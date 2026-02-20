@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volt - Gestion VTC</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3b82f6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/charts.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <img src="assets/logo.svg" alt="Volt" class="logo-icon">
+        <div>
+          <div class="logo-text">VOLT</div>
+          <div class="logo-subtitle">Transport VTC</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <div class="nav-section-title">Principal</div>
+        <a class="nav-item active" href="#/dashboard" data-route="/dashboard">
+          <i class="fas fa-gauge-high"></i>
+          <span>Tableau de bord</span>
+        </a>
+        <a class="nav-item" href="#/chauffeurs" data-route="/chauffeurs">
+          <i class="fas fa-id-card"></i>
+          <span>Chauffeurs</span>
+        </a>
+        <a class="nav-item" href="#/vehicules" data-route="/vehicules">
+          <i class="fas fa-car"></i>
+          <span>V&eacute;hicules</span>
+        </a>
+        <a class="nav-item" href="#/planning" data-route="/planning">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Planning</span>
+        </a>
+
+        <div class="nav-section-title">Finances</div>
+        <a class="nav-item" href="#/versements" data-route="/versements">
+          <i class="fas fa-money-bill-transfer"></i>
+          <span>Versements</span>
+        </a>
+        <a class="nav-item" href="#/rentabilite" data-route="/rentabilite">
+          <i class="fas fa-chart-pie"></i>
+          <span>Rentabilit&eacute;</span>
+        </a>
+        <a class="nav-item" href="#/comptabilite" data-route="/comptabilite">
+          <i class="fas fa-calculator"></i>
+          <span>Comptabilit&eacute;</span>
+        </a>
+
+        <div class="nav-section-title">Suivi</div>
+        <a class="nav-item" href="#/gps-conduite" data-route="/gps-conduite">
+          <i class="fas fa-satellite-dish"></i>
+          <span>GPS &amp; Conduite</span>
+        </a>
+        <a class="nav-item" href="#/alertes" data-route="/alertes">
+          <i class="fas fa-bell"></i>
+          <span>Alertes</span>
+        </a>
+        <a class="nav-item" href="#/rapports" data-route="/rapports">
+          <i class="fas fa-file-export"></i>
+          <span>Rapports</span>
+        </a>
+
+        <div class="nav-section-title">Syst&egrave;me</div>
+        <a class="nav-item" href="#/parametres" data-route="/parametres">
+          <i class="fas fa-cog"></i>
+          <span>Param&egrave;tres</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="version">Volt v1.0.0</div>
+      </div>
+    </aside>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <button class="header-toggle" id="sidebar-toggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="header-breadcrumb" id="header-breadcrumb">
+            <span class="text-muted">Volt</span>
+            <i class="fas fa-chevron-right text-muted" style="font-size: 10px;"></i>
+            <span class="current">Tableau de bord</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="theme-toggle" id="theme-toggle" title="Changer de thème">
+            <i class="fas fa-moon" id="theme-icon"></i>
+          </button>
+          <div class="header-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Rechercher..." id="global-search">
+          </div>
+          <div class="header-notifications" id="notifications-toggle">
+            <i class="fas fa-bell"></i>
+            <span class="badge-count" id="notif-count">3</span>
+            <div class="notif-dropdown" id="notif-dropdown">
+              <div class="notif-dropdown-header">
+                <span>Notifications</span>
+                <button class="btn btn-sm btn-secondary" id="notif-clear">Tout effacer</button>
+              </div>
+              <div id="notif-list"></div>
+            </div>
+          </div>
+          <div class="header-user">
+            <div class="header-user-avatar">YN</div>
+            <span class="header-user-name">Yves Nicolas</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Dynamic Page Content -->
+      <div id="page-content">
+        <!-- Content loaded by router -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Modal Container -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal-container">
+      <div class="modal-header">
+        <h2 id="modal-title"></h2>
+        <button class="modal-close" id="modal-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.js"></script>
+
+  <!-- jsPDF -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- App JS -->
+  <script src="js/store.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/demo-data.js"></script>
+  <script src="js/components/toast.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/components/sidebar.js"></script>
+  <script src="js/components/header.js"></script>
+  <script src="js/components/table.js"></script>
+  <script src="js/components/form-builder.js"></script>
+  <script src="js/pages/dashboard.js"></script>
+  <script src="js/pages/chauffeurs.js"></script>
+  <script src="js/pages/vehicules.js"></script>
+  <script src="js/pages/versements.js"></script>
+  <script src="js/pages/rentabilite.js"></script>
+  <script src="js/pages/gps-conduite.js"></script>
+  <script src="js/pages/rapports.js"></script>
+  <script src="js/pages/comptabilite.js"></script>
+  <script src="js/pages/planning.js"></script>
+  <script src="js/pages/alertes.js"></script>
+  <script src="js/pages/parametres.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

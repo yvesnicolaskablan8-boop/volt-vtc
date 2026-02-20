@@ -1,0 +1,644 @@
+/**
+ * ParametresPage - Paramètres de l'application
+ *
+ * Onglets :
+ * 1. Utilisateurs — CRUD avec permissions page par page
+ * 2. Entreprise — Infos société (nom, email, adresse…)
+ * 3. Préférences — Thème, langue, notifications…
+ */
+const ParametresPage = {
+  _currentTab: 'users',
+
+  // =================== MODULES MAP ===================
+  _modules: [
+    { key: 'dashboard', label: 'Tableau de bord', icon: 'fa-gauge-high' },
+    { key: 'chauffeurs', label: 'Chauffeurs', icon: 'fa-id-card' },
+    { key: 'vehicules', label: 'Véhicules', icon: 'fa-car' },
+    { key: 'planning', label: 'Planning', icon: 'fa-calendar-alt' },
+    { key: 'versements', label: 'Versements', icon: 'fa-money-bill-transfer' },
+    { key: 'rentabilite', label: 'Rentabilité', icon: 'fa-chart-pie' },
+    { key: 'comptabilite', label: 'Comptabilité', icon: 'fa-calculator' },
+    { key: 'gps_conduite', label: 'GPS & Conduite', icon: 'fa-satellite-dish' },
+    { key: 'alertes', label: 'Alertes', icon: 'fa-bell' },
+    { key: 'rapports', label: 'Rapports', icon: 'fa-file-export' },
+    { key: 'parametres', label: 'Paramètres', icon: 'fa-cog' }
+  ],
+
+  // =================== ROLE TEMPLATES ===================
+  _roleTemplates: {
+    'Administrateur': { dashboard: true, chauffeurs: true, vehicules: true, planning: true, versements: true, rentabilite: true, comptabilite: true, gps_conduite: true, alertes: true, rapports: true, parametres: true },
+    'Manager': { dashboard: true, chauffeurs: true, vehicules: true, planning: true, versements: true, rentabilite: true, comptabilite: true, gps_conduite: true, alertes: true, rapports: true, parametres: false },
+    'Opérateur': { dashboard: true, chauffeurs: true, vehicules: true, planning: true, versements: false, rentabilite: false, comptabilite: false, gps_conduite: false, alertes: false, rapports: false, parametres: false },
+    'Comptable': { dashboard: true, chauffeurs: false, vehicules: false, planning: false, versements: true, rentabilite: true, comptabilite: true, gps_conduite: false, alertes: false, rapports: true, parametres: false },
+    'Superviseur': { dashboard: true, chauffeurs: false, vehicules: false, planning: false, versements: false, rentabilite: false, comptabilite: false, gps_conduite: true, alertes: true, rapports: true, parametres: false }
+  },
+
+  render() {
+    const container = document.getElementById('page-content');
+    container.innerHTML = this._template();
+    this._bindEvents();
+    this._renderTab(this._currentTab);
+  },
+
+  destroy() {
+    // Nothing to clean up
+  },
+
+  _template() {
+    return `
+      <div class="page-header">
+        <h1><i class="fas fa-cog"></i> Paramètres</h1>
+      </div>
+
+      <div class="tabs" id="settings-tabs">
+        <div class="tab active" data-tab="users"><i class="fas fa-users-cog"></i> Utilisateurs</div>
+        <div class="tab" data-tab="entreprise"><i class="fas fa-building"></i> Entreprise</div>
+        <div class="tab" data-tab="preferences"><i class="fas fa-sliders-h"></i> Préférences</div>
+      </div>
+
+      <div id="settings-content"></div>
+    `;
+  },
+
+  _bindEvents() {
+    document.querySelectorAll('#settings-tabs .tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('#settings-tabs .tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        this._currentTab = tab.dataset.tab;
+        this._renderTab(this._currentTab);
+      });
+    });
+  },
+
+  _renderTab(tab) {
+    const ct = document.getElementById('settings-content');
+    switch (tab) {
+      case 'users': ct.innerHTML = this._renderUsers(); this._bindUsersEvents(); break;
+      case 'entreprise': ct.innerHTML = this._renderEntreprise(); this._bindEntrepriseEvents(); break;
+      case 'preferences': ct.innerHTML = this._renderPreferences(); this._bindPreferencesEvents(); break;
+    }
+  },
+
+  // ========================= ONGLET UTILISATEURS =========================
+
+  _renderUsers() {
+    const users = Store.get('users') || [];
+    const actifs = users.filter(u => u.statut === 'actif').length;
+    const inactifs = users.filter(u => u.statut === 'inactif').length;
+    const roles = [...new Set(users.map(u => u.role))];
+
+    return `
+      <div class="grid-4" style="margin-bottom:var(--space-lg);">
+        <div class="kpi-card cyan">
+          <div class="kpi-icon"><i class="fas fa-users"></i></div>
+          <div class="kpi-value">${users.length}</div>
+          <div class="kpi-label">Total utilisateurs</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-icon"><i class="fas fa-user-check"></i></div>
+          <div class="kpi-value">${actifs}</div>
+          <div class="kpi-label">Actifs</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-icon"><i class="fas fa-user-slash"></i></div>
+          <div class="kpi-value">${inactifs}</div>
+          <div class="kpi-label">Inactifs</div>
+        </div>
+        <div class="kpi-card yellow">
+          <div class="kpi-icon"><i class="fas fa-shield-halved"></i></div>
+          <div class="kpi-value">${roles.length}</div>
+          <div class="kpi-label">Rôles distincts</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
+        <div></div>
+        <button class="btn btn-primary" id="btn-add-user"><i class="fas fa-user-plus"></i> Nouvel utilisateur</button>
+      </div>
+
+      <div id="users-table"></div>
+    `;
+  },
+
+  _bindUsersEvents() {
+    const users = Store.get('users') || [];
+
+    Table.create({
+      containerId: 'users-table',
+      columns: [
+        {
+          label: 'Utilisateur', primary: true,
+          render: (u) => `
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:${Utils.getAvatarColor(u.id)};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;">${Utils.getInitials(u.prenom, u.nom)}</div>
+              <div>
+                <div style="font-weight:600;font-size:var(--font-size-sm);">${u.prenom} ${u.nom}</div>
+                <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${u.email}</div>
+              </div>
+            </div>`,
+          value: (u) => `${u.prenom} ${u.nom}`
+        },
+        { label: 'Rôle', render: (u) => `<span class="badge badge-info">${u.role}</span>`, value: (u) => u.role },
+        { label: 'Statut', render: (u) => u.statut === 'actif' ? '<span class="badge badge-success"><i class="fas fa-circle" style="font-size:6px;margin-right:4px;"></i>Actif</span>' : '<span class="badge badge-danger"><i class="fas fa-circle" style="font-size:6px;margin-right:4px;"></i>Inactif</span>', value: (u) => u.statut },
+        {
+          label: 'Accès',
+          render: (u) => {
+            const granted = this._modules.filter(m => u.permissions && u.permissions[m.key]);
+            if (granted.length === this._modules.length) return '<span class="badge badge-success">Tous</span>';
+            if (granted.length === 0) return '<span class="badge badge-danger">Aucun</span>';
+            return `<span class="badge badge-warning">${granted.length}/${this._modules.length} modules</span>`;
+          },
+          value: (u) => Object.values(u.permissions || {}).filter(Boolean).length
+        },
+        {
+          label: 'Dernière connexion',
+          render: (u) => u.dernierConnexion ? `<span style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.timeAgo(u.dernierConnexion)}</span>` : '-',
+          value: (u) => u.dernierConnexion || ''
+        }
+      ],
+      data: users,
+      pageSize: 15,
+      actions: (u) => `
+        <button class="btn btn-sm btn-secondary" onclick="ParametresPage._editUser('${u.id}')" title="Modifier"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="ParametresPage._deleteUser('${u.id}')" title="Supprimer"><i class="fas fa-trash"></i></button>
+      `
+    });
+
+    document.getElementById('btn-add-user').addEventListener('click', () => this._addUser());
+  },
+
+  _getPermissionsHTML(perms = {}) {
+    return `
+      <div style="margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--border-color);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
+          <h4 style="margin:0;font-size:var(--font-size-sm);font-weight:600;"><i class="fas fa-shield-halved" style="margin-right:6px;color:var(--primary);"></i>Accès aux modules</h4>
+          <div style="display:flex;gap:var(--space-xs);">
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-perms-all"><i class="fas fa-check-double"></i> Tout</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-perms-none"><i class="fas fa-times"></i> Aucun</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:8px;" id="perms-grid">
+          ${this._modules.map(m => {
+            const checked = perms[m.key] ? 'checked' : '';
+            return `
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);cursor:pointer;transition:all 0.2s;background:${perms[m.key] ? 'var(--card-hover-bg, rgba(59,130,246,0.05))' : 'transparent'};" class="perm-label">
+                <input type="checkbox" name="perm_${m.key}" ${checked} style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;">
+                <i class="fas ${m.icon}" style="font-size:12px;color:var(--text-muted);width:16px;text-align:center;"></i>
+                <span style="font-size:var(--font-size-xs);font-weight:500;">${m.label}</span>
+              </label>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  },
+
+  _collectPermissions(container) {
+    const perms = {};
+    this._modules.forEach(m => {
+      const cb = container.querySelector(`[name="perm_${m.key}"]`);
+      perms[m.key] = cb ? cb.checked : false;
+    });
+    return perms;
+  },
+
+  _bindPermissionToggles(container) {
+    // Select all / none
+    const allBtn = container.querySelector('#btn-perms-all');
+    const noneBtn = container.querySelector('#btn-perms-none');
+    if (allBtn) {
+      allBtn.addEventListener('click', () => {
+        container.querySelectorAll('#perms-grid input[type="checkbox"]').forEach(cb => { cb.checked = true; });
+        this._updatePermLabels(container);
+      });
+    }
+    if (noneBtn) {
+      noneBtn.addEventListener('click', () => {
+        container.querySelectorAll('#perms-grid input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+        this._updatePermLabels(container);
+      });
+    }
+
+    // Checkbox visual toggle
+    container.querySelectorAll('#perms-grid input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => this._updatePermLabels(container));
+    });
+
+    // Role change → auto-fill permissions
+    const roleSelect = container.querySelector('[name="role"]');
+    if (roleSelect) {
+      roleSelect.addEventListener('change', () => {
+        const role = roleSelect.value;
+        const template = this._roleTemplates[role];
+        if (template) {
+          this._modules.forEach(m => {
+            const cb = container.querySelector(`[name="perm_${m.key}"]`);
+            if (cb) cb.checked = !!template[m.key];
+          });
+          this._updatePermLabels(container);
+        }
+      });
+    }
+  },
+
+  _updatePermLabels(container) {
+    container.querySelectorAll('.perm-label').forEach(label => {
+      const cb = label.querySelector('input[type="checkbox"]');
+      if (cb && cb.checked) {
+        label.style.background = 'var(--card-hover-bg, rgba(59,130,246,0.05))';
+        label.style.borderColor = 'var(--primary)';
+      } else {
+        label.style.background = 'transparent';
+        label.style.borderColor = 'var(--border-color)';
+      }
+    });
+  },
+
+  _addUser() {
+    const allPerms = {};
+    this._modules.forEach(m => { allPerms[m.key] = true; });
+
+    const fields = [
+      { type: 'row-start' },
+      { name: 'prenom', label: 'Prénom', type: 'text', required: true, placeholder: 'Ex: Aminata' },
+      { name: 'nom', label: 'Nom', type: 'text', required: true, placeholder: 'Ex: Koné' },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'ex: aminata@volt.ci' },
+      { name: 'telephone', label: 'Téléphone', type: 'tel', placeholder: '+225 XX XX XX XX' },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'role', label: 'Rôle', type: 'select', required: true, options: [
+        { value: 'Administrateur', label: 'Administrateur' },
+        { value: 'Manager', label: 'Manager' },
+        { value: 'Opérateur', label: 'Opérateur' },
+        { value: 'Comptable', label: 'Comptable' },
+        { value: 'Superviseur', label: 'Superviseur' }
+      ]},
+      { name: 'statut', label: 'Statut', type: 'select', options: [
+        { value: 'actif', label: 'Actif' },
+        { value: 'inactif', label: 'Inactif' }
+      ]},
+      { type: 'row-end' }
+    ];
+
+    const formHtml = FormBuilder.build(fields) + this._getPermissionsHTML(allPerms);
+
+    Modal.form('<i class="fas fa-user-plus" style="color:var(--primary);"></i> Nouvel utilisateur', formHtml, () => {
+      const body = document.getElementById('modal-body');
+      if (!FormBuilder.validate(body, fields)) return;
+      const values = FormBuilder.getValues(body);
+      const permissions = this._collectPermissions(body);
+
+      // Remove perm_* keys that FormBuilder picks up from checkboxes
+      Object.keys(values).forEach(k => { if (k.startsWith('perm_')) delete values[k]; });
+
+      const user = {
+        id: Utils.generateId('USR'),
+        ...values,
+        avatar: null,
+        permissions,
+        dernierConnexion: null,
+        dateCreation: new Date().toISOString()
+      };
+
+      Store.add('users', user);
+      Modal.close();
+      Toast.success(`Utilisateur ${values.prenom} ${values.nom} créé`);
+      this._renderTab('users');
+    }, 'modal-lg');
+
+    // Bind permission toggles after modal is open
+    setTimeout(() => {
+      const body = document.getElementById('modal-body');
+      if (body) this._bindPermissionToggles(body);
+    }, 50);
+  },
+
+  _editUser(id) {
+    const user = Store.findById('users', id);
+    if (!user) return;
+
+    const fields = [
+      { type: 'row-start' },
+      { name: 'prenom', label: 'Prénom', type: 'text', required: true },
+      { name: 'nom', label: 'Nom', type: 'text', required: true },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'email', label: 'Email', type: 'email', required: true },
+      { name: 'telephone', label: 'Téléphone', type: 'tel' },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'role', label: 'Rôle', type: 'select', required: true, options: [
+        { value: 'Administrateur', label: 'Administrateur' },
+        { value: 'Manager', label: 'Manager' },
+        { value: 'Opérateur', label: 'Opérateur' },
+        { value: 'Comptable', label: 'Comptable' },
+        { value: 'Superviseur', label: 'Superviseur' }
+      ]},
+      { name: 'statut', label: 'Statut', type: 'select', options: [
+        { value: 'actif', label: 'Actif' },
+        { value: 'inactif', label: 'Inactif' }
+      ]},
+      { type: 'row-end' }
+    ];
+
+    const formHtml = FormBuilder.build(fields, user) + this._getPermissionsHTML(user.permissions || {});
+
+    Modal.form('<i class="fas fa-user-edit" style="color:var(--primary);"></i> Modifier utilisateur', formHtml, () => {
+      const body = document.getElementById('modal-body');
+      if (!FormBuilder.validate(body, fields)) return;
+      const values = FormBuilder.getValues(body);
+      const permissions = this._collectPermissions(body);
+
+      // Remove perm_* keys that FormBuilder picks up from checkboxes
+      Object.keys(values).forEach(k => { if (k.startsWith('perm_')) delete values[k]; });
+
+      Store.update('users', id, { ...values, permissions });
+      Modal.close();
+      Toast.success('Utilisateur modifié');
+      this._renderTab('users');
+    }, 'modal-lg');
+
+    setTimeout(() => {
+      const body = document.getElementById('modal-body');
+      if (body) this._bindPermissionToggles(body);
+    }, 50);
+  },
+
+  _deleteUser(id) {
+    const user = Store.findById('users', id);
+    if (!user) return;
+    Modal.confirm(
+      'Supprimer l\'utilisateur',
+      `Êtes-vous sûr de vouloir supprimer <strong>${user.prenom} ${user.nom}</strong> (${user.role}) ? Cette action est irréversible.`,
+      () => {
+        Store.delete('users', id);
+        Toast.success('Utilisateur supprimé');
+        this._renderTab('users');
+      }
+    );
+  },
+
+  // ========================= ONGLET ENTREPRISE =========================
+
+  _renderEntreprise() {
+    const settings = Store.get('settings') || {};
+    const ent = settings.entreprise || {};
+
+    return `
+      <div class="grid-2" style="gap:var(--space-lg);">
+        <!-- Formulaire -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-building"></i> Informations de l'entreprise</span>
+            <button class="btn btn-sm btn-primary" id="btn-save-entreprise"><i class="fas fa-save"></i> Sauvegarder</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+            <div class="grid-2" style="gap:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Nom de l'entreprise *</label>
+                <input type="text" class="form-control" id="ent-nom" value="${ent.nom || ''}" placeholder="Ex: Volt VTC">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Slogan</label>
+                <input type="text" class="form-control" id="ent-slogan" value="${ent.slogan || ''}" placeholder="Ex: Transport de qualité">
+              </div>
+            </div>
+            <div class="grid-2" style="gap:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="ent-email" value="${ent.email || ''}" placeholder="contact@volt.ci">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Téléphone</label>
+                <input type="tel" class="form-control" id="ent-telephone" value="${ent.telephone || ''}" placeholder="+225 XX XX XX XX">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Adresse</label>
+              <input type="text" class="form-control" id="ent-adresse" value="${ent.adresse || ''}" placeholder="Ex: Cocody Riviera, Abidjan">
+            </div>
+            <div class="grid-2" style="gap:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Site web</label>
+                <input type="text" class="form-control" id="ent-siteweb" value="${ent.siteWeb || ''}" placeholder="www.volt.ci">
+              </div>
+              <div class="form-group">
+                <label class="form-label">N° Registre du commerce</label>
+                <input type="text" class="form-control" id="ent-registre" value="${ent.numeroRegistre || ''}" placeholder="CI-ABJ-2024-XXXX">
+              </div>
+            </div>
+            <div class="form-group" style="max-width:200px;">
+              <label class="form-label">Devise</label>
+              <select class="form-control" id="ent-devise">
+                <option value="FCFA" ${ent.devise === 'FCFA' ? 'selected' : ''}>FCFA (Franc CFA)</option>
+                <option value="EUR" ${ent.devise === 'EUR' ? 'selected' : ''}>EUR (Euro)</option>
+                <option value="USD" ${ent.devise === 'USD' ? 'selected' : ''}>USD (Dollar US)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aperçu -->
+        <div>
+          <div class="card" style="border-top:3px solid var(--primary);">
+            <div style="text-align:center;padding:var(--space-xl) var(--space-lg);">
+              <div style="width:80px;height:80px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;margin:0 auto var(--space-md);font-size:28px;color:#fff;font-weight:700;">
+                ${(ent.nom || 'V').charAt(0)}
+              </div>
+              <h2 style="margin-bottom:4px;" id="preview-nom">${ent.nom || 'Nom entreprise'}</h2>
+              <p style="color:var(--text-muted);font-size:var(--font-size-sm);margin-bottom:var(--space-lg);" id="preview-slogan">${ent.slogan || ''}</p>
+
+              <div style="display:flex;flex-direction:column;gap:var(--space-sm);text-align:left;">
+                ${ent.email ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><i class="fas fa-envelope" style="color:var(--text-muted);width:16px;text-align:center;"></i> ${ent.email}</div>` : ''}
+                ${ent.telephone ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><i class="fas fa-phone" style="color:var(--text-muted);width:16px;text-align:center;"></i> ${ent.telephone}</div>` : ''}
+                ${ent.adresse ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><i class="fas fa-map-marker-alt" style="color:var(--text-muted);width:16px;text-align:center;"></i> ${ent.adresse}</div>` : ''}
+                ${ent.siteWeb ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><i class="fas fa-globe" style="color:var(--text-muted);width:16px;text-align:center;"></i> ${ent.siteWeb}</div>` : ''}
+                ${ent.numeroRegistre ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><i class="fas fa-file-contract" style="color:var(--text-muted);width:16px;text-align:center;"></i> ${ent.numeroRegistre}</div>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:var(--space-md);border-left:4px solid var(--volt-blue);">
+            <div style="display:flex;align-items:center;gap:var(--space-sm);">
+              <i class="fas fa-lightbulb" style="color:var(--volt-blue);"></i>
+              <p style="font-size:var(--font-size-xs);color:var(--text-muted);margin:0;">Ces informations apparaissent sur les exports PDF et les factures générées par l'application.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  _bindEntrepriseEvents() {
+    document.getElementById('btn-save-entreprise').addEventListener('click', () => {
+      const settings = Store.get('settings') || {};
+      settings.entreprise = {
+        nom: document.getElementById('ent-nom').value.trim(),
+        slogan: document.getElementById('ent-slogan').value.trim(),
+        email: document.getElementById('ent-email').value.trim(),
+        telephone: document.getElementById('ent-telephone').value.trim(),
+        adresse: document.getElementById('ent-adresse').value.trim(),
+        siteWeb: document.getElementById('ent-siteweb').value.trim(),
+        numeroRegistre: document.getElementById('ent-registre').value.trim(),
+        devise: document.getElementById('ent-devise').value
+      };
+
+      if (!settings.entreprise.nom) {
+        Toast.error('Le nom de l\'entreprise est obligatoire');
+        return;
+      }
+
+      Store.set('settings', settings);
+      Toast.success('Informations entreprise sauvegardées');
+      this._renderTab('entreprise');
+    });
+  },
+
+  // ========================= ONGLET PREFERENCES =========================
+
+  _renderPreferences() {
+    const settings = Store.get('settings') || {};
+    const prefs = settings.preferences || {};
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+
+    return `
+      <div class="grid-2" style="gap:var(--space-lg);">
+        <!-- Apparence -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-palette"></i> Apparence</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-lg);padding-top:var(--space-md);">
+            <div class="form-group">
+              <label class="form-label">Thème par défaut</label>
+              <div style="display:flex;gap:var(--space-md);">
+                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${currentTheme === 'dark' ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;transition:all 0.2s;">
+                  <input type="radio" name="pref-theme" value="dark" ${currentTheme === 'dark' ? 'checked' : ''} style="accent-color:var(--primary);">
+                  <i class="fas fa-moon" style="color:var(--primary);"></i>
+                  <div>
+                    <div style="font-weight:600;font-size:var(--font-size-sm);">Mode sombre</div>
+                    <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Recommandé pour un usage prolongé</div>
+                  </div>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${currentTheme === 'light' ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;transition:all 0.2s;">
+                  <input type="radio" name="pref-theme" value="light" ${currentTheme === 'light' ? 'checked' : ''} style="accent-color:var(--primary);">
+                  <i class="fas fa-sun" style="color:var(--warning);"></i>
+                  <div>
+                    <div style="font-weight:600;font-size:var(--font-size-sm);">Mode clair</div>
+                    <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Idéal pour les environnements lumineux</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Langue</label>
+              <select class="form-control" id="pref-langue" style="max-width:300px;">
+                <option value="fr" ${prefs.langue === 'fr' ? 'selected' : ''}>Français</option>
+                <option value="en" ${prefs.langue === 'en' ? 'selected' : ''}>English</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Format de date</label>
+              <select class="form-control" id="pref-format-date" style="max-width:300px;">
+                <option value="DD/MM/YYYY" ${prefs.formatDate === 'DD/MM/YYYY' ? 'selected' : ''}>DD/MM/YYYY (20/02/2026)</option>
+                <option value="MM/DD/YYYY" ${prefs.formatDate === 'MM/DD/YYYY' ? 'selected' : ''}>MM/DD/YYYY (02/20/2026)</option>
+                <option value="YYYY-MM-DD" ${prefs.formatDate === 'YYYY-MM-DD' ? 'selected' : ''}>YYYY-MM-DD (2026-02-20)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications & Sécurité -->
+        <div>
+          <div class="card" style="margin-bottom:var(--space-lg);">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-bell"></i> Notifications</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+                <div>
+                  <div style="font-weight:500;font-size:var(--font-size-sm);">Notifications dans l'application</div>
+                  <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Afficher les alertes et mises à jour</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="pref-notifications" ${prefs.notifications !== false ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border-color);">
+                <div>
+                  <div style="font-weight:500;font-size:var(--font-size-sm);">Alertes sonores</div>
+                  <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Jouer un son lors d'une alerte critique</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="pref-sons" ${prefs.alertesSonores ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-lock"></i> Sécurité</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Délai d'inactivité avant déconnexion (minutes)</label>
+                <input type="number" class="form-control" id="pref-timeout" value="${prefs.sessionTimeout || 30}" min="5" max="480" style="max-width:200px;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:var(--space-lg);display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" id="btn-save-preferences"><i class="fas fa-save"></i> Sauvegarder les préférences</button>
+      </div>
+
+      <style>
+        .toggle-switch { position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0; }
+        .toggle-switch input { opacity:0;width:0;height:0; }
+        .toggle-slider { position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--bg-tertiary);border:1px solid var(--border-color);transition:0.3s;border-radius:24px; }
+        .toggle-slider::before { content:"";position:absolute;height:18px;width:18px;left:2px;bottom:2px;background:var(--text-muted);transition:0.3s;border-radius:50%; }
+        .toggle-switch input:checked + .toggle-slider { background:var(--primary);border-color:var(--primary); }
+        .toggle-switch input:checked + .toggle-slider::before { transform:translateX(20px);background:#fff; }
+      </style>
+    `;
+  },
+
+  _bindPreferencesEvents() {
+    // Theme radio buttons — apply immediately
+    document.querySelectorAll('input[name="pref-theme"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const theme = radio.value;
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('volt_theme', theme);
+        if (typeof Utils !== 'undefined' && Utils.configureChartDefaults) {
+          Utils.configureChartDefaults();
+        }
+      });
+    });
+
+    // Save button
+    document.getElementById('btn-save-preferences').addEventListener('click', () => {
+      const settings = Store.get('settings') || {};
+      settings.preferences = {
+        themeDefaut: document.querySelector('input[name="pref-theme"]:checked')?.value || 'dark',
+        langue: document.getElementById('pref-langue').value,
+        formatDate: document.getElementById('pref-format-date').value,
+        notifications: document.getElementById('pref-notifications').checked,
+        alertesSonores: document.getElementById('pref-sons').checked,
+        sessionTimeout: parseInt(document.getElementById('pref-timeout').value) || 30
+      };
+
+      Store.set('settings', settings);
+      Toast.success('Préférences sauvegardées');
+    });
+  }
+};
