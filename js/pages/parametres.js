@@ -323,7 +323,7 @@ const ParametresPage = {
         ...values,
         avatar: null,
         passwordHash: null,
-        mustChangePassword: false,
+        mustChangePassword: pwd ? true : true,
         permissions,
         dernierConnexion: null,
         dateCreation: new Date().toISOString()
