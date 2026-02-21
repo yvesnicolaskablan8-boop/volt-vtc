@@ -43,6 +43,20 @@ const FormBuilder = {
             ${field.readonly ? 'readonly' : ''}>`;
           break;
 
+        case 'password':
+          input = `<div style="position:relative;">
+            <input type="password" class="form-control" name="${field.name}" value=""
+              ${field.placeholder ? `placeholder="${field.placeholder}"` : ''}
+              ${field.required ? 'required' : ''}
+              ${field.minlength ? `minlength="${field.minlength}"` : ''}
+              autocomplete="new-password">
+            <button type="button" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;"
+              onclick="const i=this.previousElementSibling;i.type=i.type==='password'?'text':'password';this.querySelector('i').className=i.type==='password'?'fas fa-eye':'fas fa-eye-slash';">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>`;
+          break;
+
         case 'select':
           input = `<select class="form-control" name="${field.name}" ${field.required ? 'required' : ''}>
             ${field.placeholder ? `<option value="">${field.placeholder}</option>` : ''}

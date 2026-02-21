@@ -6,6 +6,8 @@ const Header = {
     this._initThemeToggle();
     this._initNotifications();
     this._initSearch();
+    this._renderUserInfo();
+    this._initLogout();
   },
 
   setBreadcrumb(title) {
@@ -17,10 +19,48 @@ const Header = {
     `;
   },
 
+  _renderUserInfo() {
+    if (typeof Auth === 'undefined' || !Auth.isLoggedIn()) return;
+
+    const session = Auth.getSession();
+    if (!session) return;
+
+    const initials = (session.prenom[0] + session.nom[0]).toUpperCase();
+    const fullName = `${session.prenom} ${session.nom}`;
+
+    const avatarEl = document.querySelector('.header-user-avatar');
+    const nameEl = document.querySelector('.header-user-name');
+
+    if (avatarEl) avatarEl.textContent = initials;
+    if (nameEl) nameEl.textContent = fullName;
+  },
+
+  _initLogout() {
+    // Add logout button if not already present
+    const userDiv = document.querySelector('.header-user');
+    if (!userDiv) return;
+
+    // Remove existing logout button
+    const existing = userDiv.querySelector('.btn-logout');
+    if (existing) existing.remove();
+
+    const logoutBtn = document.createElement('button');
+    logoutBtn.className = 'btn-logout';
+    logoutBtn.title = 'Déconnexion';
+    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
+    logoutBtn.addEventListener('click', () => {
+      App.logout();
+    });
+    userDiv.appendChild(logoutBtn);
+  },
+
   _initThemeToggle() {
     const btn = document.getElementById('theme-toggle');
     if (btn) {
-      btn.addEventListener('click', () => ThemeManager.toggle());
+      // Clone to remove old listeners
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      newBtn.addEventListener('click', () => ThemeManager.toggle());
     }
   },
 
@@ -28,34 +68,48 @@ const Header = {
     const toggle = document.getElementById('notifications-toggle');
     const dropdown = document.getElementById('notif-dropdown');
 
-    toggle.addEventListener('click', (e) => {
+    // Clone to remove old listeners
+    const newToggle = toggle.cloneNode(true);
+    toggle.parentNode.replaceChild(newToggle, toggle);
+
+    const newDropdown = newToggle.querySelector('#notif-dropdown') || document.getElementById('notif-dropdown');
+
+    newToggle.addEventListener('click', (e) => {
       e.stopPropagation();
-      dropdown.classList.toggle('active');
+      newDropdown.classList.toggle('active');
     });
 
     document.addEventListener('click', (e) => {
-      if (!toggle.contains(e.target)) {
-        dropdown.classList.remove('active');
+      if (!newToggle.contains(e.target)) {
+        newDropdown.classList.remove('active');
       }
     });
 
-    const clearBtn = document.getElementById('notif-clear');
-    clearBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.getElementById('notif-list').innerHTML = `
-        <div class="empty-state" style="padding: 24px;">
-          <i class="fas fa-bell-slash"></i>
-          <p style="font-size: 12px;">Aucune notification</p>
-        </div>
-      `;
-      document.getElementById('notif-count').style.display = 'none';
-    });
+    const clearBtn = newToggle.querySelector('#notif-clear') || document.getElementById('notif-clear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const notifList = document.getElementById('notif-list');
+        if (notifList) {
+          notifList.innerHTML = `
+            <div class="empty-state" style="padding: 24px;">
+              <i class="fas fa-bell-slash"></i>
+              <p style="font-size: 12px;">Aucune notification</p>
+            </div>
+          `;
+        }
+        const countEl = document.getElementById('notif-count');
+        if (countEl) countEl.style.display = 'none';
+      });
+    }
 
     this._loadNotifications();
   },
 
   _loadNotifications() {
     const list = document.getElementById('notif-list');
+    if (!list) return;
+
     const versementsRetard = Store.query('versements', v => v.statut === 'retard' || v.statut === 'en_attente');
     const docsExpires = [];
 
@@ -108,8 +162,10 @@ const Header = {
 
     const count = notifications.length;
     const countEl = document.getElementById('notif-count');
-    countEl.textContent = count;
-    countEl.style.display = count > 0 ? 'flex' : 'none';
+    if (countEl) {
+      countEl.textContent = count;
+      countEl.style.display = count > 0 ? 'flex' : 'none';
+    }
 
     if (notifications.length === 0) {
       list.innerHTML = `
@@ -134,7 +190,13 @@ const Header = {
 
   _initSearch() {
     const input = document.getElementById('global-search');
-    input.addEventListener('input', Utils.debounce((e) => {
+    if (!input) return;
+
+    // Clone to remove old listeners
+    const newInput = input.cloneNode(true);
+    input.parentNode.replaceChild(newInput, input);
+
+    newInput.addEventListener('input', Utils.debounce((e) => {
       const query = e.target.value.trim().toLowerCase();
       if (query.length < 2) return;
 
@@ -152,22 +214,22 @@ const Header = {
 
       if (chauffeurs.length === 1) {
         Router.navigate(`/chauffeurs/${chauffeurs[0].id}`);
-        input.value = '';
+        newInput.value = '';
       } else if (vehicules.length === 1) {
         Router.navigate(`/vehicules/${vehicules[0].id}`);
-        input.value = '';
+        newInput.value = '';
       } else if (chauffeurs.length > 0) {
         Router.navigate('/chauffeurs');
-        input.value = '';
+        newInput.value = '';
       } else if (vehicules.length > 0) {
         Router.navigate('/vehicules');
-        input.value = '';
+        newInput.value = '';
       }
     }, 500));
 
-    input.addEventListener('keydown', (e) => {
+    newInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        input.dispatchEvent(new Event('input'));
+        newInput.dispatchEvent(new Event('input'));
       }
     });
   },

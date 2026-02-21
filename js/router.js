@@ -54,6 +54,30 @@ const Router = {
     const { route, params } = match;
     const config = this._routes[route];
 
+    // Auth guard: check if user is logged in
+    if (typeof Auth !== 'undefined' && !Auth.isLoggedIn()) {
+      return;
+    }
+
+    // Auth guard: check route permission
+    if (typeof Auth !== 'undefined' && !Auth.canAccessRoute(hash)) {
+      this._currentRoute = hash;
+      Sidebar.setActive(hash);
+      Header.setBreadcrumb('Accès restreint');
+      const container = document.getElementById('page-content');
+      container.innerHTML = `
+        <div class="access-restricted">
+          <i class="fas fa-lock"></i>
+          <h2>Accès restreint</h2>
+          <p>Vous n'avez pas les permissions nécessaires pour accéder à cette page. Contactez votre administrateur.</p>
+          <button class="btn btn-primary" style="margin-top: var(--space-lg);" onclick="Router.navigate('/dashboard')">
+            <i class="fas fa-home"></i> Retour au tableau de bord
+          </button>
+        </div>
+      `;
+      return;
+    }
+
     // Update current
     this._currentPage = config.page;
     this._currentRoute = hash;

@@ -1,5 +1,5 @@
 /**
- * Sidebar - Navigation management
+ * Sidebar - Navigation management with permission filtering
  */
 const Sidebar = {
   init() {
@@ -8,14 +8,22 @@ const Sidebar = {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
 
-    toggle.addEventListener('click', () => {
+    // Clone to remove old listeners
+    const newToggle = toggle.cloneNode(true);
+    toggle.parentNode.replaceChild(newToggle, toggle);
+
+    newToggle.addEventListener('click', () => {
       sidebar.classList.toggle('open');
       overlay.classList.toggle('active');
     });
 
-    overlay.addEventListener('click', () => {
+    // Clone overlay too
+    const newOverlay = overlay.cloneNode(true);
+    overlay.parentNode.replaceChild(newOverlay, overlay);
+
+    newOverlay.addEventListener('click', () => {
       sidebar.classList.remove('open');
-      overlay.classList.remove('active');
+      newOverlay.classList.remove('active');
     });
 
     // Nav item clicks close mobile sidebar
@@ -23,9 +31,27 @@ const Sidebar = {
       item.addEventListener('click', () => {
         if (window.innerWidth <= 768) {
           sidebar.classList.remove('open');
-          overlay.classList.remove('active');
+          newOverlay.classList.remove('active');
         }
       });
+    });
+
+    // Filter by permissions
+    this._filterByPermissions();
+  },
+
+  _filterByPermissions() {
+    if (typeof Auth === 'undefined' || !Auth.isLoggedIn()) return;
+
+    const navItems = document.querySelectorAll('.nav-item[data-route]');
+
+    navItems.forEach(item => {
+      const route = item.getAttribute('data-route');
+      if (!route) return;
+
+      // Check if user can access this route
+      const canAccess = Auth.canAccessRoute(route);
+      item.style.display = canAccess ? '' : 'none';
     });
   },
 

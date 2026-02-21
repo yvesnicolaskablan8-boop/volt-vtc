@@ -161,6 +161,7 @@ const ParametresPage = {
       pageSize: 15,
       actions: (u) => `
         <button class="btn btn-sm btn-secondary" onclick="ParametresPage._editUser('${u.id}')" title="Modifier"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-secondary" onclick="ParametresPage._resetUserPassword('${u.id}')" title="Mot de passe"><i class="fas fa-key"></i></button>
         <button class="btn btn-sm btn-danger" onclick="ParametresPage._deleteUser('${u.id}')" title="Supprimer"><i class="fas fa-trash"></i></button>
       `
     });
@@ -280,12 +281,20 @@ const ParametresPage = {
         { value: 'actif', label: 'Actif' },
         { value: 'inactif', label: 'Inactif' }
       ]},
+      { type: 'row-end' },
+      { type: 'divider' },
+      { type: 'heading', label: 'Mot de passe' },
+      { type: 'row-start' },
+      { name: 'password', label: 'Mot de passe temporaire', type: 'password', placeholder: 'Minimum 6 caractères', minlength: 6 },
+      { name: 'password_confirm', label: 'Confirmer le mot de passe', type: 'password', placeholder: 'Retapez le mot de passe', minlength: 6 },
       { type: 'row-end' }
     ];
 
-    const formHtml = FormBuilder.build(fields) + this._getPermissionsHTML(allPerms);
+    const formHtml = FormBuilder.build(fields) +
+      `<div style="margin-top:-8px;margin-bottom:var(--space-md);font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-info-circle" style="color:var(--volt-blue);"></i> Si aucun mot de passe n'est défini, l'utilisateur devra en créer un lors de sa première connexion.</div>` +
+      this._getPermissionsHTML(allPerms);
 
-    Modal.form('<i class="fas fa-user-plus" style="color:var(--primary);"></i> Nouvel utilisateur', formHtml, () => {
+    Modal.form('<i class="fas fa-user-plus" style="color:var(--primary);"></i> Nouvel utilisateur', formHtml, async () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -294,10 +303,27 @@ const ParametresPage = {
       // Remove perm_* keys that FormBuilder picks up from checkboxes
       Object.keys(values).forEach(k => { if (k.startsWith('perm_')) delete values[k]; });
 
+      // Extract and validate password
+      const pwd = values.password || '';
+      const pwdConfirm = values.password_confirm || '';
+      delete values.password;
+      delete values.password_confirm;
+
+      if (pwd && pwd.length < 6) {
+        Toast.error('Le mot de passe doit contenir au moins 6 caractères');
+        return;
+      }
+      if (pwd && pwd !== pwdConfirm) {
+        Toast.error('Les mots de passe ne correspondent pas');
+        return;
+      }
+
       const user = {
         id: Utils.generateId('USR'),
         ...values,
         avatar: null,
+        passwordHash: pwd ? await Auth.hashPassword(pwd) : null,
+        mustChangePassword: pwd ? true : false,
         permissions,
         dernierConnexion: null,
         dateCreation: new Date().toISOString()
@@ -305,7 +331,7 @@ const ParametresPage = {
 
       Store.add('users', user);
       Modal.close();
-      Toast.success(`Utilisateur ${values.prenom} ${values.nom} créé`);
+      Toast.success(`Utilisateur ${values.prenom} ${values.nom} créé` + (pwd ? ' avec mot de passe temporaire' : ''));
       this._renderTab('users');
     }, 'modal-lg');
 
@@ -344,7 +370,20 @@ const ParametresPage = {
       { type: 'row-end' }
     ];
 
-    const formHtml = FormBuilder.build(fields, user) + this._getPermissionsHTML(user.permissions || {});
+    // Password status info
+    const pwdStatus = user.passwordHash
+      ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);margin-bottom:var(--space-md);">
+          <i class="fas fa-check-circle" style="color:var(--success);"></i>
+          <span style="font-size:var(--font-size-xs);color:var(--text-secondary);">Mot de passe défini${user.mustChangePassword ? ' (temporaire — devra être changé)' : ''}</span>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-reset-pwd" style="margin-left:auto;"><i class="fas fa-key"></i> Réinitialiser</button>
+        </div>`
+      : `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);margin-bottom:var(--space-md);">
+          <i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i>
+          <span style="font-size:var(--font-size-xs);color:var(--text-secondary);">Aucun mot de passe — l'utilisateur devra en créer un à la première connexion</span>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-reset-pwd" style="margin-left:auto;"><i class="fas fa-key"></i> Définir</button>
+        </div>`;
+
+    const formHtml = FormBuilder.build(fields, user) + pwdStatus + this._getPermissionsHTML(user.permissions || {});
 
     Modal.form('<i class="fas fa-user-edit" style="color:var(--primary);"></i> Modifier utilisateur', formHtml, () => {
       const body = document.getElementById('modal-body');
@@ -356,6 +395,15 @@ const ParametresPage = {
       Object.keys(values).forEach(k => { if (k.startsWith('perm_')) delete values[k]; });
 
       Store.update('users', id, { ...values, permissions });
+
+      // If editing the current user, refresh session
+      if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+        const session = Auth.getSession();
+        if (session && session.id === id) {
+          Auth.refreshSession();
+        }
+      }
+
       Modal.close();
       Toast.success('Utilisateur modifié');
       this._renderTab('users');
@@ -363,8 +411,76 @@ const ParametresPage = {
 
     setTimeout(() => {
       const body = document.getElementById('modal-body');
-      if (body) this._bindPermissionToggles(body);
+      if (body) {
+        this._bindPermissionToggles(body);
+        // Bind reset password button
+        const resetBtn = body.querySelector('#btn-reset-pwd');
+        if (resetBtn) {
+          resetBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            Modal.close();
+            setTimeout(() => this._resetUserPassword(id), 300);
+          });
+        }
+      }
     }, 50);
+  },
+
+  _resetUserPassword(id) {
+    const user = Store.findById('users', id);
+    if (!user) return;
+
+    const fields = [
+      { type: 'row-start' },
+      { name: 'password', label: 'Nouveau mot de passe', type: 'password', required: true, placeholder: 'Minimum 6 caractères', minlength: 6 },
+      { name: 'password_confirm', label: 'Confirmer', type: 'password', required: true, placeholder: 'Retapez le mot de passe', minlength: 6 },
+      { type: 'row-end' }
+    ];
+
+    const formHtml = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:var(--space-lg);padding-bottom:var(--space-md);border-bottom:1px solid var(--border-color);">
+        <div style="width:40px;height:40px;border-radius:50%;background:${Utils.getAvatarColor(user.id)};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff;">${Utils.getInitials(user.prenom, user.nom)}</div>
+        <div>
+          <div style="font-weight:600;">${user.prenom} ${user.nom}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${user.email}</div>
+        </div>
+      </div>
+      ${FormBuilder.build(fields)}
+      <label style="display:flex;align-items:center;gap:8px;margin-top:var(--space-sm);cursor:pointer;">
+        <input type="checkbox" id="force-change" checked style="accent-color:var(--primary);width:16px;height:16px;">
+        <span style="font-size:var(--font-size-xs);color:var(--text-secondary);">Forcer le changement au prochain login</span>
+      </label>
+    `;
+
+    Modal.form('<i class="fas fa-key" style="color:var(--warning);"></i> Réinitialiser le mot de passe', formHtml, async () => {
+      const body = document.getElementById('modal-body');
+      const pwd = body.querySelector('[name="password"]').value;
+      const pwdConfirm = body.querySelector('[name="password_confirm"]').value;
+      const forceChange = body.querySelector('#force-change').checked;
+
+      if (!pwd || !pwdConfirm) {
+        Toast.error('Veuillez remplir tous les champs');
+        return;
+      }
+      if (pwd.length < 6) {
+        Toast.error('Le mot de passe doit contenir au moins 6 caractères');
+        return;
+      }
+      if (pwd !== pwdConfirm) {
+        Toast.error('Les mots de passe ne correspondent pas');
+        return;
+      }
+
+      if (forceChange) {
+        await Auth.setTemporaryPassword(id, pwd);
+      } else {
+        await Auth.setPassword(id, pwd);
+      }
+
+      Modal.close();
+      Toast.success(`Mot de passe de ${user.prenom} ${user.nom} réinitialisé`);
+      this._renderTab('users');
+    });
   },
 
   _deleteUser(id) {
