@@ -251,7 +251,14 @@ const VersementsPage = {
           { label: 'Commission', key: 'commission', render: (v) => Utils.formatCurrency(v.commission) },
           { label: 'Versé', key: 'montantVerse', render: (v) => `<strong>${Utils.formatCurrency(v.montantVerse)}</strong>`, primary: true },
           { label: 'Courses', key: 'nombreCourses' },
-          { label: 'Statut', key: 'statut', render: (v) => Utils.statusBadge(v.statut) }
+          { label: 'Statut', key: 'statut', render: (v) => {
+              let html = Utils.statusBadge(v.statut);
+              if (v.soumisParChauffeur) {
+                html += ' <span class="badge badge-info" style="font-size:0.65rem;"><i class="fas fa-mobile-alt"></i> Chauffeur</span>';
+              }
+              return html;
+            }
+          }
         ],
         data,
         pageSize: 15,

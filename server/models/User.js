@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true },
   telephone: String,
   role: { type: String, default: 'Opérateur' },
+  chauffeurId: String,
+  pin: String,
   statut: { type: String, default: 'actif' },
   avatar: String,
   passwordHash: String,
@@ -32,6 +34,7 @@ const userSchema = new mongoose.Schema({
       delete ret._id;
       delete ret.__v;
       delete ret.passwordHash;
+      delete ret.pin;
       return ret;
     }
   }

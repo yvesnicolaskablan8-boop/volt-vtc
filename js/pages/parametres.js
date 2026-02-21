@@ -536,7 +536,8 @@ const ParametresPage = {
         { value: 'Manager', label: 'Manager' },
         { value: 'Opérateur', label: 'Opérateur' },
         { value: 'Comptable', label: 'Comptable' },
-        { value: 'Superviseur', label: 'Superviseur' }
+        { value: 'Superviseur', label: 'Superviseur' },
+        { value: 'chauffeur', label: 'Chauffeur (app mobile)' }
       ]},
       { name: 'statut', label: 'Statut', type: 'select', options: [
         { value: 'actif', label: 'Actif' },
@@ -551,7 +552,31 @@ const ParametresPage = {
       { type: 'row-end' }
     ];
 
+    // Chauffeur-specific fields (shown/hidden based on role selection)
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const chauffeurOptions = chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom} (${c.telephone || ''})</option>`).join('');
+    const chauffeurSection = `
+      <div id="chauffeur-section" style="display:none;margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--volt-blue);background:rgba(59,130,246,0.05);">
+        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><i class="fas fa-car"></i> Configuration compte chauffeur</h4>
+        <div class="grid-2" style="gap:var(--space-md);">
+          <div class="form-group">
+            <label class="form-label">Chauffeur lié *</label>
+            <select class="form-control" name="chauffeurId" id="add-chauffeurId">
+              <option value="">-- Sélectionner un chauffeur --</option>
+              ${chauffeurOptions}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Code PIN (4-6 chiffres)</label>
+            <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Ex: 1234">
+          </div>
+        </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><i class="fas fa-info-circle" style="color:var(--volt-blue);"></i> Le chauffeur se connectera avec son numéro de téléphone et ce code PIN via l'app <strong>/driver/</strong></div>
+      </div>
+    `;
+
     const formHtml = FormBuilder.build(fields) +
+      chauffeurSection +
       `<div style="margin-top:-8px;margin-bottom:var(--space-md);font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-info-circle" style="color:var(--volt-blue);"></i> Si aucun mot de passe n'est défini, l'utilisateur devra en créer un lors de sa première connexion.</div>` +
       this._getPermissionsHTML(allPerms);
 
@@ -579,9 +604,27 @@ const ParametresPage = {
         return;
       }
 
+      // Get chauffeur-specific fields
+      const chauffeurId = body.querySelector('#add-chauffeurId')?.value || '';
+      const pin = body.querySelector('#add-pin')?.value || '';
+
+      // For chauffeur role, validate chauffeurId
+      if (values.role === 'chauffeur') {
+        if (!chauffeurId) {
+          Toast.error('Veuillez sélectionner un chauffeur à lier');
+          return;
+        }
+        // Auto-fill telephone from chauffeur
+        const chauffeur = Store.findById('chauffeurs', chauffeurId);
+        if (chauffeur && chauffeur.telephone) {
+          values.telephone = chauffeur.telephone;
+        }
+      }
+
       const user = {
         id: Utils.generateId('USR'),
         ...values,
+        chauffeurId: values.role === 'chauffeur' ? chauffeurId : undefined,
         avatar: null,
         passwordHash: null,
         mustChangePassword: pwd ? true : true,
@@ -597,16 +640,56 @@ const ParametresPage = {
         await Auth.setTemporaryPassword(user.id, pwd);
       }
 
+      // If chauffeur role with PIN, set the PIN via API
+      if (values.role === 'chauffeur' && pin) {
+        await this._setChauffeurPin(user.id, pin, chauffeurId);
+      }
+
       Modal.close();
-      Toast.success(`Utilisateur ${values.prenom} ${values.nom} créé` + (pwd ? ' avec mot de passe temporaire' : ''));
+      Toast.success(`Utilisateur ${values.prenom} ${values.nom} créé` + (values.role === 'chauffeur' ? ' (compte chauffeur)' : pwd ? ' avec mot de passe temporaire' : ''));
       this._renderTab('users');
     }, 'modal-lg');
 
-    // Bind permission toggles after modal is open
+    // Bind permission toggles + chauffeur role toggle after modal is open
     setTimeout(() => {
       const body = document.getElementById('modal-body');
-      if (body) this._bindPermissionToggles(body);
+      if (body) {
+        this._bindPermissionToggles(body);
+        this._bindChauffeurRoleToggle(body);
+      }
     }, 50);
+  },
+
+  /**
+   * Show/hide chauffeur-specific fields based on role selection
+   */
+  _bindChauffeurRoleToggle(container) {
+    const roleSelect = container.querySelector('[name="role"]');
+    const chauffeurSection = container.querySelector('#chauffeur-section');
+    if (!roleSelect || !chauffeurSection) return;
+
+    const toggle = () => {
+      chauffeurSection.style.display = roleSelect.value === 'chauffeur' ? 'block' : 'none';
+    };
+    roleSelect.addEventListener('change', toggle);
+    toggle(); // apply initial state
+  },
+
+  /**
+   * If role is chauffeur, call set-pin API to define the PIN
+   */
+  async _setChauffeurPin(userId, pin, chauffeurId) {
+    if (!pin || !chauffeurId) return;
+    try {
+      const apiBase = Store._apiBase || '/api';
+      await fetch(apiBase + '/driver/auth/set-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, pin, chauffeurId })
+      });
+    } catch (e) {
+      console.warn('Set PIN failed:', e);
+    }
   },
 
   _editUser(id) {
@@ -628,7 +711,8 @@ const ParametresPage = {
         { value: 'Manager', label: 'Manager' },
         { value: 'Opérateur', label: 'Opérateur' },
         { value: 'Comptable', label: 'Comptable' },
-        { value: 'Superviseur', label: 'Superviseur' }
+        { value: 'Superviseur', label: 'Superviseur' },
+        { value: 'chauffeur', label: 'Chauffeur (app mobile)' }
       ]},
       { name: 'statut', label: 'Statut', type: 'select', options: [
         { value: 'actif', label: 'Actif' },
@@ -636,6 +720,29 @@ const ParametresPage = {
       ]},
       { type: 'row-end' }
     ];
+
+    // Chauffeur-specific section for edit
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const chauffeurOptions = chauffeurs.map(c => `<option value="${c.id}" ${user.chauffeurId === c.id ? 'selected' : ''}>${c.prenom} ${c.nom} (${c.telephone || ''})</option>`).join('');
+    const editChauffeurSection = `
+      <div id="chauffeur-section" style="display:${user.role === 'chauffeur' ? 'block' : 'none'};margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--volt-blue);background:rgba(59,130,246,0.05);">
+        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><i class="fas fa-car"></i> Configuration compte chauffeur</h4>
+        <div class="grid-2" style="gap:var(--space-md);">
+          <div class="form-group">
+            <label class="form-label">Chauffeur lié *</label>
+            <select class="form-control" name="chauffeurId" id="add-chauffeurId">
+              <option value="">-- Sélectionner un chauffeur --</option>
+              ${chauffeurOptions}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nouveau code PIN (laisser vide pour ne pas changer)</label>
+            <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="****">
+          </div>
+        </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><i class="fas fa-info-circle" style="color:var(--volt-blue);"></i> Le chauffeur se connectera via l'app <strong>/driver/</strong></div>
+      </div>
+    `;
 
     // Password status info
     const pwdStatus = user.passwordHash
@@ -650,7 +757,7 @@ const ParametresPage = {
           <button type="button" class="btn btn-sm btn-secondary" id="btn-reset-pwd" style="margin-left:auto;"><i class="fas fa-key"></i> Définir</button>
         </div>`;
 
-    const formHtml = FormBuilder.build(fields, user) + pwdStatus + this._getPermissionsHTML(user.permissions || {});
+    const formHtml = FormBuilder.build(fields, user) + editChauffeurSection + pwdStatus + this._getPermissionsHTML(user.permissions || {});
 
     Modal.form('<i class="fas fa-user-edit" style="color:var(--primary);"></i> Modifier utilisateur', formHtml, () => {
       const body = document.getElementById('modal-body');
@@ -661,7 +768,28 @@ const ParametresPage = {
       // Remove perm_* keys that FormBuilder picks up from checkboxes
       Object.keys(values).forEach(k => { if (k.startsWith('perm_')) delete values[k]; });
 
-      Store.update('users', id, { ...values, permissions });
+      // Get chauffeur-specific fields
+      const chauffeurIdVal = body.querySelector('#add-chauffeurId')?.value || '';
+      const pinVal = body.querySelector('#add-pin')?.value || '';
+
+      // For chauffeur role, validate
+      if (values.role === 'chauffeur' && !chauffeurIdVal) {
+        Toast.error('Veuillez sélectionner un chauffeur à lier');
+        return;
+      }
+
+      const updateData = {
+        ...values,
+        permissions,
+        chauffeurId: values.role === 'chauffeur' ? chauffeurIdVal : undefined
+      };
+
+      Store.update('users', id, updateData);
+
+      // If chauffeur role with new PIN, set it via API
+      if (values.role === 'chauffeur' && pinVal) {
+        await this._setChauffeurPin(id, pinVal, chauffeurIdVal);
+      }
 
       // If editing the current user, refresh session
       if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
@@ -680,6 +808,7 @@ const ParametresPage = {
       const body = document.getElementById('modal-body');
       if (body) {
         this._bindPermissionToggles(body);
+        this._bindChauffeurRoleToggle(body);
         // Bind reset password button
         const resetBtn = body.querySelector('#btn-reset-pwd');
         if (resetBtn) {

@@ -247,6 +247,7 @@ const Store = {
       planning: [],
       absences: [],
       users: [],
+      signalements: [],
       settings: { entreprise: {}, preferences: {} }
     };
   },

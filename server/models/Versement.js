@@ -14,6 +14,7 @@ const versementSchema = new mongoose.Schema({
   dateValidation: String,
   commentaire: String,
   nombreCourses: Number,
+  soumisParChauffeur: { type: Boolean, default: false },
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {
   toJSON: {

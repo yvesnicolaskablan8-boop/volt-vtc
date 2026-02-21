@@ -4,6 +4,7 @@
   "framework": null,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://volt-vtc-production.up.railway.app/api/$1" },
+    { "source": "/driver/(.*)", "destination": "/driver/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
