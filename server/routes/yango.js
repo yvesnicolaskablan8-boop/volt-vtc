@@ -342,16 +342,35 @@ router.get('/vehicles', async (req, res) => {
 });
 
 /**
- * GET /api/yango/stats?work_rule=RULE_ID_1,RULE_ID_2
+ * GET /api/yango/stats?work_rule=RULE_ID_1,RULE_ID_2&from=ISO_DATE&to=ISO_DATE
  * Aggregated stats endpoint: combines drivers + orders for quick dashboard view
  * Query params:
  *   work_rule - comma-separated work rule IDs to filter drivers by
+ *   from - start date (ISO string), defaults to start of today
+ *   to - end date (ISO string), defaults to now
  */
 router.get('/stats', async (req, res) => {
   try {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    // Custom date range support
+    const customFrom = req.query.from ? new Date(req.query.from) : null;
+    const customTo = req.query.to ? new Date(req.query.to) : null;
+    const isCustomRange = customFrom && !isNaN(customFrom.getTime());
+
+    const todayStart = isCustomRange
+      ? customFrom.toISOString()
+      : new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const todayEnd = (customTo && !isNaN(customTo.getTime()))
+      ? customTo.toISOString()
+      : now.toISOString();
+
+    // For month stats: if custom range, use same range; otherwise use month start
+    const monthStart = isCustomRange
+      ? customFrom.toISOString()
+      : new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const monthEnd = (customTo && !isNaN(customTo.getTime()))
+      ? customTo.toISOString()
+      : now.toISOString();
 
     // Build driver profile filter
     const driverFilter = {
@@ -390,7 +409,7 @@ router.get('/stats', async (req, res) => {
       driversData = { driver_profiles: [], total: 0 };
     }
 
-    // Fetch today's orders
+    // Fetch orders for selected period (today or custom range)
     let ordersToday;
     try {
       ordersToday = await yangoFetch('/v1/parks/orders/list', {
@@ -398,30 +417,35 @@ router.get('/stats', async (req, res) => {
         query: {
           park: {
             id: process.env.YANGO_PARK_ID,
-            order: { booked_at: { from: todayStart, to: now.toISOString() } }
+            order: { booked_at: { from: todayStart, to: todayEnd } }
           }
         }
       });
     } catch (e) {
-      console.error('Yango stats - today orders failed:', e.message);
+      console.error('Yango stats - period orders failed:', e.message);
       ordersToday = { orders: [], total: 0 };
     }
 
-    // Fetch month's orders
+    // Fetch month/full range orders (skip if custom range — same as period)
     let ordersMonth;
-    try {
-      ordersMonth = await yangoFetch('/v1/parks/orders/list', {
-        limit: 100,
-        query: {
-          park: {
-            id: process.env.YANGO_PARK_ID,
-            order: { booked_at: { from: monthStart, to: now.toISOString() } }
+    if (isCustomRange) {
+      // When using custom dates, month stats = same as period stats
+      ordersMonth = ordersToday;
+    } else {
+      try {
+        ordersMonth = await yangoFetch('/v1/parks/orders/list', {
+          limit: 100,
+          query: {
+            park: {
+              id: process.env.YANGO_PARK_ID,
+              order: { booked_at: { from: monthStart, to: monthEnd } }
+            }
           }
-        }
-      });
-    } catch (e) {
-      console.error('Yango stats - month orders failed:', e.message);
-      ordersMonth = { orders: [], total: 0 };
+        });
+      } catch (e) {
+        console.error('Yango stats - month orders failed:', e.message);
+        ordersMonth = { orders: [], total: 0 };
+      }
     }
 
     // Process drivers
@@ -534,7 +558,12 @@ router.get('/stats', async (req, res) => {
       tempsActiviteMoyen,
       tempsActiviteTotal,
       topChauffeurs,
-      derniereMaj: now.toISOString()
+      derniereMaj: now.toISOString(),
+      periode: {
+        from: todayStart,
+        to: todayEnd,
+        isCustom: isCustomRange
+      }
     });
   } catch (err) {
     console.error('Yango stats error:', err.message);

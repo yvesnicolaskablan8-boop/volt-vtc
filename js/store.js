@@ -266,12 +266,20 @@ const Store = {
     }
   },
 
-  async getYangoStats(workRuleIds) {
+  async getYangoStats(workRuleIds, dateRange) {
     try {
-      let url = this._apiBase + '/yango/stats';
+      const params = new URLSearchParams();
       if (workRuleIds && workRuleIds.length > 0) {
-        url += '?work_rule=' + encodeURIComponent(workRuleIds.join(','));
+        params.set('work_rule', workRuleIds.join(','));
       }
+      if (dateRange && dateRange.from) {
+        params.set('from', dateRange.from);
+      }
+      if (dateRange && dateRange.to) {
+        params.set('to', dateRange.to);
+      }
+      const qs = params.toString();
+      const url = this._apiBase + '/yango/stats' + (qs ? '?' + qs : '');
       const res = await fetch(url, {
         headers: this._headers()
       });

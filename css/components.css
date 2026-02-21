@@ -1862,6 +1862,164 @@ textarea.form-control {
   border-color: rgba(252, 76, 2, 0.2);
 }
 
+/* ========== YANGO DATE PICKER BAR ========== */
+
+.yango-date-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: var(--space-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  border-left: 3px solid #FC4C02;
+}
+
+.yango-date-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.yango-date-preset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.yango-date-preset:hover {
+  color: var(--text-primary);
+  background: rgba(252, 76, 2, 0.08);
+  border-color: rgba(252, 76, 2, 0.3);
+}
+
+.yango-date-preset.active {
+  color: #fff;
+  background: #FC4C02;
+  border-color: #FC4C02;
+  box-shadow: 0 2px 8px rgba(252, 76, 2, 0.3);
+}
+
+.yango-date-preset.active i {
+  color: #fff;
+}
+
+.yango-date-preset i {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.yango-date-custom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  animation: yango-slide-down 0.2s ease;
+}
+
+@keyframes yango-slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.yango-date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.yango-date-inputs label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.yango-date-input {
+  padding: 5px 10px;
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast);
+  font-family: inherit;
+}
+
+.yango-date-input:focus {
+  border-color: #FC4C02;
+  box-shadow: 0 0 0 2px rgba(252, 76, 2, 0.15);
+}
+
+.yango-date-apply {
+  background: #FC4C02 !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 5px 14px !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius-sm) !important;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.yango-date-apply:hover {
+  background: #e04400 !important;
+  transform: translateY(-1px);
+}
+
+.yango-date-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: #FC4C02;
+  font-weight: 600;
+}
+
+.yango-date-label i {
+  font-size: 12px;
+}
+
+/* Light theme overrides for date picker */
+[data-theme="light"] .yango-date-bar {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="light"] .yango-date-preset {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .yango-date-preset:hover {
+  background: rgba(252, 76, 2, 0.06);
+}
+
+[data-theme="light"] .yango-date-custom {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .yango-date-input {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
 /* Responsive: stack filter on small screens */
 @media (max-width: 768px) {
   .yango-section-actions {
@@ -1872,5 +2030,28 @@ textarea.form-control {
   .yango-filter-select {
     min-width: 120px;
     font-size: 11px;
+  }
+
+  .yango-date-presets {
+    gap: 4px;
+  }
+
+  .yango-date-preset {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .yango-date-inputs {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .yango-date-inputs label {
+    justify-content: space-between;
+  }
+
+  .yango-date-input {
+    flex: 1;
   }
 }
