@@ -273,7 +273,7 @@ const ParametresPage = {
         Toast.error('Le prénom et le nom sont obligatoires');
         return;
       }
-      if (!email || !email.includes('@')) {
+      if (email && !email.includes('@')) {
         Toast.error('Veuillez entrer un email valide');
         return;
       }
@@ -527,7 +527,7 @@ const ParametresPage = {
       { name: 'nom', label: 'Nom', type: 'text', required: true, placeholder: 'Ex: Koné' },
       { type: 'row-end' },
       { type: 'row-start' },
-      { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'ex: aminata@volt.ci' },
+      { name: 'email', label: 'Email (facultatif)', type: 'email', required: false, placeholder: 'ex: aminata@volt.ci' },
       { name: 'telephone', label: 'Téléphone', type: 'tel', placeholder: '+225 XX XX XX XX' },
       { type: 'row-end' },
       { type: 'row-start' },
@@ -702,7 +702,7 @@ const ParametresPage = {
       { name: 'nom', label: 'Nom', type: 'text', required: true },
       { type: 'row-end' },
       { type: 'row-start' },
-      { name: 'email', label: 'Email', type: 'email', required: true },
+      { name: 'email', label: 'Email (facultatif)', type: 'email', required: false },
       { name: 'telephone', label: 'Téléphone', type: 'tel' },
       { type: 'row-end' },
       { type: 'row-start' },

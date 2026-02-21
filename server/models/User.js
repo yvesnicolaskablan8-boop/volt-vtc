@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   prenom: { type: String, required: true },
   nom: { type: String, required: true },
-  email: { type: String, required: true, unique: true, lowercase: true },
+  email: { type: String, lowercase: true, sparse: true },
   telephone: String,
   role: { type: String, default: 'Opérateur' },
   chauffeurId: String,
