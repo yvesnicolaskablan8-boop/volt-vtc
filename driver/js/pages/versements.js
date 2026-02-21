@@ -1,5 +1,5 @@
 /**
- * VersementsPage — Declaration et historique des versements
+ * VersementsPage — Versements et historique
  */
 const VersementsPage = {
   async render(container) {
@@ -41,7 +41,7 @@ const VersementsPage = {
 
       <!-- Bouton nouveau -->
       <button class="btn btn-success btn-block btn-lg" onclick="VersementsPage._nouveauVersement()">
-        <i class="fas fa-plus-circle"></i> Nouveau versement
+        <i class="fas fa-plus-circle"></i> Faire un versement
       </button>
 
       <!-- Liste -->
@@ -118,9 +118,9 @@ const VersementsPage = {
       </form>
     `;
 
-    DriverModal.show('Nouveau versement', formHTML, [
+    DriverModal.show('Faire un versement', formHTML, [
       { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
-      { label: 'Soumettre', class: 'btn btn-success', onclick: 'VersementsPage._submitVersement()' }
+      { label: 'Valider', class: 'btn btn-success', onclick: 'VersementsPage._submitVersement()' }
     ]);
   },
 
@@ -156,7 +156,7 @@ const VersementsPage = {
 
     if (result && !result.error) {
       DriverModal.close();
-      DriverToast.show('Versement soumis avec succes', 'success');
+      DriverToast.show('Versement enregistre avec succes', 'success');
       // Reload
       this.render(document.getElementById('app-content'));
     } else {

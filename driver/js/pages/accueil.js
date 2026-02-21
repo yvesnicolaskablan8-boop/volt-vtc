@@ -92,7 +92,7 @@ const AccueilPage = {
       <div class="action-grid">
         <button class="action-btn green" onclick="DriverRouter.navigate('versements')">
           <i class="fas fa-money-bill-wave"></i>
-          Declarer un versement
+          Faire un versement
         </button>
         <button class="action-btn red" onclick="DriverRouter.navigate('signalements')">
           <i class="fas fa-exclamation-triangle"></i>
