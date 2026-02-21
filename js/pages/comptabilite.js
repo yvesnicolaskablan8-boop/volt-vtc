@@ -1055,6 +1055,29 @@ const ComptabilitePage = {
     return labels[mode] || mode;
   },
 
+  /**
+   * Generate sequential reference number
+   * Format: PREFIX-YYYY-NNN (e.g. ENC-2025-001, DEC-2025-042, FAC-2025-015)
+   */
+  _generateReference(prefix, collection) {
+    const year = new Date().getFullYear();
+    const pattern = `${prefix}-${year}-`;
+    const items = Store.get(collection) || [];
+
+    // Find highest existing number for this prefix and year
+    let maxNum = 0;
+    items.forEach(item => {
+      const ref = item.reference || item.numero || '';
+      if (ref.startsWith(pattern)) {
+        const num = parseInt(ref.slice(pattern.length), 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      }
+    });
+
+    const nextNum = (maxNum + 1).toString().padStart(3, '0');
+    return `${pattern}${nextNum}`;
+  },
+
   _getCategoriesOptions() {
     const cats = [
       { group: 'Encaissements', items: [{ v: 'commissions_courses', l: 'Commissions courses' }, { v: 'commission_yango', l: 'Commission Yango (3%)' }, { v: 'courses_directes', l: 'Courses directes' }, { v: 'frais_service', l: 'Frais de service' }, { v: 'location_vehicule', l: 'Location véhicule' }, { v: 'autres_recettes', l: 'Autres recettes' }] },
@@ -1069,6 +1092,10 @@ const ComptabilitePage = {
       ? [{ value: 'commissions_courses', label: 'Commissions courses' }, { value: 'commission_yango', label: 'Commission Yango (3%)' }, { value: 'courses_directes', label: 'Courses directes' }, { value: 'frais_service', label: 'Frais de service' }, { value: 'location_vehicule', label: 'Location véhicule' }, { value: 'autres_recettes', label: 'Autres recettes' }]
       : [{ value: 'carburant', label: 'Carburant' }, { value: 'maintenance', label: 'Maintenance' }, { value: 'assurance', label: 'Assurance' }, { value: 'leasing', label: 'Leasing' }, { value: 'salaires', label: 'Salaires' }, { value: 'loyer_bureau', label: 'Loyer / Bureau' }, { value: 'taxes_impots', label: 'Impôts / Taxes' }, { value: 'telecoms', label: 'Télécom' }, { value: 'marketing', label: 'Marketing' }, { value: 'fournitures', label: 'Fournitures' }, { value: 'autres_depenses', label: 'Autres dépenses' }];
 
+    // Auto-generate reference: ENC-YYYY-NNN or DEC-YYYY-NNN
+    const refPrefix = isRecette ? 'ENC' : 'DEC';
+    const autoRef = this._generateReference(refPrefix, 'comptabilite');
+
     const fields = [
       { type: 'row-start' },
       { name: 'date', label: 'Date', type: 'date', required: true, default: new Date().toISOString().split('T')[0] },
@@ -1079,7 +1106,7 @@ const ComptabilitePage = {
       { name: 'montant', label: 'Montant (FCFA)', type: 'number', min: 0, required: true, placeholder: 'Ex: 150000' },
       { name: 'modePaiement', label: 'Mode de paiement', type: 'select', options: [{ value: 'especes', label: 'Espèces' }, { value: 'mobile_money', label: 'Mobile Money' }, { value: 'virement', label: 'Virement bancaire' }, { value: 'cheque', label: 'Chèque' }, { value: 'carte', label: 'Carte bancaire' }] },
       { type: 'row-end' },
-      { name: 'reference', label: 'Référence / N° pièce', type: 'text', placeholder: 'Ex: FAC-2025-042, REC-015...' },
+      { name: 'reference', label: 'Référence / N° pièce (auto)', type: 'text', default: autoRef, placeholder: autoRef },
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2, placeholder: 'Informations complémentaires...' }
     ];
 
@@ -1147,9 +1174,12 @@ const ComptabilitePage = {
   },
 
   _addFacture() {
+    // Auto-generate invoice number: FAC-YYYY-NNN
+    const autoNumero = this._generateReference('FAC', 'factures');
+
     const fields = [
       { type: 'row-start' },
-      { name: 'numero', label: 'N° Facture', type: 'text', required: true, placeholder: 'FAC-2025-001' },
+      { name: 'numero', label: 'N° Facture (auto)', type: 'text', required: true, default: autoNumero, placeholder: autoNumero },
       { name: 'date', label: 'Date', type: 'date', required: true, default: new Date().toISOString().split('T')[0] },
       { type: 'row-end' },
       { type: 'row-start' },
