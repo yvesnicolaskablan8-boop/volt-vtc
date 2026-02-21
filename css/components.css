@@ -1765,25 +1765,180 @@ textarea.form-control {
 }
 
 /* Light theme Yango overrides */
+/* ========== YANGO LIGHT THEME OVERRIDES ========== */
+
 [data-theme="light"] .yango-section {
-  background: rgba(255, 255, 255, 0.8);
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .yango-section-header {
+  border-bottom-color: #e2e8f0;
+}
+
+[data-theme="light"] .yango-section-title {
+  color: #0f172a;
 }
 
 [data-theme="light"] .yango-kpi {
-  border-top-color: rgba(252, 76, 2, 0.4) !important;
+  border-top-color: rgba(252, 76, 2, 0.5) !important;
+}
+
+/* Force dark text in KPI cards for light mode */
+[data-theme="light"] .kpi-value {
+  color: #0f172a;
+}
+
+[data-theme="light"] .kpi-label {
+  color: #475569;
+}
+
+[data-theme="light"] .kpi-trend.neutral {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .kpi-icon {
+  background: rgba(59, 130, 246, 0.08);
+  color: #3b82f6;
+}
+
+[data-theme="light"] .yango-icon-green { background: rgba(34, 197, 94, 0.1) !important; color: #16a34a !important; }
+[data-theme="light"] .yango-icon-orange { background: rgba(252, 76, 2, 0.08) !important; color: #FC4C02 !important; }
+[data-theme="light"] .yango-icon-blue { background: rgba(59, 130, 246, 0.1) !important; color: #2563eb !important; }
+[data-theme="light"] .yango-icon-purple { background: rgba(139, 92, 246, 0.1) !important; color: #7c3aed !important; }
+
+/* Badge live: ensure green text is visible */
+[data-theme="light"] .yango-badge-live {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+  font-weight: 700;
+}
+
+[data-theme="light"] .yango-last-update {
+  color: #64748b;
+}
+
+/* Driver rows */
+[data-theme="light"] .yango-driver-row {
+  border-bottom-color: #f1f5f9;
 }
 
 [data-theme="light"] .yango-driver-row:hover,
 [data-theme="light"] .yango-course-item:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: #f8fafc;
 }
 
+[data-theme="light"] .yango-driver-name {
+  color: #0f172a;
+}
+
+[data-theme="light"] .yango-driver-meta {
+  color: #64748b;
+}
+
+[data-theme="light"] .yango-driver-balance {
+  color: #0f172a;
+}
+
+[data-theme="light"] .yango-balance-positive {
+  color: #16a34a;
+}
+
+[data-theme="light"] .yango-balance-negative {
+  color: #dc2626;
+}
+
+/* Status badges */
+[data-theme="light"] .yango-status-online {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+[data-theme="light"] .yango-status-busy {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+[data-theme="light"] .yango-status-offline {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+/* Courses */
+[data-theme="light"] .yango-course-driver {
+  color: #0f172a;
+}
+
+[data-theme="light"] .yango-course-route {
+  color: #64748b;
+}
+
+[data-theme="light"] .yango-course-amount {
+  color: #0f172a;
+}
+
+[data-theme="light"] .yango-course-time {
+  color: #64748b;
+}
+
+[data-theme="light"] .yango-course-item {
+  border-bottom-color: #f1f5f9;
+}
+
+/* Top drivers */
 [data-theme="light"] .yango-top-item {
-  background: rgba(0, 0, 0, 0.03);
+  background: #f8fafc;
+  border-color: #e2e8f0;
 }
 
 [data-theme="light"] .yango-top-item:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .yango-top-name {
+  color: #0f172a;
+}
+
+[data-theme="light"] .yango-top-meta {
+  color: #64748b;
+}
+
+[data-theme="light"] .yango-top-amount {
+  color: #ea580c;
+}
+
+[data-theme="light"] .yango-top-rank {
+  color: #0f172a;
+}
+
+/* Card headers */
+[data-theme="light"] .card-header {
+  border-bottom-color: #e2e8f0;
+}
+
+[data-theme="light"] .card-title {
+  color: #0f172a;
+}
+
+/* Avatar */
+[data-theme="light"] .avatar-sm {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* Empty & error states */
+[data-theme="light"] .yango-empty {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .yango-error {
+  color: #dc2626;
+}
+
+/* More link */
+[data-theme="light"] .yango-more-link {
+  color: #64748b;
 }
 
 /* ========== YANGO WORK RULE FILTER ========== */
@@ -1849,17 +2004,24 @@ textarea.form-control {
 
 /* Light theme overrides for filter */
 [data-theme="light"] .yango-filter-select {
-  background-color: rgba(252, 76, 2, 0.06);
-  border-color: rgba(252, 76, 2, 0.25);
+  background-color: #fff;
+  border-color: #d1d5db;
+  color: #0f172a;
 }
 
 [data-theme="light"] .yango-filter-select:hover {
-  background-color: rgba(252, 76, 2, 0.1);
+  background-color: rgba(252, 76, 2, 0.04);
+  border-color: rgba(252, 76, 2, 0.4);
+}
+
+[data-theme="light"] .yango-filter-select:focus {
+  border-color: #FC4C02;
 }
 
 [data-theme="light"] .yango-work-rule-badge {
   background: rgba(252, 76, 2, 0.08);
   border-color: rgba(252, 76, 2, 0.2);
+  color: #ea580c;
 }
 
 /* ========== YANGO DATE PICKER BAR ========== */
@@ -1999,25 +2161,57 @@ textarea.form-control {
 
 /* Light theme overrides for date picker */
 [data-theme="light"] .yango-date-bar {
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
+  border-color: #e2e8f0;
 }
 
 [data-theme="light"] .yango-date-preset {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+[data-theme="light"] .yango-date-preset i {
+  color: #64748b;
 }
 
 [data-theme="light"] .yango-date-preset:hover {
   background: rgba(252, 76, 2, 0.06);
+  color: #0f172a;
+  border-color: rgba(252, 76, 2, 0.3);
+}
+
+[data-theme="light"] .yango-date-preset.active {
+  background: #FC4C02;
+  color: #fff;
+  border-color: #FC4C02;
+}
+
+[data-theme="light"] .yango-date-preset.active i {
+  color: #fff;
 }
 
 [data-theme="light"] .yango-date-custom {
-  background: rgba(0, 0, 0, 0.03);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .yango-date-inputs label {
+  color: #475569;
 }
 
 [data-theme="light"] .yango-date-input {
   background: #fff;
-  border-color: rgba(0, 0, 0, 0.15);
+  border-color: #d1d5db;
+  color: #0f172a;
+}
+
+[data-theme="light"] .yango-date-input:focus {
+  border-color: #FC4C02;
+}
+
+[data-theme="light"] .yango-date-label {
+  color: #ea580c;
 }
 
 /* Responsive: stack filter on small screens */
