@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const budgetSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   categorie: { type: String, required: true },
-  type: { type: String, enum: ['recette', 'depense'], required: true },
+  type: { type: String, required: true },
   montantPrevu: { type: Number, required: true },
   annee: { type: Number, required: true },
   dateCreation: { type: String, default: () => new Date().toISOString() }

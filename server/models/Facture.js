@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const factureSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
-  typeFacture: { type: String, enum: ['client', 'fournisseur'], required: true },
+  typeFacture: { type: String, required: true },
   numero: String,
   client: String,
   description: String,
@@ -11,7 +11,7 @@ const factureSchema = new mongoose.Schema({
   montantTTC: Number,
   dateEmission: String,
   dateEcheance: String,
-  statut: { type: String, enum: ['payee', 'en_attente', 'en_retard', 'annulee'], default: 'en_attente' },
+  statut: { type: String, default: 'en_attente' },
   datePaiement: String,
   notes: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }

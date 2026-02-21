@@ -12,9 +12,9 @@ const courseSchema = new mongoose.Schema({
   montantTTC: Number,
   montantHT: Number,
   tva: Number,
-  typeTrajet: { type: String, enum: ['aeroport', 'gare', 'urbain', 'banlieue', 'longue_distance'] },
-  plateforme: { type: String, enum: ['yango', 'bolt', 'app_directe', 'telephone'] },
-  statut: { type: String, enum: ['terminee', 'annulee', 'en_cours'], default: 'terminee' },
+  typeTrajet: String,
+  plateforme: String,
+  statut: { type: String, default: 'terminee' },
   noteClient: Number
 }, {
   toJSON: {

@@ -4,7 +4,7 @@ const planningSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   chauffeurId: { type: String, required: true },
   date: { type: String, required: true },
-  typeCreneaux: { type: String, enum: ['matin', 'apres_midi', 'journee', 'nuit'], default: 'journee' },
+  typeCreneaux: { type: String, default: 'journee' },
   notes: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {

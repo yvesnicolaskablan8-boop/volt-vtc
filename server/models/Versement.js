@@ -10,7 +10,7 @@ const versementSchema = new mongoose.Schema({
   commission: Number,
   montantNet: Number,
   montantVerse: Number,
-  statut: { type: String, enum: ['valide', 'en_attente', 'retard', 'partiel'], default: 'en_attente' },
+  statut: { type: String, default: 'en_attente' },
   dateValidation: String,
   commentaire: String,
   nombreCourses: Number,

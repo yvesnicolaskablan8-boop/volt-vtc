@@ -4,7 +4,7 @@ const documentSchema = new mongoose.Schema({
   type: String,
   nom: String,
   dateExpiration: String,
-  statut: { type: String, enum: ['valide', 'expire', 'a_renouveler'], default: 'valide' }
+  statut: { type: String, default: 'valide' }
 }, { _id: false });
 
 const chauffeurSchema = new mongoose.Schema({
@@ -18,7 +18,7 @@ const chauffeurSchema = new mongoose.Schema({
   numeroPermis: String,
   dateDebutContrat: String,
   dateFinContrat: String,
-  statut: { type: String, enum: ['actif', 'inactif', 'suspendu'], default: 'actif' },
+  statut: { type: String, default: 'actif' },
   scoreConduite: { type: Number, default: 80 },
   baseScore: Number,
   volatility: Number,

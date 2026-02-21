@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const absenceSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   chauffeurId: { type: String, required: true },
-  type: { type: String, enum: ['repos', 'conge', 'maladie', 'formation', 'personnel', 'suspension'], required: true },
+  type: { type: String, required: true },
   dateDebut: { type: String, required: true },
   dateFin: { type: String, required: true },
   motif: String,

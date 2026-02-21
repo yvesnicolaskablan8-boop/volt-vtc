@@ -2,12 +2,12 @@ const mongoose = require('mongoose');
 
 const comptabiliteSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
-  type: { type: String, enum: ['recette', 'depense'], required: true },
+  type: { type: String, required: true },
   categorie: { type: String, required: true },
   description: String,
   montant: { type: Number, required: true },
   date: { type: String, required: true },
-  modePaiement: { type: String, enum: ['especes', 'virement', 'mobile_money', 'cheque', 'carte'] },
+  modePaiement: String,
   reference: String,
   notes: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
