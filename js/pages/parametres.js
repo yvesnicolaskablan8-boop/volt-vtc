@@ -432,7 +432,7 @@ const ParametresPage = {
 
   _getPermissionsHTML(perms = {}) {
     return `
-      <div style="margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--border-color);">
+      <div id="permissions-section" style="margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--border-color);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
           <h4 style="margin:0;font-size:var(--font-size-sm);font-weight:600;"><i class="fas fa-shield-halved" style="margin-right:6px;color:var(--primary);"></i>Accès aux modules</h4>
           <div style="display:flex;gap:var(--space-xs);">
@@ -664,7 +664,10 @@ const ParametresPage = {
 
       // If chauffeur role with PIN, set the PIN via API
       if (values.role === 'chauffeur' && pin) {
-        await this._setChauffeurPin(user.id, pin, chauffeurId);
+        const pinSet = await this._setChauffeurPin(user.id, pin, chauffeurId);
+        if (!pinSet) {
+          Toast.warning('Utilisateur créé mais le PIN n\'a pas pu être défini. Modifiez l\'utilisateur pour réessayer.');
+        }
       }
 
       Modal.close();
@@ -690,8 +693,22 @@ const ParametresPage = {
     const chauffeurSection = container.querySelector('#chauffeur-section');
     if (!roleSelect || !chauffeurSection) return;
 
+    const permsWrapper = container.querySelector('#permissions-section');
+
     const toggle = () => {
-      chauffeurSection.style.display = roleSelect.value === 'chauffeur' ? 'block' : 'none';
+      const isChauffeur = roleSelect.value === 'chauffeur';
+      chauffeurSection.style.display = isChauffeur ? 'block' : 'none';
+
+      // Hide/show permissions section for chauffeur role
+      if (permsWrapper) {
+        permsWrapper.style.display = isChauffeur ? 'none' : '';
+      }
+
+      // Auto-uncheck all permissions when chauffeur is selected
+      if (isChauffeur) {
+        container.querySelectorAll('#perms-grid input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+        this._updatePermLabels(container);
+      }
     };
     roleSelect.addEventListener('change', toggle);
     toggle(); // apply initial state
@@ -778,16 +795,53 @@ const ParametresPage = {
    */
   async _setChauffeurPin(userId, pin, chauffeurId) {
     if (!pin || !chauffeurId) return;
-    try {
-      const apiBase = Store._apiBase || '/api';
-      await fetch(apiBase + '/driver/auth/set-pin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, pin, chauffeurId })
-      });
-    } catch (e) {
-      console.warn('Set PIN failed:', e);
+
+    const apiBase = Store._apiBase || '/api';
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    // Include admin auth token
+    const token = localStorage.getItem('volt_token');
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+
+    // Retry logic: Store.add() syncs to DB in background,
+    // so the user may not exist yet when we call set-pin
+    const maxRetries = 5;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Wait a bit for the user to be created in DB
+        if (attempt > 1) {
+          await new Promise(r => setTimeout(r, 800 * attempt));
+        } else {
+          // First attempt: short delay to let Store.add() API call start
+          await new Promise(r => setTimeout(r, 500));
+        }
+
+        const res = await fetch(apiBase + '/driver/auth/set-pin', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ userId, pin, chauffeurId })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          console.log('PIN set successfully for', userId);
+          return true;
+        }
+
+        if (res.status === 404 && attempt < maxRetries) {
+          console.warn(`Set PIN attempt ${attempt}: user not yet in DB, retrying...`);
+          continue;
+        }
+
+        console.warn('Set PIN failed:', data.error || data);
+        return false;
+      } catch (e) {
+        console.warn(`Set PIN attempt ${attempt} error:`, e);
+        if (attempt === maxRetries) return false;
+      }
     }
+    return false;
   },
 
   _editUser(id) {
@@ -908,7 +962,12 @@ const ParametresPage = {
 
       // If chauffeur role with new PIN, set it via API
       if (values.role === 'chauffeur' && pinVal) {
-        await this._setChauffeurPin(id, pinVal, chauffeurIdVal);
+        const pinSet = await this._setChauffeurPin(id, pinVal, chauffeurIdVal);
+        if (pinSet) {
+          Toast.success('PIN mis à jour');
+        } else {
+          Toast.error('Erreur lors de la mise à jour du PIN');
+        }
       }
 
       // If editing the current user, refresh session
