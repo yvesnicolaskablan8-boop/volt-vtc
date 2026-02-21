@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volt-vtc-v1';
+const CACHE_NAME = 'volt-vtc-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const ASSETS = [
   './js/store.js',
   './js/utils.js',
   './js/demo-data.js',
+  './js/auth.js',
   './js/components/toast.js',
   './js/components/modal.js',
   './js/components/sidebar.js',
@@ -54,21 +55,23 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Fetch — cache first, then network
+// Fetch — network first, fallback to cache
 self.addEventListener('fetch', (e) => {
-  // Skip non-GET and external requests
+  // Skip non-GET and API requests
   if (e.request.method !== 'GET') return;
+  if (e.request.url.includes('/api/')) return;
   if (!e.request.url.startsWith(self.location.origin)) return;
 
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(e.request).then((response) => {
-        if (!response || response.status !== 200) return response;
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-        return response;
+    fetch(e.request).then((response) => {
+      if (!response || response.status !== 200) return response;
+      const clone = response.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+      return response;
+    }).catch(() => {
+      return caches.match(e.request).then((cached) => {
+        return cached || caches.match('./index.html');
       });
-    }).catch(() => caches.match('./index.html'))
+    })
   );
 });
