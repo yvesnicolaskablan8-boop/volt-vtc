@@ -322,14 +322,20 @@ const ParametresPage = {
         id: Utils.generateId('USR'),
         ...values,
         avatar: null,
-        passwordHash: pwd ? await Auth.hashPassword(pwd) : null,
-        mustChangePassword: pwd ? true : false,
+        passwordHash: null,
+        mustChangePassword: false,
         permissions,
         dernierConnexion: null,
         dateCreation: new Date().toISOString()
       };
 
       Store.add('users', user);
+
+      // If a password was provided, set it via API (server-side hashing)
+      if (pwd) {
+        await Auth.setTemporaryPassword(user.id, pwd);
+      }
+
       Modal.close();
       Toast.success(`Utilisateur ${values.prenom} ${values.nom} créé` + (pwd ? ' avec mot de passe temporaire' : ''));
       this._renderTab('users');

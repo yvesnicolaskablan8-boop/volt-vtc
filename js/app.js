@@ -74,12 +74,6 @@ const App = {
     // Configure Chart.js defaults
     Utils.configureChartDefaults();
 
-    // Initialize demo data if needed
-    if (!Store.isInitialized()) {
-      await DemoData.generate();
-      console.log('Volt: Demo data generated');
-    }
-
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js')
@@ -89,6 +83,9 @@ const App = {
 
     // Check authentication
     if (Auth.isLoggedIn()) {
+      // Load data from API into cache
+      await Store.initialize();
+
       // Verify user still exists and is active
       const user = Auth.getCurrentUser();
       if (user && user.statut === 'actif') {
@@ -101,7 +98,7 @@ const App = {
       this._showLogin();
     }
 
-    console.log('Volt VTC Management v1.1.0 initialized');
+    console.log('Volt VTC Management v2.0.0 initialized (API mode)');
     console.log(`Data size: ${Store.getStorageSize().kb} Ko`);
     console.log(`Theme: ${ThemeManager._current}`);
   },
@@ -268,6 +265,8 @@ const App = {
       const result = await Auth.login(email, password);
 
       if (result.success) {
+        // Load data from API after successful login
+        await Store.initialize();
         this._showApp();
         Toast.show('Bienvenue, ' + result.user.prenom + ' !', 'success');
       } else if (result.error === 'first_login') {
@@ -283,6 +282,7 @@ const App = {
           'user_not_found': 'Aucun compte trouvé avec cet email.',
           'account_disabled': 'Ce compte est désactivé. Contactez l\'administrateur.',
           'invalid_password': 'Mot de passe incorrect.',
+          'network_error': 'Impossible de contacter le serveur. Vérifiez votre connexion.',
         };
         this._showLoginError(messages[result.error] || 'Erreur de connexion.');
       }
@@ -363,7 +363,10 @@ const App = {
     }
 
     try {
-      await Auth.setPassword(userId, newPwd);
+      const result = await Auth.setPassword(userId, newPwd);
+
+      // Load data from API after password set (auto-login)
+      await Store.initialize();
 
       // Create session for the user
       const user = Store.findById('users', userId);

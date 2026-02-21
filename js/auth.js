@@ -1,23 +1,22 @@
 /**
- * Auth - Authentication, sessions & permissions
+ * Auth - Authentication via API, JWT tokens & permissions
  */
 const Auth = {
   _SESSION_KEY: 'volt_session',
-  _HASH_SALT: 'volt_vtc_2024',
+  _TOKEN_KEY: 'volt_token',
 
-  // =================== PASSWORD HASHING ===================
+  // =================== TOKEN MANAGEMENT ===================
 
-  async hashPassword(password) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(this._HASH_SALT + password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  getToken() {
+    return localStorage.getItem(this._TOKEN_KEY);
   },
 
-  async verifyPassword(password, hash) {
-    const computed = await this.hashPassword(password);
-    return computed === hash;
+  setToken(token) {
+    localStorage.setItem(this._TOKEN_KEY, token);
+  },
+
+  removeToken() {
+    localStorage.removeItem(this._TOKEN_KEY);
   },
 
   // =================== SESSION ===================
@@ -33,7 +32,6 @@ const Auth = {
       loginTime: new Date().toISOString()
     };
     sessionStorage.setItem(this._SESSION_KEY, JSON.stringify(session));
-    Store.update('users', user.id, { dernierConnexion: new Date().toISOString() });
     return session;
   },
 
@@ -48,10 +46,11 @@ const Auth = {
 
   destroySession() {
     sessionStorage.removeItem(this._SESSION_KEY);
+    this.removeToken();
   },
 
   isLoggedIn() {
-    return this.getSession() !== null;
+    return this.getSession() !== null && this.getToken() !== null;
   },
 
   getCurrentUser() {
@@ -105,47 +104,88 @@ const Auth = {
     return this.hasPermission(perm);
   },
 
-  // =================== LOGIN ===================
+  // =================== LOGIN (via API) ===================
 
   async login(email, password) {
-    const users = Store.get('users') || [];
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const apiBase = Store._apiBase || (window.location.hostname === 'localhost'
+      ? 'http://localhost:3001/api'
+      : '/api');
 
-    if (!user) {
-      return { success: false, error: 'user_not_found' };
-    }
-    if (user.statut !== 'actif') {
-      return { success: false, error: 'account_disabled' };
-    }
+    try {
+      const res = await fetch(apiBase + '/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-    // User has no password yet (migration / first login)
-    if (!user.passwordHash) {
-      return { success: false, error: 'first_login', user };
-    }
+      const data = await res.json();
 
-    const valid = await this.verifyPassword(password, user.passwordHash);
-    if (!valid) {
-      return { success: false, error: 'invalid_password' };
-    }
+      if (data.success) {
+        // Store JWT token
+        this.setToken(data.token);
+        // Create local session for quick access
+        const session = this.createSession(data.user);
+        return { success: true, session, user: data.user };
+      }
 
-    // Temporary password — must change
-    if (user.mustChangePassword) {
-      return { success: false, error: 'must_change_password', user };
-    }
+      // Handle special cases (first_login, must_change_password)
+      if (data.error === 'first_login' || data.error === 'must_change_password') {
+        return { success: false, error: data.error, user: data.user };
+      }
 
-    const session = this.createSession(user);
-    return { success: true, session, user };
+      return { success: false, error: data.error || 'unknown_error' };
+    } catch (err) {
+      console.error('Auth.login network error:', err);
+      return { success: false, error: 'network_error' };
+    }
   },
 
-  // =================== PASSWORD MANAGEMENT ===================
+  // =================== PASSWORD MANAGEMENT (via API) ===================
 
   async setPassword(userId, newPassword) {
-    const hash = await this.hashPassword(newPassword);
-    Store.update('users', userId, { passwordHash: hash, mustChangePassword: false });
+    const apiBase = Store._apiBase || '/api';
+    const headers = { 'Content-Type': 'application/json' };
+    const token = this.getToken();
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+
+    const res = await fetch(apiBase + '/auth/set-password', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ userId, password: newPassword, temporary: false })
+    });
+    const data = await res.json();
+
+    // Store token if provided (auto-login after first password set)
+    if (data.token) {
+      this.setToken(data.token);
+    }
+
+    // Update user in local cache
+    Store.update('users', userId, { mustChangePassword: false });
+    return data;
   },
 
   async setTemporaryPassword(userId, tempPassword) {
-    const hash = await this.hashPassword(tempPassword);
-    Store.update('users', userId, { passwordHash: hash, mustChangePassword: true });
+    const apiBase = Store._apiBase || '/api';
+    const headers = { 'Content-Type': 'application/json' };
+    const token = this.getToken();
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+
+    const res = await fetch(apiBase + '/auth/set-password', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ userId, password: tempPassword, temporary: true })
+    });
+    const data = await res.json();
+
+    // Update user in local cache
+    Store.update('users', userId, { mustChangePassword: true });
+    return data;
+  },
+
+  // Keep hashPassword for backward compatibility (used in parametres.js _addUser)
+  // In API mode, password hashing is done server-side
+  async hashPassword(password) {
+    return '[server-side]';
   }
 };

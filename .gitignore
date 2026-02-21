@@ -1,5 +1,8 @@
 .DS_Store
 *.log
 node_modules/
+server/node_modules/
 .env
+server/.env
 .vercel
+.claude/
