@@ -10,6 +10,7 @@ const Router = {
     // Register routes
     this._routes = {
       '/dashboard': { page: DashboardPage, title: 'Tableau de bord' },
+      '/yango': { page: YangoPage, title: 'Yango Fleet' },
       '/chauffeurs': { page: ChauffeursPage, title: 'Chauffeurs' },
       '/chauffeurs/:id': { page: ChauffeursPage, title: 'Détail chauffeur', action: 'detail' },
       '/vehicules': { page: VehiculesPage, title: 'Véhicules' },
