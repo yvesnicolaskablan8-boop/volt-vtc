@@ -122,14 +122,18 @@
 }
 
 .kpi-trend {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 2px 5px;
   font-size: var(--font-size-xs);
   font-weight: 600;
   margin-top: var(--space-sm);
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  max-width: 100%;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .kpi-trend.up {
@@ -2312,15 +2316,15 @@ textarea.form-control {
   margin-top: 0.65rem;
   font-size: 0.72rem;
   font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 20px;
-  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 10px;
+  display: flex;
   align-items: center;
-  gap: 3px;
+  flex-wrap: wrap;
+  gap: 2px 5px;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .kpi-trend.positive,
