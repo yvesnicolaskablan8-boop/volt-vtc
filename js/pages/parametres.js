@@ -608,8 +608,8 @@ const ParametresPage = {
       const values = FormBuilder.getValues(body);
       const permissions = this._collectPermissions(body);
 
-      // Remove perm_* keys that FormBuilder picks up from checkboxes
-      Object.keys(values).forEach(k => { if (k.startsWith('perm_')) delete values[k]; });
+      // Remove perm_* keys and pin (pin is handled separately via set-pin API with bcrypt)
+      Object.keys(values).forEach(k => { if (k.startsWith('perm_') || k === 'pin') delete values[k]; });
 
       // Extract and validate password
       const pwd = values.password || '';
@@ -939,8 +939,8 @@ const ParametresPage = {
       const values = FormBuilder.getValues(body);
       const permissions = this._collectPermissions(body);
 
-      // Remove perm_* keys that FormBuilder picks up from checkboxes
-      Object.keys(values).forEach(k => { if (k.startsWith('perm_')) delete values[k]; });
+      // Remove perm_* keys and pin (pin is handled separately via set-pin API with bcrypt)
+      Object.keys(values).forEach(k => { if (k.startsWith('perm_') || k === 'pin') delete values[k]; });
 
       // Get chauffeur-specific fields
       const chauffeurIdVal = body.querySelector('#add-chauffeurId')?.value || '';
