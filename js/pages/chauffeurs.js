@@ -1,15 +1,18 @@
 /**
  * ChauffeursPage - Driver management with CRUD and detail view
+ * Integrates Yango real-time data for active drivers
  */
 const ChauffeursPage = {
   _charts: [],
   _table: null,
+  _yangoDrivers: null,
 
   render() {
     const container = document.getElementById('page-content');
     const chauffeurs = Store.get('chauffeurs');
     container.innerHTML = this._listTemplate(chauffeurs);
     this._bindListEvents();
+    this._loadYangoDrivers();
   },
 
   renderDetail(id) {
@@ -46,12 +49,56 @@ const ChauffeursPage = {
       </div>
 
       <div class="grid-4" style="margin-bottom: var(--space-lg);">
-        <div class="kpi-card"><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total</div></div>
+        <div class="kpi-card"><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total Volt</div></div>
         <div class="kpi-card green"><div class="kpi-value">${stats.actifs}</div><div class="kpi-label">Actifs</div></div>
         <div class="kpi-card yellow"><div class="kpi-value">${stats.suspendus}</div><div class="kpi-label">Suspendus</div></div>
         <div class="kpi-card red"><div class="kpi-value">${stats.inactifs}</div><div class="kpi-label">Inactifs</div></div>
       </div>
 
+      <!-- Yango Drivers Section -->
+      <div class="yango-section" id="yango-chauffeurs-section" style="margin-bottom: var(--space-lg);">
+        <div class="yango-section-header">
+          <div class="yango-section-title">
+            <span>Chauffeurs Yango</span>
+            <span class="yango-badge-live">EN SERVICE</span>
+          </div>
+          <div class="yango-section-actions">
+            <span class="yango-last-update" id="yango-chauffeurs-update"></span>
+            <button class="btn btn-sm yango-refresh-btn" onclick="ChauffeursPage._loadYangoDrivers()" id="yango-chauffeurs-refresh">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="grid-4" id="yango-chauffeurs-kpis">
+          <div class="kpi-card yango-kpi">
+            <div class="kpi-icon yango-icon-green"><i class="fas fa-users"></i></div>
+            <div class="kpi-value" id="yc-total"><div class="yango-skeleton"></div></div>
+            <div class="kpi-label">En service Yango</div>
+          </div>
+          <div class="kpi-card yango-kpi">
+            <div class="kpi-icon yango-icon-green"><i class="fas fa-signal"></i></div>
+            <div class="kpi-value" id="yc-online"><div class="yango-skeleton"></div></div>
+            <div class="kpi-label">En ligne</div>
+          </div>
+          <div class="kpi-card yango-kpi">
+            <div class="kpi-icon yango-icon-orange"><i class="fas fa-car"></i></div>
+            <div class="kpi-value" id="yc-busy"><div class="yango-skeleton"></div></div>
+            <div class="kpi-label">En course</div>
+          </div>
+          <div class="kpi-card yango-kpi">
+            <div class="kpi-icon yango-icon-purple"><i class="fas fa-moon"></i></div>
+            <div class="kpi-value" id="yc-offline"><div class="yango-skeleton"></div></div>
+            <div class="kpi-label">Hors ligne</div>
+          </div>
+        </div>
+        <div id="yango-chauffeurs-table" style="margin-top: var(--space-md);">
+          <div class="yango-loading"><i class="fas fa-spinner fa-spin"></i> Chargement Yango...</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: var(--space-md);">
+        <div class="card-header"><span class="card-title"><i class="fas fa-database"></i> Chauffeurs Volt (base interne)</span></div>
+      </div>
       <div id="chauffeurs-table"></div>
     `;
   },
@@ -351,6 +398,130 @@ const ChauffeursPage = {
   },
 
   _bindDetailEvents() {},
+
+  // =================== YANGO INTEGRATION ===================
+
+  async _loadYangoDrivers() {
+    const refreshBtn = document.getElementById('yango-chauffeurs-refresh');
+    if (refreshBtn) { refreshBtn.classList.add('spinning'); refreshBtn.disabled = true; }
+
+    try {
+      const data = await Store.getYangoDrivers();
+      if (!data || data.error) {
+        this._showYangoDriversError(data?.details || data?.error || 'Erreur');
+        return;
+      }
+
+      this._yangoDrivers = data.drivers || [];
+      const drivers = this._yangoDrivers;
+
+      // Update KPIs
+      const total = data.total || drivers.length;
+      const online = data.online || 0;
+      const busy = data.busy || 0;
+      const offline = total - online - busy;
+
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setVal('yc-total', total);
+      setVal('yc-online', online);
+      setVal('yc-busy', busy);
+      setVal('yc-offline', offline);
+
+      // Render table
+      const container = document.getElementById('yango-chauffeurs-table');
+      if (container && drivers.length > 0) {
+        const statusOrder = { en_ligne: 0, occupe: 1, hors_ligne: 2 };
+        const sorted = [...drivers].sort((a, b) => (statusOrder[a.statut] || 2) - (statusOrder[b.statut] || 2));
+
+        container.innerHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Chauffeur</th>
+                <th>Telephone</th>
+                <th>Statut</th>
+                <th>Vehicule</th>
+                <th>Balance</th>
+                <th>Derniere activite</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sorted.map(d => {
+                const statusConfig = {
+                  en_ligne: { label: 'En ligne', class: 'yango-status-online' },
+                  occupe: { label: 'En course', class: 'yango-status-busy' },
+                  hors_ligne: { label: 'Hors ligne', class: 'yango-status-offline' }
+                };
+                const status = statusConfig[d.statut] || statusConfig.hors_ligne;
+                const lastUpdate = d.derniereMaj
+                  ? new Date(d.derniereMaj).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+                  : '--';
+                const balVal = parseFloat(d.balance || 0);
+                const balClass = balVal >= 0 ? 'yango-balance-positive' : 'yango-balance-negative';
+                const vehicule = d.vehicule
+                  ? `${d.vehicule.marque} ${d.vehicule.modele} <span class="text-muted">${d.vehicule.immatriculation}</span>`
+                  : '<span class="text-muted">--</span>';
+
+                return `
+                  <tr>
+                    <td class="primary">
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="avatar-sm">${(d.nom?.[0] || d.prenom?.[0] || '?').toUpperCase()}</div>
+                        <div>
+                          <div style="font-weight:500">${d.prenom} ${d.nom}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>${d.telephone || '--'}</td>
+                    <td>
+                      <span class="yango-status ${status.class}">
+                        <i class="fas fa-circle"></i> ${status.label}
+                      </span>
+                    </td>
+                    <td>${vehicule}</td>
+                    <td class="tabular-nums ${balClass}">${balVal.toLocaleString('fr-FR')} F</td>
+                    <td class="text-muted" style="font-size:var(--font-size-xs);">${lastUpdate}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      } else if (container) {
+        container.innerHTML = '<div class="yango-empty"><i class="fas fa-user-check"></i><span>Aucun chauffeur en service</span></div>';
+      }
+
+      // Update timestamp
+      const updateEl = document.getElementById('yango-chauffeurs-update');
+      if (updateEl) {
+        const now = new Date();
+        updateEl.textContent = `Maj: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      }
+    } catch (err) {
+      console.error('Yango drivers load error:', err);
+      this._showYangoDriversError('Impossible de charger les chauffeurs Yango');
+    } finally {
+      if (refreshBtn) { refreshBtn.classList.remove('spinning'); refreshBtn.disabled = false; }
+    }
+  },
+
+  _showYangoDriversError(msg) {
+    ['yc-total', 'yc-online', 'yc-busy', 'yc-offline'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.textContent = '--';
+    });
+    const container = document.getElementById('yango-chauffeurs-table');
+    if (container) {
+      container.innerHTML = `
+        <div class="yango-error">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>${msg}</span>
+          <button class="btn btn-sm btn-secondary" onclick="ChauffeursPage._loadYangoDrivers()" style="margin-top:8px;">
+            <i class="fas fa-redo"></i> Reessayer
+          </button>
+        </div>
+      `;
+    }
+  },
 
   // CRUD operations
   _getFormFields() {

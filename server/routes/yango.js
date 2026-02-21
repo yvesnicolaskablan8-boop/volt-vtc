@@ -72,7 +72,10 @@ router.get('/drivers', async (req, res) => {
       offset: 0,
       query: {
         park: {
-          id: process.env.YANGO_PARK_ID
+          id: process.env.YANGO_PARK_ID,
+          driver_profile: {
+            work_status: ['working']
+          }
         }
       },
       sort_order: [
@@ -141,19 +144,32 @@ router.get('/orders', async (req, res) => {
       }
     });
 
-    const orders = (data.orders || []).map(o => ({
-      id: o.id || '',
-      statut: o.status || '',
-      chauffeurId: o.driver?.id || '',
-      chauffeurNom: o.driver ? `${o.driver.first_name || ''} ${o.driver.last_name || ''}`.trim() : '',
-      vehiculeImmat: o.car?.number || '',
-      montant: parseFloat(o.price || o.cost?.total || 0),
-      devise: o.currency || 'XOF',
-      dateReservation: o.booked_at || '',
-      dateDebut: o.started_at || '',
-      dateFin: o.ended_at || '',
-      categorie: o.category || ''
-    }));
+    const orders = (data.orders || []).map(o => {
+      // Calculate duration in minutes
+      let dureeMinutes = 0;
+      if (o.started_at && o.ended_at) {
+        dureeMinutes = Math.round((new Date(o.ended_at) - new Date(o.started_at)) / 60000);
+      }
+
+      return {
+        id: o.id || '',
+        statut: mapOrderStatus(o.status),
+        statutRaw: o.status || '',
+        chauffeurId: o.driver?.id || '',
+        chauffeurNom: o.driver ? `${o.driver.first_name || ''} ${o.driver.last_name || ''}`.trim() : '',
+        vehiculeImmat: o.car?.number || '',
+        montant: parseFloat(o.price || o.cost?.total || 0),
+        devise: o.currency || 'XOF',
+        dateReservation: o.booked_at || '',
+        dateDebut: o.started_at || '',
+        dateFin: o.ended_at || '',
+        categorie: o.category || '',
+        depart: o.route?.[0]?.address?.fullname || o.address_from?.fullname || o.source || '',
+        arrivee: o.route?.[1]?.address?.fullname || o.address_to?.fullname || o.destination || '',
+        distance: o.route_info?.distance || o.distance || 0,
+        dureeMinutes
+      };
+    });
 
     const totalCA = orders.reduce((sum, o) => sum + o.montant, 0);
 
@@ -227,7 +243,14 @@ router.get('/stats', async (req, res) => {
         },
         limit: 100,
         offset: 0,
-        query: { park: { id: process.env.YANGO_PARK_ID } },
+        query: {
+          park: {
+            id: process.env.YANGO_PARK_ID,
+            driver_profile: {
+              work_status: ['working']
+            }
+          }
+        },
         sort_order: [{ direction: 'asc', field: 'driver_profile.last_name' }]
       });
     } catch (e) {
@@ -289,6 +312,7 @@ router.get('/stats', async (req, res) => {
     // Calculate average activity time
     const completedToday = todayOrders.filter(o => o.ended_at && o.started_at);
     let tempsActiviteMoyen = 0;
+    let tempsActiviteTotal = 0;
     if (completedToday.length > 0) {
       const totalMinutes = completedToday.reduce((sum, o) => {
         const start = new Date(o.started_at);
@@ -296,7 +320,50 @@ router.get('/stats', async (req, res) => {
         return sum + (end - start) / 60000;
       }, 0);
       tempsActiviteMoyen = Math.round(totalMinutes / completedToday.length);
+      tempsActiviteTotal = Math.round(totalMinutes);
     }
+
+    // Calculate completed + cancelled counts
+    const coursesTerminees = todayOrders.filter(o => o.status === 'complete').length;
+    const coursesAnnulees = todayOrders.filter(o => o.status === 'cancelled').length;
+    const coursesEnCours = todayOrders.filter(o =>
+      o.status === 'driving' || o.status === 'transporting' || o.status === 'waiting'
+    ).length;
+
+    // Top drivers today (by revenue)
+    const driverRevenue = {};
+    todayOrders.filter(o => o.status === 'complete').forEach(o => {
+      const driverId = o.driver?.id;
+      if (driverId) {
+        if (!driverRevenue[driverId]) {
+          driverRevenue[driverId] = {
+            id: driverId,
+            nom: `${o.driver?.first_name || ''} ${o.driver?.last_name || ''}`.trim(),
+            ca: 0,
+            courses: 0
+          };
+        }
+        driverRevenue[driverId].ca += parseFloat(o.price || o.cost?.total || 0);
+        driverRevenue[driverId].courses++;
+      }
+    });
+    const topChauffeurs = Object.values(driverRevenue)
+      .sort((a, b) => b.ca - a.ca)
+      .slice(0, 5);
+
+    // Recent orders (last 10)
+    const coursesRecentes = todayOrders
+      .sort((a, b) => new Date(b.booked_at || 0) - new Date(a.booked_at || 0))
+      .slice(0, 10)
+      .map(o => ({
+        id: o.id || '',
+        statut: mapOrderStatus(o.status),
+        chauffeur: o.driver ? `${o.driver.first_name || ''} ${o.driver.last_name || ''}`.trim() : '--',
+        montant: parseFloat(o.price || o.cost?.total || 0),
+        heure: o.booked_at || '',
+        depart: o.route?.[0]?.address?.fullname || o.address_from?.fullname || '',
+        arrivee: o.route?.[1]?.address?.fullname || o.address_to?.fullname || ''
+      }));
 
     res.json({
       chauffeurs: {
@@ -309,15 +376,18 @@ router.get('/stats', async (req, res) => {
       courses: {
         aujourd_hui: ordersToday.total || todayOrders.length,
         mois: ordersMonth.total || monthOrders.length,
-        enCours: todayOrders.filter(o =>
-          o.status === 'driving' || o.status === 'transporting' || o.status === 'waiting'
-        ).length
+        enCours: coursesEnCours,
+        terminees: coursesTerminees,
+        annulees: coursesAnnulees,
+        recentes: coursesRecentes
       },
       chiffreAffaires: {
         aujourd_hui: caToday,
         mois: caMonth
       },
       tempsActiviteMoyen,
+      tempsActiviteTotal,
+      topChauffeurs,
       derniereMaj: now.toISOString()
     });
   } catch (err) {
@@ -340,6 +410,24 @@ function mapDriverStatus(status) {
     default:
       return 'hors_ligne';
   }
+}
+
+/**
+ * Map Yango order status to French labels
+ */
+function mapOrderStatus(status) {
+  const map = {
+    'driving': 'en_route',
+    'waiting': 'en_attente',
+    'transporting': 'en_course',
+    'complete': 'terminee',
+    'cancelled': 'annulee',
+    'failed': 'echouee',
+    'expired': 'expiree',
+    'search': 'recherche',
+    'assigned': 'assignee'
+  };
+  return map[status] || status || 'inconnue';
 }
 
 module.exports = router;

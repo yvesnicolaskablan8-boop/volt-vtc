@@ -1,14 +1,17 @@
 /**
  * VehiculesPage - Vehicle management with CRUD and detail
+ * Integrates Yango fleet data for registered vehicles
  */
 const VehiculesPage = {
   _charts: [],
+  _yangoVehicles: null,
 
   render() {
     const container = document.getElementById('page-content');
     const vehicules = Store.get('vehicules');
     container.innerHTML = this._listTemplate(vehicules);
     this._bindListEvents(vehicules);
+    this._loadYangoVehicles();
   },
 
   renderDetail(id) {
@@ -59,6 +62,35 @@ const VehiculesPage = {
         </div>
       </div>
 
+      <!-- Yango Vehicles Section -->
+      <div class="yango-section" id="yango-vehicules-section" style="margin-bottom: var(--space-lg);">
+        <div class="yango-section-header">
+          <div class="yango-section-title">
+            <span>Vehicules Yango</span>
+            <span class="yango-badge-live">FLOTTE</span>
+          </div>
+          <div class="yango-section-actions">
+            <span class="yango-last-update" id="yango-vehicules-update"></span>
+            <button class="btn btn-sm yango-refresh-btn" onclick="VehiculesPage._loadYangoVehicles()" id="yango-vehicules-refresh">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="grid-4" id="yango-vehicules-kpis">
+          <div class="kpi-card yango-kpi">
+            <div class="kpi-icon yango-icon-blue"><i class="fas fa-car"></i></div>
+            <div class="kpi-value" id="yv-total"><div class="yango-skeleton"></div></div>
+            <div class="kpi-label">Vehicules Yango</div>
+          </div>
+        </div>
+        <div id="yango-vehicules-table" style="margin-top: var(--space-md);">
+          <div class="yango-loading"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: var(--space-md);">
+        <div class="card-header"><span class="card-title"><i class="fas fa-database"></i> Vehicules Volt (base interne)</span></div>
+      </div>
       <div id="vehicules-table"></div>
     `;
   },
@@ -426,6 +458,95 @@ const VehiculesPage = {
   },
 
   _bindDetailEvents() {},
+
+  // =================== YANGO VEHICLES INTEGRATION ===================
+
+  async _loadYangoVehicles() {
+    const refreshBtn = document.getElementById('yango-vehicules-refresh');
+    if (refreshBtn) { refreshBtn.classList.add('spinning'); refreshBtn.disabled = true; }
+
+    try {
+      const data = await Store.getYangoVehicles();
+      if (!data || data.error) {
+        this._showYangoVehiclesError(data?.details || data?.error || 'Erreur');
+        return;
+      }
+
+      this._yangoVehicles = data.vehicles || [];
+      const vehicles = this._yangoVehicles;
+
+      // Update KPIs
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setVal('yv-total', data.total || vehicles.length);
+
+      // Render table
+      const container = document.getElementById('yango-vehicules-table');
+      if (container && vehicles.length > 0) {
+        container.innerHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Vehicule</th>
+                <th>Immatriculation</th>
+                <th>Couleur</th>
+                <th>Annee</th>
+                <th>Statut</th>
+                <th>Callsign</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${vehicles.map(v => `
+                <tr>
+                  <td class="primary">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div class="avatar-sm" style="background:linear-gradient(135deg, #3b82f6, #06b6d4)"><i class="fas fa-car" style="font-size:11px"></i></div>
+                      <span style="font-weight:500;">${v.marque} ${v.modele}</span>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-neutral">${v.immatriculation || '--'}</span></td>
+                  <td>${v.couleur || '--'}</td>
+                  <td>${v.annee || '--'}</td>
+                  <td>${v.statut ? `<span class="badge badge-info">${v.statut}</span>` : '--'}</td>
+                  <td class="text-muted">${v.callsign || '--'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } else if (container) {
+        container.innerHTML = '<div class="yango-empty"><i class="fas fa-car"></i><span>Aucun vehicule enregistre sur Yango</span></div>';
+      }
+
+      // Update timestamp
+      const updateEl = document.getElementById('yango-vehicules-update');
+      if (updateEl) {
+        const now = new Date();
+        updateEl.textContent = `Maj: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      }
+    } catch (err) {
+      console.error('Yango vehicles load error:', err);
+      this._showYangoVehiclesError('Impossible de charger les vehicules Yango');
+    } finally {
+      if (refreshBtn) { refreshBtn.classList.remove('spinning'); refreshBtn.disabled = false; }
+    }
+  },
+
+  _showYangoVehiclesError(msg) {
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setVal('yv-total', '--');
+    const container = document.getElementById('yango-vehicules-table');
+    if (container) {
+      container.innerHTML = `
+        <div class="yango-error">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>${msg}</span>
+          <button class="btn btn-sm btn-secondary" onclick="VehiculesPage._loadYangoVehicles()" style="margin-top:8px;">
+            <i class="fas fa-redo"></i> Reessayer
+          </button>
+        </div>
+      `;
+    }
+  },
 
   _getFormFields() {
     const chauffeurs = Store.get('chauffeurs');
