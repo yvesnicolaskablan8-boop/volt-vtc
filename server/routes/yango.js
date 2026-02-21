@@ -124,10 +124,15 @@ async function getWorkRules() {
 router.get('/work-rules', async (req, res) => {
   try {
     const data = await getWorkRules();
-    const rules = (data.work_rules || []).map(r => ({
-      id: r.id || '',
-      name: r.name || r.id || 'Sans nom'
-    }));
+    // Yango API returns "rules" (not "work_rules")
+    const rawRules = data.rules || data.work_rules || [];
+    const rules = rawRules
+      .filter(r => r.is_enabled !== false) // Only enabled rules
+      .map(r => ({
+        id: r.id || '',
+        name: r.name || r.id || 'Sans nom'
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     res.json({
       total: rules.length,
@@ -183,11 +188,12 @@ router.get('/drivers', async (req, res) => {
       ]
     });
 
-    // Resolve work rule names
+    // Resolve work rule names (Yango API returns "rules" key)
     let workRulesMap = {};
     try {
       const rulesData = await getWorkRules();
-      (rulesData.work_rules || []).forEach(r => {
+      const rawRules = rulesData.rules || rulesData.work_rules || [];
+      rawRules.forEach(r => {
         workRulesMap[r.id] = r.name || r.id;
       });
     } catch (e) {
