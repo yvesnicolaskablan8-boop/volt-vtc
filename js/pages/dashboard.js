@@ -347,7 +347,9 @@ const DashboardPage = {
       const stats = await Store.getYangoStats();
 
       if (!stats || stats.error) {
-        this._showYangoError(stats?.details || stats?.error || 'Erreur de connexion');
+        const msg = stats?.details || stats?.error || 'Erreur de connexion';
+        console.error('Yango API error:', stats);
+        this._showYangoError(msg);
         return;
       }
 

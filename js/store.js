@@ -258,11 +258,15 @@ const Store = {
       const res = await fetch(this._apiBase + '/yango/stats', {
         headers: this._headers()
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      const data = await res.json();
+      if (!res.ok) {
+        console.warn('Store: Yango stats error:', data);
+        return { error: data.error || 'Erreur API', details: data.details || `HTTP ${res.status}` };
+      }
+      return data;
     } catch (e) {
       console.warn('Store: Yango stats failed:', e.message);
-      return null;
+      return { error: 'Erreur reseau', details: e.message };
     }
   },
 
