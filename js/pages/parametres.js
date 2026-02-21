@@ -759,7 +759,7 @@ const ParametresPage = {
 
     const formHtml = FormBuilder.build(fields, user) + editChauffeurSection + pwdStatus + this._getPermissionsHTML(user.permissions || {});
 
-    Modal.form('<i class="fas fa-user-edit" style="color:var(--primary);"></i> Modifier utilisateur', formHtml, () => {
+    Modal.form('<i class="fas fa-user-edit" style="color:var(--primary);"></i> Modifier utilisateur', formHtml, async () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
