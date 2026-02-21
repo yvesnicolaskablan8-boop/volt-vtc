@@ -46,7 +46,7 @@ app.use(errorHandler);
 // Start server
 const startServer = async () => {
   await connectDB();
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Volt VTC API running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
