@@ -7,7 +7,7 @@
  * 3. Préférences — Thème, langue, notifications…
  */
 const ParametresPage = {
-  _currentTab: 'users',
+  _currentTab: 'account',
 
   // =================== MODULES MAP ===================
   _modules: [
@@ -51,7 +51,8 @@ const ParametresPage = {
       </div>
 
       <div class="tabs" id="settings-tabs">
-        <div class="tab active" data-tab="users"><i class="fas fa-users-cog"></i> Utilisateurs</div>
+        <div class="tab active" data-tab="account"><i class="fas fa-user-circle"></i> Mon compte</div>
+        <div class="tab" data-tab="users"><i class="fas fa-users-cog"></i> Utilisateurs</div>
         <div class="tab" data-tab="entreprise"><i class="fas fa-building"></i> Entreprise</div>
         <div class="tab" data-tab="preferences"><i class="fas fa-sliders-h"></i> Préférences</div>
       </div>
@@ -74,10 +75,270 @@ const ParametresPage = {
   _renderTab(tab) {
     const ct = document.getElementById('settings-content');
     switch (tab) {
+      case 'account': ct.innerHTML = this._renderAccount(); this._bindAccountEvents(); break;
       case 'users': ct.innerHTML = this._renderUsers(); this._bindUsersEvents(); break;
       case 'entreprise': ct.innerHTML = this._renderEntreprise(); this._bindEntrepriseEvents(); break;
       case 'preferences': ct.innerHTML = this._renderPreferences(); this._bindPreferencesEvents(); break;
     }
+  },
+
+  // ========================= ONGLET MON COMPTE =========================
+
+  _renderAccount() {
+    const session = Auth.getSession();
+    if (!session) return '<div class="card"><p>Vous devez être connecté.</p></div>';
+    const user = Store.findById('users', session.id) || session;
+
+    return `
+      <div class="grid-2" style="gap:var(--space-lg);">
+        <!-- Profil -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-user-circle"></i> Mon profil</span>
+          </div>
+          <div style="padding-top:var(--space-md);">
+            <div style="display:flex;align-items:center;gap:var(--space-lg);margin-bottom:var(--space-lg);padding-bottom:var(--space-lg);border-bottom:1px solid var(--border-color);">
+              <div style="width:72px;height:72px;border-radius:50%;background:${Utils.getAvatarColor(user.id)};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;flex-shrink:0;">
+                ${Utils.getInitials(user.prenom, user.nom)}
+              </div>
+              <div>
+                <div style="font-size:var(--font-size-lg);font-weight:700;">${user.prenom} ${user.nom}</div>
+                <div style="font-size:var(--font-size-sm);color:var(--text-muted);">${user.email}</div>
+                <span class="badge badge-info" style="margin-top:6px;">${user.role}</span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:var(--space-md);">
+              <div class="grid-2" style="gap:var(--space-md);">
+                <div class="form-group">
+                  <label class="form-label">Prénom</label>
+                  <input type="text" class="form-control" id="account-prenom" value="${user.prenom || ''}">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Nom</label>
+                  <input type="text" class="form-control" id="account-nom" value="${user.nom || ''}">
+                </div>
+              </div>
+              <div class="grid-2" style="gap:var(--space-md);">
+                <div class="form-group">
+                  <label class="form-label">Email</label>
+                  <input type="email" class="form-control" id="account-email" value="${user.email || ''}">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Téléphone</label>
+                  <input type="tel" class="form-control" id="account-telephone" value="${user.telephone || ''}">
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;">
+                <button class="btn btn-primary" id="btn-save-profile"><i class="fas fa-save"></i> Sauvegarder le profil</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mot de passe + Infos -->
+        <div>
+          <!-- Changer mot de passe -->
+          <div class="card" style="margin-bottom:var(--space-lg);">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-key"></i> Modifier le mot de passe</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Mot de passe actuel</label>
+                <div style="position:relative;">
+                  <input type="password" class="form-control" id="pwd-current" placeholder="Entrez votre mot de passe actuel" style="padding-right:40px;">
+                  <button type="button" class="btn-toggle-pwd" data-target="pwd-current" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nouveau mot de passe</label>
+                <div style="position:relative;">
+                  <input type="password" class="form-control" id="pwd-new" placeholder="Minimum 6 caractères" style="padding-right:40px;">
+                  <button type="button" class="btn-toggle-pwd" data-target="pwd-new" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+                <div id="pwd-strength" style="margin-top:6px;"></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirmer le nouveau mot de passe</label>
+                <div style="position:relative;">
+                  <input type="password" class="form-control" id="pwd-confirm" placeholder="Retapez le nouveau mot de passe" style="padding-right:40px;">
+                  <button type="button" class="btn-toggle-pwd" data-target="pwd-confirm" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;">
+                <button class="btn btn-primary" id="btn-change-pwd"><i class="fas fa-lock"></i> Modifier le mot de passe</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Infos session -->
+          <div class="card" style="border-left:4px solid var(--volt-blue);">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-info-circle"></i> Informations de session</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-sm);padding-top:var(--space-md);font-size:var(--font-size-sm);">
+              <div style="display:flex;justify-content:space-between;padding:6px 0;">
+                <span style="color:var(--text-muted);">Identifiant</span>
+                <span style="font-weight:500;font-family:monospace;">${user.id}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border-color);">
+                <span style="color:var(--text-muted);">Rôle</span>
+                <span class="badge badge-info">${user.role}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border-color);">
+                <span style="color:var(--text-muted);">Statut</span>
+                <span class="badge badge-success"><i class="fas fa-circle" style="font-size:6px;margin-right:4px;"></i>Actif</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border-color);">
+                <span style="color:var(--text-muted);">Dernière connexion</span>
+                <span>${user.dernierConnexion ? Utils.timeAgo(user.dernierConnexion) : '-'}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border-color);">
+                <span style="color:var(--text-muted);">Modules accessibles</span>
+                <span style="font-weight:500;">${user.permissions ? Object.values(user.permissions).filter(Boolean).length : 0} / ${this._modules.length}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  _bindAccountEvents() {
+    const session = Auth.getSession();
+    if (!session) return;
+
+    // Toggle password visibility
+    document.querySelectorAll('.btn-toggle-pwd').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.target);
+        if (target) {
+          const isPassword = target.type === 'password';
+          target.type = isPassword ? 'text' : 'password';
+          btn.innerHTML = `<i class="fas fa-eye${isPassword ? '-slash' : ''}"></i>`;
+        }
+      });
+    });
+
+    // Password strength indicator
+    const pwdNew = document.getElementById('pwd-new');
+    if (pwdNew) {
+      pwdNew.addEventListener('input', () => {
+        const pwd = pwdNew.value;
+        const strengthDiv = document.getElementById('pwd-strength');
+        if (!pwd) { strengthDiv.innerHTML = ''; return; }
+
+        let score = 0;
+        if (pwd.length >= 6) score++;
+        if (pwd.length >= 10) score++;
+        if (/[A-Z]/.test(pwd)) score++;
+        if (/[0-9]/.test(pwd)) score++;
+        if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+        const levels = [
+          { label: 'Très faible', color: '#ef4444', width: '20%' },
+          { label: 'Faible', color: '#f97316', width: '40%' },
+          { label: 'Moyen', color: '#eab308', width: '60%' },
+          { label: 'Fort', color: '#22c55e', width: '80%' },
+          { label: 'Très fort', color: '#10b981', width: '100%' }
+        ];
+        const level = levels[Math.min(score, 4)];
+
+        strengthDiv.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:4px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden;">
+              <div style="width:${level.width};height:100%;background:${level.color};border-radius:4px;transition:all 0.3s;"></div>
+            </div>
+            <span style="font-size:11px;color:${level.color};font-weight:500;white-space:nowrap;">${level.label}</span>
+          </div>
+        `;
+      });
+    }
+
+    // Save profile
+    document.getElementById('btn-save-profile').addEventListener('click', () => {
+      const prenom = document.getElementById('account-prenom').value.trim();
+      const nom = document.getElementById('account-nom').value.trim();
+      const email = document.getElementById('account-email').value.trim();
+      const telephone = document.getElementById('account-telephone').value.trim();
+
+      if (!prenom || !nom) {
+        Toast.error('Le prénom et le nom sont obligatoires');
+        return;
+      }
+      if (!email || !email.includes('@')) {
+        Toast.error('Veuillez entrer un email valide');
+        return;
+      }
+
+      Store.update('users', session.id, { prenom, nom, email, telephone });
+      Auth.refreshSession();
+      Toast.success('Profil mis à jour');
+      this._renderTab('account');
+    });
+
+    // Change password
+    document.getElementById('btn-change-pwd').addEventListener('click', async () => {
+      const current = document.getElementById('pwd-current').value;
+      const newPwd = document.getElementById('pwd-new').value;
+      const confirm = document.getElementById('pwd-confirm').value;
+
+      if (!current) {
+        Toast.error('Veuillez entrer votre mot de passe actuel');
+        return;
+      }
+      if (!newPwd || newPwd.length < 6) {
+        Toast.error('Le nouveau mot de passe doit contenir au moins 6 caractères');
+        return;
+      }
+      if (newPwd !== confirm) {
+        Toast.error('Les mots de passe ne correspondent pas');
+        return;
+      }
+      if (current === newPwd) {
+        Toast.error('Le nouveau mot de passe doit être différent de l\'actuel');
+        return;
+      }
+
+      try {
+        // Verify current password by attempting login
+        const apiBase = Store._apiBase || '/api';
+        const user = Store.findById('users', session.id);
+        const verifyRes = await fetch(apiBase + '/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, password: current })
+        });
+        const verifyData = await verifyRes.json();
+
+        if (!verifyData.success) {
+          Toast.error('Mot de passe actuel incorrect');
+          return;
+        }
+
+        // Set new password (not temporary — user chose it themselves)
+        const result = await Auth.setPassword(session.id, newPwd);
+        if (result.success) {
+          Toast.success('Mot de passe modifié avec succès');
+          document.getElementById('pwd-current').value = '';
+          document.getElementById('pwd-new').value = '';
+          document.getElementById('pwd-confirm').value = '';
+          document.getElementById('pwd-strength').innerHTML = '';
+        } else {
+          Toast.error('Erreur lors de la modification du mot de passe');
+        }
+      } catch (err) {
+        console.error('Password change error:', err);
+        Toast.error('Erreur réseau — veuillez réessayer');
+      }
+    });
   },
 
   // ========================= ONGLET UTILISATEURS =========================
