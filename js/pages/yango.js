@@ -119,9 +119,9 @@ const YangoPage = {
           <div class="kpi-trend neutral" id="yp-courses-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
         <div class="kpi-card yango-kpi">
-          <div class="kpi-icon yango-icon-purple"><i class="fas fa-hand-holding-dollar"></i></div>
+          <div class="kpi-icon yango-icon-purple"><i class="fas fa-percentage"></i></div>
           <div class="kpi-value" id="yp-commission"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label" id="yp-commission-label">Commission (3%)</div>
+          <div class="kpi-label" id="yp-commission-label">Commission Yango</div>
           <div class="kpi-trend neutral" id="yp-commission-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
       </div>
@@ -134,9 +134,9 @@ const YangoPage = {
           <div class="kpi-label" id="yp-ca-month-label">CA du mois</div>
         </div>
         <div class="kpi-card green">
-          <div class="kpi-icon"><i class="fas fa-coins"></i></div>
+          <div class="kpi-icon"><i class="fas fa-hand-holding-dollar"></i></div>
           <div class="kpi-value" id="yp-commission-month"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label" id="yp-commission-month-label">Commission du mois</div>
+          <div class="kpi-label" id="yp-commission-month-label">Commission partenaire</div>
         </div>
         <div class="kpi-card cyan">
           <div class="kpi-icon"><i class="fas fa-road"></i></div>
@@ -188,7 +188,7 @@ const YangoPage = {
       <!-- Commission info -->
       <div style="margin-top:var(--space-md);padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
         <i class="fas fa-info-circle" style="color:#FC4C02"></i>
-        Yango vous reverse 3% du chiffre d'affaires global genere par votre flotte. Les donnees se rafraichissent automatiquement toutes les 2 minutes.
+        Le chiffre d'affaires est calcule a partir des transactions reelles (especes + carte). La commission Yango et la commission partenaire sont issues des donnees financieres de la plateforme. Rafraichissement automatique toutes les 2 minutes.
       </div>
     `;
   },
@@ -384,16 +384,16 @@ const YangoPage = {
     const setLabel = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
     setLabel('yp-ca-label', `CA ${periodSuffix}`);
     setLabel('yp-courses-label', `Courses ${coursesSuffix}`);
-    setLabel('yp-commission-label', `Commission (3%)`);
+    setLabel('yp-commission-label', `Commission Yango`);
 
     // Row 2 labels
     if (isToday) {
       setLabel('yp-ca-month-label', 'CA du mois');
-      setLabel('yp-commission-month-label', 'Commission du mois');
+      setLabel('yp-commission-month-label', 'Commission partenaire du mois');
       setLabel('yp-courses-month-label', 'Courses du mois');
     } else {
       setLabel('yp-ca-month-label', `CA total (${label})`);
-      setLabel('yp-commission-month-label', `Commission totale`);
+      setLabel('yp-commission-month-label', `Commission partenaire`);
       setLabel('yp-courses-month-label', `Total courses`);
     }
 
@@ -451,15 +451,27 @@ const YangoPage = {
     const total = stats.chauffeurs?.total || 0;
     const busy = stats.chauffeurs?.occupes || 0;
     const offline = total - online - busy;
+
+    // Revenue from real transactions (cash + card)
     const caToday = stats.chiffreAffaires?.aujourd_hui || 0;
     const caMonth = stats.chiffreAffaires?.mois || 0;
+    const cashToday = stats.chiffreAffaires?.cash?.aujourd_hui || 0;
+    const cardToday = stats.chiffreAffaires?.card?.aujourd_hui || 0;
+    const cashMonth = stats.chiffreAffaires?.cash?.mois || 0;
+    const cardMonth = stats.chiffreAffaires?.card?.mois || 0;
+
     const coursesToday = stats.courses?.aujourd_hui || 0;
     const coursesMonth = stats.courses?.mois || 0;
     const enCours = stats.courses?.enCours || 0;
     const terminees = stats.courses?.terminees || 0;
     const annulees = stats.courses?.annulees || 0;
-    const commToday = stats.commissionYango?.aujourd_hui || 0;
-    const commMonth = stats.commissionYango?.mois || 0;
+
+    // Real commissions from Yango transactions
+    const commYangoToday = stats.commissionYango?.aujourd_hui || 0;
+    const commYangoMonth = stats.commissionYango?.mois || 0;
+    const commPartToday = stats.commissionPartenaire?.aujourd_hui || 0;
+    const commPartMonth = stats.commissionPartenaire?.mois || 0;
+
     const tempsActivite = stats.tempsActiviteMoyen || 0;
 
     // Row 1
@@ -475,8 +487,13 @@ const YangoPage = {
       <span class="yango-dot yango-dot-red"></span> ${offline} hors ligne
     `);
 
+    // CA with cash/card breakdown
     setVal('yp-ca-today', Utils.formatCurrency(caToday));
-    setHtml('yp-ca-detail', `<i class="fas fa-calendar"></i> ${Utils.formatCurrency(caMonth)} ce mois`);
+    setHtml('yp-ca-detail', `
+      <i class="fas fa-money-bill-wave" style="color:#22c55e;font-size:9px"></i> ${Utils.formatCurrency(cashToday)}
+      <span style="margin:0 3px">&bull;</span>
+      <i class="fas fa-credit-card" style="color:#3b82f6;font-size:9px"></i> ${Utils.formatCurrency(cardToday)}
+    `);
 
     setVal('yp-courses-today', coursesToday);
     const courseParts = [];
@@ -486,12 +503,13 @@ const YangoPage = {
     if (courseParts.length === 0) courseParts.push(`<i class="fas fa-chart-line"></i> ${coursesMonth} ce mois`);
     setHtml('yp-courses-detail', courseParts.join(' <span style="margin:0 3px">&bull;</span> '));
 
-    setVal('yp-commission', Utils.formatCurrency(commMonth));
-    setHtml('yp-commission-detail', `<i class="fas fa-calendar-day"></i> ${Utils.formatCurrency(commToday)} aujourd'hui`);
+    // Commission Yango (real from transactions)
+    setVal('yp-commission', Utils.formatCurrency(commYangoToday));
+    setHtml('yp-commission-detail', `<i class="fas fa-calendar"></i> ${Utils.formatCurrency(commYangoMonth)} ce mois`);
 
     // Row 2
     setVal('yp-ca-month', Utils.formatCurrency(caMonth));
-    setVal('yp-commission-month', Utils.formatCurrency(commMonth));
+    setVal('yp-commission-month', Utils.formatCurrency(commPartMonth));
     setVal('yp-courses-month', coursesMonth);
     setVal('yp-activity-time', tempsActivite > 0 ? `${tempsActivite} min` : '--');
   },
@@ -622,13 +640,19 @@ const YangoPage = {
         ${topDrivers.map((d, i) => {
           const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
           const medal = i < 3 ? medals[i] : `${i + 1}.`;
+          const cashVal = d.cash || 0;
+          const cardVal = d.card || 0;
+          const detailParts = [];
+          if (cashVal > 0) detailParts.push(`<i class="fas fa-money-bill-wave" style="color:#22c55e;font-size:9px"></i> ${Utils.formatCurrency(cashVal)}`);
+          if (cardVal > 0) detailParts.push(`<i class="fas fa-credit-card" style="color:#3b82f6;font-size:9px"></i> ${Utils.formatCurrency(cardVal)}`);
+          if (d.courses > 0) detailParts.push(`${d.courses} course${d.courses > 1 ? 's' : ''}`);
           return `
             <div class="yango-top-item">
               <span class="yango-top-rank">${medal}</span>
               <div class="avatar-sm">${(d.nom?.[0] || '?').toUpperCase()}</div>
               <div class="yango-top-info">
                 <div class="yango-top-name">${d.nom || 'Inconnu'}</div>
-                <div class="yango-top-meta">${d.courses} course${d.courses > 1 ? 's' : ''}</div>
+                <div class="yango-top-meta">${detailParts.join(' &bull; ') || '--'}</div>
               </div>
               <div class="yango-top-amount">${Utils.formatCurrency(d.ca)}</div>
             </div>

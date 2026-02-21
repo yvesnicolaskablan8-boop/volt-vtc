@@ -96,6 +96,133 @@ let _workRulesCache = null;
 let _workRulesCacheTime = 0;
 const WORK_RULES_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
+/**
+ * Fetch ALL transactions for a period with cursor-based pagination
+ * Returns all transactions as a flat array
+ * Categories for revenue:
+ *   - cash_collected: especes collectees par le chauffeur
+ *   - card: paiement par carte
+ *   - partner_ride_cash_collected: course partenaire en especes
+ *   - partner_ride_card: paiement par carte course partenaire
+ *   - ewallet_payment: paiement portefeuille electronique
+ *   - terminal_payment: paiement via terminal
+ * Categories for commissions (negative amounts):
+ *   - platform_ride_fee: commission Yango
+ *   - platform_ride_vat: TVA sur commission
+ *   - partner_ride_fee: commission partenaire (3%)
+ */
+async function fetchAllTransactions(from, to, driverIds = null) {
+  const allTransactions = [];
+  let cursor = '';
+  let pageCount = 0;
+  const MAX_PAGES = 10; // Safety limit
+
+  do {
+    const body = {
+      query: {
+        park: {
+          id: process.env.YANGO_PARK_ID,
+          transaction: {
+            event_at: { from, to }
+          }
+        }
+      },
+      limit: 1000
+    };
+    if (cursor) body.cursor = cursor;
+
+    const data = await yangoFetch('/v2/parks/transactions/list', body);
+    const txns = data.transactions || [];
+    allTransactions.push(...txns);
+    cursor = data.cursor || '';
+    pageCount++;
+  } while (cursor && pageCount < MAX_PAGES);
+
+  // If driver filter is active, filter transactions by driver_profile_id
+  if (driverIds && driverIds.size > 0) {
+    return allTransactions.filter(t => t.driver_profile_id && driverIds.has(t.driver_profile_id));
+  }
+
+  return allTransactions;
+}
+
+/**
+ * Aggregate transactions into financial summary
+ */
+function aggregateTransactions(transactions) {
+  // Revenue categories (positive = income)
+  const revenueCats = new Set([
+    'cash_collected', 'partner_ride_cash_collected'
+  ]);
+  const cardCats = new Set([
+    'card', 'partner_ride_card', 'ewallet_payment', 'terminal_payment'
+  ]);
+  // Commission categories (negative amounts from Yango)
+  const commissionYangoCats = new Set([
+    'platform_ride_fee', 'platform_ride_vat'
+  ]);
+  // Partner commission (your 3%)
+  const commissionPartnerCats = new Set([
+    'partner_ride_fee'
+  ]);
+
+  let totalCash = 0;
+  let totalCard = 0;
+  let commissionYango = 0;
+  let commissionPartenaire = 0;
+  let nbCoursesCash = 0;
+  let nbCoursesCard = 0;
+
+  // Track unique orders for counting
+  const cashOrders = new Set();
+  const cardOrders = new Set();
+
+  // Per-driver revenue for top drivers
+  const driverRevenue = {};
+
+  for (const t of transactions) {
+    const amount = parseFloat(t.amount || 0);
+    const catId = t.category_id || '';
+    const driverId = t.driver_profile_id || '';
+
+    if (revenueCats.has(catId)) {
+      totalCash += amount;
+      if (t.order_id) cashOrders.add(t.order_id);
+      // Track per-driver
+      if (driverId) {
+        if (!driverRevenue[driverId]) driverRevenue[driverId] = { cash: 0, card: 0 };
+        driverRevenue[driverId].cash += amount;
+      }
+    } else if (cardCats.has(catId)) {
+      totalCard += amount;
+      if (t.order_id) cardOrders.add(t.order_id);
+      if (driverId) {
+        if (!driverRevenue[driverId]) driverRevenue[driverId] = { cash: 0, card: 0 };
+        driverRevenue[driverId].card += amount;
+      }
+    } else if (commissionYangoCats.has(catId)) {
+      commissionYango += Math.abs(amount);
+    } else if (commissionPartnerCats.has(catId)) {
+      commissionPartenaire += Math.abs(amount);
+    }
+  }
+
+  const totalCA = totalCash + totalCard;
+  nbCoursesCash = cashOrders.size;
+  nbCoursesCard = cardOrders.size;
+
+  return {
+    totalCA: Math.round(totalCA),
+    totalCash: Math.round(totalCash),
+    totalCard: Math.round(totalCard),
+    commissionYango: Math.round(commissionYango),
+    commissionPartenaire: Math.round(commissionPartenaire),
+    nbCoursesCash,
+    nbCoursesCard,
+    driverRevenue
+  };
+}
+
 async function getWorkRules() {
   const now = Date.now();
   if (_workRulesCache && (now - _workRulesCacheTime) < WORK_RULES_CACHE_TTL) {
@@ -458,11 +585,59 @@ router.get('/stats', async (req, res) => {
       balance: dp.accounts?.[0]?.balance || '0'
     }));
 
-    // Get set of driver IDs for filtering orders when work_rule is active
+    // Get set of driver IDs for filtering when work_rule is active
     const driverIds = new Set(drivers.map(d => d.id));
     const hasWorkRuleFilter = !!req.query.work_rule;
 
-    // Process orders — filter by driver IDs if work_rule filter is active
+    // ========== TRANSACTIONS-BASED REVENUE (real payments) ==========
+    // Fetch transactions for the period (with pagination)
+    let todayTxns, monthTxns;
+    try {
+      todayTxns = await fetchAllTransactions(
+        todayStart, todayEnd,
+        hasWorkRuleFilter ? driverIds : null
+      );
+    } catch (e) {
+      console.error('Yango stats - transactions fetch failed:', e.message);
+      todayTxns = [];
+    }
+
+    if (isCustomRange) {
+      monthTxns = todayTxns; // Same period
+    } else {
+      try {
+        monthTxns = await fetchAllTransactions(
+          monthStart, monthEnd,
+          hasWorkRuleFilter ? driverIds : null
+        );
+      } catch (e) {
+        console.error('Yango stats - month transactions failed:', e.message);
+        monthTxns = [];
+      }
+    }
+
+    // Aggregate financial data from real transactions
+    const todayFinance = aggregateTransactions(todayTxns);
+    const monthFinance = aggregateTransactions(monthTxns);
+
+    // Build driver name map from drivers list
+    const driverNameMap = {};
+    drivers.forEach(d => { driverNameMap[d.id] = d.nom; });
+
+    // Top drivers from transactions (more accurate than orders)
+    const topChauffeurs = Object.entries(todayFinance.driverRevenue)
+      .map(([id, rev]) => ({
+        id,
+        nom: driverNameMap[id] || id,
+        ca: Math.round(rev.cash + rev.card),
+        cash: Math.round(rev.cash),
+        card: Math.round(rev.card),
+        courses: 0 // Will be enriched from orders if available
+      }))
+      .sort((a, b) => b.ca - a.ca)
+      .slice(0, 5);
+
+    // ========== ORDERS for course counts + recent courses ==========
     let todayOrders = (ordersToday.orders || []);
     let monthOrders = (ordersMonth.orders || []);
 
@@ -471,10 +646,17 @@ router.get('/stats', async (req, res) => {
       monthOrders = monthOrders.filter(o => o.driver?.id && driverIds.has(o.driver.id));
     }
 
-    const caToday = todayOrders.reduce((sum, o) => sum + parseFloat(o.price || o.cost?.total || 0), 0);
-    const caMonth = monthOrders.reduce((sum, o) => sum + parseFloat(o.price || o.cost?.total || 0), 0);
+    // Enrich top drivers with course count from orders
+    const driverCourseCount = {};
+    todayOrders.filter(o => o.status === 'complete').forEach(o => {
+      const did = o.driver?.id;
+      if (did) driverCourseCount[did] = (driverCourseCount[did] || 0) + 1;
+    });
+    topChauffeurs.forEach(d => {
+      d.courses = driverCourseCount[d.id] || 0;
+    });
 
-    // Calculate average activity time
+    // Calculate average activity time from completed orders
     const completedToday = todayOrders.filter(o => o.ended_at && o.started_at);
     let tempsActiviteMoyen = 0;
     let tempsActiviteTotal = 0;
@@ -488,33 +670,12 @@ router.get('/stats', async (req, res) => {
       tempsActiviteTotal = Math.round(totalMinutes);
     }
 
-    // Calculate completed + cancelled counts
+    // Course status counts
     const coursesTerminees = todayOrders.filter(o => o.status === 'complete').length;
     const coursesAnnulees = todayOrders.filter(o => o.status === 'cancelled').length;
     const coursesEnCours = todayOrders.filter(o =>
       o.status === 'driving' || o.status === 'transporting' || o.status === 'waiting'
     ).length;
-
-    // Top drivers today (by revenue)
-    const driverRevenue = {};
-    todayOrders.filter(o => o.status === 'complete').forEach(o => {
-      const driverId = o.driver?.id;
-      if (driverId) {
-        if (!driverRevenue[driverId]) {
-          driverRevenue[driverId] = {
-            id: driverId,
-            nom: `${o.driver?.first_name || ''} ${o.driver?.last_name || ''}`.trim(),
-            ca: 0,
-            courses: 0
-          };
-        }
-        driverRevenue[driverId].ca += parseFloat(o.price || o.cost?.total || 0);
-        driverRevenue[driverId].courses++;
-      }
-    });
-    const topChauffeurs = Object.values(driverRevenue)
-      .sort((a, b) => b.ca - a.ca)
-      .slice(0, 5);
 
     // Recent orders (last 10)
     const coursesRecentes = todayOrders
@@ -546,14 +707,29 @@ router.get('/stats', async (req, res) => {
         annulees: coursesAnnulees,
         recentes: coursesRecentes
       },
+      // Revenue from REAL transactions (cash + card)
       chiffreAffaires: {
-        aujourd_hui: caToday,
-        mois: caMonth
+        aujourd_hui: todayFinance.totalCA,
+        mois: monthFinance.totalCA,
+        cash: {
+          aujourd_hui: todayFinance.totalCash,
+          mois: monthFinance.totalCash,
+          nbCourses: todayFinance.nbCoursesCash
+        },
+        card: {
+          aujourd_hui: todayFinance.totalCard,
+          mois: monthFinance.totalCard,
+          nbCourses: todayFinance.nbCoursesCard
+        }
       },
+      // Real commissions from Yango transactions
       commissionYango: {
-        taux: 0.03,
-        aujourd_hui: Math.round(caToday * 0.03),
-        mois: Math.round(caMonth * 0.03)
+        aujourd_hui: todayFinance.commissionYango,
+        mois: monthFinance.commissionYango
+      },
+      commissionPartenaire: {
+        aujourd_hui: todayFinance.commissionPartenaire,
+        mois: monthFinance.commissionPartenaire
       },
       tempsActiviteMoyen,
       tempsActiviteTotal,
