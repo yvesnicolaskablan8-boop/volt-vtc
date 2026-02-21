@@ -7,7 +7,7 @@ const Header = {
     this._initNotifications();
     this._initSearch();
     this._renderUserInfo();
-    this._initLogout();
+    this._initUserDropdown();
   },
 
   setBreadcrumb(title) {
@@ -27,31 +27,89 @@ const Header = {
 
     const initials = (session.prenom[0] + session.nom[0]).toUpperCase();
     const fullName = `${session.prenom} ${session.nom}`;
+    const role = session.role || 'Utilisateur';
 
+    // Update header avatar & name
     const avatarEl = document.querySelector('.header-user-avatar');
     const nameEl = document.querySelector('.header-user-name');
 
     if (avatarEl) avatarEl.textContent = initials;
     if (nameEl) nameEl.textContent = fullName;
+
+    // Update dropdown avatar, name & role
+    const dropdownAvatar = document.querySelector('.user-dropdown-avatar');
+    const dropdownName = document.querySelector('.user-dropdown-name');
+    const dropdownRole = document.querySelector('.user-dropdown-role');
+
+    if (dropdownAvatar) dropdownAvatar.textContent = initials;
+    if (dropdownName) dropdownName.textContent = fullName;
+    if (dropdownRole) dropdownRole.textContent = role;
   },
 
-  _initLogout() {
-    // Add logout button if not already present
-    const userDiv = document.querySelector('.header-user');
-    if (!userDiv) return;
+  _initUserDropdown() {
+    const userToggle = document.getElementById('header-user-toggle');
+    const dropdown = document.getElementById('user-dropdown');
+    if (!userToggle || !dropdown) return;
 
-    // Remove existing logout button
-    const existing = userDiv.querySelector('.btn-logout');
-    if (existing) existing.remove();
+    // Toggle dropdown on click
+    userToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isActive = dropdown.classList.contains('active');
 
-    const logoutBtn = document.createElement('button');
-    logoutBtn.className = 'btn-logout';
-    logoutBtn.title = 'Déconnexion';
-    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
-    logoutBtn.addEventListener('click', () => {
-      App.logout();
+      // Close other dropdowns (notifications)
+      const notifDropdown = document.getElementById('notif-dropdown');
+      if (notifDropdown) notifDropdown.classList.remove('active');
+
+      dropdown.classList.toggle('active');
+      userToggle.classList.toggle('active');
     });
-    userDiv.appendChild(logoutBtn);
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!userToggle.contains(e.target)) {
+        dropdown.classList.remove('active');
+        userToggle.classList.remove('active');
+      }
+    });
+
+    // Mon compte → Navigate to Paramètres > Mon compte
+    const profileBtn = document.getElementById('user-dropdown-profile');
+    if (profileBtn) {
+      profileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.remove('active');
+        userToggle.classList.remove('active');
+        Router.navigate('/parametres');
+        // Small delay to ensure page loads, then switch to account tab
+        setTimeout(() => {
+          if (typeof Parametres !== 'undefined' && Parametres._switchTab) {
+            Parametres._switchTab('account');
+          }
+        }, 200);
+      });
+    }
+
+    // Paramètres → Navigate to Paramètres
+    const settingsBtn = document.getElementById('user-dropdown-settings');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.remove('active');
+        userToggle.classList.remove('active');
+        Router.navigate('/parametres');
+      });
+    }
+
+    // Déconnexion
+    const logoutBtn = document.getElementById('user-dropdown-logout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.remove('active');
+        userToggle.classList.remove('active');
+        App.logout();
+      });
+    }
   },
 
   _initThemeToggle() {
@@ -76,6 +134,13 @@ const Header = {
 
     newToggle.addEventListener('click', (e) => {
       e.stopPropagation();
+
+      // Close user dropdown
+      const userDropdown = document.getElementById('user-dropdown');
+      const userToggle = document.getElementById('header-user-toggle');
+      if (userDropdown) userDropdown.classList.remove('active');
+      if (userToggle) userToggle.classList.remove('active');
+
       newDropdown.classList.toggle('active');
     });
 

@@ -1246,26 +1246,7 @@ textarea.form-control {
   color: rgba(0, 0, 0, 0.15);
 }
 
-/* Logout button in header */
-.btn-logout {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: 4px 12px;
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.btn-logout:hover {
-  color: var(--danger);
-  border-color: var(--danger);
-  background: rgba(239, 68, 68, 0.08);
-}
+/* Logout button (legacy - kept for compatibility) */
 
 /* Access restricted page */
 .access-restricted {

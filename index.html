@@ -228,9 +228,34 @@
               <div id="notif-list"></div>
             </div>
           </div>
-          <div class="header-user">
+          <div class="header-user" id="header-user-toggle">
             <div class="header-user-avatar">YN</div>
             <span class="header-user-name">Yves Nicolas</span>
+            <i class="fas fa-chevron-down header-user-chevron"></i>
+            <!-- User Dropdown -->
+            <div class="header-user-dropdown" id="user-dropdown">
+              <div class="user-dropdown-header">
+                <div class="user-dropdown-avatar">YN</div>
+                <div class="user-dropdown-info">
+                  <div class="user-dropdown-name">Yves Nicolas</div>
+                  <div class="user-dropdown-role">Administrateur</div>
+                </div>
+              </div>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item" id="user-dropdown-profile">
+                <i class="fas fa-user-circle"></i>
+                <span>Mon compte</span>
+              </button>
+              <button class="user-dropdown-item" id="user-dropdown-settings">
+                <i class="fas fa-cog"></i>
+                <span>Paramètres</span>
+              </button>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item user-dropdown-logout" id="user-dropdown-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Déconnexion</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
