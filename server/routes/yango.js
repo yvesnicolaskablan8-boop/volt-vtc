@@ -14,7 +14,7 @@ router.use(authMiddleware);
 
 const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
 
-// Helper: make Yango API call
+// Helper: make Yango API call with detailed error logging
 async function yangoFetch(endpoint, body = {}) {
   const parkId = process.env.YANGO_PARK_ID;
   const apiKey = process.env.YANGO_API_KEY;
@@ -23,6 +23,9 @@ async function yangoFetch(endpoint, body = {}) {
   if (!parkId || !apiKey || !clientId) {
     throw new Error('Yango API credentials not configured');
   }
+
+  console.log(`Yango API call: POST ${endpoint}`);
+  console.log('Yango request body:', JSON.stringify(body, null, 2));
 
   const res = await fetch(`${YANGO_BASE}${endpoint}`, {
     method: 'POST',
@@ -35,12 +38,18 @@ async function yangoFetch(endpoint, body = {}) {
     body: JSON.stringify(body)
   });
 
+  const text = await res.text();
+  console.log(`Yango API response ${res.status}:`, text.substring(0, 500));
+
   if (!res.ok) {
-    const text = await res.text();
     throw new Error(`Yango API error ${res.status}: ${text}`);
   }
 
-  return res.json();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Yango API invalid JSON: ${text.substring(0, 200)}`);
+  }
 }
 
 /**
@@ -52,14 +61,14 @@ router.get('/drivers', async (req, res) => {
     const data = await yangoFetch('/v1/parks/driver-profiles/list', {
       fields: {
         account: ['balance', 'currency'],
-        car: ['brand', 'model', 'color', 'number', 'year', 'category'],
+        car: ['brand', 'model', 'color', 'number', 'year'],
         current_status: ['status', 'status_updated_at'],
         driver_profile: [
           'id', 'first_name', 'last_name', 'phones', 'created_date',
-          'driver_license', 'hire_date', 'work_status'
+          'hire_date', 'work_status'
         ]
       },
-      limit: 500,
+      limit: 100,
       offset: 0,
       query: {
         park: {
@@ -88,12 +97,10 @@ router.get('/drivers', async (req, res) => {
         modele: dp.car.model || '',
         couleur: dp.car.color || '',
         immatriculation: dp.car.number || '',
-        annee: dp.car.year || '',
-        categorie: dp.car.category || []
+        annee: dp.car.year || ''
       } : null,
       dateCreation: dp.driver_profile?.created_date || null,
-      dateEmbauche: dp.driver_profile?.hire_date || null,
-      permis: dp.driver_profile?.driver_license || null
+      dateEmbauche: dp.driver_profile?.hire_date || null
     }));
 
     res.json({
@@ -120,7 +127,7 @@ router.get('/orders', async (req, res) => {
     const to = req.query.to || now.toISOString();
 
     const data = await yangoFetch('/v1/parks/orders/list', {
-      limit: 500,
+      limit: 100,
       query: {
         park: {
           id: process.env.YANGO_PARK_ID,
@@ -140,29 +147,20 @@ router.get('/orders', async (req, res) => {
       chauffeurId: o.driver?.id || '',
       chauffeurNom: o.driver ? `${o.driver.first_name || ''} ${o.driver.last_name || ''}`.trim() : '',
       vehiculeImmat: o.car?.number || '',
-      depart: o.route?.[0]?.address || '',
-      arrivee: o.route?.[1]?.address || o.route?.[o.route?.length - 1]?.address || '',
       montant: parseFloat(o.price || o.cost?.total || 0),
       devise: o.currency || 'XOF',
       dateReservation: o.booked_at || '',
       dateDebut: o.started_at || '',
       dateFin: o.ended_at || '',
-      duree: o.duration || 0,
-      distance: o.distance || 0,
       categorie: o.category || ''
     }));
 
-    // Calculs agrégés
     const totalCA = orders.reduce((sum, o) => sum + o.montant, 0);
-    const completedOrders = orders.filter(o =>
-      o.statut === 'complete' || o.statut === 'finished' || o.statut === 'transporting'
-    );
 
     res.json({
       total: data.total || orders.length,
       orders,
       chiffreAffaires: totalCA,
-      coursesTerminees: completedOrders.length,
       coursesEnCours: orders.filter(o => o.statut === 'driving' || o.statut === 'transporting' || o.statut === 'waiting').length
     });
   } catch (err) {
@@ -178,7 +176,7 @@ router.get('/orders', async (req, res) => {
 router.get('/vehicles', async (req, res) => {
   try {
     const data = await yangoFetch('/v1/parks/cars/list', {
-      limit: 500,
+      limit: 100,
       offset: 0,
       query: {
         park: {
@@ -194,9 +192,7 @@ router.get('/vehicles', async (req, res) => {
       couleur: car.color || '',
       immatriculation: car.number || '',
       annee: car.year || '',
-      vin: car.vin || '',
       statut: car.status || '',
-      categorie: car.category || [],
       callsign: car.callsign || ''
     }));
 
@@ -211,68 +207,6 @@ router.get('/vehicles', async (req, res) => {
 });
 
 /**
- * GET /api/yango/transactions?from=ISO_DATE&to=ISO_DATE&driver_id=DRIVER_ID
- * Fetches financial transactions
- */
-router.get('/transactions', async (req, res) => {
-  try {
-    const now = new Date();
-    const from = req.query.from || new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const to = req.query.to || now.toISOString();
-
-    const body = {
-      limit: 500,
-      query: {
-        park: {
-          id: process.env.YANGO_PARK_ID,
-          transaction: {
-            event_at: {
-              from: from,
-              to: to
-            }
-          }
-        }
-      }
-    };
-
-    // Optional: filter by driver
-    if (req.query.driver_id) {
-      body.query.park.driver_profile = { id: req.query.driver_id };
-    }
-
-    const data = await yangoFetch('/v2/parks/driver-profiles/transactions/list', body);
-
-    const transactions = (data.transactions || []).map(t => ({
-      id: t.id || '',
-      chauffeurId: t.driver_profile_id || '',
-      montant: parseFloat(t.amount || 0),
-      categorie: t.category_name || t.category_id || '',
-      description: t.description || '',
-      date: t.event_at || '',
-      devise: t.currency || 'XOF'
-    }));
-
-    const totalRevenu = transactions
-      .filter(t => t.montant > 0)
-      .reduce((sum, t) => sum + t.montant, 0);
-    const totalDepenses = transactions
-      .filter(t => t.montant < 0)
-      .reduce((sum, t) => sum + Math.abs(t.montant), 0);
-
-    res.json({
-      total: data.total || transactions.length,
-      transactions,
-      totalRevenu,
-      totalDepenses,
-      soldeNet: totalRevenu - totalDepenses
-    });
-  } catch (err) {
-    console.error('Yango transactions error:', err.message);
-    res.status(502).json({ error: 'Erreur API Yango', details: err.message });
-  }
-});
-
-/**
  * GET /api/yango/stats
  * Aggregated stats endpoint: combines drivers + orders for quick dashboard view
  */
@@ -280,41 +214,60 @@ router.get('/stats', async (req, res) => {
   try {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).toISOString();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-    // Fetch drivers and today's orders in parallel
-    const [driversData, ordersToday, ordersMonth] = await Promise.all([
-      yangoFetch('/v1/parks/driver-profiles/list', {
+    // Fetch drivers first (most important)
+    let driversData;
+    try {
+      driversData = await yangoFetch('/v1/parks/driver-profiles/list', {
         fields: {
           account: ['balance'],
           current_status: ['status', 'status_updated_at'],
           driver_profile: ['id', 'first_name', 'last_name', 'work_status']
         },
-        limit: 500,
+        limit: 100,
         offset: 0,
         query: { park: { id: process.env.YANGO_PARK_ID } },
         sort_order: [{ direction: 'asc', field: 'driver_profile.last_name' }]
-      }),
-      yangoFetch('/v1/parks/orders/list', {
-        limit: 500,
+      });
+    } catch (e) {
+      console.error('Yango stats - drivers fetch failed:', e.message);
+      driversData = { driver_profiles: [], total: 0 };
+    }
+
+    // Fetch today's orders
+    let ordersToday;
+    try {
+      ordersToday = await yangoFetch('/v1/parks/orders/list', {
+        limit: 100,
         query: {
           park: {
             id: process.env.YANGO_PARK_ID,
             order: { booked_at: { from: todayStart, to: now.toISOString() } }
           }
         }
-      }),
-      yangoFetch('/v1/parks/orders/list', {
-        limit: 1000,
+      });
+    } catch (e) {
+      console.error('Yango stats - today orders failed:', e.message);
+      ordersToday = { orders: [], total: 0 };
+    }
+
+    // Fetch month's orders
+    let ordersMonth;
+    try {
+      ordersMonth = await yangoFetch('/v1/parks/orders/list', {
+        limit: 100,
         query: {
           park: {
             id: process.env.YANGO_PARK_ID,
             order: { booked_at: { from: monthStart, to: now.toISOString() } }
           }
         }
-      })
-    ]);
+      });
+    } catch (e) {
+      console.error('Yango stats - month orders failed:', e.message);
+      ordersMonth = { orders: [], total: 0 };
+    }
 
     // Process drivers
     const drivers = (driversData.driver_profiles || []).map(dp => ({
@@ -333,14 +286,14 @@ router.get('/stats', async (req, res) => {
     const caToday = todayOrders.reduce((sum, o) => sum + parseFloat(o.price || o.cost?.total || 0), 0);
     const caMonth = monthOrders.reduce((sum, o) => sum + parseFloat(o.price || o.cost?.total || 0), 0);
 
-    // Calculate average activity time from today's completed orders
+    // Calculate average activity time
     const completedToday = todayOrders.filter(o => o.ended_at && o.started_at);
     let tempsActiviteMoyen = 0;
     if (completedToday.length > 0) {
       const totalMinutes = completedToday.reduce((sum, o) => {
         const start = new Date(o.started_at);
         const end = new Date(o.ended_at);
-        return sum + (end - start) / 60000; // minutes
+        return sum + (end - start) / 60000;
       }, 0);
       tempsActiviteMoyen = Math.round(totalMinutes / completedToday.length);
     }
@@ -364,7 +317,7 @@ router.get('/stats', async (req, res) => {
         aujourd_hui: caToday,
         mois: caMonth
       },
-      tempsActiviteMoyen, // en minutes
+      tempsActiviteMoyen,
       derniereMaj: now.toISOString()
     });
   } catch (err) {
