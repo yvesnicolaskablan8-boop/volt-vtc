@@ -253,9 +253,26 @@ const Store = {
 
   // =================== YANGO API (real-time, no cache) ===================
 
-  async getYangoStats() {
+  async getYangoWorkRules() {
     try {
-      const res = await fetch(this._apiBase + '/yango/stats', {
+      const res = await fetch(this._apiBase + '/yango/work-rules', {
+        headers: this._headers()
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('Store: Yango work-rules failed:', e.message);
+      return null;
+    }
+  },
+
+  async getYangoStats(workRuleIds) {
+    try {
+      let url = this._apiBase + '/yango/stats';
+      if (workRuleIds && workRuleIds.length > 0) {
+        url += '?work_rule=' + encodeURIComponent(workRuleIds.join(','));
+      }
+      const res = await fetch(url, {
         headers: this._headers()
       });
       const data = await res.json();
@@ -270,9 +287,13 @@ const Store = {
     }
   },
 
-  async getYangoDrivers() {
+  async getYangoDrivers(workRuleIds) {
     try {
-      const res = await fetch(this._apiBase + '/yango/drivers', {
+      let url = this._apiBase + '/yango/drivers';
+      if (workRuleIds && workRuleIds.length > 0) {
+        url += '?work_rule=' + encodeURIComponent(workRuleIds.join(','));
+      }
+      const res = await fetch(url, {
         headers: this._headers()
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

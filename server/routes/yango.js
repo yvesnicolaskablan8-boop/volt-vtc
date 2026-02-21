@@ -14,7 +14,7 @@ router.use(authMiddleware);
 
 const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
 
-// Helper: make Yango API call with detailed error logging
+// Helper: make Yango POST API call with detailed error logging
 async function yangoFetch(endpoint, body = {}) {
   const parkId = process.env.YANGO_PARK_ID;
   const apiKey = process.env.YANGO_API_KEY;
@@ -52,12 +52,114 @@ async function yangoFetch(endpoint, body = {}) {
   }
 }
 
+// Helper: make Yango GET API call (for work-rules etc.)
+async function yangoGet(endpoint, params = {}) {
+  const parkId = process.env.YANGO_PARK_ID;
+  const apiKey = process.env.YANGO_API_KEY;
+  const clientId = process.env.YANGO_CLIENT_ID;
+
+  if (!parkId || !apiKey || !clientId) {
+    throw new Error('Yango API credentials not configured');
+  }
+
+  const url = new URL(`${YANGO_BASE}${endpoint}`);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.append(k, v));
+
+  console.log(`Yango API call: GET ${url.toString()}`);
+
+  const res = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'X-Client-ID': clientId,
+      'X-API-Key': apiKey,
+      'X-Park-ID': parkId,
+      'Accept-Language': 'fr'
+    }
+  });
+
+  const text = await res.text();
+  console.log(`Yango GET response ${res.status}:`, text.substring(0, 500));
+
+  if (!res.ok) {
+    throw new Error(`Yango API error ${res.status}: ${text}`);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Yango API invalid JSON: ${text.substring(0, 200)}`);
+  }
+}
+
+// Cache for work rules (refreshed every 10 minutes)
+let _workRulesCache = null;
+let _workRulesCacheTime = 0;
+const WORK_RULES_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+async function getWorkRules() {
+  const now = Date.now();
+  if (_workRulesCache && (now - _workRulesCacheTime) < WORK_RULES_CACHE_TTL) {
+    return _workRulesCache;
+  }
+  try {
+    const data = await yangoGet('/v1/parks/driver-work-rules', {
+      park_id: process.env.YANGO_PARK_ID
+    });
+    _workRulesCache = data;
+    _workRulesCacheTime = now;
+    return data;
+  } catch (e) {
+    console.error('Failed to fetch work rules:', e.message);
+    // Return cached data if available, even if expired
+    if (_workRulesCache) return _workRulesCache;
+    throw e;
+  }
+}
+
 /**
- * GET /api/yango/drivers
- * Fetches all driver profiles with their current status, vehicle, and account balance
+ * GET /api/yango/work-rules
+ * Fetches all work rules/categories for the park
+ * Returns list of { id, name } objects
+ */
+router.get('/work-rules', async (req, res) => {
+  try {
+    const data = await getWorkRules();
+    const rules = (data.work_rules || []).map(r => ({
+      id: r.id || '',
+      name: r.name || r.id || 'Sans nom'
+    }));
+
+    res.json({
+      total: rules.length,
+      work_rules: rules
+    });
+  } catch (err) {
+    console.error('Yango work-rules error:', err.message);
+    res.status(502).json({ error: 'Erreur API Yango', details: err.message });
+  }
+});
+
+/**
+ * GET /api/yango/drivers?work_rule=RULE_ID_1,RULE_ID_2
+ * Fetches driver profiles with optional work rule filter
+ * Query params:
+ *   work_rule - comma-separated work rule IDs to filter by
  */
 router.get('/drivers', async (req, res) => {
   try {
+    // Build driver profile filter
+    const driverFilter = {
+      work_status: ['working']
+    };
+
+    // Optional: filter by work rule ID(s)
+    if (req.query.work_rule) {
+      const workRuleIds = req.query.work_rule.split(',').map(s => s.trim()).filter(Boolean);
+      if (workRuleIds.length > 0) {
+        driverFilter.work_rule_id = workRuleIds;
+      }
+    }
+
     const data = await yangoFetch('/v1/parks/driver-profiles/list', {
       fields: {
         account: ['balance', 'currency'],
@@ -65,7 +167,7 @@ router.get('/drivers', async (req, res) => {
         current_status: ['status', 'status_updated_at'],
         driver_profile: [
           'id', 'first_name', 'last_name', 'phones', 'created_date',
-          'hire_date', 'work_status'
+          'hire_date', 'work_status', 'work_rule_id'
         ]
       },
       limit: 100,
@@ -73,15 +175,24 @@ router.get('/drivers', async (req, res) => {
       query: {
         park: {
           id: process.env.YANGO_PARK_ID,
-          driver_profile: {
-            work_status: ['working']
-          }
+          driver_profile: driverFilter
         }
       },
       sort_order: [
         { direction: 'asc', field: 'driver_profile.last_name' }
       ]
     });
+
+    // Resolve work rule names
+    let workRulesMap = {};
+    try {
+      const rulesData = await getWorkRules();
+      (rulesData.work_rules || []).forEach(r => {
+        workRulesMap[r.id] = r.name || r.id;
+      });
+    } catch (e) {
+      console.warn('Could not resolve work rule names:', e.message);
+    }
 
     // Map to simplified format
     const drivers = (data.driver_profiles || []).map(dp => ({
@@ -93,6 +204,8 @@ router.get('/drivers', async (req, res) => {
       statutRaw: dp.current_status?.status || 'offline',
       derniereMaj: dp.current_status?.status_updated_at || null,
       workStatus: dp.driver_profile?.work_status || '',
+      workRuleId: dp.driver_profile?.work_rule_id || '',
+      workRuleName: workRulesMap[dp.driver_profile?.work_rule_id] || '',
       balance: dp.accounts?.[0]?.balance || '0',
       devise: dp.accounts?.[0]?.currency || 'XOF',
       vehicule: dp.car ? {
@@ -223,14 +336,29 @@ router.get('/vehicles', async (req, res) => {
 });
 
 /**
- * GET /api/yango/stats
+ * GET /api/yango/stats?work_rule=RULE_ID_1,RULE_ID_2
  * Aggregated stats endpoint: combines drivers + orders for quick dashboard view
+ * Query params:
+ *   work_rule - comma-separated work rule IDs to filter drivers by
  */
 router.get('/stats', async (req, res) => {
   try {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    // Build driver profile filter
+    const driverFilter = {
+      work_status: ['working']
+    };
+
+    // Optional: filter by work rule ID(s)
+    if (req.query.work_rule) {
+      const workRuleIds = req.query.work_rule.split(',').map(s => s.trim()).filter(Boolean);
+      if (workRuleIds.length > 0) {
+        driverFilter.work_rule_id = workRuleIds;
+      }
+    }
 
     // Fetch drivers first (most important)
     let driversData;
@@ -239,16 +367,14 @@ router.get('/stats', async (req, res) => {
         fields: {
           account: ['balance'],
           current_status: ['status', 'status_updated_at'],
-          driver_profile: ['id', 'first_name', 'last_name', 'work_status']
+          driver_profile: ['id', 'first_name', 'last_name', 'work_status', 'work_rule_id']
         },
         limit: 100,
         offset: 0,
         query: {
           park: {
             id: process.env.YANGO_PARK_ID,
-            driver_profile: {
-              work_status: ['working']
-            }
+            driver_profile: driverFilter
           }
         },
         sort_order: [{ direction: 'asc', field: 'driver_profile.last_name' }]
@@ -302,9 +428,18 @@ router.get('/stats', async (req, res) => {
       balance: dp.accounts?.[0]?.balance || '0'
     }));
 
-    // Process orders
-    const todayOrders = (ordersToday.orders || []);
-    const monthOrders = (ordersMonth.orders || []);
+    // Get set of driver IDs for filtering orders when work_rule is active
+    const driverIds = new Set(drivers.map(d => d.id));
+    const hasWorkRuleFilter = !!req.query.work_rule;
+
+    // Process orders — filter by driver IDs if work_rule filter is active
+    let todayOrders = (ordersToday.orders || []);
+    let monthOrders = (ordersMonth.orders || []);
+
+    if (hasWorkRuleFilter && driverIds.size > 0) {
+      todayOrders = todayOrders.filter(o => o.driver?.id && driverIds.has(o.driver.id));
+      monthOrders = monthOrders.filter(o => o.driver?.id && driverIds.has(o.driver.id));
+    }
 
     const caToday = todayOrders.reduce((sum, o) => sum + parseFloat(o.price || o.cost?.total || 0), 0);
     const caMonth = monthOrders.reduce((sum, o) => sum + parseFloat(o.price || o.cost?.total || 0), 0);
@@ -374,8 +509,8 @@ router.get('/stats', async (req, res) => {
         liste: drivers
       },
       courses: {
-        aujourd_hui: ordersToday.total || todayOrders.length,
-        mois: ordersMonth.total || monthOrders.length,
+        aujourd_hui: hasWorkRuleFilter ? todayOrders.length : (ordersToday.total || todayOrders.length),
+        mois: hasWorkRuleFilter ? monthOrders.length : (ordersMonth.total || monthOrders.length),
         enCours: coursesEnCours,
         terminees: coursesTerminees,
         annulees: coursesAnnulees,

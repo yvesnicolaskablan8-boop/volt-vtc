@@ -5,6 +5,8 @@ const DashboardPage = {
   _charts: [],
   _yangoData: null,
   _yangoRefreshInterval: null,
+  _yangoWorkRules: [],
+  _selectedWorkRules: [], // selected work rule IDs for filtering
 
   render() {
     const container = document.getElementById('page-content');
@@ -163,6 +165,11 @@ const DashboardPage = {
             <span class="yango-badge-live">EN DIRECT</span>
           </div>
           <div class="yango-section-actions">
+            <div class="yango-filter-group" id="yango-work-rule-filter">
+              <select id="yango-work-rule-select" class="yango-filter-select" onchange="DashboardPage._onWorkRuleChange()" title="Filtrer par categorie de travail">
+                <option value="">Toutes categories</option>
+              </select>
+            </div>
             <span class="yango-last-update" id="yango-last-update"></span>
             <button class="btn btn-sm yango-refresh-btn" onclick="DashboardPage._loadYangoSection()" id="yango-refresh-btn">
               <i class="fas fa-sync-alt"></i>
@@ -373,7 +380,13 @@ const DashboardPage = {
     }
 
     try {
-      const stats = await Store.getYangoStats();
+      // Load work rules if not yet loaded
+      if (this._yangoWorkRules.length === 0) {
+        await this._loadWorkRules();
+      }
+
+      // Fetch stats with optional work rule filter
+      const stats = await Store.getYangoStats(this._selectedWorkRules);
 
       if (!stats || stats.error) {
         const msg = stats?.details || stats?.error || 'Erreur de connexion';
@@ -404,6 +417,45 @@ const DashboardPage = {
         refreshBtn.disabled = false;
       }
     }
+  },
+
+  async _loadWorkRules() {
+    try {
+      const data = await Store.getYangoWorkRules();
+      if (data && data.work_rules) {
+        this._yangoWorkRules = data.work_rules;
+        this._populateWorkRuleSelect();
+      }
+    } catch (e) {
+      console.warn('Failed to load work rules:', e);
+    }
+  },
+
+  _populateWorkRuleSelect() {
+    const select = document.getElementById('yango-work-rule-select');
+    if (!select) return;
+
+    // Keep the "all" option, add work rules
+    select.innerHTML = '<option value="">Toutes categories</option>';
+    this._yangoWorkRules.forEach(rule => {
+      const option = document.createElement('option');
+      option.value = rule.id;
+      option.textContent = rule.name;
+      if (this._selectedWorkRules.includes(rule.id)) {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    });
+  },
+
+  _onWorkRuleChange() {
+    const select = document.getElementById('yango-work-rule-select');
+    if (!select) return;
+
+    const value = select.value;
+    this._selectedWorkRules = value ? [value] : [];
+    // Reload with new filter
+    this._loadYangoSection();
   },
 
   _renderYangoKPIs(stats) {

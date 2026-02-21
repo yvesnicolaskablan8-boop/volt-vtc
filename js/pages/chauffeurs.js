@@ -6,6 +6,8 @@ const ChauffeursPage = {
   _charts: [],
   _table: null,
   _yangoDrivers: null,
+  _yangoWorkRules: [],
+  _selectedWorkRules: [],
 
   render() {
     const container = document.getElementById('page-content');
@@ -63,6 +65,11 @@ const ChauffeursPage = {
             <span class="yango-badge-live">EN SERVICE</span>
           </div>
           <div class="yango-section-actions">
+            <div class="yango-filter-group" id="yango-chauffeurs-filter">
+              <select id="yango-chauffeurs-rule-select" class="yango-filter-select" onchange="ChauffeursPage._onWorkRuleChange()" title="Filtrer par categorie de travail">
+                <option value="">Toutes categories</option>
+              </select>
+            </div>
             <span class="yango-last-update" id="yango-chauffeurs-update"></span>
             <button class="btn btn-sm yango-refresh-btn" onclick="ChauffeursPage._loadYangoDrivers()" id="yango-chauffeurs-refresh">
               <i class="fas fa-sync-alt"></i>
@@ -406,7 +413,12 @@ const ChauffeursPage = {
     if (refreshBtn) { refreshBtn.classList.add('spinning'); refreshBtn.disabled = true; }
 
     try {
-      const data = await Store.getYangoDrivers();
+      // Load work rules if not yet loaded
+      if (this._yangoWorkRules.length === 0) {
+        await this._loadWorkRules();
+      }
+
+      const data = await Store.getYangoDrivers(this._selectedWorkRules);
       if (!data || data.error) {
         this._showYangoDriversError(data?.details || data?.error || 'Erreur');
         return;
@@ -439,6 +451,7 @@ const ChauffeursPage = {
               <tr>
                 <th>Chauffeur</th>
                 <th>Telephone</th>
+                <th>Categorie</th>
                 <th>Statut</th>
                 <th>Vehicule</th>
                 <th>Balance</th>
@@ -461,6 +474,7 @@ const ChauffeursPage = {
                 const vehicule = d.vehicule
                   ? `${d.vehicule.marque} ${d.vehicule.modele} <span class="text-muted">${d.vehicule.immatriculation}</span>`
                   : '<span class="text-muted">--</span>';
+                const workRule = d.workRuleName || '<span class="text-muted">--</span>';
 
                 return `
                   <tr>
@@ -473,6 +487,7 @@ const ChauffeursPage = {
                       </div>
                     </td>
                     <td>${d.telephone || '--'}</td>
+                    <td><span class="yango-work-rule-badge">${workRule}</span></td>
                     <td>
                       <span class="yango-status ${status.class}">
                         <i class="fas fa-circle"></i> ${status.label}
@@ -521,6 +536,43 @@ const ChauffeursPage = {
         </div>
       `;
     }
+  },
+
+  async _loadWorkRules() {
+    try {
+      const data = await Store.getYangoWorkRules();
+      if (data && data.work_rules) {
+        this._yangoWorkRules = data.work_rules;
+        this._populateWorkRuleSelect();
+      }
+    } catch (e) {
+      console.warn('Chauffeurs: Failed to load work rules:', e);
+    }
+  },
+
+  _populateWorkRuleSelect() {
+    const select = document.getElementById('yango-chauffeurs-rule-select');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Toutes categories</option>';
+    this._yangoWorkRules.forEach(rule => {
+      const option = document.createElement('option');
+      option.value = rule.id;
+      option.textContent = rule.name;
+      if (this._selectedWorkRules.includes(rule.id)) {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    });
+  },
+
+  _onWorkRuleChange() {
+    const select = document.getElementById('yango-chauffeurs-rule-select');
+    if (!select) return;
+
+    const value = select.value;
+    this._selectedWorkRules = value ? [value] : [];
+    this._loadYangoDrivers();
   },
 
   // CRUD operations

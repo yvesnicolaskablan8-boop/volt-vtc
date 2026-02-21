@@ -1785,3 +1785,92 @@ textarea.form-control {
 [data-theme="light"] .yango-top-item:hover {
   background: rgba(0, 0, 0, 0.06);
 }
+
+/* ========== YANGO WORK RULE FILTER ========== */
+
+.yango-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.yango-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(252, 76, 2, 0.1);
+  border: 1px solid rgba(252, 76, 2, 0.3);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  padding: 4px 28px 4px 10px;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-base);
+  min-width: 140px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23fc4c02' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.yango-filter-select:hover {
+  border-color: rgba(252, 76, 2, 0.6);
+  background-color: rgba(252, 76, 2, 0.15);
+}
+
+.yango-filter-select:focus {
+  border-color: var(--yango-orange, #fc4c02);
+  box-shadow: 0 0 0 2px rgba(252, 76, 2, 0.2);
+}
+
+.yango-filter-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Work rule badge in table */
+.yango-work-rule-badge {
+  display: inline-block;
+  font-size: var(--font-size-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(252, 76, 2, 0.1);
+  color: var(--yango-orange, #fc4c02);
+  border: 1px solid rgba(252, 76, 2, 0.2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Active filter indicator */
+.yango-filter-select:not([value=""]):valid {
+  border-color: var(--yango-orange, #fc4c02);
+  background-color: rgba(252, 76, 2, 0.15);
+  font-weight: 500;
+}
+
+/* Light theme overrides for filter */
+[data-theme="light"] .yango-filter-select {
+  background-color: rgba(252, 76, 2, 0.06);
+  border-color: rgba(252, 76, 2, 0.25);
+}
+
+[data-theme="light"] .yango-filter-select:hover {
+  background-color: rgba(252, 76, 2, 0.1);
+}
+
+[data-theme="light"] .yango-work-rule-badge {
+  background: rgba(252, 76, 2, 0.08);
+  border-color: rgba(252, 76, 2, 0.2);
+}
+
+/* Responsive: stack filter on small screens */
+@media (max-width: 768px) {
+  .yango-section-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .yango-filter-select {
+    min-width: 120px;
+    font-size: 11px;
+  }
+}
