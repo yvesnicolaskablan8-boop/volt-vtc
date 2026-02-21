@@ -29,6 +29,7 @@ app.use('/api/budgets', require('./routes/crud')('Budget'));
 app.use('/api/planning', require('./routes/crud')('Planning'));
 app.use('/api/absences', require('./routes/crud')('Absence'));
 app.use('/api/users', require('./routes/crud')('User'));
+app.use('/api/yango', require('./routes/yango'));
 
 // Serve frontend static files in production
 app.use(express.static(path.join(__dirname, '..')));

@@ -249,5 +249,62 @@ const Store = {
       users: [],
       settings: { entreprise: {}, preferences: {} }
     };
+  },
+
+  // =================== YANGO API (real-time, no cache) ===================
+
+  async getYangoStats() {
+    try {
+      const res = await fetch(this._apiBase + '/yango/stats', {
+        headers: this._headers()
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('Store: Yango stats failed:', e.message);
+      return null;
+    }
+  },
+
+  async getYangoDrivers() {
+    try {
+      const res = await fetch(this._apiBase + '/yango/drivers', {
+        headers: this._headers()
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('Store: Yango drivers failed:', e.message);
+      return null;
+    }
+  },
+
+  async getYangoOrders(from, to) {
+    try {
+      const params = new URLSearchParams();
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      const res = await fetch(this._apiBase + '/yango/orders?' + params.toString(), {
+        headers: this._headers()
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('Store: Yango orders failed:', e.message);
+      return null;
+    }
+  },
+
+  async getYangoVehicles() {
+    try {
+      const res = await fetch(this._apiBase + '/yango/vehicles', {
+        headers: this._headers()
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('Store: Yango vehicles failed:', e.message);
+      return null;
+    }
   }
 };
