@@ -15,6 +15,7 @@
 const ComptabilitePage = {
   _charts: [],
   _currentTab: 'overview',
+  _yangoStats: null,
 
   render() {
     const container = document.getElementById('page-content');
@@ -176,6 +177,48 @@ const ComptabilitePage = {
         </div>
       </div>
 
+      <!-- Commission Yango (3% du CA flotte) -->
+      <div class="yango-section" id="compta-yango-section" style="margin-bottom:var(--space-lg);">
+        <div class="yango-section-header">
+          <div class="yango-section-title">
+            <i class="fas fa-hand-holding-dollar" style="color:#FC4C02"></i>
+            <span>Commission Yango (3%)</span>
+            <span class="yango-badge-live">REVENU</span>
+          </div>
+          <div class="yango-section-actions">
+            <button class="btn btn-sm yango-refresh-btn" onclick="ComptabilitePage._loadYangoCommission()" id="compta-yango-refresh">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="grid-4" id="compta-yango-kpis">
+          <div class="kpi-card yango-kpi">
+            <div class="kpi-icon yango-icon-orange"><i class="fas fa-chart-line"></i></div>
+            <div class="kpi-value" id="cy-ca-mois"><div class="yango-skeleton"></div></div>
+            <div class="kpi-label">CA Yango du mois</div>
+          </div>
+          <div class="kpi-card yango-kpi" style="border-top-color:rgba(34, 197, 94, 0.5) !important;">
+            <div class="kpi-icon yango-icon-green"><i class="fas fa-hand-holding-dollar"></i></div>
+            <div class="kpi-value" id="cy-comm-mois" style="color:var(--success)"><div class="yango-skeleton"></div></div>
+            <div class="kpi-label">Commission du mois (3%)</div>
+          </div>
+          <div class="kpi-card yango-kpi">
+            <div class="kpi-icon yango-icon-blue"><i class="fas fa-calendar-day"></i></div>
+            <div class="kpi-value" id="cy-ca-jour"><div class="yango-skeleton"></div></div>
+            <div class="kpi-label">CA aujourd'hui</div>
+          </div>
+          <div class="kpi-card yango-kpi" style="border-top-color:rgba(34, 197, 94, 0.5) !important;">
+            <div class="kpi-icon yango-icon-green"><i class="fas fa-coins"></i></div>
+            <div class="kpi-value" id="cy-comm-jour" style="color:var(--success)"><div class="yango-skeleton"></div></div>
+            <div class="kpi-label">Commission aujourd'hui</div>
+          </div>
+        </div>
+        <div style="margin-top:var(--space-sm);padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
+          <i class="fas fa-info-circle" style="color:#FC4C02"></i>
+          Yango vous reverse 3% du chiffre d'affaires global genere par votre flotte. Ce montant est automatiquement calcule a partir des donnees Yango en temps reel.
+        </div>
+      </div>
+
       <!-- Guide rapide pour non-comptable -->
       <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-blue);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));">
         <div style="display:flex;align-items:center;gap:var(--space-md);">
@@ -183,7 +226,7 @@ const ComptabilitePage = {
           <div style="flex:1;">
             <h3 style="font-size:var(--font-size-base);margin-bottom:4px;">Comment ça marche ?</h3>
             <p style="font-size:var(--font-size-sm);line-height:1.6;">
-              <strong style="color:var(--success);">Encaissement</strong> = argent qui rentre (versements chauffeurs, paiements clients)<br>
+              <strong style="color:var(--success);">Encaissement</strong> = argent qui rentre (versements chauffeurs, paiements clients, <strong>commission Yango</strong>)<br>
               <strong style="color:var(--danger);">Décaissement</strong> = argent qui sort (carburant, maintenance, salaires, loyers, assurance)<br>
               <strong style="color:var(--volt-blue);">Bénéfice</strong> = Encaissements − Décaissements. Si positif, vous gagnez de l'argent !
             </p>
@@ -224,6 +267,9 @@ const ComptabilitePage = {
   },
 
   _loadOverviewCharts() {
+    // Load Yango commission data
+    this._loadYangoCommission();
+
     const ops = this._getOperations();
     const now = new Date();
 
@@ -890,6 +936,7 @@ const ComptabilitePage = {
     const recCats = [
       { id: 'commissions_courses', label: 'Commissions courses', desc: 'Commissions reçues sur les courses des chauffeurs', icon: 'fa-money-bill-transfer', color: '#22c55e' },
       { id: 'courses_directes', label: 'Courses directes', desc: 'Paiement direct de courses (app & téléphone)', icon: 'fa-taxi', color: '#3b82f6' },
+      { id: 'commission_yango', label: 'Commission Yango (3%)', desc: 'Commission de 3% reversee par Yango sur le CA de la flotte', icon: 'fa-hand-holding-dollar', color: '#FC4C02' },
       { id: 'frais_service', label: 'Frais de service', desc: 'Frais de service des plateformes (Yango, Bolt)', icon: 'fa-mobile-screen', color: '#8b5cf6' },
       { id: 'location_vehicule', label: 'Location véhicule', desc: 'Location de véhicule à un tiers', icon: 'fa-car', color: '#f59e0b' },
       { id: 'autres_recettes', label: 'Autres recettes', desc: 'Autres sources de revenus', icon: 'fa-plus-circle', color: '#22d3ee' }
@@ -943,11 +990,52 @@ const ComptabilitePage = {
     `;
   },
 
+  // ========================= YANGO COMMISSION =========================
+
+  async _loadYangoCommission() {
+    const refreshBtn = document.getElementById('compta-yango-refresh');
+    if (refreshBtn) { refreshBtn.classList.add('spinning'); refreshBtn.disabled = true; }
+
+    try {
+      const stats = await Store.getYangoStats();
+      if (!stats || stats.error) {
+        this._showYangoCommissionError();
+        return;
+      }
+
+      this._yangoStats = stats;
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+      const caMonth = stats.chiffreAffaires?.mois || 0;
+      const caToday = stats.chiffreAffaires?.aujourd_hui || 0;
+      const commMonth = stats.commissionYango?.mois || Math.round(caMonth * 0.03);
+      const commToday = stats.commissionYango?.aujourd_hui || Math.round(caToday * 0.03);
+
+      setVal('cy-ca-mois', Utils.formatCurrency(caMonth));
+      setVal('cy-comm-mois', Utils.formatCurrency(commMonth));
+      setVal('cy-ca-jour', Utils.formatCurrency(caToday));
+      setVal('cy-comm-jour', Utils.formatCurrency(commToday));
+    } catch (err) {
+      console.error('Yango commission load error:', err);
+      this._showYangoCommissionError();
+    } finally {
+      if (refreshBtn) { refreshBtn.classList.remove('spinning'); refreshBtn.disabled = false; }
+    }
+  },
+
+  _showYangoCommissionError() {
+    ['cy-ca-mois', 'cy-comm-mois', 'cy-ca-jour', 'cy-comm-jour'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '--';
+    });
+  },
+
   // ========================= CRUD OPERATIONS =========================
 
   _catLabel(cat) {
     const labels = {
       commissions_courses: 'Commissions courses', courses_directes: 'Courses directes',
+      commission_yango: 'Commission Yango (3%)',
       location_vehicule: 'Location véhicule', frais_service: 'Frais de service',
       autres_recettes: 'Autres recettes', versement_chauffeur: 'Versement chauffeur',
       course_directe: 'Course directe', subvention: 'Subvention', autre_recette: 'Autre recette',
@@ -969,7 +1057,7 @@ const ComptabilitePage = {
 
   _getCategoriesOptions() {
     const cats = [
-      { group: 'Encaissements', items: [{ v: 'commissions_courses', l: 'Commissions courses' }, { v: 'courses_directes', l: 'Courses directes' }, { v: 'frais_service', l: 'Frais de service' }, { v: 'location_vehicule', l: 'Location véhicule' }, { v: 'autres_recettes', l: 'Autres recettes' }] },
+      { group: 'Encaissements', items: [{ v: 'commissions_courses', l: 'Commissions courses' }, { v: 'commission_yango', l: 'Commission Yango (3%)' }, { v: 'courses_directes', l: 'Courses directes' }, { v: 'frais_service', l: 'Frais de service' }, { v: 'location_vehicule', l: 'Location véhicule' }, { v: 'autres_recettes', l: 'Autres recettes' }] },
       { group: 'Décaissements', items: [{ v: 'carburant', l: 'Carburant' }, { v: 'recharge_electrique', l: 'Recharge électrique' }, { v: 'maintenance', l: 'Maintenance' }, { v: 'assurance', l: 'Assurance' }, { v: 'leasing', l: 'Leasing' }, { v: 'salaires', l: 'Salaires' }, { v: 'loyer_bureau', l: 'Loyer / Bureau' }, { v: 'taxes_impots', l: 'Impôts / Taxes' }, { v: 'telecoms', l: 'Télécom' }, { v: 'marketing', l: 'Marketing' }, { v: 'fournitures', l: 'Fournitures' }, { v: 'autres_depenses', l: 'Autres dépenses' }] }
     ];
     return cats.map(g => `<optgroup label="${g.group}">${g.items.map(i => `<option value="${i.v}">${i.l}</option>`).join('')}</optgroup>`).join('');
@@ -978,7 +1066,7 @@ const ComptabilitePage = {
   _addOperation(type) {
     const isRecette = type === 'recette';
     const catOptions = isRecette
-      ? [{ value: 'commissions_courses', label: 'Commissions courses' }, { value: 'courses_directes', label: 'Courses directes' }, { value: 'frais_service', label: 'Frais de service' }, { value: 'location_vehicule', label: 'Location véhicule' }, { value: 'autres_recettes', label: 'Autres recettes' }]
+      ? [{ value: 'commissions_courses', label: 'Commissions courses' }, { value: 'commission_yango', label: 'Commission Yango (3%)' }, { value: 'courses_directes', label: 'Courses directes' }, { value: 'frais_service', label: 'Frais de service' }, { value: 'location_vehicule', label: 'Location véhicule' }, { value: 'autres_recettes', label: 'Autres recettes' }]
       : [{ value: 'carburant', label: 'Carburant' }, { value: 'maintenance', label: 'Maintenance' }, { value: 'assurance', label: 'Assurance' }, { value: 'leasing', label: 'Leasing' }, { value: 'salaires', label: 'Salaires' }, { value: 'loyer_bureau', label: 'Loyer / Bureau' }, { value: 'taxes_impots', label: 'Impôts / Taxes' }, { value: 'telecoms', label: 'Télécom' }, { value: 'marketing', label: 'Marketing' }, { value: 'fournitures', label: 'Fournitures' }, { value: 'autres_depenses', label: 'Autres dépenses' }];
 
     const fields = [
@@ -1023,7 +1111,7 @@ const ComptabilitePage = {
     if (!op) return;
     const isRecette = op.type === 'recette';
     const catOptions = isRecette
-      ? [{ value: 'commissions_courses', label: 'Commissions courses' }, { value: 'courses_directes', label: 'Courses directes' }, { value: 'frais_service', label: 'Frais de service' }, { value: 'location_vehicule', label: 'Location véhicule' }, { value: 'autres_recettes', label: 'Autres recettes' }]
+      ? [{ value: 'commissions_courses', label: 'Commissions courses' }, { value: 'commission_yango', label: 'Commission Yango (3%)' }, { value: 'courses_directes', label: 'Courses directes' }, { value: 'frais_service', label: 'Frais de service' }, { value: 'location_vehicule', label: 'Location véhicule' }, { value: 'autres_recettes', label: 'Autres recettes' }]
       : [{ value: 'carburant', label: 'Carburant' }, { value: 'maintenance', label: 'Maintenance' }, { value: 'assurance', label: 'Assurance' }, { value: 'leasing', label: 'Leasing' }, { value: 'salaires', label: 'Salaires' }, { value: 'loyer_bureau', label: 'Loyer / Bureau' }, { value: 'taxes_impots', label: 'Impôts / Taxes' }, { value: 'telecoms', label: 'Télécom' }, { value: 'marketing', label: 'Marketing' }, { value: 'fournitures', label: 'Fournitures' }, { value: 'autres_depenses', label: 'Autres dépenses' }];
 
     const fields = [

@@ -203,12 +203,12 @@ const DashboardPage = {
             </div>
           </div>
           <div class="kpi-card yango-kpi">
-            <div class="kpi-icon yango-icon-purple"><i class="fas fa-clock"></i></div>
-            <div class="kpi-value" id="yango-temps">
+            <div class="kpi-icon yango-icon-purple"><i class="fas fa-hand-holding-dollar"></i></div>
+            <div class="kpi-value" id="yango-commission">
               <div class="yango-skeleton"></div>
             </div>
-            <div class="kpi-label">Temps d'activite moy.</div>
-            <div class="kpi-trend neutral" id="yango-temps-detail">
+            <div class="kpi-label">Commission Yango (3%)</div>
+            <div class="kpi-trend neutral" id="yango-commission-detail">
               <div class="yango-skeleton-sm"></div>
             </div>
           </div>
@@ -457,27 +457,15 @@ const DashboardPage = {
       }
     }
 
-    // Temps d'activite moyen
-    const tempsEl = document.getElementById('yango-temps');
-    const tempsDetail = document.getElementById('yango-temps-detail');
-    if (tempsEl) {
-      const minutes = stats.tempsActiviteMoyen || 0;
-      if (minutes > 0) {
-        const h = Math.floor(minutes / 60);
-        const m = minutes % 60;
-        tempsEl.textContent = h > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${m} min`;
-      } else {
-        tempsEl.textContent = '--';
-      }
-      if (tempsDetail) {
-        const totalMin = stats.tempsActiviteTotal || 0;
-        if (totalMin > 0) {
-          const th = Math.floor(totalMin / 60);
-          const tm = totalMin % 60;
-          tempsDetail.innerHTML = `<i class="fas fa-clock"></i> ${th}h${tm.toString().padStart(2, '0')} total aujourd'hui`;
-        } else {
-          tempsDetail.innerHTML = `<i class="fas fa-info-circle"></i> Par course moy.`;
-        }
+    // Commission Yango (3%)
+    const commEl = document.getElementById('yango-commission');
+    const commDetail = document.getElementById('yango-commission-detail');
+    if (commEl) {
+      const commToday = stats.commissionYango?.aujourd_hui || 0;
+      const commMonth = stats.commissionYango?.mois || 0;
+      commEl.textContent = Utils.formatCurrency(commMonth);
+      if (commDetail) {
+        commDetail.innerHTML = `<i class="fas fa-calendar-day"></i> ${Utils.formatCurrency(commToday)} aujourd'hui`;
       }
     }
   },
@@ -638,11 +626,11 @@ const DashboardPage = {
     const driversCard = document.getElementById('yango-drivers-table');
 
     // Show error in KPIs
-    ['yango-online', 'yango-ca', 'yango-courses', 'yango-temps'].forEach(id => {
+    ['yango-online', 'yango-ca', 'yango-courses', 'yango-commission'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = '--';
     });
-    ['yango-online-detail', 'yango-ca-detail', 'yango-courses-detail', 'yango-temps-detail'].forEach(id => {
+    ['yango-online-detail', 'yango-ca-detail', 'yango-courses-detail', 'yango-commission-detail'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = '';
     });

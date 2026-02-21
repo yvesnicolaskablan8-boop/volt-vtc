@@ -385,6 +385,11 @@ router.get('/stats', async (req, res) => {
         aujourd_hui: caToday,
         mois: caMonth
       },
+      commissionYango: {
+        taux: 0.03,
+        aujourd_hui: Math.round(caToday * 0.03),
+        mois: Math.round(caMonth * 0.03)
+      },
       tempsActiviteMoyen,
       tempsActiviteTotal,
       topChauffeurs,
