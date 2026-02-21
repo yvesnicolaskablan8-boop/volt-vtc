@@ -558,18 +558,40 @@ const ParametresPage = {
     const chauffeurSection = `
       <div id="chauffeur-section" style="display:none;margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--volt-blue);background:rgba(59,130,246,0.05);">
         <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><i class="fas fa-car"></i> Configuration compte chauffeur</h4>
-        <div class="grid-2" style="gap:var(--space-md);">
-          <div class="form-group">
+        <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-md);">
+          <div class="form-group" style="flex:1;margin-bottom:0;">
             <label class="form-label">Chauffeur lié *</label>
             <select class="form-control" name="chauffeurId" id="add-chauffeurId">
               <option value="">-- Sélectionner un chauffeur --</option>
               ${chauffeurOptions}
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">Code PIN (4-6 chiffres)</label>
-            <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Ex: 1234">
+          <button type="button" class="btn btn-sm btn-success" id="btn-quick-add-chauffeur" style="white-space:nowrap;height:38px;"><i class="fas fa-plus"></i> Créer un chauffeur</button>
+        </div>
+        <div id="quick-chauffeur-form" style="display:none;margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);background:rgba(34,197,94,0.06);border:1px dashed var(--success);">
+          <h5 style="margin:0 0 var(--space-sm);font-size:var(--font-size-xs);font-weight:600;color:var(--success);"><i class="fas fa-bolt"></i> Création rapide</h5>
+          <div class="grid-2" style="gap:var(--space-sm);">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Prénom *</label>
+              <input type="text" class="form-control" id="quick-chf-prenom" placeholder="Prénom">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Nom *</label>
+              <input type="text" class="form-control" id="quick-chf-nom" placeholder="Nom">
+            </div>
           </div>
+          <div class="form-group" style="margin-top:var(--space-sm);margin-bottom:var(--space-sm);">
+            <label class="form-label">Téléphone *</label>
+            <input type="tel" class="form-control" id="quick-chf-tel" placeholder="+225 XX XX XX XX">
+          </div>
+          <div style="display:flex;gap:var(--space-sm);justify-content:flex-end;">
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-quick-chf-cancel">Annuler</button>
+            <button type="button" class="btn btn-sm btn-success" id="btn-quick-chf-save"><i class="fas fa-check"></i> Créer & lier</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Code PIN (4-6 chiffres)</label>
+          <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Ex: 1234">
         </div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><i class="fas fa-info-circle" style="color:var(--volt-blue);"></i> Le chauffeur se connectera avec son numéro de téléphone et ce code PIN via l'app <strong>/driver/</strong></div>
       </div>
@@ -673,6 +695,82 @@ const ParametresPage = {
     };
     roleSelect.addEventListener('change', toggle);
     toggle(); // apply initial state
+
+    // Quick add chauffeur button
+    const btnQuickAdd = container.querySelector('#btn-quick-add-chauffeur');
+    const quickForm = container.querySelector('#quick-chauffeur-form');
+    const btnCancel = container.querySelector('#btn-quick-chf-cancel');
+    const btnSave = container.querySelector('#btn-quick-chf-save');
+
+    if (btnQuickAdd && quickForm) {
+      btnQuickAdd.addEventListener('click', () => {
+        quickForm.style.display = 'block';
+        btnQuickAdd.style.display = 'none';
+        const prenomInput = container.querySelector('#quick-chf-prenom');
+        if (prenomInput) prenomInput.focus();
+      });
+
+      if (btnCancel) {
+        btnCancel.addEventListener('click', () => {
+          quickForm.style.display = 'none';
+          btnQuickAdd.style.display = '';
+        });
+      }
+
+      if (btnSave) {
+        btnSave.addEventListener('click', () => {
+          const prenom = container.querySelector('#quick-chf-prenom').value.trim();
+          const nom = container.querySelector('#quick-chf-nom').value.trim();
+          const tel = container.querySelector('#quick-chf-tel').value.trim();
+
+          if (!prenom || !nom || !tel) {
+            Toast.error('Prénom, nom et téléphone sont obligatoires');
+            return;
+          }
+
+          // Create chauffeur
+          const chauffeur = {
+            id: Utils.generateId('CHF'),
+            prenom,
+            nom,
+            telephone: tel,
+            email: '',
+            statut: 'actif',
+            dateDebutContrat: new Date().toISOString().split('T')[0],
+            vehiculeAssigne: null,
+            photo: null,
+            documents: [],
+            scoreConduite: 80,
+            noteInterne: '',
+            dateCreation: new Date().toISOString()
+          };
+
+          Store.add('chauffeurs', chauffeur);
+
+          // Add to select and select it
+          const select = container.querySelector('#add-chauffeurId');
+          if (select) {
+            const opt = document.createElement('option');
+            opt.value = chauffeur.id;
+            opt.textContent = `${prenom} ${nom} (${tel})`;
+            opt.selected = true;
+            select.appendChild(opt);
+          }
+
+          // Auto-fill telephone in user form
+          const telInput = container.querySelector('[name="telephone"]');
+          if (telInput && !telInput.value) {
+            telInput.value = tel;
+          }
+
+          // Hide quick form
+          quickForm.style.display = 'none';
+          btnQuickAdd.style.display = '';
+
+          Toast.success(`Chauffeur ${prenom} ${nom} créé et lié`);
+        });
+      }
+    }
   },
 
   /**
@@ -727,18 +825,40 @@ const ParametresPage = {
     const editChauffeurSection = `
       <div id="chauffeur-section" style="display:${user.role === 'chauffeur' ? 'block' : 'none'};margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--volt-blue);background:rgba(59,130,246,0.05);">
         <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><i class="fas fa-car"></i> Configuration compte chauffeur</h4>
-        <div class="grid-2" style="gap:var(--space-md);">
-          <div class="form-group">
+        <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-md);">
+          <div class="form-group" style="flex:1;margin-bottom:0;">
             <label class="form-label">Chauffeur lié *</label>
             <select class="form-control" name="chauffeurId" id="add-chauffeurId">
               <option value="">-- Sélectionner un chauffeur --</option>
               ${chauffeurOptions}
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">Nouveau code PIN (laisser vide pour ne pas changer)</label>
-            <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="****">
+          <button type="button" class="btn btn-sm btn-success" id="btn-quick-add-chauffeur" style="white-space:nowrap;height:38px;"><i class="fas fa-plus"></i> Créer un chauffeur</button>
+        </div>
+        <div id="quick-chauffeur-form" style="display:none;margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);background:rgba(34,197,94,0.06);border:1px dashed var(--success);">
+          <h5 style="margin:0 0 var(--space-sm);font-size:var(--font-size-xs);font-weight:600;color:var(--success);"><i class="fas fa-bolt"></i> Création rapide</h5>
+          <div class="grid-2" style="gap:var(--space-sm);">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Prénom *</label>
+              <input type="text" class="form-control" id="quick-chf-prenom" placeholder="Prénom">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Nom *</label>
+              <input type="text" class="form-control" id="quick-chf-nom" placeholder="Nom">
+            </div>
           </div>
+          <div class="form-group" style="margin-top:var(--space-sm);margin-bottom:var(--space-sm);">
+            <label class="form-label">Téléphone *</label>
+            <input type="tel" class="form-control" id="quick-chf-tel" placeholder="+225 XX XX XX XX">
+          </div>
+          <div style="display:flex;gap:var(--space-sm);justify-content:flex-end;">
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-quick-chf-cancel">Annuler</button>
+            <button type="button" class="btn btn-sm btn-success" id="btn-quick-chf-save"><i class="fas fa-check"></i> Créer & lier</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nouveau code PIN (laisser vide pour ne pas changer)</label>
+          <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="****">
         </div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><i class="fas fa-info-circle" style="color:var(--volt-blue);"></i> Le chauffeur se connectera via l'app <strong>/driver/</strong></div>
       </div>
