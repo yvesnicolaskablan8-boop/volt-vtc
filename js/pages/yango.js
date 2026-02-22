@@ -813,10 +813,21 @@ const YangoPage = {
           </div>
         ` : ''}
 
+        ${result.matchMethods ? `
+          <div style="margin-top:10px;font-size:var(--font-size-xs);color:var(--text-muted);">
+            <strong>Methodes de matching :</strong> ${Object.entries(result.matchMethods).map(([k,v]) => `${k}: ${v}`).join(', ')}
+          </div>
+        ` : ''}
+
         ${result.unmatched > 0 ? `
           <div style="margin-top:10px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);font-size:var(--font-size-xs);color:#b45309;">
-            <i class="fas fa-exclamation-triangle"></i> <strong>${result.unmatched} chauffeur(s) Yango non matché(s)</strong> : ${(result.unmatchedDrivers || []).join(', ')}
-            <br><span style="font-size:10px;color:var(--text-muted);">Verifiez que les noms/prenoms correspondent ou ajoutez manuellement le yangoDriverId dans la fiche chauffeur.</span>
+            <i class="fas fa-exclamation-triangle"></i> <strong>${result.unmatched} chauffeur(s) Yango non matché(s)</strong>
+            <div style="margin-top:4px;max-height:100px;overflow-y:auto;font-size:10px;color:var(--text-muted);">
+              ${(result.unmatchedDrivers || []).join(' • ')}
+            </div>
+            <div style="margin-top:6px;font-size:10px;color:var(--text-muted);">
+              <i class="fas fa-info-circle"></i> Verifiez que les noms/prenoms correspondent dans Volt ou ajoutez le yangoDriverId dans la fiche chauffeur.
+            </div>
           </div>
         ` : ''}
       </div>

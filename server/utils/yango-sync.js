@@ -127,56 +127,155 @@ async function fetchAllTransactions(from, to) {
 }
 
 /**
+ * Normalise un nom : supprime les accents, lowercase, trim, supprime les doubles espaces
+ */
+function normalizeName(str) {
+  if (!str) return '';
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Normalise un numero de telephone
+ * Gere les formats Côte d'Ivoire (+225, 07xxx) et internationaux
+ */
+function normalizePhone(phone) {
+  if (!phone) return '';
+  // Enlever tout sauf les chiffres
+  const digits = phone.replace(/\D/g, '');
+  // Si commence par 225 (CI country code), enlever
+  if (digits.startsWith('225') && digits.length >= 13) return digits.slice(3);
+  // Prendre les 10 derniers chiffres
+  return digits.slice(-10);
+}
+
+/**
  * Matche les chauffeurs Yango avec les chauffeurs Volt
- * Strategie : yangoDriverId direct > match par telephone > match par nom+prenom
+ *
+ * Strategie multi-niveaux :
+ * 1. yangoDriverId (match direct)
+ * 2. Telephone normalise
+ * 3. prenom_nom exact (normalise sans accents)
+ * 4. nom_prenom inverse (Yango peut inverser first_name / last_name)
+ * 5. Match partiel : un seul des deux mots (prenom OU nom) correspond dans les deux sens
  */
 function matchDrivers(yangoDrivers, voltChauffeurs) {
   const matched = [];
+  const usedVoltIds = new Set();
 
-  // Index par yangoDriverId
+  // 1. Index par yangoDriverId
   const byYangoId = {};
   voltChauffeurs.forEach(c => {
     if (c.yangoDriverId) byYangoId[c.yangoDriverId] = c;
   });
 
-  // Index par telephone (normalise)
+  // 2. Index par telephone (normalise)
   const byPhone = {};
   voltChauffeurs.forEach(c => {
-    if (c.telephone) {
-      const normalized = c.telephone.replace(/[\s\-\+]/g, '').slice(-10);
-      byPhone[normalized] = c;
-    }
+    const normalized = normalizePhone(c.telephone);
+    if (normalized.length >= 8) byPhone[normalized] = c;
   });
 
-  // Index par nom+prenom (lowercase)
-  const byName = {};
+  // 3. Index par prenom_nom et nom_prenom (pour matcher dans les deux sens)
+  const byNameDirect = {};  // prenom_nom
+  const byNameReverse = {}; // nom_prenom
+  const byFullName = {};    // "prenom nom" (string complet normalise)
+
   voltChauffeurs.forEach(c => {
-    const key = `${(c.prenom || '').toLowerCase().trim()}_${(c.nom || '').toLowerCase().trim()}`;
-    if (key !== '_') byName[key] = c;
+    const p = normalizeName(c.prenom);
+    const n = normalizeName(c.nom);
+    if (p && n) {
+      byNameDirect[`${p}_${n}`] = c;
+      byNameReverse[`${n}_${p}`] = c;
+      byFullName[`${p} ${n}`] = c;
+      byFullName[`${n} ${p}`] = c;
+    }
   });
 
   for (const yd of yangoDrivers) {
     let voltMatch = null;
+    let matchMethod = '';
 
     // 1. Match par yangoDriverId
-    if (byYangoId[yd.id]) {
+    if (!voltMatch && byYangoId[yd.id]) {
       voltMatch = byYangoId[yd.id];
+      matchMethod = 'yangoId';
     }
 
     // 2. Match par telephone
     if (!voltMatch && yd.telephone) {
-      const normalizedPhone = yd.telephone.replace(/[\s\-\+]/g, '').slice(-10);
-      if (byPhone[normalizedPhone]) voltMatch = byPhone[normalizedPhone];
+      const normalizedPhone = normalizePhone(yd.telephone);
+      if (normalizedPhone.length >= 8 && byPhone[normalizedPhone]) {
+        voltMatch = byPhone[normalizedPhone];
+        matchMethod = 'telephone';
+      }
     }
 
-    // 3. Match par nom+prenom
-    if (!voltMatch) {
-      const key = `${(yd.prenom || '').toLowerCase().trim()}_${(yd.nom || '').toLowerCase().trim()}`;
-      if (byName[key]) voltMatch = byName[key];
+    // 3. Match par prenom_nom direct
+    const yp = normalizeName(yd.prenom);
+    const yn = normalizeName(yd.nom);
+
+    if (!voltMatch && yp && yn) {
+      const keyDirect = `${yp}_${yn}`;
+      if (byNameDirect[keyDirect]) {
+        voltMatch = byNameDirect[keyDirect];
+        matchMethod = 'nom_direct';
+      }
     }
 
-    if (voltMatch) {
-      matched.push({ yango: yd, volt: voltMatch });
+    // 4. Match par nom_prenom inverse (Yango peut inverser nom/prenom)
+    if (!voltMatch && yp && yn) {
+      const keyReverse = `${yp}_${yn}`;
+      if (byNameReverse[keyReverse]) {
+        voltMatch = byNameReverse[keyReverse];
+        matchMethod = 'nom_inverse';
+      }
+    }
+
+    // 5. Match par nom complet (concatene prenom+nom dans les deux sens)
+    if (!voltMatch && yp && yn) {
+      const fullA = `${yp} ${yn}`;
+      const fullB = `${yn} ${yp}`;
+      if (byFullName[fullA]) {
+        voltMatch = byFullName[fullA];
+        matchMethod = 'nom_complet';
+      } else if (byFullName[fullB]) {
+        voltMatch = byFullName[fullB];
+        matchMethod = 'nom_complet_inverse';
+      }
+    }
+
+    // 6. Match partiel : prenom Yango = nom Volt ET nom Yango = prenom Volt
+    if (!voltMatch && yp && yn) {
+      const candidate = voltChauffeurs.find(c => {
+        if (usedVoltIds.has(c.id)) return false;
+        const cp = normalizeName(c.prenom);
+        const cn = normalizeName(c.nom);
+        // Match croise : prenom↔nom
+        return (yp === cn && yn === cp);
+      });
+      if (candidate) {
+        voltMatch = candidate;
+        matchMethod = 'croise';
+      }
+    }
+
+    // 7. Match par nom de famille seul (si unique)
+    if (!voltMatch && yn) {
+      const candidates = voltChauffeurs.filter(c => {
+        if (usedVoltIds.has(c.id)) return false;
+        const cn = normalizeName(c.nom);
+        const cp = normalizeName(c.prenom);
+        return cn === yn || cp === yn || cn === yp || cp === yp;
+      });
+      if (candidates.length === 1) {
+        voltMatch = candidates[0];
+        matchMethod = 'nom_partiel';
+      }
+    }
+
+    if (voltMatch && !usedVoltIds.has(voltMatch.id)) {
+      usedVoltIds.add(voltMatch.id);
+      matched.push({ yango: yd, volt: voltMatch, method: matchMethod });
     }
   }
 
@@ -435,13 +534,20 @@ async function syncYangoActivity(date = null) {
     yd => !matched.find(m => m.yango.id === yd.id)
   );
 
+  // Stats de matching par methode
+  const matchMethods = {};
+  matched.forEach(m => {
+    matchMethods[m.method] = (matchMethods[m.method] || 0) + 1;
+  });
+
   const summary = {
     date: dateStr,
     totalYangoDrivers: yangoDrivers.length,
     totalVoltChauffeurs: voltChauffeurs.length,
     matched: matched.length,
+    matchMethods,
     unmatched: unmatchedYango.length,
-    unmatchedDrivers: unmatchedYango.map(d => `${d.prenom} ${d.nom}`),
+    unmatchedDrivers: unmatchedYango.slice(0, 30).map(d => `${d.prenom} ${d.nom} (${d.telephone || 'pas de tel'})`),
     updated,
     created,
     errors,
@@ -450,7 +556,12 @@ async function syncYangoActivity(date = null) {
     details: results
   };
 
-  console.log(`[YangoSync] Terminé: ${updated} mis a jour, ${created} créés, ${errors} erreurs, ${unmatchedYango.length} non matchés`);
+  console.log(`[YangoSync] Terminé: ${updated} mis a jour, ${created} créés, ${errors} erreurs`);
+  console.log(`[YangoSync] Matching: ${matched.length} matchés, ${unmatchedYango.length} non matchés`);
+  console.log(`[YangoSync] Méthodes:`, matchMethods);
+  if (unmatchedYango.length > 0) {
+    console.log(`[YangoSync] Non matchés (5 premiers):`, unmatchedYango.slice(0, 5).map(d => `${d.prenom} ${d.nom}`));
+  }
 
   return summary;
 }
