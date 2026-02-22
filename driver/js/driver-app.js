@@ -62,7 +62,7 @@ const DriverApp = {
     if (sessionStorage.getItem('volt_deadline_sound_played')) return;
     try {
       const deadline = await DriverStore.getDeadline();
-      if (deadline && deadline.configured && deadline.remainingMs <= 24 * 3600 * 1000 && deadline.remainingMs > 0) {
+      if (deadline && deadline.configured && !deadline.alreadyPaid && deadline.remainingMs <= 24 * 3600 * 1000 && deadline.remainingMs > 0) {
         // Jouer l'alerte sonore
         if (typeof DriverCountdown !== 'undefined') {
           DriverCountdown.playAlertSound();

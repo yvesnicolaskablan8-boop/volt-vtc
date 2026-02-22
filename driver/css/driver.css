@@ -1105,6 +1105,20 @@ body {
   color: #166534;
 }
 
+/* Status: paid (versement effectue) */
+.countdown-paid {
+  background: linear-gradient(135deg, #dcfce7, #d1fae5);
+  border: 2px solid #6ee7b7;
+  color: #065f46;
+}
+.countdown-paid .countdown-header {
+  font-size: 0.9rem;
+}
+.countdown-paid .countdown-header i {
+  color: #22c55e;
+  font-size: 1.1rem;
+}
+
 /* Status: warning (24-48h) */
 .countdown-warning {
   background: linear-gradient(135deg, #fef3c7, #fffbeb);
@@ -1230,6 +1244,8 @@ body {
 .deadline-banner.critical .deadline-banner-icon { background: #fef2f2; color: #dc2626; }
 .deadline-banner.expired { background: linear-gradient(135deg, #dc2626, #b91c1c); border-color: #991b1b; color: #fff; animation: countdown-blink 1s ease-in-out infinite; }
 .deadline-banner.expired .deadline-banner-icon { background: rgba(255,255,255,0.15); color: #fff; }
+.deadline-banner.paid { background: #d1fae5; border-color: #6ee7b7; color: #065f46; }
+.deadline-banner.paid .deadline-banner-icon { background: #a7f3d0; color: #22c55e; }
 
 .deadline-banner-title {
   font-size: 0.68rem;

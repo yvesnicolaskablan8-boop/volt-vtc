@@ -30,42 +30,55 @@ const VersementsPage = {
     // Deadline banner
     let deadlineBannerHTML = '';
     if (deadline && deadline.configured) {
-      const remaining = new Date(deadline.deadlineDate) - now;
-      const statusClass = remaining <= 0 ? 'expired' : remaining <= 24 * 3600000 ? 'critical' : remaining <= 48 * 3600000 ? 'warning' : 'safe';
-      const dlDate = new Date(deadline.deadlineDate);
-      const heureLimit = String(dlDate.getHours()).padStart(2, '0') + 'h' + String(dlDate.getMinutes()).padStart(2, '0');
-
-      let bannerTitle, timeText;
-      if (remaining <= 0) {
-        bannerTitle = deadline.deadlineType === 'quotidien'
-          ? `Recette non versee ! (limite : ${heureLimit})`
-          : 'Deadline depassee !';
-        const elapsed = Math.abs(remaining);
-        const retH = Math.floor(elapsed / 3600000);
-        const retM = Math.floor((elapsed % 3600000) / 60000);
-        timeText = `<i class="fas fa-exclamation-triangle"></i> Retard : ${retH}h ${String(retM).padStart(2, '0')}min`;
-      } else {
-        bannerTitle = deadline.deadlineType === 'quotidien'
-          ? `Verse ta recette avant ${heureLimit}`
-          : `Prochaine deadline : ${dlDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}`;
-        timeText = this._formatCountdown(remaining);
-      }
-
-      deadlineBannerHTML = `
-        <div class="deadline-banner ${statusClass}">
-          <div class="deadline-banner-icon"><i class="fas ${remaining <= 0 ? 'fa-exclamation-circle' : 'fa-clock'}"></i></div>
-          <div class="deadline-banner-text">
-            <div class="deadline-banner-title">${bannerTitle}</div>
-            <div class="deadline-banner-time" id="versements-countdown">${timeText}</div>
-          </div>
-          ${deadline.penaliteActive && remaining <= 0 ? `
-            <div class="deadline-banner-penalty">
-              <i class="fas fa-coins"></i>
-              ${deadline.penaliteType === 'pourcentage' ? deadline.penaliteValeur + '%' : this._formatCurrency(deadline.penaliteValeur)}
+      if (deadline.alreadyPaid) {
+        // Versement deja effectue → banniere de confirmation
+        deadlineBannerHTML = `
+          <div class="deadline-banner paid">
+            <div class="deadline-banner-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="deadline-banner-text">
+              <div class="deadline-banner-title">Recette du jour versee</div>
+              <div class="deadline-banner-time">Ton versement a bien ete enregistre</div>
             </div>
-          ` : ''}
-        </div>
-      `;
+          </div>
+        `;
+      } else {
+        const remaining = new Date(deadline.deadlineDate) - now;
+        const statusClass = remaining <= 0 ? 'expired' : remaining <= 24 * 3600000 ? 'critical' : remaining <= 48 * 3600000 ? 'warning' : 'safe';
+        const dlDate = new Date(deadline.deadlineDate);
+        const heureLimit = String(dlDate.getHours()).padStart(2, '0') + 'h' + String(dlDate.getMinutes()).padStart(2, '0');
+
+        let bannerTitle, timeText;
+        if (remaining <= 0) {
+          bannerTitle = deadline.deadlineType === 'quotidien'
+            ? `Recette non versee ! (limite : ${heureLimit})`
+            : 'Deadline depassee !';
+          const elapsed = Math.abs(remaining);
+          const retH = Math.floor(elapsed / 3600000);
+          const retM = Math.floor((elapsed % 3600000) / 60000);
+          timeText = `<i class="fas fa-exclamation-triangle"></i> Retard : ${retH}h ${String(retM).padStart(2, '0')}min`;
+        } else {
+          bannerTitle = deadline.deadlineType === 'quotidien'
+            ? `Verse ta recette avant ${heureLimit}`
+            : `Prochaine deadline : ${dlDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+          timeText = this._formatCountdown(remaining);
+        }
+
+        deadlineBannerHTML = `
+          <div class="deadline-banner ${statusClass}">
+            <div class="deadline-banner-icon"><i class="fas ${remaining <= 0 ? 'fa-exclamation-circle' : 'fa-clock'}"></i></div>
+            <div class="deadline-banner-text">
+              <div class="deadline-banner-title">${bannerTitle}</div>
+              <div class="deadline-banner-time" id="versements-countdown">${timeText}</div>
+            </div>
+            ${deadline.penaliteActive && remaining <= 0 ? `
+              <div class="deadline-banner-penalty">
+                <i class="fas fa-coins"></i>
+                ${deadline.penaliteType === 'pourcentage' ? deadline.penaliteValeur + '%' : this._formatCurrency(deadline.penaliteValeur)}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
     }
 
     container.innerHTML = `
@@ -110,8 +123,8 @@ const VersementsPage = {
       </div>
     `;
 
-    // Timer live pour la banniere
-    if (deadline && deadline.configured) {
+    // Timer live pour la banniere (pas si deja paye)
+    if (deadline && deadline.configured && !deadline.alreadyPaid) {
       this._deadlineDate = new Date(deadline.deadlineDate);
       this._deadlineType = deadline.deadlineType || 'quotidien';
       this._startBannerTimer();

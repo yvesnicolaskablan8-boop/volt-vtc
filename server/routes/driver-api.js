@@ -88,11 +88,16 @@ router.get('/dashboard', async (req, res, next) => {
       scoreConduite: dernierGps ? dernierGps.scoreGlobal : scoreConduite,
       alertesActives: signalements.length,
       dateJour: today,
-      deadline: (() => {
+      deadline: await (async () => {
         const vs = settings && settings.versements;
         if (!vs || !vs.deadlineType) return null;
         const info = getNextDeadline(vs);
         if (!info) return null;
+        // Verifier si un versement a deja ete fait pour la periode en cours
+        const versementPeriode = await Versement.findOne({
+          chauffeurId,
+          dateCreation: { $gte: info.previousDeadline.toISOString() }
+        }).lean();
         return {
           configured: true,
           deadlineDate: info.deadlineDate.toISOString(),
@@ -100,7 +105,8 @@ router.get('/dashboard', async (req, res, next) => {
           deadlineType: vs.deadlineType,
           penaliteActive: vs.penaliteActive || false,
           penaliteType: vs.penaliteType || 'pourcentage',
-          penaliteValeur: vs.penaliteValeur || 0
+          penaliteValeur: vs.penaliteValeur || 0,
+          alreadyPaid: !!versementPeriode
         };
       })()
     });
@@ -181,6 +187,7 @@ router.post('/absences', async (req, res, next) => {
 // GET /api/driver/deadline — Infos deadline legeres (pour refresh rapide)
 router.get('/deadline', async (req, res, next) => {
   try {
+    const chauffeurId = req.user.chauffeurId;
     const settings = await Settings.findOne().lean();
     const vs = settings && settings.versements;
     if (!vs || !vs.deadlineType) {
@@ -189,6 +196,12 @@ router.get('/deadline', async (req, res, next) => {
     const info = getNextDeadline(vs);
     if (!info) return res.json({ configured: false });
 
+    // Verifier si un versement a deja ete fait pour la periode en cours
+    const versementPeriode = await Versement.findOne({
+      chauffeurId,
+      dateCreation: { $gte: info.previousDeadline.toISOString() }
+    }).lean();
+
     res.json({
       configured: true,
       deadlineDate: info.deadlineDate.toISOString(),
@@ -196,7 +209,8 @@ router.get('/deadline', async (req, res, next) => {
       deadlineType: vs.deadlineType,
       penaliteActive: vs.penaliteActive || false,
       penaliteType: vs.penaliteType || 'pourcentage',
-      penaliteValeur: vs.penaliteValeur || 0
+      penaliteValeur: vs.penaliteValeur || 0,
+      alreadyPaid: !!versementPeriode
     });
   } catch (err) {
     next(err);

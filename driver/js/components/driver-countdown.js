@@ -22,6 +22,7 @@ const DriverCountdown = {
     this._penaliteType = deadlineData.penaliteType || 'pourcentage';
     this._penaliteValeur = deadlineData.penaliteValeur || 0;
     this._deadlineType = deadlineData.deadlineType || 'quotidien';
+    this._alreadyPaid = deadlineData.alreadyPaid || false;
   },
 
   /**
@@ -29,6 +30,19 @@ const DriverCountdown = {
    */
   renderWidget() {
     if (!this._deadlineDate) return '';
+
+    // Si deja paye → afficher message de confirmation
+    if (this._alreadyPaid) {
+      return `
+        <div class="countdown-widget countdown-paid" id="countdown-widget">
+          <div class="countdown-header">
+            <i class="fas fa-check-circle"></i>
+            <span>Recette du jour versee</span>
+          </div>
+          <div class="countdown-subtext">Ton versement a bien ete enregistre. Bonne route !</div>
+        </div>
+      `;
+    }
 
     const remaining = this._deadlineDate - new Date();
     const status = this._getStatus(remaining);
@@ -89,7 +103,7 @@ const DriverCountdown = {
    */
   startTimer() {
     if (this._interval) clearInterval(this._interval);
-    if (!this._deadlineDate) return;
+    if (!this._deadlineDate || this._alreadyPaid) return;
 
     this._interval = setInterval(() => {
       const el = document.getElementById('countdown-timer');
