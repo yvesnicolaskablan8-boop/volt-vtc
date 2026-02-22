@@ -33,15 +33,39 @@ const DriverCountdown = {
     const remaining = this._deadlineDate - new Date();
     const status = this._getStatus(remaining);
 
-    const headerText = this._deadlineType === 'quotidien' ? 'Versement du jour' : 'Deadline versement';
+    // Heure limite formatee (ex: "23h59")
+    const heureLimit = String(this._deadlineDate.getHours()).padStart(2, '0') + 'h' + String(this._deadlineDate.getMinutes()).padStart(2, '0');
+
+    // Textes adaptes au type de deadline
+    let headerIcon, headerText, subText;
+    if (status.level === 'expired') {
+      headerIcon = 'fa-exclamation-circle';
+      if (this._deadlineType === 'quotidien') {
+        headerText = 'Recette non versee !';
+        subText = `L'heure limite de ${heureLimit} est depassee`;
+      } else {
+        headerText = 'Deadline depassee !';
+        subText = 'Versez votre recette au plus vite';
+      }
+    } else {
+      headerIcon = 'fa-hourglass-half';
+      if (this._deadlineType === 'quotidien') {
+        headerText = `Verse ta recette avant ${heureLimit}`;
+        subText = 'Temps restant pour verser sans penalite';
+      } else {
+        headerText = 'Deadline versement';
+        subText = `Date limite : ${this._deadlineDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} a ${heureLimit}`;
+      }
+    }
 
     return `
       <div class="countdown-widget countdown-${status.level}" id="countdown-widget">
         <div class="countdown-header">
-          <i class="fas ${status.level === 'expired' ? 'fa-exclamation-circle' : 'fa-hourglass-half'}"></i>
+          <i class="fas ${headerIcon}"></i>
           <span>${headerText}</span>
-          ${status.level === 'expired' ? '<span class="badge-countdown-expired">EXPIRE</span>' : ''}
+          ${status.level === 'expired' ? '<span class="badge-countdown-expired">EN RETARD</span>' : ''}
         </div>
+        <div class="countdown-subtext" id="countdown-subtext">${subText}</div>
         <div class="countdown-timer" id="countdown-timer">
           ${this._formatTime(remaining)}
         </div>
@@ -53,7 +77,7 @@ const DriverCountdown = {
         ${status.level === 'expired' && this._penaliteActive ? `
           <div class="countdown-penalty">
             <i class="fas fa-exclamation-triangle"></i>
-            Penalite: ${this._penaliteType === 'pourcentage' ? this._penaliteValeur + '% du montant brut' : this._penaliteValeur.toLocaleString('fr-FR') + ' FCFA'}
+            Penalite de retard : ${this._penaliteType === 'pourcentage' ? this._penaliteValeur + '% preleve sur ta recette' : this._penaliteValeur.toLocaleString('fr-FR') + ' FCFA en plus'}
           </div>
         ` : ''}
       </div>
@@ -109,8 +133,7 @@ const DriverCountdown = {
       const elapsed = Math.abs(remainingMs);
       const h = Math.floor(elapsed / 3600000);
       const m = Math.floor((elapsed % 3600000) / 60000);
-      const prefix = this._deadlineType === 'quotidien' ? 'En retard de' : 'Depasse de';
-      return `<span class="countdown-expired-text"><i class="fas fa-exclamation-triangle"></i> ${prefix} ${h}h ${String(m).padStart(2, '0')}m</span>`;
+      return `<span class="countdown-expired-text"><i class="fas fa-exclamation-triangle"></i> Retard : ${h}h ${String(m).padStart(2, '0')}min</span>`;
     }
 
     const days = Math.floor(remainingMs / 86400000);

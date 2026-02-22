@@ -32,15 +32,28 @@ const VersementsPage = {
     if (deadline && deadline.configured) {
       const remaining = new Date(deadline.deadlineDate) - now;
       const statusClass = remaining <= 0 ? 'expired' : remaining <= 24 * 3600000 ? 'critical' : remaining <= 48 * 3600000 ? 'warning' : 'safe';
-      const expiredText = deadline.deadlineType === 'quotidien' ? 'Heure limite depassee !' : 'Deadline depassee';
-      const timeText = remaining <= 0
-        ? `<i class="fas fa-exclamation-triangle"></i> ${expiredText}`
-        : this._formatCountdown(remaining);
+      const dlDate = new Date(deadline.deadlineDate);
+      const heureLimit = String(dlDate.getHours()).padStart(2, '0') + 'h' + String(dlDate.getMinutes()).padStart(2, '0');
 
-      const bannerTitle = deadline.deadlineType === 'quotidien' ? 'Versement du jour' : 'Prochaine deadline';
+      let bannerTitle, timeText;
+      if (remaining <= 0) {
+        bannerTitle = deadline.deadlineType === 'quotidien'
+          ? `Recette non versee ! (limite : ${heureLimit})`
+          : 'Deadline depassee !';
+        const elapsed = Math.abs(remaining);
+        const retH = Math.floor(elapsed / 3600000);
+        const retM = Math.floor((elapsed % 3600000) / 60000);
+        timeText = `<i class="fas fa-exclamation-triangle"></i> Retard : ${retH}h ${String(retM).padStart(2, '0')}min`;
+      } else {
+        bannerTitle = deadline.deadlineType === 'quotidien'
+          ? `Verse ta recette avant ${heureLimit}`
+          : `Prochaine deadline : ${dlDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+        timeText = this._formatCountdown(remaining);
+      }
+
       deadlineBannerHTML = `
         <div class="deadline-banner ${statusClass}">
-          <div class="deadline-banner-icon"><i class="fas fa-clock"></i></div>
+          <div class="deadline-banner-icon"><i class="fas ${remaining <= 0 ? 'fa-exclamation-circle' : 'fa-clock'}"></i></div>
           <div class="deadline-banner-text">
             <div class="deadline-banner-title">${bannerTitle}</div>
             <div class="deadline-banner-time" id="versements-countdown">${timeText}</div>
@@ -113,10 +126,14 @@ const VersementsPage = {
       const el = document.getElementById('versements-countdown');
       if (!el) { clearInterval(this._bannerInterval); return; }
       const remaining = this._deadlineDate - new Date();
-      const expText = this._deadlineType === 'quotidien' ? 'Heure limite depassee !' : 'Deadline depassee';
-      el.innerHTML = remaining <= 0
-        ? `<i class="fas fa-exclamation-triangle"></i> ${expText}`
-        : this._formatCountdown(remaining);
+      if (remaining <= 0) {
+        const elapsed = Math.abs(remaining);
+        const retH = Math.floor(elapsed / 3600000);
+        const retM = Math.floor((elapsed % 3600000) / 60000);
+        el.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Retard : ${retH}h ${String(retM).padStart(2, '0')}min`;
+      } else {
+        el.innerHTML = this._formatCountdown(remaining);
+      }
     }, 1000);
   },
 
