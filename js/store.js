@@ -340,5 +340,34 @@ const Store = {
       console.warn('Store: Yango vehicles failed:', e.message);
       return null;
     }
+  },
+
+  async triggerYangoSync(date = null) {
+    try {
+      const body = date ? { date } : {};
+      const res = await fetch(this._apiBase + '/yango/sync', {
+        method: 'POST',
+        headers: this._headers(),
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('Store: Yango sync failed:', e.message);
+      return { error: e.message };
+    }
+  },
+
+  async getYangoSyncStatus() {
+    try {
+      const res = await fetch(this._apiBase + '/yango/sync/status', {
+        headers: this._headers()
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('Store: Yango sync status failed:', e.message);
+      return null;
+    }
   }
 };

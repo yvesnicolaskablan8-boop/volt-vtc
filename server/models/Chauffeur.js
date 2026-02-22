@@ -23,6 +23,7 @@ const chauffeurSchema = new mongoose.Schema({
   baseScore: Number,
   volatility: Number,
   weakness: String,
+  yangoDriverId: String,
   vehiculeAssigne: String,
   photo: String,
   documents: [documentSchema],

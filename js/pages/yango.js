@@ -185,6 +185,33 @@ const YangoPage = {
         </div>
       </div>
 
+      <!-- Synchronisation Yango → Volt -->
+      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
+        <div class="card-header">
+          <span class="card-title"><i class="fas fa-sync-alt" style="color:#FC4C02"></i> Synchronisation Yango → Volt</span>
+          <span class="badge" id="yp-sync-status-badge">--</span>
+        </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:var(--space-md);">
+          Recupere automatiquement les courses et l'activite de chaque chauffeur depuis Yango, puis met a jour les scores de conduite et le temps d'activite dans Volt. La sync automatique s'execute chaque nuit a 2h.
+        </div>
+        <div style="display:flex;gap:var(--space-sm);align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="YangoPage._triggerSync()" id="yp-sync-btn">
+            <i class="fas fa-play"></i> Lancer la sync maintenant
+          </button>
+          <button class="btn btn-secondary" onclick="YangoPage._triggerSync('yesterday')" id="yp-sync-btn-hier">
+            <i class="fas fa-calendar-minus"></i> Sync hier
+          </button>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <label style="font-size:var(--font-size-xs);color:var(--text-muted);">Date :</label>
+            <input type="date" class="form-control" id="yp-sync-date" style="width:auto;font-size:var(--font-size-xs);padding:4px 8px;" max="${new Date().toISOString().split('T')[0]}">
+            <button class="btn btn-sm btn-outline" onclick="YangoPage._triggerSyncDate()">
+              <i class="fas fa-sync"></i>
+            </button>
+          </div>
+        </div>
+        <div id="yp-sync-result" style="margin-top:var(--space-md);display:none;"></div>
+      </div>
+
       <!-- Commission info -->
       <div style="margin-top:var(--space-md);padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
         <i class="fas fa-info-circle" style="color:#FC4C02"></i>
@@ -221,6 +248,24 @@ const YangoPage = {
       this._renderDriversTable(stats.chauffeurs?.liste || []);
       this._renderRecentCourses(stats.courses?.recentes || []);
       this._renderTopDrivers(stats.topChauffeurs || []);
+
+      // Update sync status badge
+      try {
+        const syncStatus = await Store.getYangoSyncStatus();
+        const badge = document.getElementById('yp-sync-status-badge');
+        if (badge && syncStatus) {
+          if (syncStatus.running && syncStatus.enabled) {
+            badge.textContent = 'CRON actif';
+            badge.className = 'badge badge-success';
+          } else {
+            badge.textContent = 'CRON inactif';
+            badge.className = 'badge badge-warning';
+          }
+          if (syncStatus.lastSyncDate) {
+            badge.textContent += ` (${syncStatus.lastSyncDate})`;
+          }
+        }
+      } catch (e) { /* ignore */ }
 
       // Update timestamp
       const updateEl = document.getElementById('yp-last-update');
@@ -658,6 +703,122 @@ const YangoPage = {
             </div>
           `;
         }).join('')}
+      </div>
+    `;
+  },
+
+  // =================== YANGO SYNC ===================
+
+  async _triggerSync(datePreset = null) {
+    const syncBtn = document.getElementById('yp-sync-btn');
+    const resultDiv = document.getElementById('yp-sync-result');
+    if (syncBtn) { syncBtn.disabled = true; syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Synchronisation...'; }
+    if (resultDiv) { resultDiv.style.display = 'block'; resultDiv.innerHTML = '<div class="yango-loading"><i class="fas fa-spinner fa-spin"></i> Recuperation des donnees Yango en cours...</div>'; }
+
+    let syncDate = null;
+    if (datePreset === 'yesterday') {
+      const d = new Date(); d.setDate(d.getDate() - 1);
+      syncDate = d.toISOString().split('T')[0];
+    }
+
+    const result = await Store.triggerYangoSync(syncDate);
+    this._renderSyncResult(result);
+
+    if (syncBtn) { syncBtn.disabled = false; syncBtn.innerHTML = '<i class="fas fa-play"></i> Lancer la sync maintenant'; }
+  },
+
+  async _triggerSyncDate() {
+    const dateInput = document.getElementById('yp-sync-date');
+    if (!dateInput || !dateInput.value) { Toast.warning('Selectionnez une date'); return; }
+
+    const syncBtn = document.getElementById('yp-sync-btn');
+    const resultDiv = document.getElementById('yp-sync-result');
+    if (syncBtn) syncBtn.disabled = true;
+    if (resultDiv) { resultDiv.style.display = 'block'; resultDiv.innerHTML = '<div class="yango-loading"><i class="fas fa-spinner fa-spin"></i> Synchronisation du ' + dateInput.value + '...</div>'; }
+
+    const result = await Store.triggerYangoSync(dateInput.value);
+    this._renderSyncResult(result);
+
+    if (syncBtn) syncBtn.disabled = false;
+  },
+
+  _renderSyncResult(result) {
+    const resultDiv = document.getElementById('yp-sync-result');
+    if (!resultDiv) return;
+
+    if (result.error) {
+      resultDiv.innerHTML = `
+        <div style="padding:12px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#ef4444;font-size:var(--font-size-xs);">
+          <i class="fas fa-exclamation-triangle"></i> Erreur: ${result.error}${result.details ? ' — ' + result.details : ''}
+        </div>
+      `;
+      return;
+    }
+
+    const details = result.details || [];
+    const okCount = details.filter(d => d.status === 'ok').length;
+    const skipCount = details.filter(d => d.status === 'skip').length;
+    const errCount = details.filter(d => d.status === 'error').length;
+
+    resultDiv.innerHTML = `
+      <div style="padding:14px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <i class="fas fa-check-circle" style="color:#22c55e;font-size:1rem;"></i>
+          <span style="font-weight:600;font-size:var(--font-size-sm);">Synchronisation terminée — ${result.date}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;">
+          <div style="text-align:center;padding:8px;background:var(--bg-secondary);border-radius:var(--radius-sm);">
+            <div style="font-size:1.1rem;font-weight:700;">${result.matched || 0}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Chauffeurs matches</div>
+          </div>
+          <div style="text-align:center;padding:8px;background:var(--bg-secondary);border-radius:var(--radius-sm);">
+            <div style="font-size:1.1rem;font-weight:700;">${result.totalOrders || 0}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Courses Yango</div>
+          </div>
+          <div style="text-align:center;padding:8px;background:var(--bg-secondary);border-radius:var(--radius-sm);">
+            <div style="font-size:1.1rem;font-weight:700;color:#22c55e;">${okCount}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Mis a jour</div>
+          </div>
+          <div style="text-align:center;padding:8px;background:var(--bg-secondary);border-radius:var(--radius-sm);">
+            <div style="font-size:1.1rem;font-weight:700;color:${errCount > 0 ? '#ef4444' : 'var(--text-primary)'};">${errCount}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Erreurs</div>
+          </div>
+        </div>
+
+        ${details.filter(d => d.status === 'ok').length > 0 ? `
+          <div style="font-size:var(--font-size-xs);font-weight:600;margin-bottom:6px;color:var(--text-secondary);">Detail par chauffeur :</div>
+          <div style="max-height:200px;overflow-y:auto;">
+            <table style="width:100%;font-size:var(--font-size-xs);border-collapse:collapse;">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border-color);text-align:left;">
+                  <th style="padding:4px 8px;">Chauffeur</th>
+                  <th style="padding:4px 8px;">Courses</th>
+                  <th style="padding:4px 8px;">Activite</th>
+                  <th style="padding:4px 8px;">Score</th>
+                  <th style="padding:4px 8px;">Revenu</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${details.filter(d => d.status === 'ok').map(d => `
+                  <tr style="border-bottom:1px solid var(--border-color);">
+                    <td style="padding:4px 8px;font-weight:500;">${d.chauffeur}</td>
+                    <td style="padding:4px 8px;">${d.courses || 0}</td>
+                    <td style="padding:4px 8px;">${d.tempsActivite ? Math.floor(d.tempsActivite/60) + 'h' + String(d.tempsActivite%60).padStart(2,'0') : '--'}</td>
+                    <td style="padding:4px 8px;font-weight:600;color:${d.scoreActivite >= 70 ? '#22c55e' : d.scoreActivite >= 50 ? '#f59e0b' : '#ef4444'};">${d.scoreActivite}/100</td>
+                    <td style="padding:4px 8px;">${(d.revenu || 0).toLocaleString('fr-FR')} F</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        ${result.unmatched > 0 ? `
+          <div style="margin-top:10px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);font-size:var(--font-size-xs);color:#b45309;">
+            <i class="fas fa-exclamation-triangle"></i> <strong>${result.unmatched} chauffeur(s) Yango non matché(s)</strong> : ${(result.unmatchedDrivers || []).join(', ')}
+            <br><span style="font-size:10px;color:var(--text-muted);">Verifiez que les noms/prenoms correspondent ou ajoutez manuellement le yangoDriverId dans la fiche chauffeur.</span>
+          </div>
+        ` : ''}
       </div>
     `;
   },

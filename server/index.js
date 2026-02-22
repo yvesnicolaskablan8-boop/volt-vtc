@@ -60,6 +60,12 @@ const startServer = async () => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Volt VTC API running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+
+    // Demarrer le CRON Yango si les credentials sont configurees
+    if (process.env.YANGO_PARK_ID && process.env.YANGO_API_KEY) {
+      const yangoCron = require('./utils/yango-cron');
+      yangoCron.start();
+    }
   });
 };
 

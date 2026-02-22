@@ -748,6 +748,38 @@ router.get('/stats', async (req, res) => {
 });
 
 /**
+ * POST /api/yango/sync
+ * Lance une synchronisation manuelle des donnees Yango
+ * Body optionnel: { date: 'YYYY-MM-DD' } (defaut: hier)
+ */
+router.post('/sync', async (req, res) => {
+  try {
+    const { syncYangoActivity } = require('../utils/yango-sync');
+    const syncDate = req.body.date ? new Date(req.body.date) : null;
+
+    console.log(`[YangoSync] Synchronisation manuelle lancée${syncDate ? ' pour le ' + req.body.date : ''}...`);
+    const result = await syncYangoActivity(syncDate);
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (err) {
+    console.error('Yango sync error:', err.message);
+    res.status(500).json({ error: 'Erreur de synchronisation', details: err.message });
+  }
+});
+
+/**
+ * GET /api/yango/sync/status
+ * Retourne le statut du CRON de synchronisation
+ */
+router.get('/sync/status', (req, res) => {
+  const yangoCron = require('../utils/yango-cron');
+  res.json(yangoCron.getStatus());
+});
+
+/**
  * Map Yango driver status to French labels
  */
 function mapDriverStatus(status) {
