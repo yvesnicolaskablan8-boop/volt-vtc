@@ -369,5 +369,18 @@ const Store = {
       console.warn('Store: Yango sync status failed:', e.message);
       return null;
     }
+  },
+
+  async getYangoDriversForLinking() {
+    try {
+      const res = await fetch(this._apiBase + '/yango/drivers/all', {
+        headers: this._headers()
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('Store: Yango drivers for linking failed:', e.message);
+      return null;
+    }
   }
 };

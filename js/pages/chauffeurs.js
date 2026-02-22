@@ -169,6 +169,32 @@ const ChauffeursPage = {
           </div>
         </div>
 
+        <!-- Liaison Yango -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-taxi" style="color:#FC4C02"></i> Liaison Yango</span>
+            ${c.yangoDriverId
+              ? '<span class="badge badge-success"><i class="fas fa-link"></i> Lié</span>'
+              : '<span class="badge badge-warning"><i class="fas fa-unlink"></i> Non lié</span>'}
+          </div>
+          ${c.yangoDriverId ? `
+            <div style="font-size:var(--font-size-sm);margin-bottom:8px;">
+              <span class="text-muted">Yango ID :</span> <code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:11px;">${c.yangoDriverId}</code>
+              <button class="btn btn-sm btn-danger" style="margin-left:8px;" onclick="ChauffeursPage._unlinkYango('${c.id}')">
+                <i class="fas fa-unlink"></i> Délier
+              </button>
+            </div>
+          ` : `
+            <div style="font-size:var(--font-size-sm);color:var(--text-muted);margin-bottom:10px;">
+              Ce chauffeur n'est pas encore lié a un profil Yango. Cliquez ci-dessous pour rechercher et lier manuellement.
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="ChauffeursPage._searchYangoDriver('${c.id}')">
+              <i class="fas fa-search"></i> Rechercher sur Yango
+            </button>
+            <div id="yango-search-results" style="margin-top:10px;"></div>
+          `}
+        </div>
+
         <!-- Documents -->
         <div class="card">
           <div class="card-header"><span class="card-title">Documents</span></div>
@@ -379,6 +405,9 @@ const ChauffeursPage = {
       ]},
       { type: 'row-end' },
       { name: 'vehiculeAssigne', label: 'Véhicule assigné', type: 'select', placeholder: 'Sélectionner...', options: vehicules.map(v => ({ value: v.id, label: `${v.marque} ${v.modele} (${v.immatriculation})` })) },
+      { type: 'divider' },
+      { type: 'heading', label: 'Liaison Yango' },
+      { name: 'yangoDriverId', label: 'Yango Driver ID', type: 'text', placeholder: 'Ex: abc123... (sera rempli auto par la sync ou manuellement)' },
       { name: 'noteInterne', label: 'Note interne', type: 'textarea', rows: 2 }
     ];
   },
@@ -445,6 +474,135 @@ const ChauffeursPage = {
         Store.delete('chauffeurs', id);
         Toast.success('Chauffeur supprimé');
         Router.navigate('/chauffeurs');
+      }
+    );
+  },
+
+  // ======== YANGO LINKING ========
+
+  async _searchYangoDriver(chauffeurId) {
+    const container = document.getElementById('yango-search-results');
+    if (!container) return;
+
+    const chauffeur = Store.findById('chauffeurs', chauffeurId);
+    if (!chauffeur) return;
+
+    container.innerHTML = '<div style="padding:8px;font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Recherche des chauffeurs Yango...</div>';
+
+    try {
+      const res = await Store.getYangoDriversForLinking();
+      if (!res || !res.drivers) {
+        container.innerHTML = '<div style="color:#ef4444;font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> Impossible de charger les chauffeurs Yango</div>';
+        return;
+      }
+
+      const drivers = res.drivers;
+      const searchName = `${chauffeur.prenom} ${chauffeur.nom}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const searchPhone = (chauffeur.telephone || '').replace(/\D/g, '').slice(-10);
+
+      // Trier par pertinence : d'abord ceux qui matchent le nom/telephone
+      const scored = drivers.map(d => {
+        let score = 0;
+        const yName = `${d.prenom} ${d.nom}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const yPhone = (d.telephone || '').replace(/\D/g, '').slice(-10);
+
+        // Match exact nom
+        if (yName === searchName) score += 100;
+        // Match inverse
+        else if (`${d.nom} ${d.prenom}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === searchName) score += 90;
+        // Match partiel (un des mots du nom)
+        else {
+          const searchWords = searchName.split(' ');
+          const yWords = yName.split(' ');
+          for (const sw of searchWords) {
+            if (sw.length >= 3 && yWords.some(yw => yw === sw)) score += 30;
+          }
+        }
+
+        // Match telephone
+        if (searchPhone.length >= 8 && yPhone === searchPhone) score += 80;
+
+        return { ...d, _score: score };
+      });
+
+      scored.sort((a, b) => b._score - a._score);
+
+      // Afficher les 20 premiers (pertinents d'abord)
+      const top = scored.slice(0, 20);
+      const matchCount = scored.filter(d => d._score > 0).length;
+
+      container.innerHTML = `
+        <div style="margin-bottom:8px;">
+          <input type="text" class="form-control" id="yango-search-input" placeholder="Filtrer par nom..." style="font-size:var(--font-size-xs);padding:6px 10px;"
+            oninput="ChauffeursPage._filterYangoResults()">
+        </div>
+        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#22c55e;margin-bottom:6px;"><i class="fas fa-star"></i> ${matchCount} correspondance(s) probable(s)</div>` : ''}
+        <div id="yango-drivers-list" style="max-height:250px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);">
+          ${this._renderYangoDriversList(top, chauffeurId)}
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${drivers.length} chauffeurs Yango au total</div>
+      `;
+
+      // Stocker pour le filtre
+      this._yangoDriversCache = scored;
+      this._yangoLinkChauffeurId = chauffeurId;
+    } catch (err) {
+      container.innerHTML = `<div style="color:#ef4444;font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> Erreur: ${err.message}</div>`;
+    }
+  },
+
+  _renderYangoDriversList(drivers, chauffeurId) {
+    if (drivers.length === 0) return '<div style="padding:12px;text-align:center;font-size:var(--font-size-xs);color:var(--text-muted);">Aucun resultat</div>';
+
+    return drivers.map(d => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border-color);font-size:var(--font-size-xs);${d._score >= 80 ? 'background:rgba(34,197,94,0.06);' : ''}">
+        <div style="flex:1;">
+          <div style="font-weight:500;">
+            ${d._score >= 80 ? '<i class="fas fa-star" style="color:#22c55e;font-size:9px;"></i> ' : ''}
+            ${d.prenom} ${d.nom}
+          </div>
+          <div style="color:var(--text-muted);font-size:10px;">${d.telephone || 'Pas de tel'} &bull; ${d.workStatus || '?'}</div>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="ChauffeursPage._linkYango('${chauffeurId}', '${d.id}', '${(d.prenom + ' ' + d.nom).replace(/'/g, "\\'")}')">
+          <i class="fas fa-link"></i> Lier
+        </button>
+      </div>
+    `).join('');
+  },
+
+  _filterYangoResults() {
+    const input = document.getElementById('yango-search-input');
+    const list = document.getElementById('yango-drivers-list');
+    if (!input || !list || !this._yangoDriversCache) return;
+
+    const query = input.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    let filtered = this._yangoDriversCache;
+
+    if (query) {
+      filtered = this._yangoDriversCache.filter(d => {
+        const name = `${d.prenom} ${d.nom}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const phone = d.telephone || '';
+        return name.includes(query) || phone.includes(query);
+      });
+    }
+
+    list.innerHTML = this._renderYangoDriversList(filtered.slice(0, 30), this._yangoLinkChauffeurId);
+  },
+
+  async _linkYango(chauffeurId, yangoId, yangoNom) {
+    Store.update('chauffeurs', chauffeurId, { yangoDriverId: yangoId });
+    Toast.success(`Chauffeur lié a ${yangoNom} sur Yango`);
+    this.renderDetail(chauffeurId);
+  },
+
+  async _unlinkYango(chauffeurId) {
+    Modal.confirm(
+      'Délier le profil Yango',
+      'Voulez-vous supprimer la liaison avec le profil Yango ? Le chauffeur ne sera plus synchronisé automatiquement.',
+      () => {
+        Store.update('chauffeurs', chauffeurId, { yangoDriverId: '' });
+        Toast.success('Liaison Yango supprimée');
+        this.renderDetail(chauffeurId);
       }
     );
   }

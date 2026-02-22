@@ -46,31 +46,51 @@ async function yangoFetch(endpoint, body = {}) {
 }
 
 /**
- * Recupere la liste des chauffeurs Yango
+ * Recupere la liste des chauffeurs Yango (TOUS, pas seulement "working")
+ * Avec pagination pour gerer plus de 300 chauffeurs
  */
 async function fetchYangoDrivers() {
-  const data = await yangoFetch('/v1/parks/driver-profiles/list', {
-    fields: {
-      current_status: ['status', 'status_updated_at'],
-      driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_status']
-    },
-    limit: 200,
-    offset: 0,
-    query: {
-      park: {
-        id: process.env.YANGO_PARK_ID,
-        driver_profile: { work_status: ['working'] }
-      }
-    }
-  });
+  const allDrivers = [];
+  let offset = 0;
+  const LIMIT = 300;
+  const MAX_PAGES = 10;
+  let page = 0;
 
-  return (data.driver_profiles || []).map(dp => ({
-    id: dp.driver_profile?.id || '',
-    prenom: dp.driver_profile?.first_name || '',
-    nom: dp.driver_profile?.last_name || '',
-    telephone: dp.driver_profile?.phones?.[0] || '',
-    statut: dp.current_status?.status || 'offline'
-  }));
+  do {
+    const data = await yangoFetch('/v1/parks/driver-profiles/list', {
+      fields: {
+        current_status: ['status', 'status_updated_at'],
+        driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_status']
+      },
+      limit: LIMIT,
+      offset,
+      query: {
+        park: {
+          id: process.env.YANGO_PARK_ID
+          // PAS de filtre work_status → recupere TOUS les chauffeurs
+        }
+      }
+    });
+
+    const profiles = data.driver_profiles || [];
+    for (const dp of profiles) {
+      allDrivers.push({
+        id: dp.driver_profile?.id || '',
+        prenom: dp.driver_profile?.first_name || '',
+        nom: dp.driver_profile?.last_name || '',
+        telephone: dp.driver_profile?.phones?.[0] || '',
+        workStatus: dp.driver_profile?.work_status || '',
+        statut: dp.current_status?.status || 'offline'
+      });
+    }
+
+    if (profiles.length < LIMIT) break;
+    offset += LIMIT;
+    page++;
+  } while (page < MAX_PAGES);
+
+  console.log(`[YangoSync] ${allDrivers.length} chauffeurs Yango recuperes (toutes categories)`);
+  return allDrivers;
 }
 
 /**
@@ -403,6 +423,14 @@ async function syncYangoActivity(date = null) {
 
   console.log(`[YangoSync] ${yangoDrivers.length} chauffeurs Yango, ${voltChauffeurs.length} chauffeurs Volt`);
 
+  // Debug : afficher les chauffeurs Volt pour diagnostiquer le matching
+  if (voltChauffeurs.length > 0 && voltChauffeurs.length <= 50) {
+    console.log(`[YangoSync] Chauffeurs Volt :`);
+    voltChauffeurs.forEach(c => {
+      console.log(`  → ${c.prenom} ${c.nom} | tel: ${c.telephone || '-'} | yangoId: ${c.yangoDriverId || '-'} | norm: "${normalizeName(c.prenom)}_${normalizeName(c.nom)}" | phone: "${normalizePhone(c.telephone)}"`);
+    });
+  }
+
   // 2. Matcher les chauffeurs
   const matched = matchDrivers(yangoDrivers, voltChauffeurs);
   console.log(`[YangoSync] ${matched.length} chauffeurs matche(s)`);
@@ -540,6 +568,11 @@ async function syncYangoActivity(date = null) {
     matchMethods[m.method] = (matchMethods[m.method] || 0) + 1;
   });
 
+  // Debug: chauffeurs Volt non matche(s)
+  const unmatchedVolt = voltChauffeurs.filter(
+    vc => !matched.find(m => m.volt.id === vc.id)
+  );
+
   const summary = {
     date: dateStr,
     totalYangoDrivers: yangoDrivers.length,
@@ -548,6 +581,13 @@ async function syncYangoActivity(date = null) {
     matchMethods,
     unmatched: unmatchedYango.length,
     unmatchedDrivers: unmatchedYango.slice(0, 30).map(d => `${d.prenom} ${d.nom} (${d.telephone || 'pas de tel'})`),
+    unmatchedVolt: unmatchedVolt.map(c => ({
+      nom: `${c.prenom} ${c.nom}`,
+      telephone: c.telephone || '',
+      normalizedName: `${normalizeName(c.prenom)}_${normalizeName(c.nom)}`,
+      normalizedPhone: normalizePhone(c.telephone),
+      yangoDriverId: c.yangoDriverId || null
+    })),
     updated,
     created,
     errors,

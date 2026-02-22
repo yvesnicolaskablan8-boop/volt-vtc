@@ -819,14 +819,29 @@ const YangoPage = {
           </div>
         ` : ''}
 
+        ${(result.unmatchedVolt && result.unmatchedVolt.length > 0) ? `
+          <div style="margin-top:10px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);font-size:var(--font-size-xs);color:#dc2626;">
+            <i class="fas fa-user-times"></i> <strong>${result.unmatchedVolt.length} chauffeur(s) Volt non retrouvé(s) dans Yango :</strong>
+            <div style="margin-top:6px;">
+              ${result.unmatchedVolt.map(c => `
+                <div style="padding:4px 0;border-bottom:1px solid rgba(239,68,68,0.1);">
+                  <strong>${c.nom}</strong>
+                  <span style="color:var(--text-muted);font-size:10px;"> tel: ${c.telephone || 'aucun'} | nom normalisé: "${c.normalizedName}" | tel normalisé: "${c.normalizedPhone}"</span>
+                  ${c.yangoDriverId ? '<span class="badge badge-success" style="font-size:9px;">yangoId défini</span>' : '<span class="badge badge-danger" style="font-size:9px;">Pas de yangoId</span>'}
+                </div>
+              `).join('')}
+            </div>
+            <div style="margin-top:8px;font-size:10px;color:var(--text-muted);">
+              <i class="fas fa-lightbulb" style="color:#f59e0b;"></i> <strong>Solutions :</strong> Verifiez l'orthographe du nom/prenom, ou allez dans la fiche du chauffeur pour le lier manuellement a un profil Yango.
+            </div>
+          </div>
+        ` : ''}
+
         ${result.unmatched > 0 ? `
           <div style="margin-top:10px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);font-size:var(--font-size-xs);color:#b45309;">
-            <i class="fas fa-exclamation-triangle"></i> <strong>${result.unmatched} chauffeur(s) Yango non matché(s)</strong>
+            <i class="fas fa-exclamation-triangle"></i> <strong>${result.unmatched} chauffeur(s) Yango non matché(s)</strong> sur ${result.totalYangoDrivers || '?'}
             <div style="margin-top:4px;max-height:100px;overflow-y:auto;font-size:10px;color:var(--text-muted);">
-              ${(result.unmatchedDrivers || []).join(' • ')}
-            </div>
-            <div style="margin-top:6px;font-size:10px;color:var(--text-muted);">
-              <i class="fas fa-info-circle"></i> Verifiez que les noms/prenoms correspondent dans Volt ou ajoutez le yangoDriverId dans la fiche chauffeur.
+              ${(result.unmatchedDrivers || []).join(' &bull; ')}
             </div>
           </div>
         ` : ''}

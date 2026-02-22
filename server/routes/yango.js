@@ -272,6 +272,62 @@ router.get('/work-rules', async (req, res) => {
 });
 
 /**
+ * GET /api/yango/drivers/all
+ * Fetches ALL driver profiles (without work_status filter) for manual linking
+ * Uses pagination to get all drivers
+ */
+router.get('/drivers/all', async (req, res) => {
+  try {
+    const allDrivers = [];
+    let offset = 0;
+    const LIMIT = 300;
+    const MAX_PAGES = 10;
+    let page = 0;
+
+    do {
+      const data = await yangoFetch('/v1/parks/driver-profiles/list', {
+        fields: {
+          current_status: ['status'],
+          driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_status']
+        },
+        limit: LIMIT,
+        offset,
+        query: {
+          park: {
+            id: process.env.YANGO_PARK_ID
+            // Pas de filtre → TOUS les chauffeurs
+          }
+        }
+      });
+
+      const profiles = data.driver_profiles || [];
+      for (const dp of profiles) {
+        allDrivers.push({
+          id: dp.driver_profile?.id || '',
+          prenom: dp.driver_profile?.first_name || '',
+          nom: dp.driver_profile?.last_name || '',
+          telephone: dp.driver_profile?.phones?.[0] || '',
+          workStatus: dp.driver_profile?.work_status || '',
+          statut: dp.current_status?.status || 'offline'
+        });
+      }
+
+      if (profiles.length < LIMIT) break;
+      offset += LIMIT;
+      page++;
+    } while (page < MAX_PAGES);
+
+    res.json({
+      total: allDrivers.length,
+      drivers: allDrivers
+    });
+  } catch (err) {
+    console.error('Yango all drivers error:', err.message);
+    res.status(502).json({ error: 'Erreur API Yango', details: err.message });
+  }
+});
+
+/**
  * GET /api/yango/drivers?work_rule=RULE_ID_1,RULE_ID_2
  * Fetches driver profiles with optional work rule filter
  * Query params:
