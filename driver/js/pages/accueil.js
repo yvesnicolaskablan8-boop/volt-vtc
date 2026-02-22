@@ -74,6 +74,17 @@ const AccueilPage = {
         </div>
       </div>
 
+      <!-- Activite Yango -->
+      <div class="card" id="yango-activity-card" style="display:none;">
+        <div class="card-header">
+          <span class="card-title"><i class="fas fa-taxi" style="color:#FC4C02"></i> Mon activite Yango</span>
+          <span class="badge" id="yango-activity-badge" style="background:#FC4C02;color:#fff;">--</span>
+        </div>
+        <div id="yango-activity-content">
+          <div class="loading" style="padding:0.5rem"><i class="fas fa-spinner fa-spin"></i></div>
+        </div>
+      </div>
+
       <!-- Vehicule -->
       ${v ? `
       <div class="card">
@@ -123,6 +134,9 @@ const AccueilPage = {
     if (data.deadline && data.deadline.configured) {
       DriverCountdown.startTimer();
     }
+
+    // Charger l'activite Yango en arriere plan
+    this._loadYangoActivity();
   },
 
   _formatCurrency(amount) {
@@ -318,6 +332,104 @@ const AccueilPage = {
       { label: 'Voir mon profil', class: 'btn btn-outline', onclick: "DriverModal.close(); DriverRouter.navigate('profil')" },
       { label: 'Compris', class: 'btn btn-primary', onclick: 'DriverModal.close()' }
     ]);
+  },
+
+  async _loadYangoActivity() {
+    const card = document.getElementById('yango-activity-card');
+    if (!card) return;
+
+    const yango = await DriverStore.getYangoActivity();
+    if (!yango || !yango.linked) {
+      // Pas de compte Yango lie → cacher la carte
+      card.style.display = 'none';
+      return;
+    }
+
+    card.style.display = '';
+    const content = document.getElementById('yango-activity-content');
+    const badge = document.getElementById('yango-activity-badge');
+    if (!content) return;
+
+    const jour = yango.aujourd_hui || {};
+    const semaine = yango.semaine || {};
+    const historique = yango.historique || [];
+    const objectif = yango.objectifMinJour || 600;
+    const objectifH = Math.floor(objectif / 60);
+
+    // Activite du jour
+    const activiteMin = jour.activiteMinutes || 0;
+    const activiteH = Math.floor(activiteMin / 60);
+    const activiteM = activiteMin % 60;
+    const progressPct = Math.min(100, Math.round((activiteMin / objectif) * 100));
+    const isOk = activiteMin >= objectif;
+
+    if (badge) {
+      badge.textContent = isOk ? 'Objectif atteint' : `${activiteH}h${String(activiteM).padStart(2,'0')} / ${objectifH}h`;
+      badge.style.background = isOk ? '#22c55e' : '#FC4C02';
+    }
+
+    // Mini barres pour l'historique (7 jours)
+    const maxActivite = Math.max(objectif, ...historique.map(h => h.activiteMinutes));
+    const barsHTML = historique.map(h => {
+      const pct = maxActivite > 0 ? Math.round((h.activiteMinutes / maxActivite) * 100) : 0;
+      const barColor = h.activiteMinutes >= objectif ? '#22c55e' : h.activiteMinutes > 0 ? '#FC4C02' : 'var(--bg-tertiary)';
+      const hh = Math.floor(h.activiteMinutes / 60);
+      const mm = h.activiteMinutes % 60;
+      return `
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;">
+          <div style="font-size:0.58rem;color:var(--text-muted);margin-bottom:2px;">${h.activiteMinutes > 0 ? hh + 'h' : ''}</div>
+          <div style="width:100%;max-width:20px;height:40px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;">
+            <div style="width:100%;height:${pct}%;background:${barColor};border-radius:3px;transition:height 0.5s ease;"></div>
+          </div>
+          <div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:${h.date === new Date().toISOString().split('T')[0] ? '700' : '400'}">${h.jour}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Stats semaine
+    const semActiviteH = Math.floor(semaine.activiteTotaleMinutes / 60);
+    const semActiviteM = semaine.activiteTotaleMinutes % 60;
+
+    content.innerHTML = `
+      <!-- Activite du jour -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:0.78rem;color:var(--text-secondary);">Aujourd'hui</span>
+          <span style="font-size:0.85rem;font-weight:700;color:${isOk ? '#22c55e' : '#FC4C02'};">${activiteH}h${String(activiteM).padStart(2,'0')} <span style="font-weight:400;font-size:0.7rem;color:var(--text-muted);">/ ${objectifH}h</span></span>
+        </div>
+        <div style="height:8px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${progressPct}%;background:${isOk ? '#22c55e' : '#FC4C02'};border-radius:4px;transition:width 0.8s ease;"></div>
+        </div>
+        ${isOk ? '<div style="font-size:0.68rem;color:#22c55e;margin-top:4px;"><i class="fas fa-check-circle"></i> Objectif atteint ! Bravo !</div>' : '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;">Il te reste ' + Math.floor((objectif - activiteMin) / 60) + 'h' + String((objectif - activiteMin) % 60).padStart(2,'0') + ' pour atteindre l\'objectif</div>'}
+      </div>
+
+      <!-- Graphique semaine -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Cette semaine</div>
+        <div style="display:flex;gap:4px;align-items:flex-end;position:relative;">
+          ${barsHTML}
+        </div>
+        <div style="height:1px;background:var(--border-color);margin-top:2px;position:relative;">
+          <div style="position:absolute;top:-42px;left:0;right:0;height:1px;border-top:1px dashed rgba(34,197,94,0.4);"></div>
+        </div>
+      </div>
+
+      <!-- Stats semaine compactes -->
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;text-align:center;background:var(--bg-tertiary);border-radius:6px;padding:6px 4px;">
+          <div style="font-size:0.6rem;color:var(--text-muted);">Total semaine</div>
+          <div style="font-size:0.8rem;font-weight:700;">${semActiviteH}h${String(semActiviteM).padStart(2,'0')}</div>
+        </div>
+        <div style="flex:1;text-align:center;background:var(--bg-tertiary);border-radius:6px;padding:6px 4px;">
+          <div style="font-size:0.6rem;color:var(--text-muted);">Jours actifs</div>
+          <div style="font-size:0.8rem;font-weight:700;">${semaine.joursActifs || 0}/6</div>
+        </div>
+        <div style="flex:1;text-align:center;background:var(--bg-tertiary);border-radius:6px;padding:6px 4px;">
+          <div style="font-size:0.6rem;color:var(--text-muted);">Distance</div>
+          <div style="font-size:0.8rem;font-weight:700;">${(semaine.distanceTotaleKm || 0).toLocaleString('fr-FR')} km</div>
+        </div>
+      </div>
+    `;
   },
 
   _demanderAbsence() {

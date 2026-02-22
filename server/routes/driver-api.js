@@ -441,4 +441,106 @@ router.get('/gps', async (req, res, next) => {
   }
 });
 
+// =================== YANGO ACTIVITE ===================
+
+// GET /api/driver/yango — Activite Yango du chauffeur connecte
+router.get('/yango', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const chauffeur = await Chauffeur.findOne({ id: chauffeurId }).lean();
+
+    if (!chauffeur || !chauffeur.yangoDriverId) {
+      return res.json({ linked: false, message: 'Compte Yango non lié' });
+    }
+
+    const yangoDriverId = chauffeur.yangoDriverId;
+
+    // Dates
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - (now.getDay() || 7) + 1); // Lundi
+    weekStart.setHours(0, 0, 0, 0);
+
+    // Recuperer les GPS Yango du chauffeur (derniers 30 jours)
+    const gpsRecords = await Gps.find({
+      chauffeurId,
+      id: { $regex: /^yango_/ }
+    }).sort({ date: -1 }).limit(30).lean();
+
+    // GPS du jour
+    const gpsDuJour = gpsRecords.find(g => g.date && g.date.startsWith(todayStr));
+
+    // GPS de la semaine
+    const gpsWeek = gpsRecords.filter(g => {
+      if (!g.date) return false;
+      return new Date(g.date) >= weekStart;
+    });
+
+    // Calculer les totaux semaine
+    let weekActivite = 0;
+    let weekCourses = 0;
+    let weekDistance = 0;
+    let weekJoursActifs = 0;
+
+    for (const g of gpsWeek) {
+      const evt = g.evenements || {};
+      weekActivite += evt.tempsActiviteYango || 0;
+      weekDistance += evt.distanceParcourue || 0;
+      if ((evt.tempsActiviteYango || 0) > 0) weekJoursActifs++;
+    }
+
+    // Objectif activite depuis les settings
+    const settings = await Settings.findOne().lean();
+    const objectifMinJour = (settings?.bonus?.tempsActiviteMin) || 600;
+
+    // Stats du jour
+    const evtJour = gpsDuJour?.evenements || {};
+    const activiteJour = evtJour.tempsActiviteYango || 0;
+    const scoreActiviteJour = gpsDuJour?.scoreActivite || 0;
+    const distanceJour = evtJour.distanceParcourue || 0;
+    const tempsConduiteJour = evtJour.tempsConduite || 0;
+
+    // Historique des 7 derniers jours (pour le graphique)
+    const historique = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const ds = d.toISOString().split('T')[0];
+      const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+      const gpsDay = gpsRecords.find(g => g.date && g.date.startsWith(ds));
+      historique.push({
+        date: ds,
+        jour: dayNames[d.getDay()],
+        activiteMinutes: gpsDay?.evenements?.tempsActiviteYango || 0,
+        score: gpsDay?.scoreActivite || 0,
+        distance: gpsDay?.evenements?.distanceParcourue || 0
+      });
+    }
+
+    res.json({
+      linked: true,
+      yangoDriverId,
+      objectifMinJour,
+      aujourd_hui: {
+        activiteMinutes: activiteJour,
+        scoreActivite: scoreActiviteJour,
+        distanceKm: distanceJour,
+        tempsConduiteMinutes: tempsConduiteJour,
+        objectifAtteint: activiteJour >= objectifMinJour
+      },
+      semaine: {
+        activiteTotaleMinutes: weekActivite,
+        activiteMoyenneMinutes: weekJoursActifs > 0 ? Math.round(weekActivite / weekJoursActifs) : 0,
+        distanceTotaleKm: weekDistance,
+        joursActifs: weekJoursActifs
+      },
+      historique
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

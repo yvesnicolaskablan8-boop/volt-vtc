@@ -106,5 +106,9 @@ const DriverStore = {
 
   getGps() {
     return this._get('/gps');
+  },
+
+  getYangoActivity() {
+    return this._get('/yango');
   }
 };
