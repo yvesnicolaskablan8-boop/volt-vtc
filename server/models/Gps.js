@@ -11,12 +11,14 @@ const gpsSchema = new mongoose.Schema({
   scoreAcceleration: Number,
   scoreVirage: Number,
   scoreRegularite: Number,
+  scoreActivite: Number,
   evenements: {
     freinagesBrusques: Number,
     accelerationsBrusques: Number,
     excesVitesse: Number,
     viragesAgressifs: Number,
     tempsConduite: Number,
+    tempsActiviteYango: Number,
     distanceParcourue: Number,
     vitesseMoyenne: Number,
     vitesseMax: Number

@@ -27,6 +27,14 @@ const settingsSchema = new mongoose.Schema({
     penaliteType: { type: String, enum: ['pourcentage', 'montant_fixe'], default: 'pourcentage' },
     penaliteValeur: { type: Number, default: 5 },
     alerteRetard: { type: Boolean, default: true }
+  },
+  bonus: {
+    bonusActif: { type: Boolean, default: false },
+    scoreMinimum: { type: Number, default: 90 },
+    tempsActiviteMin: { type: Number, default: 600 },
+    bonusType: { type: String, enum: ['pourcentage', 'montant_fixe'], default: 'montant_fixe' },
+    bonusValeur: { type: Number, default: 5000 },
+    bonusPeriode: { type: String, enum: ['hebdomadaire', 'mensuel'], default: 'mensuel' }
   }
 }, {
   toJSON: {

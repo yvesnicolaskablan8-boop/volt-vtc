@@ -159,7 +159,8 @@ const AccueilPage = {
       { key: 'scoreFreinage', label: 'Freinage', icon: 'fa-brake-warning', desc: 'Douceur et anticipation au freinage', iconFallback: 'fa-hand-paper' },
       { key: 'scoreAcceleration', label: 'Acceleration', icon: 'fa-gauge-high', desc: 'Progressivite des accelerations' },
       { key: 'scoreVirage', label: 'Virages', icon: 'fa-road', desc: 'Fluidite dans les tournants' },
-      { key: 'scoreRegularite', label: 'Regularite', icon: 'fa-clock', desc: 'Constance dans le style de conduite' }
+      { key: 'scoreRegularite', label: 'Regularite', icon: 'fa-clock', desc: 'Constance dans le style de conduite' },
+      { key: 'scoreActivite', label: 'Activite Yango', icon: 'fa-mobile-screen', desc: 'Temps d\'activite sur Yango (objectif : 10h/jour)' }
     ];
 
     const scoresHTML = criteres.map(c => {
@@ -211,8 +212,9 @@ const AccueilPage = {
     }
 
     // Stats conduite
+    const tempsActiviteYango = evt.tempsActiviteYango || 0;
     let statsHTML = '';
-    if (evt.distanceParcourue || evt.vitesseMoyenne || evt.tempsConduite) {
+    if (evt.distanceParcourue || evt.vitesseMoyenne || evt.tempsConduite || tempsActiviteYango) {
       statsHTML = `
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
           ${evt.distanceParcourue ? `<div style="flex:1;min-width:80px;text-align:center;background:var(--bg-tertiary);border-radius:8px;padding:8px 6px">
@@ -224,8 +226,12 @@ const AccueilPage = {
             <div style="font-size:0.85rem;font-weight:700">${evt.vitesseMoyenne} km/h</div>
           </div>` : ''}
           ${evt.tempsConduite ? `<div style="flex:1;min-width:80px;text-align:center;background:var(--bg-tertiary);border-radius:8px;padding:8px 6px">
-            <div style="font-size:0.68rem;color:var(--text-muted)">Temps</div>
+            <div style="font-size:0.68rem;color:var(--text-muted)">Temps conduite</div>
             <div style="font-size:0.85rem;font-weight:700">${Math.floor(evt.tempsConduite / 60)}h${String(evt.tempsConduite % 60).padStart(2, '0')}</div>
+          </div>` : ''}
+          ${tempsActiviteYango ? `<div style="flex:1;min-width:80px;text-align:center;background:${tempsActiviteYango >= 600 ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)'};border-radius:8px;padding:8px 6px">
+            <div style="font-size:0.68rem;color:var(--text-muted)"><i class="fas fa-mobile-screen" style="margin-right:2px"></i> Yango</div>
+            <div style="font-size:0.85rem;font-weight:700;color:${tempsActiviteYango >= 600 ? '#22c55e' : '#f59e0b'}">${Math.floor(tempsActiviteYango / 60)}h${String(tempsActiviteYango % 60).padStart(2, '0')}</div>
           </div>` : ''}
         </div>
       `;
@@ -250,6 +256,48 @@ const AccueilPage = {
       `;
     }
 
+    // Bonus eligibility
+    let bonusHTML = '';
+    const dashData = await DriverStore.getDashboard();
+    const bonusInfo = dashData && dashData.bonus;
+    if (bonusInfo && bonusInfo.bonusActif) {
+      const bonusAmount = bonusInfo.bonusType === 'montant_fixe'
+        ? bonusInfo.bonusValeur.toLocaleString('fr-FR') + ' FCFA'
+        : bonusInfo.bonusValeur + '% du net';
+      const periodeLabel = bonusInfo.bonusPeriode === 'mensuel' ? 'mois' : 'semaine';
+      const activiteMinH = Math.floor(bonusInfo.tempsActiviteMin / 60);
+      const activiteActuelH = Math.floor(bonusInfo.tempsActiviteActuel / 60);
+      const activiteActuelM = bonusInfo.tempsActiviteActuel % 60;
+
+      bonusHTML = `
+        <div style="margin-top:16px;padding:14px;border-radius:10px;background:${bonusInfo.eligible ? 'rgba(34,197,94,0.1)' : 'rgba(59,130,246,0.08)'};border:1px solid ${bonusInfo.eligible ? 'rgba(34,197,94,0.3)' : 'rgba(59,130,246,0.2)'}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <i class="fas fa-trophy" style="color:${bonusInfo.eligible ? '#22c55e' : '#6366f1'};font-size:1rem"></i>
+            <span style="font-size:0.82rem;font-weight:700;color:${bonusInfo.eligible ? '#22c55e' : 'var(--text-primary)'}">
+              ${bonusInfo.eligible ? 'Tu es eligible au bonus !' : 'Bonus de performance'}
+            </span>
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:10px">
+            ${bonusInfo.eligible
+              ? 'Felicitations ! Tu recevras un bonus de <strong>' + bonusAmount + '</strong> ce ' + periodeLabel + '.'
+              : 'Atteins les objectifs pour recevoir <strong>' + bonusAmount + '</strong> / ' + periodeLabel + ' :'}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem">
+              <i class="fas ${bonusInfo.scoreOk ? 'fa-check-circle' : 'fa-circle'}" style="color:${bonusInfo.scoreOk ? '#22c55e' : 'var(--text-muted)'};font-size:0.75rem"></i>
+              <span>Score de conduite ≥ ${bonusInfo.scoreMinimum}/100</span>
+              <span style="margin-left:auto;font-weight:600;color:${bonusInfo.scoreOk ? '#22c55e' : '#f59e0b'}">${bonusInfo.scoreActuel}/100</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem">
+              <i class="fas ${bonusInfo.activiteOk ? 'fa-check-circle' : 'fa-circle'}" style="color:${bonusInfo.activiteOk ? '#22c55e' : 'var(--text-muted)'};font-size:0.75rem"></i>
+              <span>Activite Yango ≥ ${activiteMinH}h/jour</span>
+              <span style="margin-left:auto;font-weight:600;color:${bonusInfo.activiteOk ? '#22c55e' : '#f59e0b'}">${activiteActuelH}h${String(activiteActuelM).padStart(2, '0')}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     const bodyHTML = `
       <div style="text-align:center;margin-bottom:16px">
         <div style="font-size:2.5rem;font-weight:800;color:${scoreColor};line-height:1">${scoreGlobal}</div>
@@ -263,6 +311,7 @@ const AccueilPage = {
       ${statsHTML}
       ${eventsHTML}
       ${recoHTML}
+      ${bonusHTML}
     `;
 
     DriverModal.show('Score de conduite', bodyHTML, [

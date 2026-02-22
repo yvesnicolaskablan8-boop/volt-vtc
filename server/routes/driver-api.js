@@ -108,6 +108,27 @@ router.get('/dashboard', async (req, res, next) => {
           penaliteValeur: vs.penaliteValeur || 0,
           alreadyPaid: !!versementPeriode
         };
+      })(),
+      bonus: (() => {
+        const b = settings && settings.bonus;
+        if (!b || !b.bonusActif) return null;
+        const driverScore = dernierGps ? dernierGps.scoreGlobal : (chauffeur ? chauffeur.scoreConduite : 0);
+        const tempsActivite = dernierGps && dernierGps.evenements ? dernierGps.evenements.tempsActiviteYango || 0 : 0;
+        const scoreOk = driverScore >= (b.scoreMinimum || 90);
+        const activiteOk = tempsActivite >= (b.tempsActiviteMin || 600);
+        return {
+          bonusActif: true,
+          scoreMinimum: b.scoreMinimum || 90,
+          tempsActiviteMin: b.tempsActiviteMin || 600,
+          bonusType: b.bonusType || 'montant_fixe',
+          bonusValeur: b.bonusValeur || 5000,
+          bonusPeriode: b.bonusPeriode || 'mensuel',
+          eligible: scoreOk && activiteOk,
+          scoreActuel: driverScore || 0,
+          tempsActiviteActuel: tempsActivite,
+          scoreOk,
+          activiteOk
+        };
       })()
     });
   } catch (err) {

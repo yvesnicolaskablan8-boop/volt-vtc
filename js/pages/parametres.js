@@ -1340,6 +1340,7 @@ const ParametresPage = {
   _renderVersementsSettings() {
     const settings = Store.get('settings') || {};
     const vs = settings.versements || {};
+    const bonus = settings.bonus || {};
     const joursSemaine = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     const dtype = vs.deadlineType || 'quotidien';
     const isQuotidien = dtype === 'quotidien';
@@ -1474,6 +1475,80 @@ const ParametresPage = {
         </div>
       </div>
 
+      <!-- Bonus de performance -->
+      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #22c55e;">
+        <div class="card-header">
+          <span class="card-title"><i class="fas fa-trophy" style="color:#22c55e;"></i> Bonus de performance</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+            <div>
+              <div style="font-weight:500;font-size:var(--font-size-sm);">Activer les bonus</div>
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Récompense les chauffeurs atteignant un excellent score de conduite</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="bonus-actif" ${bonus.bonusActif ? 'checked' : ''}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div id="bonus-details" style="display:${bonus.bonusActif ? 'flex' : 'none'};flex-direction:column;gap:var(--space-md);padding-top:var(--space-sm);border-top:1px solid var(--border-color);">
+            <div class="grid-2" style="gap:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Score minimum requis</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="number" class="form-control" id="bonus-score-min" min="50" max="100" value="${bonus.scoreMinimum || 90}" style="max-width:100px;">
+                  <span style="font-size:var(--font-size-sm);color:var(--text-muted);">/ 100</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Temps d'activité Yango minimum</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="number" class="form-control" id="bonus-activite-min" min="0" max="1440" value="${Math.round((bonus.tempsActiviteMin || 600) / 60)}" style="max-width:100px;">
+                  <span style="font-size:var(--font-size-sm);color:var(--text-muted);">heures / jour</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Type de bonus</label>
+              <div style="display:flex;gap:var(--space-sm);">
+                <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);border:1px solid ${(bonus.bonusType || 'montant_fixe') === 'montant_fixe' ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;">
+                  <input type="radio" name="bonus-type" value="montant_fixe" ${(bonus.bonusType || 'montant_fixe') === 'montant_fixe' ? 'checked' : ''} style="accent-color:var(--primary);">
+                  <span style="font-size:var(--font-size-sm);font-weight:500;">Montant fixe (FCFA)</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);border:1px solid ${bonus.bonusType === 'pourcentage' ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;">
+                  <input type="radio" name="bonus-type" value="pourcentage" ${bonus.bonusType === 'pourcentage' ? 'checked' : ''} style="accent-color:var(--primary);">
+                  <span style="font-size:var(--font-size-sm);font-weight:500;">Pourcentage (%)</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="grid-2" style="gap:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Valeur du bonus</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input type="number" class="form-control" id="bonus-valeur" min="0" value="${bonus.bonusValeur || 5000}" style="max-width:150px;">
+                  <span id="bonus-unite" style="font-size:var(--font-size-sm);color:var(--text-muted);font-weight:500;">${(bonus.bonusType || 'montant_fixe') === 'montant_fixe' ? 'FCFA' : '% du montant net'}</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Période d'évaluation</label>
+                <select class="form-control" id="bonus-periode">
+                  <option value="mensuel" ${(bonus.bonusPeriode || 'mensuel') === 'mensuel' ? 'selected' : ''}>Mensuel</option>
+                  <option value="hebdomadaire" ${bonus.bonusPeriode === 'hebdomadaire' ? 'selected' : ''}>Hebdomadaire</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="padding:12px 16px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);font-size:var(--font-size-xs);color:var(--text-secondary);">
+              <i class="fas fa-info-circle" style="color:#22c55e;margin-right:6px;"></i>
+              Le chauffeur doit atteindre <strong>un score de conduite ≥ <span id="bonus-info-score">${bonus.scoreMinimum || 90}</span>/100</strong> et <strong>un temps d'activité Yango ≥ <span id="bonus-info-activite">${Math.round((bonus.tempsActiviteMin || 600) / 60)}</span>h/jour</strong> pour recevoir le bonus de <strong><span id="bonus-info-valeur">${(bonus.bonusValeur || 5000).toLocaleString('fr-FR')}</span> <span id="bonus-info-unite">${(bonus.bonusType || 'montant_fixe') === 'montant_fixe' ? 'FCFA' : '%'}</span></strong>.
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div style="margin-top:var(--space-lg);display:flex;justify-content:flex-end;">
         <button class="btn btn-primary" id="btn-save-versements-settings"><i class="fas fa-save"></i> Sauvegarder la configuration</button>
       </div>
@@ -1515,6 +1590,44 @@ const ParametresPage = {
       });
     });
 
+    // Toggle bonus actif → show/hide details
+    const bonusToggle = document.getElementById('bonus-actif');
+    if (bonusToggle) {
+      bonusToggle.addEventListener('change', () => {
+        document.getElementById('bonus-details').style.display = bonusToggle.checked ? 'flex' : 'none';
+      });
+    }
+
+    // Toggle bonus type → update unite label
+    document.querySelectorAll('input[name="bonus-type"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const unite = document.getElementById('bonus-unite');
+        const infoUnite = document.getElementById('bonus-info-unite');
+        if (unite) unite.textContent = radio.value === 'montant_fixe' ? 'FCFA' : '% du montant net';
+        if (infoUnite) infoUnite.textContent = radio.value === 'montant_fixe' ? 'FCFA' : '%';
+        document.querySelectorAll('input[name="bonus-type"]').forEach(r => {
+          r.closest('label').style.borderColor = r.checked ? 'var(--primary)' : 'var(--border-color)';
+        });
+      });
+    });
+
+    // Update bonus info banner dynamically
+    const bonusScoreInput = document.getElementById('bonus-score-min');
+    const bonusActiviteInput = document.getElementById('bonus-activite-min');
+    const bonusValeurInput = document.getElementById('bonus-valeur');
+    if (bonusScoreInput) bonusScoreInput.addEventListener('input', () => {
+      const el = document.getElementById('bonus-info-score');
+      if (el) el.textContent = bonusScoreInput.value;
+    });
+    if (bonusActiviteInput) bonusActiviteInput.addEventListener('input', () => {
+      const el = document.getElementById('bonus-info-activite');
+      if (el) el.textContent = bonusActiviteInput.value;
+    });
+    if (bonusValeurInput) bonusValeurInput.addEventListener('input', () => {
+      const el = document.getElementById('bonus-info-valeur');
+      if (el) el.textContent = parseInt(bonusValeurInput.value || 0).toLocaleString('fr-FR');
+    });
+
     // Save
     document.getElementById('btn-save-versements-settings').addEventListener('click', () => {
       const deadlineType = document.querySelector('input[name="vs-deadline-type"]:checked')?.value || 'quotidien';
@@ -1530,6 +1643,14 @@ const ParametresPage = {
       const penaliteValeur = parseInt(document.getElementById('vs-penalite-valeur').value) || 0;
       const alerteRetard = document.getElementById('vs-alerte-retard').checked;
 
+      // Bonus config
+      const bonusActif = document.getElementById('bonus-actif').checked;
+      const scoreMinimum = parseInt(document.getElementById('bonus-score-min').value) || 90;
+      const tempsActiviteMin = (parseInt(document.getElementById('bonus-activite-min').value) || 10) * 60;
+      const bonusType = document.querySelector('input[name="bonus-type"]:checked')?.value || 'montant_fixe';
+      const bonusValeur = parseInt(document.getElementById('bonus-valeur').value) || 5000;
+      const bonusPeriode = document.getElementById('bonus-periode').value || 'mensuel';
+
       const settings = Store.get('settings') || {};
       settings.versements = {
         deadlineType,
@@ -1539,6 +1660,14 @@ const ParametresPage = {
         penaliteType,
         penaliteValeur,
         alerteRetard
+      };
+      settings.bonus = {
+        bonusActif,
+        scoreMinimum,
+        tempsActiviteMin,
+        bonusType,
+        bonusValeur,
+        bonusPeriode
       };
 
       Store.set('settings', settings);
