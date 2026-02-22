@@ -36,12 +36,22 @@ const AccueilPage = {
     const score = data.scoreConduite || 0;
     const scoreClass = score >= 70 ? 'good' : score >= 50 ? 'medium' : 'bad';
 
+    // Countdown deadline
+    let countdownHTML = '';
+    if (data.deadline && data.deadline.configured) {
+      DriverCountdown.init(data.deadline);
+      countdownHTML = DriverCountdown.renderWidget();
+    }
+
     container.innerHTML = `
       <!-- Greeting -->
       <div class="greeting">
         <h2>Bonjour, ${prenom} !</h2>
         <p><i class="fas fa-calendar-day"></i> ${dateStr}</p>
       </div>
+
+      <!-- Countdown deadline versement -->
+      ${countdownHTML}
 
       <!-- Planning du jour -->
       <div class="card">
@@ -108,6 +118,11 @@ const AccueilPage = {
         </button>
       </div>
     `;
+
+    // Demarrer le timer du countdown apres le render
+    if (data.deadline && data.deadline.configured) {
+      DriverCountdown.startTimer();
+    }
   },
 
   _formatCurrency(amount) {
@@ -164,5 +179,7 @@ const AccueilPage = {
     }
   },
 
-  destroy() {}
+  destroy() {
+    DriverCountdown.stopTimer();
+  }
 };

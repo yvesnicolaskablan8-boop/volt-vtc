@@ -18,6 +18,15 @@ const settingsSchema = new mongoose.Schema({
     notifications: { type: Boolean, default: true },
     alertesSonores: { type: Boolean, default: false },
     sessionTimeout: { type: Number, default: 30 }
+  },
+  versements: {
+    deadlineType: { type: String, enum: ['hebdomadaire', 'mensuel'], default: 'hebdomadaire' },
+    deadlineJour: { type: Number, default: 0 },
+    deadlineHeure: { type: String, default: '23:59' },
+    penaliteActive: { type: Boolean, default: false },
+    penaliteType: { type: String, enum: ['pourcentage', 'montant_fixe'], default: 'pourcentage' },
+    penaliteValeur: { type: Number, default: 5 },
+    alerteRetard: { type: Boolean, default: true }
   }
 }, {
   toJSON: {

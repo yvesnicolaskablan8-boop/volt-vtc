@@ -6,6 +6,8 @@ const Absence = require('../models/Absence');
 const Versement = require('../models/Versement');
 const Signalement = require('../models/Signalement');
 const Gps = require('../models/Gps');
+const Settings = require('../models/Settings');
+const { getNextDeadline, calculatePenalty } = require('../utils/deadline');
 
 const router = express.Router();
 
@@ -19,7 +21,7 @@ router.get('/dashboard', async (req, res, next) => {
     const monthStart = today.slice(0, 7); // YYYY-MM
 
     // Recuperer toutes les donnees en parallele
-    const [chauffeur, planningToday, versementsMois, signalements, gpsRecent] = await Promise.all([
+    const [chauffeur, planningToday, versementsMois, signalements, gpsRecent, settings] = await Promise.all([
       Chauffeur.findOne({ id: chauffeurId }).lean(),
       Planning.findOne({ chauffeurId, date: today }).lean(),
       Versement.find({
@@ -30,7 +32,8 @@ router.get('/dashboard', async (req, res, next) => {
         chauffeurId,
         statut: { $in: ['ouvert', 'en_cours'] }
       }).lean(),
-      Gps.find({ chauffeurId }).sort({ date: -1 }).limit(1).lean()
+      Gps.find({ chauffeurId }).sort({ date: -1 }).limit(1).lean(),
+      Settings.findOne().lean()
     ]);
 
     // Vehicule assigne
@@ -84,7 +87,22 @@ router.get('/dashboard', async (req, res, next) => {
       },
       scoreConduite: dernierGps ? dernierGps.scoreGlobal : scoreConduite,
       alertesActives: signalements.length,
-      dateJour: today
+      dateJour: today,
+      deadline: (() => {
+        const vs = settings && settings.versements;
+        if (!vs || !vs.deadlineType) return null;
+        const info = getNextDeadline(vs);
+        if (!info) return null;
+        return {
+          configured: true,
+          deadlineDate: info.deadlineDate.toISOString(),
+          remainingMs: info.remainingMs,
+          deadlineType: vs.deadlineType,
+          penaliteActive: vs.penaliteActive || false,
+          penaliteType: vs.penaliteType || 'pourcentage',
+          penaliteValeur: vs.penaliteValeur || 0
+        };
+      })()
     });
   } catch (err) {
     next(err);
@@ -158,6 +176,33 @@ router.post('/absences', async (req, res, next) => {
   }
 });
 
+// =================== DEADLINE ===================
+
+// GET /api/driver/deadline — Infos deadline legeres (pour refresh rapide)
+router.get('/deadline', async (req, res, next) => {
+  try {
+    const settings = await Settings.findOne().lean();
+    const vs = settings && settings.versements;
+    if (!vs || !vs.deadlineType) {
+      return res.json({ configured: false });
+    }
+    const info = getNextDeadline(vs);
+    if (!info) return res.json({ configured: false });
+
+    res.json({
+      configured: true,
+      deadlineDate: info.deadlineDate.toISOString(),
+      remainingMs: info.remainingMs,
+      deadlineType: vs.deadlineType,
+      penaliteActive: vs.penaliteActive || false,
+      penaliteType: vs.penaliteType || 'pourcentage',
+      penaliteValeur: vs.penaliteValeur || 0
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // =================== VERSEMENTS ===================
 
 // GET /api/driver/versements — Historique versements du chauffeur
@@ -183,13 +228,48 @@ router.post('/versements', async (req, res, next) => {
 
     const chauffeurId = req.user.chauffeurId;
 
-    // Recuperer le vehicule assigne
-    const chauffeur = await Chauffeur.findOne({ id: chauffeurId }).lean();
+    // Recuperer le vehicule assigne + settings en parallele
+    const [chauffeur, settings] = await Promise.all([
+      Chauffeur.findOne({ id: chauffeurId }).lean(),
+      Settings.findOne().lean()
+    ]);
     const vehiculeId = chauffeur ? chauffeur.vehiculeAssigne : null;
 
     // Calcul commission 20%
     const commission = Math.round(montantBrut * 0.20);
-    const montantNet = montantBrut - commission;
+
+    // Verifier deadline et penalite
+    const vs = settings && settings.versements;
+    let enRetard = false;
+    let penaliteMontant = 0;
+    let deadlineDateStr = null;
+
+    if (vs && vs.deadlineType) {
+      const deadlineInfo = getNextDeadline(vs);
+      if (deadlineInfo) {
+        deadlineDateStr = deadlineInfo.previousDeadline.toISOString();
+        // En retard si le temps restant indique qu'on est apres la deadline precedente
+        // et qu'aucun versement n'a ete fait depuis cette deadline
+        const now = new Date();
+        if (now > deadlineInfo.previousDeadline) {
+          // Verifier s'il existe deja un versement dans la periode courante
+          const versementsPeriode = await Versement.find({
+            chauffeurId,
+            dateCreation: { $gte: deadlineInfo.previousDeadline.toISOString() }
+          }).lean();
+
+          if (versementsPeriode.length === 0) {
+            // Premier versement de la periode — verifier si en retard
+            // En retard si la previousDeadline est passee (ce qui est toujours le cas ici)
+            // MAIS seulement si on depasse le delai depuis la previousDeadline
+            enRetard = true;
+            penaliteMontant = calculatePenalty(montantBrut, vs);
+          }
+        }
+      }
+    }
+
+    const montantNet = montantBrut - commission - penaliteMontant;
 
     // Generer un ID unique
     const id = 'VRS-' + Math.random().toString(36).substr(2, 6).toUpperCase();
@@ -204,10 +284,13 @@ router.post('/versements', async (req, res, next) => {
       commission,
       montantNet,
       montantVerse: montantNet,
-      statut: 'en_attente',
+      statut: enRetard ? 'retard' : 'en_attente',
       nombreCourses: nombreCourses || 0,
       commentaire: commentaire || '',
       soumisParChauffeur: true,
+      enRetard,
+      penaliteMontant,
+      deadlineDate: deadlineDateStr,
       dateCreation: new Date().toISOString()
     });
 

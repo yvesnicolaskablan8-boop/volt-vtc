@@ -53,6 +53,25 @@ const DriverApp = {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-shell').style.display = 'flex';
     DriverRouter.init();
+
+    // Verifier deadline pour alerte sonore a l'ouverture
+    this._checkDeadlineSound();
+  },
+
+  async _checkDeadlineSound() {
+    if (sessionStorage.getItem('volt_deadline_sound_played')) return;
+    try {
+      const deadline = await DriverStore.getDeadline();
+      if (deadline && deadline.configured && deadline.remainingMs <= 24 * 3600 * 1000 && deadline.remainingMs > 0) {
+        // Jouer l'alerte sonore
+        if (typeof DriverCountdown !== 'undefined') {
+          DriverCountdown.playAlertSound();
+        }
+        sessionStorage.setItem('volt_deadline_sound_played', '1');
+      }
+    } catch (e) {
+      console.warn('Deadline sound check failed:', e);
+    }
   },
 
   _setupLoginForm() {

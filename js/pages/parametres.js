@@ -55,6 +55,7 @@ const ParametresPage = {
         <div class="tab" data-tab="users"><i class="fas fa-users-cog"></i> Utilisateurs</div>
         <div class="tab" data-tab="entreprise"><i class="fas fa-building"></i> Entreprise</div>
         <div class="tab" data-tab="preferences"><i class="fas fa-sliders-h"></i> Préférences</div>
+        <div class="tab" data-tab="versements-settings"><i class="fas fa-money-bill-transfer"></i> Versements</div>
       </div>
 
       <div id="settings-content"></div>
@@ -79,6 +80,7 @@ const ParametresPage = {
       case 'users': ct.innerHTML = this._renderUsers(); this._bindUsersEvents(); break;
       case 'entreprise': ct.innerHTML = this._renderEntreprise(); this._bindEntrepriseEvents(); break;
       case 'preferences': ct.innerHTML = this._renderPreferences(); this._bindPreferencesEvents(); break;
+      case 'versements-settings': ct.innerHTML = this._renderVersementsSettings(); this._bindVersementsSettingsEvents(); break;
     }
   },
 
@@ -1330,6 +1332,198 @@ const ParametresPage = {
 
       Store.set('settings', settings);
       Toast.success('Préférences sauvegardées');
+    });
+  },
+
+  // ========================= ONGLET VERSEMENTS (DEADLINE + PENALITES) =========================
+
+  _renderVersementsSettings() {
+    const settings = Store.get('settings') || {};
+    const vs = settings.versements || {};
+    const joursSemaine = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    const isHebdo = (vs.deadlineType || 'hebdomadaire') === 'hebdomadaire';
+
+    return `
+      <div class="grid-2" style="gap:var(--space-lg);">
+        <!-- Deadline -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-clock" style="color:var(--primary);"></i> Deadline de versement</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-lg);padding-top:var(--space-md);">
+
+            <div class="form-group">
+              <label class="form-label">Type de deadline</label>
+              <div style="display:flex;gap:var(--space-md);">
+                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${isHebdo ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;transition:all 0.2s;">
+                  <input type="radio" name="vs-deadline-type" value="hebdomadaire" ${isHebdo ? 'checked' : ''} style="accent-color:var(--primary);">
+                  <div>
+                    <div style="font-weight:600;font-size:var(--font-size-sm);">Hebdomadaire</div>
+                    <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Chaque semaine</div>
+                  </div>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${!isHebdo ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;transition:all 0.2s;">
+                  <input type="radio" name="vs-deadline-type" value="mensuel" ${!isHebdo ? 'checked' : ''} style="accent-color:var(--primary);">
+                  <div>
+                    <div style="font-weight:600;font-size:var(--font-size-sm);">Mensuel</div>
+                    <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Chaque mois</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Jour de la semaine (hebdo) -->
+            <div class="form-group" id="vs-jour-hebdo" style="display:${isHebdo ? 'block' : 'none'};">
+              <label class="form-label">Jour de la semaine</label>
+              <select class="form-control" id="vs-deadline-jour-semaine">
+                ${joursSemaine.map((j, i) => `<option value="${i}" ${(vs.deadlineJour || 0) === i ? 'selected' : ''}>${j}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- Jour du mois (mensuel) -->
+            <div class="form-group" id="vs-jour-mensuel" style="display:${!isHebdo ? 'block' : 'none'};">
+              <label class="form-label">Jour du mois</label>
+              <input type="number" class="form-control" id="vs-deadline-jour-mois" min="1" max="31" value="${vs.deadlineJour || 1}" style="max-width:120px;">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Heure limite</label>
+              <input type="time" class="form-control" id="vs-deadline-heure" value="${vs.deadlineHeure || '23:59'}" style="max-width:160px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Penalites -->
+        <div>
+          <div class="card" style="margin-bottom:var(--space-lg);">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i> Pénalités de retard</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+                <div>
+                  <div style="font-weight:500;font-size:var(--font-size-sm);">Activer les pénalités</div>
+                  <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Applique une pénalité sur les versements en retard</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="vs-penalite-active" ${vs.penaliteActive ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div id="vs-penalite-details" style="display:${vs.penaliteActive ? 'flex' : 'none'};flex-direction:column;gap:var(--space-md);padding-top:var(--space-sm);border-top:1px solid var(--border-color);">
+                <div class="form-group">
+                  <label class="form-label">Type de pénalité</label>
+                  <div style="display:flex;gap:var(--space-sm);">
+                    <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);border:1px solid ${(vs.penaliteType || 'pourcentage') === 'pourcentage' ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;">
+                      <input type="radio" name="vs-penalite-type" value="pourcentage" ${(vs.penaliteType || 'pourcentage') === 'pourcentage' ? 'checked' : ''} style="accent-color:var(--primary);">
+                      <span style="font-size:var(--font-size-sm);font-weight:500;">Pourcentage (%)</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);border:1px solid ${vs.penaliteType === 'montant_fixe' ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;">
+                      <input type="radio" name="vs-penalite-type" value="montant_fixe" ${vs.penaliteType === 'montant_fixe' ? 'checked' : ''} style="accent-color:var(--primary);">
+                      <span style="font-size:var(--font-size-sm);font-weight:500;">Montant fixe (FCFA)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Valeur de la pénalité</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="number" class="form-control" id="vs-penalite-valeur" min="0" value="${vs.penaliteValeur || 5}" style="max-width:150px;">
+                    <span id="vs-penalite-unite" style="font-size:var(--font-size-sm);color:var(--text-muted);font-weight:500;">${(vs.penaliteType || 'pourcentage') === 'pourcentage' ? '% du montant brut' : 'FCFA'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alertes admin -->
+          <div class="card" style="border-left:4px solid var(--volt-blue);">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-bell" style="color:var(--volt-blue);"></i> Notifications admin</span>
+            </div>
+            <div style="padding-top:var(--space-md);">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+                <div>
+                  <div style="font-weight:500;font-size:var(--font-size-sm);">Alerte retard de versement</div>
+                  <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Recevoir une alerte quand un chauffeur est en retard</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="vs-alerte-retard" ${vs.alerteRetard !== false ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:var(--space-lg);display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" id="btn-save-versements-settings"><i class="fas fa-save"></i> Sauvegarder la configuration</button>
+      </div>
+    `;
+  },
+
+  _bindVersementsSettingsEvents() {
+    // Toggle hebdo/mensuel → switch jour selector
+    document.querySelectorAll('input[name="vs-deadline-type"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const isHebdo = radio.value === 'hebdomadaire';
+        document.getElementById('vs-jour-hebdo').style.display = isHebdo ? 'block' : 'none';
+        document.getElementById('vs-jour-mensuel').style.display = isHebdo ? 'none' : 'block';
+        // Update radio border
+        document.querySelectorAll('input[name="vs-deadline-type"]').forEach(r => {
+          r.closest('label').style.borderColor = r.checked ? 'var(--primary)' : 'var(--border-color)';
+        });
+      });
+    });
+
+    // Toggle penalite active → show/hide details
+    const penaliteToggle = document.getElementById('vs-penalite-active');
+    if (penaliteToggle) {
+      penaliteToggle.addEventListener('change', () => {
+        document.getElementById('vs-penalite-details').style.display = penaliteToggle.checked ? 'flex' : 'none';
+      });
+    }
+
+    // Toggle penalite type → update unite label
+    document.querySelectorAll('input[name="vs-penalite-type"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const unite = document.getElementById('vs-penalite-unite');
+        if (unite) unite.textContent = radio.value === 'pourcentage' ? '% du montant brut' : 'FCFA';
+        // Update radio borders
+        document.querySelectorAll('input[name="vs-penalite-type"]').forEach(r => {
+          r.closest('label').style.borderColor = r.checked ? 'var(--primary)' : 'var(--border-color)';
+        });
+      });
+    });
+
+    // Save
+    document.getElementById('btn-save-versements-settings').addEventListener('click', () => {
+      const deadlineType = document.querySelector('input[name="vs-deadline-type"]:checked')?.value || 'hebdomadaire';
+      const isHebdo = deadlineType === 'hebdomadaire';
+      const deadlineJour = isHebdo
+        ? parseInt(document.getElementById('vs-deadline-jour-semaine').value)
+        : parseInt(document.getElementById('vs-deadline-jour-mois').value) || 1;
+      const deadlineHeure = document.getElementById('vs-deadline-heure').value || '23:59';
+      const penaliteActive = document.getElementById('vs-penalite-active').checked;
+      const penaliteType = document.querySelector('input[name="vs-penalite-type"]:checked')?.value || 'pourcentage';
+      const penaliteValeur = parseInt(document.getElementById('vs-penalite-valeur').value) || 0;
+      const alerteRetard = document.getElementById('vs-alerte-retard').checked;
+
+      const settings = Store.get('settings') || {};
+      settings.versements = {
+        deadlineType,
+        deadlineJour,
+        deadlineHeure,
+        penaliteActive,
+        penaliteType,
+        penaliteValeur,
+        alerteRetard
+      };
+
+      Store.set('settings', settings);
+      Toast.success('Configuration des versements sauvegardée');
     });
   }
 };

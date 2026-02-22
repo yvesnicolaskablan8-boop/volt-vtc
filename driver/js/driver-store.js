@@ -76,6 +76,10 @@ const DriverStore = {
     return this._post('/absences', data);
   },
 
+  getDeadline() {
+    return this._get('/deadline');
+  },
+
   getVersements() {
     return this._get('/versements');
   },

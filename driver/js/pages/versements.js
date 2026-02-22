@@ -5,7 +5,12 @@ const VersementsPage = {
   async render(container) {
     container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
 
-    const versements = await DriverStore.getVersements();
+    // Fetch versements et deadline en parallele
+    const [versements, deadline] = await Promise.all([
+      DriverStore.getVersements(),
+      DriverStore.getDeadline()
+    ]);
+
     if (!versements) {
       container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Impossible de charger les versements</p></div>';
       return;
@@ -18,10 +23,40 @@ const VersementsPage = {
     const totalBrut = versMois.reduce((s, v) => s + (v.montantBrut || 0), 0);
     const totalCommission = versMois.reduce((s, v) => s + (v.commission || 0), 0);
     const totalNet = versMois.reduce((s, v) => s + (v.montantNet || 0), 0);
+    const totalPenalites = versMois.reduce((s, v) => s + (v.penaliteMontant || 0), 0);
 
     const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
 
+    // Deadline banner
+    let deadlineBannerHTML = '';
+    if (deadline && deadline.configured) {
+      const remaining = new Date(deadline.deadlineDate) - now;
+      const statusClass = remaining <= 0 ? 'expired' : remaining <= 24 * 3600000 ? 'critical' : remaining <= 48 * 3600000 ? 'warning' : 'safe';
+      const timeText = remaining <= 0
+        ? `<i class="fas fa-exclamation-triangle"></i> Deadline depassee`
+        : this._formatCountdown(remaining);
+
+      deadlineBannerHTML = `
+        <div class="deadline-banner ${statusClass}">
+          <div class="deadline-banner-icon"><i class="fas fa-clock"></i></div>
+          <div class="deadline-banner-text">
+            <div class="deadline-banner-title">Prochain deadline</div>
+            <div class="deadline-banner-time" id="versements-countdown">${timeText}</div>
+          </div>
+          ${deadline.penaliteActive && remaining <= 0 ? `
+            <div class="deadline-banner-penalty">
+              <i class="fas fa-coins"></i>
+              ${deadline.penaliteType === 'pourcentage' ? deadline.penaliteValeur + '%' : this._formatCurrency(deadline.penaliteValeur)}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
     container.innerHTML = `
+      <!-- Deadline banner -->
+      ${deadlineBannerHTML}
+
       <!-- Resume du mois -->
       <div class="stats-summary">
         <div class="stats-summary-title"><i class="fas fa-chart-bar"></i> ${monthNames[now.getMonth()]} ${now.getFullYear()}</div>
@@ -33,6 +68,12 @@ const VersementsPage = {
           <span class="stats-label">Commission (20%)</span>
           <span class="stats-value" style="color:#ef4444">-${this._formatCurrency(totalCommission)}</span>
         </div>
+        ${totalPenalites > 0 ? `
+        <div class="stats-row">
+          <span class="stats-label"><i class="fas fa-exclamation-triangle" style="color:#ef4444"></i> Penalites</span>
+          <span class="stats-value" style="color:#ef4444">-${this._formatCurrency(totalPenalites)}</span>
+        </div>
+        ` : ''}
         <div class="stats-row">
           <span class="stats-label">Net</span>
           <span class="stats-value highlight">${this._formatCurrency(totalNet)}</span>
@@ -53,6 +94,35 @@ const VersementsPage = {
         }
       </div>
     `;
+
+    // Timer live pour la banniere
+    if (deadline && deadline.configured) {
+      this._deadlineDate = new Date(deadline.deadlineDate);
+      this._startBannerTimer();
+    }
+  },
+
+  _bannerInterval: null,
+
+  _startBannerTimer() {
+    if (this._bannerInterval) clearInterval(this._bannerInterval);
+    this._bannerInterval = setInterval(() => {
+      const el = document.getElementById('versements-countdown');
+      if (!el) { clearInterval(this._bannerInterval); return; }
+      const remaining = this._deadlineDate - new Date();
+      el.innerHTML = remaining <= 0
+        ? '<i class="fas fa-exclamation-triangle"></i> Deadline depassee'
+        : this._formatCountdown(remaining);
+    }, 1000);
+  },
+
+  _formatCountdown(ms) {
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    if (d > 0) return `${d}j ${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+    return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
   },
 
   _renderVersement(v) {
@@ -74,6 +144,7 @@ const VersementsPage = {
           <div class="list-item-subtitle">${date} ${v.periode ? '• ' + v.periode : ''}</div>
           <div class="list-item-meta">
             <span class="badge ${v.statut}">${statusLabels[v.statut] || v.statut}</span>
+            ${v.enRetard && v.penaliteMontant > 0 ? `<span class="badge retard-penalty"><i class="fas fa-coins"></i> -${this._formatCurrency(v.penaliteMontant)}</span>` : ''}
             ${v.nombreCourses ? `<span style="font-size:0.72rem;color:var(--text-muted)">${v.nombreCourses} courses</span>` : ''}
           </div>
         </div>
@@ -156,7 +227,11 @@ const VersementsPage = {
 
     if (result && !result.error) {
       DriverModal.close();
-      DriverToast.show('Versement enregistre avec succes', 'success');
+      if (result.enRetard && result.penaliteMontant > 0) {
+        DriverToast.show(`Versement enregistre (penalite: ${result.penaliteMontant.toLocaleString('fr-FR')} FCFA)`, 'warning');
+      } else {
+        DriverToast.show('Versement enregistre avec succes', 'success');
+      }
       // Reload
       this.render(document.getElementById('app-content'));
     } else {
@@ -168,5 +243,7 @@ const VersementsPage = {
     return amount.toLocaleString('fr-FR') + ' FCFA';
   },
 
-  destroy() {}
+  destroy() {
+    if (this._bannerInterval) { clearInterval(this._bannerInterval); this._bannerInterval = null; }
+  }
 };

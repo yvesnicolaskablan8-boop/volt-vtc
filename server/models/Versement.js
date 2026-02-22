@@ -15,6 +15,9 @@ const versementSchema = new mongoose.Schema({
   commentaire: String,
   nombreCourses: Number,
   soumisParChauffeur: { type: Boolean, default: false },
+  enRetard: { type: Boolean, default: false },
+  penaliteMontant: { type: Number, default: 0 },
+  deadlineDate: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {
   toJSON: {
