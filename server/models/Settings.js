@@ -20,7 +20,7 @@ const settingsSchema = new mongoose.Schema({
     sessionTimeout: { type: Number, default: 30 }
   },
   versements: {
-    deadlineType: { type: String, enum: ['hebdomadaire', 'mensuel'], default: 'hebdomadaire' },
+    deadlineType: { type: String, enum: ['quotidien', 'hebdomadaire', 'mensuel'], default: 'quotidien' },
     deadlineJour: { type: Number, default: 0 },
     deadlineHeure: { type: String, default: '23:59' },
     penaliteActive: { type: Boolean, default: false },

@@ -1341,7 +1341,10 @@ const ParametresPage = {
     const settings = Store.get('settings') || {};
     const vs = settings.versements || {};
     const joursSemaine = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    const isHebdo = (vs.deadlineType || 'hebdomadaire') === 'hebdomadaire';
+    const dtype = vs.deadlineType || 'quotidien';
+    const isQuotidien = dtype === 'quotidien';
+    const isHebdo = dtype === 'hebdomadaire';
+    const isMensuel = dtype === 'mensuel';
 
     return `
       <div class="grid-2" style="gap:var(--space-lg);">
@@ -1354,22 +1357,35 @@ const ParametresPage = {
 
             <div class="form-group">
               <label class="form-label">Type de deadline</label>
-              <div style="display:flex;gap:var(--space-md);">
-                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${isHebdo ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;transition:all 0.2s;">
+              <div style="display:flex;gap:var(--space-md);flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${isQuotidien ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;min-width:140px;transition:all 0.2s;">
+                  <input type="radio" name="vs-deadline-type" value="quotidien" ${isQuotidien ? 'checked' : ''} style="accent-color:var(--primary);">
+                  <div>
+                    <div style="font-weight:600;font-size:var(--font-size-sm);">Quotidien</div>
+                    <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Lundi → Samedi</div>
+                  </div>
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${isHebdo ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;min-width:140px;transition:all 0.2s;">
                   <input type="radio" name="vs-deadline-type" value="hebdomadaire" ${isHebdo ? 'checked' : ''} style="accent-color:var(--primary);">
                   <div>
                     <div style="font-weight:600;font-size:var(--font-size-sm);">Hebdomadaire</div>
                     <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Chaque semaine</div>
                   </div>
                 </label>
-                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${!isHebdo ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;transition:all 0.2s;">
-                  <input type="radio" name="vs-deadline-type" value="mensuel" ${!isHebdo ? 'checked' : ''} style="accent-color:var(--primary);">
+                <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${isMensuel ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;min-width:140px;transition:all 0.2s;">
+                  <input type="radio" name="vs-deadline-type" value="mensuel" ${isMensuel ? 'checked' : ''} style="accent-color:var(--primary);">
                   <div>
                     <div style="font-weight:600;font-size:var(--font-size-sm);">Mensuel</div>
                     <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Chaque mois</div>
                   </div>
                 </label>
               </div>
+            </div>
+
+            <!-- Info quotidien -->
+            <div id="vs-info-quotidien" style="display:${isQuotidien ? 'block' : 'none'};padding:12px 16px;border-radius:var(--radius-sm);background:rgba(var(--primary-rgb,99,102,241),0.08);font-size:var(--font-size-xs);color:var(--text-secondary);">
+              <i class="fas fa-info-circle" style="color:var(--primary);margin-right:6px;"></i>
+              Les chauffeurs doivent verser leur recette <strong>chaque jour du lundi au samedi</strong> avant l'heure limite. Le dimanche est un jour de repos (pas de deadline).
             </div>
 
             <!-- Jour de la semaine (hebdo) -->
@@ -1381,7 +1397,7 @@ const ParametresPage = {
             </div>
 
             <!-- Jour du mois (mensuel) -->
-            <div class="form-group" id="vs-jour-mensuel" style="display:${!isHebdo ? 'block' : 'none'};">
+            <div class="form-group" id="vs-jour-mensuel" style="display:${isMensuel ? 'block' : 'none'};">
               <label class="form-label">Jour du mois</label>
               <input type="number" class="form-control" id="vs-deadline-jour-mois" min="1" max="31" value="${vs.deadlineJour || 1}" style="max-width:120px;">
             </div>
@@ -1465,12 +1481,13 @@ const ParametresPage = {
   },
 
   _bindVersementsSettingsEvents() {
-    // Toggle hebdo/mensuel → switch jour selector
+    // Toggle quotidien/hebdo/mensuel → switch jour selector
     document.querySelectorAll('input[name="vs-deadline-type"]').forEach(radio => {
       radio.addEventListener('change', () => {
-        const isHebdo = radio.value === 'hebdomadaire';
-        document.getElementById('vs-jour-hebdo').style.display = isHebdo ? 'block' : 'none';
-        document.getElementById('vs-jour-mensuel').style.display = isHebdo ? 'none' : 'block';
+        const val = radio.value;
+        document.getElementById('vs-info-quotidien').style.display = val === 'quotidien' ? 'block' : 'none';
+        document.getElementById('vs-jour-hebdo').style.display = val === 'hebdomadaire' ? 'block' : 'none';
+        document.getElementById('vs-jour-mensuel').style.display = val === 'mensuel' ? 'block' : 'none';
         // Update radio border
         document.querySelectorAll('input[name="vs-deadline-type"]').forEach(r => {
           r.closest('label').style.borderColor = r.checked ? 'var(--primary)' : 'var(--border-color)';
@@ -1500,11 +1517,13 @@ const ParametresPage = {
 
     // Save
     document.getElementById('btn-save-versements-settings').addEventListener('click', () => {
-      const deadlineType = document.querySelector('input[name="vs-deadline-type"]:checked')?.value || 'hebdomadaire';
-      const isHebdo = deadlineType === 'hebdomadaire';
-      const deadlineJour = isHebdo
-        ? parseInt(document.getElementById('vs-deadline-jour-semaine').value)
-        : parseInt(document.getElementById('vs-deadline-jour-mois').value) || 1;
+      const deadlineType = document.querySelector('input[name="vs-deadline-type"]:checked')?.value || 'quotidien';
+      let deadlineJour = 0;
+      if (deadlineType === 'hebdomadaire') {
+        deadlineJour = parseInt(document.getElementById('vs-deadline-jour-semaine').value);
+      } else if (deadlineType === 'mensuel') {
+        deadlineJour = parseInt(document.getElementById('vs-deadline-jour-mois').value) || 1;
+      }
       const deadlineHeure = document.getElementById('vs-deadline-heure').value || '23:59';
       const penaliteActive = document.getElementById('vs-penalite-active').checked;
       const penaliteType = document.querySelector('input[name="vs-penalite-type"]:checked')?.value || 'pourcentage';

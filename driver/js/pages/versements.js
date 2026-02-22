@@ -32,15 +32,17 @@ const VersementsPage = {
     if (deadline && deadline.configured) {
       const remaining = new Date(deadline.deadlineDate) - now;
       const statusClass = remaining <= 0 ? 'expired' : remaining <= 24 * 3600000 ? 'critical' : remaining <= 48 * 3600000 ? 'warning' : 'safe';
+      const expiredText = deadline.deadlineType === 'quotidien' ? 'Heure limite depassee !' : 'Deadline depassee';
       const timeText = remaining <= 0
-        ? `<i class="fas fa-exclamation-triangle"></i> Deadline depassee`
+        ? `<i class="fas fa-exclamation-triangle"></i> ${expiredText}`
         : this._formatCountdown(remaining);
 
+      const bannerTitle = deadline.deadlineType === 'quotidien' ? 'Versement du jour' : 'Prochaine deadline';
       deadlineBannerHTML = `
         <div class="deadline-banner ${statusClass}">
           <div class="deadline-banner-icon"><i class="fas fa-clock"></i></div>
           <div class="deadline-banner-text">
-            <div class="deadline-banner-title">Prochain deadline</div>
+            <div class="deadline-banner-title">${bannerTitle}</div>
             <div class="deadline-banner-time" id="versements-countdown">${timeText}</div>
           </div>
           ${deadline.penaliteActive && remaining <= 0 ? `
@@ -98,6 +100,7 @@ const VersementsPage = {
     // Timer live pour la banniere
     if (deadline && deadline.configured) {
       this._deadlineDate = new Date(deadline.deadlineDate);
+      this._deadlineType = deadline.deadlineType || 'quotidien';
       this._startBannerTimer();
     }
   },
@@ -110,8 +113,9 @@ const VersementsPage = {
       const el = document.getElementById('versements-countdown');
       if (!el) { clearInterval(this._bannerInterval); return; }
       const remaining = this._deadlineDate - new Date();
+      const expText = this._deadlineType === 'quotidien' ? 'Heure limite depassee !' : 'Deadline depassee';
       el.innerHTML = remaining <= 0
-        ? '<i class="fas fa-exclamation-triangle"></i> Deadline depassee'
+        ? `<i class="fas fa-exclamation-triangle"></i> ${expText}`
         : this._formatCountdown(remaining);
     }, 1000);
   },

@@ -21,6 +21,7 @@ const DriverCountdown = {
     this._penaliteActive = deadlineData.penaliteActive || false;
     this._penaliteType = deadlineData.penaliteType || 'pourcentage';
     this._penaliteValeur = deadlineData.penaliteValeur || 0;
+    this._deadlineType = deadlineData.deadlineType || 'quotidien';
   },
 
   /**
@@ -32,11 +33,13 @@ const DriverCountdown = {
     const remaining = this._deadlineDate - new Date();
     const status = this._getStatus(remaining);
 
+    const headerText = this._deadlineType === 'quotidien' ? 'Versement du jour' : 'Deadline versement';
+
     return `
       <div class="countdown-widget countdown-${status.level}" id="countdown-widget">
         <div class="countdown-header">
           <i class="fas ${status.level === 'expired' ? 'fa-exclamation-circle' : 'fa-hourglass-half'}"></i>
-          <span>Deadline versement</span>
+          <span>${headerText}</span>
           ${status.level === 'expired' ? '<span class="badge-countdown-expired">EXPIRE</span>' : ''}
         </div>
         <div class="countdown-timer" id="countdown-timer">
@@ -106,7 +109,8 @@ const DriverCountdown = {
       const elapsed = Math.abs(remainingMs);
       const h = Math.floor(elapsed / 3600000);
       const m = Math.floor((elapsed % 3600000) / 60000);
-      return `<span class="countdown-expired-text"><i class="fas fa-exclamation-triangle"></i> Depasse de ${h}h ${String(m).padStart(2, '0')}m</span>`;
+      const prefix = this._deadlineType === 'quotidien' ? 'En retard de' : 'Depasse de';
+      return `<span class="countdown-expired-text"><i class="fas fa-exclamation-triangle"></i> ${prefix} ${h}h ${String(m).padStart(2, '0')}m</span>`;
     }
 
     const days = Math.floor(remainingMs / 86400000);
