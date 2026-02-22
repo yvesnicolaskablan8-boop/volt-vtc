@@ -64,8 +64,8 @@ const AccueilPage = {
 
       <!-- KPIs -->
       <div class="kpi-row">
-        <div class="kpi-card">
-          <div class="kpi-label">Score conduite</div>
+        <div class="kpi-card kpi-clickable" onclick="AccueilPage._showScoreDetail()">
+          <div class="kpi-label">Score conduite <i class="fas fa-chevron-right" style="font-size:0.6rem;opacity:0.5;margin-left:4px"></i></div>
           <div class="kpi-value" style="color: ${score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444'}">${score}/100</div>
         </div>
         <div class="kpi-card">
@@ -127,6 +127,148 @@ const AccueilPage = {
 
   _formatCurrency(amount) {
     return amount.toLocaleString('fr-FR') + ' FCFA';
+  },
+
+  async _showScoreDetail() {
+    // Afficher un loading dans le modal pendant le fetch
+    DriverModal.show('Score de conduite', '<div class="loading" style="padding:2rem"><i class="fas fa-spinner fa-spin"></i></div>', []);
+
+    const gpsData = await DriverStore.getGps();
+    const lastGps = gpsData && gpsData.length > 0 ? gpsData[0] : null;
+
+    if (!lastGps) {
+      DriverModal.show('Score de conduite', `
+        <div style="text-align:center;padding:1.5rem 0">
+          <i class="fas fa-satellite-dish" style="font-size:2.5rem;color:var(--text-muted);margin-bottom:12px;display:block"></i>
+          <p style="font-size:0.9rem;color:var(--text-secondary);margin:0">Pas encore de donnees GPS enregistrees.</p>
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:8px">Ton score sera calcule automatiquement en fonction de ta conduite.</p>
+        </div>
+      `, [
+        { label: 'Compris', class: 'btn btn-primary', onclick: 'DriverModal.close()' }
+      ]);
+      return;
+    }
+
+    const scoreGlobal = lastGps.scoreGlobal || 0;
+    const scoreColor = scoreGlobal >= 70 ? '#22c55e' : scoreGlobal >= 50 ? '#f59e0b' : '#ef4444';
+    const scoreLabel = scoreGlobal >= 70 ? 'Bon conducteur' : scoreGlobal >= 50 ? 'Peut mieux faire' : 'A ameliorer';
+
+    // Sous-scores avec icones et descriptions
+    const criteres = [
+      { key: 'scoreVitesse', label: 'Vitesse', icon: 'fa-tachometer-alt', desc: 'Respect des limitations de vitesse' },
+      { key: 'scoreFreinage', label: 'Freinage', icon: 'fa-brake-warning', desc: 'Douceur et anticipation au freinage', iconFallback: 'fa-hand-paper' },
+      { key: 'scoreAcceleration', label: 'Acceleration', icon: 'fa-gauge-high', desc: 'Progressivite des accelerations' },
+      { key: 'scoreVirage', label: 'Virages', icon: 'fa-road', desc: 'Fluidite dans les tournants' },
+      { key: 'scoreRegularite', label: 'Regularite', icon: 'fa-clock', desc: 'Constance dans le style de conduite' }
+    ];
+
+    const scoresHTML = criteres.map(c => {
+      const val = lastGps[c.key] || 0;
+      const color = val >= 70 ? '#22c55e' : val >= 50 ? '#f59e0b' : '#ef4444';
+      const barColor = val >= 70 ? 'good' : val >= 50 ? 'medium' : 'bad';
+      return `
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <i class="fas ${c.icon}" style="color:${color};font-size:0.8rem;width:16px;text-align:center"></i>
+              <span style="font-size:0.82rem;font-weight:600">${c.label}</span>
+            </div>
+            <span style="font-size:0.82rem;font-weight:700;color:${color}">${val}/100</span>
+          </div>
+          <div style="height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${val}%;background:${color};border-radius:3px;transition:width 0.6s ease"></div>
+          </div>
+          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">${c.desc}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Evenements
+    const evt = lastGps.evenements || {};
+    let eventsHTML = '';
+    const eventItems = [
+      { key: 'excesVitesse', label: 'Exces de vitesse', icon: 'fa-tachometer-alt', color: '#ef4444' },
+      { key: 'freinagesBrusques', label: 'Freinages brusques', icon: 'fa-hand-paper', color: '#f59e0b' },
+      { key: 'accelerationsBrusques', label: 'Accelerations brusques', icon: 'fa-gauge-high', color: '#f59e0b' },
+      { key: 'viragesAgressifs', label: 'Virages agressifs', icon: 'fa-road', color: '#f59e0b' }
+    ];
+    const activeEvents = eventItems.filter(e => (evt[e.key] || 0) > 0);
+    if (activeEvents.length > 0) {
+      eventsHTML = `
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.03em">Derniers evenements</div>
+          ${activeEvents.map(e => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+              <div style="display:flex;align-items:center;gap:8px">
+                <i class="fas ${e.icon}" style="color:${e.color};font-size:0.75rem;width:14px;text-align:center"></i>
+                <span style="font-size:0.8rem">${e.label}</span>
+              </div>
+              <span style="font-size:0.82rem;font-weight:700;color:${e.color}">${evt[e.key]}x</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // Stats conduite
+    let statsHTML = '';
+    if (evt.distanceParcourue || evt.vitesseMoyenne || evt.tempsConduite) {
+      statsHTML = `
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+          ${evt.distanceParcourue ? `<div style="flex:1;min-width:80px;text-align:center;background:var(--bg-tertiary);border-radius:8px;padding:8px 6px">
+            <div style="font-size:0.68rem;color:var(--text-muted)">Distance</div>
+            <div style="font-size:0.85rem;font-weight:700">${evt.distanceParcourue.toLocaleString('fr-FR')} km</div>
+          </div>` : ''}
+          ${evt.vitesseMoyenne ? `<div style="flex:1;min-width:80px;text-align:center;background:var(--bg-tertiary);border-radius:8px;padding:8px 6px">
+            <div style="font-size:0.68rem;color:var(--text-muted)">Vitesse moy.</div>
+            <div style="font-size:0.85rem;font-weight:700">${evt.vitesseMoyenne} km/h</div>
+          </div>` : ''}
+          ${evt.tempsConduite ? `<div style="flex:1;min-width:80px;text-align:center;background:var(--bg-tertiary);border-radius:8px;padding:8px 6px">
+            <div style="font-size:0.68rem;color:var(--text-muted)">Temps</div>
+            <div style="font-size:0.85rem;font-weight:700">${Math.floor(evt.tempsConduite / 60)}h${String(evt.tempsConduite % 60).padStart(2, '0')}</div>
+          </div>` : ''}
+        </div>
+      `;
+    }
+
+    // Recommandations IA
+    let recoHTML = '';
+    const analyse = lastGps.analyseIA;
+    if (analyse && analyse.recommandations && analyse.recommandations.length > 0) {
+      recoHTML = `
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.03em">
+            <i class="fas fa-lightbulb" style="color:#f59e0b;margin-right:4px"></i> Conseils
+          </div>
+          ${analyse.recommandations.map(r => `
+            <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+              <i class="fas fa-angle-right" style="color:var(--primary);margin-top:2px;font-size:0.7rem"></i>
+              <span style="font-size:0.8rem;color:var(--text-secondary)">${r}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    const bodyHTML = `
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:2.5rem;font-weight:800;color:${scoreColor};line-height:1">${scoreGlobal}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted)">sur 100</div>
+        <div style="font-size:0.82rem;font-weight:600;color:${scoreColor};margin-top:4px">${scoreLabel}</div>
+        ${lastGps.date ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">Derniere mise a jour : ${new Date(lastGps.date).toLocaleDateString('fr-FR')}</div>` : ''}
+      </div>
+
+      <div style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.03em">Criteres de notation</div>
+      ${scoresHTML}
+      ${statsHTML}
+      ${eventsHTML}
+      ${recoHTML}
+    `;
+
+    DriverModal.show('Score de conduite', bodyHTML, [
+      { label: 'Voir mon profil', class: 'btn btn-outline', onclick: "DriverModal.close(); DriverRouter.navigate('profil')" },
+      { label: 'Compris', class: 'btn btn-primary', onclick: 'DriverModal.close()' }
+    ]);
   },
 
   _demanderAbsence() {
