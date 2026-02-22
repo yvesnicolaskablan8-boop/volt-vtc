@@ -416,6 +416,7 @@ const ChauffeursPage = {
     const fields = this._getFormFields();
     const formHtml = FormBuilder.build(fields);
 
+    this._currentEditId = null; // Mode creation
     Modal.form('<i class="fas fa-user-plus text-blue"></i> Nouveau chauffeur', formHtml, () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
@@ -436,6 +437,9 @@ const ChauffeursPage = {
       Toast.success(`${chauffeur.prenom} ${chauffeur.nom} ajouté avec succès`);
       this.render();
     }, 'modal-lg');
+
+    // Injecter le bouton "+ Créer véhicule" a coté du select vehiculeAssigne
+    this._injectQuickVehicleButton();
   },
 
   _edit(id) {
@@ -445,6 +449,7 @@ const ChauffeursPage = {
     const fields = this._getFormFields();
     const formHtml = FormBuilder.build(fields, chauffeur);
 
+    this._currentEditId = id; // Mode edition
     Modal.form('<i class="fas fa-user-edit text-blue"></i> Modifier chauffeur', formHtml, () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
@@ -461,6 +466,9 @@ const ChauffeursPage = {
         this.render();
       }
     }, 'modal-lg');
+
+    // Injecter le bouton "+ Créer véhicule" a coté du select vehiculeAssigne
+    this._injectQuickVehicleButton();
   },
 
   _delete(id) {
@@ -476,6 +484,177 @@ const ChauffeursPage = {
         Router.navigate('/chauffeurs');
       }
     );
+  },
+
+  // ======== QUICK VEHICLE CREATION ========
+
+  _injectQuickVehicleButton() {
+    // Trouver le select vehiculeAssigne dans le modal ouvert
+    setTimeout(() => {
+      const select = document.querySelector('#modal-body [name="vehiculeAssigne"]');
+      if (!select) return;
+
+      // Verifier qu'on n'a pas deja ajoute le bouton
+      if (select.parentElement.querySelector('.quick-add-vehicle-btn')) return;
+
+      // Wrapper le select + bouton dans un flex container
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
+
+      select.parentElement.insertBefore(wrapper, select);
+      wrapper.appendChild(select);
+      select.style.flex = '1';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-secondary quick-add-vehicle-btn';
+      btn.style.cssText = 'white-space:nowrap;margin-top:0;height:38px;padding:0 12px;';
+      btn.innerHTML = '<i class="fas fa-plus"></i> <i class="fas fa-car" style="font-size:11px;"></i>';
+      btn.title = 'Créer un véhicule rapidement';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this._quickAddVehicle();
+      });
+      wrapper.appendChild(btn);
+    }, 50);
+  },
+
+  _quickAddVehicle() {
+    // Sauvegarder l'etat du formulaire chauffeur actuellement ouvert
+    const chauffeurModal = document.getElementById('modal-body');
+    const savedValues = chauffeurModal ? FormBuilder.getValues(chauffeurModal) : {};
+    if (this._currentEditId) savedValues._editId = this._currentEditId;
+
+    // Construire un formulaire vehicule simplifie
+    const quickFields = [
+      { type: 'row-start' },
+      { name: 'marque', label: 'Marque', type: 'text', required: true, placeholder: 'Ex: Toyota' },
+      { name: 'modele', label: 'Modèle', type: 'text', required: true, placeholder: 'Ex: Corolla' },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'annee', label: 'Année', type: 'number', min: 2015, max: 2026, required: true, default: new Date().getFullYear() },
+      { name: 'immatriculation', label: 'Immatriculation', type: 'text', required: true },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'couleur', label: 'Couleur', type: 'text', placeholder: 'Ex: Noir' },
+      { name: 'typeEnergie', label: "Énergie", type: 'select', options: [
+        { value: 'thermique', label: 'Thermique' },
+        { value: 'electrique', label: 'Électrique' }
+      ]},
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'typeAcquisition', label: 'Acquisition', type: 'select', options: [
+        { value: 'leasing', label: 'Leasing' },
+        { value: 'cash', label: 'Cash' }
+      ]},
+      { name: 'kilometrage', label: 'Kilométrage', type: 'number', min: 0, default: 0 },
+      { type: 'row-end' }
+    ];
+
+    const quickFormHtml = FormBuilder.build(quickFields);
+
+    // Ouvrir un second modal (on ferme d'abord le premier, puis on le rouvrira)
+    Modal.close();
+
+    setTimeout(() => {
+      Modal.form('<i class="fas fa-car text-blue"></i> Création rapide véhicule', quickFormHtml, () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, quickFields)) return;
+
+        const values = FormBuilder.getValues(body);
+        const isEV = values.typeEnergie === 'electrique';
+        const vehicule = {
+          id: Utils.generateId('VEH'),
+          ...values,
+          vin: '',
+          consommation: isEV ? 15 : 6.5,
+          coutEnergie: isEV ? 120 : 800,
+          kilometrageMensuel: 2500,
+          dateDerniereRevision: null,
+          prochainRevisionKm: (values.kilometrage || 0) + 10000,
+          assureur: '',
+          primeAnnuelle: 0,
+          prixAchat: 0,
+          mensualiteLeasing: 0,
+          dureeLeasing: 0,
+          apportInitial: 0,
+          numeroPolice: '',
+          dateExpirationAssurance: '',
+          statut: 'en_service',
+          coutsMaintenance: [],
+          dateCreation: new Date().toISOString()
+        };
+
+        if (isEV) {
+          vehicule.capaciteBatterie = 60;
+          vehicule.autonomieKm = 350;
+          vehicule.niveauBatterie = 100;
+          vehicule.typeChargeur = 'CCS Combo 2';
+          vehicule.puissanceChargeMax = 100;
+          vehicule.tempsRechargeRapide = 30;
+          vehicule.tempsRechargeNormale = 480;
+          vehicule.dernierRecharge = new Date().toISOString().split('T')[0];
+          vehicule.stationRechargeHabituelle = '';
+        }
+
+        Store.add('vehicules', vehicule);
+        Modal.close();
+        Toast.success(`${vehicule.marque} ${vehicule.modele} créé et sélectionné`);
+
+        // Rouvrir le formulaire chauffeur avec le vehicule pre-selectionne
+        savedValues.vehiculeAssigne = vehicule.id;
+        this._reopenChauffeurForm(savedValues);
+      }, 'modal-md');
+    }, 200);
+  },
+
+  _reopenChauffeurForm(savedValues) {
+    // Reconstruire les fields (avec le nouveau vehicule dans la liste)
+    const fields = this._getFormFields();
+    const formHtml = FormBuilder.build(fields, savedValues);
+
+    const isEdit = savedValues._editId;
+    const title = isEdit
+      ? '<i class="fas fa-user-edit text-blue"></i> Modifier chauffeur'
+      : '<i class="fas fa-user-plus text-blue"></i> Nouveau chauffeur';
+
+    setTimeout(() => {
+      Modal.form(title, formHtml, () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, fields)) return;
+
+        const values = FormBuilder.getValues(body);
+        delete values._editId;
+
+        if (isEdit) {
+          Store.update('chauffeurs', isEdit, values);
+          Modal.close();
+          Toast.success('Chauffeur modifié avec succès');
+          if (window.location.hash.includes(isEdit)) {
+            this.renderDetail(isEdit);
+          } else {
+            this.render();
+          }
+        } else {
+          const chauffeur = {
+            id: Utils.generateId('CHF'),
+            ...values,
+            dateFinContrat: null,
+            photo: null,
+            documents: [],
+            scoreConduite: Utils.random(60, 95),
+            dateCreation: new Date().toISOString()
+          };
+          Store.add('chauffeurs', chauffeur);
+          Modal.close();
+          Toast.success(`${chauffeur.prenom} ${chauffeur.nom} ajouté avec succès`);
+          this.render();
+        }
+      }, 'modal-lg');
+
+      this._injectQuickVehicleButton();
+    }, 200);
   },
 
   // ======== YANGO LINKING ========
