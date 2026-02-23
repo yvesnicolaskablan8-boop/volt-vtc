@@ -1675,6 +1675,94 @@ body {
 }
 .drv-chat-send:active { opacity: 0.8; }
 
+/* ========== ALARM OVERLAY (versement en retard) ========== */
+.alarm-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: alarm-flash 0.8s ease-in-out infinite;
+}
+
+@keyframes alarm-flash {
+  0%, 100% { background: rgba(220, 38, 38, 0.97); }
+  50% { background: rgba(153, 27, 27, 0.97); }
+}
+
+.alarm-overlay-content {
+  text-align: center;
+  color: #fff;
+  max-width: 360px;
+  width: 100%;
+}
+
+.alarm-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+  animation: alarm-shake 0.3s ease-in-out infinite;
+}
+
+@keyframes alarm-shake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-12deg); }
+  75% { transform: rotate(12deg); }
+}
+
+.alarm-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.alarm-subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  line-height: 1.5;
+  margin-bottom: 32px;
+}
+
+.alarm-btn-dismiss {
+  display: block;
+  width: 100%;
+  padding: 16px 24px;
+  border: 2px solid #fff;
+  border-radius: 12px;
+  background: transparent;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+.alarm-btn-dismiss:active {
+  background: rgba(255,255,255,0.2);
+  transform: scale(0.97);
+}
+
+.alarm-btn-payer {
+  display: block;
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 12px;
+  background: #fff;
+  color: #dc2626;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.alarm-btn-payer:active {
+  background: #fee2e2;
+  transform: scale(0.97);
+}
+
 /* ========== RESPONSIVE ========== */
 @media (min-width: 768px) {
   .app-content {

@@ -188,14 +188,25 @@ const DriverApp = {
   // =================== DEADLINE SOUND ===================
 
   async _checkDeadlineSound() {
-    if (sessionStorage.getItem('volt_deadline_sound_played')) return;
     try {
       const deadline = await DriverStore.getDeadline();
-      if (deadline && deadline.configured && !deadline.alreadyPaid && deadline.remainingMs <= 24 * 3600 * 1000 && deadline.remainingMs > 0) {
-        // Jouer l'alerte sonore
-        if (typeof DriverCountdown !== 'undefined') {
-          DriverCountdown.playAlertSound();
-        }
+      if (!deadline || !deadline.configured || deadline.alreadyPaid) return;
+      if (typeof DriverCountdown === 'undefined') return;
+
+      const ms = deadline.remainingMs;
+
+      // Cas 1 : Deadline depassee ou < 1h → alarme agressive
+      if (ms <= 0 || (ms > 0 && ms <= 3600 * 1000)) {
+        if (sessionStorage.getItem('volt_alarm_dismissed')) return;
+        DriverCountdown.init(deadline);
+        DriverCountdown.startAlarm();
+        return;
+      }
+
+      // Cas 2 : < 24h → son simple (1 seule fois par session)
+      if (ms <= 24 * 3600 * 1000) {
+        if (sessionStorage.getItem('volt_deadline_sound_played')) return;
+        DriverCountdown.playAlertSound();
         sessionStorage.setItem('volt_deadline_sound_played', '1');
       }
     } catch (e) {
