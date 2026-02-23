@@ -101,6 +101,15 @@ const App = {
     // Detect native WebView app and force mobile mode
     this._applyMobileMode();
 
+    // DEBUG — temporary alert to diagnose WebView viewport
+    var _vw = window.innerWidth || document.documentElement.clientWidth;
+    var _vh = window.innerHeight || document.documentElement.clientHeight;
+    var _native = !!(window.VoltNative);
+    var _ua = navigator.userAgent;
+    var _sidebar = document.getElementById('sidebar');
+    var _sidebarStyle = _sidebar ? window.getComputedStyle(_sidebar) : {};
+    alert('DEBUG VIEWPORT\nWidth: ' + _vw + '\nHeight: ' + _vh + '\nNative: ' + _native + '\nUA has VoltAdmin: ' + _ua.includes('VoltAdminApp') + '\nSidebar display: ' + (_sidebarStyle.display || 'N/A') + '\nSidebar transform: ' + (_sidebarStyle.transform || 'N/A') + '\nSidebar pointerEvents: ' + (_sidebarStyle.pointerEvents || 'N/A') + '\nSidebar visibility: ' + (_sidebarStyle.visibility || 'N/A') + '\nBody classes: ' + document.body.className);
+
     console.log('Volt VTC Management v2.0.0 initialized (API mode)');
     console.log(`Data size: ${Store.getStorageSize().kb} Ko`);
     console.log(`Theme: ${ThemeManager._current}`);
