@@ -2,7 +2,10 @@
  * Header - Top bar management
  */
 const Header = {
+  _handlers: {},
+
   init() {
+    this._cleanup();
     this._initThemeToggle();
     this._initNotifications();
     this._initSearch();
@@ -10,8 +13,23 @@ const Header = {
     this._initUserDropdown();
   },
 
+  // Remove all previously attached handlers
+  _cleanup() {
+    Object.values(this._handlers).forEach(({ el, event, fn }) => {
+      if (el) el.removeEventListener(event, fn);
+    });
+    this._handlers = {};
+  },
+
+  _on(key, el, event, fn) {
+    if (!el) return;
+    el.addEventListener(event, fn);
+    this._handlers[key] = { el, event, fn };
+  },
+
   setBreadcrumb(title) {
     const breadcrumb = document.getElementById('header-breadcrumb');
+    if (!breadcrumb) return;
     breadcrumb.innerHTML = `
       <span class="text-muted">Volt</span>
       <i class="fas fa-chevron-right text-muted" style="font-size: 10px;"></i>
@@ -51,10 +69,10 @@ const Header = {
     const dropdown = document.getElementById('user-dropdown');
     if (!userToggle || !dropdown) return;
 
-    // Toggle dropdown on click
-    userToggle.addEventListener('click', (e) => {
+    // Toggle dropdown on click/touch
+    const toggleHandler = (e) => {
       e.stopPropagation();
-      const isActive = dropdown.classList.contains('active');
+      e.preventDefault();
 
       // Close other dropdowns (notifications)
       const notifDropdown = document.getElementById('notif-dropdown');
@@ -62,77 +80,74 @@ const Header = {
 
       dropdown.classList.toggle('active');
       userToggle.classList.toggle('active');
-    });
+    };
+
+    this._on('userToggleClick', userToggle, 'click', toggleHandler);
 
     // Close when clicking outside
-    document.addEventListener('click', (e) => {
+    const outsideHandler = (e) => {
       if (!userToggle.contains(e.target)) {
         dropdown.classList.remove('active');
         userToggle.classList.remove('active');
       }
-    });
+    };
+    this._on('userOutside', document, 'click', outsideHandler);
 
     // Mon compte → Navigate to Paramètres > Mon compte
     const profileBtn = document.getElementById('user-dropdown-profile');
     if (profileBtn) {
-      profileBtn.addEventListener('click', (e) => {
+      const profileHandler = (e) => {
         e.stopPropagation();
         dropdown.classList.remove('active');
         userToggle.classList.remove('active');
         Router.navigate('/parametres');
-        // Small delay to ensure page loads, then switch to account tab
         setTimeout(() => {
           if (typeof Parametres !== 'undefined' && Parametres._switchTab) {
             Parametres._switchTab('account');
           }
         }, 200);
-      });
+      };
+      this._on('profileClick', profileBtn, 'click', profileHandler);
     }
 
     // Paramètres → Navigate to Paramètres
     const settingsBtn = document.getElementById('user-dropdown-settings');
     if (settingsBtn) {
-      settingsBtn.addEventListener('click', (e) => {
+      const settingsHandler = (e) => {
         e.stopPropagation();
         dropdown.classList.remove('active');
         userToggle.classList.remove('active');
         Router.navigate('/parametres');
-      });
+      };
+      this._on('settingsClick', settingsBtn, 'click', settingsHandler);
     }
 
     // Déconnexion
     const logoutBtn = document.getElementById('user-dropdown-logout');
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', (e) => {
+      const logoutHandler = (e) => {
         e.stopPropagation();
         dropdown.classList.remove('active');
         userToggle.classList.remove('active');
         App.logout();
-      });
+      };
+      this._on('logoutClick', logoutBtn, 'click', logoutHandler);
     }
   },
 
   _initThemeToggle() {
     const btn = document.getElementById('theme-toggle');
-    if (btn) {
-      // Clone to remove old listeners
-      const newBtn = btn.cloneNode(true);
-      btn.parentNode.replaceChild(newBtn, btn);
-      newBtn.addEventListener('click', () => ThemeManager.toggle());
-    }
+    if (!btn) return;
+    const handler = () => ThemeManager.toggle();
+    this._on('themeClick', btn, 'click', handler);
   },
 
   _initNotifications() {
     const toggle = document.getElementById('notifications-toggle');
     const dropdown = document.getElementById('notif-dropdown');
+    if (!toggle || !dropdown) return;
 
-    // Clone to remove old listeners
-    const newToggle = toggle.cloneNode(true);
-    toggle.parentNode.replaceChild(newToggle, toggle);
-
-    const newDropdown = newToggle.querySelector('#notif-dropdown') || document.getElementById('notif-dropdown');
-
-    newToggle.addEventListener('click', (e) => {
+    const toggleHandler = (e) => {
       e.stopPropagation();
 
       // Close user dropdown
@@ -141,18 +156,21 @@ const Header = {
       if (userDropdown) userDropdown.classList.remove('active');
       if (userToggle) userToggle.classList.remove('active');
 
-      newDropdown.classList.toggle('active');
-    });
+      dropdown.classList.toggle('active');
+    };
 
-    document.addEventListener('click', (e) => {
-      if (!newToggle.contains(e.target)) {
-        newDropdown.classList.remove('active');
+    this._on('notifClick', toggle, 'click', toggleHandler);
+
+    const outsideHandler = (e) => {
+      if (!toggle.contains(e.target)) {
+        dropdown.classList.remove('active');
       }
-    });
+    };
+    this._on('notifOutside', document, 'click', outsideHandler);
 
-    const clearBtn = newToggle.querySelector('#notif-clear') || document.getElementById('notif-clear');
+    const clearBtn = document.getElementById('notif-clear');
     if (clearBtn) {
-      clearBtn.addEventListener('click', (e) => {
+      const clearHandler = (e) => {
         e.stopPropagation();
         const notifList = document.getElementById('notif-list');
         if (notifList) {
@@ -165,7 +183,8 @@ const Header = {
         }
         const countEl = document.getElementById('notif-count');
         if (countEl) countEl.style.display = 'none';
-      });
+      };
+      this._on('notifClear', clearBtn, 'click', clearHandler);
     }
 
     this._loadNotifications();
@@ -257,11 +276,11 @@ const Header = {
     const input = document.getElementById('global-search');
     if (!input) return;
 
-    // Clone to remove old listeners
-    const newInput = input.cloneNode(true);
-    input.parentNode.replaceChild(newInput, input);
+    // Use a flag to prevent duplicate init
+    if (input._voltSearchInit) return;
+    input._voltSearchInit = true;
 
-    newInput.addEventListener('input', Utils.debounce((e) => {
+    input.addEventListener('input', Utils.debounce((e) => {
       const query = e.target.value.trim().toLowerCase();
       if (query.length < 2) return;
 
@@ -279,22 +298,22 @@ const Header = {
 
       if (chauffeurs.length === 1) {
         Router.navigate(`/chauffeurs/${chauffeurs[0].id}`);
-        newInput.value = '';
+        input.value = '';
       } else if (vehicules.length === 1) {
         Router.navigate(`/vehicules/${vehicules[0].id}`);
-        newInput.value = '';
+        input.value = '';
       } else if (chauffeurs.length > 0) {
         Router.navigate('/chauffeurs');
-        newInput.value = '';
+        input.value = '';
       } else if (vehicules.length > 0) {
         Router.navigate('/vehicules');
-        newInput.value = '';
+        input.value = '';
       }
     }, 500));
 
-    newInput.addEventListener('keydown', (e) => {
+    input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        newInput.dispatchEvent(new Event('input'));
+        input.dispatchEvent(new Event('input'));
       }
     });
   },

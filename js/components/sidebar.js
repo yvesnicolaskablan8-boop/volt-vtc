@@ -2,40 +2,63 @@
  * Sidebar - Navigation management with permission filtering
  */
 const Sidebar = {
+  _toggleHandler: null,
+  _overlayHandler: null,
+  _navHandlers: [],
+
   init() {
-    // Mobile toggle
     const toggle = document.getElementById('sidebar-toggle');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
 
-    // Clone overlay first (before toggle, so toggle handler references the new overlay)
-    const newOverlay = overlay.cloneNode(true);
-    overlay.parentNode.replaceChild(newOverlay, overlay);
+    if (!toggle || !sidebar || !overlay) return;
 
-    // Clone toggle to remove old listeners
-    const newToggle = toggle.cloneNode(true);
-    toggle.parentNode.replaceChild(newToggle, toggle);
+    // Remove old listeners if any (safe re-init)
+    if (this._toggleHandler) {
+      toggle.removeEventListener('click', this._toggleHandler);
+      toggle.removeEventListener('touchend', this._toggleHandler);
+    }
+    if (this._overlayHandler) {
+      overlay.removeEventListener('click', this._overlayHandler);
+      overlay.removeEventListener('touchend', this._overlayHandler);
+    }
+    this._navHandlers.forEach(({ el, handler }) => {
+      el.removeEventListener('click', handler);
+    });
+    this._navHandlers = [];
 
-    // Toggle sidebar open/close
-    newToggle.addEventListener('click', () => {
+    // Toggle handler — opens/closes sidebar
+    this._toggleHandler = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       sidebar.classList.toggle('open');
-      newOverlay.classList.toggle('active');
-    });
+      overlay.classList.toggle('active');
+    };
 
-    // Click overlay to close sidebar
-    newOverlay.addEventListener('click', () => {
+    // Overlay handler — closes sidebar when tapping the dark overlay
+    this._overlayHandler = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       sidebar.classList.remove('open');
-      newOverlay.classList.remove('active');
-    });
+      overlay.classList.remove('active');
+    };
+
+    // Attach with both click and touchend for WebView compatibility
+    toggle.addEventListener('click', this._toggleHandler);
+    toggle.addEventListener('touchend', this._toggleHandler);
+    overlay.addEventListener('click', this._overlayHandler);
+    overlay.addEventListener('touchend', this._overlayHandler);
 
     // Nav item clicks close mobile sidebar
     document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', () => {
+      const handler = () => {
         if (window.innerWidth <= 768) {
           sidebar.classList.remove('open');
-          newOverlay.classList.remove('active');
+          overlay.classList.remove('active');
         }
-      });
+      };
+      item.addEventListener('click', handler);
+      this._navHandlers.push({ el: item, handler });
     });
 
     // Filter by permissions
