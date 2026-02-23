@@ -134,6 +134,28 @@ const DriverStore = {
     return this._delete('/push/subscribe', { endpoint });
   },
 
+  // ===== MESSAGERIE =====
+
+  getConversations() {
+    return this._get('/messages');
+  },
+
+  getConversation(id) {
+    return this._get(`/messages/${id}`);
+  },
+
+  replyToConversation(id, message) {
+    return this._post(`/messages/${id}/reply`, { message });
+  },
+
+  markConversationRead(id) {
+    return this._put(`/messages/${id}/read`, {});
+  },
+
+  pollMessages() {
+    return this._get('/messages/poll');
+  },
+
   // ===== HTTP METHODS SUPPLEMENTAIRES =====
 
   async _put(path, body) {
