@@ -32,6 +32,7 @@ app.use('/api/users', require('./routes/crud')('User'));
 app.use('/api/signalements', require('./routes/crud')('Signalement'));
 app.use('/api/yango', require('./routes/yango'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/messages', require('./routes/messages'));
 
 // API Routes — Driver (PWA chauffeur)
 app.use('/api/driver/auth', require('./routes/driver-auth'));

@@ -16,7 +16,13 @@ const DriverStore = {
 
   async _get(path) {
     try {
-      const res = await fetch(this._apiBase + path, { headers: this._headers() });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(this._apiBase + path, {
+        headers: this._headers(),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
       if (res.status === 401) {
         DriverAuth.logout();
         return null;
@@ -31,11 +37,15 @@ const DriverStore = {
 
   async _post(path, body) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
       const res = await fetch(this._apiBase + path, {
         method: 'POST',
         headers: this._headers(),
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       if (res.status === 401) {
         DriverAuth.logout();
         return null;
@@ -134,15 +144,41 @@ const DriverStore = {
     return this._delete('/push/subscribe', { endpoint });
   },
 
+  // ===== MESSAGERIE =====
+
+  getConversations() {
+    return this._get('/messages');
+  },
+
+  getConversation(id) {
+    return this._get(`/messages/${id}`);
+  },
+
+  replyToConversation(id, message) {
+    return this._post(`/messages/${id}/reply`, { message });
+  },
+
+  markConversationRead(id) {
+    return this._put(`/messages/${id}/read`, {});
+  },
+
+  pollMessages() {
+    return this._get('/messages/poll');
+  },
+
   // ===== HTTP METHODS SUPPLEMENTAIRES =====
 
   async _put(path, body) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
       const res = await fetch(this._apiBase + path, {
         method: 'PUT',
         headers: this._headers(),
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       if (res.status === 401) { DriverAuth.logout(); return null; }
       const data = await res.json();
       if (!res.ok) return { error: data.error || `Erreur ${res.status}` };

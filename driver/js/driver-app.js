@@ -56,6 +56,7 @@ const DriverApp = {
     DriverRouter.register('signalements', SignalementsPage);
     DriverRouter.register('profil', ProfilPage);
     DriverRouter.register('notifications', NotificationsPage);
+    DriverRouter.register('messagerie', MessageriePage);
 
     // Check auth
     if (DriverAuth.isLoggedIn()) {
@@ -81,6 +82,7 @@ const DriverApp = {
     // Demander la permission push + charger le badge notifications
     this._setupPushNotifications();
     this._loadNotificationBadge();
+    this._loadMessagesBadge();
   },
 
   // =================== PUSH NOTIFICATIONS ===================
@@ -164,6 +166,19 @@ const DriverApp = {
       const data = await DriverStore.getNotifications(1);
       if (data && typeof NotificationsPage !== 'undefined') {
         NotificationsPage.updateBadge(data.nonLues || 0);
+      }
+    } catch (e) {
+      // Silently fail
+    }
+  },
+
+  // =================== MESSAGES BADGE ===================
+
+  async _loadMessagesBadge() {
+    try {
+      const data = await DriverStore.pollMessages();
+      if (data && typeof MessageriePage !== 'undefined') {
+        MessageriePage.updateBadge(data.nonLus || 0);
       }
     } catch (e) {
       // Silently fail

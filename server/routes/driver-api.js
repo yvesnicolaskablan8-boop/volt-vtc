@@ -9,6 +9,7 @@ const Gps = require('../models/Gps');
 const Settings = require('../models/Settings');
 const Notification = require('../models/Notification');
 const PushSubscription = require('../models/PushSubscription');
+const Conversation = require('../models/Conversation');
 const { getNextDeadline, calculatePenalty } = require('../utils/deadline');
 const notifService = require('../utils/notification-service');
 
@@ -661,6 +662,117 @@ router.delete('/push/subscribe', async (req, res, next) => {
       // Supprimer toutes les subscriptions du chauffeur
       await PushSubscription.deleteMany({ chauffeurId });
     }
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== MESSAGERIE ===================
+
+// GET /api/driver/messages — Conversations du chauffeur
+router.get('/messages', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const statut = req.query.statut || 'active';
+
+    const conversations = await Conversation.find({ chauffeurId, statut })
+      .sort({ dernierMessageDate: -1 })
+      .lean();
+
+    const result = conversations.map(({ _id, __v, messages, ...rest }) => ({
+      ...rest,
+      nbMessages: (messages || []).length
+    }));
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/driver/messages/poll — Poll rapide (nombre non lus + dernier update)
+router.get('/messages/poll', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+
+    const conversations = await Conversation.find({ chauffeurId, statut: 'active' })
+      .select('nonLusChauffeur dernierMessageDate')
+      .lean();
+
+    const nonLus = conversations.reduce((sum, c) => sum + (c.nonLusChauffeur || 0), 0);
+    const dernierUpdate = conversations.length > 0
+      ? conversations.reduce((max, c) => c.dernierMessageDate > max ? c.dernierMessageDate : max, '')
+      : null;
+
+    res.json({ nonLus, dernierUpdate });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/driver/messages/:id — Detail conversation avec messages
+router.get('/messages/:id', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const conv = await Conversation.findOne({ id: req.params.id, chauffeurId }).lean();
+    if (!conv) return res.status(404).json({ error: 'Conversation introuvable' });
+
+    const { _id, __v, ...rest } = conv;
+    res.json(rest);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/driver/messages/:id/reply — Repondre a une conversation
+router.post('/messages/:id/reply', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ error: 'message requis' });
+
+    const conv = await Conversation.findOne({ id: req.params.id, chauffeurId });
+    if (!conv) return res.status(404).json({ error: 'Conversation introuvable' });
+
+    // Recuperer le nom du chauffeur
+    const chauffeur = await Chauffeur.findOne({ id: chauffeurId }).lean();
+    const auteurNom = chauffeur ? `${chauffeur.prenom} ${chauffeur.nom}` : chauffeurId;
+
+    const msgId = 'MSG-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+    const now = new Date().toISOString();
+
+    conv.messages.push({
+      id: msgId,
+      auteur: chauffeurId,
+      auteurNom,
+      contenu: message,
+      type: 'message',
+      dateCreation: now
+    });
+
+    conv.dernierMessage = message.substring(0, 100);
+    conv.dernierMessageDate = now;
+    conv.nonLusAdmin = (conv.nonLusAdmin || 0) + 1;
+
+    await conv.save();
+
+    res.json({ success: true, message: conv.messages[conv.messages.length - 1] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/driver/messages/:id/read — Marquer lus cote chauffeur
+router.put('/messages/:id/read', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const conv = await Conversation.findOne({ id: req.params.id, chauffeurId });
+    if (!conv) return res.status(404).json({ error: 'Conversation introuvable' });
+
+    conv.nonLusChauffeur = 0;
+    await conv.save();
 
     res.json({ success: true });
   } catch (err) {
