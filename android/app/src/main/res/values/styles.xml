@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="Theme.VoltChauffeur" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:navigationBarColor">#3b82f6</item>
+        <item name="android:statusBarColor">#3b82f6</item>
+    </style>
+
+    <!-- Splash screen theme (shown while TWA loads) -->
+    <style name="Theme.VoltChauffeur.Splash" parent="Theme.VoltChauffeur">
+        <item name="android:windowBackground">#0a0e17</item>
+    </style>
+</resources>

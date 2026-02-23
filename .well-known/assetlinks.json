@@ -1,8 +1,8 @@
 [{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "io.github.yvesnicolaskablan8_boop.twa",
-        "sha256_cert_fingerprints": ["B9:E7:7A:BB:CC:27:49:76:5B:94:29:31:19:4C:82:3E:CB:E8:41:CF:11:6C:5A:7A:36:3B:23:A3:C7:FF:1E:B3"]
-      }
-    }]
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.volt.chauffeur",
+    "sha256_cert_fingerprints": ["12:C0:3E:FF:C7:F1:DC:26:52:64:92:15:95:9B:36:B4:F9:B1:E4:44:01:EA:0E:AF:1E:12:DE:82:5D:C6:B9:31"]
+  }
+}]
