@@ -315,6 +315,61 @@ const AlertesPage = {
         }
       }
 
+      // Maintenances planifiées
+      (v.maintenancesPlanifiees || []).forEach(m => {
+        if (m.statut === 'complete') return;
+        const typeLabels = {
+          vidange: 'Vidange', revision: 'Révision', pneus: 'Pneus', freins: 'Freins',
+          filtres: 'Filtres', climatisation: 'Climatisation', courroie: 'Courroie',
+          controle_technique: 'Contrôle technique', batterie: 'Batterie',
+          amortisseurs: 'Amortisseurs', echappement: 'Échappement',
+          carrosserie: 'Carrosserie', autre: 'Entretien'
+        };
+        const typeLabel = typeLabels[m.type] || m.label || m.type;
+
+        let detail = '';
+        let niveau = 'attention';
+
+        if (m.statut === 'en_retard') {
+          niveau = 'critique';
+          if (m.prochainKm && v.kilometrage) {
+            const kmDepasse = v.kilometrage - m.prochainKm;
+            detail += `Dépassé de ${Utils.formatNumber(kmDepasse)} km`;
+          }
+          if (m.prochaineDate) {
+            const jours = Math.ceil((new Date() - new Date(m.prochaineDate)) / 86400000);
+            if (detail) detail += ' / ';
+            detail += `${jours} jour(s) de retard`;
+          }
+        } else if (m.statut === 'urgent') {
+          niveau = 'urgent';
+          if (m.prochainKm && v.kilometrage) {
+            const kmR = m.prochainKm - v.kilometrage;
+            detail += `Dans ${Utils.formatNumber(kmR)} km`;
+          }
+          if (m.prochaineDate) {
+            const jours = Math.ceil((new Date(m.prochaineDate) - new Date()) / 86400000);
+            if (detail) detail += ' / ';
+            detail += `dans ${jours} jour(s)`;
+          }
+        } else {
+          return; // Pas d'alerte pour statut a_venir
+        }
+
+        alerts.push({
+          id: `MPL-${v.id}-${m.id}`,
+          categorie: 'vehicules',
+          niveau,
+          titre: `${typeLabel} ${m.statut === 'en_retard' ? 'en retard' : 'imminente'}`,
+          description: `${label} — ${typeLabel}${m.label && m.label !== m.type ? ' (' + m.label + ')' : ''} : ${detail}${m.coutEstime ? '. Coût estimé : ' + Utils.formatCurrency(m.coutEstime) : ''}`,
+          vehiculeId: v.id,
+          action: 'Voir le véhicule',
+          actionRoute: `#/vehicules/${v.id}`,
+          icon: 'fa-calendar-check',
+          date: m.prochaineDate || todayStr
+        });
+      });
+
       // Assurance véhicule
       if (v.dateExpirationAssurance) {
         const expDate = new Date(v.dateExpirationAssurance);

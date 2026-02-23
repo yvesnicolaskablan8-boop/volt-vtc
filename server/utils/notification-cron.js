@@ -11,6 +11,7 @@
 
 const Settings = require('../models/Settings');
 const Chauffeur = require('../models/Chauffeur');
+const Vehicule = require('../models/Vehicule');
 const Versement = require('../models/Versement');
 const Gps = require('../models/Gps');
 const Notification = require('../models/Notification');
@@ -116,6 +117,9 @@ async function runChecks() {
     if (notifSettings.alerteScoreFaible) {
       await checkLowScores(chauffeurs, notifSettings, canal);
     }
+
+    // === CHECK 4 : Maintenances planifiees ===
+    await checkMaintenancesPlanifiees(chauffeurs, canal);
 
   } catch (err) {
     console.error('[NotifCron] Erreur:', err.message);
@@ -300,6 +304,105 @@ async function checkLowScores(chauffeurs, notifSettings, canal) {
       { url: '/driver/#/profil' }
     );
     _sentToday.add(key);
+  }
+}
+
+// ===================== CHECK : MAINTENANCES PLANIFIEES =====================
+
+async function checkMaintenancesPlanifiees(chauffeurs, canal) {
+  try {
+    const vehicules = await Vehicule.find({ statut: 'en_service' });
+    const now = new Date();
+    const MS_PAR_JOUR = 24 * 3600 * 1000;
+
+    for (const vehicule of vehicules) {
+      const maintenances = vehicule.maintenancesPlanifiees || [];
+      let modified = false;
+
+      for (const m of maintenances) {
+        if (m.statut === 'complete') continue;
+
+        let isUrgent = false;
+        let isEnRetard = false;
+        let detail = '';
+
+        // Check par km
+        if ((m.declencheur === 'km' || m.declencheur === 'les_deux') && m.prochainKm) {
+          const kmRestant = m.prochainKm - vehicule.kilometrage;
+          if (kmRestant <= 0) {
+            isEnRetard = true;
+            detail = `depasse de ${Math.abs(kmRestant)} km`;
+          } else if (kmRestant <= 500) {
+            isUrgent = true;
+            detail = `dans ${kmRestant} km`;
+          }
+        }
+
+        // Check par temps
+        if ((m.declencheur === 'temps' || m.declencheur === 'les_deux') && m.prochaineDate) {
+          const prochaineDate = new Date(m.prochaineDate);
+          const joursRestants = Math.floor((prochaineDate - now) / MS_PAR_JOUR);
+          if (joursRestants < 0) {
+            isEnRetard = true;
+            detail = detail ? detail + ` et ${Math.abs(joursRestants)} jours de retard` : `${Math.abs(joursRestants)} jours de retard`;
+          } else if (joursRestants <= 7) {
+            if (!isEnRetard) isUrgent = true;
+            const timeDetail = `dans ${joursRestants} jour(s)`;
+            detail = detail ? detail + ` / ${timeDetail}` : timeDetail;
+          }
+        }
+
+        // Mettre a jour le statut
+        const newStatut = isEnRetard ? 'en_retard' : isUrgent ? 'urgent' : 'a_venir';
+        if (m.statut !== newStatut) {
+          m.statut = newStatut;
+          modified = true;
+        }
+
+        // Envoyer notification si urgent ou en retard
+        if (isUrgent || isEnRetard) {
+          const typeLabels = {
+            vidange: 'Vidange', revision: 'Revision', pneus: 'Pneus', freins: 'Freins',
+            filtres: 'Filtres', climatisation: 'Climatisation', courroie: 'Courroie',
+            controle_technique: 'Controle technique', batterie: 'Batterie',
+            amortisseurs: 'Amortisseurs', echappement: 'Echappement',
+            carrosserie: 'Carrosserie', autre: 'Entretien'
+          };
+          const typeLabel = typeLabels[m.type] || m.label || m.type;
+          const vLabel = `${vehicule.marque} ${vehicule.modele} (${vehicule.immatriculation})`;
+
+          // Notifier le chauffeur assigne
+          if (vehicule.chauffeurAssigne) {
+            const key = `maintenance_${m.id}_${vehicule.chauffeurAssigne}_${_lastDateStr}`;
+            if (!_sentToday.has(key)) {
+              const chauffeur = chauffeurs.find(c => c.id === vehicule.chauffeurAssigne);
+              const prenom = chauffeur ? chauffeur.prenom : 'Chauffeur';
+              const titre = isEnRetard ? `Maintenance en retard : ${typeLabel}` : `Maintenance imminente : ${typeLabel}`;
+              const message = isEnRetard
+                ? `${prenom}, ${typeLabel.toLowerCase()} sur ${vLabel} est en retard (${detail}). Contactez votre gestionnaire.`
+                : `${prenom}, ${typeLabel.toLowerCase()} sur ${vLabel} est prevue ${detail}. Contactez votre gestionnaire.`;
+
+              await notifService.notify(
+                vehicule.chauffeurAssigne,
+                isEnRetard ? 'deadline_retard' : 'deadline_rappel',
+                titre,
+                message,
+                canal,
+                { url: '/driver/#/accueil' }
+              );
+              _sentToday.add(key);
+            }
+          }
+        }
+      }
+
+      // Sauvegarder si statuts modifies
+      if (modified) {
+        await vehicule.save();
+      }
+    }
+  } catch (err) {
+    console.error('[NotifCron] Erreur check maintenances:', err.message);
   }
 }
 

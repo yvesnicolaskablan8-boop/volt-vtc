@@ -424,7 +424,19 @@ router.get('/vehicule', async (req, res, next) => {
     }
 
     const { _id, __v, ...safeVehicule } = vehicule;
-    res.json(safeVehicule);
+
+    // Ajouter les maintenances urgentes/en retard
+    const maintenancesUrgentes = (vehicule.maintenancesPlanifiees || [])
+      .filter(m => m.statut === 'urgent' || m.statut === 'en_retard')
+      .map(m => ({
+        type: m.type,
+        label: m.label,
+        statut: m.statut,
+        prochainKm: m.prochainKm,
+        prochaineDate: m.prochaineDate
+      }));
+
+    res.json({ ...safeVehicule, maintenancesUrgentes });
   } catch (err) {
     next(err);
   }

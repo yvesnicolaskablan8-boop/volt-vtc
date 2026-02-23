@@ -158,6 +158,7 @@ const VehiculesPage = {
         </h1>
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="VehiculesPage._edit('${v.id}')"><i class="fas fa-edit"></i> Modifier</button>
+          <button class="btn btn-primary" onclick="VehiculesPage._addPlanifiedMaintenance('${v.id}')"><i class="fas fa-calendar-check"></i> Planifier</button>
           <button class="btn btn-warning" onclick="VehiculesPage._addMaintenance('${v.id}')"><i class="fas fa-wrench"></i> Maintenance</button>
         </div>
       </div>
@@ -292,6 +293,15 @@ const VehiculesPage = {
             <canvas id="chart-vehicle-revenue"></canvas>
           </div>
         </div>
+      </div>
+
+      <!-- Maintenances planifiées -->
+      <div class="card" style="margin-top:var(--space-lg);">
+        <div class="card-header">
+          <span class="card-title"><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:6px;"></i> Maintenances planifiées</span>
+          <button class="btn btn-sm btn-primary" onclick="VehiculesPage._addPlanifiedMaintenance('${v.id}')"><i class="fas fa-plus"></i> Planifier</button>
+        </div>
+        ${this._renderPlanifiedMaintenances(v)}
       </div>
 
       <!-- Maintenance history -->
@@ -550,16 +560,27 @@ const VehiculesPage = {
     });
   },
 
+  // =================== TYPES MAINTENANCE ===================
+  _maintenanceTypes: [
+    { value: 'vidange', label: 'Vidange' },
+    { value: 'revision', label: 'Révision' },
+    { value: 'pneus', label: 'Pneus' },
+    { value: 'freins', label: 'Freins' },
+    { value: 'filtres', label: 'Filtres' },
+    { value: 'climatisation', label: 'Climatisation' },
+    { value: 'courroie', label: 'Courroie' },
+    { value: 'controle_technique', label: 'Contrôle technique' },
+    { value: 'batterie', label: 'Batterie' },
+    { value: 'amortisseurs', label: 'Amortisseurs' },
+    { value: 'echappement', label: 'Échappement' },
+    { value: 'carrosserie', label: 'Carrosserie' },
+    { value: 'autre', label: 'Autre' }
+  ],
+
   _addMaintenance(id) {
     const fields = [
       { name: 'date', label: 'Date', type: 'date', required: true },
-      { name: 'type', label: 'Type', type: 'select', required: true, options: [
-        { value: 'revision', label: 'Révision' },
-        { value: 'pneus', label: 'Pneus' },
-        { value: 'freins', label: 'Freins' },
-        { value: 'carrosserie', label: 'Carrosserie' },
-        { value: 'autre', label: 'Autre' }
-      ]},
+      { name: 'type', label: 'Type', type: 'select', required: true, options: this._maintenanceTypes },
       { name: 'description', label: 'Description', type: 'text', required: true },
       { type: 'row-start' },
       { name: 'montant', label: 'Montant (FCFA)', type: 'number', min: 0, required: true },
@@ -581,5 +602,399 @@ const VehiculesPage = {
       Toast.success('Maintenance ajoutée');
       this.renderDetail(id);
     });
+  },
+
+  // =================== MAINTENANCES PLANIFIEES ===================
+
+  _maintenanceStatutBadge(statut) {
+    const config = {
+      a_venir: { label: 'À venir', class: 'badge-success' },
+      urgent: { label: 'Urgent', class: 'badge-warning' },
+      en_retard: { label: 'En retard', class: 'badge-danger' },
+      complete: { label: 'Complété', class: 'badge-neutral' }
+    };
+    const c = config[statut] || config.a_venir;
+    return `<span class="badge ${c.class}">${c.label}</span>`;
+  },
+
+  _getTypeLabel(type) {
+    const found = this._maintenanceTypes.find(t => t.value === type);
+    return found ? found.label : type;
+  },
+
+  _renderPlanifiedMaintenances(v) {
+    const maintenances = (v.maintenancesPlanifiees || []).sort((a, b) => {
+      const order = { en_retard: 0, urgent: 1, a_venir: 2, complete: 3 };
+      return (order[a.statut] || 2) - (order[b.statut] || 2);
+    });
+
+    if (maintenances.length === 0) {
+      return `
+        <div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);">
+          <i class="fas fa-calendar-check" style="font-size:32px;margin-bottom:var(--space-sm);opacity:0.3;"></i>
+          <p style="margin:0;">Aucune maintenance planifiée</p>
+          <p style="font-size:var(--font-size-xs);margin-top:4px;">Cliquez sur "Planifier" pour anticiper les entretiens</p>
+        </div>
+      `;
+    }
+
+    return `
+      <div style="overflow-x:auto;">
+        <table class="data-table" style="width:100%;">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Déclencheur</th>
+              <th>Prochaine échéance</th>
+              <th>Statut</th>
+              <th>Coût estimé</th>
+              <th>Prestataire</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${maintenances.map(m => {
+              const echeance = [];
+              if (m.prochainKm) echeance.push(`${Utils.formatNumber(m.prochainKm)} km`);
+              if (m.prochaineDate) echeance.push(Utils.formatDate(m.prochaineDate));
+
+              // Calcul restant pour affichage
+              let restant = '';
+              if (m.statut !== 'complete') {
+                if (m.prochainKm && v.kilometrage) {
+                  const kmR = m.prochainKm - v.kilometrage;
+                  restant += kmR > 0 ? `${Utils.formatNumber(kmR)} km restants` : `Dépassé de ${Utils.formatNumber(Math.abs(kmR))} km`;
+                }
+                if (m.prochaineDate) {
+                  const jours = Math.ceil((new Date(m.prochaineDate) - new Date()) / 86400000);
+                  if (restant) restant += ' / ';
+                  restant += jours > 0 ? `${jours}j restants` : `${Math.abs(jours)}j de retard`;
+                }
+              }
+
+              return `
+                <tr>
+                  <td>
+                    <div style="font-weight:500;">${this._getTypeLabel(m.type)}</div>
+                    ${m.label && m.label !== m.type ? `<div style="font-size:var(--font-size-xs);color:var(--text-muted);">${m.label}</div>` : ''}
+                  </td>
+                  <td>
+                    <span class="badge badge-info" style="font-size:10px;">
+                      ${m.declencheur === 'km' ? `Tous les ${Utils.formatNumber(m.intervalleKm)} km` : ''}
+                      ${m.declencheur === 'temps' ? `Tous les ${m.intervalleMois} mois` : ''}
+                      ${m.declencheur === 'les_deux' ? `${Utils.formatNumber(m.intervalleKm)} km / ${m.intervalleMois} mois` : ''}
+                    </span>
+                  </td>
+                  <td>
+                    <div>${echeance.join(' / ')}</div>
+                    ${restant ? `<div style="font-size:var(--font-size-xs);color:${m.statut === 'en_retard' ? 'var(--danger)' : m.statut === 'urgent' ? 'var(--warning)' : 'var(--text-muted)'};font-weight:500;">${restant}</div>` : ''}
+                  </td>
+                  <td>${this._maintenanceStatutBadge(m.statut)}</td>
+                  <td>${m.coutEstime ? Utils.formatCurrency(m.coutEstime) : '-'}</td>
+                  <td>${m.prestataire || '-'}</td>
+                  <td style="text-align:right;">
+                    ${m.statut !== 'complete' ? `
+                      <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); VehiculesPage._completePlanifiedMaintenance('${v.id}', '${m.id}')" title="Compléter">
+                        <i class="fas fa-check"></i>
+                      </button>
+                    ` : ''}
+                    <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); VehiculesPage._editPlanifiedMaintenance('${v.id}', '${m.id}')" title="Modifier">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); VehiculesPage._deletePlanifiedMaintenance('${v.id}', '${m.id}')" title="Supprimer">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  },
+
+  _addPlanifiedMaintenance(vehiculeId) {
+    const vehicule = Store.findById('vehicules', vehiculeId);
+    if (!vehicule) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const fields = [
+      { type: 'row-start' },
+      { name: 'type', label: 'Type d\'entretien', type: 'select', required: true, options: this._maintenanceTypes },
+      { name: 'label', label: 'Libellé (optionnel)', type: 'text', placeholder: 'Ex: Vidange + filtre huile' },
+      { type: 'row-end' },
+      { type: 'heading', label: 'Déclencheur' },
+      { name: 'declencheur', label: 'Planifier selon', type: 'select', required: true, options: [
+        { value: 'km', label: 'Kilométrage' },
+        { value: 'temps', label: 'Temps (mois)' },
+        { value: 'les_deux', label: 'Les deux (km et temps)' }
+      ]},
+      { type: 'row-start' },
+      { name: 'intervalleKm', label: 'Intervalle (km)', type: 'number', min: 100, step: 500, placeholder: '10000' },
+      { name: 'intervalleMois', label: 'Intervalle (mois)', type: 'number', min: 1, max: 60, placeholder: '6' },
+      { type: 'row-end' },
+      { type: 'heading', label: 'Dernier entretien de ce type' },
+      { type: 'row-start' },
+      { name: 'dernierKm', label: 'Km au dernier entretien', type: 'number', min: 0, value: vehicule.kilometrage || 0 },
+      { name: 'derniereDate', label: 'Date du dernier entretien', type: 'date', value: today },
+      { type: 'row-end' },
+      { type: 'heading', label: 'Informations complémentaires' },
+      { type: 'row-start' },
+      { name: 'coutEstime', label: 'Coût estimé (FCFA)', type: 'number', min: 0, step: 1000 },
+      { name: 'prestataire', label: 'Prestataire / Garage', type: 'text' },
+      { type: 'row-end' },
+      { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Commentaires ou instructions...' }
+    ];
+
+    Modal.form('<i class="fas fa-calendar-check text-blue"></i> Planifier une maintenance', FormBuilder.build(fields), () => {
+      const body = document.getElementById('modal-body');
+      const values = FormBuilder.getValues(body);
+
+      if (!values.type || !values.declencheur) {
+        Toast.error('Type et déclencheur requis');
+        return;
+      }
+
+      // Validation selon déclencheur
+      if ((values.declencheur === 'km' || values.declencheur === 'les_deux') && !values.intervalleKm) {
+        Toast.error('Intervalle km requis pour ce déclencheur');
+        return;
+      }
+      if ((values.declencheur === 'temps' || values.declencheur === 'les_deux') && !values.intervalleMois) {
+        Toast.error('Intervalle mois requis pour ce déclencheur');
+        return;
+      }
+
+      // Auto-calcul prochaines échéances
+      const dernierKm = values.dernierKm || vehicule.kilometrage || 0;
+      const derniereDate = values.derniereDate || today;
+      let prochainKm = null;
+      let prochaineDate = null;
+
+      if (values.declencheur === 'km' || values.declencheur === 'les_deux') {
+        prochainKm = dernierKm + (parseInt(values.intervalleKm) || 0);
+      }
+      if (values.declencheur === 'temps' || values.declencheur === 'les_deux') {
+        const d = new Date(derniereDate);
+        d.setMonth(d.getMonth() + (parseInt(values.intervalleMois) || 6));
+        prochaineDate = d.toISOString().split('T')[0];
+      }
+
+      // Determiner le statut initial
+      let statut = 'a_venir';
+      if (prochainKm && vehicule.kilometrage >= prochainKm) statut = 'en_retard';
+      else if (prochainKm && (prochainKm - vehicule.kilometrage) <= 500) statut = 'urgent';
+      if (prochaineDate) {
+        const jours = Math.ceil((new Date(prochaineDate) - new Date()) / 86400000);
+        if (jours < 0) statut = 'en_retard';
+        else if (jours <= 7 && statut !== 'en_retard') statut = 'urgent';
+      }
+
+      const maintenance = {
+        id: Utils.generateId('MPL'),
+        type: values.type,
+        label: values.label || '',
+        declencheur: values.declencheur,
+        intervalleKm: parseInt(values.intervalleKm) || null,
+        intervalleMois: parseInt(values.intervalleMois) || null,
+        dernierKm,
+        derniereDate,
+        prochainKm,
+        prochaineDate,
+        coutEstime: parseInt(values.coutEstime) || null,
+        prestataire: values.prestataire || '',
+        notes: values.notes || '',
+        statut,
+        dateCreation: new Date().toISOString()
+      };
+
+      const current = vehicule.maintenancesPlanifiees || [];
+      current.push(maintenance);
+      Store.update('vehicules', vehiculeId, { maintenancesPlanifiees: current });
+
+      Modal.close();
+      Toast.success(`Maintenance planifiée : ${this._getTypeLabel(values.type)}`);
+      this.renderDetail(vehiculeId);
+    }, 'modal-lg');
+  },
+
+  _editPlanifiedMaintenance(vehiculeId, maintenanceId) {
+    const vehicule = Store.findById('vehicules', vehiculeId);
+    if (!vehicule) return;
+    const maintenances = vehicule.maintenancesPlanifiees || [];
+    const m = maintenances.find(x => x.id === maintenanceId);
+    if (!m) return;
+
+    const fields = [
+      { type: 'row-start' },
+      { name: 'type', label: 'Type d\'entretien', type: 'select', required: true, options: this._maintenanceTypes },
+      { name: 'label', label: 'Libellé', type: 'text' },
+      { type: 'row-end' },
+      { name: 'declencheur', label: 'Planifier selon', type: 'select', required: true, options: [
+        { value: 'km', label: 'Kilométrage' },
+        { value: 'temps', label: 'Temps (mois)' },
+        { value: 'les_deux', label: 'Les deux' }
+      ]},
+      { type: 'row-start' },
+      { name: 'intervalleKm', label: 'Intervalle (km)', type: 'number', min: 100, step: 500 },
+      { name: 'intervalleMois', label: 'Intervalle (mois)', type: 'number', min: 1, max: 60 },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'dernierKm', label: 'Dernier km', type: 'number', min: 0 },
+      { name: 'derniereDate', label: 'Dernière date', type: 'date' },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'coutEstime', label: 'Coût estimé (FCFA)', type: 'number', min: 0 },
+      { name: 'prestataire', label: 'Prestataire', type: 'text' },
+      { type: 'row-end' },
+      { name: 'notes', label: 'Notes', type: 'textarea' }
+    ];
+
+    Modal.form('<i class="fas fa-edit text-blue"></i> Modifier maintenance planifiée', FormBuilder.build(fields, m), () => {
+      const body = document.getElementById('modal-body');
+      const values = FormBuilder.getValues(body);
+
+      // Recalcul
+      const dernierKm = values.dernierKm || m.dernierKm || 0;
+      const derniereDate = values.derniereDate || m.derniereDate;
+      let prochainKm = null;
+      let prochaineDate = null;
+      const declencheur = values.declencheur || m.declencheur;
+
+      if (declencheur === 'km' || declencheur === 'les_deux') {
+        prochainKm = dernierKm + (parseInt(values.intervalleKm) || m.intervalleKm || 0);
+      }
+      if (declencheur === 'temps' || declencheur === 'les_deux') {
+        const d = new Date(derniereDate);
+        d.setMonth(d.getMonth() + (parseInt(values.intervalleMois) || m.intervalleMois || 6));
+        prochaineDate = d.toISOString().split('T')[0];
+      }
+
+      // Recalcul statut
+      let statut = 'a_venir';
+      if (prochainKm && vehicule.kilometrage >= prochainKm) statut = 'en_retard';
+      else if (prochainKm && (prochainKm - vehicule.kilometrage) <= 500) statut = 'urgent';
+      if (prochaineDate) {
+        const jours = Math.ceil((new Date(prochaineDate) - new Date()) / 86400000);
+        if (jours < 0) statut = 'en_retard';
+        else if (jours <= 7 && statut !== 'en_retard') statut = 'urgent';
+      }
+
+      Object.assign(m, {
+        type: values.type || m.type,
+        label: values.label || '',
+        declencheur,
+        intervalleKm: parseInt(values.intervalleKm) || m.intervalleKm,
+        intervalleMois: parseInt(values.intervalleMois) || m.intervalleMois,
+        dernierKm,
+        derniereDate,
+        prochainKm,
+        prochaineDate,
+        coutEstime: parseInt(values.coutEstime) || m.coutEstime,
+        prestataire: values.prestataire || '',
+        notes: values.notes || '',
+        statut
+      });
+
+      Store.update('vehicules', vehiculeId, { maintenancesPlanifiees: maintenances });
+      Modal.close();
+      Toast.success('Maintenance planifiée modifiée');
+      this.renderDetail(vehiculeId);
+    }, 'modal-lg');
+  },
+
+  _completePlanifiedMaintenance(vehiculeId, maintenanceId) {
+    const vehicule = Store.findById('vehicules', vehiculeId);
+    if (!vehicule) return;
+    const maintenances = vehicule.maintenancesPlanifiees || [];
+    const m = maintenances.find(x => x.id === maintenanceId);
+    if (!m) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const fields = [
+      { type: 'heading', label: `Compléter : ${this._getTypeLabel(m.type)}${m.label ? ' — ' + m.label : ''}` },
+      { type: 'row-start' },
+      { name: 'date', label: 'Date réelle', type: 'date', required: true, value: today },
+      { name: 'kilometrage', label: 'Km réel', type: 'number', min: 0, required: true, value: vehicule.kilometrage || 0 },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'montant', label: 'Montant réel (FCFA)', type: 'number', min: 0, required: true, value: m.coutEstime || 0 },
+      { name: 'prestataire', label: 'Prestataire', type: 'text', value: m.prestataire || '' },
+      { type: 'row-end' },
+      { name: 'description', label: 'Description', type: 'text', required: true, value: m.label || this._getTypeLabel(m.type) }
+    ];
+
+    Modal.form('<i class="fas fa-check-circle text-success"></i> Compléter la maintenance', FormBuilder.build(fields), () => {
+      const body = document.getElementById('modal-body');
+      const values = FormBuilder.getValues(body);
+
+      if (!values.date || !values.montant) {
+        Toast.error('Date et montant requis');
+        return;
+      }
+
+      // 1. Ajouter dans l'historique coutsMaintenance
+      const histMaintenance = {
+        id: Utils.generateId('MNT'),
+        date: values.date,
+        type: m.type,
+        description: values.description || m.label || this._getTypeLabel(m.type),
+        montant: parseInt(values.montant) || 0,
+        kilometrage: parseInt(values.kilometrage) || vehicule.kilometrage
+      };
+      const coutsMaintenance = vehicule.coutsMaintenance || [];
+      coutsMaintenance.push(histMaintenance);
+
+      // 2. Recalculer le cycle suivant dans la planification
+      const kmReel = parseInt(values.kilometrage) || vehicule.kilometrage;
+      const dateReelle = values.date;
+
+      m.dernierKm = kmReel;
+      m.derniereDate = dateReelle;
+
+      if (m.declencheur === 'km' || m.declencheur === 'les_deux') {
+        m.prochainKm = kmReel + (m.intervalleKm || 10000);
+      }
+      if (m.declencheur === 'temps' || m.declencheur === 'les_deux') {
+        const d = new Date(dateReelle);
+        d.setMonth(d.getMonth() + (m.intervalleMois || 6));
+        m.prochaineDate = d.toISOString().split('T')[0];
+      }
+
+      // Remettre le statut à "a_venir" (nouveau cycle)
+      m.statut = 'a_venir';
+
+      // 3. Mettre à jour le km du véhicule si plus élevé
+      const newKm = Math.max(vehicule.kilometrage, kmReel);
+
+      Store.update('vehicules', vehiculeId, {
+        coutsMaintenance,
+        maintenancesPlanifiees: maintenances,
+        kilometrage: newKm
+      });
+
+      Modal.close();
+      Toast.success(`${this._getTypeLabel(m.type)} complétée — prochain cycle planifié`);
+      this.renderDetail(vehiculeId);
+    });
+  },
+
+  _deletePlanifiedMaintenance(vehiculeId, maintenanceId) {
+    const vehicule = Store.findById('vehicules', vehiculeId);
+    if (!vehicule) return;
+    const m = (vehicule.maintenancesPlanifiees || []).find(x => x.id === maintenanceId);
+    if (!m) return;
+
+    Modal.confirm(
+      'Supprimer la maintenance planifiée',
+      `Supprimer la planification <strong>${this._getTypeLabel(m.type)}</strong>${m.label ? ' (' + m.label + ')' : ''} ?`,
+      () => {
+        const updated = (vehicule.maintenancesPlanifiees || []).filter(x => x.id !== maintenanceId);
+        Store.update('vehicules', vehiculeId, { maintenancesPlanifiees: updated });
+        Toast.success('Maintenance planifiée supprimée');
+        this.renderDetail(vehiculeId);
+      }
+    );
   }
 };

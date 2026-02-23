@@ -99,6 +99,9 @@ const AccueilPage = {
       </div>
       ` : ''}
 
+      <!-- Alertes maintenance vehicule -->
+      <div id="maintenance-alerts"></div>
+
       <!-- Alertes actives -->
       ${data.alertesActives > 0 ? `
       <div class="card" style="border-left: 3px solid #ef4444">
@@ -137,6 +140,9 @@ const AccueilPage = {
 
     // Charger l'activite Yango en arriere plan
     this._loadYangoActivity();
+
+    // Charger les alertes maintenance vehicule
+    this._loadMaintenanceAlerts();
   },
 
   _formatCurrency(amount) {
@@ -430,6 +436,63 @@ const AccueilPage = {
         </div>
       </div>
     `;
+  },
+
+  async _loadMaintenanceAlerts() {
+    const container = document.getElementById('maintenance-alerts');
+    if (!container) return;
+
+    try {
+      const vehicule = await DriverStore.getVehicule();
+      if (!vehicule || !vehicule.maintenancesUrgentes || vehicule.maintenancesUrgentes.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+
+      const typeLabels = {
+        vidange: 'Vidange', revision: 'Revision', pneus: 'Pneus', freins: 'Freins',
+        filtres: 'Filtres', climatisation: 'Climatisation', courroie: 'Courroie',
+        controle_technique: 'Controle technique', batterie: 'Batterie',
+        amortisseurs: 'Amortisseurs', echappement: 'Echappement',
+        carrosserie: 'Carrosserie', autre: 'Entretien'
+      };
+
+      container.innerHTML = vehicule.maintenancesUrgentes.map(m => {
+        const typeLabel = typeLabels[m.type] || m.label || m.type;
+        const isRetard = m.statut === 'en_retard';
+        const color = isRetard ? '#ef4444' : '#f59e0b';
+        const icon = isRetard ? 'fa-exclamation-circle' : 'fa-exclamation-triangle';
+
+        let detail = '';
+        if (m.prochainKm && vehicule.kilometrage) {
+          const diff = m.prochainKm - vehicule.kilometrage;
+          detail = diff > 0 ? `dans ${diff.toLocaleString('fr-FR')} km` : `depasse de ${Math.abs(diff).toLocaleString('fr-FR')} km`;
+        }
+        if (m.prochaineDate) {
+          const jours = Math.ceil((new Date(m.prochaineDate) - new Date()) / 86400000);
+          if (detail) detail += ' / ';
+          detail += jours > 0 ? `dans ${jours} jour(s)` : `${Math.abs(jours)} jour(s) de retard`;
+        }
+
+        return `
+          <div class="card" style="border-left:3px solid ${color};padding:10px 12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <i class="fas ${icon}" style="color:${color};font-size:0.9rem;"></i>
+              <div style="flex:1;">
+                <div style="font-size:0.82rem;font-weight:600;color:${color};">
+                  ${isRetard ? 'Maintenance en retard' : 'Maintenance imminente'} : ${typeLabel}
+                </div>
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">
+                  ${detail ? detail + ' — ' : ''}Contactez votre gestionnaire
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      container.style.display = 'none';
+    }
   },
 
   _demanderAbsence() {

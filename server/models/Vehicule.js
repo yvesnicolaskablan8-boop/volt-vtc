@@ -9,6 +9,24 @@ const maintenanceSchema = new mongoose.Schema({
   kilometrage: Number
 }, { _id: false });
 
+const maintenancePlanifieeSchema = new mongoose.Schema({
+  id: String,                    // 'MPL-XXXXXX'
+  type: String,                  // vidange, revision, pneus, freins, filtres, climatisation, courroie, controle_technique, batterie, amortisseurs, echappement, carrosserie, autre
+  label: String,                 // Libellé libre (ex: "Vidange + filtre huile")
+  declencheur: String,           // 'km' | 'temps' | 'les_deux'
+  intervalleKm: Number,          // Tous les X km (ex: 10000)
+  intervalleMois: Number,        // Tous les X mois (ex: 6)
+  dernierKm: Number,             // Km au dernier entretien de ce type
+  derniereDate: String,          // Date du dernier entretien de ce type
+  prochainKm: Number,            // Km de la prochaine échéance
+  prochaineDate: String,         // Date de la prochaine échéance
+  coutEstime: Number,            // Coût estimé en FCFA
+  prestataire: String,           // Nom du garage/prestataire
+  notes: String,
+  statut: { type: String, default: 'a_venir' }, // 'a_venir' | 'urgent' | 'en_retard' | 'complete'
+  dateCreation: String
+}, { _id: false });
+
 const vehiculeSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   marque: { type: String, required: true },
@@ -33,6 +51,7 @@ const vehiculeSchema = new mongoose.Schema({
   primeAnnuelle: Number,
   dateExpirationAssurance: String,
   coutsMaintenance: [maintenanceSchema],
+  maintenancesPlanifiees: [maintenancePlanifieeSchema],
   statut: { type: String, default: 'en_service' },
   chauffeurAssigne: String,
   consommation: Number,
