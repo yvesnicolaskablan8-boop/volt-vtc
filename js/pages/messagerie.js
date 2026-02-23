@@ -251,20 +251,30 @@ const MessageriePage = {
 
   async _api(method, path, body) {
     const token = localStorage.getItem('volt_token');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     const opts = {
       method,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + token
-      }
+      },
+      signal: controller.signal
     };
     if (body) opts.body = JSON.stringify(body);
-    const res = await fetch('/api/messages' + path, opts);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || `Erreur ${res.status}`);
+    try {
+      const res = await fetch('/api/messages' + path, opts);
+      clearTimeout(timeout);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Erreur ${res.status}`);
+      }
+      return res.json();
+    } catch (e) {
+      clearTimeout(timeout);
+      if (e.name === 'AbortError') throw new Error('Délai de connexion dépassé');
+      throw e;
     }
-    return res.json();
   },
 
   // =================== LOAD CONVERSATIONS ===================
@@ -272,12 +282,23 @@ const MessageriePage = {
   async _loadConversations(statut = 'active', silent = false) {
     try {
       const data = await this._api('GET', `?statut=${statut}`);
-      this._conversations = data;
+      this._conversations = Array.isArray(data) ? data : [];
       this._renderConversationList();
     } catch (e) {
       if (!silent) {
         console.error('[Messagerie] Erreur chargement conversations:', e);
-        Toast.show('Erreur chargement messagerie', 'error');
+        const container = document.getElementById('msg-conv-list');
+        if (container) {
+          container.innerHTML = `
+            <div style="text-align:center;padding:var(--space-xl);opacity:0.6;">
+              <i class="fas fa-exclamation-circle" style="font-size:2rem;color:var(--danger);"></i>
+              <p style="margin-top:var(--space-sm);">${e.message || 'Erreur de connexion'}</p>
+              <button class="btn btn-sm btn-secondary" style="margin-top:var(--space-md);" onclick="MessageriePage._loadConversations()">
+                <i class="fas fa-redo"></i> Réessayer
+              </button>
+            </div>
+          `;
+        }
       }
     }
   },
