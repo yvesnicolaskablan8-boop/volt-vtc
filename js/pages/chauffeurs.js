@@ -440,6 +440,8 @@ const ChauffeursPage = {
 
     // Injecter le bouton "+ Créer véhicule" a coté du select vehiculeAssigne
     this._injectQuickVehicleButton();
+    // Injecter le bouton "Rechercher sur Yango" a coté du champ yangoDriverId
+    this._injectYangoSearchButton();
   },
 
   _edit(id) {
@@ -469,6 +471,8 @@ const ChauffeursPage = {
 
     // Injecter le bouton "+ Créer véhicule" a coté du select vehiculeAssigne
     this._injectQuickVehicleButton();
+    // Injecter le bouton "Rechercher sur Yango" a coté du champ yangoDriverId
+    this._injectYangoSearchButton();
   },
 
   _delete(id) {
@@ -518,6 +522,189 @@ const ChauffeursPage = {
       });
       wrapper.appendChild(btn);
     }, 50);
+  },
+
+  // ======== YANGO SEARCH IN FORM ========
+
+  _injectYangoSearchButton() {
+    setTimeout(() => {
+      const input = document.querySelector('#modal-body [name="yangoDriverId"]');
+      if (!input) return;
+
+      // Verifier qu'on n'a pas deja ajoute le bouton
+      if (input.parentElement.querySelector('.yango-search-form-btn')) return;
+
+      // Wrapper l'input + bouton dans un flex container
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
+
+      input.parentElement.insertBefore(wrapper, input);
+      wrapper.appendChild(input);
+      input.style.flex = '1';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-secondary yango-search-form-btn';
+      btn.style.cssText = 'white-space:nowrap;margin-top:0;height:38px;padding:0 12px;';
+      btn.innerHTML = '<i class="fas fa-search"></i> Yango';
+      btn.title = 'Rechercher un chauffeur sur Yango';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this._searchYangoInForm();
+      });
+      wrapper.appendChild(btn);
+
+      // Ajouter le container de résultats sous le wrapper
+      const resultsDiv = document.createElement('div');
+      resultsDiv.id = 'yango-form-search-results';
+      resultsDiv.style.cssText = 'margin-top:4px;';
+      wrapper.parentElement.insertBefore(resultsDiv, wrapper.nextSibling);
+    }, 60);
+  },
+
+  async _searchYangoInForm() {
+    const container = document.getElementById('yango-form-search-results');
+    if (!container) return;
+
+    // Récupérer nom + telephone du formulaire pour le scoring de pertinence
+    const body = document.getElementById('modal-body');
+    const prenom = (body.querySelector('[name="prenom"]')?.value || '').trim();
+    const nom = (body.querySelector('[name="nom"]')?.value || '').trim();
+    const telephone = (body.querySelector('[name="telephone"]')?.value || '').trim();
+
+    container.innerHTML = '<div style="padding:8px;font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Recherche des chauffeurs Yango...</div>';
+
+    try {
+      const res = await Store.getYangoDriversForLinking();
+      if (!res || !res.drivers) {
+        container.innerHTML = '<div style="color:#ef4444;font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> Impossible de charger les chauffeurs Yango</div>';
+        return;
+      }
+
+      const drivers = res.drivers;
+      const searchName = `${prenom} ${nom}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      const searchPhone = telephone.replace(/\D/g, '').slice(-10);
+
+      // Scoring identique a _searchYangoDriver
+      const scored = drivers.map(d => {
+        let score = 0;
+        const yName = `${d.prenom} ${d.nom}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const yPhone = (d.telephone || '').replace(/\D/g, '').slice(-10);
+
+        if (searchName.length >= 3) {
+          if (yName === searchName) score += 100;
+          else if (`${d.nom} ${d.prenom}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === searchName) score += 90;
+          else {
+            const searchWords = searchName.split(' ').filter(w => w.length >= 3);
+            const yWords = yName.split(' ');
+            for (const sw of searchWords) {
+              if (yWords.some(yw => yw === sw)) score += 30;
+            }
+          }
+        }
+
+        if (searchPhone.length >= 8 && yPhone === searchPhone) score += 80;
+
+        return { ...d, _score: score };
+      });
+
+      scored.sort((a, b) => b._score - a._score);
+
+      const top = scored.slice(0, 20);
+      const matchCount = scored.filter(d => d._score > 0).length;
+
+      container.innerHTML = `
+        <div style="margin-bottom:8px;">
+          <input type="text" class="form-control" id="yango-form-filter-input" placeholder="Filtrer par nom..." style="font-size:var(--font-size-xs);padding:6px 10px;"
+            oninput="ChauffeursPage._filterYangoFormResults()">
+        </div>
+        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#22c55e;margin-bottom:6px;"><i class="fas fa-star"></i> ${matchCount} correspondance(s) probable(s)</div>` : ''}
+        ${(!prenom && !nom && !telephone) ? '<div style="font-size:var(--font-size-xs);color:var(--warning);margin-bottom:6px;"><i class="fas fa-info-circle"></i> Remplissez nom/téléphone pour un meilleur tri</div>' : ''}
+        <div id="yango-form-drivers-list" style="max-height:200px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);">
+          ${this._renderYangoFormDriversList(top)}
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${drivers.length} chauffeurs Yango au total</div>
+      `;
+
+      // Stocker pour le filtre
+      this._yangoFormDriversCache = scored;
+    } catch (err) {
+      container.innerHTML = `<div style="color:#ef4444;font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> Erreur: ${err.message}</div>`;
+    }
+  },
+
+  _renderYangoFormDriversList(drivers) {
+    if (drivers.length === 0) return '<div style="padding:12px;text-align:center;font-size:var(--font-size-xs);color:var(--text-muted);">Aucun résultat</div>';
+
+    return drivers.map(d => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border-color);font-size:var(--font-size-xs);${d._score >= 80 ? 'background:rgba(34,197,94,0.06);' : ''}">
+        <div style="flex:1;">
+          <div style="font-weight:500;">
+            ${d._score >= 80 ? '<i class="fas fa-star" style="color:#22c55e;font-size:9px;"></i> ' : ''}
+            ${d.prenom} ${d.nom}
+          </div>
+          <div style="color:var(--text-muted);font-size:10px;">${d.telephone || 'Pas de tel'} &bull; ${d.workStatus || '?'}</div>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="ChauffeursPage._linkYangoFromForm('${d.id}', '${(d.prenom + ' ' + d.nom).replace(/'/g, "\\'")}')">
+          <i class="fas fa-link"></i> Lier
+        </button>
+      </div>
+    `).join('');
+  },
+
+  _filterYangoFormResults() {
+    const input = document.getElementById('yango-form-filter-input');
+    const list = document.getElementById('yango-form-drivers-list');
+    if (!input || !list || !this._yangoFormDriversCache) return;
+
+    const query = input.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    let filtered = this._yangoFormDriversCache;
+
+    if (query) {
+      filtered = this._yangoFormDriversCache.filter(d => {
+        const name = `${d.prenom} ${d.nom}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const phone = d.telephone || '';
+        return name.includes(query) || phone.includes(query);
+      });
+    }
+
+    list.innerHTML = this._renderYangoFormDriversList(filtered.slice(0, 30));
+  },
+
+  _linkYangoFromForm(yangoId, yangoNom) {
+    const input = document.querySelector('#modal-body [name="yangoDriverId"]');
+    if (input) {
+      input.value = yangoId;
+      // Déclencher l'event change pour que FormBuilder le capte
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // Remplacer la zone de résultats par un badge de confirmation
+    const container = document.getElementById('yango-form-search-results');
+    if (container) {
+      container.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-sm);font-size:var(--font-size-xs);margin-top:4px;">
+          <i class="fas fa-check-circle" style="color:#22c55e;"></i>
+          <span>Lié à <strong>${yangoNom}</strong> (${yangoId})</span>
+          <button type="button" class="btn btn-sm" style="margin-left:auto;padding:2px 8px;font-size:10px;" onclick="ChauffeursPage._unlinkYangoFromForm()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+    }
+
+    Toast.success(`Chauffeur sera lié à ${yangoNom} sur Yango`);
+  },
+
+  _unlinkYangoFromForm() {
+    const input = document.querySelector('#modal-body [name="yangoDriverId"]');
+    if (input) {
+      input.value = '';
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    const container = document.getElementById('yango-form-search-results');
+    if (container) container.innerHTML = '';
   },
 
   _quickAddVehicle() {
