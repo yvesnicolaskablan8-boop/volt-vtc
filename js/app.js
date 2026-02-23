@@ -98,9 +98,13 @@ const App = {
       this._showLogin();
     }
 
+    // Detect native WebView app and force mobile mode
+    this._applyMobileMode();
+
     console.log('Volt VTC Management v2.0.0 initialized (API mode)');
     console.log(`Data size: ${Store.getStorageSize().kb} Ko`);
     console.log(`Theme: ${ThemeManager._current}`);
+    console.log(`Viewport: ${window.innerWidth}x${window.innerHeight}, Native: ${!!(window.VoltNative)}`);
   },
 
   _showApp() {
@@ -410,6 +414,29 @@ const App = {
   _hideSetPasswordError() {
     const el = document.getElementById('set-password-error');
     if (el) el.style.display = 'none';
+  },
+
+  _applyMobileMode() {
+    // Detect native app WebView or narrow viewport
+    const isNative = !!(window.VoltNative) || navigator.userAgent.includes('VoltAdminApp');
+    const vw = window.innerWidth || document.documentElement.clientWidth;
+
+    if (isNative || vw <= 1024) {
+      // Force sidebar hidden — ensures it cannot block header touch events
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar && !sidebar.classList.contains('open')) {
+        sidebar.style.pointerEvents = 'none';
+        sidebar.style.visibility = 'hidden';
+      }
+
+      // Add a class to body for native app targeting
+      if (isNative) {
+        document.body.classList.add('volt-native-app');
+      }
+      document.body.classList.add('volt-mobile');
+
+      console.log(`Mobile mode applied: native=${isNative}, vw=${vw}`);
+    }
   },
 
   logout() {

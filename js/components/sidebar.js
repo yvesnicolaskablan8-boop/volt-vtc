@@ -27,20 +27,46 @@ const Sidebar = {
     });
     this._navHandlers = [];
 
+    // Helper to open sidebar
+    const openSidebar = () => {
+      sidebar.classList.add('open');
+      sidebar.style.pointerEvents = '';
+      sidebar.style.visibility = '';
+      sidebar.style.transform = '';
+      overlay.classList.add('active');
+    };
+
+    // Helper to close sidebar
+    const closeSidebar = () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('active');
+      // On mobile, re-apply pointer-events block after transition
+      if (window.innerWidth <= 1024) {
+        setTimeout(() => {
+          if (!sidebar.classList.contains('open')) {
+            sidebar.style.pointerEvents = 'none';
+            sidebar.style.visibility = 'hidden';
+          }
+        }, 350);
+      }
+    };
+
     // Toggle handler — opens/closes sidebar
     this._toggleHandler = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('active');
+      if (sidebar.classList.contains('open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
     };
 
     // Overlay handler — closes sidebar when tapping the dark overlay
     this._overlayHandler = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      sidebar.classList.remove('open');
-      overlay.classList.remove('active');
+      closeSidebar();
     };
 
     // Attach with both click and touchend for WebView compatibility
@@ -52,9 +78,8 @@ const Sidebar = {
     // Nav item clicks close mobile sidebar
     document.querySelectorAll('.nav-item').forEach(item => {
       const handler = () => {
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('open');
-          overlay.classList.remove('active');
+        if (window.innerWidth <= 1024) {
+          closeSidebar();
         }
       };
       item.addEventListener('click', handler);

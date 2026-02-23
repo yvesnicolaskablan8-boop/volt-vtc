@@ -27,6 +27,19 @@ public class LauncherActivity extends Activity {
     private static final String APP_URL = "https://volt-vtc.vercel.app/";
     private static final String ALLOWED_HOST = "volt-vtc.vercel.app";
 
+    // JavaScript injected after page load to force mobile layout
+    private static final String MOBILE_FIX_JS =
+        "(function() {" +
+        "  var vw = window.innerWidth || document.documentElement.clientWidth;" +
+        "  document.title = 'VW:' + vw;" +
+        "  if (vw <= 1024) {" +
+        "    var sidebar = document.getElementById('sidebar');" +
+        "    if (sidebar && !sidebar.classList.contains('open')) {" +
+        "      sidebar.style.cssText += 'transform:translateX(-100%) !important;pointer-events:none !important;visibility:hidden !important;';" +
+        "    }" +
+        "  }" +
+        "})();";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,8 +70,7 @@ public class LauncherActivity extends Activity {
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         // Mark as mobile app in user-agent
         settings.setUserAgentString(settings.getUserAgentString() + " VoltAdminApp/1.0");
-        // useWideViewPort(true) = read the meta viewport tag (width=device-width)
-        // loadWithOverviewMode(false) = don't zoom out to show full page
+        // Viewport: respect meta tag, do NOT zoom out
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(false);
         settings.setSupportZoom(false);
@@ -86,6 +98,13 @@ public class LauncherActivity extends Activity {
                 Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());
                 startActivity(intent);
                 return true;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                // Inject mobile fix after every page load
+                view.evaluateJavascript(MOBILE_FIX_JS, null);
             }
 
             @Override
@@ -155,6 +174,16 @@ public class LauncherActivity extends Activity {
         @JavascriptInterface
         public boolean isNativeApp() {
             return true;
+        }
+
+        @JavascriptInterface
+        public int getViewportWidth() {
+            return activity.getResources().getDisplayMetrics().widthPixels;
+        }
+
+        @JavascriptInterface
+        public float getDeviceDensity() {
+            return activity.getResources().getDisplayMetrics().density;
         }
 
         @JavascriptInterface
