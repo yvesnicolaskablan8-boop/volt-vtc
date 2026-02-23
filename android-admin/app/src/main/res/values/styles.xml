@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="Theme.VoltAdmin" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:navigationBarColor">#0a0e17</item>
+        <item name="android:statusBarColor">#3b82f6</item>
+    </style>
+
+    <!-- Splash screen theme -->
+    <style name="Theme.VoltAdmin.Splash" parent="Theme.VoltAdmin">
+        <item name="android:windowBackground">#0a0e17</item>
+    </style>
+</resources>
