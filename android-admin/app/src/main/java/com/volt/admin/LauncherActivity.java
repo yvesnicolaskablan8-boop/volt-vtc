@@ -24,8 +24,8 @@ import org.json.JSONArray;
 public class LauncherActivity extends Activity {
 
     private WebView webView;
-    private static final String APP_URL = "https://volt-vtc-production.up.railway.app/";
-    private static final String ALLOWED_HOST = "volt-vtc-production.up.railway.app";
+    private static final String APP_URL = "https://volt-vtc.vercel.app/";
+    private static final String ALLOWED_HOST = "volt-vtc.vercel.app";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
