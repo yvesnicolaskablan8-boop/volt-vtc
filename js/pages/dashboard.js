@@ -127,13 +127,34 @@ const DashboardPage = {
       .sort((a, b) => new Date(b.dateCreation) - new Date(a.dateCreation))
       .slice(0, 5);
 
+    // Maintenance alerts
+    const maintenanceAlerts = [];
+    vehicules.forEach(v => {
+      if (!v.maintenancesPlanifiees) return;
+      const chauffeur = chauffeurs.find(c => c.vehiculeAssigne === v.id);
+      v.maintenancesPlanifiees.forEach(m => {
+        if (m.statut === 'en_retard' || m.statut === 'urgent') {
+          maintenanceAlerts.push({
+            ...m,
+            vehiculeLabel: `${v.marque} ${v.modele}`,
+            immatriculation: v.immatriculation,
+            vehiculeId: v.id,
+            chauffeurNom: chauffeur ? `${chauffeur.prenom} ${chauffeur.nom}` : null
+          });
+        }
+      });
+    });
+    const ordre = { en_retard: 0, urgent: 1 };
+    maintenanceAlerts.sort((a, b) => (ordre[a.statut] || 9) - (ordre[b.statut] || 9));
+
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
       activeCount, vehiclesActifs, vehiclesEV, vehiclesThermique,
       monthCourses: monthCourses.length,
       monthlyRevenue, weeklyPayments,
       coursesByType, typeLabels, vehicleProfit,
-      recentVersements, chauffeurs, vehiculesTotal: vehicules.length
+      recentVersements, chauffeurs, vehiculesTotal: vehicules.length,
+      maintenanceAlerts
     };
   },
 
@@ -183,6 +204,39 @@ const DashboardPage = {
           </div>
         </div>
       </div>
+
+      <!-- Maintenance Alerts -->
+      ${d.maintenanceAlerts.length > 0 ? `
+      <div class="card" style="margin-top:var(--space-lg);border-left:4px solid ${d.maintenanceAlerts.some(m => m.statut === 'en_retard') ? '#ef4444' : '#f59e0b'};">
+        <div class="card-header">
+          <span class="card-title"><i class="fas fa-tools" style="color:${d.maintenanceAlerts.some(m => m.statut === 'en_retard') ? '#ef4444' : '#f59e0b'};"></i> Alertes maintenance (${d.maintenanceAlerts.length})</span>
+          <a href="#/maintenances" class="btn btn-sm btn-secondary">Voir tout</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${d.maintenanceAlerts.slice(0, 5).map(m => {
+            const typeLabels = { vidange:'Vidange', revision:'Revision', pneus:'Pneus', freins:'Freins', filtres:'Filtres', climatisation:'Clim.', courroie:'Courroie', controle_technique:'CT', batterie:'Batterie', amortisseurs:'Amortisseurs', echappement:'Echappement', carrosserie:'Carrosserie', autre:'Autre' };
+            const isRetard = m.statut === 'en_retard';
+            const color = isRetard ? '#ef4444' : '#f59e0b';
+            const icon = isRetard ? 'fa-exclamation-circle' : 'fa-exclamation-triangle';
+            const label = isRetard ? 'EN RETARD' : 'URGENT';
+            let echeance = '';
+            if (m.prochaineDate) {
+              const jours = Math.ceil((new Date(m.prochaineDate) - new Date()) / 86400000);
+              echeance = jours < 0 ? Math.abs(jours) + 'j de retard' : jours === 0 ? "aujourd'hui" : 'dans ' + jours + 'j';
+            }
+            return '<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);cursor:pointer;" onclick="Router.navigate(\\'/vehicules/' + m.vehiculeId + '\\')">' +
+              '<i class="fas ' + icon + '" style="color:' + color + ';font-size:0.9rem;flex-shrink:0;"></i>' +
+              '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:var(--font-size-sm);font-weight:600;">' + (typeLabels[m.type] || m.type) + ' <span style="font-size:var(--font-size-xs);font-weight:700;color:' + color + ';">' + label + '</span></div>' +
+                '<div style="font-size:var(--font-size-xs);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + m.vehiculeLabel + ' (' + m.immatriculation + ')' + (m.chauffeurNom ? ' — ' + m.chauffeurNom : '') + '</div>' +
+              '</div>' +
+              (echeance ? '<div style="font-size:var(--font-size-xs);color:' + color + ';font-weight:600;white-space:nowrap;">' + echeance + '</div>' : '') +
+            '</div>';
+          }).join('')}
+          ${d.maintenanceAlerts.length > 5 ? '<div style="text-align:center;padding:4px;font-size:var(--font-size-xs);color:var(--text-muted);">+ ' + (d.maintenanceAlerts.length - 5) + ' autre(s)...</div>' : ''}
+        </div>
+      </div>
+      ` : ''}
 
       <!-- Charts Row 1 -->
       <div class="charts-grid">
