@@ -37,6 +37,9 @@ const AlertesPage = {
         </div>
       </div>
 
+      <!-- Bandeau notifications -->
+      <div id="notif-stats-banner" style="margin-bottom:var(--space-lg);display:none;"></div>
+
       <!-- KPIs -->
       <div class="grid-4" id="alerts-kpis" style="margin-bottom:var(--space-lg);"></div>
 
@@ -105,6 +108,53 @@ const AlertesPage = {
     this._renderKPIs(alerts);
     this._renderAlertsList(alerts);
     this._renderCharts(alerts);
+    this._loadNotifStats();
+  },
+
+  async _loadNotifStats() {
+    const banner = document.getElementById('notif-stats-banner');
+    if (!banner) return;
+
+    try {
+      const token = Auth.getToken ? Auth.getToken() : localStorage.getItem('volt_token');
+      const res = await fetch((Store._apiBase || '/api') + '/notifications/stats', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const stats = await res.json();
+
+      const total = stats.mois?.total || 0;
+      const sms = stats.mois?.sms || 0;
+      const echecs = stats.mois?.echecs || 0;
+      const aujourd_hui = stats.aujourd_hui || 0;
+
+      if (total === 0 && aujourd_hui === 0) {
+        banner.style.display = 'none';
+        return;
+      }
+
+      banner.style.display = 'block';
+      banner.innerHTML = `
+        <div class="card" style="border-left:4px solid var(--primary);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));">
+          <div style="display:flex;align-items:center;gap:var(--space-md);flex-wrap:wrap;">
+            <div style="width:40px;height:40px;border-radius:50%;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--primary);">
+              <i class="fas fa-paper-plane"></i>
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <div style="font-weight:600;font-size:var(--font-size-sm);">Notifications ce mois</div>
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:2px;">
+                <strong>${total}</strong> envoyees &bull; <strong>${sms}</strong> SMS (~${stats.mois?.coutEstimeSMS || 0}$) &bull; <strong>${echecs}</strong> echec(s) &bull; <strong>${aujourd_hui}</strong> aujourd'hui
+              </div>
+            </div>
+            <a href="#/parametres" class="btn btn-sm btn-secondary" onclick="setTimeout(()=>{const tabs=document.querySelectorAll('#settings-tabs .tab');tabs.forEach(t=>{if(t.dataset.tab==='notifications-settings'){t.click();}});},200);">
+              <i class="fas fa-cog"></i> Configurer
+            </a>
+          </div>
+        </div>
+      `;
+    } catch (e) {
+      banner.style.display = 'none';
+    }
   },
 
   // =================== GENERATION DES ALERTES ===================

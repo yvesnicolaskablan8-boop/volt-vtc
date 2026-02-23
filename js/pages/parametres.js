@@ -56,6 +56,7 @@ const ParametresPage = {
         <div class="tab" data-tab="entreprise"><i class="fas fa-building"></i> Entreprise</div>
         <div class="tab" data-tab="preferences"><i class="fas fa-sliders-h"></i> Préférences</div>
         <div class="tab" data-tab="versements-settings"><i class="fas fa-money-bill-transfer"></i> Versements</div>
+        <div class="tab" data-tab="notifications-settings"><i class="fas fa-bell"></i> Notifications</div>
       </div>
 
       <div id="settings-content"></div>
@@ -81,6 +82,7 @@ const ParametresPage = {
       case 'entreprise': ct.innerHTML = this._renderEntreprise(); this._bindEntrepriseEvents(); break;
       case 'preferences': ct.innerHTML = this._renderPreferences(); this._bindPreferencesEvents(); break;
       case 'versements-settings': ct.innerHTML = this._renderVersementsSettings(); this._bindVersementsSettingsEvents(); break;
+      case 'notifications-settings': ct.innerHTML = this._renderNotificationsSettings(); this._bindNotificationsSettingsEvents(); break;
     }
   },
 
@@ -1672,6 +1674,296 @@ const ParametresPage = {
 
       Store.set('settings', settings);
       Toast.success('Configuration des versements sauvegardée');
+    });
+  },
+
+  // ========================= ONGLET NOTIFICATIONS =========================
+
+  _renderNotificationsSettings() {
+    const settings = Store.get('settings') || {};
+    const notif = settings.notifications || {};
+
+    return `
+      <div class="grid-2" style="gap:var(--space-lg);">
+        <!-- Canaux -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-satellite-dish" style="color:var(--primary);"></i> Canaux de notification</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+              <div>
+                <div style="font-weight:500;font-size:var(--font-size-sm);"><i class="fas fa-bell" style="color:var(--primary);margin-right:6px;"></i> Push (PWA)</div>
+                <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Notifications dans le navigateur/mobile des chauffeurs. Gratuit.</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-push-actif" ${notif.pushActif !== false ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border-color);">
+              <div>
+                <div style="font-weight:500;font-size:var(--font-size-sm);"><i class="fas fa-sms" style="color:#22c55e;margin-right:6px;"></i> SMS (Twilio)</div>
+                <div style="font-size:var(--font-size-xs);color:var(--text-muted);">SMS aux chauffeurs. Necessite un compte Twilio (~0.05$/SMS).</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-sms-actif" ${notif.smsActif ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="form-group" style="border-top:1px solid var(--border-color);padding-top:var(--space-md);">
+              <label class="form-label"><i class="fas fa-phone" style="color:var(--primary);margin-right:4px;"></i> Telephone admin (pour alertes)</label>
+              <input type="tel" class="form-control" id="notif-tel-admin" value="${notif.telephoneAdmin || ''}" placeholder="+225 07 XX XX XX XX">
+              <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Recoit les SMS d'alerte retard des chauffeurs</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rappels deadline -->
+        <div>
+          <div class="card" style="margin-bottom:var(--space-lg);">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-hourglass-half" style="color:#f59e0b;"></i> Rappels deadline</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-sm);padding-top:var(--space-md);">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+                <div>
+                  <div style="font-weight:500;font-size:var(--font-size-sm);">Rappel 24h avant</div>
+                  <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Envoye quand il reste 24h avant la deadline</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notif-rappel-24h" ${notif.rappelDeadline24h !== false ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border-color);">
+                <div>
+                  <div style="font-weight:500;font-size:var(--font-size-sm);">Rappel 1h avant</div>
+                  <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Rappel urgent 1 heure avant la deadline</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notif-rappel-1h" ${notif.rappelDeadline1h !== false ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documents -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-id-card" style="color:#6366f1;"></i> Expiration documents</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-sm);padding-top:var(--space-md);">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+                <div>
+                  <div style="font-weight:500;font-size:var(--font-size-sm);">Alerte 30 jours avant</div>
+                  <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Permis, carte VTC, assurance</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notif-doc-30j" ${notif.alerteDocuments30j !== false ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border-color);">
+                <div>
+                  <div style="font-weight:500;font-size:var(--font-size-sm);">Alerte 7 jours avant</div>
+                  <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Rappel urgent avant expiration</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notif-doc-7j" ${notif.alerteDocuments7j !== false ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Score conduite + Admin retard -->
+      <div class="grid-2" style="gap:var(--space-lg);margin-top:var(--space-lg);">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-tachometer-alt" style="color:#ef4444;"></i> Score de conduite</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+              <div>
+                <div style="font-weight:500;font-size:var(--font-size-sm);">Alerte score faible</div>
+                <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Previent le chauffeur si son score est trop bas</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-score-faible" ${notif.alerteScoreFaible !== false ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group" id="notif-score-seuil-group" style="display:${notif.alerteScoreFaible !== false ? 'block' : 'none'};padding-top:var(--space-sm);border-top:1px solid var(--border-color);">
+              <label class="form-label">Seuil d'alerte</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input type="number" class="form-control" id="notif-score-seuil" min="30" max="90" value="${notif.scoreSeuilAlerte || 60}" style="max-width:100px;">
+                <span style="font-size:var(--font-size-sm);color:var(--text-muted);">/ 100</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="border-left:4px solid var(--volt-blue);">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-user-shield" style="color:var(--volt-blue);"></i> Alertes admin</span>
+          </div>
+          <div style="padding-top:var(--space-md);">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+              <div>
+                <div style="font-weight:500;font-size:var(--font-size-sm);">SMS retard de versement</div>
+                <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Recevoir un SMS quand un chauffeur est en retard</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-admin-retard" ${notif.alerteAdminRetard !== false ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Envoyer une annonce -->
+      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
+        <div class="card-header">
+          <span class="card-title"><i class="fas fa-bullhorn" style="color:#FC4C02;"></i> Envoyer une annonce</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+          <div class="form-group">
+            <label class="form-label">Titre</label>
+            <input type="text" class="form-control" id="annonce-titre" placeholder="Ex: Reunion demain matin" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-control" id="annonce-message" rows="3" placeholder="Ecrivez votre message ici..." maxlength="500"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Canal d'envoi</label>
+            <div style="display:flex;gap:var(--space-sm);">
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);border:2px solid var(--primary);cursor:pointer;flex:1;">
+                <input type="radio" name="annonce-canal" value="push" checked style="accent-color:var(--primary);">
+                <span style="font-size:var(--font-size-sm);font-weight:500;"><i class="fas fa-bell"></i> Push</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);border:2px solid var(--border-color);cursor:pointer;flex:1;">
+                <input type="radio" name="annonce-canal" value="sms" style="accent-color:var(--primary);">
+                <span style="font-size:var(--font-size-sm);font-weight:500;"><i class="fas fa-sms"></i> SMS</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);border:2px solid var(--border-color);cursor:pointer;flex:1;">
+                <input type="radio" name="annonce-canal" value="both" style="accent-color:var(--primary);">
+                <span style="font-size:var(--font-size-sm);font-weight:500;"><i class="fas fa-paper-plane"></i> Les deux</span>
+              </label>
+            </div>
+          </div>
+          <button class="btn btn-warning" id="btn-send-annonce" style="align-self:flex-start;">
+            <i class="fas fa-paper-plane"></i> Envoyer a tous les chauffeurs
+          </button>
+          <div id="annonce-result" style="display:none;"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:var(--space-lg);display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" id="btn-save-notifications-settings"><i class="fas fa-save"></i> Sauvegarder la configuration</button>
+      </div>
+    `;
+  },
+
+  _bindNotificationsSettingsEvents() {
+    // Toggle score faible → show/hide seuil
+    const scoreToggle = document.getElementById('notif-score-faible');
+    if (scoreToggle) {
+      scoreToggle.addEventListener('change', () => {
+        const group = document.getElementById('notif-score-seuil-group');
+        if (group) group.style.display = scoreToggle.checked ? 'block' : 'none';
+      });
+    }
+
+    // Annonce canal radio → update border colors
+    document.querySelectorAll('input[name="annonce-canal"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        document.querySelectorAll('input[name="annonce-canal"]').forEach(r => {
+          r.closest('label').style.borderColor = r.checked ? 'var(--primary)' : 'var(--border-color)';
+        });
+      });
+    });
+
+    // Envoyer annonce
+    const sendBtn = document.getElementById('btn-send-annonce');
+    if (sendBtn) {
+      sendBtn.addEventListener('click', async () => {
+        const titre = document.getElementById('annonce-titre').value.trim();
+        const message = document.getElementById('annonce-message').value.trim();
+        const canal = document.querySelector('input[name="annonce-canal"]:checked')?.value || 'push';
+        const resultDiv = document.getElementById('annonce-result');
+
+        if (!titre || !message) {
+          Toast.error('Veuillez remplir le titre et le message');
+          return;
+        }
+
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
+
+        try {
+          const res = await fetch(Store._apiBase + '/notifications/send', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + (Auth.getToken ? Auth.getToken() : localStorage.getItem('volt_token'))
+            },
+            body: JSON.stringify({ titre, message, canal })
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            Toast.success(\`Annonce envoyee a \${data.sent} chauffeur(s)\`);
+            document.getElementById('annonce-titre').value = '';
+            document.getElementById('annonce-message').value = '';
+            if (resultDiv) {
+              resultDiv.style.display = 'block';
+              resultDiv.innerHTML = \`
+                <div style="padding:12px 16px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);font-size:var(--font-size-xs);">
+                  <i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px;"></i>
+                  <strong>\${data.sent}</strong> envoyee(s), <strong>\${data.failed}</strong> echec(s) sur <strong>\${data.total}</strong> chauffeur(s)
+                </div>
+              \`;
+            }
+          } else {
+            Toast.error(data.error || 'Erreur lors de l\\'envoi');
+          }
+        } catch (err) {
+          Toast.error('Erreur reseau: ' + err.message);
+        }
+
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer a tous les chauffeurs';
+      });
+    }
+
+    // Sauvegarder configuration notifications
+    document.getElementById('btn-save-notifications-settings').addEventListener('click', () => {
+      const notifications = {
+        pushActif: document.getElementById('notif-push-actif').checked,
+        smsActif: document.getElementById('notif-sms-actif').checked,
+        rappelDeadline24h: document.getElementById('notif-rappel-24h').checked,
+        rappelDeadline1h: document.getElementById('notif-rappel-1h').checked,
+        alerteDocuments30j: document.getElementById('notif-doc-30j').checked,
+        alerteDocuments7j: document.getElementById('notif-doc-7j').checked,
+        alerteScoreFaible: document.getElementById('notif-score-faible').checked,
+        scoreSeuilAlerte: parseInt(document.getElementById('notif-score-seuil').value) || 60,
+        alerteAdminRetard: document.getElementById('notif-admin-retard').checked,
+        telephoneAdmin: document.getElementById('notif-tel-admin').value.trim()
+      };
+
+      const settings = Store.get('settings') || {};
+      settings.notifications = notifications;
+      Store.set('settings', settings);
+      Toast.success('Configuration des notifications sauvegardee');
     });
   }
 };

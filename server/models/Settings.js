@@ -35,6 +35,18 @@ const settingsSchema = new mongoose.Schema({
     bonusType: { type: String, enum: ['pourcentage', 'montant_fixe'], default: 'montant_fixe' },
     bonusValeur: { type: Number, default: 5000 },
     bonusPeriode: { type: String, enum: ['hebdomadaire', 'mensuel'], default: 'mensuel' }
+  },
+  notifications: {
+    smsActif: { type: Boolean, default: false },
+    pushActif: { type: Boolean, default: true },
+    rappelDeadline24h: { type: Boolean, default: true },
+    rappelDeadline1h: { type: Boolean, default: true },
+    alerteDocuments30j: { type: Boolean, default: true },
+    alerteDocuments7j: { type: Boolean, default: true },
+    alerteScoreFaible: { type: Boolean, default: true },
+    scoreSeuilAlerte: { type: Number, default: 60 },
+    alerteAdminRetard: { type: Boolean, default: true },
+    telephoneAdmin: String
   }
 }, {
   toJSON: {

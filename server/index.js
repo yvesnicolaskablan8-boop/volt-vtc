@@ -31,6 +31,7 @@ app.use('/api/absences', require('./routes/crud')('Absence'));
 app.use('/api/users', require('./routes/crud')('User'));
 app.use('/api/signalements', require('./routes/crud')('Signalement'));
 app.use('/api/yango', require('./routes/yango'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // API Routes — Driver (PWA chauffeur)
 app.use('/api/driver/auth', require('./routes/driver-auth'));
@@ -66,6 +67,13 @@ const startServer = async () => {
       const yangoCron = require('./utils/yango-cron');
       yangoCron.start();
     }
+
+    // Demarrer le CRON Notifications + initialiser VAPID
+    const notifService = require('./utils/notification-service');
+    notifService.initVAPID();
+
+    const notifCron = require('./utils/notification-cron');
+    notifCron.start();
   });
 };
 

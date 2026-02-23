@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volt-chauffeur-v1';
+const CACHE_NAME = 'volt-chauffeur-v2';
 
 const STATIC_ASSETS = [
   '/driver/',
@@ -15,7 +15,8 @@ const STATIC_ASSETS = [
   '/driver/js/pages/planning.js',
   '/driver/js/pages/versements.js',
   '/driver/js/pages/signalements.js',
-  '/driver/js/pages/profil.js'
+  '/driver/js/pages/profil.js',
+  '/driver/js/pages/notifications.js'
 ];
 
 // Install — cache static assets
@@ -58,4 +59,71 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => caches.match(request))
   );
+});
+
+// =================== PUSH NOTIFICATIONS ===================
+
+// Push event — afficher la notification systeme
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { titre: 'Volt VTC', message: event.data ? event.data.text() : 'Nouvelle notification' };
+  }
+
+  const options = {
+    body: data.message || 'Vous avez une nouvelle notification',
+    icon: '/driver/icons/icon-192.png',
+    badge: '/driver/icons/icon-72.png',
+    data: {
+      url: data.url || '/driver/#/notifications',
+      type: data.type || 'info'
+    },
+    vibrate: [200, 100, 200],
+    tag: data.type || 'volt-notification', // Evite les doublons du meme type
+    renotify: true,
+    actions: [
+      { action: 'open', title: 'Ouvrir' },
+      { action: 'dismiss', title: 'Fermer' }
+    ]
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.titre || 'Volt VTC', options)
+  );
+});
+
+// Click sur notification — ouvrir/focus l'app
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'dismiss') return;
+
+  const url = event.notification.data?.url || '/driver/#/notifications';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clientList => {
+        // Si l'app est deja ouverte, focus et naviguer
+        for (const client of clientList) {
+          if (client.url.includes('/driver/') && 'focus' in client) {
+            client.focus();
+            client.postMessage({
+              type: 'NOTIFICATION_CLICK',
+              url: url
+            });
+            return;
+          }
+        }
+        // Sinon ouvrir une nouvelle fenetre
+        return self.clients.openWindow(url);
+      })
+  );
+});
+
+// Notification close event (optionnel — pour tracking)
+self.addEventListener('notificationclose', (event) => {
+  // On pourrait envoyer un event de "dismissed" au serveur
+  console.log('[SW] Notification fermee:', event.notification.tag);
 });

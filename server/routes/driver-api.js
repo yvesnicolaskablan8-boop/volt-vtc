@@ -7,7 +7,10 @@ const Versement = require('../models/Versement');
 const Signalement = require('../models/Signalement');
 const Gps = require('../models/Gps');
 const Settings = require('../models/Settings');
+const Notification = require('../models/Notification');
+const PushSubscription = require('../models/PushSubscription');
 const { getNextDeadline, calculatePenalty } = require('../utils/deadline');
+const notifService = require('../utils/notification-service');
 
 const router = express.Router();
 
@@ -538,6 +541,116 @@ router.get('/yango', async (req, res, next) => {
       },
       historique
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== NOTIFICATIONS ===================
+
+// GET /api/driver/notifications — Notifications du chauffeur (recentes + non lues)
+router.get('/notifications', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const limit = parseInt(req.query.limit) || 30;
+
+    // Recuperer les notifications du chauffeur + broadcasts
+    const notifications = await Notification.find({
+      $or: [
+        { chauffeurId },
+        { chauffeurId: null } // Broadcasts
+      ]
+    })
+      .sort({ dateCreation: -1 })
+      .limit(limit)
+      .lean();
+
+    const clean = notifications.map(({ _id, __v, ...rest }) => rest);
+
+    // Compter les non lues
+    const nonLues = clean.filter(n => n.statut !== 'lue').length;
+
+    res.json({
+      notifications: clean,
+      nonLues
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/driver/notifications/:id/read — Marquer comme lue
+router.put('/notifications/:id/read', async (req, res, next) => {
+  try {
+    const notif = await Notification.findOne({ id: req.params.id });
+    if (!notif) {
+      return res.status(404).json({ error: 'Notification introuvable' });
+    }
+
+    notif.statut = 'lue';
+    notif.dateLue = new Date().toISOString();
+    await notif.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== PUSH SUBSCRIPTION ===================
+
+// GET /api/driver/push/vapid-key — Cle publique VAPID pour le frontend
+router.get('/push/vapid-key', (req, res) => {
+  const key = notifService.getVapidPublicKey();
+  if (!key) {
+    return res.json({ configured: false });
+  }
+  res.json({ configured: true, publicKey: key });
+});
+
+// POST /api/driver/push/subscribe — Enregistrer une subscription push
+router.post('/push/subscribe', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const { subscription } = req.body;
+
+    if (!subscription || !subscription.endpoint || !subscription.keys) {
+      return res.status(400).json({ error: 'Subscription invalide' });
+    }
+
+    // Upsert : mettre a jour si meme endpoint, creer sinon
+    await PushSubscription.findOneAndUpdate(
+      { 'subscription.endpoint': subscription.endpoint },
+      {
+        chauffeurId,
+        subscription,
+        userAgent: req.headers['user-agent'] || '',
+        dateCreation: new Date().toISOString()
+      },
+      { upsert: true, new: true }
+    );
+
+    console.log(`[Push] Subscription enregistree pour chauffeur ${chauffeurId}`);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/driver/push/subscribe — Supprimer une subscription push
+router.delete('/push/subscribe', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const { endpoint } = req.body;
+
+    if (endpoint) {
+      await PushSubscription.deleteOne({ chauffeurId, 'subscription.endpoint': endpoint });
+    } else {
+      // Supprimer toutes les subscriptions du chauffeur
+      await PushSubscription.deleteMany({ chauffeurId });
+    }
+
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

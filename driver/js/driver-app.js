@@ -10,6 +10,18 @@ const DriverApp = {
         .catch(err => console.warn('SW registration failed:', err));
     }
 
+    // Ecouter les messages du Service Worker (notification click)
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
+          const url = event.data.url;
+          if (url && url.includes('#/')) {
+            window.location.hash = url.split('#')[1];
+          }
+        }
+      });
+    }
+
     // Setup login form
     this._setupLoginForm();
 
@@ -29,12 +41,21 @@ const DriverApp = {
       });
     }
 
+    // Setup notification bell
+    const notifBtn = document.getElementById('btn-notifications');
+    if (notifBtn) {
+      notifBtn.addEventListener('click', () => {
+        window.location.hash = '#/notifications';
+      });
+    }
+
     // Register pages
     DriverRouter.register('accueil', AccueilPage);
     DriverRouter.register('planning', PlanningPage);
     DriverRouter.register('versements', VersementsPage);
     DriverRouter.register('signalements', SignalementsPage);
     DriverRouter.register('profil', ProfilPage);
+    DriverRouter.register('notifications', NotificationsPage);
 
     // Check auth
     if (DriverAuth.isLoggedIn()) {
@@ -56,7 +77,100 @@ const DriverApp = {
 
     // Verifier deadline pour alerte sonore a l'ouverture
     this._checkDeadlineSound();
+
+    // Demander la permission push + charger le badge notifications
+    this._setupPushNotifications();
+    this._loadNotificationBadge();
   },
+
+  // =================== PUSH NOTIFICATIONS ===================
+
+  async _setupPushNotifications() {
+    // Verifier le support
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.log('[Push] Notifications non supportees par ce navigateur');
+      return;
+    }
+
+    // Si deja refuse, ne pas re-demander
+    if (Notification.permission === 'denied') {
+      console.log('[Push] Permission refusee');
+      return;
+    }
+
+    // Recuperer la cle VAPID du serveur
+    const vapid = await DriverStore.getVapidKey();
+    if (!vapid || !vapid.configured || !vapid.publicKey) {
+      console.log('[Push] VAPID non configure sur le serveur');
+      return;
+    }
+
+    // Si pas encore de permission, demander (apres un delai pour ne pas etre intrusif)
+    if (Notification.permission === 'default') {
+      // Attendre 3 secondes apres le login pour demander
+      setTimeout(async () => {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          this._registerPushSubscription(vapid.publicKey);
+        }
+      }, 3000);
+    } else if (Notification.permission === 'granted') {
+      this._registerPushSubscription(vapid.publicKey);
+    }
+  },
+
+  async _registerPushSubscription(vapidPublicKey) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+
+      // Verifier si on a deja une subscription
+      let subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        // Creer une nouvelle subscription
+        const applicationServerKey = this._urlBase64ToUint8Array(vapidPublicKey);
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey
+        });
+        console.log('[Push] Nouvelle subscription creee');
+      }
+
+      // Envoyer au serveur
+      const result = await DriverStore.subscribePush(subscription.toJSON());
+      if (result && !result.error) {
+        console.log('[Push] Subscription enregistree sur le serveur');
+      }
+    } catch (err) {
+      console.warn('[Push] Erreur inscription:', err.message);
+    }
+  },
+
+  _urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  },
+
+  // =================== NOTIFICATION BADGE ===================
+
+  async _loadNotificationBadge() {
+    try {
+      const data = await DriverStore.getNotifications(1);
+      if (data && typeof NotificationsPage !== 'undefined') {
+        NotificationsPage.updateBadge(data.nonLues || 0);
+      }
+    } catch (e) {
+      // Silently fail
+    }
+  },
+
+  // =================== DEADLINE SOUND ===================
 
   async _checkDeadlineSound() {
     if (sessionStorage.getItem('volt_deadline_sound_played')) return;

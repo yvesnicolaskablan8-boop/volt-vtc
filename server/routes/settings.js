@@ -48,6 +48,7 @@ router.put('/', async (req, res, next) => {
       if (req.body.preferences) settings.preferences = req.body.preferences;
       if (req.body.versements) settings.versements = req.body.versements;
       if (req.body.bonus) settings.bonus = req.body.bonus;
+      if (req.body.notifications) settings.notifications = req.body.notifications;
       await settings.save();
     } else {
       // Create new settings

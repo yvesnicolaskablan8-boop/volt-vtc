@@ -110,5 +110,63 @@ const DriverStore = {
 
   getYangoActivity() {
     return this._get('/yango');
+  },
+
+  // ===== NOTIFICATIONS =====
+
+  getNotifications(limit = 30) {
+    return this._get(`/notifications?limit=${limit}`);
+  },
+
+  markNotificationRead(id) {
+    return this._put(`/notifications/${id}/read`, {});
+  },
+
+  getVapidKey() {
+    return this._get('/push/vapid-key');
+  },
+
+  subscribePush(subscription) {
+    return this._post('/push/subscribe', { subscription });
+  },
+
+  unsubscribePush(endpoint) {
+    return this._delete('/push/subscribe', { endpoint });
+  },
+
+  // ===== HTTP METHODS SUPPLEMENTAIRES =====
+
+  async _put(path, body) {
+    try {
+      const res = await fetch(this._apiBase + path, {
+        method: 'PUT',
+        headers: this._headers(),
+        body: JSON.stringify(body)
+      });
+      if (res.status === 401) { DriverAuth.logout(); return null; }
+      const data = await res.json();
+      if (!res.ok) return { error: data.error || `Erreur ${res.status}` };
+      return data;
+    } catch (e) {
+      console.warn('DriverStore PUT ' + path + ' failed:', e.message);
+      return { error: 'Erreur reseau' };
+    }
+  },
+
+  async _delete(path, body) {
+    try {
+      const res = await fetch(this._apiBase + path, {
+        method: 'DELETE',
+        headers: this._headers(),
+        body: JSON.stringify(body)
+      });
+      if (res.status === 401) { DriverAuth.logout(); return null; }
+      const data = await res.json();
+      if (!res.ok) return { error: data.error || `Erreur ${res.status}` };
+      return data;
+    } catch (e) {
+      console.warn('DriverStore DELETE ' + path + ' failed:', e.message);
+      return { error: 'Erreur reseau' };
+    }
   }
 };
