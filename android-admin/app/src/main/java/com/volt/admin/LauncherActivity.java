@@ -55,9 +55,12 @@ public class LauncherActivity extends Activity {
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setAllowFileAccess(false);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        // Mark as mobile app in user-agent
         settings.setUserAgentString(settings.getUserAgentString() + " VoltAdminApp/1.0");
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
+        // IMPORTANT: false = respect meta viewport (mobile rendering)
+        // true would render as desktop and shrink to fit
+        settings.setLoadWithOverviewMode(false);
+        settings.setUseWideViewPort(false);
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
 
