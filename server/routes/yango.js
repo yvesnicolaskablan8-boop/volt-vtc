@@ -12,6 +12,8 @@ const authMiddleware = require('../middleware/auth');
 // All Yango routes require authentication
 router.use(authMiddleware);
 
+const Chauffeur = require('../models/Chauffeur');
+
 const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
 
 // Helper: make Yango POST API call with detailed error logging
@@ -680,11 +682,32 @@ router.get('/stats', async (req, res) => {
     const driverNameMap = {};
     drivers.forEach(d => { driverNameMap[d.id] = d.nom; });
 
-    // Top drivers from transactions (more accurate than orders)
+    // Load Volt-registered chauffeurs to filter top drivers
+    // Only chauffeurs with a yangoDriverId are considered "registered on Volt"
+    let voltChauffeurs = [];
+    try {
+      voltChauffeurs = await Chauffeur.find(
+        { yangoDriverId: { $exists: true, $ne: '' } },
+        { yangoDriverId: 1, prenom: 1, nom: 1 }
+      ).lean();
+    } catch (e) {
+      console.error('Yango stats - failed to load Volt chauffeurs:', e.message);
+    }
+
+    // Map yangoDriverId → Volt chauffeur name
+    const voltYangoIds = new Set();
+    const voltNameMap = {};
+    voltChauffeurs.forEach(c => {
+      voltYangoIds.add(c.yangoDriverId);
+      voltNameMap[c.yangoDriverId] = `${c.prenom} ${c.nom}`.trim();
+    });
+
+    // Top drivers from transactions — ONLY Volt-registered chauffeurs
     const topChauffeurs = Object.entries(todayFinance.driverRevenue)
+      .filter(([id]) => voltYangoIds.has(id))
       .map(([id, rev]) => ({
         id,
-        nom: driverNameMap[id] || id,
+        nom: voltNameMap[id] || driverNameMap[id] || id,
         ca: Math.round(rev.cash + rev.card),
         cash: Math.round(rev.cash),
         card: Math.round(rev.card),
