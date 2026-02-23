@@ -1921,20 +1921,20 @@ const ParametresPage = {
           const data = await res.json();
 
           if (data.success) {
-            Toast.success(\`Annonce envoyee a \${data.sent} chauffeur(s)\`);
+            Toast.success(`Annonce envoyee a ${data.sent} chauffeur(s)`);
             document.getElementById('annonce-titre').value = '';
             document.getElementById('annonce-message').value = '';
             if (resultDiv) {
               resultDiv.style.display = 'block';
-              resultDiv.innerHTML = \`
+              resultDiv.innerHTML = `
                 <div style="padding:12px 16px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);font-size:var(--font-size-xs);">
                   <i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px;"></i>
-                  <strong>\${data.sent}</strong> envoyee(s), <strong>\${data.failed}</strong> echec(s) sur <strong>\${data.total}</strong> chauffeur(s)
+                  <strong>${data.sent}</strong> envoyee(s), <strong>${data.failed}</strong> echec(s) sur <strong>${data.total}</strong> chauffeur(s)
                 </div>
-              \`;
+              `;
             }
           } else {
-            Toast.error(data.error || 'Erreur lors de l\\'envoi');
+            Toast.error(data.error || 'Erreur lors de l\'envoi');
           }
         } catch (err) {
           Toast.error('Erreur reseau: ' + err.message);
