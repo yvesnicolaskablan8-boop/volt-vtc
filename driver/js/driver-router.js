@@ -31,7 +31,6 @@ const DriverRouter = {
       planning: 'Mon Planning',
       versements: 'Mes Versements',
       signalements: 'Signalements',
-      messagerie: 'Messages',
       profil: 'Mon Profil'
     };
     const titleEl = document.getElementById('page-title');

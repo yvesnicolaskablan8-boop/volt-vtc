@@ -21,7 +21,6 @@ const Router = {
       '/rapports': { page: RapportsPage, title: 'Rapports' },
       '/comptabilite': { page: ComptabilitePage, title: 'Comptabilité' },
       '/planning': { page: PlanningPage, title: 'Planning' },
-      '/messagerie': { page: MessageriePage, title: 'Messagerie' },
       '/alertes': { page: AlertesPage, title: 'Alertes' },
       '/parametres': { page: ParametresPage, title: 'Paramètres' }
     };
