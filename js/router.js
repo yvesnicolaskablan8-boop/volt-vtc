@@ -23,6 +23,7 @@ const Router = {
       '/planning': { page: PlanningPage, title: 'Planning' },
       '/messagerie': { page: MessageriePage, title: 'Messagerie' },
       '/alertes': { page: AlertesPage, title: 'Alertes' },
+      '/maintenances': { page: MaintenancesPage, title: 'Maintenances' },
       '/parametres': { page: ParametresPage, title: 'Paramètres' }
     };
 
