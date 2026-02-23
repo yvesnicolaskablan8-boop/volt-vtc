@@ -996,10 +996,10 @@ const ComptabilitePage = {
       this._yangoStats = stats;
       const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-      const caMonth = stats.chiffreAffaires?.mois || 0;
-      const caToday = stats.chiffreAffaires?.aujourd_hui || 0;
-      const commMonth = stats.commissionYango?.mois || Math.round(caMonth * 0.03);
-      const commToday = stats.commissionYango?.aujourd_hui || Math.round(caToday * 0.03);
+      // Utiliser commissionPartenaire (partner_ride_fee) = votre vraie commission
+      // PAS commissionYango qui est la commission que Yango preleve sur les courses
+      const commMonth = stats.commissionPartenaire?.mois || 0;
+      const commToday = stats.commissionPartenaire?.aujourd_hui || 0;
 
       setVal('cy-comm-mois', Utils.formatCurrency(commMonth));
       setVal('cy-comm-jour', Utils.formatCurrency(commToday));
