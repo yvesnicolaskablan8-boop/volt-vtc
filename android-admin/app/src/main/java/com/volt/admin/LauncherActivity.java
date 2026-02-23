@@ -54,7 +54,7 @@ public class LauncherActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setAllowFileAccess(false);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         // Mark as mobile app in user-agent
         settings.setUserAgentString(settings.getUserAgentString() + " VoltAdminApp/1.0");
         // useWideViewPort(true) = read the meta viewport tag (width=device-width)
