@@ -118,10 +118,10 @@ const YangoPage = {
           <div class="kpi-label" id="yp-courses-label">Courses aujourd'hui</div>
           <div class="kpi-trend neutral" id="yp-courses-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
-        <div class="kpi-card yango-kpi">
-          <div class="kpi-icon yango-icon-purple"><i class="fas fa-percentage"></i></div>
-          <div class="kpi-value" id="yp-commission"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label" id="yp-commission-label">Commission Yango</div>
+        <div class="kpi-card yango-kpi" style="border-top-color:rgba(34,197,94,0.5) !important;">
+          <div class="kpi-icon yango-icon-green"><i class="fas fa-hand-holding-dollar"></i></div>
+          <div class="kpi-value" id="yp-commission" style="color:var(--success)"><div class="yango-skeleton"></div></div>
+          <div class="kpi-label" id="yp-commission-label">Commission partenaire</div>
           <div class="kpi-trend neutral" id="yp-commission-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
       </div>
@@ -133,10 +133,10 @@ const YangoPage = {
           <div class="kpi-value" id="yp-ca-month"><div class="yango-skeleton"></div></div>
           <div class="kpi-label" id="yp-ca-month-label">CA du mois</div>
         </div>
-        <div class="kpi-card green">
-          <div class="kpi-icon"><i class="fas fa-hand-holding-dollar"></i></div>
-          <div class="kpi-value" id="yp-commission-month"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label" id="yp-commission-month-label">Commission partenaire</div>
+        <div class="kpi-card red">
+          <div class="kpi-icon"><i class="fas fa-percentage"></i></div>
+          <div class="kpi-value" id="yp-commission-month" style="color:var(--danger)"><div class="yango-skeleton"></div></div>
+          <div class="kpi-label" id="yp-commission-month-label">Frais Yango (prélevés)</div>
         </div>
         <div class="kpi-card cyan">
           <div class="kpi-icon"><i class="fas fa-road"></i></div>
@@ -429,16 +429,16 @@ const YangoPage = {
     const setLabel = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
     setLabel('yp-ca-label', `CA ${periodSuffix}`);
     setLabel('yp-courses-label', `Courses ${coursesSuffix}`);
-    setLabel('yp-commission-label', `Commission Yango`);
+    setLabel('yp-commission-label', `Commission partenaire`);
 
     // Row 2 labels
     if (isToday) {
       setLabel('yp-ca-month-label', 'CA du mois');
-      setLabel('yp-commission-month-label', 'Commission partenaire du mois');
+      setLabel('yp-commission-month-label', 'Frais Yango du mois');
       setLabel('yp-courses-month-label', 'Courses du mois');
     } else {
       setLabel('yp-ca-month-label', `CA total (${label})`);
-      setLabel('yp-commission-month-label', `Commission partenaire`);
+      setLabel('yp-commission-month-label', `Frais Yango (prelevés)`);
       setLabel('yp-courses-month-label', `Total courses`);
     }
 
@@ -548,13 +548,13 @@ const YangoPage = {
     if (courseParts.length === 0) courseParts.push(`<i class="fas fa-chart-line"></i> ${coursesMonth} ce mois`);
     setHtml('yp-courses-detail', courseParts.join(' <span style="margin:0 3px">&bull;</span> '));
 
-    // Commission Yango (real from transactions)
-    setVal('yp-commission', Utils.formatCurrency(commYangoToday));
-    setHtml('yp-commission-detail', `<i class="fas fa-calendar"></i> ${Utils.formatCurrency(commYangoMonth)} ce mois`);
+    // Commission partenaire (partner_ride_fee)
+    setVal('yp-commission', Utils.formatCurrency(commPartToday));
+    setHtml('yp-commission-detail', `<i class="fas fa-calendar"></i> ${Utils.formatCurrency(commPartMonth)} ce mois`);
 
     // Row 2
     setVal('yp-ca-month', Utils.formatCurrency(caMonth));
-    setVal('yp-commission-month', Utils.formatCurrency(commPartMonth));
+    setVal('yp-commission-month', Utils.formatCurrency(commYangoMonth));
     setVal('yp-courses-month', coursesMonth);
     setVal('yp-activity-time', tempsActivite > 0 ? `${tempsActivite} min` : '--');
   },
