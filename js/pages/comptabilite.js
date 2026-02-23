@@ -177,12 +177,12 @@ const ComptabilitePage = {
         </div>
       </div>
 
-      <!-- Commission Yango (3% du CA flotte) -->
+      <!-- Commission Partenaire Yango -->
       <div class="yango-section" id="compta-yango-section" style="margin-bottom:var(--space-lg);">
         <div class="yango-section-header">
           <div class="yango-section-title">
             <i class="fas fa-hand-holding-dollar" style="color:#FC4C02"></i>
-            <span>Commission Yango (3%)</span>
+            <span>Commission Partenaire</span>
             <span class="yango-badge-live">REVENU</span>
           </div>
           <div class="yango-section-actions">
@@ -191,21 +191,11 @@ const ComptabilitePage = {
             </button>
           </div>
         </div>
-        <div class="grid-4" id="compta-yango-kpis">
-          <div class="kpi-card yango-kpi">
-            <div class="kpi-icon yango-icon-orange"><i class="fas fa-chart-line"></i></div>
-            <div class="kpi-value" id="cy-ca-mois"><div class="yango-skeleton"></div></div>
-            <div class="kpi-label">CA Yango du mois</div>
-          </div>
+        <div class="grid-2" id="compta-yango-kpis">
           <div class="kpi-card yango-kpi" style="border-top-color:rgba(34, 197, 94, 0.5) !important;">
             <div class="kpi-icon yango-icon-green"><i class="fas fa-hand-holding-dollar"></i></div>
             <div class="kpi-value" id="cy-comm-mois" style="color:var(--success)"><div class="yango-skeleton"></div></div>
-            <div class="kpi-label">Commission du mois (3%)</div>
-          </div>
-          <div class="kpi-card yango-kpi">
-            <div class="kpi-icon yango-icon-blue"><i class="fas fa-calendar-day"></i></div>
-            <div class="kpi-value" id="cy-ca-jour"><div class="yango-skeleton"></div></div>
-            <div class="kpi-label">CA aujourd'hui</div>
+            <div class="kpi-label">Commission du mois</div>
           </div>
           <div class="kpi-card yango-kpi" style="border-top-color:rgba(34, 197, 94, 0.5) !important;">
             <div class="kpi-icon yango-icon-green"><i class="fas fa-coins"></i></div>
@@ -215,7 +205,7 @@ const ComptabilitePage = {
         </div>
         <div style="margin-top:var(--space-sm);padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
           <i class="fas fa-info-circle" style="color:#FC4C02"></i>
-          Yango vous reverse 3% du chiffre d'affaires global genere par votre flotte. Ce montant est automatiquement calcule a partir des donnees Yango en temps reel.
+          Commission partenaire reversée par Yango, calculée automatiquement a partir des transactions réelles.
         </div>
       </div>
 
@@ -1011,9 +1001,7 @@ const ComptabilitePage = {
       const commMonth = stats.commissionYango?.mois || Math.round(caMonth * 0.03);
       const commToday = stats.commissionYango?.aujourd_hui || Math.round(caToday * 0.03);
 
-      setVal('cy-ca-mois', Utils.formatCurrency(caMonth));
       setVal('cy-comm-mois', Utils.formatCurrency(commMonth));
-      setVal('cy-ca-jour', Utils.formatCurrency(caToday));
       setVal('cy-comm-jour', Utils.formatCurrency(commToday));
     } catch (err) {
       console.error('Yango commission load error:', err);
@@ -1024,7 +1012,7 @@ const ComptabilitePage = {
   },
 
   _showYangoCommissionError() {
-    ['cy-ca-mois', 'cy-comm-mois', 'cy-ca-jour', 'cy-comm-jour'].forEach(id => {
+    ['cy-comm-mois', 'cy-comm-jour'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = '--';
     });
