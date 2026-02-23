@@ -8,19 +8,21 @@ const Sidebar = {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
 
-    // Clone to remove old listeners
-    const newToggle = toggle.cloneNode(true);
-    toggle.parentNode.replaceChild(newToggle, toggle);
-
-    newToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('active');
-    });
-
-    // Clone overlay too
+    // Clone overlay first (before toggle, so toggle handler references the new overlay)
     const newOverlay = overlay.cloneNode(true);
     overlay.parentNode.replaceChild(newOverlay, overlay);
 
+    // Clone toggle to remove old listeners
+    const newToggle = toggle.cloneNode(true);
+    toggle.parentNode.replaceChild(newToggle, toggle);
+
+    // Toggle sidebar open/close
+    newToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      newOverlay.classList.toggle('active');
+    });
+
+    // Click overlay to close sidebar
     newOverlay.addEventListener('click', () => {
       sidebar.classList.remove('open');
       newOverlay.classList.remove('active');
