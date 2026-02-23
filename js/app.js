@@ -101,15 +101,6 @@ const App = {
     // Detect native WebView app and force mobile mode
     this._applyMobileMode();
 
-    // DEBUG — temporary alert to diagnose WebView viewport
-    var _vw = window.innerWidth || document.documentElement.clientWidth;
-    var _vh = window.innerHeight || document.documentElement.clientHeight;
-    var _native = !!(window.VoltNative);
-    var _ua = navigator.userAgent;
-    var _sidebar = document.getElementById('sidebar');
-    var _sidebarStyle = _sidebar ? window.getComputedStyle(_sidebar) : {};
-    alert('DEBUG VIEWPORT\nWidth: ' + _vw + '\nHeight: ' + _vh + '\nNative: ' + _native + '\nUA has VoltAdmin: ' + _ua.includes('VoltAdminApp') + '\nSidebar display: ' + (_sidebarStyle.display || 'N/A') + '\nSidebar transform: ' + (_sidebarStyle.transform || 'N/A') + '\nSidebar pointerEvents: ' + (_sidebarStyle.pointerEvents || 'N/A') + '\nSidebar visibility: ' + (_sidebarStyle.visibility || 'N/A') + '\nBody classes: ' + document.body.className);
-
     console.log('Volt VTC Management v2.0.0 initialized (API mode)');
     console.log(`Data size: ${Store.getStorageSize().kb} Ko`);
     console.log(`Theme: ${ThemeManager._current}`);
@@ -431,18 +422,61 @@ const App = {
     const vw = window.innerWidth || document.documentElement.clientWidth;
 
     if (isNative || vw <= 1024) {
-      // Force sidebar hidden — ensures it cannot block header touch events
-      const sidebar = document.getElementById('sidebar');
-      if (sidebar && !sidebar.classList.contains('open')) {
-        sidebar.style.pointerEvents = 'none';
-        sidebar.style.visibility = 'hidden';
-      }
-
-      // Add a class to body for native app targeting
-      if (isNative) {
-        document.body.classList.add('volt-native-app');
-      }
+      // Add classes on body
+      if (isNative) document.body.classList.add('volt-native-app');
       document.body.classList.add('volt-mobile');
+
+      // Inject a <style> tag that forces mobile layout — more reliable than CSS files
+      if (!document.getElementById('volt-mobile-override')) {
+        const style = document.createElement('style');
+        style.id = 'volt-mobile-override';
+        style.textContent = `
+          .sidebar {
+            transform: translateX(-100%) !important;
+            pointer-events: none !important;
+            visibility: hidden !important;
+            position: fixed !important;
+            width: 280px !important;
+            z-index: 200 !important;
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+          }
+          .sidebar.open {
+            transform: translateX(0) !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+          }
+          .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+          }
+          .header-toggle {
+            display: flex !important;
+          }
+          .header-search {
+            display: none !important;
+          }
+          .header-user-name,
+          .header-user-chevron {
+            display: none !important;
+          }
+          .header {
+            overflow: visible !important;
+          }
+          .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 199;
+          }
+          .sidebar-overlay.active {
+            display: block !important;
+          }
+        `;
+        document.head.appendChild(style);
+      }
 
       console.log(`Mobile mode applied: native=${isNative}, vw=${vw}`);
     }
