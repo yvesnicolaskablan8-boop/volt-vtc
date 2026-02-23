@@ -384,11 +384,11 @@ async function checkMaintenancesPlanifiees(chauffeurs, canal) {
 
               await notifService.notify(
                 vehicule.chauffeurAssigne,
-                isEnRetard ? 'deadline_retard' : 'deadline_rappel',
+                isEnRetard ? 'maintenance_retard' : 'maintenance_urgente',
                 titre,
                 message,
                 canal,
-                { url: '/driver/#/accueil' }
+                { url: '/driver/#/maintenance' }
               );
               _sentToday.add(key);
             }

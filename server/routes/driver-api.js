@@ -457,6 +457,122 @@ router.get('/gps', async (req, res, next) => {
   }
 });
 
+// =================== LOCATION TRACKING ===================
+
+// POST /api/driver/location — Mettre a jour la position GPS du chauffeur
+router.post('/location', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const { lat, lng, speed, heading, accuracy } = req.body;
+
+    if (lat === undefined || lng === undefined) {
+      return res.status(400).json({ error: 'lat et lng requis' });
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return res.status(400).json({ error: 'Coordonnees invalides' });
+    }
+
+    await Chauffeur.findOneAndUpdate(
+      { id: chauffeurId },
+      {
+        $set: {
+          'location.lat': lat,
+          'location.lng': lng,
+          'location.speed': speed || null,
+          'location.heading': heading || null,
+          'location.accuracy': accuracy || null,
+          'location.updatedAt': new Date().toISOString()
+        }
+      }
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== MAINTENANCES PLANIFIEES ===================
+
+// GET /api/driver/maintenances — Toutes les maintenances planifiees du vehicule assigne
+router.get('/maintenances', async (req, res, next) => {
+  try {
+    const chauffeur = await Chauffeur.findOne({ id: req.user.chauffeurId }).lean();
+    if (!chauffeur || !chauffeur.vehiculeAssigne) {
+      return res.json({ vehicule: null, maintenances: [] });
+    }
+
+    const vehicule = await Vehicule.findOne({ id: chauffeur.vehiculeAssigne }).lean();
+    if (!vehicule) {
+      return res.json({ vehicule: null, maintenances: [] });
+    }
+
+    const maintenances = (vehicule.maintenancesPlanifiees || []).map(m => ({
+      id: m.id,
+      type: m.type,
+      label: m.label,
+      declencheur: m.declencheur,
+      intervalleKm: m.intervalleKm,
+      intervalleMois: m.intervalleMois,
+      dernierKm: m.dernierKm,
+      derniereDate: m.derniereDate,
+      prochainKm: m.prochainKm,
+      prochaineDate: m.prochaineDate,
+      coutEstime: m.coutEstime,
+      prestataire: m.prestataire,
+      statut: m.statut,
+      notes: m.notes
+    }));
+
+    res.json({
+      vehicule: {
+        marque: vehicule.marque,
+        modele: vehicule.modele,
+        immatriculation: vehicule.immatriculation,
+        kilometrage: vehicule.kilometrage
+      },
+      maintenances
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/driver/maintenances/signal — Signaler un probleme de maintenance
+router.post('/maintenances/signal', async (req, res, next) => {
+  try {
+    const { maintenanceId, maintenanceLabel, description } = req.body;
+    const chauffeurId = req.user.chauffeurId;
+
+    if (!maintenanceLabel) {
+      return res.status(400).json({ error: 'Label maintenance requis' });
+    }
+
+    const chauffeur = await Chauffeur.findOne({ id: chauffeurId }).lean();
+    const vehiculeId = chauffeur ? chauffeur.vehiculeAssigne : null;
+
+    const id = 'SIG-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+
+    const signalement = new Signalement({
+      id,
+      chauffeurId,
+      vehiculeId,
+      type: 'panne',
+      titre: `Probleme maintenance : ${maintenanceLabel}`,
+      description: description || '',
+      urgence: 'haute',
+      statut: 'ouvert',
+      dateSignalement: new Date().toISOString(),
+      dateCreation: new Date().toISOString()
+    });
+
+    await signalement.save();
+    res.status(201).json(signalement.toJSON());
+  } catch (err) {
+    next(err);
+  }
+});
+
 // =================== YANGO ACTIVITE ===================
 
 // GET /api/driver/yango — Activite Yango du chauffeur connecte

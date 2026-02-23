@@ -57,6 +57,7 @@ const DriverApp = {
     DriverRouter.register('profil', ProfilPage);
     DriverRouter.register('notifications', NotificationsPage);
     DriverRouter.register('messagerie', MessageriePage);
+    DriverRouter.register('maintenance', MaintenancePage);
 
     // Check auth
     if (DriverAuth.isLoggedIn()) {
@@ -83,6 +84,9 @@ const DriverApp = {
     this._setupPushNotifications();
     this._loadNotificationBadge();
     this._loadMessagesBadge();
+
+    // Demarrer le tracking GPS
+    this._startLocationTracking();
   },
 
   // =================== PUSH NOTIFICATIONS ===================
@@ -211,6 +215,43 @@ const DriverApp = {
       }
     } catch (e) {
       console.warn('Deadline sound check failed:', e);
+    }
+  },
+
+  // =================== LOCATION TRACKING ===================
+
+  _locationInterval: null,
+
+  _startLocationTracking() {
+    if (!('geolocation' in navigator)) {
+      console.log('[Geo] Geolocation non supportee');
+      return;
+    }
+
+    const sendPosition = () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          DriverStore.sendLocation(
+            pos.coords.latitude,
+            pos.coords.longitude,
+            pos.coords.speed != null ? Math.round(pos.coords.speed * 3.6) : null,
+            pos.coords.heading,
+            pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null
+          );
+        },
+        (err) => console.warn('[Geo] Erreur:', err.message),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 }
+      );
+    };
+
+    sendPosition();
+    this._locationInterval = setInterval(sendPosition, 30000);
+  },
+
+  _stopLocationTracking() {
+    if (this._locationInterval) {
+      clearInterval(this._locationInterval);
+      this._locationInterval = null;
     }
   },
 

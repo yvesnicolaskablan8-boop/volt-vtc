@@ -166,6 +166,22 @@ const DriverStore = {
     return this._get('/messages/poll');
   },
 
+  // ===== LOCATION GPS =====
+
+  sendLocation(lat, lng, speed, heading, accuracy) {
+    return this._post('/location', { lat, lng, speed, heading, accuracy });
+  },
+
+  // ===== MAINTENANCES =====
+
+  getMaintenances() {
+    return this._get('/maintenances');
+  },
+
+  signalMaintenanceProblem(data) {
+    return this._post('/maintenances/signal', data);
+  },
+
   // ===== HTTP METHODS SUPPLEMENTAIRES =====
 
   async _put(path, body) {

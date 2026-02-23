@@ -22,6 +22,7 @@ app.use('/api/chauffeurs', require('./routes/crud')('Chauffeur'));
 app.use('/api/vehicules', require('./routes/crud')('Vehicule'));
 app.use('/api/courses', require('./routes/crud')('Course'));
 app.use('/api/versements', require('./routes/crud')('Versement'));
+app.use('/api/gps', require('./routes/gps-positions'));
 app.use('/api/gps', require('./routes/crud')('Gps'));
 app.use('/api/comptabilite', require('./routes/crud')('Comptabilite'));
 app.use('/api/factures', require('./routes/crud')('Facture'));

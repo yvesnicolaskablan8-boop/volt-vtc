@@ -28,6 +28,14 @@ const chauffeurSchema = new mongoose.Schema({
   photo: String,
   documents: [documentSchema],
   noteInterne: String,
+  location: {
+    lat: Number,
+    lng: Number,
+    speed: Number,
+    heading: Number,
+    accuracy: Number,
+    updatedAt: String
+  },
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {
   toJSON: {

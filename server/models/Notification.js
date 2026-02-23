@@ -5,7 +5,7 @@ const notificationSchema = new mongoose.Schema({
   chauffeurId: String,  // null = broadcast a tous
   type: {
     type: String,
-    enum: ['deadline_rappel', 'deadline_retard', 'document_expiration', 'score_faible', 'annonce', 'bonus', 'bienvenue'],
+    enum: ['deadline_rappel', 'deadline_retard', 'document_expiration', 'score_faible', 'annonce', 'bonus', 'bienvenue', 'maintenance_urgente', 'maintenance_retard'],
     required: true
   },
   titre: { type: String, required: true },

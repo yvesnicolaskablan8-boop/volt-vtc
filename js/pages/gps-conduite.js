@@ -1,9 +1,13 @@
 /**
- * GpsConduitePage - GPS tracking and AI driving behavior analysis
+ * GpsConduitePage - GPS tracking, real-time map, and AI driving behavior analysis
  */
 const GpsConduitePage = {
   _charts: [],
   _selectedDriver: null,
+  _map: null,
+  _markers: {},
+  _mapPollInterval: null,
+  _mapFitted: false,
 
   render() {
     const container = document.getElementById('page-content');
@@ -14,11 +18,24 @@ const GpsConduitePage = {
     if (this._selectedDriver) {
       this._renderDriverAnalysis(this._selectedDriver);
     }
+    // Init real-time map after DOM is rendered
+    setTimeout(() => this._initMap(), 100);
   },
 
   destroy() {
     this._charts.forEach(c => c.destroy());
     this._charts = [];
+    // Cleanup map
+    if (this._mapPollInterval) {
+      clearInterval(this._mapPollInterval);
+      this._mapPollInterval = null;
+    }
+    if (this._map) {
+      this._map.remove();
+      this._map = null;
+    }
+    this._markers = {};
+    this._mapFitted = false;
   },
 
   _template(chauffeurs) {
@@ -40,6 +57,20 @@ const GpsConduitePage = {
             <i class="fas fa-circle" style="font-size:8px;animation:pulse 2s infinite"></i> Suivi en temps réel
           </div>
         </div>
+      </div>
+
+      <!-- Real-time GPS Map -->
+      <div class="card" style="margin-bottom:var(--space-lg);overflow:hidden;">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span class="card-title"><i class="fas fa-map-location-dot text-blue"></i> Carte temps réel</span>
+          <div style="display:flex;align-items:center;gap:var(--space-sm);">
+            <span id="map-driver-count" class="badge badge-info" style="font-size:var(--font-size-xs);">0 en ligne</span>
+            <span class="badge badge-success" style="font-size:10px;padding:3px 8px;">
+              <i class="fas fa-circle" style="font-size:6px;animation:pulse 2s infinite"></i> Live 15s
+            </span>
+          </div>
+        </div>
+        <div id="gps-realtime-map" style="height:450px;border-radius:0 0 var(--radius-md) var(--radius-md);z-index:0;"></div>
       </div>
 
       <!-- Fleet KPIs -->
@@ -125,6 +156,120 @@ const GpsConduitePage = {
         this._renderDriverAnalysis(this._selectedDriver);
       });
     });
+  },
+
+  // =================== REAL-TIME MAP ===================
+
+  _initMap() {
+    const mapEl = document.getElementById('gps-realtime-map');
+    if (!mapEl || typeof L === 'undefined') return;
+
+    // Centrer sur Abidjan
+    this._map = L.map('gps-realtime-map', {
+      center: [5.345, -4.025],
+      zoom: 12,
+      zoomControl: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+      maxZoom: 19
+    }).addTo(this._map);
+
+    // Premier chargement
+    this._refreshMapPositions();
+
+    // Polling toutes les 15 secondes
+    this._mapPollInterval = setInterval(() => this._refreshMapPositions(), 15000);
+  },
+
+  async _refreshMapPositions() {
+    if (!this._map) return;
+
+    try {
+      const token = localStorage.getItem('volt_token');
+      const resp = await fetch('/api/gps/positions', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!resp.ok) return;
+      const positions = await resp.json();
+
+      const countEl = document.getElementById('map-driver-count');
+      if (countEl) {
+        countEl.textContent = `${positions.length} en ligne`;
+      }
+
+      const now = Date.now();
+      const activeIds = new Set();
+
+      positions.forEach(pos => {
+        activeIds.add(pos.chauffeurId);
+
+        const updatedAt = pos.updatedAt ? new Date(pos.updatedAt).getTime() : 0;
+        const ageMin = Math.round((now - updatedAt) / 60000);
+        const isStale = ageMin > 5;
+
+        const popupContent = `
+          <div style="font-size:13px;min-width:160px;">
+            <strong>${pos.prenom} ${pos.nom}</strong><br>
+            ${pos.vehicule ? `<span style="color:#666;">${pos.vehicule}</span><br>` : ''}
+            ${pos.speed != null ? `<i class="fas fa-gauge-high"></i> ${pos.speed} km/h<br>` : ''}
+            <i class="fas fa-clock"></i> ${ageMin < 1 ? 'À l\'instant' : `Il y a ${ageMin} min`}
+            ${isStale ? '<br><span style="color:#ef4444;font-weight:600;">⚠ Signal ancien</span>' : ''}
+          </div>
+        `;
+
+        // Icône colorée selon fraîcheur
+        const markerColor = isStale ? '#94a3b8' : '#3b82f6';
+        const markerIcon = L.divIcon({
+          className: 'gps-marker-icon',
+          html: `
+            <div style="
+              background:${markerColor};
+              width:32px;height:32px;border-radius:50%;
+              display:flex;align-items:center;justify-content:center;
+              color:white;font-size:14px;font-weight:700;
+              border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);
+              ${pos.heading != null ? `transform:rotate(${pos.heading}deg);` : ''}
+            ">
+              <i class="fas fa-${pos.heading != null ? 'location-arrow' : 'car'}" style="font-size:14px;"></i>
+            </div>
+          `,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+          popupAnchor: [0, -20]
+        });
+
+        if (this._markers[pos.chauffeurId]) {
+          // Mettre à jour le marker existant
+          this._markers[pos.chauffeurId].setLatLng([pos.lat, pos.lng]);
+          this._markers[pos.chauffeurId].setIcon(markerIcon);
+          this._markers[pos.chauffeurId].getPopup().setContent(popupContent);
+        } else {
+          // Créer un nouveau marker
+          this._markers[pos.chauffeurId] = L.marker([pos.lat, pos.lng], { icon: markerIcon })
+            .addTo(this._map)
+            .bindPopup(popupContent);
+        }
+      });
+
+      // Supprimer les markers de chauffeurs déconnectés
+      Object.keys(this._markers).forEach(id => {
+        if (!activeIds.has(id)) {
+          this._map.removeLayer(this._markers[id]);
+          delete this._markers[id];
+        }
+      });
+
+      // Ajuster la vue au premier chargement si on a des positions
+      if (!this._mapFitted && positions.length > 0) {
+        const bounds = L.latLngBounds(positions.map(p => [p.lat, p.lng]));
+        this._map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+        this._mapFitted = true;
+      }
+    } catch (err) {
+      console.warn('[Map] Erreur refresh positions:', err);
+    }
   },
 
   _renderDriverAnalysis(driverId) {

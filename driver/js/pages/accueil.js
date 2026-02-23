@@ -130,6 +130,10 @@ const AccueilPage = {
           <i class="fas fa-calendar-alt"></i>
           Voir mon planning
         </button>
+        <button class="action-btn" style="background:rgba(139,92,246,0.1);color:#8b5cf6;" onclick="DriverRouter.navigate('maintenance')">
+          <i class="fas fa-wrench"></i>
+          Entretien vehicule
+        </button>
       </div>
     `;
 
