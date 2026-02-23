@@ -236,6 +236,14 @@ const DriverCountdown = {
     if (this._alarmActive) return;
     this._alarmActive = true;
 
+    // Si app native Android → utiliser les fonctions natives
+    if (window.VoltNative) {
+      try {
+        window.VoltNative.setMaxVolume();
+        window.VoltNative.keepScreenOn(true);
+      } catch (e) {}
+    }
+
     // 1. Sirene sonore en boucle via Web Audio API
     this._startSirenSound();
 
@@ -267,7 +275,10 @@ const DriverCountdown = {
       clearInterval(this._alarmVibInterval);
       this._alarmVibInterval = null;
     }
-    if (navigator.vibrate) {
+    if (window.VoltNative) {
+      try { window.VoltNative.cancelVibration(); } catch (e) {}
+      try { window.VoltNative.keepScreenOn(false); } catch (e) {}
+    } else if (navigator.vibrate) {
       navigator.vibrate(0);
     }
 
@@ -321,6 +332,15 @@ const DriverCountdown = {
    * Lance la vibration en boucle.
    */
   _startVibration() {
+    // App native → vibration native Android (plus puissante)
+    if (window.VoltNative) {
+      try {
+        window.VoltNative.vibratePattern('[0,500,200,500,200,500,200,500]', 0);
+        return; // La vibration native boucle toute seule
+      } catch (e) {}
+    }
+
+    // Fallback PWA navigateur
     if (!navigator.vibrate) return;
 
     const vibratePattern = () => {

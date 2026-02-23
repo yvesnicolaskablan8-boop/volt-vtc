@@ -12,14 +12,6 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0.0"
-
-        // TWA configuration
-        manifestPlaceholders = [
-            hostName   : "volt-vtc.vercel.app",
-            defaultUrl : "https://volt-vtc.vercel.app/driver/",
-            launcherName: "Volt Chauffeur",
-            assetStatements: '[{"relation": ["delegate_permission/common.handle_all_urls"], "target": {"namespace": "web", "site": "https://volt-vtc.vercel.app"}}]'
-        ]
     }
 
     signingConfigs {
@@ -49,5 +41,4 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.browser:browser:1.8.0'
 }
