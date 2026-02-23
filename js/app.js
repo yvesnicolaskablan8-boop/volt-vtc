@@ -74,15 +74,11 @@ const App = {
     // Configure Chart.js defaults
     Utils.configureChartDefaults();
 
-    // Unregister old Service Workers to ensure fresh files
+    // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(r => r.unregister());
-      });
-      // Clear old caches
-      if ('caches' in window) {
-        caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-      }
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered, scope:', reg.scope))
+        .catch(err => console.warn('SW registration failed:', err));
     }
 
     // Check authentication

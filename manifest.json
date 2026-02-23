@@ -1,12 +1,14 @@
 {
   "name": "Volt - Gestion VTC",
   "short_name": "Volt VTC",
-  "description": "Application de gestion de flotte VTC - Chauffeurs, véhicules, versements, rentabilité",
+  "description": "Application de gestion de flotte VTC - Chauffeurs, vehicules, versements, rentabilite",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0a0e1a",
   "theme_color": "#3b82f6",
   "orientation": "any",
+  "categories": ["business", "productivity"],
   "icons": [
     {
       "src": "assets/icon-192.png",

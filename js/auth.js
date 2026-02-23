@@ -83,8 +83,12 @@ const Auth = {
   getPermissionForRoute(route) {
     const map = {
       '/dashboard': 'dashboard',
+      '/yango': 'dashboard',
       '/chauffeurs': 'chauffeurs',
+      '/motivation': 'chauffeurs',
+      '/messagerie': 'chauffeurs',
       '/vehicules': 'vehicules',
+      '/maintenances': 'vehicules',
       '/planning': 'planning',
       '/versements': 'versements',
       '/rentabilite': 'rentabilite',
