@@ -16,7 +16,13 @@ const DriverStore = {
 
   async _get(path) {
     try {
-      const res = await fetch(this._apiBase + path, { headers: this._headers() });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(this._apiBase + path, {
+        headers: this._headers(),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
       if (res.status === 401) {
         DriverAuth.logout();
         return null;
@@ -31,11 +37,15 @@ const DriverStore = {
 
   async _post(path, body) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
       const res = await fetch(this._apiBase + path, {
         method: 'POST',
         headers: this._headers(),
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       if (res.status === 401) {
         DriverAuth.logout();
         return null;
@@ -160,11 +170,15 @@ const DriverStore = {
 
   async _put(path, body) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
       const res = await fetch(this._apiBase + path, {
         method: 'PUT',
         headers: this._headers(),
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       if (res.status === 401) { DriverAuth.logout(); return null; }
       const data = await res.json();
       if (!res.ok) return { error: data.error || `Erreur ${res.status}` };

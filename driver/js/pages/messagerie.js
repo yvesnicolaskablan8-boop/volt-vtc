@@ -60,18 +60,34 @@ const MessageriePage = {
   // =================== LOAD ===================
 
   async _loadConversations() {
-    const data = await DriverStore.getConversations();
-    if (!data || data.error) {
+    try {
+      const data = await DriverStore.getConversations();
+      if (!data || data.error || !Array.isArray(data)) {
+        this._container.innerHTML = `
+          <div class="drv-msg-empty">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>Impossible de charger les messages</span>
+            <button class="drv-msg-retry" onclick="MessageriePage._loadConversations()" style="margin-top:12px;padding:8px 20px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);cursor:pointer;">
+              <i class="fas fa-redo"></i> Réessayer
+            </button>
+          </div>
+        `;
+        return;
+      }
+      this._conversations = data;
+      this._renderList();
+    } catch (e) {
+      console.error('[Messagerie] Erreur:', e);
       this._container.innerHTML = `
         <div class="drv-msg-empty">
           <i class="fas fa-exclamation-circle"></i>
-          <span>Erreur chargement messages</span>
+          <span>Erreur: ${e.message || 'Réseau indisponible'}</span>
+          <button class="drv-msg-retry" onclick="MessageriePage._loadConversations()" style="margin-top:12px;padding:8px 20px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);cursor:pointer;">
+            <i class="fas fa-redo"></i> Réessayer
+          </button>
         </div>
       `;
-      return;
     }
-    this._conversations = data;
-    this._renderList();
   },
 
   async _openConversation(convId) {
