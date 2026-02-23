@@ -57,12 +57,13 @@ public class LauncherActivity extends Activity {
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         // Mark as mobile app in user-agent
         settings.setUserAgentString(settings.getUserAgentString() + " VoltAdminApp/1.0");
-        // IMPORTANT: false = respect meta viewport (mobile rendering)
-        // true would render as desktop and shrink to fit
+        // useWideViewPort(true) = read the meta viewport tag (width=device-width)
+        // loadWithOverviewMode(false) = don't zoom out to show full page
+        settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(false);
-        settings.setUseWideViewPort(false);
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
 
         // Enable cookies (for session persistence)
         CookieManager.getInstance().setAcceptCookie(true);
