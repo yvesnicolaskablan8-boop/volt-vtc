@@ -647,6 +647,11 @@ const ParametresPage = {
         }
       }
 
+      // Clean empty email to avoid duplicate key errors in MongoDB
+      if (!values.email || !values.email.trim()) {
+        delete values.email;
+      }
+
       const user = {
         id: Utils.generateId('USR'),
         ...values,

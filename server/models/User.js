@@ -40,4 +40,24 @@ const userSchema = new mongoose.Schema({
   }
 });
 
+// Pre-save: remove empty email to avoid duplicate key errors
+userSchema.pre('save', function(next) {
+  if (this.email !== undefined && (!this.email || !this.email.trim())) {
+    this.email = undefined;
+  }
+  next();
+});
+
+// Pre-findOneAndUpdate: same cleanup
+userSchema.pre('findOneAndUpdate', function(next) {
+  const update = this.getUpdate();
+  if (update && update.$set && update.$set.email !== undefined) {
+    if (!update.$set.email || !update.$set.email.trim()) {
+      delete update.$set.email;
+      this.update({}, { $unset: { email: 1 } });
+    }
+  }
+  next();
+});
+
 module.exports = mongoose.model('User', userSchema);
