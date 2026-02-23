@@ -123,17 +123,22 @@
     width: 280px !important;
     transform: translateX(-100%) !important;
     z-index: 200;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.3s;
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    pointer-events: none;
+    visibility: hidden;
   }
 
   .sidebar.open {
     transform: translateX(0) !important;
+    pointer-events: auto;
+    visibility: visible;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0s;
   }
 
   .sidebar .nav-item span,
