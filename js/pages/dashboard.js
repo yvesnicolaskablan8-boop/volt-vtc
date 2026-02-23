@@ -206,37 +206,7 @@ const DashboardPage = {
       </div>
 
       <!-- Maintenance Alerts -->
-      ${d.maintenanceAlerts.length > 0 ? `
-      <div class="card" style="margin-top:var(--space-lg);border-left:4px solid ${d.maintenanceAlerts.some(m => m.statut === 'en_retard') ? '#ef4444' : '#f59e0b'};">
-        <div class="card-header">
-          <span class="card-title"><i class="fas fa-tools" style="color:${d.maintenanceAlerts.some(m => m.statut === 'en_retard') ? '#ef4444' : '#f59e0b'};"></i> Alertes maintenance (${d.maintenanceAlerts.length})</span>
-          <a href="#/maintenances" class="btn btn-sm btn-secondary">Voir tout</a>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          ${d.maintenanceAlerts.slice(0, 5).map(m => {
-            const typeLabels = { vidange:'Vidange', revision:'Revision', pneus:'Pneus', freins:'Freins', filtres:'Filtres', climatisation:'Clim.', courroie:'Courroie', controle_technique:'CT', batterie:'Batterie', amortisseurs:'Amortisseurs', echappement:'Echappement', carrosserie:'Carrosserie', autre:'Autre' };
-            const isRetard = m.statut === 'en_retard';
-            const color = isRetard ? '#ef4444' : '#f59e0b';
-            const icon = isRetard ? 'fa-exclamation-circle' : 'fa-exclamation-triangle';
-            const label = isRetard ? 'EN RETARD' : 'URGENT';
-            let echeance = '';
-            if (m.prochaineDate) {
-              const jours = Math.ceil((new Date(m.prochaineDate) - new Date()) / 86400000);
-              echeance = jours < 0 ? Math.abs(jours) + 'j de retard' : jours === 0 ? "aujourd'hui" : 'dans ' + jours + 'j';
-            }
-            return '<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);cursor:pointer;" onclick="Router.navigate(\\'/vehicules/' + m.vehiculeId + '\\')">' +
-              '<i class="fas ' + icon + '" style="color:' + color + ';font-size:0.9rem;flex-shrink:0;"></i>' +
-              '<div style="flex:1;min-width:0;">' +
-                '<div style="font-size:var(--font-size-sm);font-weight:600;">' + (typeLabels[m.type] || m.type) + ' <span style="font-size:var(--font-size-xs);font-weight:700;color:' + color + ';">' + label + '</span></div>' +
-                '<div style="font-size:var(--font-size-xs);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + m.vehiculeLabel + ' (' + m.immatriculation + ')' + (m.chauffeurNom ? ' — ' + m.chauffeurNom : '') + '</div>' +
-              '</div>' +
-              (echeance ? '<div style="font-size:var(--font-size-xs);color:' + color + ';font-weight:600;white-space:nowrap;">' + echeance + '</div>' : '') +
-            '</div>';
-          }).join('')}
-          ${d.maintenanceAlerts.length > 5 ? '<div style="text-align:center;padding:4px;font-size:var(--font-size-xs);color:var(--text-muted);">+ ' + (d.maintenanceAlerts.length - 5) + ' autre(s)...</div>' : ''}
-        </div>
-      </div>
-      ` : ''}
+      ${this._renderMaintenanceAlerts(d)}
 
       <!-- Charts Row 1 -->
       <div class="charts-grid">
@@ -507,6 +477,52 @@ const DashboardPage = {
         }
       }));
     }
+  },
+
+  _renderMaintenanceAlerts(d) {
+    if (!d.maintenanceAlerts || d.maintenanceAlerts.length === 0) return '';
+
+    const typeLabels = { vidange:'Vidange', revision:'Revision', pneus:'Pneus', freins:'Freins', filtres:'Filtres', climatisation:'Clim.', courroie:'Courroie', controle_technique:'CT', batterie:'Batterie', amortisseurs:'Amortisseurs', echappement:'Echappement', carrosserie:'Carrosserie', autre:'Autre' };
+    const hasRetard = d.maintenanceAlerts.some(m => m.statut === 'en_retard');
+    const borderColor = hasRetard ? '#ef4444' : '#f59e0b';
+
+    const rows = d.maintenanceAlerts.slice(0, 5).map(m => {
+      const isRetard = m.statut === 'en_retard';
+      const color = isRetard ? '#ef4444' : '#f59e0b';
+      const icon = isRetard ? 'fa-exclamation-circle' : 'fa-exclamation-triangle';
+      const badgeLabel = isRetard ? 'EN RETARD' : 'URGENT';
+      let echeance = '';
+      if (m.prochaineDate) {
+        const jours = Math.ceil((new Date(m.prochaineDate) - new Date()) / 86400000);
+        if (jours < 0) echeance = Math.abs(jours) + 'j de retard';
+        else if (jours === 0) echeance = "aujourd\u2019hui";
+        else echeance = 'dans ' + jours + 'j';
+      }
+      const typeLabel = typeLabels[m.type] || m.type;
+      const chauffeurInfo = m.chauffeurNom ? ' \u2014 ' + m.chauffeurNom : '';
+
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);cursor:pointer;" onclick="Router.navigate('/vehicules/${m.vehiculeId}')">
+        <i class="fas ${icon}" style="color:${color};font-size:0.9rem;flex-shrink:0;"></i>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:var(--font-size-sm);font-weight:600;">${typeLabel} <span style="font-size:var(--font-size-xs);font-weight:700;color:${color};">${badgeLabel}</span></div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.vehiculeLabel} (${m.immatriculation})${chauffeurInfo}</div>
+        </div>
+        ${echeance ? `<div style="font-size:var(--font-size-xs);color:${color};font-weight:600;white-space:nowrap;">${echeance}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    const moreText = d.maintenanceAlerts.length > 5 ? `<div style="text-align:center;padding:4px;font-size:var(--font-size-xs);color:var(--text-muted);">+ ${d.maintenanceAlerts.length - 5} autre(s)...</div>` : '';
+
+    return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid ${borderColor};">
+      <div class="card-header">
+        <span class="card-title"><i class="fas fa-tools" style="color:${borderColor};"></i> Alertes maintenance (${d.maintenanceAlerts.length})</span>
+        <a href="#/maintenances" class="btn btn-sm btn-secondary">Voir tout</a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${rows}
+        ${moreText}
+      </div>
+    </div>`;
   },
 
   refresh() {
