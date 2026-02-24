@@ -36,16 +36,28 @@ const MenuPage = {
         </div>
         <div class="menu-grid">
           ${visibleItems.map(item => `
-            <a class="menu-grid-item" href="#${item.route}">
+            <div class="menu-grid-item" data-route="${item.route}">
               <div class="menu-grid-icon" style="color:${item.color};background:${item.color}15;">
                 <i class="fas ${item.icon}"></i>
               </div>
               <span class="menu-grid-label">${item.label}</span>
-            </a>
+            </div>
           `).join('')}
         </div>
       </div>
     `;
+
+    // Bind click handlers explicitly for reliable navigation
+    container.querySelectorAll('.menu-grid-item[data-route]').forEach(item => {
+      const handler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const route = item.getAttribute('data-route');
+        if (route) Router.navigate(route);
+      };
+      item.addEventListener('click', handler);
+      item.addEventListener('touchend', handler);
+    });
   },
 
   destroy() {

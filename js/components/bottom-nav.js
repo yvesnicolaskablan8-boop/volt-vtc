@@ -27,14 +27,23 @@ const BottomNav = {
     // Filter items by permissions
     this._filterByPermissions();
 
-    // Tap feedback on nav items
+    // Click/touch handlers for nav items — use Router.navigate for reliability
     nav.querySelectorAll('.bottom-nav-item').forEach(item => {
-      const handler = () => {
-        item.classList.add('bottom-nav-tap');
-        setTimeout(() => item.classList.remove('bottom-nav-tap'), 150);
+      const clickHandler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const route = item.getAttribute('data-route');
+        if (route) {
+          // Tap feedback
+          item.classList.add('bottom-nav-tap');
+          setTimeout(() => item.classList.remove('bottom-nav-tap'), 150);
+          Router.navigate(route);
+        }
       };
-      item.addEventListener('click', handler);
-      this._handlers.push({ el: item, event: 'click', handler });
+      item.addEventListener('click', clickHandler);
+      item.addEventListener('touchend', clickHandler);
+      this._handlers.push({ el: item, event: 'click', handler: clickHandler });
+      this._handlers.push({ el: item, event: 'touchend', handler: clickHandler });
     });
   },
 
