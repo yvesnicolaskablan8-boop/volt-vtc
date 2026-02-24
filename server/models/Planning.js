@@ -17,4 +17,8 @@ const planningSchema = new mongoose.Schema({
   }
 });
 
+// Index for date-range queries
+planningSchema.index({ date: -1 });
+planningSchema.index({ chauffeurId: 1, date: -1 });
+
 module.exports = mongoose.model('Planning', planningSchema);

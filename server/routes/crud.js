@@ -39,11 +39,37 @@ function createCrudRoutes(modelName) {
     }
   });
 
-  // GET / - List all documents
+  // GET / - List documents with optional pagination
+  // Query params: ?limit=N&skip=N&sort=field&order=asc|desc&from=ISO&to=ISO
   router.get('/', async (req, res, next) => {
     try {
       const Model = getModel(modelName);
-      const docs = await Model.find().lean();
+      const { limit, skip, sort, order, from, to } = req.query;
+
+      // Build query filter for date ranges
+      let filter = {};
+      if (from || to) {
+        // Try both 'date' and 'dateHeure' fields
+        const dateFilter = {};
+        if (from) dateFilter.$gte = from;
+        if (to) dateFilter.$lte = to;
+        // Determine which date field exists based on model
+        filter = { $or: [{ date: dateFilter }, { dateHeure: dateFilter }] };
+      }
+
+      let query = Model.find(filter).lean();
+
+      // Apply sorting
+      if (sort) {
+        const sortOrder = order === 'asc' ? 1 : -1;
+        query = query.sort({ [sort]: sortOrder });
+      }
+
+      // Apply pagination
+      if (skip) query = query.skip(parseInt(skip));
+      if (limit) query = query.limit(parseInt(limit));
+
+      const docs = await query;
       // Clean MongoDB fields for frontend compatibility
       const cleaned = docs.map(doc => {
         const { _id, __v, ...rest } = doc;

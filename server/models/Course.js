@@ -26,4 +26,9 @@ const courseSchema = new mongoose.Schema({
   }
 });
 
+// Index for date-range queries and driver lookups
+courseSchema.index({ dateHeure: -1 });
+courseSchema.index({ chauffeurId: 1, dateHeure: -1 });
+courseSchema.index({ vehiculeId: 1, dateHeure: -1 });
+
 module.exports = mongoose.model('Course', courseSchema);

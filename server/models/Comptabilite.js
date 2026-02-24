@@ -21,4 +21,9 @@ const comptabiliteSchema = new mongoose.Schema({
   }
 });
 
+// Index for date-range queries and type filtering
+comptabiliteSchema.index({ date: -1 });
+comptabiliteSchema.index({ type: 1, date: -1 });
+comptabiliteSchema.index({ categorie: 1, date: -1 });
+
 module.exports = mongoose.model('Comptabilite', comptabiliteSchema);

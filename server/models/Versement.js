@@ -29,4 +29,9 @@ const versementSchema = new mongoose.Schema({
   }
 });
 
+// Index for date-range queries and driver lookups
+versementSchema.index({ date: -1 });
+versementSchema.index({ chauffeurId: 1, date: -1 });
+versementSchema.index({ vehiculeId: 1, date: -1 });
+
 module.exports = mongoose.model('Versement', versementSchema);
