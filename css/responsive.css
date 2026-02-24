@@ -747,6 +747,233 @@ body.volt-native-app .sidebar-overlay.active {
   display: block;
 }
 
+/* ========== BOTTOM NAVIGATION BAR (mobile only) ========== */
+
+/* Hidden by default on desktop */
+.bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .bottom-nav.bottom-nav-visible {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 150;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.12);
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(60px + env(safe-area-inset-bottom));
+    align-items: flex-start;
+    justify-content: space-around;
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 8px 0 4px;
+    height: 60px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 500;
+    transition: color 0.15s ease;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .bottom-nav-item i {
+    font-size: 20px;
+    margin-bottom: 3px;
+    transition: transform 0.15s ease, color 0.15s ease;
+  }
+
+  .bottom-nav-item span {
+    font-size: 10px;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+  }
+
+  .bottom-nav-item.active {
+    color: var(--volt-blue);
+  }
+
+  .bottom-nav-item.active i {
+    transform: scale(1.15);
+  }
+
+  /* Active indicator dot */
+  .bottom-nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: var(--volt-blue);
+    border-radius: 50%;
+  }
+
+  /* Tap feedback */
+  .bottom-nav-item:active,
+  .bottom-nav-item.bottom-nav-tap {
+    opacity: 0.7;
+  }
+
+  .bottom-nav-item:active i {
+    transform: scale(0.9);
+  }
+
+  /* Adjust page content bottom padding for bottom nav */
+  body.volt-has-bottomnav #page-content {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Adjust toast container above bottom nav */
+  body.volt-has-bottomnav .toast-container {
+    bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Hide sidebar toggle when bottom nav is active */
+  body.volt-has-bottomnav .header-toggle {
+    display: none !important;
+  }
+
+  /* Breadcrumb can use full width */
+  body.volt-has-bottomnav .header-breadcrumb {
+    padding-left: var(--space-sm);
+  }
+}
+
+/* Native app always shows bottom nav */
+body.volt-native-app .bottom-nav.bottom-nav-visible {
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.12);
+  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(60px + env(safe-area-inset-bottom));
+  align-items: flex-start;
+  justify-content: space-around;
+}
+
+body.volt-native-app.volt-has-bottomnav #page-content {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+}
+
+body.volt-native-app.volt-has-bottomnav .toast-container {
+  bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+}
+
+body.volt-native-app.volt-has-bottomnav .header-toggle {
+  display: none !important;
+}
+
+/* ========== MENU PAGE ========== */
+
+.menu-page {
+  padding: 0;
+}
+
+.menu-page-header {
+  margin-bottom: var(--space-lg);
+}
+
+.menu-page-header h1 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.menu-page-header h1 i {
+  color: var(--volt-blue);
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+}
+
+.menu-grid-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg) var(--space-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.menu-grid-item:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.menu-grid-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.menu-grid-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.3;
+}
+
+@media (max-width: 480px) {
+  .menu-grid {
+    gap: var(--space-sm);
+  }
+
+  .menu-grid-item {
+    padding: var(--space-md) var(--space-xs);
+  }
+
+  .menu-grid-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+  }
+
+  .menu-grid-label {
+    font-size: 10px;
+  }
+}
+
 /* ========== PRINT ========== */
 @media print {
   .sidebar,

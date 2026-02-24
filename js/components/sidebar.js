@@ -13,6 +13,29 @@ const Sidebar = {
 
     if (!toggle || !sidebar || !overlay) return;
 
+    // On mobile with bottom nav, don't initialize sidebar interaction at all
+    const isNative = !!(window.VoltNative) || navigator.userAgent.includes('VoltAdminApp');
+    const isMobile = isNative || window.innerWidth <= 768;
+    if (isMobile) {
+      // Clean up any old handlers
+      if (this._toggleHandler) {
+        toggle.removeEventListener('click', this._toggleHandler);
+        toggle.removeEventListener('touchend', this._toggleHandler);
+      }
+      if (this._overlayHandler) {
+        overlay.removeEventListener('click', this._overlayHandler);
+        overlay.removeEventListener('touchend', this._overlayHandler);
+      }
+      this._navHandlers.forEach(({ el, handler }) => el.removeEventListener('click', handler));
+      this._navHandlers = [];
+      // Ensure sidebar stays closed
+      sidebar.classList.remove('open');
+      overlay.classList.remove('active');
+      // Still apply permission filtering for desktop if user rotates
+      this._filterByPermissions();
+      return;
+    }
+
     // Remove old listeners if any (safe re-init)
     if (this._toggleHandler) {
       toggle.removeEventListener('click', this._toggleHandler);

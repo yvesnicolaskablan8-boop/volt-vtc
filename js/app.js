@@ -126,11 +126,13 @@ const App = {
       Sidebar.init();
       Header.init();
       Router.init();
+      BottomNav.init();
       this._initialized = true;
     } else {
       // Refresh sidebar permissions and header user info
       Sidebar.init();
       Header.init();
+      BottomNav.init();
       // Re-navigate to current page
       Router._handleRoute();
     }
@@ -431,6 +433,7 @@ const App = {
         const style = document.createElement('style');
         style.id = 'volt-mobile-override';
         style.textContent = `
+          /* Hide sidebar completely on mobile — bottom nav replaces it */
           .sidebar {
             transform: translateX(-100%) !important;
             pointer-events: none !important;
@@ -442,17 +445,19 @@ const App = {
             left: 0 !important;
             bottom: 0 !important;
           }
+          /* Sidebar never opens on mobile */
           .sidebar.open {
-            transform: translateX(0) !important;
-            pointer-events: auto !important;
-            visibility: visible !important;
+            transform: translateX(-100%) !important;
+            pointer-events: none !important;
+            visibility: hidden !important;
           }
           .main-content {
             margin-left: 0 !important;
             width: 100% !important;
           }
+          /* Hide hamburger toggle — bottom nav replaces it */
           .header-toggle {
-            display: flex !important;
+            display: none !important;
           }
           .header-search {
             display: none !important;
@@ -464,15 +469,10 @@ const App = {
           .header {
             overflow: visible !important;
           }
-          .sidebar-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 199;
-          }
+          /* Hide sidebar overlay entirely */
+          .sidebar-overlay,
           .sidebar-overlay.active {
-            display: block !important;
+            display: none !important;
           }
         `;
         document.head.appendChild(style);

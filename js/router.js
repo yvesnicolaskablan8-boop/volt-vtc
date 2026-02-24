@@ -25,7 +25,8 @@ const Router = {
       '/alertes': { page: AlertesPage, title: 'Alertes' },
       '/maintenances': { page: MaintenancesPage, title: 'Maintenances' },
       '/motivation': { page: MotivationPage, title: 'Motivation & Engagement' },
-      '/parametres': { page: ParametresPage, title: 'Paramètres' }
+      '/parametres': { page: ParametresPage, title: 'Paramètres' },
+      '/menu': { page: MenuPage, title: 'Menu' }
     };
 
     // Listen for hash changes
@@ -67,6 +68,7 @@ const Router = {
     if (typeof Auth !== 'undefined' && !Auth.canAccessRoute(hash)) {
       this._currentRoute = hash;
       Sidebar.setActive(hash);
+      if (typeof BottomNav !== 'undefined') BottomNav.setActive(hash);
       Header.setBreadcrumb('Accès restreint');
       const container = document.getElementById('page-content');
       container.innerHTML = `
@@ -88,6 +90,9 @@ const Router = {
 
     // Update sidebar active state
     Sidebar.setActive(hash);
+
+    // Update bottom nav active state (mobile)
+    if (typeof BottomNav !== 'undefined') BottomNav.setActive(hash);
 
     // Update breadcrumb
     Header.setBreadcrumb(config.title);
