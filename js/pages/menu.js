@@ -1,12 +1,10 @@
 /**
  * MenuPage - Grid of all navigation items not in the bottom bar
  * Displayed on mobile when user taps the "Menu" tab
+ * Uses simple <a href="#/route"> links — the most reliable navigation method
  */
 const MenuPage = {
-  _navigating: false,
-
   render() {
-    this._navigating = false;
     const container = document.getElementById('page-content');
 
     // All pages NOT present in bottom nav tabs (Dashboard, Chauffeurs, Planning, Vehicules)
@@ -39,25 +37,17 @@ const MenuPage = {
         </div>
         <div class="menu-grid">
           ${visibleItems.map(item => `
-            <div class="menu-grid-item" onclick="MenuPage._go('${item.route}')">
+            <a href="#${item.route}" class="menu-grid-item" style="text-decoration:none;color:inherit;-webkit-tap-highlight-color:rgba(59,130,246,0.15);">
               <div class="menu-grid-icon" style="color:${item.color};background:${item.color}15;">
                 <i class="fas ${item.icon}"></i>
               </div>
               <span class="menu-grid-label">${item.label}</span>
-            </div>
+            </a>
           `).join('')}
         </div>
       </div>
     `;
   },
 
-  _go(route) {
-    if (this._navigating) return;
-    this._navigating = true;
-    Router.navigate(route);
-  },
-
-  destroy() {
-    this._navigating = false;
-  }
+  destroy() {}
 };
