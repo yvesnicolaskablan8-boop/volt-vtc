@@ -487,12 +487,14 @@ textarea.form-control {
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
   transition: all var(--transition-base);
 }
 
 .modal-overlay.active {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
 }
 
 .modal {
