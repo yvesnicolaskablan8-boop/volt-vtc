@@ -3,7 +3,10 @@
  * Displayed on mobile when user taps the "Menu" tab
  */
 const MenuPage = {
+  _navigating: false,
+
   render() {
+    this._navigating = false;
     const container = document.getElementById('page-content');
 
     // All pages NOT present in bottom nav tabs (Dashboard, Chauffeurs, Planning, Vehicules)
@@ -36,7 +39,7 @@ const MenuPage = {
         </div>
         <div class="menu-grid">
           ${visibleItems.map(item => `
-            <div class="menu-grid-item" data-route="${item.route}">
+            <div class="menu-grid-item" onclick="MenuPage._go('${item.route}')">
               <div class="menu-grid-icon" style="color:${item.color};background:${item.color}15;">
                 <i class="fas ${item.icon}"></i>
               </div>
@@ -46,21 +49,15 @@ const MenuPage = {
         </div>
       </div>
     `;
+  },
 
-    // Bind click handlers explicitly for reliable navigation
-    container.querySelectorAll('.menu-grid-item[data-route]').forEach(item => {
-      const handler = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const route = item.getAttribute('data-route');
-        if (route) Router.navigate(route);
-      };
-      item.addEventListener('click', handler);
-      item.addEventListener('touchend', handler);
-    });
+  _go(route) {
+    if (this._navigating) return;
+    this._navigating = true;
+    Router.navigate(route);
   },
 
   destroy() {
-    // No intervals or charts to clean up
+    this._navigating = false;
   }
 };

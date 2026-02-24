@@ -5,6 +5,7 @@
 const BottomNav = {
   _handlers: [],
   _visible: false,
+  _navigating: false,
 
   init() {
     const nav = document.getElementById('bottom-nav');
@@ -15,6 +16,7 @@ const BottomNav = {
       el.removeEventListener(event, handler);
     });
     this._handlers = [];
+    this._navigating = false;
 
     // Determine if we should show bottom nav
     this._checkVisibility();
@@ -27,23 +29,25 @@ const BottomNav = {
     // Filter items by permissions
     this._filterByPermissions();
 
-    // Click/touch handlers for nav items — use Router.navigate for reliability
+    // Click handlers for nav items — only 'click', no 'touchend' to avoid double-fire
     nav.querySelectorAll('.bottom-nav-item').forEach(item => {
       const clickHandler = (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (this._navigating) return;
         const route = item.getAttribute('data-route');
         if (route) {
+          this._navigating = true;
           // Tap feedback
           item.classList.add('bottom-nav-tap');
           setTimeout(() => item.classList.remove('bottom-nav-tap'), 150);
           Router.navigate(route);
+          // Reset flag after short delay
+          setTimeout(() => { this._navigating = false; }, 300);
         }
       };
       item.addEventListener('click', clickHandler);
-      item.addEventListener('touchend', clickHandler);
       this._handlers.push({ el: item, event: 'click', handler: clickHandler });
-      this._handlers.push({ el: item, event: 'touchend', handler: clickHandler });
     });
   },
 
