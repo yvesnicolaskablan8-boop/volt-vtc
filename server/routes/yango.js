@@ -119,14 +119,19 @@ async function fetchAllTransactions(from, to, driverIds = null) {
   let pageCount = 0;
   const MAX_PAGES = 10; // Safety limit
 
+  // Build transaction query — add driver_profile_id filter when available
+  const transactionQuery = { event_at: { from, to } };
+  if (driverIds && driverIds.size === 1) {
+    const [singleId] = driverIds;
+    transactionQuery.driver_profile_id = singleId;
+  }
+
   do {
     const body = {
       query: {
         park: {
           id: process.env.YANGO_PARK_ID,
-          transaction: {
-            event_at: { from, to }
-          }
+          transaction: transactionQuery
         }
       },
       limit: 1000
@@ -140,8 +145,8 @@ async function fetchAllTransactions(from, to, driverIds = null) {
     pageCount++;
   } while (cursor && pageCount < MAX_PAGES);
 
-  // If driver filter is active, filter transactions by driver_profile_id
-  if (driverIds && driverIds.size > 0) {
+  // If multiple drivers filter is active, filter client-side
+  if (driverIds && driverIds.size > 1) {
     return allTransactions.filter(t => t.driver_profile_id && driverIds.has(t.driver_profile_id));
   }
 

@@ -306,9 +306,13 @@ const Store = {
       }
       const qs = params.toString();
       const url = this._apiBase + '/yango/driver-stats/' + encodeURIComponent(yangoDriverId) + (qs ? '?' + qs : '');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
       const res = await fetch(url, {
-        headers: this._headers()
+        headers: this._headers(),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       const data = await res.json();
       if (!res.ok) {
         console.warn('Store: Yango driver-stats error:', data);
@@ -317,6 +321,9 @@ const Store = {
       return data;
     } catch (e) {
       console.warn('Store: Yango driver-stats failed:', e.message);
+      if (e.name === 'AbortError') {
+        return { error: 'Délai dépassé', details: 'Le serveur met trop de temps à répondre' };
+      }
       return { error: 'Erreur reseau', details: e.message };
     }
   },
