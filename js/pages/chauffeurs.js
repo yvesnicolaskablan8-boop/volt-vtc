@@ -28,6 +28,10 @@ const ChauffeursPage = {
   destroy() {
     this._charts.forEach(c => c.destroy());
     this._charts = [];
+    if (this._yangoRefreshInterval) {
+      clearInterval(this._yangoRefreshInterval);
+      this._yangoRefreshInterval = null;
+    }
   },
 
   _listTemplate(chauffeurs) {
@@ -194,6 +198,27 @@ const ChauffeursPage = {
             <div id="yango-search-results" style="margin-top:10px;"></div>
           `}
         </div>
+
+        <!-- CA Yango (only if linked) -->
+        ${c.yangoDriverId ? `
+        <div class="card" id="yango-ca-card" style="border-top:3px solid #FC4C02;">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-wallet" style="color:#FC4C02"></i> CA Yango</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="date" id="yango-ca-date" class="form-control"
+                style="width:auto;font-size:12px;padding:4px 8px;min-height:auto;"
+                value="${new Date().toISOString().split('T')[0]}"
+                max="${new Date().toISOString().split('T')[0]}">
+              <span id="yango-ca-live" style="font-size:9px;padding:2px 8px;background:#FC4C02;color:#fff;border-radius:10px;font-weight:700;">EN DIRECT</span>
+            </div>
+          </div>
+          <div id="yango-ca-content" class="card-body">
+            <div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-xs);">
+              <i class="fas fa-spinner fa-spin"></i> Chargement des données Yango...
+            </div>
+          </div>
+        </div>
+        ` : ''}
 
         <!-- Documents -->
         <div class="card">
@@ -377,7 +402,78 @@ const ChauffeursPage = {
     });
   },
 
-  _bindDetailEvents() {},
+  _bindDetailEvents(chauffeur) {
+    if (chauffeur && chauffeur.yangoDriverId) {
+      // Load Yango CA on page load
+      this._loadYangoCA(chauffeur.id);
+
+      // Wire date picker change
+      const dateInput = document.getElementById('yango-ca-date');
+      if (dateInput) {
+        dateInput.addEventListener('change', () => this._loadYangoCA(chauffeur.id));
+      }
+
+      // Auto-refresh every 2 min when viewing today
+      this._yangoRefreshInterval = setInterval(() => {
+        const input = document.getElementById('yango-ca-date');
+        const today = new Date().toISOString().split('T')[0];
+        if (input && input.value === today) {
+          this._loadYangoCA(chauffeur.id);
+        }
+      }, 120000);
+    }
+  },
+
+  async _loadYangoCA(chauffeurId) {
+    const chauffeur = Store.findById('chauffeurs', chauffeurId);
+    if (!chauffeur || !chauffeur.yangoDriverId) return;
+
+    const container = document.getElementById('yango-ca-content');
+    if (!container) return;
+
+    const dateInput = document.getElementById('yango-ca-date');
+    const today = new Date().toISOString().split('T')[0];
+    const selectedDate = dateInput ? dateInput.value : today;
+    const isToday = selectedDate === today;
+
+    // Show/hide live badge
+    const liveBadge = document.getElementById('yango-ca-live');
+    if (liveBadge) liveBadge.style.display = isToday ? '' : 'none';
+
+    container.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-xs);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+
+    const stats = await Store.getYangoDriverStats(chauffeur.yangoDriverId, isToday ? null : selectedDate);
+
+    if (!stats || stats.error) {
+      container.innerHTML = `<div style="text-align:center;padding:var(--space-md);color:var(--danger);font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> ${stats?.details || stats?.error || 'Erreur'}</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="grid-4" style="gap:var(--space-sm);">
+        <div style="text-align:center;padding:var(--space-sm);">
+          <div style="font-size:var(--font-size-xl);font-weight:700;color:#FC4C02;">${Utils.formatCurrency(stats.totalCA)}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">CA Total</div>
+        </div>
+        <div style="text-align:center;padding:var(--space-sm);">
+          <div style="font-size:var(--font-size-lg);font-weight:600;color:#22c55e;">${Utils.formatCurrency(stats.totalCash)}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-money-bill-wave" style="font-size:9px"></i> Espèces</div>
+        </div>
+        <div style="text-align:center;padding:var(--space-sm);">
+          <div style="font-size:var(--font-size-lg);font-weight:600;color:#3b82f6;">${Utils.formatCurrency(stats.totalCard)}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-credit-card" style="font-size:9px"></i> Carte</div>
+        </div>
+        <div style="text-align:center;padding:var(--space-sm);">
+          <div style="font-size:var(--font-size-lg);font-weight:600;">${stats.nbCourses}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-taxi" style="font-size:9px"></i> Courses</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:var(--space-md);margin-top:var(--space-sm);padding-top:var(--space-sm);border-top:1px solid var(--border-color);font-size:var(--font-size-xs);color:var(--text-muted);">
+        ${isToday ? '<span><i class="fas fa-circle" style="color:#FC4C02;font-size:6px;vertical-align:middle"></i> Temps réel</span>' : `<span><i class="fas fa-calendar"></i> ${Utils.formatDate(selectedDate)}</span>`}
+        <span>Maj: ${new Date(stats.derniereMaj).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}</span>
+      </div>
+    `;
+  },
 
   // CRUD operations
   _getFormFields() {

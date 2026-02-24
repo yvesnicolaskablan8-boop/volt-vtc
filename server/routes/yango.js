@@ -892,4 +892,71 @@ function mapOrderStatus(status) {
   return map[status] || status || 'inconnue';
 }
 
+// =================== DRIVER INDIVIDUAL STATS ===================
+
+/**
+ * GET /api/yango/driver-stats/:yangoDriverId?from=ISO&to=ISO
+ * Revenue for a single driver. Defaults to today if no dates.
+ */
+router.get('/driver-stats/:yangoDriverId', async (req, res) => {
+  try {
+    const { yangoDriverId } = req.params;
+    if (!yangoDriverId) {
+      return res.status(400).json({ error: 'yangoDriverId requis' });
+    }
+
+    const now = new Date();
+    const customFrom = req.query.from ? new Date(req.query.from) : null;
+    const customTo = req.query.to ? new Date(req.query.to) : null;
+    const isCustom = customFrom && !isNaN(customFrom.getTime());
+
+    const from = isCustom
+      ? customFrom.toISOString()
+      : new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const to = (customTo && !isNaN(customTo.getTime()))
+      ? customTo.toISOString()
+      : now.toISOString();
+
+    // Fetch transactions for this single driver
+    const driverIds = new Set([yangoDriverId]);
+    const transactions = await fetchAllTransactions(from, to, driverIds);
+    const finance = aggregateTransactions(transactions);
+
+    // Fetch orders for accurate course count
+    let nbCourses = 0;
+    try {
+      const ordersData = await yangoFetch('/v1/parks/orders/list', {
+        limit: 100,
+        query: {
+          park: {
+            id: process.env.YANGO_PARK_ID,
+            order: { booked_at: { from, to } }
+          }
+        }
+      });
+      nbCourses = (ordersData.orders || []).filter(
+        o => o.driver && o.driver.id === yangoDriverId && o.status === 'complete'
+      ).length;
+    } catch (e) {
+      console.warn('driver-stats: orders fetch failed:', e.message);
+      nbCourses = finance.nbCoursesCash + finance.nbCoursesCard;
+    }
+
+    res.json({
+      yangoDriverId,
+      totalCA: finance.totalCA,
+      totalCash: finance.totalCash,
+      totalCard: finance.totalCard,
+      nbCourses,
+      commissionYango: finance.commissionYango,
+      commissionPartenaire: finance.commissionPartenaire,
+      derniereMaj: now.toISOString(),
+      periode: { from, to, isCustom }
+    });
+  } catch (err) {
+    console.error('Yango driver-stats error:', err.message);
+    res.status(502).json({ error: 'Erreur API Yango', details: err.message });
+  }
+});
+
 module.exports = router;

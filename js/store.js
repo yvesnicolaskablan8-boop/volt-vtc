@@ -296,6 +296,31 @@ const Store = {
     }
   },
 
+  async getYangoDriverStats(yangoDriverId, date) {
+    try {
+      const params = new URLSearchParams();
+      if (date) {
+        // date is 'YYYY-MM-DD' string — build full day range
+        params.set('from', new Date(date + 'T00:00:00').toISOString());
+        params.set('to', new Date(date + 'T23:59:59').toISOString());
+      }
+      const qs = params.toString();
+      const url = this._apiBase + '/yango/driver-stats/' + encodeURIComponent(yangoDriverId) + (qs ? '?' + qs : '');
+      const res = await fetch(url, {
+        headers: this._headers()
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.warn('Store: Yango driver-stats error:', data);
+        return { error: data.error || 'Erreur API', details: data.details || `HTTP ${res.status}` };
+      }
+      return data;
+    } catch (e) {
+      console.warn('Store: Yango driver-stats failed:', e.message);
+      return { error: 'Erreur reseau', details: e.message };
+    }
+  },
+
   async getYangoDrivers(workRuleIds) {
     try {
       let url = this._apiBase + '/yango/drivers';
