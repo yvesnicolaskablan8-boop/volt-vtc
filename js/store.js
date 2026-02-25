@@ -26,13 +26,8 @@ const Store = {
       });
       if (res.ok) {
         this._cache = await res.json();
-        // Store _meta info separately if present
-        if (this._cache._meta) {
-          this._meta = this._cache._meta;
-          delete this._cache._meta;
-        }
         this._backupToLocalStorage();
-        console.log('Store: Data loaded from API', this._meta ? `(last ${this._meta.dataMonths} months)` : '');
+        console.log('Store: Data loaded from API');
       } else if (res.status === 401) {
         // Token invalid — will redirect to login
         this._cache = this._emptyData();
@@ -45,47 +40,6 @@ const Store = {
       // Offline — use localStorage fallback
       console.warn('Store: API unreachable — using local backup');
       this._cache = this._loadFromLocalStorage() || this._emptyData();
-    }
-  },
-
-  /** Get metadata about data loading (cutoff date, totals) */
-  getMeta() {
-    return this._meta || null;
-  },
-
-  /**
-   * Load historical data for a date range (not in initial cache).
-   * Returns { courses, versements, comptabilite, gps, planning } for the range.
-   */
-  async loadDateRange(from, to, collections) {
-    try {
-      const params = new URLSearchParams({ from, to });
-      if (collections) params.set('collections', collections);
-      const res = await fetch(this._apiBase + '/data/range?' + params.toString(), {
-        headers: this._headers()
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn('Store: loadDateRange failed:', e.message);
-      return null;
-    }
-  },
-
-  /**
-   * Load aggregated all-time stats for dashboard/reports.
-   * Returns monthly revenue, expenses, versements, courses aggregates.
-   */
-  async loadAggregates() {
-    try {
-      const res = await fetch(this._apiBase + '/data/aggregates', {
-        headers: this._headers()
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn('Store: loadAggregates failed:', e.message);
-      return null;
     }
   },
 
@@ -259,18 +213,7 @@ const Store = {
 
   _backupToLocalStorage() {
     try {
-      // Only backup small/essential collections to avoid QuotaExceeded
-      const essentials = {
-        chauffeurs: this._cache.chauffeurs || [],
-        vehicules: this._cache.vehicules || [],
-        users: this._cache.users || [],
-        settings: this._cache.settings || {},
-        budgets: this._cache.budgets || [],
-        absences: this._cache.absences || [],
-        signalements: this._cache.signalements || [],
-        factures: this._cache.factures || []
-      };
-      localStorage.setItem(this._KEY, JSON.stringify(essentials));
+      localStorage.setItem(this._KEY, JSON.stringify(this._cache));
     } catch (e) {
       // QuotaExceeded — not critical since API is primary storage
       console.warn('Store: localStorage backup failed:', e.message);
