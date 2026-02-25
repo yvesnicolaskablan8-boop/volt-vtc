@@ -25,20 +25,13 @@ router.get('/', async (req, res, next) => {
     const Settings = require('../models/Settings');
     const Signalement = require('../models/Signalement');
 
-    // Date filter for large collections
-    const months = parseInt(req.query.months) || 3;
-    const cutoffDate = new Date();
-    cutoffDate.setMonth(cutoffDate.getMonth() - months);
-    const cutoffISO = cutoffDate.toISOString();
-
-    // For date-filtered collections, we filter on the 'date' or 'dateHeure' field
-    // These fields are stored as ISO strings, so string comparison works
-    const recentDateFilter = { date: { $gte: cutoffISO } };
-    const recentDateHeureFilter = { dateHeure: { $gte: cutoffISO } };
+    // Limit for large collections — load only the N most recent records
+    // Default: 5000 records per large collection (enough for ~2-3 months of a 31-vehicle fleet)
+    const limit = parseInt(req.query.limit) || 5000;
 
     // Fetch all collections in parallel
     // Small collections: load ALL (chauffeurs, vehicules, budgets, absences, users, settings, signalements, factures)
-    // Large collections: load only recent data
+    // Large collections: load only the N most recent records sorted by date desc
     const [
       chauffeurs, vehicules,
       courses, versements, gps, comptabilite, planning,
@@ -49,12 +42,12 @@ router.get('/', async (req, res, next) => {
       // Small — load all
       Chauffeur.find().lean(),
       Vehicule.find().lean(),
-      // Large — filtered by date
-      Course.find(recentDateHeureFilter).sort({ dateHeure: -1 }).lean(),
-      Versement.find(recentDateFilter).sort({ date: -1 }).lean(),
-      Gps.find(recentDateFilter).sort({ date: -1 }).lean(),
-      Comptabilite.find(recentDateFilter).sort({ date: -1 }).lean(),
-      Planning.find(recentDateFilter).sort({ date: -1 }).lean(),
+      // Large — limited to N most recent
+      Course.find().sort({ dateHeure: -1 }).limit(limit).lean(),
+      Versement.find().sort({ date: -1 }).limit(limit).lean(),
+      Gps.find().sort({ date: -1 }).limit(limit).lean(),
+      Comptabilite.find().sort({ date: -1 }).limit(limit).lean(),
+      Planning.find().sort({ date: -1 }).limit(limit).lean(),
       // Small — load all
       Facture.find().lean(),
       Budget.find().lean(),
@@ -95,8 +88,7 @@ router.get('/', async (req, res, next) => {
       settings,
       // Metadata for the frontend to know data is partial
       _meta: {
-        dataMonths: months,
-        cutoffDate: cutoffISO,
+        limit,
         totals: {
           courses: coursesTotal,
           versements: versementsTotal,

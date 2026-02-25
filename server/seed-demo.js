@@ -450,8 +450,8 @@ async function seedDemo() {
     console.log('\n--- Generating daily operational data (Jan 2022 - Jul 2025) ---');
     console.log('This will take a few minutes...\n');
 
-    const START_DATE = new Date(2024, 0, 1); // Jan 1, 2024
-    const END_DATE = new Date(2026, 1, 24);  // Feb 24, 2026 (yesterday)
+    const START_DATE = new Date(2022, 0, 3); // Monday Jan 3, 2022
+    const END_DATE = new Date(2025, 6, 31);  // Jul 31, 2025
     const RECETTE_JOUR = 23000; // FCFA per day per vehicle
     const COMMISSION_YANGO_RATE = 0.18; // 18% Yango commission
 
@@ -532,7 +532,7 @@ async function seedDemo() {
         const netAmount = recetteJour - commissionYango;
 
         // Number of courses per day: 12-20
-        const nbCourses = seededRand(8, 14);
+        const nbCourses = seededRand(5, 8);
         const courseMontant = Math.round(recetteJour / nbCourses);
 
         // ---- PLANNING ----
@@ -814,7 +814,7 @@ async function seedDemo() {
     console.log('\n--- Creating yearly budgets ---');
     const budgets = [];
     let budgetCounter = 0;
-    for (const year of [2024, 2025, 2026]) {
+    for (const year of [2022, 2023, 2024, 2025]) {
       const budgetCategories = [
         { cat: 'carburant', type: 'expense', montant: 31 * 5000 * 26 * 12 }, // 31 cars * 5000/day * 26 days/month * 12 months
         { cat: 'maintenance', type: 'expense', montant: 31 * 50000 * 4 }, // 31 cars * 50000 * 4 times/year
@@ -855,7 +855,7 @@ async function seedDemo() {
     console.log(`Absences:       ${absences.length}`);
     console.log(`Signalements:   ${signalements.length}`);
     console.log(`Budgets:        ${budgets.length}`);
-    console.log(`Période:        Jan 2024 → Fév 2026`);
+    console.log(`Période:        Jan 2022 → Jul 2025`);
     console.log(`Recette/jour:   ${RECETTE_JOUR} FCFA`);
     console.log(`Entreprise:     Mauralex`);
     console.log('========================================\n');
