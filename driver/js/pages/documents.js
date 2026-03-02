@@ -1,0 +1,171 @@
+/**
+ * DocumentsPage — Documents & Alertes du chauffeur
+ */
+const DocumentsPage = {
+  _filter: 'tous',
+
+  async render(container) {
+    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+
+    const [profil, vehicule] = await Promise.all([
+      DriverStore.getProfil(),
+      DriverStore.getVehicule()
+    ]);
+
+    const chauffeur = profil?.chauffeur || {};
+    const docs = chauffeur.documents || [];
+    const v = vehicule || {};
+
+    // Count by status
+    const critiques = docs.filter(d => d.statut === 'expire' || d.statut === 'a_renouveler');
+    const valides = docs.filter(d => d.statut === 'valide');
+
+    container.innerHTML = `
+      <!-- Filter tabs -->
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:1.5rem;scrollbar-width:none">
+        <button class="doc-filter active" data-filter="tous" onclick="DocumentsPage._setFilter('tous')"
+          style="flex-shrink:0;padding:8px 16px;border-radius:999px;border:none;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;background:#3b82f6;color:white">
+          Tous (${docs.length})
+        </button>
+        <button class="doc-filter" data-filter="critique" onclick="DocumentsPage._setFilter('critique')"
+          style="flex-shrink:0;padding:8px 16px;border-radius:999px;border:none;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;background:#f1f5f9;color:#64748b">
+          Critique (${critiques.length})
+        </button>
+        <button class="doc-filter" data-filter="valide" onclick="DocumentsPage._setFilter('valide')"
+          style="flex-shrink:0;padding:8px 16px;border-radius:999px;border:none;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;background:#f1f5f9;color:#64748b">
+          Valide (${valides.length})
+        </button>
+      </div>
+
+      <!-- Priority alerts -->
+      ${critiques.length > 0 ? `
+        <div style="margin-bottom:1.5rem">
+          <h3 style="font-weight:800;color:#ef4444;display:flex;align-items:center;gap:8px;margin-bottom:1rem;font-size:0.95rem">
+            <iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon>Priorite elevee
+          </h3>
+          ${critiques.map(d => this._renderAlert(d, chauffeur)).join('')}
+        </div>
+      ` : ''}
+
+      <!-- All documents -->
+      <div id="docs-list">
+        <h3 style="font-weight:800;margin-bottom:1rem;font-size:0.95rem">Mes Documents</h3>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          ${docs.length > 0
+            ? docs.map(d => this._renderDoc(d)).join('')
+            : '<div style="text-align:center;padding:2rem;color:#94a3b8;font-size:0.875rem"><iconify-icon icon="solar:document-bold-duotone" style="font-size:2rem;display:block;margin-bottom:8px"></iconify-icon>Aucun document enregistre</div>'
+          }
+        </div>
+      </div>
+
+      <!-- Vehicle documents section -->
+      ${v.immatriculation ? `
+        <div style="margin-top:2rem">
+          <h3 style="font-weight:800;margin-bottom:1rem;font-size:0.95rem">Vehicule : ${v.marque || ''} ${v.modele || ''}</h3>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem;border-radius:1rem;background:white;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:40px;height:40px;border-radius:12px;background:rgba(245,158,11,0.1);color:#f59e0b;display:flex;align-items:center;justify-content:center">
+                  <iconify-icon icon="solar:shield-star-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+                </div>
+                <div>
+                  <div style="font-size:0.875rem;font-weight:700">Assurance</div>
+                  <div style="font-size:0.625rem;color:#94a3b8">${v.immatriculation}</div>
+                </div>
+              </div>
+              <span style="font-size:10px;font-weight:700;color:#22c55e">VALIDE</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem;border-radius:1rem;background:white;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:40px;height:40px;border-radius:12px;background:rgba(245,158,11,0.1);color:#f59e0b;display:flex;align-items:center;justify-content:center">
+                  <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+                </div>
+                <div>
+                  <div style="font-size:0.875rem;font-weight:700">Visite technique</div>
+                  <div style="font-size:0.625rem;color:#94a3b8">${v.immatriculation}</div>
+                </div>
+              </div>
+              <span style="font-size:10px;font-weight:700;color:#22c55e">VALIDE</span>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+    `;
+  },
+
+  _renderAlert(doc, chauffeur) {
+    const isExpire = doc.statut === 'expire';
+    const daysLeft = doc.dateExpiration ? Math.ceil((new Date(doc.dateExpiration) - new Date()) / 86400000) : null;
+    const delayText = daysLeft !== null
+      ? (daysLeft <= 0 ? 'Expire' : `Dans ${daysLeft}j`)
+      : '';
+
+    return `
+      <div style="border-radius:1.5rem;border:1px solid ${isExpire ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'};background:${isExpire ? 'rgba(239,68,68,0.03)' : 'rgba(245,158,11,0.03)'};padding:1rem;margin-bottom:12px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div>
+            <div style="font-weight:700;font-size:0.9rem">${doc.nom}</div>
+            <div style="font-size:0.75rem;color:#64748b;margin-top:4px">Echeance : ${doc.dateExpiration ? new Date(doc.dateExpiration).toLocaleDateString('fr-FR', {day:'numeric',month:'short',year:'numeric'}) : 'N/A'}</div>
+          </div>
+          <span style="padding:4px 8px;border-radius:999px;background:${isExpire ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)'};color:${isExpire ? '#ef4444' : '#f59e0b'};font-size:10px;font-weight:700;text-transform:uppercase">${delayText}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid ${isExpire ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)'};margin-top:12px;padding-top:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:32px;height:32px;border-radius:999px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#64748b">${(chauffeur.prenom || 'C')[0]}${(chauffeur.nom || 'H')[0]}</div>
+            <span style="font-size:0.75rem;font-weight:500">${chauffeur.prenom || ''} ${chauffeur.nom || ''}</span>
+          </div>
+          <span style="font-size:0.75rem;font-weight:700;color:#3b82f6;cursor:pointer">Renouveler</span>
+        </div>
+      </div>
+    `;
+  },
+
+  _renderDoc(doc) {
+    const statusColors = {
+      valide: '#22c55e',
+      expire: '#ef4444',
+      a_renouveler: '#f59e0b',
+      en_attente: '#3b82f6'
+    };
+    const statusLabels = {
+      valide: 'VALIDE',
+      expire: 'EXPIRE',
+      a_renouveler: 'A RENOUVELER',
+      en_attente: 'EN ATTENTE'
+    };
+    const color = statusColors[doc.statut] || '#94a3b8';
+    const label = statusLabels[doc.statut] || doc.statut;
+    const icon = doc.statut === 'valide' ? 'solar:check-circle-bold' : 'solar:danger-bold';
+
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem;border-radius:1rem;background:white;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:12px;background:${color}15;color:${color};display:flex;align-items:center;justify-content:center">
+            <iconify-icon icon="solar:document-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+          </div>
+          <div>
+            <div style="font-size:0.875rem;font-weight:700">${doc.nom}</div>
+            <div style="font-size:0.625rem;color:#94a3b8">${doc.dateExpiration ? 'Expire le ' + new Date(doc.dateExpiration).toLocaleDateString('fr-FR') : ''}</div>
+          </div>
+        </div>
+        <iconify-icon icon="${icon}" style="color:${color};font-size:1.1rem"></iconify-icon>
+      </div>
+    `;
+  },
+
+  _setFilter(filter) {
+    this._filter = filter;
+    // Update active button styling
+    document.querySelectorAll('.doc-filter').forEach(btn => {
+      if (btn.dataset.filter === filter) {
+        btn.style.background = '#3b82f6';
+        btn.style.color = 'white';
+      } else {
+        btn.style.background = '#f1f5f9';
+        btn.style.color = '#64748b';
+      }
+    });
+  },
+
+  destroy() {}
+};

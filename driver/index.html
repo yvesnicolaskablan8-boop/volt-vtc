@@ -22,6 +22,9 @@
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+  <!-- Iconify (modern icons) -->
+  <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+
   <!-- Styles -->
   <link rel="stylesheet" href="/driver/css/driver.css">
 </head>
@@ -31,7 +34,7 @@
     <div class="login-container">
       <div class="login-logo">
         <div class="login-logo-icon">
-          <i class="fas fa-bolt"></i>
+          <iconify-icon icon="solar:bolt-bold" style="font-size:2.8rem;color:white"></iconify-icon>
         </div>
         <h1>Volt <span>Chauffeur</span></h1>
         <p class="login-subtitle">Connectez-vous avec votre numero et PIN</p>
@@ -41,7 +44,7 @@
         <div class="form-group">
           <label for="login-tel">Numero de telephone</label>
           <div class="input-icon">
-            <i class="fas fa-phone"></i>
+            <iconify-icon icon="solar:phone-bold-duotone" style="font-size:1.2rem"></iconify-icon>
             <input type="tel" id="login-tel" placeholder="07 00 00 00 00" required autocomplete="tel">
           </div>
         </div>
@@ -49,7 +52,7 @@
         <div class="form-group">
           <label for="login-pin">Code PIN</label>
           <div class="input-icon">
-            <i class="fas fa-lock"></i>
+            <iconify-icon icon="solar:lock-password-bold-duotone" style="font-size:1.2rem"></iconify-icon>
             <input type="password" id="login-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="****" required autocomplete="current-password">
           </div>
         </div>
@@ -59,13 +62,12 @@
           <span class="btn-loading" style="display:none"><i class="fas fa-spinner fa-spin"></i> Connexion...</span>
         </button>
 
-        <p class="login-help">
-          <i class="fas fa-info-circle"></i>
-          PIN oublie ? Contactez votre gestionnaire.
-        </p>
+        <p class="login-help">Mot de passe oublie ?</p>
       </form>
 
       <div id="login-error" class="login-error" style="display:none"></div>
+
+      <p class="login-version">Volt v1.2.0 &bull; Propulse par Yango</p>
     </div>
   </div>
 
@@ -73,14 +75,19 @@
   <div id="app-shell" class="app-shell" style="display:none">
     <!-- Header -->
     <header class="app-header">
-      <h2 id="page-title">Accueil</h2>
+      <div class="header-left">
+        <button id="btn-back" class="header-btn header-back" style="display:none" title="Retour">
+          <iconify-icon icon="solar:alt-arrow-left-linear" style="font-size:1.25rem"></iconify-icon>
+        </button>
+        <h2 id="page-title">Accueil</h2>
+      </div>
       <div class="header-actions">
         <button id="btn-notifications" class="header-btn notif-bell-btn" title="Notifications">
-          <i class="fas fa-bell"></i>
+          <iconify-icon icon="solar:bell-bing-bold-duotone" style="font-size:1.25rem"></iconify-icon>
           <span id="notif-badge" class="notif-badge" style="display:none">0</span>
         </button>
         <button id="btn-refresh" class="header-btn" title="Actualiser">
-          <i class="fas fa-sync-alt"></i>
+          <iconify-icon icon="solar:refresh-bold-duotone" style="font-size:1.25rem"></iconify-icon>
         </button>
       </div>
     </header>
@@ -90,19 +97,23 @@
       <!-- Pages rendered here -->
     </main>
 
-    <!-- Bottom Navigation -->
+    <!-- Bottom Navigation (4 tabs matching mockup) -->
     <nav class="bottom-nav" id="bottom-nav">
       <a href="#/accueil" class="nav-item active" data-route="accueil">
-        <i class="fas fa-home"></i>
+        <iconify-icon icon="solar:home-2-bold" class="nav-icon"></iconify-icon>
         <span>Accueil</span>
       </a>
+      <a href="#/versements" class="nav-item" data-route="versements">
+        <iconify-icon icon="solar:wallet-bold" class="nav-icon"></iconify-icon>
+        <span>Finances</span>
+      </a>
       <a href="#/messagerie" class="nav-item" data-route="messagerie">
-        <i class="fas fa-comments"></i>
+        <iconify-icon icon="solar:chat-round-dots-bold" class="nav-icon"></iconify-icon>
         <span>Messages</span>
         <span class="msg-nav-badge" style="display:none">0</span>
       </a>
       <a href="#/profil" class="nav-item" data-route="profil">
-        <i class="fas fa-user"></i>
+        <iconify-icon icon="solar:user-circle-bold" class="nav-icon"></iconify-icon>
         <span>Profil</span>
       </a>
     </nav>
@@ -130,6 +141,9 @@
   <script src="/driver/js/pages/notifications.js"></script>
   <script src="/driver/js/pages/messagerie.js"></script>
   <script src="/driver/js/pages/maintenance.js"></script>
+  <script src="/driver/js/pages/etat-lieux.js"></script>
+  <script src="/driver/js/pages/documents.js"></script>
+  <script src="/driver/js/pages/support.js"></script>
   <script src="/driver/js/driver-auth.js"></script>
   <script src="/driver/js/driver-router.js"></script>
   <script src="/driver/js/driver-app.js"></script>

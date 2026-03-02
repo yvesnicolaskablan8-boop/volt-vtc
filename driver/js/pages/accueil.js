@@ -45,32 +45,43 @@ const AccueilPage = {
 
     container.innerHTML = `
       <!-- Greeting -->
-      <div class="greeting">
-        <h2>Bonjour, ${prenom} !</h2>
-        <p><i class="fas fa-calendar-day"></i> ${dateStr}</p>
+      <div style="margin-bottom:1.5rem">
+        <h2 style="font-size:1.65rem;font-weight:800;color:#0f172a">Bonjour, ${prenom} !</h2>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.875rem;font-weight:500;color:#64748b">
+          <iconify-icon icon="solar:calendar-date-bold-duotone" style="color:#3b82f6;font-size:1.1rem"></iconify-icon>
+          ${dateStr}
+        </div>
       </div>
 
       <!-- Countdown deadline versement -->
       ${countdownHTML}
 
       <!-- Planning du jour -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title"><i class="fas fa-clock"></i> Aujourd'hui</span>
-          ${creneau ? `<span class="badge ${creneau.type}">${creneauText}</span>` : '<span class="badge neutral">Pas de creneau</span>'}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem;border-radius:1rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:12px;font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">
+          <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1.25rem;color:#94a3b8"></iconify-icon>
+          Aujourd'hui
         </div>
-        ${creneau && creneau.notes ? `<p style="font-size:0.82rem;color:var(--text-secondary);font-style:italic">${creneau.notes}</p>` : ''}
+        ${creneau
+          ? `<span style="padding:6px 12px;border-radius:999px;background:#3b82f6;color:white;font-size:0.75rem;font-weight:700">${creneauText}</span>`
+          : `<span style="padding:6px 12px;border-radius:999px;background:#f1f5f9;color:#64748b;font-size:0.75rem;font-weight:700">Pas de creneau</span>`
+        }
       </div>
 
-      <!-- KPIs -->
-      <div class="kpi-row">
-        <div class="kpi-card kpi-clickable" onclick="AccueilPage._showScoreDetail()">
-          <div class="kpi-label">Score conduite <i class="fas fa-chevron-right" style="font-size:0.6rem;opacity:0.5;margin-left:4px"></i></div>
-          <div class="kpi-value" style="color: ${score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444'}">${score}/100</div>
+      <!-- KPIs (2 cols) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+        <div onclick="AccueilPage._showScoreDetail()" style="cursor:pointer;padding:1rem;border-radius:1rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8">Score conduite</span>
+            <iconify-icon icon="solar:alt-arrow-right-linear" style="color:#cbd5e1"></iconify-icon>
+          </div>
+          <div style="font-size:1.5rem;font-weight:900;color:${score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444'}">${score}/100</div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Versements du mois</div>
-          <div class="kpi-value small">${this._formatCurrency(stats.totalNet || 0)}</div>
+        <div style="padding:1rem;border-radius:1rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+          <div style="margin-bottom:4px">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8">Versements du mois</span>
+          </div>
+          <div style="font-size:1.5rem;font-weight:900">${this._formatCurrency(stats.totalNet || 0)}</div>
         </div>
       </div>
 
@@ -85,55 +96,38 @@ const AccueilPage = {
         </div>
       </div>
 
-      <!-- Vehicule -->
-      ${v ? `
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title"><i class="fas fa-car"></i> Mon vehicule</span>
-          <span class="card-icon cyan"><i class="fas fa-car"></i></span>
-        </div>
-        <div style="font-size:0.95rem;font-weight:600">${v.marque} ${v.modele}</div>
-        <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:2px">
-          ${v.immatriculation} ${v.kilometrage ? '• ' + v.kilometrage.toLocaleString('fr-FR') + ' km' : ''}
-        </div>
-      </div>
-      ` : ''}
-
       <!-- Alertes maintenance vehicule -->
       <div id="maintenance-alerts"></div>
 
-      <!-- Alertes actives -->
-      ${data.alertesActives > 0 ? `
-      <div class="card" style="border-left: 3px solid #ef4444">
-        <div style="display:flex;align-items:center;gap:8px;color:#dc2626;font-weight:600;font-size:0.85rem">
-          <i class="fas fa-bell"></i> ${data.alertesActives} signalement${data.alertesActives > 1 ? 's' : ''} en cours
-        </div>
-      </div>
-      ` : ''}
-
       <!-- Actions rapides -->
-      <div class="section-title">Actions rapides</div>
-      <div class="action-grid">
-        <button class="action-btn green" onclick="DriverRouter.navigate('versements')">
-          <i class="fas fa-money-bill-wave"></i>
-          Faire un versement
-        </button>
-        <button class="action-btn red" onclick="DriverRouter.navigate('signalements')">
-          <i class="fas fa-exclamation-triangle"></i>
-          Signaler un probleme
-        </button>
-        <button class="action-btn blue" onclick="AccueilPage._demanderAbsence()">
-          <i class="fas fa-calendar-minus"></i>
-          Demander une absence
-        </button>
-        <button class="action-btn cyan" onclick="DriverRouter.navigate('planning')">
-          <i class="fas fa-calendar-alt"></i>
-          Voir mon planning
-        </button>
-        <button class="action-btn" style="background:rgba(139,92,246,0.1);color:#8b5cf6;" onclick="DriverRouter.navigate('maintenance')">
-          <i class="fas fa-wrench"></i>
-          Entretien vehicule
-        </button>
+      <div style="margin-bottom:1rem">
+        <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:1rem">Actions rapides</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <button onclick="DriverRouter.navigate('versements')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(34,197,94,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(34,197,94,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:1.75rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Faire un<br>versement</span>
+          </button>
+          <button onclick="DriverRouter.navigate('versements')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:#4f46e5;color:white;cursor:pointer;box-shadow:0 4px 12px rgba(79,70,229,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            <iconify-icon icon="solar:history-bold-duotone" style="font-size:1.75rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Historique<br>versements</span>
+          </button>
+          <button onclick="DriverRouter.navigate('etat-lieux')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:#f59e0b;color:white;cursor:pointer;box-shadow:0 4px 12px rgba(245,158,11,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:1.75rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Etat des<br>lieux</span>
+          </button>
+          <button onclick="AccueilPage._demanderAbsence()" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(59,130,246,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            <iconify-icon icon="solar:calendar-mark-bold-duotone" style="font-size:1.75rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Demander une<br>absence</span>
+          </button>
+          <button onclick="DriverRouter.navigate('planning')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(6,182,212,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(6,182,212,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:1.75rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Voir mon<br>planning</span>
+          </button>
+          <button onclick="DriverRouter.navigate('support')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(239,68,68,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.75rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Support &<br>Assistance</span>
+          </button>
+        </div>
       </div>
     `;
 

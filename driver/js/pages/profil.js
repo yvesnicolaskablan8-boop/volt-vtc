@@ -33,108 +33,225 @@ const ProfilPage = {
       { label: 'Regularite', value: lastGps.scoreRegularite || 0 }
     ] : [];
 
+    // Anciennete
+    const anciennete = profil.dateDebutContrat
+      ? (() => {
+          const d = new Date(profil.dateDebutContrat);
+          const diff = Math.floor((new Date() - d) / (1000 * 60 * 60 * 24 * 30));
+          return diff < 12 ? diff + ' mois' : Math.floor(diff / 12) + ' an' + (Math.floor(diff / 12) > 1 ? 's' : '');
+        })()
+      : '--';
+
     container.innerHTML = `
-      <!-- Profile Header -->
-      <div class="profile-header">
-        <div class="profile-avatar">${initials.toUpperCase()}</div>
-        <div class="profile-name">${profil.prenom} ${profil.nom}</div>
-        <div class="profile-info">
-          <i class="fas fa-phone"></i> ${profil.telephone || '--'}
-          ${profil.email ? ` • <i class="fas fa-envelope"></i> ${profil.email}` : ''}
+      <!-- Profile Header Card -->
+      <div style="display:flex;flex-direction:column;align-items:center;padding:2rem 0 1.5rem">
+        <div style="width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:white;margin-bottom:1rem;box-shadow:0 8px 24px rgba(59,130,246,0.3)">${initials.toUpperCase()}</div>
+        <h2 style="font-size:1.5rem;font-weight:900;color:#0f172a;margin-bottom:4px">${profil.prenom} ${profil.nom}</h2>
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:#64748b;margin-bottom:8px">
+          <iconify-icon icon="solar:phone-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>
+          ${profil.telephone || '--'}
         </div>
-        <div class="profile-info" style="margin-top:4px">
-          <span class="badge ${profil.statut === 'actif' ? 'success' : 'danger'}">${profil.statut || 'actif'}</span>
+        <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:2rem;background:${profil.statut === 'actif' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)'};color:${profil.statut === 'actif' ? '#16a34a' : '#ef4444'};font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">
+          <span style="width:8px;height:8px;border-radius:50%;background:${profil.statut === 'actif' ? '#22c55e' : '#ef4444'}"></span>
+          ${profil.statut || 'actif'}
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.5rem">
+        <div style="text-align:center;padding:1rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03)">
+          <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(59,130,246,0.08);color:#3b82f6;display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
+            <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+          </div>
+          <div style="font-size:1.25rem;font-weight:800;color:${scoreGlobal >= 70 ? '#22c55e' : scoreGlobal >= 50 ? '#f59e0b' : '#ef4444'}">${scoreGlobal}</div>
+          <div style="font-size:0.65rem;color:#94a3b8;font-weight:600;text-transform:uppercase">Score</div>
+        </div>
+        <div style="text-align:center;padding:1rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03)">
+          <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(139,92,246,0.08);color:#8b5cf6;display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
+            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+          </div>
+          <div style="font-size:1.25rem;font-weight:800;color:#0f172a">${anciennete}</div>
+          <div style="font-size:0.65rem;color:#94a3b8;font-weight:600;text-transform:uppercase">Anciennete</div>
+        </div>
+        <div style="text-align:center;padding:1rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03)">
+          <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(249,115,22,0.08);color:#f97316;display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
+            <iconify-icon icon="solar:car-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+          </div>
+          <div style="font-size:1.25rem;font-weight:800;color:#0f172a">${vehicule ? vehicule.immatriculation || 'Oui' : '--'}</div>
+          <div style="font-size:0.65rem;color:#94a3b8;font-weight:600;text-transform:uppercase">Vehicule</div>
         </div>
       </div>
 
       <!-- Score de conduite -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title"><i class="fas fa-tachometer-alt"></i> Score de conduite</span>
+      <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+          <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(34,197,94,0.08);color:#22c55e;display:flex;align-items:center;justify-content:center">
+            <iconify-icon icon="solar:chart-2-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+          </div>
+          <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Score de conduite</div>
         </div>
-        <div class="score-circle ${scoreClass}">${scoreGlobal}</div>
-        <div style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin-bottom:16px">sur 100</div>
-        ${scores.length > 0 ? scores.map(s => {
-          const sc = s.value >= 70 ? 'good' : s.value >= 50 ? 'medium' : 'bad';
-          return `
-            <div class="score-bar">
-              <span class="score-bar-label">${s.label}</span>
-              <div class="score-bar-track">
-                <div class="score-bar-fill ${sc}" style="width:${s.value}%"></div>
-              </div>
-              <span class="score-bar-value">${s.value}</span>
+        <div style="display:flex;align-items:center;gap:1.5rem;margin-bottom:${scores.length > 0 ? '1rem' : '0'}">
+          <div style="width:80px;height:80px;border-radius:50%;background:${scoreGlobal >= 70 ? 'rgba(34,197,94,0.1)' : scoreGlobal >= 50 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <span style="font-size:2rem;font-weight:900;color:${scoreGlobal >= 70 ? '#22c55e' : scoreGlobal >= 50 ? '#f59e0b' : '#ef4444'}">${scoreGlobal}</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:4px">sur 100</div>
+            <div style="height:8px;border-radius:4px;background:#f1f5f9;overflow:hidden">
+              <div style="height:100%;width:${scoreGlobal}%;border-radius:4px;background:${scoreGlobal >= 70 ? '#22c55e' : scoreGlobal >= 50 ? '#f59e0b' : '#ef4444'};transition:width 0.5s"></div>
             </div>
-          `;
-        }).join('') : '<div style="font-size:0.82rem;color:var(--text-muted);text-align:center">Pas de donnees GPS</div>'}
+          </div>
+        </div>
+        ${scores.length > 0 ? `
+          <div style="display:flex;flex-direction:column;gap:10px">
+            ${scores.map(s => {
+              const color = s.value >= 70 ? '#22c55e' : s.value >= 50 ? '#f59e0b' : '#ef4444';
+              return `
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font-size:0.75rem;color:#64748b;width:80px;font-weight:600">${s.label}</span>
+                  <div style="flex:1;height:6px;border-radius:3px;background:#f1f5f9;overflow:hidden">
+                    <div style="height:100%;width:${s.value}%;border-radius:3px;background:${color}"></div>
+                  </div>
+                  <span style="font-size:0.75rem;font-weight:700;color:${color};width:28px;text-align:right">${s.value}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : '<div style="font-size:0.82rem;color:#94a3b8;text-align:center">Pas de donnees GPS</div>'}
+      </div>
+
+      <!-- Informations personnelles -->
+      <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+          <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(59,130,246,0.08);color:#3b82f6;display:flex;align-items:center;justify-content:center">
+            <iconify-icon icon="solar:user-id-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+          </div>
+          <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Informations personnelles</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid #f1f5f9">
+            <span style="font-size:0.8rem;color:#94a3b8;font-weight:500">Telephone</span>
+            <span style="font-size:0.85rem;font-weight:700;color:#0f172a">${profil.telephone || '--'}</span>
+          </div>
+          ${profil.email ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid #f1f5f9">
+            <span style="font-size:0.8rem;color:#94a3b8;font-weight:500">Email</span>
+            <span style="font-size:0.85rem;font-weight:700;color:#0f172a">${profil.email}</span>
+          </div>
+          ` : ''}
+          ${profil.dateDebutContrat ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid #f1f5f9">
+            <span style="font-size:0.8rem;color:#94a3b8;font-weight:500">Debut contrat</span>
+            <span style="font-size:0.85rem;font-weight:700;color:#0f172a">${new Date(profil.dateDebutContrat).toLocaleDateString('fr-FR')}</span>
+          </div>
+          ` : ''}
+          ${profil.dateFinContrat ? `
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:0.8rem;color:#94a3b8;font-weight:500">Fin contrat</span>
+            <span style="font-size:0.85rem;font-weight:700;color:#0f172a">${new Date(profil.dateFinContrat).toLocaleDateString('fr-FR')}</span>
+          </div>
+          ` : ''}
+        </div>
       </div>
 
       <!-- Vehicule assigne -->
-      ${vehicule ? `
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title"><i class="fas fa-car"></i> Vehicule assigne</span>
-          <span class="card-icon cyan"><i class="fas fa-car"></i></span>
+      <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+          <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(6,182,212,0.08);color:#06b6d4;display:flex;align-items:center;justify-content:center">
+            <iconify-icon icon="solar:car-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+          </div>
+          <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Vehicule assigne</div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.85rem">
-          <div><span style="color:var(--text-muted)">Marque</span><br><strong>${vehicule.marque}</strong></div>
-          <div><span style="color:var(--text-muted)">Modele</span><br><strong>${vehicule.modele}</strong></div>
-          <div><span style="color:var(--text-muted)">Immatriculation</span><br><strong>${vehicule.immatriculation}</strong></div>
-          <div><span style="color:var(--text-muted)">Kilometrage</span><br><strong>${vehicule.kilometrage ? vehicule.kilometrage.toLocaleString('fr-FR') + ' km' : '--'}</strong></div>
-          ${vehicule.typeEnergie ? `<div><span style="color:var(--text-muted)">Energie</span><br><strong>${vehicule.typeEnergie}</strong></div>` : ''}
-          ${vehicule.couleur ? `<div><span style="color:var(--text-muted)">Couleur</span><br><strong>${vehicule.couleur}</strong></div>` : ''}
-        </div>
+        ${vehicule ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="padding:12px;border-radius:1rem;background:#f8fafc">
+              <div style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Marque</div>
+              <div style="font-size:0.9rem;font-weight:700;color:#0f172a">${vehicule.marque || '--'}</div>
+            </div>
+            <div style="padding:12px;border-radius:1rem;background:#f8fafc">
+              <div style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Modele</div>
+              <div style="font-size:0.9rem;font-weight:700;color:#0f172a">${vehicule.modele || '--'}</div>
+            </div>
+            <div style="padding:12px;border-radius:1rem;background:#f8fafc">
+              <div style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Immatriculation</div>
+              <div style="font-size:0.9rem;font-weight:700;color:#0f172a">${vehicule.immatriculation || '--'}</div>
+            </div>
+            <div style="padding:12px;border-radius:1rem;background:#f8fafc">
+              <div style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Kilometrage</div>
+              <div style="font-size:0.9rem;font-weight:700;color:#0f172a">${vehicule.kilometrage ? vehicule.kilometrage.toLocaleString('fr-FR') + ' km' : '--'}</div>
+            </div>
+            ${vehicule.typeEnergie ? `
+            <div style="padding:12px;border-radius:1rem;background:#f8fafc">
+              <div style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Energie</div>
+              <div style="font-size:0.9rem;font-weight:700;color:#0f172a">${vehicule.typeEnergie}</div>
+            </div>` : ''}
+            ${vehicule.couleur ? `
+            <div style="padding:12px;border-radius:1rem;background:#f8fafc">
+              <div style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Couleur</div>
+              <div style="font-size:0.9rem;font-weight:700;color:#0f172a">${vehicule.couleur}</div>
+            </div>` : ''}
+          </div>
+        ` : `
+          <div style="text-align:center;padding:1.5rem 0">
+            <iconify-icon icon="solar:car-broken" style="font-size:2.5rem;color:#cbd5e1;display:block;margin-bottom:8px"></iconify-icon>
+            <div style="font-size:0.85rem;color:#94a3b8;font-weight:500">Aucun vehicule assigne</div>
+          </div>
+        `}
       </div>
-      ` : `
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title"><i class="fas fa-car"></i> Vehicule</span>
-        </div>
-        <div style="font-size:0.85rem;color:var(--text-muted);text-align:center;padding:1rem">Aucun vehicule assigne</div>
-      </div>
-      `}
 
       <!-- Documents -->
       ${profil.documents && profil.documents.length > 0 ? `
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title"><i class="fas fa-file-alt"></i> Documents</span>
+      <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+          <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(245,158,11,0.08);color:#f59e0b;display:flex;align-items:center;justify-content:center">
+            <iconify-icon icon="solar:document-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+          </div>
+          <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Documents</div>
         </div>
-        ${profil.documents.map(doc => {
-          const expired = doc.dateExpiration && new Date(doc.dateExpiration) < new Date();
-          return `
-            <div class="doc-item">
-              <div>
-                <div class="doc-name">${doc.nom || doc.type || 'Document'}</div>
-                ${doc.dateExpiration ? `<div class="doc-expiry">Expire: ${new Date(doc.dateExpiration).toLocaleDateString('fr-FR')}</div>` : ''}
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${profil.documents.map(doc => {
+            const expired = doc.dateExpiration && new Date(doc.dateExpiration) < new Date();
+            const statusColor = expired ? '#ef4444' : doc.statut === 'valide' ? '#22c55e' : '#f59e0b';
+            const statusBg = expired ? 'rgba(239,68,68,0.08)' : doc.statut === 'valide' ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)';
+            return `
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:1rem;background:#f8fafc">
+                <div>
+                  <div style="font-size:0.85rem;font-weight:700;color:#0f172a">${doc.nom || doc.type || 'Document'}</div>
+                  ${doc.dateExpiration ? `<div style="font-size:0.7rem;color:#94a3b8;margin-top:2px">Expire: ${new Date(doc.dateExpiration).toLocaleDateString('fr-FR')}</div>` : ''}
+                </div>
+                <span style="padding:4px 12px;border-radius:2rem;background:${statusBg};color:${statusColor};font-size:0.7rem;font-weight:700">${expired ? 'Expire' : doc.statut || 'Valide'}</span>
               </div>
-              <span class="badge ${expired ? 'danger' : doc.statut === 'valide' ? 'success' : 'warning'}">${expired ? 'Expire' : doc.statut || 'Valide'}</span>
-            </div>
-          `;
-        }).join('')}
-      </div>
-      ` : ''}
-
-      <!-- Contrat -->
-      ${profil.dateDebutContrat ? `
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title"><i class="fas fa-file-contract"></i> Contrat</span>
-        </div>
-        <div style="font-size:0.85rem">
-          <div style="margin-bottom:4px"><span style="color:var(--text-muted)">Debut :</span> <strong>${new Date(profil.dateDebutContrat).toLocaleDateString('fr-FR')}</strong></div>
-          ${profil.dateFinContrat ? `<div><span style="color:var(--text-muted)">Fin :</span> <strong>${new Date(profil.dateFinContrat).toLocaleDateString('fr-FR')}</strong></div>` : ''}
+            `;
+          }).join('')}
         </div>
       </div>
       ` : ''}
 
       <!-- Actions -->
-      <div class="section-title">Actions</div>
-      <button class="btn btn-outline btn-block" onclick="ProfilPage._changerPin()" style="margin-bottom:10px">
-        <i class="fas fa-key"></i> Changer mon PIN
-      </button>
-      <button class="btn btn-danger btn-block" onclick="ProfilPage._deconnexion()">
-        <i class="fas fa-sign-out-alt"></i> Deconnexion
-      </button>
+      <div style="margin-bottom:1.5rem">
+        <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:1rem">Actions</h3>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button onclick="ProfilPage._changerPin()" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
+            <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(59,130,246,0.08);color:#3b82f6;display:flex;align-items:center;justify-content:center">
+              <iconify-icon icon="solar:key-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+            </div>
+            <span style="font-size:0.9rem;font-weight:700;color:#0f172a">Changer mon PIN</span>
+          </button>
+
+          <button onclick="DriverRouter.navigate('documents')" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
+            <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(245,158,11,0.08);color:#f59e0b;display:flex;align-items:center;justify-content:center">
+              <iconify-icon icon="solar:document-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+            </div>
+            <span style="font-size:0.9rem;font-weight:700;color:#0f172a">Mes documents</span>
+          </button>
+
+          <button onclick="ProfilPage._deconnexion()" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.1);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
+            <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(239,68,68,0.08);color:#ef4444;display:flex;align-items:center;justify-content:center">
+              <iconify-icon icon="solar:logout-2-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+            </div>
+            <span style="font-size:0.9rem;font-weight:700;color:#ef4444">Deconnexion</span>
+          </button>
+        </div>
+      </div>
 
       <div style="height:20px"></div>
     `;

@@ -49,6 +49,14 @@ const DriverApp = {
       });
     }
 
+    // Setup back button
+    const backBtn = document.getElementById('btn-back');
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        window.history.back();
+      });
+    }
+
     // Register pages
     DriverRouter.register('accueil', AccueilPage);
     DriverRouter.register('planning', PlanningPage);
@@ -58,6 +66,9 @@ const DriverApp = {
     DriverRouter.register('notifications', NotificationsPage);
     DriverRouter.register('messagerie', MessageriePage);
     DriverRouter.register('maintenance', MaintenancePage);
+    if (typeof EtatLieuxPage !== 'undefined') DriverRouter.register('etat-lieux', EtatLieuxPage);
+    if (typeof DocumentsPage !== 'undefined') DriverRouter.register('documents', DocumentsPage);
+    if (typeof SupportPage !== 'undefined') DriverRouter.register('support', SupportPage);
 
     // Check auth
     if (DriverAuth.isLoggedIn()) {

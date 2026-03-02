@@ -31,23 +31,27 @@ const VersementsPage = {
     let deadlineBannerHTML = '';
     if (deadline && deadline.configured) {
       if (deadline.alreadyPaid) {
-        // Versement deja effectue → banniere de confirmation
         deadlineBannerHTML = `
-          <div class="deadline-banner paid">
-            <div class="deadline-banner-icon"><i class="fas fa-check-circle"></i></div>
-            <div class="deadline-banner-text">
-              <div class="deadline-banner-title">Recette du jour versee</div>
-              <div class="deadline-banner-time">Ton versement a bien ete enregistre</div>
+          <div style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:rgba(34,197,94,0.06);border:1.5px solid rgba(34,197,94,0.15);margin-bottom:1rem">
+            <div style="width:44px;height:44px;border-radius:1rem;background:rgba(34,197,94,0.1);color:#22c55e;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:check-circle-bold" style="font-size:1.5rem"></iconify-icon>
+            </div>
+            <div>
+              <div style="font-weight:800;font-size:0.9rem;color:#16a34a">Recette du jour versee</div>
+              <div style="font-size:0.75rem;color:#64748b;margin-top:2px">Ton versement a bien ete enregistre</div>
             </div>
           </div>
         `;
       } else {
         const remaining = new Date(deadline.deadlineDate) - now;
-        const statusClass = remaining <= 0 ? 'expired' : remaining <= 24 * 3600000 ? 'critical' : remaining <= 48 * 3600000 ? 'warning' : 'safe';
         const dlDate = new Date(deadline.deadlineDate);
         const heureLimit = String(dlDate.getHours()).padStart(2, '0') + 'h' + String(dlDate.getMinutes()).padStart(2, '0');
 
         let bannerTitle, timeText;
+        const bannerColor = remaining <= 0 ? '#ef4444' : remaining <= 24 * 3600000 ? '#ef4444' : remaining <= 48 * 3600000 ? '#f59e0b' : '#3b82f6';
+        const bannerBg = remaining <= 0 ? 'rgba(239,68,68,0.06)' : remaining <= 24 * 3600000 ? 'rgba(239,68,68,0.06)' : remaining <= 48 * 3600000 ? 'rgba(245,158,11,0.06)' : 'rgba(59,130,246,0.06)';
+        const bannerBorder = remaining <= 0 ? 'rgba(239,68,68,0.15)' : remaining <= 24 * 3600000 ? 'rgba(239,68,68,0.15)' : remaining <= 48 * 3600000 ? 'rgba(245,158,11,0.15)' : 'rgba(59,130,246,0.15)';
+
         if (remaining <= 0) {
           bannerTitle = deadline.deadlineType === 'quotidien'
             ? `Recette non versee ! (limite : ${heureLimit})`
@@ -55,7 +59,7 @@ const VersementsPage = {
           const elapsed = Math.abs(remaining);
           const retH = Math.floor(elapsed / 3600000);
           const retM = Math.floor((elapsed % 3600000) / 60000);
-          timeText = `<i class="fas fa-exclamation-triangle"></i> Retard : ${retH}h ${String(retM).padStart(2, '0')}min`;
+          timeText = `Retard : ${retH}h ${String(retM).padStart(2, '0')}min`;
         } else {
           bannerTitle = deadline.deadlineType === 'quotidien'
             ? `Verse ta recette avant ${heureLimit}`
@@ -64,15 +68,17 @@ const VersementsPage = {
         }
 
         deadlineBannerHTML = `
-          <div class="deadline-banner ${statusClass}">
-            <div class="deadline-banner-icon"><i class="fas ${remaining <= 0 ? 'fa-exclamation-circle' : 'fa-clock'}"></i></div>
-            <div class="deadline-banner-text">
-              <div class="deadline-banner-title">${bannerTitle}</div>
-              <div class="deadline-banner-time" id="versements-countdown">${timeText}</div>
+          <div style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:${bannerBg};border:1.5px solid ${bannerBorder};margin-bottom:1rem">
+            <div style="width:44px;height:44px;border-radius:1rem;background:${bannerBg};color:${bannerColor};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="${remaining <= 0 ? 'solar:danger-bold' : 'solar:alarm-bold-duotone'}" style="font-size:1.5rem"></iconify-icon>
+            </div>
+            <div style="flex:1">
+              <div style="font-weight:800;font-size:0.85rem;color:${bannerColor}">${bannerTitle}</div>
+              <div style="font-size:0.8rem;color:#64748b;margin-top:2px;font-weight:700" id="versements-countdown">${timeText}</div>
             </div>
             ${deadline.penaliteActive && remaining <= 0 ? `
-              <div class="deadline-banner-penalty">
-                <i class="fas fa-coins"></i>
+              <div style="padding:4px 10px;border-radius:2rem;background:rgba(239,68,68,0.1);color:#ef4444;font-size:0.7rem;font-weight:700">
+                <iconify-icon icon="solar:tag-bold" style="font-size:0.8rem;vertical-align:middle"></iconify-icon>
                 ${deadline.penaliteType === 'pourcentage' ? deadline.penaliteValeur + '%' : this._formatCurrency(deadline.penaliteValeur)}
               </div>
             ` : ''}
@@ -85,39 +91,45 @@ const VersementsPage = {
       <!-- Deadline banner -->
       ${deadlineBannerHTML}
 
-      <!-- Resume du mois -->
-      <div class="stats-summary">
-        <div class="stats-summary-title"><i class="fas fa-chart-bar"></i> ${monthNames[now.getMonth()]} ${now.getFullYear()}</div>
-        <div class="stats-row">
-          <span class="stats-label">Total brut</span>
-          <span class="stats-value">${this._formatCurrency(totalBrut)}</span>
+      <!-- Resume du mois — Green gradient card -->
+      <div style="border-radius:1.5rem;background:linear-gradient(135deg,#22c55e,#16a34a);padding:1.5rem;color:white;margin-bottom:1rem;box-shadow:0 8px 24px rgba(34,197,94,0.25)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;opacity:0.9">
+          <iconify-icon icon="solar:chart-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+          <span style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em">${monthNames[now.getMonth()]} ${now.getFullYear()}</span>
         </div>
-        <div class="stats-row">
-          <span class="stats-label">Commission (20%)</span>
-          <span class="stats-value" style="color:#ef4444">-${this._formatCurrency(totalCommission)}</span>
-        </div>
-        ${totalPenalites > 0 ? `
-        <div class="stats-row">
-          <span class="stats-label"><i class="fas fa-exclamation-triangle" style="color:#ef4444"></i> Penalites</span>
-          <span class="stats-value" style="color:#ef4444">-${this._formatCurrency(totalPenalites)}</span>
-        </div>
-        ` : ''}
-        <div class="stats-row">
-          <span class="stats-label">Net</span>
-          <span class="stats-value highlight">${this._formatCurrency(totalNet)}</span>
+        <div style="font-size:2rem;font-weight:900;margin-bottom:1rem">${this._formatCurrency(totalNet)}</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem">
+            <span style="opacity:0.8">Total brut</span>
+            <span style="font-weight:700">${this._formatCurrency(totalBrut)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem">
+            <span style="opacity:0.8">Commission (20%)</span>
+            <span style="font-weight:700;color:rgba(255,255,255,0.8)">-${this._formatCurrency(totalCommission)}</span>
+          </div>
+          ${totalPenalites > 0 ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem">
+            <span style="opacity:0.8"><iconify-icon icon="solar:danger-triangle-bold" style="font-size:0.9rem;vertical-align:middle"></iconify-icon> Penalites</span>
+            <span style="font-weight:700;color:#fde68a">-${this._formatCurrency(totalPenalites)}</span>
+          </div>
+          ` : ''}
         </div>
       </div>
 
-      <!-- Bouton nouveau -->
-      <button class="btn btn-success btn-block btn-lg" onclick="VersementsPage._nouveauVersement()">
-        <i class="fas fa-plus-circle"></i> Faire un versement
+      <!-- Bouton nouveau versement -->
+      <button onclick="VersementsPage._nouveauVersement()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:1rem;border-radius:1.25rem;border:none;background:#22c55e;color:white;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:1.5rem;box-shadow:0 4px 12px rgba(34,197,94,0.25);transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+        <iconify-icon icon="solar:add-circle-bold" style="font-size:1.3rem"></iconify-icon>
+        Faire un versement
       </button>
 
-      <!-- Liste -->
-      <div class="section-title">Historique</div>
-      <div id="versements-list">
+      <!-- Historique -->
+      <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:1rem">Historique</h3>
+      <div id="versements-list" style="display:flex;flex-direction:column;gap:10px">
         ${versements.length === 0
-          ? '<div class="empty-state"><i class="fas fa-inbox"></i><p>Aucun versement</p></div>'
+          ? `<div style="text-align:center;padding:3rem 0">
+               <iconify-icon icon="solar:wallet-broken" style="font-size:3rem;color:#cbd5e1;display:block;margin-bottom:12px"></iconify-icon>
+               <div style="font-size:0.9rem;color:#94a3b8;font-weight:500">Aucun versement</div>
+             </div>`
           : versements.map(v => this._renderVersement(v)).join('')
         }
       </div>
@@ -143,7 +155,7 @@ const VersementsPage = {
         const elapsed = Math.abs(remaining);
         const retH = Math.floor(elapsed / 3600000);
         const retM = Math.floor((elapsed % 3600000) / 60000);
-        el.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Retard : ${retH}h ${String(retM).padStart(2, '0')}min`;
+        el.innerHTML = `Retard : ${retH}h ${String(retM).padStart(2, '0')}min`;
       } else {
         el.innerHTML = this._formatCountdown(remaining);
       }
@@ -166,25 +178,35 @@ const VersementsPage = {
       retard: 'En retard',
       partiel: 'Partiel'
     };
-    const date = v.date ? new Date(v.date).toLocaleDateString('fr-FR') : '--';
+    const statusColors = {
+      en_attente: { bg: 'rgba(245,158,11,0.08)', color: '#f59e0b' },
+      valide: { bg: 'rgba(34,197,94,0.08)', color: '#22c55e' },
+      retard: { bg: 'rgba(239,68,68,0.08)', color: '#ef4444' },
+      partiel: { bg: 'rgba(59,130,246,0.08)', color: '#3b82f6' }
+    };
+    const sc = statusColors[v.statut] || statusColors.en_attente;
+    const date = v.date ? new Date(v.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '--';
+    const iconName = v.statut === 'valide' ? 'solar:check-circle-bold' : v.statut === 'retard' ? 'solar:danger-triangle-bold' : 'solar:clock-circle-bold';
 
     return `
-      <div class="list-item">
-        <div class="list-item-icon card-icon ${v.statut === 'valide' ? 'green' : v.statut === 'retard' ? 'red' : 'yellow'}">
-          <i class="fas fa-money-bill-wave"></i>
+      <div style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03)">
+        <div style="width:44px;height:44px;border-radius:1rem;background:${sc.bg};color:${sc.color};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <iconify-icon icon="${iconName}" style="font-size:1.3rem"></iconify-icon>
         </div>
-        <div class="list-item-content">
-          <div class="list-item-title">${this._formatCurrency(v.montantBrut || 0)}</div>
-          <div class="list-item-subtitle">${date} ${v.periode ? '• ' + v.periode : ''}</div>
-          <div class="list-item-meta">
-            <span class="badge ${v.statut}">${statusLabels[v.statut] || v.statut}</span>
-            ${v.enRetard && v.penaliteMontant > 0 ? `<span class="badge retard-penalty"><i class="fas fa-coins"></i> -${this._formatCurrency(v.penaliteMontant)}</span>` : ''}
-            ${v.nombreCourses ? `<span style="font-size:0.72rem;color:var(--text-muted)">${v.nombreCourses} courses</span>` : ''}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+            <span style="font-size:0.9rem;font-weight:800;color:#0f172a">${this._formatCurrency(v.montantBrut || 0)}</span>
+            <span style="font-size:0.85rem;font-weight:800;color:#22c55e">${this._formatCurrency(v.montantNet || 0)}</span>
           </div>
-        </div>
-        <div style="text-align:right;min-width:70px">
-          <div style="font-size:0.72rem;color:var(--text-muted)">Net</div>
-          <div style="font-size:0.85rem;font-weight:700;color:#22c55e">${this._formatCurrency(v.montantNet || 0)}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:0.72rem;color:#94a3b8;font-weight:500">${date} ${v.periode ? ' · ' + v.periode : ''}${v.nombreCourses ? ' · ' + v.nombreCourses + ' courses' : ''}</span>
+            <span style="padding:2px 10px;border-radius:2rem;background:${sc.bg};color:${sc.color};font-size:0.65rem;font-weight:700">${statusLabels[v.statut] || v.statut}</span>
+          </div>
+          ${v.enRetard && v.penaliteMontant > 0 ? `
+            <div style="margin-top:4px;font-size:0.7rem;color:#ef4444;font-weight:600">
+              <iconify-icon icon="solar:danger-triangle-bold" style="font-size:0.8rem;vertical-align:middle"></iconify-icon> Penalite: -${this._formatCurrency(v.penaliteMontant)}
+            </div>
+          ` : ''}
         </div>
       </div>
     `;

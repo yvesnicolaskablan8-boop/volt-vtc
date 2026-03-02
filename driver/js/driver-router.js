@@ -33,10 +33,21 @@ const DriverRouter = {
       signalements: 'Signalements',
       messagerie: 'Messages',
       maintenance: 'Entretien vehicule',
-      profil: 'Mon Profil'
+      profil: 'Mon Profil',
+      notifications: 'Notifications',
+      'etat-lieux': 'Etat des Lieux',
+      documents: 'Documents & Alertes',
+      support: 'Assistance'
     };
     const titleEl = document.getElementById('page-title');
     if (titleEl) titleEl.textContent = titles[route] || 'Volt Chauffeur';
+
+    // Show/hide back button (hidden on main tab pages)
+    const mainTabs = ['accueil', 'versements', 'messagerie', 'profil'];
+    const backBtn = document.getElementById('btn-back');
+    if (backBtn) {
+      backBtn.style.display = mainTabs.includes(route) ? 'none' : 'flex';
+    }
 
     // Destroy current page
     if (this._currentPage && typeof this._currentPage.destroy === 'function') {
