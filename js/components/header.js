@@ -27,10 +27,16 @@ const Header = {
     this._handlers[key] = { el, event, fn };
   },
 
-  setBreadcrumb(title) {
+  setBreadcrumb(title, backRoute) {
     const breadcrumb = document.getElementById('header-breadcrumb');
     if (!breadcrumb) return;
+
+    const backBtn = backRoute
+      ? `<a href="#${backRoute}" class="breadcrumb-back"><i class="fas fa-arrow-left"></i></a>`
+      : '';
+
     breadcrumb.innerHTML = `
+      ${backBtn}
       <span class="text-muted">Volt</span>
       <i class="fas fa-chevron-right text-muted" style="font-size: 10px;"></i>
       <span class="current">${title}</span>

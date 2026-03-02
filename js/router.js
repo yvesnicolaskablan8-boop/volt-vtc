@@ -94,8 +94,13 @@ const Router = {
     // Update bottom nav active state (mobile)
     if (typeof BottomNav !== 'undefined') BottomNav.setActive(hash);
 
-    // Update breadcrumb
-    Header.setBreadcrumb(config.title);
+    // Determine if this is a "menu sub-page" (not a bottom nav tab) → show back button to /menu
+    const bottomNavRoutes = ['/dashboard', '/chauffeurs', '/planning', '/vehicules', '/menu'];
+    const baseRoute = '/' + hash.split('/').filter(Boolean)[0];
+    const backRoute = bottomNavRoutes.includes(baseRoute) ? null : '/menu';
+
+    // Update breadcrumb (with optional back button for menu sub-pages)
+    Header.setBreadcrumb(config.title, backRoute);
 
     // Render page
     const container = document.getElementById('page-content');

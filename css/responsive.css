@@ -754,6 +754,11 @@ body.volt-native-app .sidebar-overlay.active {
   display: none;
 }
 
+/* Back button hidden by default (shown only on mobile with bottom nav) */
+.breadcrumb-back {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .bottom-nav.bottom-nav-visible {
     display: flex;
@@ -853,6 +858,32 @@ body.volt-native-app .sidebar-overlay.active {
   /* Breadcrumb can use full width */
   body.volt-has-bottomnav .header-breadcrumb {
     padding-left: var(--space-sm);
+  }
+
+  /* Back button in breadcrumb for menu sub-pages */
+  body.volt-has-bottomnav .breadcrumb-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin-right: var(--space-xs);
+    flex-shrink: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  body.volt-has-bottomnav .breadcrumb-back:active {
+    background: var(--bg-tertiary);
+    color: var(--volt-blue);
+  }
+
+  body.volt-has-bottomnav .breadcrumb-back i {
+    font-size: 16px;
   }
 }
 
