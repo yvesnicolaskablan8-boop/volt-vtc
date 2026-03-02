@@ -51,10 +51,10 @@ const GpsConduitePage = {
 
     return `
       <div class="page-header">
-        <h1><i class="fas fa-satellite-dish"></i> GPS & Conduite</h1>
+        <h1><iconify-icon icon="solar:map-arrow-right-bold-duotone"></iconify-icon> GPS & Conduite</h1>
         <div class="page-actions">
           <div class="badge badge-success" style="padding:6px 12px;font-size:var(--font-size-sm);">
-            <i class="fas fa-circle" style="font-size:8px;animation:pulse 2s infinite"></i> Suivi en temps réel
+            <iconify-icon icon="solar:record-circle-bold-duotone" style="font-size:8px;animation:pulse 2s infinite"></iconify-icon> Suivi en temps réel
           </div>
         </div>
       </div>
@@ -62,11 +62,11 @@ const GpsConduitePage = {
       <!-- Real-time GPS Map -->
       <div class="card" style="margin-bottom:var(--space-lg);overflow:hidden;">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
-          <span class="card-title"><i class="fas fa-map-location-dot text-blue"></i> Carte temps réel</span>
+          <span class="card-title"><iconify-icon icon="solar:map-bold-duotone" class="text-blue"></iconify-icon> Carte temps réel</span>
           <div style="display:flex;align-items:center;gap:var(--space-sm);">
             <span id="map-driver-count" class="badge badge-info" style="font-size:var(--font-size-xs);">0 en ligne</span>
             <span class="badge badge-success" style="font-size:10px;padding:3px 8px;">
-              <i class="fas fa-circle" style="font-size:6px;animation:pulse 2s infinite"></i> Live 15s
+              <iconify-icon icon="solar:record-circle-bold-duotone" style="font-size:6px;animation:pulse 2s infinite"></iconify-icon> Live 15s
             </span>
           </div>
         </div>
@@ -76,22 +76,22 @@ const GpsConduitePage = {
       <!-- Fleet KPIs -->
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
         <div class="kpi-card">
-          <div class="kpi-icon"><i class="fas fa-shield-halved"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:shield-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${avgScore}<span style="font-size:var(--font-size-sm);color:var(--text-muted)">/100</span></div>
           <div class="kpi-label">Score moyen flotte</div>
         </div>
         <div class="kpi-card cyan">
-          <div class="kpi-icon"><i class="fas fa-users"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${chauffeurs.length}</div>
           <div class="kpi-label">Chauffeurs suivis</div>
         </div>
         <div class="kpi-card ${totalEvents > 20 ? 'red' : 'yellow'}">
-          <div class="kpi-icon"><i class="fas fa-triangle-exclamation"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${totalEvents}</div>
           <div class="kpi-label">Incidents aujourd'hui</div>
         </div>
         <div class="kpi-card green">
-          <div class="kpi-icon"><i class="fas fa-road"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:route-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatNumber(totalKm)}<span style="font-size:var(--font-size-sm);color:var(--text-muted)"> km</span></div>
           <div class="kpi-label">Distance parcourue</div>
         </div>
@@ -119,7 +119,7 @@ const GpsConduitePage = {
                 <div style="text-align:center;">
                   <div class="score-circle ${Utils.scoreClass(score)}" style="width:48px;height:48px;font-size:var(--font-size-base);">${score}</div>
                   <div style="font-size:10px;margin-top:4px;" class="${trend >= 0 ? 'text-success' : 'text-danger'}">
-                    <i class="fas fa-arrow-${trend >= 0 ? 'up' : 'down'}"></i> ${Math.abs(trend)}
+                    <iconify-icon icon="solar:arrow-${trend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(trend)}
                   </div>
                 </div>
               </div>
@@ -213,8 +213,8 @@ const GpsConduitePage = {
           <div style="font-size:13px;min-width:160px;">
             <strong>${pos.prenom} ${pos.nom}</strong><br>
             ${pos.vehicule ? `<span style="color:#666;">${pos.vehicule}</span><br>` : ''}
-            ${pos.speed != null ? `<i class="fas fa-gauge-high"></i> ${pos.speed} km/h<br>` : ''}
-            <i class="fas fa-clock"></i> ${ageMin < 1 ? 'À l\'instant' : `Il y a ${ageMin} min`}
+            ${pos.speed != null ? `<iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon> ${pos.speed} km/h<br>` : ''}
+            <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> ${ageMin < 1 ? 'À l\'instant' : `Il y a ${ageMin} min`}
             ${isStale ? '<br><span style="color:#ef4444;font-weight:600;">⚠ Signal ancien</span>' : ''}
           </div>
         `;
@@ -232,7 +232,7 @@ const GpsConduitePage = {
               border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);
               ${pos.heading != null ? `transform:rotate(${pos.heading}deg);` : ''}
             ">
-              <i class="fas fa-${pos.heading != null ? 'location-arrow' : 'car'}" style="font-size:14px;"></i>
+              <iconify-icon icon="solar:${pos.heading != null ? 'map-arrow-right-bold-duotone' : 'car-bold-duotone'}" style="font-size:14px;"></iconify-icon>
             </div>
           `,
           iconSize: [32, 32],
@@ -283,7 +283,7 @@ const GpsConduitePage = {
 
     if (!chauffeur || gpsData.length === 0) {
       document.getElementById('driver-analysis').innerHTML = `
-        <div class="empty-state"><i class="fas fa-satellite-dish"></i><h3>Aucune donnée GPS</h3></div>
+        <div class="empty-state"><iconify-icon icon="solar:map-arrow-right-bold-duotone"></iconify-icon><h3>Aucune donnée GPS</h3></div>
       `;
       return;
     }
@@ -308,7 +308,7 @@ const GpsConduitePage = {
       <!-- AI Analysis Card -->
       <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-cyan);">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-robot text-blue"></i> Analyse IA du comportement routier</span>
+          <span class="card-title"><iconify-icon icon="solar:cpu-bolt-bold-duotone" class="text-blue"></iconify-icon> Analyse IA du comportement routier</span>
           <span class="badge ${latest.analyseIA.tendance === 'amelioration' ? 'badge-success' : latest.analyseIA.tendance === 'stable' ? 'badge-info' : 'badge-danger'}">
             ${latest.analyseIA.tendance === 'amelioration' ? 'En amélioration' : latest.analyseIA.tendance === 'stable' ? 'Stable' : 'En dégradation'}
           </span>
@@ -319,7 +319,7 @@ const GpsConduitePage = {
           <ul style="margin-top:var(--space-sm);display:flex;flex-direction:column;gap:6px;">
             ${latest.analyseIA.recommandations.map(r => `
               <li style="display:flex;align-items:flex-start;gap:8px;">
-                <i class="fas fa-lightbulb text-yellow" style="margin-top:3px;"></i>
+                <iconify-icon icon="solar:lightbulb-bold-duotone" class="text-yellow" style="margin-top:3px;"></iconify-icon>
                 <span>${r}</span>
               </li>
             `).join('')}
@@ -357,7 +357,7 @@ const GpsConduitePage = {
       <div class="charts-grid">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-line"></i> Évolution des scores (30 jours)</div>
+            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Évolution des scores (30 jours)</div>
           </div>
           <div class="chart-container" style="height:300px;">
             <canvas id="chart-gps-scores"></canvas>
@@ -366,7 +366,7 @@ const GpsConduitePage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-bar"></i> Incidents journaliers</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Incidents journaliers</div>
           </div>
           <div class="chart-container" style="height:300px;">
             <canvas id="chart-gps-events"></canvas>
@@ -375,7 +375,7 @@ const GpsConduitePage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-gauge"></i> Score global</div>
+            <div class="chart-title"><iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon> Score global</div>
           </div>
           <div class="chart-container" style="height:300px;">
             <canvas id="chart-gps-gauge"></canvas>
@@ -384,7 +384,7 @@ const GpsConduitePage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-radar"></i> Profil de conduite</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon> Profil de conduite</div>
           </div>
           <div class="chart-container" style="height:300px;">
             <canvas id="chart-gps-radar"></canvas>

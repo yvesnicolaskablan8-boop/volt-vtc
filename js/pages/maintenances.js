@@ -62,10 +62,10 @@ const MaintenancesPage = {
 
     return `
       <div class="page-header">
-        <h1><i class="fas fa-tools"></i> Maintenances planifi&eacute;es</h1>
+        <h1><iconify-icon icon="solar:wrench-bold-duotone"></iconify-icon> Maintenances planifi&eacute;es</h1>
         <div class="page-actions">
           <div class="badge ${stats.countRetard > 0 ? 'badge-danger' : stats.countUrgent > 0 ? 'badge-warning' : 'badge-success'}" style="padding:6px 12px;font-size:var(--font-size-sm);">
-            ${stats.countRetard > 0 ? `<i class="fas fa-exclamation-circle"></i> ${stats.countRetard} en retard` : stats.countUrgent > 0 ? `<i class="fas fa-exclamation-triangle"></i> ${stats.countUrgent} urgentes` : '<i class="fas fa-check-circle"></i> Flotte OK'}
+            ${stats.countRetard > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon> ${stats.countRetard} en retard` : stats.countUrgent > 0 ? `<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${stats.countUrgent} urgentes` : '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Flotte OK'}
           </div>
         </div>
       </div>
@@ -73,22 +73,22 @@ const MaintenancesPage = {
       <!-- KPIs -->
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
         <div class="kpi-card ${stats.countRetard > 0 ? 'red' : ''}">
-          <div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${stats.countRetard}</div>
           <div class="kpi-label">En retard</div>
         </div>
         <div class="kpi-card ${stats.countUrgent > 0 ? 'yellow' : ''}">
-          <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${stats.countUrgent}</div>
           <div class="kpi-label">Urgentes</div>
         </div>
         <div class="kpi-card cyan">
-          <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${stats.countAVenir}</div>
           <div class="kpi-label">&Agrave; venir</div>
         </div>
         <div class="kpi-card green">
-          <div class="kpi-icon"><i class="fas fa-coins"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatNumber(stats.totalCout)}<span style="font-size:var(--font-size-xs);color:var(--text-muted)"> FCFA</span></div>
           <div class="kpi-label">Co&ucirc;t estim&eacute; total</div>
         </div>
@@ -98,7 +98,7 @@ const MaintenancesPage = {
       <div class="charts-grid" style="margin-bottom:var(--space-lg);">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-pie"></i> R&eacute;partition par statut</div>
+            <div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> R&eacute;partition par statut</div>
           </div>
           <div class="chart-container" style="height:250px;">
             <canvas id="chart-maint-statut"></canvas>
@@ -106,7 +106,7 @@ const MaintenancesPage = {
         </div>
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-bar"></i> Par type de maintenance</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Par type de maintenance</div>
           </div>
           <div class="chart-container" style="height:250px;">
             <canvas id="chart-maint-type"></canvas>
@@ -129,7 +129,7 @@ const MaintenancesPage = {
       <!-- Tableau -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-list"></i> Toutes les maintenances (${maintenances.length})</span>
+          <span class="card-title"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon> Toutes les maintenances (${maintenances.length})</span>
           <span style="font-size:var(--font-size-xs);color:var(--text-muted);">${stats.vehiculesAvecMaint}/${stats.totalVehicules} v&eacute;hicules concern&eacute;s</span>
         </div>
         <div id="maintenances-table"></div>
@@ -158,10 +158,10 @@ const MaintenancesPage = {
     };
 
     const statutLabels = {
-      en_retard: '<i class="fas fa-exclamation-circle"></i> En retard',
-      urgent: '<i class="fas fa-exclamation-triangle"></i> Urgent',
-      a_venir: '<i class="fas fa-clock"></i> A venir',
-      terminee: '<i class="fas fa-check-circle"></i> Terminee'
+      en_retard: '<iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon> En retard',
+      urgent: '<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Urgent',
+      a_venir: '<iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> A venir',
+      terminee: '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Terminee'
     };
 
     let currentFilter = 'all';
@@ -229,7 +229,7 @@ const MaintenancesPage = {
         },
         actions: (m) => `
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); Router.navigate('/vehicules/${m.vehiculeId}')" title="Voir vehicule">
-            <i class="fas fa-car"></i>
+            <iconify-icon icon="solar:car-bold-duotone"></iconify-icon>
           </button>
         `
       });

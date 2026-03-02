@@ -172,27 +172,27 @@ const RentabilitePage = {
   _template(d) {
     return `
       <div class="page-header">
-        <h1><i class="fas fa-chart-pie"></i> Rentabilité</h1>
+        <h1><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Rentabilité</h1>
       </div>
 
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
         <div class="kpi-card green">
-          <div class="kpi-icon"><i class="fas fa-arrow-trend-up"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
           <div class="kpi-label">Revenus totaux flotte</div>
         </div>
         <div class="kpi-card red">
-          <div class="kpi-icon"><i class="fas fa-arrow-trend-down"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:graph-down-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.fleetTotalCost)}</div>
           <div class="kpi-label">Coûts totaux flotte</div>
         </div>
         <div class="kpi-card ${d.fleetProfit >= 0 ? 'green' : 'red'}">
-          <div class="kpi-icon"><i class="fas fa-calculator"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.fleetProfit)}</div>
           <div class="kpi-label">Profit net flotte</div>
         </div>
         <div class="kpi-card cyan">
-          <div class="kpi-icon"><i class="fas fa-percentage"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.fleetROI.toFixed(1)}%</div>
           <div class="kpi-label">ROI global</div>
         </div>
@@ -201,12 +201,12 @@ const RentabilitePage = {
       <!-- EV vs Thermique comparison -->
       <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-yellow);background:rgba(250,204,21,0.03);">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-bolt" style="color:var(--volt-yellow)"></i> Comparaison Électrique vs Thermique</span>
+          <span class="card-title"><iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--volt-yellow)"></iconify-icon> Comparaison Électrique vs Thermique</span>
         </div>
         <div class="grid-2" style="gap:var(--space-lg);">
           <div>
             <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-md);">
-              <span class="badge badge-warning"><i class="fas fa-bolt" style="font-size:8px"></i> ${d.evCount} véhicules électriques</span>
+              <span class="badge badge-warning"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:8px"></iconify-icon> ${d.evCount} véhicules électriques</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:8px;font-size:var(--font-size-sm);">
               <div style="display:flex;justify-content:space-between;"><span class="text-muted">ROI moyen</span><strong style="color:var(--volt-yellow)">${d.avgEVROI.toFixed(1)}%</strong></div>
@@ -217,7 +217,7 @@ const RentabilitePage = {
           </div>
           <div>
             <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-md);">
-              <span class="badge badge-neutral"><i class="fas fa-gas-pump" style="font-size:8px"></i> ${d.thermalCount} véhicules thermiques</span>
+              <span class="badge badge-neutral"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:8px"></iconify-icon> ${d.thermalCount} véhicules thermiques</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:8px;font-size:var(--font-size-sm);">
               <div style="display:flex;justify-content:space-between;"><span class="text-muted">ROI moyen</span><strong>${d.avgThermalROI.toFixed(1)}%</strong></div>
@@ -230,7 +230,7 @@ const RentabilitePage = {
         ${d.energySavingsPercent > 0 ? `
         <div style="margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--border-primary);text-align:center;">
           <span style="font-size:var(--font-size-sm);color:var(--success);font-weight:600;">
-            <i class="fas fa-leaf"></i> Les véhicules électriques économisent ~${d.energySavingsPercent}% en coûts d'énergie par rapport aux thermiques
+            <iconify-icon icon="solar:leaf-bold-duotone"></iconify-icon> Les véhicules électriques économisent ~${d.energySavingsPercent}% en coûts d'énergie par rapport aux thermiques
           </span>
         </div>
         ` : ''}
@@ -239,12 +239,12 @@ const RentabilitePage = {
       <!-- Leasing vs Cash summary -->
       <div class="grid-2" style="margin-bottom:var(--space-lg);">
         <div class="card" style="border-left:4px solid var(--volt-blue);">
-          <div class="card-header"><span class="card-title"><i class="fas fa-file-contract text-blue"></i> Leasing (${d.leasingCount} véhicules)</span></div>
+          <div class="card-header"><span class="card-title"><iconify-icon icon="solar:document-bold-duotone" class="text-blue"></iconify-icon> Leasing (${d.leasingCount} véhicules)</span></div>
           <div class="kpi-value" style="font-size:var(--font-size-xl);">${d.avgLeasingROI.toFixed(1)}% ROI moyen</div>
           <p style="font-size:var(--font-size-sm);margin-top:var(--space-sm);">Avantages : trésorerie préservée, véhicules récents, charges déductibles</p>
         </div>
         <div class="card" style="border-left:4px solid var(--success);">
-          <div class="card-header"><span class="card-title"><i class="fas fa-money-bills text-success"></i> Cash (${d.cashCount} véhicules)</span></div>
+          <div class="card-header"><span class="card-title"><iconify-icon icon="solar:money-bag-bold-duotone" class="text-success"></iconify-icon> Cash (${d.cashCount} véhicules)</span></div>
           <div class="kpi-value" style="font-size:var(--font-size-xl);">${d.avgCashROI.toFixed(1)}% ROI moyen</div>
           <p style="font-size:var(--font-size-sm);margin-top:var(--space-sm);">Avantages : pas de mensualités, actif au bilan, coût total inférieur</p>
         </div>
@@ -254,7 +254,7 @@ const RentabilitePage = {
       <div class="charts-grid">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-bar"></i> TCO par véhicule</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> TCO par véhicule</div>
           </div>
           <div class="chart-container" style="height:320px;">
             <canvas id="chart-tco"></canvas>
@@ -263,7 +263,7 @@ const RentabilitePage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-line"></i> Comparaison Leasing vs Cash (coût cumulé)</div>
+            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Comparaison Leasing vs Cash (coût cumulé)</div>
           </div>
           <div class="chart-container" style="height:320px;">
             <canvas id="chart-leasing-cash"></canvas>
@@ -272,7 +272,7 @@ const RentabilitePage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-bar"></i> Profit mensuel par véhicule</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Profit mensuel par véhicule</div>
           </div>
           <div class="chart-container" style="height:320px;">
             <canvas id="chart-monthly-profit"></canvas>
@@ -281,7 +281,7 @@ const RentabilitePage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-line"></i> Amortissement des véhicules</div>
+            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Amortissement des véhicules</div>
           </div>
           <div class="chart-container" style="height:320px;">
             <canvas id="chart-depreciation"></canvas>
@@ -513,7 +513,7 @@ const RentabilitePage = {
         {
           label: 'Véhicule', primary: true,
           render: (a) => {
-            const icon = a.isEV ? '<i class="fas fa-bolt" style="color:var(--volt-yellow);font-size:10px;margin-left:4px"></i>' : '';
+            const icon = a.isEV ? '<iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--volt-yellow);font-size:10px;margin-left:4px"></iconify-icon>' : '';
             return `${a.vehicule.marque} ${a.vehicule.modele} ${icon}`;
           },
           value: (a) => a.vehicule.marque
@@ -521,8 +521,8 @@ const RentabilitePage = {
         {
           label: 'Énergie',
           render: (a) => a.isEV
-            ? '<span class="badge badge-warning"><i class="fas fa-bolt" style="font-size:8px"></i> EV</span>'
-            : '<span class="badge badge-neutral"><i class="fas fa-gas-pump" style="font-size:8px"></i> Therm.</span>'
+            ? '<span class="badge badge-warning"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:8px"></iconify-icon> EV</span>'
+            : '<span class="badge badge-neutral"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:8px"></iconify-icon> Therm.</span>'
         },
         { label: 'Acq.', render: (a) => `<span class="badge ${a.vehicule.typeAcquisition === 'leasing' ? 'badge-info' : 'badge-success'}">${a.vehicule.typeAcquisition}</span>` },
         { label: 'CA généré', render: (a) => Utils.formatCurrency(a.totalCA), value: (a) => a.totalCA },

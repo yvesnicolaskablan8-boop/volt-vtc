@@ -18,24 +18,24 @@ const RapportsPage = {
 
   _template() {
     const reports = [
-      { id: 'bilan-mensuel', icon: 'fa-calendar-alt', color: 'var(--volt-blue)', title: 'Bilan mensuel', desc: "Synthese mensuelle du CA, des courses et des versements" },
-      { id: 'fiche-chauffeur', icon: 'fa-id-card', color: 'var(--volt-cyan)', title: 'Fiche chauffeur', desc: 'Rapport individuel : courses, versements, score conduite' },
-      { id: 'fiche-vehicule', icon: 'fa-car', color: 'var(--success)', title: 'Fiche vehicule', desc: 'Rapport couts et revenus par vehicule' },
-      { id: 'etat-versements', icon: 'fa-money-bill-transfer', color: 'var(--warning)', title: 'Etat des versements', desc: 'Versements en attente, en retard ou partiels' },
-      { id: 'analyse-rentabilite', icon: 'fa-chart-pie', color: 'var(--danger)', title: 'Analyse rentabilite', desc: 'Comparaison de rentabilite de la flotte' },
-      { id: 'bilan-conduite', icon: 'fa-satellite-dish', color: 'var(--volt-yellow)', title: 'Bilan conduite', desc: "Scores et incidents de conduite de l'ensemble des chauffeurs" }
+      { id: 'bilan-mensuel', icon: 'solar:calendar-bold-duotone', color: 'var(--volt-blue)', title: 'Bilan mensuel', desc: "Synthese mensuelle du CA, des courses et des versements" },
+      { id: 'fiche-chauffeur', icon: 'solar:user-id-bold-duotone', color: 'var(--volt-cyan)', title: 'Fiche chauffeur', desc: 'Rapport individuel : courses, versements, score conduite' },
+      { id: 'fiche-vehicule', icon: 'solar:car-bold-duotone', color: 'var(--success)', title: 'Fiche vehicule', desc: 'Rapport couts et revenus par vehicule' },
+      { id: 'etat-versements', icon: 'solar:transfer-horizontal-bold-duotone', color: 'var(--warning)', title: 'Etat des versements', desc: 'Versements en attente, en retard ou partiels' },
+      { id: 'analyse-rentabilite', icon: 'solar:pie-chart-2-bold-duotone', color: 'var(--danger)', title: 'Analyse rentabilite', desc: 'Comparaison de rentabilite de la flotte' },
+      { id: 'bilan-conduite', icon: 'solar:map-arrow-right-bold-duotone', color: 'var(--volt-yellow)', title: 'Bilan conduite', desc: "Scores et incidents de conduite de l'ensemble des chauffeurs" }
     ];
 
     return `
       <div class="page-header">
-        <h1><i class="fas fa-file-export"></i> Rapports</h1>
+        <h1><iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon> Rapports</h1>
       </div>
 
       <!-- Charts Section -->
       <div class="charts-grid" style="margin-bottom:var(--space-xl);">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-bar" style="color:var(--volt-blue)"></i> CA mensuel (6 derniers mois)</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone" style="color:var(--volt-blue)"></iconify-icon> CA mensuel (6 derniers mois)</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-rapport-ca-mensuel"></canvas>
@@ -43,7 +43,7 @@ const RapportsPage = {
         </div>
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-pie" style="color:var(--danger)"></i> Repartition des couts flotte</div>
+            <div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone" style="color:var(--danger)"></iconify-icon> Repartition des couts flotte</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-rapport-couts"></canvas>
@@ -54,7 +54,7 @@ const RapportsPage = {
       <div class="charts-grid" style="margin-bottom:var(--space-xl);">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-line" style="color:var(--success)"></i> Courses par mois</div>
+            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone" style="color:var(--success)"></iconify-icon> Courses par mois</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-rapport-courses"></canvas>
@@ -62,7 +62,7 @@ const RapportsPage = {
         </div>
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-users" style="color:var(--volt-cyan)"></i> Performance chauffeurs (CA)</div>
+            <div class="chart-title"><iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:var(--volt-cyan)"></iconify-icon> Performance chauffeurs (CA)</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-rapport-drivers"></canvas>
@@ -73,7 +73,7 @@ const RapportsPage = {
       <div class="charts-grid" style="margin-bottom:var(--space-xl);">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-money-bill-wave" style="color:var(--warning)"></i> Versements vs Commissions</div>
+            <div class="chart-title"><iconify-icon icon="solar:money-bag-bold-duotone" style="color:var(--warning)"></iconify-icon> Versements vs Commissions</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-rapport-versements"></canvas>
@@ -81,7 +81,7 @@ const RapportsPage = {
         </div>
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-satellite-dish" style="color:var(--volt-yellow)"></i> Scores de conduite</div>
+            <div class="chart-title"><iconify-icon icon="solar:map-arrow-right-bold-duotone" style="color:var(--volt-yellow)"></iconify-icon> Scores de conduite</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-rapport-conduite"></canvas>
@@ -92,7 +92,7 @@ const RapportsPage = {
       <!-- Export Reports Cards -->
       <div class="card" style="margin-bottom:var(--space-lg);">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-download"></i> Exporter un rapport</span>
+          <span class="card-title"><iconify-icon icon="solar:download-bold-duotone"></iconify-icon> Exporter un rapport</span>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ const RapportsPage = {
                onmouseout="this.style.borderColor='';this.style.transform=''">
             <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-md);">
               <div style="width:44px;height:44px;border-radius:var(--radius-sm);background:${r.color}20;color:${r.color};display:flex;align-items:center;justify-content:center;font-size:var(--font-size-lg);">
-                <i class="fas ${r.icon}"></i>
+                <iconify-icon icon="${r.icon}"></iconify-icon>
               </div>
               <div>
                 <h3 style="font-size:var(--font-size-base);">${r.title}</h3>
@@ -111,8 +111,8 @@ const RapportsPage = {
               </div>
             </div>
             <div style="display:flex;gap:var(--space-sm);">
-              <button class="btn btn-sm btn-primary" data-export="csv" data-report="${r.id}"><i class="fas fa-file-csv"></i> CSV</button>
-              <button class="btn btn-sm btn-secondary" data-export="pdf" data-report="${r.id}"><i class="fas fa-file-pdf"></i> PDF</button>
+              <button class="btn btn-sm btn-primary" data-export="csv" data-report="${r.id}"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> CSV</button>
+              <button class="btn btn-sm btn-secondary" data-export="pdf" data-report="${r.id}"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> PDF</button>
             </div>
           </div>
         `).join('')}
@@ -121,7 +121,7 @@ const RapportsPage = {
       <!-- Preview section -->
       <div class="card" style="margin-top:var(--space-md);">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-eye"></i> Apercu du rapport</span>
+          <span class="card-title"><iconify-icon icon="solar:eye-bold"></iconify-icon> Apercu du rapport</span>
           <div style="display:flex;gap:var(--space-sm);">
             <select class="form-control" id="report-month" style="width:160px;">
               ${Array.from({ length: 6 }, (_, i) => {
@@ -141,14 +141,14 @@ const RapportsPage = {
       <!-- Data management -->
       <div class="card" style="margin-top:var(--space-xl);">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-database"></i> Gestion des donnees</span>
+          <span class="card-title"><iconify-icon icon="solar:server-bold-duotone"></iconify-icon> Gestion des donnees</span>
         </div>
         <div style="display:flex;gap:var(--space-md);align-items:center;flex-wrap:wrap;">
           <div style="flex:1;font-size:var(--font-size-sm);">
             <p>Taille des donnees : <strong>${Store.getStorageSize().kb} Ko</strong></p>
             <p class="text-muted" style="font-size:var(--font-size-xs);">Les donnees sont stockees localement dans votre navigateur</p>
           </div>
-          <button class="btn btn-danger" id="btn-reset-data"><i class="fas fa-undo"></i> Reinitialiser les donnees</button>
+          <button class="btn btn-danger" id="btn-reset-data"><iconify-icon icon="solar:undo-left-bold-duotone"></iconify-icon> Reinitialiser les donnees</button>
         </div>
       </div>
     `;

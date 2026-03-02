@@ -16,7 +16,7 @@ const VehiculesPage = {
     const container = document.getElementById('page-content');
     const vehicule = Store.findById('vehicules', id);
     if (!vehicule) {
-      container.innerHTML = '<div class="empty-state"><i class="fas fa-car-burst"></i><h3>Véhicule non trouvé</h3></div>';
+      container.innerHTML = '<div class="empty-state"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon><h3>Véhicule non trouvé</h3></div>';
       return;
     }
     container.innerHTML = this._detailTemplate(vehicule);
@@ -44,9 +44,9 @@ const VehiculesPage = {
 
     return `
       <div class="page-header">
-        <h1><i class="fas fa-car"></i> Véhicules</h1>
+        <h1><iconify-icon icon="solar:car-bold-duotone"></iconify-icon> Véhicules</h1>
         <div class="page-actions">
-          <button class="btn btn-primary" id="btn-add-vehicule"><i class="fas fa-plus"></i> Ajouter</button>
+          <button class="btn btn-primary" id="btn-add-vehicule"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter</button>
         </div>
       </div>
 
@@ -56,9 +56,9 @@ const VehiculesPage = {
         <div class="kpi-card yellow"><div class="kpi-value">${stats.enMaintenance}</div><div class="kpi-label">En maintenance</div></div>
         <div class="kpi-card cyan">
           <div class="kpi-value">
-            <span style="color:var(--volt-yellow)">${stats.electriques} <i class="fas fa-bolt" style="font-size:16px"></i></span>
+            <span style="color:var(--volt-yellow)">${stats.electriques} <iconify-icon icon="solar:bolt-bold-duotone" style="font-size:16px"></iconify-icon></span>
             <span style="color:var(--text-muted);font-size:14px;margin:0 4px;">/</span>
-            <span>${stats.thermiques} <i class="fas fa-gas-pump" style="font-size:14px"></i></span>
+            <span>${stats.thermiques} <iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:14px"></iconify-icon></span>
           </div>
           <div class="kpi-label">Électrique / Thermique</div>
         </div>
@@ -79,8 +79,8 @@ const VehiculesPage = {
           render: (v) => {
             const isEV = v.typeEnergie === 'electrique';
             const energyIcon = isEV
-              ? '<i class="fas fa-bolt" style="color:var(--volt-yellow);font-size:10px;margin-left:4px" title="Électrique"></i>'
-              : '<i class="fas fa-gas-pump" style="color:var(--text-muted);font-size:9px;margin-left:4px" title="Thermique"></i>';
+              ? '<iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--volt-yellow);font-size:10px;margin-left:4px" title="Électrique"></iconify-icon>'
+              : '<iconify-icon icon="solar:gas-station-bold-duotone" style="color:var(--text-muted);font-size:9px;margin-left:4px" title="Thermique"></iconify-icon>';
             return `<div><div style="font-weight:500">${v.marque} ${v.modele} ${energyIcon}</div><div style="font-size:11px;color:var(--text-muted)">${v.immatriculation} &bull; ${v.annee}</div></div>`;
           },
           value: (v) => `${v.marque} ${v.modele}`
@@ -88,8 +88,8 @@ const VehiculesPage = {
         {
           label: 'Énergie', key: 'typeEnergie',
           render: (v) => v.typeEnergie === 'electrique'
-            ? '<span class="badge badge-warning"><i class="fas fa-bolt" style="font-size:8px"></i> Électrique</span>'
-            : '<span class="badge badge-neutral"><i class="fas fa-gas-pump" style="font-size:8px"></i> Thermique</span>'
+            ? '<span class="badge badge-warning"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:8px"></iconify-icon> Électrique</span>'
+            : '<span class="badge badge-neutral"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:8px"></iconify-icon> Thermique</span>'
         },
         {
           label: 'Acquisition', key: 'typeAcquisition',
@@ -100,7 +100,7 @@ const VehiculesPage = {
           render: (v) => {
             if (v.typeEnergie === 'electrique') {
               const autonomieRestante = Math.round((v.niveauBatterie || 0) / 100 * (v.autonomieKm || 0));
-              return `${Utils.formatNumber(v.kilometrage)} km<br><span style="font-size:10px;color:var(--volt-yellow)"><i class="fas fa-battery-three-quarters"></i> ${v.niveauBatterie}% &bull; ~${autonomieRestante} km</span>`;
+              return `${Utils.formatNumber(v.kilometrage)} km<br><span style="font-size:10px;color:var(--volt-yellow)"><iconify-icon icon="solar:battery-full-bold-duotone"></iconify-icon> ${v.niveauBatterie}% &bull; ~${autonomieRestante} km</span>`;
             }
             return `${Utils.formatNumber(v.kilometrage)} km`;
           }
@@ -122,8 +122,8 @@ const VehiculesPage = {
       pageSize: 10,
       onRowClick: (id) => Router.navigate(`/vehicules/${id}`),
       actions: (v) => `
-        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); VehiculesPage._edit('${v.id}')" title="Modifier"><i class="fas fa-edit"></i></button>
-        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); VehiculesPage._delete('${v.id}')" title="Supprimer"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); VehiculesPage._edit('${v.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); VehiculesPage._delete('${v.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
       `
     });
 
@@ -148,27 +148,27 @@ const VehiculesPage = {
       : ((v.consommation || 7) / 100) * (v.coutEnergie || 800); // FCFA/km thermique
 
     const energyBadge = isEV
-      ? '<span class="badge badge-warning"><i class="fas fa-bolt" style="font-size:8px"></i> Électrique</span>'
-      : '<span class="badge badge-neutral"><i class="fas fa-gas-pump" style="font-size:8px"></i> Thermique</span>';
+      ? '<span class="badge badge-warning"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:8px"></iconify-icon> Électrique</span>'
+      : '<span class="badge badge-neutral"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:8px"></iconify-icon> Thermique</span>';
 
     const avatarBg = isEV ? 'var(--volt-yellow)' : 'var(--volt-blue)';
-    const avatarIcon = isEV ? 'fa-charging-station' : 'fa-car';
+    const avatarIcon = isEV ? 'solar:bolt-circle-bold-duotone' : 'solar:car-bold-duotone';
 
     return `
       <div class="page-header">
         <h1>
-          <a href="#/vehicules" style="color:var(--text-muted)"><i class="fas fa-arrow-left"></i></a>
+          <a href="#/vehicules" style="color:var(--text-muted)"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></a>
           Fiche véhicule
         </h1>
         <div class="page-actions">
-          <button class="btn btn-secondary" onclick="VehiculesPage._edit('${v.id}')"><i class="fas fa-edit"></i> Modifier</button>
-          <button class="btn btn-primary" onclick="VehiculesPage._addPlanifiedMaintenance('${v.id}')"><i class="fas fa-calendar-check"></i> Planifier</button>
-          <button class="btn btn-warning" onclick="VehiculesPage._addMaintenance('${v.id}')"><i class="fas fa-wrench"></i> Maintenance</button>
+          <button class="btn btn-secondary" onclick="VehiculesPage._edit('${v.id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>
+          <button class="btn btn-primary" onclick="VehiculesPage._addPlanifiedMaintenance('${v.id}')"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon> Planifier</button>
+          <button class="btn btn-warning" onclick="VehiculesPage._addMaintenance('${v.id}')"><iconify-icon icon="solar:wrench-bold-duotone"></iconify-icon> Maintenance</button>
         </div>
       </div>
 
       <div class="detail-header">
-        <div class="avatar avatar-xl" style="background:${avatarBg}"><i class="fas ${avatarIcon}" style="font-size:28px"></i></div>
+        <div class="avatar avatar-xl" style="background:${avatarBg}"><iconify-icon icon="${avatarIcon}" style="font-size:28px"></iconify-icon></div>
         <div class="detail-info">
           <h2>${v.marque} ${v.modele} ${Utils.statusBadge(v.statut)} ${energyBadge}</h2>
           <p>${v.immatriculation} &bull; ${v.couleur} &bull; ${v.annee} &bull;
@@ -204,7 +204,7 @@ const VehiculesPage = {
       ${isEV ? `
       <!-- Bloc spécifique Véhicule Électrique -->
       <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-yellow);background:rgba(250,204,21,0.04);">
-        <div class="card-header"><span class="card-title"><i class="fas fa-bolt" style="color:var(--volt-yellow)"></i> Informations Véhicule Électrique</span></div>
+        <div class="card-header"><span class="card-title"><iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--volt-yellow)"></iconify-icon> Informations Véhicule Électrique</span></div>
         <div class="grid-4" style="gap:var(--space-md);">
           <div style="text-align:center;padding:var(--space-sm);">
             <div style="font-size:var(--font-size-2xl);font-weight:700;color:var(--volt-yellow);">${v.niveauBatterie}%</div>
@@ -282,7 +282,7 @@ const VehiculesPage = {
       ${(chauffeur && chauffeur.yangoDriverId) ? `
       <div class="card" id="yango-ca-card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-wallet" style="color:#FC4C02"></i> CA Yango — ${chauffeur.prenom} ${chauffeur.nom}</span>
+          <span class="card-title"><iconify-icon icon="solar:wallet-bold-duotone" style="color:#FC4C02"></iconify-icon> CA Yango — ${chauffeur.prenom} ${chauffeur.nom}</span>
           <div style="display:flex;align-items:center;gap:8px;">
             <input type="date" id="yango-ca-date" class="form-control"
               style="width:auto;font-size:12px;padding:4px 8px;min-height:auto;"
@@ -293,7 +293,7 @@ const VehiculesPage = {
         </div>
         <div id="yango-ca-content" class="card-body">
           <div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-xs);">
-            <i class="fas fa-spinner fa-spin"></i> Chargement des données Yango...
+            <iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement des données Yango...
           </div>
         </div>
       </div>
@@ -303,7 +303,7 @@ const VehiculesPage = {
       <div class="charts-grid" style="margin-top:var(--space-lg);">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-bar"></i> Répartition des coûts</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Répartition des coûts</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-vehicle-costs"></canvas>
@@ -312,7 +312,7 @@ const VehiculesPage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-line"></i> CA mensuel généré</div>
+            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> CA mensuel généré</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-vehicle-revenue"></canvas>
@@ -323,8 +323,8 @@ const VehiculesPage = {
       <!-- Maintenances planifiées -->
       <div class="card" style="margin-top:var(--space-lg);">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:6px;"></i> Maintenances planifiées</span>
-          <button class="btn btn-sm btn-primary" onclick="VehiculesPage._addPlanifiedMaintenance('${v.id}')"><i class="fas fa-plus"></i> Planifier</button>
+          <span class="card-title"><iconify-icon icon="solar:calendar-mark-bold-duotone" style="color:var(--primary);margin-right:6px;"></iconify-icon> Maintenances planifiées</span>
+          <button class="btn btn-sm btn-primary" onclick="VehiculesPage._addPlanifiedMaintenance('${v.id}')"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Planifier</button>
         </div>
         ${this._renderPlanifiedMaintenances(v)}
       </div>
@@ -333,7 +333,7 @@ const VehiculesPage = {
       <div class="card" style="margin-top:var(--space-lg);">
         <div class="card-header">
           <span class="card-title">Historique maintenance</span>
-          <button class="btn btn-sm btn-primary" onclick="VehiculesPage._addMaintenance('${v.id}')"><i class="fas fa-plus"></i> Ajouter</button>
+          <button class="btn btn-sm btn-primary" onclick="VehiculesPage._addMaintenance('${v.id}')"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter</button>
         </div>
         <div id="maintenance-table"></div>
       </div>
@@ -503,12 +503,12 @@ const VehiculesPage = {
     const liveBadge = document.getElementById('yango-ca-live');
     if (liveBadge) liveBadge.style.display = isToday ? '' : 'none';
 
-    container.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-xs);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+    container.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-xs);"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>';
 
     const stats = await Store.getYangoDriverStats(chauffeur.yangoDriverId, isToday ? null : selectedDate);
 
     if (!stats || stats.error) {
-      container.innerHTML = `<div style="text-align:center;padding:var(--space-md);color:var(--danger);font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> ${stats?.details || stats?.error || 'Erreur'}</div>`;
+      container.innerHTML = `<div style="text-align:center;padding:var(--space-md);color:var(--danger);font-size:var(--font-size-xs);"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${stats?.details || stats?.error || 'Erreur'}</div>`;
       return;
     }
 
@@ -520,19 +520,19 @@ const VehiculesPage = {
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
           <div style="font-size:var(--font-size-lg);font-weight:600;color:#22c55e;">${Utils.formatCurrency(stats.totalCash)}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-money-bill-wave" style="font-size:9px"></i> Espèces</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:money-bag-bold-duotone" style="font-size:9px"></iconify-icon> Espèces</div>
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
           <div style="font-size:var(--font-size-lg);font-weight:600;color:#3b82f6;">${Utils.formatCurrency(stats.totalCard)}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-credit-card" style="font-size:9px"></i> Carte</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:card-bold-duotone" style="font-size:9px"></iconify-icon> Carte</div>
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
           <div style="font-size:var(--font-size-lg);font-weight:600;">${stats.nbCourses}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-taxi" style="font-size:9px"></i> Courses</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:taxi-bold-duotone" style="font-size:9px"></iconify-icon> Courses</div>
         </div>
       </div>
       <div style="display:flex;justify-content:center;gap:var(--space-md);margin-top:var(--space-sm);padding-top:var(--space-sm);border-top:1px solid var(--border-color);font-size:var(--font-size-xs);color:var(--text-muted);">
-        ${isToday ? '<span><i class="fas fa-circle" style="color:#FC4C02;font-size:6px;vertical-align:middle"></i> Temps réel</span>' : `<span><i class="fas fa-calendar"></i> ${Utils.formatDate(selectedDate)}</span>`}
+        ${isToday ? '<span><iconify-icon icon="solar:record-circle-bold-duotone" style="color:#FC4C02;font-size:6px;vertical-align:middle"></iconify-icon> Temps réel</span>' : `<span><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> ${Utils.formatDate(selectedDate)}</span>`}
         <span>Maj: ${new Date(stats.derniereMaj).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}</span>
       </div>
     `;
@@ -598,7 +598,7 @@ const VehiculesPage = {
 
   _add() {
     const fields = this._getFormFields();
-    Modal.form('<i class="fas fa-car text-blue"></i> Nouveau véhicule', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:car-bold-duotone" class="text-blue"></iconify-icon> Nouveau véhicule', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -640,7 +640,7 @@ const VehiculesPage = {
     const vehicule = Store.findById('vehicules', id);
     if (!vehicule) return;
     const fields = this._getFormFields();
-    Modal.form('<i class="fas fa-car text-blue"></i> Modifier véhicule', FormBuilder.build(fields, vehicule), () => {
+    Modal.form('<iconify-icon icon="solar:car-bold-duotone" class="text-blue"></iconify-icon> Modifier véhicule', FormBuilder.build(fields, vehicule), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       Store.update('vehicules', id, FormBuilder.getValues(body));
@@ -688,7 +688,7 @@ const VehiculesPage = {
       { type: 'row-end' }
     ];
 
-    Modal.form('<i class="fas fa-wrench text-warning"></i> Nouvelle maintenance', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:wrench-bold-duotone" class="text-warning"></iconify-icon> Nouvelle maintenance', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -731,7 +731,7 @@ const VehiculesPage = {
     if (maintenances.length === 0) {
       return `
         <div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);">
-          <i class="fas fa-calendar-check" style="font-size:32px;margin-bottom:var(--space-sm);opacity:0.3;"></i>
+          <iconify-icon icon="solar:calendar-mark-bold-duotone" style="font-size:32px;margin-bottom:var(--space-sm);opacity:0.3;"></iconify-icon>
           <p style="margin:0;">Aucune maintenance planifiée</p>
           <p style="font-size:var(--font-size-xs);margin-top:4px;">Cliquez sur "Planifier" pour anticiper les entretiens</p>
         </div>
@@ -795,14 +795,14 @@ const VehiculesPage = {
                   <td style="text-align:right;">
                     ${m.statut !== 'complete' ? `
                       <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); VehiculesPage._completePlanifiedMaintenance('${v.id}', '${m.id}')" title="Compléter">
-                        <i class="fas fa-check"></i>
+                        <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
                       </button>
                     ` : ''}
                     <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); VehiculesPage._editPlanifiedMaintenance('${v.id}', '${m.id}')" title="Modifier">
-                      <i class="fas fa-edit"></i>
+                      <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                     </button>
                     <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); VehiculesPage._deletePlanifiedMaintenance('${v.id}', '${m.id}')" title="Supprimer">
-                      <i class="fas fa-trash"></i>
+                      <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                     </button>
                   </td>
                 </tr>
@@ -847,7 +847,7 @@ const VehiculesPage = {
       { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Commentaires ou instructions...' }
     ];
 
-    Modal.form('<i class="fas fa-calendar-check text-blue"></i> Planifier une maintenance', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:calendar-mark-bold-duotone" class="text-blue"></iconify-icon> Planifier une maintenance', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
 
@@ -951,7 +951,7 @@ const VehiculesPage = {
       { name: 'notes', label: 'Notes', type: 'textarea' }
     ];
 
-    Modal.form('<i class="fas fa-edit text-blue"></i> Modifier maintenance planifiée', FormBuilder.build(fields, m), () => {
+    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier maintenance planifiée', FormBuilder.build(fields, m), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
 
@@ -1025,7 +1025,7 @@ const VehiculesPage = {
       { name: 'description', label: 'Description', type: 'text', required: true, value: m.label || this._getTypeLabel(m.type) }
     ];
 
-    Modal.form('<i class="fas fa-check-circle text-success"></i> Compléter la maintenance', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:check-circle-bold-duotone" class="text-success"></iconify-icon> Compléter la maintenance', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
 

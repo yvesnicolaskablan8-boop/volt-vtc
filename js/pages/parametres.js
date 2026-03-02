@@ -11,17 +11,17 @@ const ParametresPage = {
 
   // =================== MODULES MAP ===================
   _modules: [
-    { key: 'dashboard', label: 'Tableau de bord', icon: 'fa-gauge-high' },
-    { key: 'chauffeurs', label: 'Chauffeurs', icon: 'fa-id-card' },
-    { key: 'vehicules', label: 'Véhicules', icon: 'fa-car' },
-    { key: 'planning', label: 'Planning', icon: 'fa-calendar-alt' },
-    { key: 'versements', label: 'Versements', icon: 'fa-money-bill-transfer' },
-    { key: 'rentabilite', label: 'Rentabilité', icon: 'fa-chart-pie' },
-    { key: 'comptabilite', label: 'Comptabilité', icon: 'fa-calculator' },
-    { key: 'gps_conduite', label: 'GPS & Conduite', icon: 'fa-satellite-dish' },
-    { key: 'alertes', label: 'Alertes', icon: 'fa-bell' },
-    { key: 'rapports', label: 'Rapports', icon: 'fa-file-export' },
-    { key: 'parametres', label: 'Paramètres', icon: 'fa-cog' }
+    { key: 'dashboard', label: 'Tableau de bord', icon: 'solar:widget-bold-duotone' },
+    { key: 'chauffeurs', label: 'Chauffeurs', icon: 'solar:user-id-bold-duotone' },
+    { key: 'vehicules', label: 'Véhicules', icon: 'solar:car-bold-duotone' },
+    { key: 'planning', label: 'Planning', icon: 'solar:calendar-bold-duotone' },
+    { key: 'versements', label: 'Versements', icon: 'solar:transfer-horizontal-bold-duotone' },
+    { key: 'rentabilite', label: 'Rentabilité', icon: 'solar:pie-chart-bold-duotone' },
+    { key: 'comptabilite', label: 'Comptabilité', icon: 'solar:calculator-bold-duotone' },
+    { key: 'gps_conduite', label: 'GPS & Conduite', icon: 'solar:satellite-bold-duotone' },
+    { key: 'alertes', label: 'Alertes', icon: 'solar:bell-bing-bold-duotone' },
+    { key: 'rapports', label: 'Rapports', icon: 'solar:file-bold-duotone' },
+    { key: 'parametres', label: 'Paramètres', icon: 'solar:settings-bold-duotone' }
   ],
 
   // =================== ROLE TEMPLATES ===================
@@ -47,16 +47,16 @@ const ParametresPage = {
   _template() {
     return `
       <div class="page-header">
-        <h1><i class="fas fa-cog"></i> Paramètres</h1>
+        <h1><iconify-icon icon="solar:settings-bold-duotone"></iconify-icon> Paramètres</h1>
       </div>
 
       <div class="tabs" id="settings-tabs">
-        <div class="tab active" data-tab="account"><i class="fas fa-user-circle"></i> Mon compte</div>
-        <div class="tab" data-tab="users"><i class="fas fa-users-cog"></i> Utilisateurs</div>
-        <div class="tab" data-tab="entreprise"><i class="fas fa-building"></i> Entreprise</div>
-        <div class="tab" data-tab="preferences"><i class="fas fa-sliders-h"></i> Préférences</div>
-        <div class="tab" data-tab="versements-settings"><i class="fas fa-money-bill-transfer"></i> Versements</div>
-        <div class="tab" data-tab="notifications-settings"><i class="fas fa-bell"></i> Notifications</div>
+        <div class="tab active" data-tab="account"><iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon> Mon compte</div>
+        <div class="tab" data-tab="users"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon> Utilisateurs</div>
+        <div class="tab" data-tab="entreprise"><iconify-icon icon="solar:buildings-bold-duotone"></iconify-icon> Entreprise</div>
+        <div class="tab" data-tab="preferences"><iconify-icon icon="solar:tuning-bold-duotone"></iconify-icon> Préférences</div>
+        <div class="tab" data-tab="versements-settings"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon> Versements</div>
+        <div class="tab" data-tab="notifications-settings"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Notifications</div>
       </div>
 
       <div id="settings-content"></div>
@@ -98,7 +98,7 @@ const ParametresPage = {
         <!-- Profil -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-user-circle"></i> Mon profil</span>
+            <span class="card-title"><iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon> Mon profil</span>
           </div>
           <div style="padding-top:var(--space-md);">
             <div style="display:flex;align-items:center;gap:var(--space-lg);margin-bottom:var(--space-lg);padding-bottom:var(--space-lg);border-bottom:1px solid var(--border-color);">
@@ -134,7 +134,7 @@ const ParametresPage = {
                 </div>
               </div>
               <div style="display:flex;justify-content:flex-end;">
-                <button class="btn btn-primary" id="btn-save-profile"><i class="fas fa-save"></i> Sauvegarder le profil</button>
+                <button class="btn btn-primary" id="btn-save-profile"><iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Sauvegarder le profil</button>
               </div>
             </div>
           </div>
@@ -145,7 +145,7 @@ const ParametresPage = {
           <!-- Changer mot de passe -->
           <div class="card" style="margin-bottom:var(--space-lg);">
             <div class="card-header">
-              <span class="card-title"><i class="fas fa-key"></i> Modifier le mot de passe</span>
+              <span class="card-title"><iconify-icon icon="solar:key-bold-duotone"></iconify-icon> Modifier le mot de passe</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
               <div class="form-group">
@@ -153,7 +153,7 @@ const ParametresPage = {
                 <div style="position:relative;">
                   <input type="password" class="form-control" id="pwd-current" placeholder="Entrez votre mot de passe actuel" style="padding-right:40px;">
                   <button type="button" class="btn-toggle-pwd" data-target="pwd-current" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
-                    <i class="fas fa-eye"></i>
+                    <iconify-icon icon="solar:eye-bold"></iconify-icon>
                   </button>
                 </div>
               </div>
@@ -162,7 +162,7 @@ const ParametresPage = {
                 <div style="position:relative;">
                   <input type="password" class="form-control" id="pwd-new" placeholder="Minimum 6 caractères" style="padding-right:40px;">
                   <button type="button" class="btn-toggle-pwd" data-target="pwd-new" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
-                    <i class="fas fa-eye"></i>
+                    <iconify-icon icon="solar:eye-bold"></iconify-icon>
                   </button>
                 </div>
                 <div id="pwd-strength" style="margin-top:6px;"></div>
@@ -172,12 +172,12 @@ const ParametresPage = {
                 <div style="position:relative;">
                   <input type="password" class="form-control" id="pwd-confirm" placeholder="Retapez le nouveau mot de passe" style="padding-right:40px;">
                   <button type="button" class="btn-toggle-pwd" data-target="pwd-confirm" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
-                    <i class="fas fa-eye"></i>
+                    <iconify-icon icon="solar:eye-bold"></iconify-icon>
                   </button>
                 </div>
               </div>
               <div style="display:flex;justify-content:flex-end;">
-                <button class="btn btn-primary" id="btn-change-pwd"><i class="fas fa-lock"></i> Modifier le mot de passe</button>
+                <button class="btn btn-primary" id="btn-change-pwd"><iconify-icon icon="solar:lock-bold-duotone"></iconify-icon> Modifier le mot de passe</button>
               </div>
             </div>
           </div>
@@ -185,7 +185,7 @@ const ParametresPage = {
           <!-- Infos session -->
           <div class="card" style="border-left:4px solid var(--volt-blue);">
             <div class="card-header">
-              <span class="card-title"><i class="fas fa-info-circle"></i> Informations de session</span>
+              <span class="card-title"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Informations de session</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-sm);padding-top:var(--space-md);font-size:var(--font-size-sm);">
               <div style="display:flex;justify-content:space-between;padding:6px 0;">
@@ -198,7 +198,7 @@ const ParametresPage = {
               </div>
               <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border-color);">
                 <span style="color:var(--text-muted);">Statut</span>
-                <span class="badge badge-success"><i class="fas fa-circle" style="font-size:6px;margin-right:4px;"></i>Actif</span>
+                <span class="badge badge-success"><iconify-icon icon="solar:record-circle-bold-duotone" style="font-size:6px;margin-right:4px;"></iconify-icon>Actif</span>
               </div>
               <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--border-color);">
                 <span style="color:var(--text-muted);">Dernière connexion</span>
@@ -226,7 +226,7 @@ const ParametresPage = {
         if (target) {
           const isPassword = target.type === 'password';
           target.type = isPassword ? 'text' : 'password';
-          btn.innerHTML = `<i class="fas fa-eye${isPassword ? '-slash' : ''}"></i>`;
+          btn.innerHTML = `<iconify-icon icon="solar:${isPassword ? 'eye-closed-bold' : 'eye-bold'}"></iconify-icon>`;
         }
       });
     });
@@ -356,22 +356,22 @@ const ParametresPage = {
     return `
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
         <div class="kpi-card cyan">
-          <div class="kpi-icon"><i class="fas fa-users"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${users.length}</div>
           <div class="kpi-label">Total utilisateurs</div>
         </div>
         <div class="kpi-card green">
-          <div class="kpi-icon"><i class="fas fa-user-check"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:user-check-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${actifs}</div>
           <div class="kpi-label">Actifs</div>
         </div>
         <div class="kpi-card red">
-          <div class="kpi-icon"><i class="fas fa-user-slash"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:user-cross-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${inactifs}</div>
           <div class="kpi-label">Inactifs</div>
         </div>
         <div class="kpi-card yellow">
-          <div class="kpi-icon"><i class="fas fa-shield-halved"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:shield-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${roles.length}</div>
           <div class="kpi-label">Rôles distincts</div>
         </div>
@@ -379,7 +379,7 @@ const ParametresPage = {
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
         <div></div>
-        <button class="btn btn-primary" id="btn-add-user"><i class="fas fa-user-plus"></i> Nouvel utilisateur</button>
+        <button class="btn btn-primary" id="btn-add-user"><iconify-icon icon="solar:user-plus-bold-duotone"></iconify-icon> Nouvel utilisateur</button>
       </div>
 
       <div id="users-table"></div>
@@ -405,7 +405,7 @@ const ParametresPage = {
           value: (u) => `${u.prenom} ${u.nom}`
         },
         { label: 'Rôle', render: (u) => `<span class="badge badge-info">${u.role}</span>`, value: (u) => u.role },
-        { label: 'Statut', render: (u) => u.statut === 'actif' ? '<span class="badge badge-success"><i class="fas fa-circle" style="font-size:6px;margin-right:4px;"></i>Actif</span>' : '<span class="badge badge-danger"><i class="fas fa-circle" style="font-size:6px;margin-right:4px;"></i>Inactif</span>', value: (u) => u.statut },
+        { label: 'Statut', render: (u) => u.statut === 'actif' ? '<span class="badge badge-success"><iconify-icon icon="solar:record-circle-bold-duotone" style="font-size:6px;margin-right:4px;"></iconify-icon>Actif</span>' : '<span class="badge badge-danger"><iconify-icon icon="solar:record-circle-bold-duotone" style="font-size:6px;margin-right:4px;"></iconify-icon>Inactif</span>', value: (u) => u.statut },
         {
           label: 'Accès',
           render: (u) => {
@@ -425,9 +425,9 @@ const ParametresPage = {
       data: users,
       pageSize: 15,
       actions: (u) => `
-        <button class="btn btn-sm btn-secondary" onclick="ParametresPage._editUser('${u.id}')" title="Modifier"><i class="fas fa-edit"></i></button>
-        <button class="btn btn-sm btn-secondary" onclick="ParametresPage._resetUserPassword('${u.id}')" title="Mot de passe"><i class="fas fa-key"></i></button>
-        <button class="btn btn-sm btn-danger" onclick="ParametresPage._deleteUser('${u.id}')" title="Supprimer"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-sm btn-secondary" onclick="ParametresPage._editUser('${u.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+        <button class="btn btn-sm btn-secondary" onclick="ParametresPage._resetUserPassword('${u.id}')" title="Mot de passe"><iconify-icon icon="solar:key-bold-duotone"></iconify-icon></button>
+        <button class="btn btn-sm btn-danger" onclick="ParametresPage._deleteUser('${u.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
       `
     });
 
@@ -438,10 +438,10 @@ const ParametresPage = {
     return `
       <div id="permissions-section" style="margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--border-color);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
-          <h4 style="margin:0;font-size:var(--font-size-sm);font-weight:600;"><i class="fas fa-shield-halved" style="margin-right:6px;color:var(--primary);"></i>Accès aux modules</h4>
+          <h4 style="margin:0;font-size:var(--font-size-sm);font-weight:600;"><iconify-icon icon="solar:shield-bold-duotone" style="margin-right:6px;color:var(--primary);"></iconify-icon>Accès aux modules</h4>
           <div style="display:flex;gap:var(--space-xs);">
-            <button type="button" class="btn btn-sm btn-secondary" id="btn-perms-all"><i class="fas fa-check-double"></i> Tout</button>
-            <button type="button" class="btn btn-sm btn-secondary" id="btn-perms-none"><i class="fas fa-times"></i> Aucun</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-perms-all"><iconify-icon icon="solar:check-read-bold-duotone"></iconify-icon> Tout</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-perms-none"><iconify-icon icon="solar:close-circle-bold"></iconify-icon> Aucun</button>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:8px;" id="perms-grid">
@@ -450,7 +450,7 @@ const ParametresPage = {
             return `
               <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-color);cursor:pointer;transition:all 0.2s;background:${perms[m.key] ? 'var(--card-hover-bg, rgba(59,130,246,0.05))' : 'transparent'};" class="perm-label">
                 <input type="checkbox" name="perm_${m.key}" ${checked} style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;">
-                <i class="fas ${m.icon}" style="font-size:12px;color:var(--text-muted);width:16px;text-align:center;"></i>
+                <iconify-icon icon="${m.icon}" style="font-size:12px;color:var(--text-muted);width:16px;text-align:center;"></iconify-icon>
                 <span style="font-size:var(--font-size-xs);font-weight:500;">${m.label}</span>
               </label>
             `;
@@ -561,7 +561,7 @@ const ParametresPage = {
     const chauffeurOptions = chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom} (${c.telephone || ''})</option>`).join('');
     const chauffeurSection = `
       <div id="chauffeur-section" style="display:none;margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--volt-blue);background:rgba(59,130,246,0.05);">
-        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><i class="fas fa-car"></i> Configuration compte chauffeur</h4>
+        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon> Configuration compte chauffeur</h4>
         <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-md);">
           <div class="form-group" style="flex:1;margin-bottom:0;">
             <label class="form-label">Chauffeur lié *</label>
@@ -570,10 +570,10 @@ const ParametresPage = {
               ${chauffeurOptions}
             </select>
           </div>
-          <button type="button" class="btn btn-sm btn-success" id="btn-quick-add-chauffeur" style="white-space:nowrap;height:38px;"><i class="fas fa-plus"></i> Créer un chauffeur</button>
+          <button type="button" class="btn btn-sm btn-success" id="btn-quick-add-chauffeur" style="white-space:nowrap;height:38px;"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Créer un chauffeur</button>
         </div>
         <div id="quick-chauffeur-form" style="display:none;margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);background:rgba(34,197,94,0.06);border:1px dashed var(--success);">
-          <h5 style="margin:0 0 var(--space-sm);font-size:var(--font-size-xs);font-weight:600;color:var(--success);"><i class="fas fa-bolt"></i> Création rapide</h5>
+          <h5 style="margin:0 0 var(--space-sm);font-size:var(--font-size-xs);font-weight:600;color:var(--success);"><iconify-icon icon="solar:bolt-bold-duotone"></iconify-icon> Création rapide</h5>
           <div class="grid-2" style="gap:var(--space-sm);">
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label">Prénom *</label>
@@ -590,23 +590,23 @@ const ParametresPage = {
           </div>
           <div style="display:flex;gap:var(--space-sm);justify-content:flex-end;">
             <button type="button" class="btn btn-sm btn-secondary" id="btn-quick-chf-cancel">Annuler</button>
-            <button type="button" class="btn btn-sm btn-success" id="btn-quick-chf-save"><i class="fas fa-check"></i> Créer & lier</button>
+            <button type="button" class="btn btn-sm btn-success" id="btn-quick-chf-save"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Créer & lier</button>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">Code PIN (4-6 chiffres)</label>
           <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Ex: 1234">
         </div>
-        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><i class="fas fa-info-circle" style="color:var(--volt-blue);"></i> Le chauffeur se connectera avec son numéro de téléphone et ce code PIN via l'app <strong>/driver/</strong></div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Le chauffeur se connectera avec son numéro de téléphone et ce code PIN via l'app <strong>/driver/</strong></div>
       </div>
     `;
 
     const formHtml = FormBuilder.build(fields) +
       chauffeurSection +
-      `<div style="margin-top:-8px;margin-bottom:var(--space-md);font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-info-circle" style="color:var(--volt-blue);"></i> Si aucun mot de passe n'est défini, l'utilisateur devra en créer un lors de sa première connexion.</div>` +
+      `<div style="margin-top:-8px;margin-bottom:var(--space-md);font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Si aucun mot de passe n'est défini, l'utilisateur devra en créer un lors de sa première connexion.</div>` +
       this._getPermissionsHTML(allPerms);
 
-    Modal.form('<i class="fas fa-user-plus" style="color:var(--primary);"></i> Nouvel utilisateur', formHtml, async () => {
+    Modal.form('<iconify-icon icon="solar:user-plus-bold-duotone" style="color:var(--primary);"></iconify-icon> Nouvel utilisateur', formHtml, async () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -887,7 +887,7 @@ const ParametresPage = {
     const chauffeurOptions = chauffeurs.map(c => `<option value="${c.id}" ${user.chauffeurId === c.id ? 'selected' : ''}>${c.prenom} ${c.nom} (${c.telephone || ''})</option>`).join('');
     const editChauffeurSection = `
       <div id="chauffeur-section" style="display:${user.role === 'chauffeur' ? 'block' : 'none'};margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--volt-blue);background:rgba(59,130,246,0.05);">
-        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><i class="fas fa-car"></i> Configuration compte chauffeur</h4>
+        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon> Configuration compte chauffeur</h4>
         <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-md);">
           <div class="form-group" style="flex:1;margin-bottom:0;">
             <label class="form-label">Chauffeur lié *</label>
@@ -896,10 +896,10 @@ const ParametresPage = {
               ${chauffeurOptions}
             </select>
           </div>
-          <button type="button" class="btn btn-sm btn-success" id="btn-quick-add-chauffeur" style="white-space:nowrap;height:38px;"><i class="fas fa-plus"></i> Créer un chauffeur</button>
+          <button type="button" class="btn btn-sm btn-success" id="btn-quick-add-chauffeur" style="white-space:nowrap;height:38px;"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Créer un chauffeur</button>
         </div>
         <div id="quick-chauffeur-form" style="display:none;margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);background:rgba(34,197,94,0.06);border:1px dashed var(--success);">
-          <h5 style="margin:0 0 var(--space-sm);font-size:var(--font-size-xs);font-weight:600;color:var(--success);"><i class="fas fa-bolt"></i> Création rapide</h5>
+          <h5 style="margin:0 0 var(--space-sm);font-size:var(--font-size-xs);font-weight:600;color:var(--success);"><iconify-icon icon="solar:bolt-bold-duotone"></iconify-icon> Création rapide</h5>
           <div class="grid-2" style="gap:var(--space-sm);">
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label">Prénom *</label>
@@ -916,33 +916,33 @@ const ParametresPage = {
           </div>
           <div style="display:flex;gap:var(--space-sm);justify-content:flex-end;">
             <button type="button" class="btn btn-sm btn-secondary" id="btn-quick-chf-cancel">Annuler</button>
-            <button type="button" class="btn btn-sm btn-success" id="btn-quick-chf-save"><i class="fas fa-check"></i> Créer & lier</button>
+            <button type="button" class="btn btn-sm btn-success" id="btn-quick-chf-save"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Créer & lier</button>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">Nouveau code PIN (laisser vide pour ne pas changer)</label>
           <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="****">
         </div>
-        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><i class="fas fa-info-circle" style="color:var(--volt-blue);"></i> Le chauffeur se connectera via l'app <strong>/driver/</strong></div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Le chauffeur se connectera via l'app <strong>/driver/</strong></div>
       </div>
     `;
 
     // Password status info
     const pwdStatus = user.passwordHash
       ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);margin-bottom:var(--space-md);">
-          <i class="fas fa-check-circle" style="color:var(--success);"></i>
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:var(--success);"></iconify-icon>
           <span style="font-size:var(--font-size-xs);color:var(--text-secondary);">Mot de passe défini${user.mustChangePassword ? ' (temporaire — devra être changé)' : ''}</span>
-          <button type="button" class="btn btn-sm btn-secondary" id="btn-reset-pwd" style="margin-left:auto;"><i class="fas fa-key"></i> Réinitialiser</button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-reset-pwd" style="margin-left:auto;"><iconify-icon icon="solar:key-bold-duotone"></iconify-icon> Réinitialiser</button>
         </div>`
       : `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);margin-bottom:var(--space-md);">
-          <i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i>
+          <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:var(--warning);"></iconify-icon>
           <span style="font-size:var(--font-size-xs);color:var(--text-secondary);">Aucun mot de passe — l'utilisateur devra en créer un à la première connexion</span>
-          <button type="button" class="btn btn-sm btn-secondary" id="btn-reset-pwd" style="margin-left:auto;"><i class="fas fa-key"></i> Définir</button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-reset-pwd" style="margin-left:auto;"><iconify-icon icon="solar:key-bold-duotone"></iconify-icon> Définir</button>
         </div>`;
 
     const formHtml = FormBuilder.build(fields, user) + editChauffeurSection + pwdStatus + this._getPermissionsHTML(user.permissions || {});
 
-    Modal.form('<i class="fas fa-user-edit" style="color:var(--primary);"></i> Modifier utilisateur', formHtml, async () => {
+    Modal.form('<iconify-icon icon="solar:user-pen-bold-duotone" style="color:var(--primary);"></iconify-icon> Modifier utilisateur', formHtml, async () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -1036,7 +1036,7 @@ const ParametresPage = {
       </label>
     `;
 
-    Modal.form('<i class="fas fa-key" style="color:var(--warning);"></i> Réinitialiser le mot de passe', formHtml, async () => {
+    Modal.form('<iconify-icon icon="solar:key-bold-duotone" style="color:var(--warning);"></iconify-icon> Réinitialiser le mot de passe', formHtml, async () => {
       const body = document.getElementById('modal-body');
       const pwd = body.querySelector('[name="password"]').value;
       const pwdConfirm = body.querySelector('[name="password_confirm"]').value;
@@ -1092,8 +1092,8 @@ const ParametresPage = {
         <!-- Formulaire -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-building"></i> Informations de l'entreprise</span>
-            <button class="btn btn-sm btn-primary" id="btn-save-entreprise"><i class="fas fa-save"></i> Sauvegarder</button>
+            <span class="card-title"><iconify-icon icon="solar:buildings-bold-duotone"></iconify-icon> Informations de l'entreprise</span>
+            <button class="btn btn-sm btn-primary" id="btn-save-entreprise"><iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Sauvegarder</button>
           </div>
           <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
             <div class="grid-2" style="gap:var(--space-md);">
@@ -1152,18 +1152,18 @@ const ParametresPage = {
               <p style="color:var(--text-muted);font-size:var(--font-size-sm);margin-bottom:var(--space-lg);" id="preview-slogan">${ent.slogan || ''}</p>
 
               <div style="display:flex;flex-direction:column;gap:var(--space-sm);text-align:left;">
-                ${ent.email ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><i class="fas fa-envelope" style="color:var(--text-muted);width:16px;text-align:center;"></i> ${ent.email}</div>` : ''}
-                ${ent.telephone ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><i class="fas fa-phone" style="color:var(--text-muted);width:16px;text-align:center;"></i> ${ent.telephone}</div>` : ''}
-                ${ent.adresse ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><i class="fas fa-map-marker-alt" style="color:var(--text-muted);width:16px;text-align:center;"></i> ${ent.adresse}</div>` : ''}
-                ${ent.siteWeb ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><i class="fas fa-globe" style="color:var(--text-muted);width:16px;text-align:center;"></i> ${ent.siteWeb}</div>` : ''}
-                ${ent.numeroRegistre ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><i class="fas fa-file-contract" style="color:var(--text-muted);width:16px;text-align:center;"></i> ${ent.numeroRegistre}</div>` : ''}
+                ${ent.email ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><iconify-icon icon="solar:letter-bold-duotone" style="color:var(--text-muted);width:16px;text-align:center;"></iconify-icon> ${ent.email}</div>` : ''}
+                ${ent.telephone ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><iconify-icon icon="solar:phone-bold-duotone" style="color:var(--text-muted);width:16px;text-align:center;"></iconify-icon> ${ent.telephone}</div>` : ''}
+                ${ent.adresse ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><iconify-icon icon="solar:map-point-bold-duotone" style="color:var(--text-muted);width:16px;text-align:center;"></iconify-icon> ${ent.adresse}</div>` : ''}
+                ${ent.siteWeb ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><iconify-icon icon="solar:global-bold-duotone" style="color:var(--text-muted);width:16px;text-align:center;"></iconify-icon> ${ent.siteWeb}</div>` : ''}
+                ${ent.numeroRegistre ? `<div style="display:flex;align-items:center;gap:10px;font-size:var(--font-size-sm);"><iconify-icon icon="solar:document-bold-duotone" style="color:var(--text-muted);width:16px;text-align:center;"></iconify-icon> ${ent.numeroRegistre}</div>` : ''}
               </div>
             </div>
           </div>
 
           <div class="card" style="margin-top:var(--space-md);border-left:4px solid var(--volt-blue);">
             <div style="display:flex;align-items:center;gap:var(--space-sm);">
-              <i class="fas fa-lightbulb" style="color:var(--volt-blue);"></i>
+              <iconify-icon icon="solar:lightbulb-bold-duotone" style="color:var(--volt-blue);"></iconify-icon>
               <p style="font-size:var(--font-size-xs);color:var(--text-muted);margin:0;">Ces informations apparaissent sur les exports PDF et les factures générées par l'application.</p>
             </div>
           </div>
@@ -1209,7 +1209,7 @@ const ParametresPage = {
         <!-- Apparence -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-palette"></i> Apparence</span>
+            <span class="card-title"><iconify-icon icon="solar:palette-bold-duotone"></iconify-icon> Apparence</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:var(--space-lg);padding-top:var(--space-md);">
             <div class="form-group">
@@ -1217,7 +1217,7 @@ const ParametresPage = {
               <div style="display:flex;gap:var(--space-md);">
                 <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${currentTheme === 'dark' ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;transition:all 0.2s;">
                   <input type="radio" name="pref-theme" value="dark" ${currentTheme === 'dark' ? 'checked' : ''} style="accent-color:var(--primary);">
-                  <i class="fas fa-moon" style="color:var(--primary);"></i>
+                  <iconify-icon icon="solar:moon-bold" style="color:var(--primary);"></iconify-icon>
                   <div>
                     <div style="font-weight:600;font-size:var(--font-size-sm);">Mode sombre</div>
                     <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Recommandé pour un usage prolongé</div>
@@ -1225,7 +1225,7 @@ const ParametresPage = {
                 </label>
                 <label style="display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);border:2px solid ${currentTheme === 'light' ? 'var(--primary)' : 'var(--border-color)'};cursor:pointer;flex:1;transition:all 0.2s;">
                   <input type="radio" name="pref-theme" value="light" ${currentTheme === 'light' ? 'checked' : ''} style="accent-color:var(--primary);">
-                  <i class="fas fa-sun" style="color:var(--warning);"></i>
+                  <iconify-icon icon="solar:sun-bold-duotone" style="color:var(--warning);"></iconify-icon>
                   <div>
                     <div style="font-weight:600;font-size:var(--font-size-sm);">Mode clair</div>
                     <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Idéal pour les environnements lumineux</div>
@@ -1257,7 +1257,7 @@ const ParametresPage = {
         <div>
           <div class="card" style="margin-bottom:var(--space-lg);">
             <div class="card-header">
-              <span class="card-title"><i class="fas fa-bell"></i> Notifications</span>
+              <span class="card-title"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Notifications</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -1285,7 +1285,7 @@ const ParametresPage = {
 
           <div class="card">
             <div class="card-header">
-              <span class="card-title"><i class="fas fa-lock"></i> Sécurité</span>
+              <span class="card-title"><iconify-icon icon="solar:lock-bold-duotone"></iconify-icon> Sécurité</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
               <div class="form-group">
@@ -1298,7 +1298,7 @@ const ParametresPage = {
       </div>
 
       <div style="margin-top:var(--space-lg);display:flex;justify-content:flex-end;">
-        <button class="btn btn-primary" id="btn-save-preferences"><i class="fas fa-save"></i> Sauvegarder les préférences</button>
+        <button class="btn btn-primary" id="btn-save-preferences"><iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Sauvegarder les préférences</button>
       </div>
 
       <style>
@@ -1359,7 +1359,7 @@ const ParametresPage = {
         <!-- Deadline -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-clock" style="color:var(--primary);"></i> Deadline de versement</span>
+            <span class="card-title"><iconify-icon icon="solar:clock-circle-bold-duotone" style="color:var(--primary);"></iconify-icon> Deadline de versement</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:var(--space-lg);padding-top:var(--space-md);">
 
@@ -1392,7 +1392,7 @@ const ParametresPage = {
 
             <!-- Info quotidien -->
             <div id="vs-info-quotidien" style="display:${isQuotidien ? 'block' : 'none'};padding:12px 16px;border-radius:var(--radius-sm);background:rgba(var(--primary-rgb,99,102,241),0.08);font-size:var(--font-size-xs);color:var(--text-secondary);">
-              <i class="fas fa-info-circle" style="color:var(--primary);margin-right:6px;"></i>
+              <iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--primary);margin-right:6px;"></iconify-icon>
               Les chauffeurs doivent verser leur recette <strong>chaque jour du lundi au samedi</strong> avant l'heure limite. Le dimanche est un jour de repos (pas de deadline).
             </div>
 
@@ -1421,7 +1421,7 @@ const ParametresPage = {
         <div>
           <div class="card" style="margin-bottom:var(--space-lg);">
             <div class="card-header">
-              <span class="card-title"><i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i> Pénalités de retard</span>
+              <span class="card-title"><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:var(--warning);"></iconify-icon> Pénalités de retard</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -1464,7 +1464,7 @@ const ParametresPage = {
           <!-- Alertes admin -->
           <div class="card" style="border-left:4px solid var(--volt-blue);">
             <div class="card-header">
-              <span class="card-title"><i class="fas fa-bell" style="color:var(--volt-blue);"></i> Notifications admin</span>
+              <span class="card-title"><iconify-icon icon="solar:bell-bing-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Notifications admin</span>
             </div>
             <div style="padding-top:var(--space-md);">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -1485,7 +1485,7 @@ const ParametresPage = {
       <!-- Bonus de performance -->
       <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #22c55e;">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-trophy" style="color:#22c55e;"></i> Bonus de performance</span>
+          <span class="card-title"><iconify-icon icon="solar:cup-bold-duotone" style="color:#22c55e;"></iconify-icon> Bonus de performance</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -1549,7 +1549,7 @@ const ParametresPage = {
             </div>
 
             <div style="padding:12px 16px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);font-size:var(--font-size-xs);color:var(--text-secondary);">
-              <i class="fas fa-info-circle" style="color:#22c55e;margin-right:6px;"></i>
+              <iconify-icon icon="solar:info-circle-bold-duotone" style="color:#22c55e;margin-right:6px;"></iconify-icon>
               Le chauffeur doit atteindre <strong>un score de conduite ≥ <span id="bonus-info-score">${bonus.scoreMinimum || 90}</span>/100</strong> et <strong>un temps d'activité Yango ≥ <span id="bonus-info-activite">${Math.round((bonus.tempsActiviteMin || 600) / 60)}</span>h/jour</strong> pour recevoir le bonus de <strong><span id="bonus-info-valeur">${(bonus.bonusValeur || 5000).toLocaleString('fr-FR')}</span> <span id="bonus-info-unite">${(bonus.bonusType || 'montant_fixe') === 'montant_fixe' ? 'FCFA' : '%'}</span></strong>.
             </div>
           </div>
@@ -1557,7 +1557,7 @@ const ParametresPage = {
       </div>
 
       <div style="margin-top:var(--space-lg);display:flex;justify-content:flex-end;">
-        <button class="btn btn-primary" id="btn-save-versements-settings"><i class="fas fa-save"></i> Sauvegarder la configuration</button>
+        <button class="btn btn-primary" id="btn-save-versements-settings"><iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Sauvegarder la configuration</button>
       </div>
     `;
   },
@@ -1693,13 +1693,13 @@ const ParametresPage = {
         <!-- Canaux -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-satellite-dish" style="color:var(--primary);"></i> Canaux de notification</span>
+            <span class="card-title"><iconify-icon icon="solar:satellite-bold-duotone" style="color:var(--primary);"></iconify-icon> Canaux de notification</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
 
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
               <div>
-                <div style="font-weight:500;font-size:var(--font-size-sm);"><i class="fas fa-bell" style="color:var(--primary);margin-right:6px;"></i> Push (PWA)</div>
+                <div style="font-weight:500;font-size:var(--font-size-sm);"><iconify-icon icon="solar:bell-bing-bold-duotone" style="color:var(--primary);margin-right:6px;"></iconify-icon> Push (PWA)</div>
                 <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Notifications dans le navigateur/mobile des chauffeurs. Gratuit.</div>
               </div>
               <label class="toggle-switch">
@@ -1710,7 +1710,7 @@ const ParametresPage = {
 
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border-color);">
               <div>
-                <div style="font-weight:500;font-size:var(--font-size-sm);"><i class="fas fa-sms" style="color:#22c55e;margin-right:6px;"></i> SMS (Twilio)</div>
+                <div style="font-weight:500;font-size:var(--font-size-sm);"><iconify-icon icon="solar:chat-dots-bold-duotone" style="color:#22c55e;margin-right:6px;"></iconify-icon> SMS (Twilio)</div>
                 <div style="font-size:var(--font-size-xs);color:var(--text-muted);">SMS aux chauffeurs. Necessite un compte Twilio (~0.05$/SMS).</div>
               </div>
               <label class="toggle-switch">
@@ -1720,7 +1720,7 @@ const ParametresPage = {
             </div>
 
             <div class="form-group" style="border-top:1px solid var(--border-color);padding-top:var(--space-md);">
-              <label class="form-label"><i class="fas fa-phone" style="color:var(--primary);margin-right:4px;"></i> Telephone admin (pour alertes)</label>
+              <label class="form-label"><iconify-icon icon="solar:phone-bold-duotone" style="color:var(--primary);margin-right:4px;"></iconify-icon> Telephone admin (pour alertes)</label>
               <input type="tel" class="form-control" id="notif-tel-admin" value="${notif.telephoneAdmin || ''}" placeholder="+225 07 XX XX XX XX">
               <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Recoit les SMS d'alerte retard des chauffeurs</div>
             </div>
@@ -1731,7 +1731,7 @@ const ParametresPage = {
         <div>
           <div class="card" style="margin-bottom:var(--space-lg);">
             <div class="card-header">
-              <span class="card-title"><i class="fas fa-hourglass-half" style="color:#f59e0b;"></i> Rappels deadline</span>
+              <span class="card-title"><iconify-icon icon="solar:hourglass-bold-duotone" style="color:#f59e0b;"></iconify-icon> Rappels deadline</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-sm);padding-top:var(--space-md);">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -1760,7 +1760,7 @@ const ParametresPage = {
           <!-- Documents -->
           <div class="card">
             <div class="card-header">
-              <span class="card-title"><i class="fas fa-id-card" style="color:#6366f1;"></i> Expiration documents</span>
+              <span class="card-title"><iconify-icon icon="solar:user-id-bold-duotone" style="color:#6366f1;"></iconify-icon> Expiration documents</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-sm);padding-top:var(--space-md);">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -1792,7 +1792,7 @@ const ParametresPage = {
       <div class="grid-2" style="gap:var(--space-lg);margin-top:var(--space-lg);">
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-tachometer-alt" style="color:#ef4444;"></i> Score de conduite</span>
+            <span class="card-title"><iconify-icon icon="solar:speedometer-bold-duotone" style="color:#ef4444;"></iconify-icon> Score de conduite</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -1817,7 +1817,7 @@ const ParametresPage = {
 
         <div class="card" style="border-left:4px solid var(--volt-blue);">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-user-shield" style="color:var(--volt-blue);"></i> Alertes admin</span>
+            <span class="card-title"><iconify-icon icon="solar:shield-user-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Alertes admin</span>
           </div>
           <div style="padding-top:var(--space-md);">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -1837,7 +1837,7 @@ const ParametresPage = {
       <!-- Envoyer une annonce -->
       <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-bullhorn" style="color:#FC4C02;"></i> Envoyer une annonce</span>
+          <span class="card-title"><iconify-icon icon="solar:megaphone-bold-duotone" style="color:#FC4C02;"></iconify-icon> Envoyer une annonce</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
           <div class="form-group">
@@ -1853,27 +1853,27 @@ const ParametresPage = {
             <div style="display:flex;gap:var(--space-sm);">
               <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);border:2px solid var(--primary);cursor:pointer;flex:1;">
                 <input type="radio" name="annonce-canal" value="push" checked style="accent-color:var(--primary);">
-                <span style="font-size:var(--font-size-sm);font-weight:500;"><i class="fas fa-bell"></i> Push</span>
+                <span style="font-size:var(--font-size-sm);font-weight:500;"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Push</span>
               </label>
               <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);border:2px solid var(--border-color);cursor:pointer;flex:1;">
                 <input type="radio" name="annonce-canal" value="sms" style="accent-color:var(--primary);">
-                <span style="font-size:var(--font-size-sm);font-weight:500;"><i class="fas fa-sms"></i> SMS</span>
+                <span style="font-size:var(--font-size-sm);font-weight:500;"><iconify-icon icon="solar:chat-dots-bold-duotone"></iconify-icon> SMS</span>
               </label>
               <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);border:2px solid var(--border-color);cursor:pointer;flex:1;">
                 <input type="radio" name="annonce-canal" value="both" style="accent-color:var(--primary);">
-                <span style="font-size:var(--font-size-sm);font-weight:500;"><i class="fas fa-paper-plane"></i> Les deux</span>
+                <span style="font-size:var(--font-size-sm);font-weight:500;"><iconify-icon icon="solar:plain-bold-duotone"></iconify-icon> Les deux</span>
               </label>
             </div>
           </div>
           <button class="btn btn-warning" id="btn-send-annonce" style="align-self:flex-start;">
-            <i class="fas fa-paper-plane"></i> Envoyer a tous les chauffeurs
+            <iconify-icon icon="solar:plain-bold-duotone"></iconify-icon> Envoyer a tous les chauffeurs
           </button>
           <div id="annonce-result" style="display:none;"></div>
         </div>
       </div>
 
       <div style="margin-top:var(--space-lg);display:flex;justify-content:flex-end;">
-        <button class="btn btn-primary" id="btn-save-notifications-settings"><i class="fas fa-save"></i> Sauvegarder la configuration</button>
+        <button class="btn btn-primary" id="btn-save-notifications-settings"><iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Sauvegarder la configuration</button>
       </div>
     `;
   },
@@ -1912,7 +1912,7 @@ const ParametresPage = {
         }
 
         sendBtn.disabled = true;
-        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
+        sendBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Envoi en cours...';
 
         try {
           const res = await fetch(Store._apiBase + '/notifications/send', {
@@ -1933,7 +1933,7 @@ const ParametresPage = {
               resultDiv.style.display = 'block';
               resultDiv.innerHTML = `
                 <div style="padding:12px 16px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);font-size:var(--font-size-xs);">
-                  <i class="fas fa-check-circle" style="color:#22c55e;margin-right:6px;"></i>
+                  <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;margin-right:6px;"></iconify-icon>
                   <strong>${data.sent}</strong> envoyee(s), <strong>${data.failed}</strong> echec(s) sur <strong>${data.total}</strong> chauffeur(s)
                 </div>
               `;
@@ -1946,7 +1946,7 @@ const ParametresPage = {
         }
 
         sendBtn.disabled = false;
-        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer a tous les chauffeurs';
+        sendBtn.innerHTML = '<iconify-icon icon="solar:plain-bold-duotone"></iconify-icon> Envoyer a tous les chauffeurs';
       });
     }
 

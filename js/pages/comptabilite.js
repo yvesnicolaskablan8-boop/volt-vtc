@@ -32,22 +32,22 @@ const ComptabilitePage = {
   _template() {
     return `
       <div class="page-header">
-        <h1><i class="fas fa-calculator"></i> Comptabilité</h1>
+        <h1><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Comptabilité</h1>
         <div class="page-actions">
-          <button class="btn btn-success" id="btn-add-recette"><i class="fas fa-plus-circle"></i> Encaissement</button>
-          <button class="btn btn-danger" id="btn-add-depense"><i class="fas fa-minus-circle"></i> Décaissement</button>
+          <button class="btn btn-success" id="btn-add-recette"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Encaissement</button>
+          <button class="btn btn-danger" id="btn-add-depense"><iconify-icon icon="solar:minus-circle-bold-duotone"></iconify-icon> Décaissement</button>
         </div>
       </div>
 
       <!-- Navigation onglets -->
       <div class="tabs" id="compta-tabs">
-        <div class="tab active" data-tab="overview"><i class="fas fa-home"></i> Vue d'ensemble</div>
-        <div class="tab" data-tab="journal"><i class="fas fa-book"></i> Journal</div>
-        <div class="tab" data-tab="resultat"><i class="fas fa-chart-line"></i> Résultat</div>
-        <div class="tab" data-tab="tresorerie"><i class="fas fa-wallet"></i> Trésorerie</div>
-        <div class="tab" data-tab="factures"><i class="fas fa-file-invoice"></i> Factures</div>
-        <div class="tab" data-tab="budget"><i class="fas fa-bullseye"></i> Budget</div>
-        <div class="tab" data-tab="categories"><i class="fas fa-tags"></i> Catégories</div>
+        <div class="tab active" data-tab="overview"><iconify-icon icon="solar:home-bold-duotone"></iconify-icon> Vue d'ensemble</div>
+        <div class="tab" data-tab="journal"><iconify-icon icon="solar:book-bold-duotone"></iconify-icon> Journal</div>
+        <div class="tab" data-tab="resultat"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Résultat</div>
+        <div class="tab" data-tab="tresorerie"><iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon> Trésorerie</div>
+        <div class="tab" data-tab="factures"><iconify-icon icon="solar:file-text-bold-duotone"></iconify-icon> Factures</div>
+        <div class="tab" data-tab="budget"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon> Budget</div>
+        <div class="tab" data-tab="categories"><iconify-icon icon="solar:tag-bold-duotone"></iconify-icon> Catégories</div>
       </div>
 
       <!-- Contenu dynamique -->
@@ -146,34 +146,34 @@ const ComptabilitePage = {
       <!-- KPIs financiers simplifiés -->
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
         <div class="kpi-card green">
-          <div class="kpi-icon"><i class="fas fa-arrow-down"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon></div>
           <div class="kpi-value" style="color:var(--success)">${Utils.formatCurrency(totalRecettes)}</div>
           <div class="kpi-label">Encaissements du mois</div>
           <div class="kpi-trend ${trendRecettes >= 0 ? 'up' : 'down'}">
-            <i class="fas fa-arrow-${trendRecettes >= 0 ? 'up' : 'down'}"></i> ${Math.abs(trendRecettes).toFixed(1)}% vs mois dernier
+            <iconify-icon icon="solar:arrow-${trendRecettes >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(trendRecettes).toFixed(1)}% vs mois dernier
           </div>
         </div>
         <div class="kpi-card red">
-          <div class="kpi-icon"><i class="fas fa-arrow-up"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon></div>
           <div class="kpi-value" style="color:var(--danger)">${Utils.formatCurrency(totalDepenses)}</div>
           <div class="kpi-label">Décaissements du mois</div>
           <div class="kpi-trend ${trendDepenses <= 0 ? 'up' : 'down'}">
-            <i class="fas fa-arrow-${trendDepenses <= 0 ? 'down' : 'up'}"></i> ${Math.abs(trendDepenses).toFixed(1)}% vs mois dernier
+            <iconify-icon icon="solar:arrow-${trendDepenses <= 0 ? 'down' : 'up'}-bold"></iconify-icon> ${Math.abs(trendDepenses).toFixed(1)}% vs mois dernier
           </div>
         </div>
         <div class="kpi-card ${resultat >= 0 ? 'green' : 'red'}">
-          <div class="kpi-icon"><i class="fas fa-scale-balanced"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:scale-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(resultat)}</div>
           <div class="kpi-label">${resultat >= 0 ? 'Bénéfice du mois' : 'Perte du mois'}</div>
           <div class="kpi-trend ${resultat >= 0 ? 'up' : 'down'}">
-            <i class="fas fa-${resultat >= 0 ? 'smile' : 'frown'}"></i> ${resultat >= 0 ? 'Positif' : 'Négatif'}
+            <iconify-icon icon="solar:${resultat >= 0 ? 'emoji-funny-circle-bold-duotone' : 'sad-circle-bold-duotone'}"></iconify-icon> ${resultat >= 0 ? 'Positif' : 'Négatif'}
           </div>
         </div>
         <div class="kpi-card cyan">
-          <div class="kpi-icon"><i class="fas fa-piggy-bank"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(soldeTotal)}</div>
           <div class="kpi-label">Solde de trésorerie</div>
-          ${totalImpaye > 0 ? `<div class="kpi-trend down"><i class="fas fa-exclamation-triangle"></i> ${Utils.formatCurrency(totalImpaye)} impayé</div>` : '<div class="kpi-trend up"><i class="fas fa-check"></i> Tout est à jour</div>'}
+          ${totalImpaye > 0 ? `<div class="kpi-trend down"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${Utils.formatCurrency(totalImpaye)} impayé</div>` : '<div class="kpi-trend up"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tout est à jour</div>'}
         </div>
       </div>
 
@@ -181,30 +181,30 @@ const ComptabilitePage = {
       <div class="yango-section" id="compta-yango-section" style="margin-bottom:var(--space-lg);">
         <div class="yango-section-header">
           <div class="yango-section-title">
-            <i class="fas fa-hand-holding-dollar" style="color:#FC4C02"></i>
+            <iconify-icon icon="solar:hand-money-bold-duotone" style="color:#FC4C02"></iconify-icon>
             <span>Commission Partenaire</span>
             <span class="yango-badge-live">REVENU</span>
           </div>
           <div class="yango-section-actions">
             <button class="btn btn-sm yango-refresh-btn" onclick="ComptabilitePage._loadYangoCommission()" id="compta-yango-refresh">
-              <i class="fas fa-sync-alt"></i>
+              <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
             </button>
           </div>
         </div>
         <div class="grid-2" id="compta-yango-kpis">
           <div class="kpi-card yango-kpi" style="border-top-color:rgba(34, 197, 94, 0.5) !important;">
-            <div class="kpi-icon yango-icon-green"><i class="fas fa-hand-holding-dollar"></i></div>
+            <div class="kpi-icon yango-icon-green"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
             <div class="kpi-value" id="cy-comm-mois" style="color:var(--success)"><div class="yango-skeleton"></div></div>
             <div class="kpi-label">Commission du mois</div>
           </div>
           <div class="kpi-card yango-kpi" style="border-top-color:rgba(34, 197, 94, 0.5) !important;">
-            <div class="kpi-icon yango-icon-green"><i class="fas fa-coins"></i></div>
+            <div class="kpi-icon yango-icon-green"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
             <div class="kpi-value" id="cy-comm-jour" style="color:var(--success)"><div class="yango-skeleton"></div></div>
             <div class="kpi-label">Commission aujourd'hui</div>
           </div>
         </div>
         <div style="margin-top:var(--space-sm);padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
-          <i class="fas fa-info-circle" style="color:#FC4C02"></i>
+          <iconify-icon icon="solar:info-circle-bold-duotone" style="color:#FC4C02"></iconify-icon>
           Commission partenaire reversée par Yango, calculée automatiquement a partir des transactions réelles.
         </div>
       </div>
@@ -212,7 +212,7 @@ const ComptabilitePage = {
       <!-- Guide rapide pour non-comptable -->
       <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-blue);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));">
         <div style="display:flex;align-items:center;gap:var(--space-md);">
-          <div style="width:48px;height:48px;border-radius:50%;background:var(--volt-blue-glow);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--volt-blue);"><i class="fas fa-lightbulb"></i></div>
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--volt-blue-glow);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--volt-blue);"><iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon></div>
           <div style="flex:1;">
             <h3 style="font-size:var(--font-size-base);margin-bottom:4px;">Comment ça marche ?</h3>
             <p style="font-size:var(--font-size-sm);line-height:1.6;">
@@ -228,7 +228,7 @@ const ComptabilitePage = {
       <div class="charts-grid">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-bar"></i> Encaissements vs Décaissements (6 mois)</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Encaissements vs Décaissements (6 mois)</div>
           </div>
           <div class="chart-container" style="height:300px;">
             <canvas id="chart-compta-overview"></canvas>
@@ -237,7 +237,7 @@ const ComptabilitePage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-pie"></i> Répartition des dépenses du mois</div>
+            <div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Répartition des dépenses du mois</div>
           </div>
           <div class="chart-container" style="height:300px;">
             <canvas id="chart-compta-depenses"></canvas>
@@ -362,7 +362,7 @@ const ComptabilitePage = {
       containerId: 'compta-recent-ops',
       columns: [
         { label: 'Date', key: 'date', render: o => Utils.formatDate(o.date) },
-        { label: 'Type', key: 'type', render: o => o.type === 'recette' ? '<span class="badge badge-success"><i class="fas fa-arrow-down" style="font-size:8px"></i> Encaissement</span>' : '<span class="badge badge-danger"><i class="fas fa-arrow-up" style="font-size:8px"></i> Décaissement</span>' },
+        { label: 'Type', key: 'type', render: o => o.type === 'recette' ? '<span class="badge badge-success"><iconify-icon icon="solar:arrow-down-bold" style="font-size:8px"></iconify-icon> Encaissement</span>' : '<span class="badge badge-danger"><iconify-icon icon="solar:arrow-up-bold" style="font-size:8px"></iconify-icon> Décaissement</span>' },
         { label: 'Catégorie', key: 'categorie', render: o => `<span class="badge badge-info">${this._catLabel(o.categorie)}</span>` },
         { label: 'Description', key: 'description', primary: true },
         { label: 'Montant', key: 'montant', render: o => `<strong class="${o.type === 'recette' ? 'text-success' : 'text-danger'}">${o.type === 'recette' ? '+' : '-'}${Utils.formatCurrency(o.montant)}</strong>`, primary: true },
@@ -396,8 +396,8 @@ const ComptabilitePage = {
           }).join('')}
         </select>
         <div style="flex:1;"></div>
-        <button class="btn btn-sm btn-secondary" id="journal-export-csv"><i class="fas fa-file-csv"></i> Exporter CSV</button>
-        <button class="btn btn-sm btn-secondary" id="journal-export-pdf"><i class="fas fa-file-pdf"></i> Exporter PDF</button>
+        <button class="btn btn-sm btn-secondary" id="journal-export-csv"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> Exporter CSV</button>
+        <button class="btn btn-sm btn-secondary" id="journal-export-pdf"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> Exporter PDF</button>
       </div>
       <div id="journal-table"></div>
     `;
@@ -421,8 +421,8 @@ const ComptabilitePage = {
         data,
         pageSize: 20,
         actions: (o) => `
-          <button class="btn btn-sm btn-secondary" onclick="ComptabilitePage._editOperation('${o.id}')"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-sm btn-danger" onclick="ComptabilitePage._deleteOperation('${o.id}')"><i class="fas fa-trash"></i></button>
+          <button class="btn btn-sm btn-secondary" onclick="ComptabilitePage._editOperation('${o.id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+          <button class="btn btn-sm btn-danger" onclick="ComptabilitePage._deleteOperation('${o.id}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
         `
       });
     };
@@ -511,7 +511,7 @@ const ComptabilitePage = {
       <!-- Compte de résultat simplifié -->
       <div class="grid-2" style="margin-bottom:var(--space-lg);">
         <div class="card" style="border-left:4px solid var(--success);">
-          <div class="card-header"><span class="card-title" style="color:var(--success)"><i class="fas fa-arrow-down"></i> Encaissements (ce que vous recevez)</span></div>
+          <div class="card-header"><span class="card-title" style="color:var(--success)"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon> Encaissements (ce que vous recevez)</span></div>
           ${Object.entries(recByCat).sort((a, b) => b[1] - a[1]).map(([cat, total]) => `
             <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-color);font-size:var(--font-size-sm);">
               <span>${this._catLabel(cat)}</span>
@@ -525,7 +525,7 @@ const ComptabilitePage = {
         </div>
 
         <div class="card" style="border-left:4px solid var(--danger);">
-          <div class="card-header"><span class="card-title" style="color:var(--danger)"><i class="fas fa-arrow-up"></i> Décaissements (ce que vous payez)</span></div>
+          <div class="card-header"><span class="card-title" style="color:var(--danger)"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon> Décaissements (ce que vous payez)</span></div>
           ${Object.entries(depByCat).sort((a, b) => b[1] - a[1]).map(([cat, total]) => `
             <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-color);font-size:var(--font-size-sm);">
               <span>${this._catLabel(cat)}</span>
@@ -542,7 +542,7 @@ const ComptabilitePage = {
       <!-- Résultat final -->
       <div class="card" style="border-left:4px solid ${resultat >= 0 ? 'var(--success)' : 'var(--danger)'};text-align:center;padding:var(--space-xl);">
         <h2 style="color:${resultat >= 0 ? 'var(--success)' : 'var(--danger)'};">
-          <i class="fas fa-${resultat >= 0 ? 'trophy' : 'exclamation-triangle'}"></i>
+          <iconify-icon icon="solar:${resultat >= 0 ? 'cup-star-bold-duotone' : 'danger-triangle-bold-duotone'}"></iconify-icon>
           Résultat net : ${Utils.formatCurrency(resultat)}
         </h2>
         <p style="margin-top:var(--space-sm);">${resultat >= 0
@@ -552,7 +552,7 @@ const ComptabilitePage = {
 
       <div class="charts-grid" style="margin-top:var(--space-lg);">
         <div class="chart-card full-width">
-          <div class="chart-header"><div class="chart-title"><i class="fas fa-chart-line"></i> Évolution du résultat mensuel ${year}</div></div>
+          <div class="chart-header"><div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Évolution du résultat mensuel ${year}</div></div>
           <div class="chart-container" style="height:300px;"><canvas id="chart-resultat-evo"></canvas></div>
         </div>
       </div>
@@ -654,7 +654,7 @@ const ComptabilitePage = {
       </div>
 
       <div class="chart-card">
-        <div class="chart-header"><div class="chart-title"><i class="fas fa-chart-area"></i> Évolution de la trésorerie</div></div>
+        <div class="chart-header"><div class="chart-title"><iconify-icon icon="solar:graph-bold-duotone"></iconify-icon> Évolution de la trésorerie</div></div>
         <div class="chart-container" style="height:350px;"><canvas id="chart-tresorerie-evo"></canvas></div>
       </div>
     `;
@@ -739,7 +739,7 @@ const ComptabilitePage = {
       </div>
 
       <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);">
-        <button class="btn btn-primary" id="btn-add-facture"><i class="fas fa-plus"></i> Nouvelle facture</button>
+        <button class="btn btn-primary" id="btn-add-facture"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouvelle facture</button>
         <select class="form-control" id="facture-filter" style="width:180px;">
           <option value="">Tous statuts</option>
           <option value="payee">Payées</option>
@@ -772,9 +772,9 @@ const ComptabilitePage = {
         actions: f => {
           let btns = '';
           if (f.statut !== 'payee') {
-            btns += `<button class="btn btn-sm btn-success" onclick="ComptabilitePage._markPaid('${f.id}')" title="Marquer payée"><i class="fas fa-check"></i></button> `;
+            btns += `<button class="btn btn-sm btn-success" onclick="ComptabilitePage._markPaid('${f.id}')" title="Marquer payée"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button> `;
           }
-          btns += `<button class="btn btn-sm btn-secondary" onclick="ComptabilitePage._editFacture('${f.id}')"><i class="fas fa-edit"></i></button>`;
+          btns += `<button class="btn btn-sm btn-secondary" onclick="ComptabilitePage._editFacture('${f.id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>`;
           return btns;
         }
       });
@@ -804,7 +804,7 @@ const ComptabilitePage = {
     return `
       <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-yellow);">
         <div style="display:flex;align-items:center;gap:var(--space-md);">
-          <i class="fas fa-lightbulb" style="font-size:24px;color:var(--volt-yellow);"></i>
+          <iconify-icon icon="solar:lightbulb-bold-duotone" style="font-size:24px;color:var(--volt-yellow);"></iconify-icon>
           <div>
             <h3 style="font-size:var(--font-size-sm);">Budget prévisionnel vs Réel</h3>
             <p style="font-size:var(--font-size-xs);color:var(--text-muted);">Définissez un budget pour chaque catégorie de dépense et suivez votre consommation réelle. Les barres rouges dépassant le budget signalent un dépassement.</p>
@@ -814,8 +814,8 @@ const ComptabilitePage = {
 
       <div class="card" style="margin-bottom:var(--space-lg);">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-bullseye"></i> Budget du mois - ${Utils.getMonthName(now.getMonth())} ${now.getFullYear()}</span>
-          <button class="btn btn-sm btn-primary" id="btn-save-budget"><i class="fas fa-save"></i> Sauvegarder</button>
+          <span class="card-title"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon> Budget du mois - ${Utils.getMonthName(now.getMonth())} ${now.getFullYear()}</span>
+          <button class="btn btn-sm btn-primary" id="btn-save-budget"><iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Sauvegarder</button>
         </div>
         <div style="display:flex;flex-direction:column;gap:12px;" id="budget-rows">
           ${categories.map(cat => {
@@ -850,7 +850,7 @@ const ComptabilitePage = {
       </div>
 
       <div class="chart-card">
-        <div class="chart-header"><div class="chart-title"><i class="fas fa-chart-bar"></i> Budget vs Réel</div></div>
+        <div class="chart-header"><div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Budget vs Réel</div></div>
         <div class="chart-container" style="height:350px;"><canvas id="chart-budget"></canvas></div>
       </div>
     `;
@@ -924,54 +924,54 @@ const ComptabilitePage = {
 
   _renderCategories() {
     const recCats = [
-      { id: 'commissions_courses', label: 'Commissions courses', desc: 'Commissions reçues sur les courses des chauffeurs', icon: 'fa-money-bill-transfer', color: '#22c55e' },
-      { id: 'courses_directes', label: 'Courses directes', desc: 'Paiement direct de courses (app & téléphone)', icon: 'fa-taxi', color: '#3b82f6' },
-      { id: 'commission_yango', label: 'Commission Yango (3%)', desc: 'Commission de 3% reversee par Yango sur le CA de la flotte', icon: 'fa-hand-holding-dollar', color: '#FC4C02' },
-      { id: 'frais_service', label: 'Frais de service', desc: 'Frais de service des plateformes (Yango, Bolt)', icon: 'fa-mobile-screen', color: '#8b5cf6' },
-      { id: 'location_vehicule', label: 'Location véhicule', desc: 'Location de véhicule à un tiers', icon: 'fa-car', color: '#f59e0b' },
-      { id: 'autres_recettes', label: 'Autres recettes', desc: 'Autres sources de revenus', icon: 'fa-plus-circle', color: '#22d3ee' }
+      { id: 'commissions_courses', label: 'Commissions courses', desc: 'Commissions reçues sur les courses des chauffeurs', icon: 'solar:transfer-horizontal-bold-duotone', color: '#22c55e' },
+      { id: 'courses_directes', label: 'Courses directes', desc: 'Paiement direct de courses (app & téléphone)', icon: 'solar:car-bold-duotone', color: '#3b82f6' },
+      { id: 'commission_yango', label: 'Commission Yango (3%)', desc: 'Commission de 3% reversee par Yango sur le CA de la flotte', icon: 'solar:hand-money-bold-duotone', color: '#FC4C02' },
+      { id: 'frais_service', label: 'Frais de service', desc: 'Frais de service des plateformes (Yango, Bolt)', icon: 'solar:smartphone-bold-duotone', color: '#8b5cf6' },
+      { id: 'location_vehicule', label: 'Location véhicule', desc: 'Location de véhicule à un tiers', icon: 'solar:car-bold-duotone', color: '#f59e0b' },
+      { id: 'autres_recettes', label: 'Autres recettes', desc: 'Autres sources de revenus', icon: 'solar:add-circle-bold-duotone', color: '#22d3ee' }
     ];
 
     const depCats = [
-      { id: 'carburant', label: 'Carburant', desc: 'Essence, gasoil, recharge électrique', icon: 'fa-gas-pump', color: '#ef4444' },
-      { id: 'maintenance', label: 'Maintenance', desc: 'Révisions, réparations, pneus, freins', icon: 'fa-wrench', color: '#f59e0b' },
-      { id: 'assurance', label: 'Assurance', desc: 'Assurance véhicules, RC Pro', icon: 'fa-shield-halved', color: '#3b82f6' },
-      { id: 'leasing', label: 'Leasing véhicules', desc: 'Mensualités de crédit-bail', icon: 'fa-file-contract', color: '#8b5cf6' },
-      { id: 'salaires', label: 'Salaires', desc: 'Salaires des employés (hors chauffeurs)', icon: 'fa-users', color: '#ec4899' },
-      { id: 'loyer_bureau', label: 'Loyer / Bureau', desc: 'Loyer bureau, parking, entrepôt', icon: 'fa-building', color: '#14b8a6' },
-      { id: 'taxes_impots', label: 'Impôts / Taxes', desc: 'Patente, impôts, taxes diverses', icon: 'fa-landmark', color: '#6366f1' },
-      { id: 'telecoms', label: 'Télécom', desc: 'Téléphone, internet, abonnements', icon: 'fa-phone', color: '#f97316' },
-      { id: 'marketing', label: 'Marketing', desc: 'Publicité, communication, branding', icon: 'fa-bullhorn', color: '#84cc16' },
-      { id: 'fournitures', label: 'Fournitures', desc: 'Fournitures bureau, consommables', icon: 'fa-box', color: '#a855f7' },
-      { id: 'autres_depenses', label: 'Autres dépenses', desc: 'Autres dépenses non classées', icon: 'fa-ellipsis', color: '#64748b' }
+      { id: 'carburant', label: 'Carburant', desc: 'Essence, gasoil, recharge électrique', icon: 'solar:gas-station-bold-duotone', color: '#ef4444' },
+      { id: 'maintenance', label: 'Maintenance', desc: 'Révisions, réparations, pneus, freins', icon: 'solar:wrench-bold-duotone', color: '#f59e0b' },
+      { id: 'assurance', label: 'Assurance', desc: 'Assurance véhicules, RC Pro', icon: 'solar:shield-bold-duotone', color: '#3b82f6' },
+      { id: 'leasing', label: 'Leasing véhicules', desc: 'Mensualités de crédit-bail', icon: 'solar:document-bold-duotone', color: '#8b5cf6' },
+      { id: 'salaires', label: 'Salaires', desc: 'Salaires des employés (hors chauffeurs)', icon: 'solar:users-group-rounded-bold-duotone', color: '#ec4899' },
+      { id: 'loyer_bureau', label: 'Loyer / Bureau', desc: 'Loyer bureau, parking, entrepôt', icon: 'solar:buildings-bold-duotone', color: '#14b8a6' },
+      { id: 'taxes_impots', label: 'Impôts / Taxes', desc: 'Patente, impôts, taxes diverses', icon: 'solar:bank-bold-duotone', color: '#6366f1' },
+      { id: 'telecoms', label: 'Télécom', desc: 'Téléphone, internet, abonnements', icon: 'solar:phone-bold-duotone', color: '#f97316' },
+      { id: 'marketing', label: 'Marketing', desc: 'Publicité, communication, branding', icon: 'solar:megaphone-bold-duotone', color: '#84cc16' },
+      { id: 'fournitures', label: 'Fournitures', desc: 'Fournitures bureau, consommables', icon: 'solar:box-bold-duotone', color: '#a855f7' },
+      { id: 'autres_depenses', label: 'Autres dépenses', desc: 'Autres dépenses non classées', icon: 'solar:menu-dots-bold', color: '#64748b' }
     ];
 
     return `
       <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-blue);">
         <div style="display:flex;align-items:center;gap:var(--space-md);">
-          <i class="fas fa-info-circle" style="font-size:24px;color:var(--volt-blue);"></i>
+          <iconify-icon icon="solar:info-circle-bold-duotone" style="font-size:24px;color:var(--volt-blue);"></iconify-icon>
           <p style="font-size:var(--font-size-sm);">Les catégories vous aident à classer vos opérations pour mieux comprendre d'où vient votre argent et où il va. Utilisez-les lors de chaque saisie.</p>
         </div>
       </div>
 
-      <h3 style="margin-bottom:var(--space-md);color:var(--success);"><i class="fas fa-arrow-down"></i> Catégories d'encaissement</h3>
+      <h3 style="margin-bottom:var(--space-md);color:var(--success);"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon> Catégories d'encaissement</h3>
       <div class="grid-3" style="margin-bottom:var(--space-xl);">
         ${recCats.map(c => `
           <div class="card" style="border-left:4px solid ${c.color};">
             <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:${c.color}20;color:${c.color};display:flex;align-items:center;justify-content:center;"><i class="fas ${c.icon}"></i></div>
+              <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:${c.color}20;color:${c.color};display:flex;align-items:center;justify-content:center;"><iconify-icon icon="${c.icon}"></iconify-icon></div>
               <div><div style="font-weight:600;font-size:var(--font-size-sm);">${c.label}</div><div style="font-size:var(--font-size-xs);color:var(--text-muted);">${c.desc}</div></div>
             </div>
           </div>
         `).join('')}
       </div>
 
-      <h3 style="margin-bottom:var(--space-md);color:var(--danger);"><i class="fas fa-arrow-up"></i> Catégories de décaissement</h3>
+      <h3 style="margin-bottom:var(--space-md);color:var(--danger);"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon> Catégories de décaissement</h3>
       <div class="grid-3">
         ${depCats.map(c => `
           <div class="card" style="border-left:4px solid ${c.color};">
             <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:${c.color}20;color:${c.color};display:flex;align-items:center;justify-content:center;"><i class="fas ${c.icon}"></i></div>
+              <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:${c.color}20;color:${c.color};display:flex;align-items:center;justify-content:center;"><iconify-icon icon="${c.icon}"></iconify-icon></div>
               <div><div style="font-weight:600;font-size:var(--font-size-sm);">${c.label}</div><div style="font-size:var(--font-size-xs);color:var(--text-muted);">${c.desc}</div></div>
             </div>
           </div>
@@ -1099,8 +1099,8 @@ const ComptabilitePage = {
     ];
 
     const title = isRecette
-      ? '<i class="fas fa-plus-circle text-success"></i> Nouvel encaissement'
-      : '<i class="fas fa-minus-circle text-danger"></i> Nouveau décaissement';
+      ? '<iconify-icon icon="solar:add-circle-bold-duotone" class="text-success"></iconify-icon> Nouvel encaissement'
+      : '<iconify-icon icon="solar:minus-circle-bold-duotone" class="text-danger"></iconify-icon> Nouveau décaissement';
 
     Modal.form(title, FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
@@ -1143,7 +1143,7 @@ const ComptabilitePage = {
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form('<i class="fas fa-edit text-blue"></i> Modifier opération', FormBuilder.build(fields, op), () => {
+    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier opération', FormBuilder.build(fields, op), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       Store.update('comptabilite', id, FormBuilder.getValues(body));
@@ -1182,7 +1182,7 @@ const ComptabilitePage = {
       { name: 'statut', label: 'Statut', type: 'select', options: [{ value: 'impayee', label: 'En attente' }, { value: 'payee', label: 'Payée' }, { value: 'en_retard', label: 'En retard' }] }
     ];
 
-    Modal.form('<i class="fas fa-file-invoice text-blue"></i> Nouvelle facture', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:file-text-bold-duotone" class="text-blue"></iconify-icon> Nouvelle facture', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -1207,7 +1207,7 @@ const ComptabilitePage = {
       { name: 'statut', label: 'Statut', type: 'select', options: [{ value: 'impayee', label: 'En attente' }, { value: 'payee', label: 'Payée' }, { value: 'en_retard', label: 'En retard' }] },
       { type: 'row-end' }
     ];
-    Modal.form('<i class="fas fa-edit text-blue"></i> Modifier facture', FormBuilder.build(fields, f), () => {
+    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier facture', FormBuilder.build(fields, f), () => {
       const body = document.getElementById('modal-body');
       Store.update('factures', id, FormBuilder.getValues(body));
       Modal.close();

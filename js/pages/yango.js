@@ -33,7 +33,7 @@ const YangoPage = {
     const today = new Date().toISOString().split('T')[0];
     return `
       <div class="page-header">
-        <h1><i class="fas fa-taxi" style="color:#FC4C02"></i> Yango Fleet</h1>
+        <h1><iconify-icon icon="solar:taxi-bold-duotone" style="color:#FC4C02"></iconify-icon> Yango Fleet</h1>
         <div class="page-actions">
           <div class="yango-filter-group">
             <select id="yp-work-rule-select" class="yango-filter-select" onchange="YangoPage._onWorkRuleChange()" title="Filtrer par categorie">
@@ -41,7 +41,7 @@ const YangoPage = {
             </select>
           </div>
           <button class="btn btn-secondary" onclick="YangoPage._loadData()" id="yp-refresh-btn">
-            <i class="fas fa-sync-alt"></i> Actualiser
+            <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser
           </button>
         </div>
       </div>
@@ -50,19 +50,19 @@ const YangoPage = {
       <div class="yango-date-bar">
         <div class="yango-date-presets">
           <button class="yango-date-preset active" data-preset="today" onclick="YangoPage._setDatePreset('today')">
-            <i class="fas fa-clock"></i> Aujourd'hui
+            <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> Aujourd'hui
           </button>
           <button class="yango-date-preset" data-preset="yesterday" onclick="YangoPage._setDatePreset('yesterday')">
-            <i class="fas fa-calendar-minus"></i> Hier
+            <iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Hier
           </button>
           <button class="yango-date-preset" data-preset="week" onclick="YangoPage._setDatePreset('week')">
-            <i class="fas fa-calendar-week"></i> Cette semaine
+            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Cette semaine
           </button>
           <button class="yango-date-preset" data-preset="month" onclick="YangoPage._setDatePreset('month')">
-            <i class="fas fa-calendar-alt"></i> Ce mois
+            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Ce mois
           </button>
           <button class="yango-date-preset" data-preset="custom" onclick="YangoPage._toggleCustomDates()">
-            <i class="fas fa-calendar-days"></i> Personnalise
+            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Personnalise
           </button>
         </div>
         <div class="yango-date-custom" id="yp-date-custom" style="display:none;">
@@ -76,12 +76,12 @@ const YangoPage = {
               <input type="date" id="yp-date-to" class="yango-date-input" value="${today}" max="${today}">
             </label>
             <button class="btn btn-sm yango-date-apply" onclick="YangoPage._applyCustomDates()">
-              <i class="fas fa-check"></i> Appliquer
+              <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Appliquer
             </button>
           </div>
         </div>
         <div class="yango-date-label" id="yp-date-label">
-          <i class="fas fa-calendar-check"></i>
+          <iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon>
           <span id="yp-date-label-text">Aujourd'hui</span>
         </div>
       </div>
@@ -101,25 +101,25 @@ const YangoPage = {
       <!-- KPIs Row 1: Main metrics -->
       <div class="grid-4" style="margin-top:var(--space-md);">
         <div class="kpi-card yango-kpi">
-          <div class="kpi-icon yango-icon-green"><i class="fas fa-user-check"></i></div>
+          <div class="kpi-icon yango-icon-green"><iconify-icon icon="solar:user-check-bold-duotone"></iconify-icon></div>
           <div class="kpi-value" id="yp-drivers-total"><div class="yango-skeleton"></div></div>
           <div class="kpi-label">Chauffeurs en service</div>
           <div class="kpi-trend neutral" id="yp-drivers-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
         <div class="kpi-card yango-kpi">
-          <div class="kpi-icon yango-icon-orange"><i class="fas fa-wallet"></i></div>
+          <div class="kpi-icon yango-icon-orange"><iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon></div>
           <div class="kpi-value" id="yp-ca-today"><div class="yango-skeleton"></div></div>
           <div class="kpi-label" id="yp-ca-label">CA du jour</div>
           <div class="kpi-trend neutral" id="yp-ca-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
         <div class="kpi-card yango-kpi">
-          <div class="kpi-icon yango-icon-blue"><i class="fas fa-taxi"></i></div>
+          <div class="kpi-icon yango-icon-blue"><iconify-icon icon="solar:taxi-bold-duotone"></iconify-icon></div>
           <div class="kpi-value" id="yp-courses-today"><div class="yango-skeleton"></div></div>
           <div class="kpi-label" id="yp-courses-label">Courses aujourd'hui</div>
           <div class="kpi-trend neutral" id="yp-courses-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
         <div class="kpi-card yango-kpi" style="border-top-color:rgba(34,197,94,0.5) !important;">
-          <div class="kpi-icon yango-icon-green"><i class="fas fa-hand-holding-dollar"></i></div>
+          <div class="kpi-icon yango-icon-green"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
           <div class="kpi-value" id="yp-commission" style="color:var(--success)"><div class="yango-skeleton"></div></div>
           <div class="kpi-label" id="yp-commission-label">Commission partenaire</div>
           <div class="kpi-trend neutral" id="yp-commission-detail"><div class="yango-skeleton-sm"></div></div>
@@ -129,22 +129,22 @@ const YangoPage = {
       <!-- KPIs Row 2: Period totals + Activity -->
       <div class="grid-4" style="margin-top:var(--space-sm);">
         <div class="kpi-card">
-          <div class="kpi-icon"><i class="fas fa-calendar-alt"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
           <div class="kpi-value" id="yp-ca-month"><div class="yango-skeleton"></div></div>
           <div class="kpi-label" id="yp-ca-month-label">CA du mois</div>
         </div>
         <div class="kpi-card red">
-          <div class="kpi-icon"><i class="fas fa-percentage"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
           <div class="kpi-value" id="yp-commission-month" style="color:var(--danger)"><div class="yango-skeleton"></div></div>
           <div class="kpi-label" id="yp-commission-month-label">Frais Yango (prélevés)</div>
         </div>
         <div class="kpi-card cyan">
-          <div class="kpi-icon"><i class="fas fa-road"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:route-bold-duotone"></iconify-icon></div>
           <div class="kpi-value" id="yp-courses-month"><div class="yango-skeleton"></div></div>
           <div class="kpi-label" id="yp-courses-month-label">Courses du mois</div>
         </div>
         <div class="kpi-card yellow">
-          <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value" id="yp-activity-time"><div class="yango-skeleton"></div></div>
           <div class="kpi-label">Temps d'activite moyen</div>
         </div>
@@ -155,22 +155,22 @@ const YangoPage = {
         <!-- Drivers list -->
         <div class="card yango-drivers-card">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-users"></i> Chauffeurs en service</span>
+            <span class="card-title"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon> Chauffeurs en service</span>
             <span class="badge badge-info" id="yp-drivers-count">--</span>
           </div>
           <div id="yp-drivers-table">
-            <div class="yango-loading"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+            <div class="yango-loading"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>
           </div>
         </div>
 
         <!-- Recent courses -->
         <div class="card yango-courses-card">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-road"></i> Courses recentes</span>
+            <span class="card-title"><iconify-icon icon="solar:route-bold-duotone"></iconify-icon> Courses recentes</span>
             <span class="badge badge-info" id="yp-courses-count">--</span>
           </div>
           <div id="yp-courses-list">
-            <div class="yango-loading"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+            <div class="yango-loading"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>
           </div>
         </div>
       </div>
@@ -178,17 +178,17 @@ const YangoPage = {
       <!-- Top drivers -->
       <div class="card" style="margin-top:var(--space-lg);">
         <div class="card-header">
-          <span class="card-title" id="yp-top-title"><i class="fas fa-trophy"></i> Top chauffeurs du jour</span>
+          <span class="card-title" id="yp-top-title"><iconify-icon icon="solar:cup-bold-duotone"></iconify-icon> Top chauffeurs du jour</span>
         </div>
         <div id="yp-top-drivers">
-          <div class="yango-loading"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+          <div class="yango-loading"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>
         </div>
       </div>
 
       <!-- Synchronisation Yango → Volt -->
       <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-sync-alt" style="color:#FC4C02"></i> Synchronisation Yango → Volt</span>
+          <span class="card-title"><iconify-icon icon="solar:refresh-bold-duotone" style="color:#FC4C02"></iconify-icon> Synchronisation Yango → Volt</span>
           <span class="badge" id="yp-sync-status-badge">--</span>
         </div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:var(--space-md);">
@@ -196,16 +196,16 @@ const YangoPage = {
         </div>
         <div style="display:flex;gap:var(--space-sm);align-items:center;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="YangoPage._triggerSync()" id="yp-sync-btn">
-            <i class="fas fa-play"></i> Lancer la sync maintenant
+            <iconify-icon icon="solar:play-bold"></iconify-icon> Lancer la sync maintenant
           </button>
           <button class="btn btn-secondary" onclick="YangoPage._triggerSync('yesterday')" id="yp-sync-btn-hier">
-            <i class="fas fa-calendar-minus"></i> Sync hier
+            <iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Sync hier
           </button>
           <div style="display:flex;align-items:center;gap:6px;">
             <label style="font-size:var(--font-size-xs);color:var(--text-muted);">Date :</label>
             <input type="date" class="form-control" id="yp-sync-date" style="width:auto;font-size:var(--font-size-xs);padding:4px 8px;" max="${new Date().toISOString().split('T')[0]}">
             <button class="btn btn-sm btn-outline" onclick="YangoPage._triggerSyncDate()">
-              <i class="fas fa-sync"></i>
+              <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
             </button>
           </div>
         </div>
@@ -214,7 +214,7 @@ const YangoPage = {
 
       <!-- Commission info -->
       <div style="margin-top:var(--space-md);padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
-        <i class="fas fa-info-circle" style="color:#FC4C02"></i>
+        <iconify-icon icon="solar:info-circle-bold-duotone" style="color:#FC4C02"></iconify-icon>
         Le chiffre d'affaires est calcule a partir des transactions reelles (especes + carte). La commission Yango et la commission partenaire sont issues des donnees financieres de la plateforme. Rafraichissement automatique toutes les 2 minutes.
       </div>
     `;
@@ -446,8 +446,8 @@ const YangoPage = {
     const topTitle = document.getElementById('yp-top-title');
     if (topTitle) {
       topTitle.innerHTML = isToday
-        ? '<i class="fas fa-trophy"></i> Top chauffeurs du jour'
-        : `<i class="fas fa-trophy"></i> Top chauffeurs (${label})`;
+        ? '<iconify-icon icon="solar:cup-bold-duotone"></iconify-icon> Top chauffeurs du jour'
+        : `<iconify-icon icon="solar:cup-bold-duotone"></iconify-icon> Top chauffeurs (${label})`;
     }
   },
 
@@ -535,22 +535,22 @@ const YangoPage = {
     // CA with cash/card breakdown
     setVal('yp-ca-today', Utils.formatCurrency(caToday));
     setHtml('yp-ca-detail', `
-      <i class="fas fa-money-bill-wave" style="color:#22c55e;font-size:9px"></i> ${Utils.formatCurrency(cashToday)}
+      <iconify-icon icon="solar:money-bag-bold-duotone" style="color:#22c55e;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cashToday)}
       <span style="margin:0 3px">&bull;</span>
-      <i class="fas fa-credit-card" style="color:#3b82f6;font-size:9px"></i> ${Utils.formatCurrency(cardToday)}
+      <iconify-icon icon="solar:card-bold-duotone" style="color:#3b82f6;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cardToday)}
     `);
 
     setVal('yp-courses-today', coursesToday);
     const courseParts = [];
     if (enCours > 0) courseParts.push(`<span class="yango-dot yango-dot-green"></span> ${enCours} en cours`);
-    if (terminees > 0) courseParts.push(`<i class="fas fa-check" style="color:#22c55e;font-size:9px"></i> ${terminees} ok`);
-    if (annulees > 0) courseParts.push(`<i class="fas fa-times" style="color:#ef4444;font-size:9px"></i> ${annulees} ann.`);
-    if (courseParts.length === 0) courseParts.push(`<i class="fas fa-chart-line"></i> ${coursesMonth} ce mois`);
+    if (terminees > 0) courseParts.push(`<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;font-size:9px"></iconify-icon> ${terminees} ok`);
+    if (annulees > 0) courseParts.push(`<iconify-icon icon="solar:close-circle-bold" style="color:#ef4444;font-size:9px"></iconify-icon> ${annulees} ann.`);
+    if (courseParts.length === 0) courseParts.push(`<iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> ${coursesMonth} ce mois`);
     setHtml('yp-courses-detail', courseParts.join(' <span style="margin:0 3px">&bull;</span> '));
 
     // Commission partenaire (partner_ride_fee)
     setVal('yp-commission', Utils.formatCurrency(commPartToday));
-    setHtml('yp-commission-detail', `<i class="fas fa-calendar"></i> ${Utils.formatCurrency(commPartMonth)} ce mois`);
+    setHtml('yp-commission-detail', `<iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> ${Utils.formatCurrency(commPartMonth)} ce mois`);
 
     // Row 2
     setVal('yp-ca-month', Utils.formatCurrency(caMonth));
@@ -569,7 +569,7 @@ const YangoPage = {
     if (countBadge) countBadge.textContent = drivers.length;
 
     if (!drivers || drivers.length === 0) {
-      container.innerHTML = '<div class="yango-empty"><i class="fas fa-user-slash"></i><span>Aucun chauffeur en service</span></div>';
+      container.innerHTML = '<div class="yango-empty"><iconify-icon icon="solar:user-cross-bold-duotone"></iconify-icon><span>Aucun chauffeur en service</span></div>';
       return;
     }
 
@@ -602,7 +602,7 @@ const YangoPage = {
               </div>
               <div class="yango-driver-right">
                 <span class="yango-status ${status.class}">
-                  <i class="fas fa-circle"></i> ${status.label}
+                  <iconify-icon icon="solar:record-circle-bold-duotone"></iconify-icon> ${status.label}
                 </span>
                 <span class="yango-driver-balance ${balanceClass}">${balanceVal.toLocaleString('fr-FR')} F</span>
               </div>
@@ -625,37 +625,37 @@ const YangoPage = {
 
     if (!courses || courses.length === 0) {
       const emptyMsg = this._datePreset === 'today' ? "Aucune course aujourd'hui" : `Aucune course pour cette periode`;
-      container.innerHTML = `<div class="yango-empty"><i class="fas fa-car-side"></i><span>${emptyMsg}</span></div>`;
+      container.innerHTML = `<div class="yango-empty"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon><span>${emptyMsg}</span></div>`;
       return;
     }
 
     const statusIcons = {
-      en_route: { icon: 'fa-car', color: '#3b82f6' },
-      en_attente: { icon: 'fa-hourglass-half', color: '#f59e0b' },
-      en_course: { icon: 'fa-taxi', color: '#22c55e' },
-      terminee: { icon: 'fa-check-circle', color: '#22c55e' },
-      annulee: { icon: 'fa-times-circle', color: '#ef4444' },
-      recherche: { icon: 'fa-search', color: '#8b5cf6' },
-      assignee: { icon: 'fa-user-check', color: '#06b6d4' }
+      en_route: { icon: 'solar:car-bold-duotone', color: '#3b82f6' },
+      en_attente: { icon: 'solar:hourglass-bold-duotone', color: '#f59e0b' },
+      en_course: { icon: 'solar:taxi-bold-duotone', color: '#22c55e' },
+      terminee: { icon: 'solar:check-circle-bold-duotone', color: '#22c55e' },
+      annulee: { icon: 'solar:close-circle-bold', color: '#ef4444' },
+      recherche: { icon: 'solar:magnifer-bold-duotone', color: '#8b5cf6' },
+      assignee: { icon: 'solar:user-check-bold-duotone', color: '#06b6d4' }
     };
 
     container.innerHTML = `
       <div class="yango-courses-list-inner">
         ${courses.map(c => {
-          const st = statusIcons[c.statut] || { icon: 'fa-circle', color: '#6b7280' };
+          const st = statusIcons[c.statut] || { icon: 'solar:record-circle-bold-duotone', color: '#6b7280' };
           const heure = c.heure ? new Date(c.heure).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--';
           const montant = c.montant > 0 ? Utils.formatCurrency(c.montant) : '--';
 
           return `
             <div class="yango-course-item">
               <div class="yango-course-icon" style="color:${st.color}">
-                <i class="fas ${st.icon}"></i>
+                <iconify-icon icon="${st.icon}"></iconify-icon>
               </div>
               <div class="yango-course-info">
                 <div class="yango-course-driver">${c.chauffeur || '--'}</div>
                 <div class="yango-course-route">
-                  ${c.depart ? `<span><i class="fas fa-map-pin" style="color:#22c55e;font-size:9px"></i> ${c.depart.substring(0, 40)}${c.depart.length > 40 ? '...' : ''}</span>` : ''}
-                  ${c.arrivee ? `<span><i class="fas fa-flag-checkered" style="color:#ef4444;font-size:9px"></i> ${c.arrivee.substring(0, 40)}${c.arrivee.length > 40 ? '...' : ''}</span>` : ''}
+                  ${c.depart ? `<span><iconify-icon icon="solar:map-point-bold-duotone" style="color:#22c55e;font-size:9px"></iconify-icon> ${c.depart.substring(0, 40)}${c.depart.length > 40 ? '...' : ''}</span>` : ''}
+                  ${c.arrivee ? `<span><iconify-icon icon="solar:flag-bold-duotone" style="color:#ef4444;font-size:9px"></iconify-icon> ${c.arrivee.substring(0, 40)}${c.arrivee.length > 40 ? '...' : ''}</span>` : ''}
                 </div>
               </div>
               <div class="yango-course-right">
@@ -676,7 +676,7 @@ const YangoPage = {
     if (!container) return;
 
     if (!topDrivers || topDrivers.length === 0) {
-      container.innerHTML = '<div class="yango-empty"><i class="fas fa-trophy"></i><span>Aucune donnee disponible</span></div>';
+      container.innerHTML = '<div class="yango-empty"><iconify-icon icon="solar:cup-bold-duotone"></iconify-icon><span>Aucune donnee disponible</span></div>';
       return;
     }
 
@@ -688,8 +688,8 @@ const YangoPage = {
           const cashVal = d.cash || 0;
           const cardVal = d.card || 0;
           const detailParts = [];
-          if (cashVal > 0) detailParts.push(`<i class="fas fa-money-bill-wave" style="color:#22c55e;font-size:9px"></i> ${Utils.formatCurrency(cashVal)}`);
-          if (cardVal > 0) detailParts.push(`<i class="fas fa-credit-card" style="color:#3b82f6;font-size:9px"></i> ${Utils.formatCurrency(cardVal)}`);
+          if (cashVal > 0) detailParts.push(`<iconify-icon icon="solar:money-bag-bold-duotone" style="color:#22c55e;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cashVal)}`);
+          if (cardVal > 0) detailParts.push(`<iconify-icon icon="solar:card-bold-duotone" style="color:#3b82f6;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cardVal)}`);
           if (d.courses > 0) detailParts.push(`${d.courses} course${d.courses > 1 ? 's' : ''}`);
           return `
             <div class="yango-top-item">
@@ -712,8 +712,8 @@ const YangoPage = {
   async _triggerSync(datePreset = null) {
     const syncBtn = document.getElementById('yp-sync-btn');
     const resultDiv = document.getElementById('yp-sync-result');
-    if (syncBtn) { syncBtn.disabled = true; syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Synchronisation...'; }
-    if (resultDiv) { resultDiv.style.display = 'block'; resultDiv.innerHTML = '<div class="yango-loading"><i class="fas fa-spinner fa-spin"></i> Recuperation des donnees Yango en cours...</div>'; }
+    if (syncBtn) { syncBtn.disabled = true; syncBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Synchronisation...'; }
+    if (resultDiv) { resultDiv.style.display = 'block'; resultDiv.innerHTML = '<div class="yango-loading"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Recuperation des donnees Yango en cours...</div>'; }
 
     let syncDate = null;
     if (datePreset === 'yesterday') {
@@ -724,7 +724,7 @@ const YangoPage = {
     const result = await Store.triggerYangoSync(syncDate);
     this._renderSyncResult(result);
 
-    if (syncBtn) { syncBtn.disabled = false; syncBtn.innerHTML = '<i class="fas fa-play"></i> Lancer la sync maintenant'; }
+    if (syncBtn) { syncBtn.disabled = false; syncBtn.innerHTML = '<iconify-icon icon="solar:play-bold"></iconify-icon> Lancer la sync maintenant'; }
   },
 
   async _triggerSyncDate() {
@@ -734,7 +734,7 @@ const YangoPage = {
     const syncBtn = document.getElementById('yp-sync-btn');
     const resultDiv = document.getElementById('yp-sync-result');
     if (syncBtn) syncBtn.disabled = true;
-    if (resultDiv) { resultDiv.style.display = 'block'; resultDiv.innerHTML = '<div class="yango-loading"><i class="fas fa-spinner fa-spin"></i> Synchronisation du ' + dateInput.value + '...</div>'; }
+    if (resultDiv) { resultDiv.style.display = 'block'; resultDiv.innerHTML = '<div class="yango-loading"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Synchronisation du ' + dateInput.value + '...</div>'; }
 
     const result = await Store.triggerYangoSync(dateInput.value);
     this._renderSyncResult(result);
@@ -749,7 +749,7 @@ const YangoPage = {
     if (result.error) {
       resultDiv.innerHTML = `
         <div style="padding:12px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#ef4444;font-size:var(--font-size-xs);">
-          <i class="fas fa-exclamation-triangle"></i> Erreur: ${result.error}${result.details ? ' — ' + result.details : ''}
+          <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Erreur: ${result.error}${result.details ? ' — ' + result.details : ''}
         </div>
       `;
       return;
@@ -763,7 +763,7 @@ const YangoPage = {
     resultDiv.innerHTML = `
       <div style="padding:14px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <i class="fas fa-check-circle" style="color:#22c55e;font-size:1rem;"></i>
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;font-size:1rem;"></iconify-icon>
           <span style="font-weight:600;font-size:var(--font-size-sm);">Synchronisation terminée — ${result.date}</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;">
@@ -821,7 +821,7 @@ const YangoPage = {
 
         ${(result.unmatchedVolt && result.unmatchedVolt.length > 0) ? `
           <div style="margin-top:10px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);font-size:var(--font-size-xs);color:#dc2626;">
-            <i class="fas fa-user-times"></i> <strong>${result.unmatchedVolt.length} chauffeur(s) Volt non retrouvé(s) dans Yango :</strong>
+            <iconify-icon icon="solar:user-cross-bold-duotone"></iconify-icon> <strong>${result.unmatchedVolt.length} chauffeur(s) Volt non retrouvé(s) dans Yango :</strong>
             <div style="margin-top:6px;">
               ${result.unmatchedVolt.map(c => `
                 <div style="padding:4px 0;border-bottom:1px solid rgba(239,68,68,0.1);">
@@ -832,14 +832,14 @@ const YangoPage = {
               `).join('')}
             </div>
             <div style="margin-top:8px;font-size:10px;color:var(--text-muted);">
-              <i class="fas fa-lightbulb" style="color:#f59e0b;"></i> <strong>Solutions :</strong> Verifiez l'orthographe du nom/prenom, ou allez dans la fiche du chauffeur pour le lier manuellement a un profil Yango.
+              <iconify-icon icon="solar:lightbulb-bold-duotone" style="color:#f59e0b;"></iconify-icon> <strong>Solutions :</strong> Verifiez l'orthographe du nom/prenom, ou allez dans la fiche du chauffeur pour le lier manuellement a un profil Yango.
             </div>
           </div>
         ` : ''}
 
         ${result.unmatched > 0 ? `
           <div style="margin-top:10px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);font-size:var(--font-size-xs);color:#b45309;">
-            <i class="fas fa-exclamation-triangle"></i> <strong>${result.unmatched} chauffeur(s) Yango non matché(s)</strong> sur ${result.totalYangoDrivers || '?'}
+            <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> <strong>${result.unmatched} chauffeur(s) Yango non matché(s)</strong> sur ${result.totalYangoDrivers || '?'}
             <div style="margin-top:4px;max-height:100px;overflow-y:auto;font-size:10px;color:var(--text-muted);">
               ${(result.unmatchedDrivers || []).join(' &bull; ')}
             </div>
@@ -867,10 +867,10 @@ const YangoPage = {
     if (driversContainer) {
       driversContainer.innerHTML = `
         <div class="yango-error">
-          <i class="fas fa-exclamation-triangle"></i>
+          <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
           <span>${message}</span>
           <button class="btn btn-sm btn-secondary" onclick="YangoPage._loadData()" style="margin-top:8px;">
-            <i class="fas fa-redo"></i> Reessayer
+            <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Reessayer
           </button>
         </div>
       `;

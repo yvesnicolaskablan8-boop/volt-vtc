@@ -161,46 +161,46 @@ const DashboardPage = {
   _template(d) {
     return `
       <div class="page-header">
-        <h1><i class="fas fa-gauge-high"></i> Tableau de bord</h1>
+        <h1><iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon> Tableau de bord</h1>
         <div class="page-actions">
-          <button class="btn btn-secondary" onclick="DashboardPage.refresh()"><i class="fas fa-sync-alt"></i> Actualiser</button>
+          <button class="btn btn-secondary" onclick="DashboardPage.refresh()"><iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser</button>
         </div>
       </div>
 
       <!-- KPI Cards -->
       <div class="grid-4">
         <div class="kpi-card">
-          <div class="kpi-icon"><i class="fas fa-coins"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.caThisMonth)}</div>
           <div class="kpi-label">Chiffre d'affaires du mois</div>
           <div class="kpi-trend ${d.caTrend >= 0 ? 'up' : 'down'}">
-            <i class="fas fa-arrow-${d.caTrend >= 0 ? 'up' : 'down'}"></i> ${Math.abs(d.caTrend).toFixed(1)}%
+            <iconify-icon icon="solar:arrow-${d.caTrend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(d.caTrend).toFixed(1)}%
           </div>
         </div>
         <div class="kpi-card green">
-          <div class="kpi-icon"><i class="fas fa-money-bill-transfer"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
           <div class="kpi-label">Versements recus ce mois</div>
           <div class="kpi-trend ${d.retardCount > 0 ? 'down' : 'up'}">
-            <i class="fas fa-exclamation-triangle"></i> ${d.retardCount} en retard
+            <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
           </div>
         </div>
         <div class="kpi-card cyan">
-          <div class="kpi-icon"><i class="fas fa-route"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:route-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatNumber(d.monthCourses)}</div>
           <div class="kpi-label">Courses ce mois</div>
           <div class="kpi-trend neutral">
-            <i class="fas fa-users"></i> ${d.activeCount} chauffeurs actifs
+            <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon> ${d.activeCount} chauffeurs actifs
           </div>
         </div>
         <div class="kpi-card yellow">
-          <div class="kpi-icon"><i class="fas fa-car"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.vehiclesActifs}</div>
           <div class="kpi-label">Vehicules en service</div>
           <div class="kpi-trend neutral">
-            <i class="fas fa-bolt" style="color:var(--volt-yellow)"></i> ${d.vehiclesEV} EV
+            <iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--volt-yellow)"></iconify-icon> ${d.vehiclesEV} EV
             <span style="margin:0 2px">&bull;</span>
-            <i class="fas fa-gas-pump"></i> ${d.vehiclesThermique} therm.
+            <iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon> ${d.vehiclesThermique} therm.
           </div>
         </div>
       </div>
@@ -212,7 +212,7 @@ const DashboardPage = {
       <div class="charts-grid">
         <div class="chart-card full-width">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-line"></i> Evolution du chiffre d'affaires</div>
+            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Evolution du chiffre d'affaires</div>
           </div>
           <div class="chart-container" style="height: 300px;">
             <canvas id="chart-revenue"></canvas>
@@ -221,7 +221,7 @@ const DashboardPage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-bar"></i> Versements hebdomadaires</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Versements hebdomadaires</div>
           </div>
           <div class="chart-container" style="height: 280px;">
             <canvas id="chart-payments"></canvas>
@@ -230,7 +230,7 @@ const DashboardPage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-pie"></i> Repartition des courses</div>
+            <div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Repartition des courses</div>
           </div>
           <div class="chart-container" style="height: 280px;">
             <canvas id="chart-rides"></canvas>
@@ -242,7 +242,7 @@ const DashboardPage = {
       <div class="charts-grid" style="margin-top: var(--space-lg);">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-bar"></i> Rentabilite par vehicule</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Rentabilite par vehicule</div>
           </div>
           <div class="chart-container" style="height: 280px;">
             <canvas id="chart-profit"></canvas>
@@ -489,7 +489,7 @@ const DashboardPage = {
     const rows = d.maintenanceAlerts.slice(0, 5).map(m => {
       const isRetard = m.statut === 'en_retard';
       const color = isRetard ? '#ef4444' : '#f59e0b';
-      const icon = isRetard ? 'fa-exclamation-circle' : 'fa-exclamation-triangle';
+      const icon = isRetard ? 'solar:danger-circle-bold-duotone' : 'solar:danger-triangle-bold-duotone';
       const badgeLabel = isRetard ? 'EN RETARD' : 'URGENT';
       let echeance = '';
       if (m.prochaineDate) {
@@ -502,7 +502,7 @@ const DashboardPage = {
       const chauffeurInfo = m.chauffeurNom ? ' \u2014 ' + m.chauffeurNom : '';
 
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);cursor:pointer;" onclick="Router.navigate('/vehicules/${m.vehiculeId}')">
-        <i class="fas ${icon}" style="color:${color};font-size:0.9rem;flex-shrink:0;"></i>
+        <iconify-icon icon="${icon}" style="color:${color};font-size:0.9rem;flex-shrink:0;"></iconify-icon>
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${typeLabel} <span style="font-size:var(--font-size-xs);font-weight:700;color:${color};">${badgeLabel}</span></div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.vehiculeLabel} (${m.immatriculation})${chauffeurInfo}</div>
@@ -515,7 +515,7 @@ const DashboardPage = {
 
     return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid ${borderColor};">
       <div class="card-header">
-        <span class="card-title"><i class="fas fa-tools" style="color:${borderColor};"></i> Alertes maintenance (${d.maintenanceAlerts.length})</span>
+        <span class="card-title"><iconify-icon icon="solar:wrench-bold-duotone" style="color:${borderColor};"></iconify-icon> Alertes maintenance (${d.maintenanceAlerts.length})</span>
         <a href="#/maintenances" class="btn btn-sm btn-secondary">Voir tout</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">

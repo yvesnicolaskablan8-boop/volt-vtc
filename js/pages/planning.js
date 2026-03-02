@@ -37,10 +37,10 @@ const PlanningPage = {
   _template() {
     return `
       <div class="page-header">
-        <h1><i class="fas fa-calendar-alt"></i> Planning Chauffeurs</h1>
+        <h1><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning Chauffeurs</h1>
         <div class="page-actions">
-          <button class="btn btn-primary" id="btn-add-absence"><i class="fas fa-calendar-minus"></i> Déclarer une absence</button>
-          <button class="btn btn-success" id="btn-add-shift"><i class="fas fa-calendar-plus"></i> Ajouter un créneau</button>
+          <button class="btn btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Déclarer une absence</button>
+          <button class="btn btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Ajouter un créneau</button>
         </div>
       </div>
 
@@ -48,15 +48,15 @@ const PlanningPage = {
       <div class="card" style="margin-bottom:var(--space-lg);padding:var(--space-md);">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
           <div style="display:flex;align-items:center;gap:var(--space-sm);">
-            <button class="btn btn-sm btn-secondary" id="btn-prev"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn btn-sm btn-secondary" id="btn-prev"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
             <h3 id="planning-period-label" style="margin:0;min-width:220px;text-align:center;font-size:var(--font-size-base);"></h3>
-            <button class="btn btn-sm btn-secondary" id="btn-next"><i class="fas fa-chevron-right"></i></button>
+            <button class="btn btn-sm btn-secondary" id="btn-next"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
             <button class="btn btn-sm btn-secondary" id="btn-today" style="margin-left:var(--space-sm);">Aujourd'hui</button>
           </div>
           <div class="tabs" id="planning-view-tabs" style="margin:0;">
-            <div class="tab active" data-view="week"><i class="fas fa-calendar-week"></i> Semaine</div>
-            <div class="tab" data-view="month"><i class="fas fa-calendar"></i> Mois</div>
-            <div class="tab" data-view="stats"><i class="fas fa-chart-bar"></i> Statistiques</div>
+            <div class="tab active" data-view="week"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Semaine</div>
+            <div class="tab" data-view="month"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
+            <div class="tab" data-view="stats"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Statistiques</div>
           </div>
         </div>
       </div>
@@ -219,22 +219,22 @@ const PlanningPage = {
       <!-- KPIs semaine -->
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
         <div class="kpi-card green">
-          <div class="kpi-icon"><i class="fas fa-users"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${chauffeurs.length}</div>
           <div class="kpi-label">Chauffeurs actifs</div>
         </div>
         <div class="kpi-card cyan">
-          <div class="kpi-icon"><i class="fas fa-calendar-check"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${filledSlots}</div>
           <div class="kpi-label">Créneaux planifiés</div>
         </div>
         <div class="kpi-card yellow">
-          <div class="kpi-icon"><i class="fas fa-calendar-minus"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${uniqueAbsDrivers}</div>
           <div class="kpi-label">Chauffeurs absents</div>
         </div>
         <div class="kpi-card ${filledSlots / totalSlots >= 0.7 ? 'green' : 'red'}">
-          <div class="kpi-icon"><i class="fas fa-percentage"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${totalSlots > 0 ? Math.round(filledSlots / totalSlots * 100) : 0}%</div>
           <div class="kpi-label">Taux de couverture</div>
         </div>
@@ -307,7 +307,7 @@ const PlanningPage = {
 
                   return `<td style="padding:4px;text-align:center;${isToday ? 'background:rgba(59,130,246,0.05);' : ''}">
                     <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="border:1px dashed var(--border-color);border-radius:6px;padding:8px 4px;cursor:pointer;opacity:0.4;transition:all 0.2s;" onmouseenter="this.style.opacity='1';this.style.borderColor='var(--volt-blue)'" onmouseleave="this.style.opacity='0.4';this.style.borderColor='var(--border-color)'">
-                      <i class="fas fa-plus" style="font-size:10px;color:var(--text-muted);"></i>
+                      <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:10px;color:var(--text-muted);"></iconify-icon>
                     </div>
                   </td>`;
                 }).join('')}
@@ -476,7 +476,7 @@ const PlanningPage = {
 
       <!-- Tableau détaillé par chauffeur -->
       <div class="card" style="margin-bottom:var(--space-lg);">
-        <div class="card-header"><span class="card-title"><i class="fas fa-users"></i> Détail par chauffeur — ${Utils.getMonthName(month)} ${year}</span></div>
+        <div class="card-header"><span class="card-title"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon> Détail par chauffeur — ${Utils.getMonthName(month)} ${year}</span></div>
         <div style="overflow-x:auto;">
           <table style="width:100%;border-collapse:collapse;">
             <thead>
@@ -522,11 +522,11 @@ const PlanningPage = {
       <!-- Charts -->
       <div class="charts-grid">
         <div class="chart-card">
-          <div class="chart-header"><div class="chart-title"><i class="fas fa-chart-bar"></i> Jours travaillés par chauffeur</div></div>
+          <div class="chart-header"><div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Jours travaillés par chauffeur</div></div>
           <div class="chart-container" style="height:300px;"><canvas id="chart-planning-worked"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-header"><div class="chart-title"><i class="fas fa-chart-pie"></i> Types d'absences (flotte)</div></div>
+          <div class="chart-header"><div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Types d'absences (flotte)</div></div>
           <div class="chart-container" style="height:300px;"><canvas id="chart-planning-absences"></canvas></div>
         </div>
       </div>
@@ -632,7 +632,7 @@ const PlanningPage = {
         plugins: [Utils.doughnutCenterPlugin(totalAbsenceDays, 'jours absence')]
       }));
     } else if (ctx2) {
-      ctx2.parentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:var(--font-size-sm);"><i class="fas fa-info-circle" style="margin-right:8px;"></i> Aucune absence enregistrée ce mois</div>';
+      ctx2.parentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:var(--font-size-sm);"><iconify-icon icon="solar:info-circle-bold-duotone" style="margin-right:8px;"></iconify-icon> Aucune absence enregistrée ce mois</div>';
     }
   },
 
@@ -654,7 +654,7 @@ const PlanningPage = {
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2, placeholder: 'Zone, client particulier, instructions...' }
     ];
 
-    Modal.form('<i class="fas fa-calendar-plus text-success"></i> Ajouter un créneau', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:calendar-add-bold-duotone" class="text-success"></iconify-icon> Ajouter un créneau', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -683,7 +683,7 @@ const PlanningPage = {
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form('<i class="fas fa-edit text-blue"></i> Modifier le créneau', FormBuilder.build(fields, shift), () => {
+    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier le créneau', FormBuilder.build(fields, shift), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       Store.update('planning', id, FormBuilder.getValues(body));
@@ -700,7 +700,7 @@ const PlanningPage = {
       if (footer) {
         const delBtn = document.createElement('button');
         delBtn.className = 'btn btn-danger';
-        delBtn.innerHTML = '<i class="fas fa-trash"></i> Supprimer';
+        delBtn.innerHTML = '<iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer';
         delBtn.style.marginRight = 'auto';
         delBtn.onclick = () => {
           Store.delete('planning', id);
@@ -732,7 +732,7 @@ const PlanningPage = {
       { name: 'motif', label: 'Motif / Commentaire', type: 'textarea', rows: 2, placeholder: 'Raison de l\'absence...' }
     ];
 
-    Modal.form('<i class="fas fa-calendar-minus text-danger"></i> Déclarer une absence', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:calendar-minimalistic-bold-duotone" class="text-danger"></iconify-icon> Déclarer une absence', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -758,7 +758,7 @@ const PlanningPage = {
     const content = `
       <div style="display:flex;flex-direction:column;gap:var(--space-md);">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:48px;height:48px;border-radius:50%;background:${this._absenceTypeColor(a.type)};display:flex;align-items:center;justify-content:center;"><i class="fas fa-calendar-minus" style="color:#fff;font-size:18px;"></i></div>
+          <div style="width:48px;height:48px;border-radius:50%;background:${this._absenceTypeColor(a.type)};display:flex;align-items:center;justify-content:center;"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone" style="color:#fff;font-size:18px;"></iconify-icon></div>
           <div>
             <div style="font-weight:600;font-size:var(--font-size-base);">${nom}</div>
             <span class="badge" style="background:${this._absenceTypeColor(a.type)}33;color:${this._absenceTypeColor(a.type)};">${this._absenceTypeLabel(a.type)}</span>
@@ -772,8 +772,8 @@ const PlanningPage = {
       </div>
     `;
 
-    Modal.open(`<i class="fas fa-info-circle"></i> Détail absence`, content, `
-      <button class="btn btn-danger" id="btn-delete-absence" style="margin-right:auto;"><i class="fas fa-trash"></i> Supprimer</button>
+    Modal.open(`<iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Détail absence`, content, `
+      <button class="btn btn-danger" id="btn-delete-absence" style="margin-right:auto;"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer</button>
       <button class="btn btn-secondary" onclick="Modal.close()">Fermer</button>
     `);
 

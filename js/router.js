@@ -73,11 +73,11 @@ const Router = {
       const container = document.getElementById('page-content');
       container.innerHTML = `
         <div class="access-restricted">
-          <i class="fas fa-lock"></i>
+          <iconify-icon icon="solar:lock-bold-duotone"></iconify-icon>
           <h2>Accès restreint</h2>
           <p>Vous n'avez pas les permissions nécessaires pour accéder à cette page. Contactez votre administrateur.</p>
           <button class="btn btn-primary" style="margin-top: var(--space-lg);" onclick="Router.navigate('/dashboard')">
-            <i class="fas fa-home"></i> Retour au tableau de bord
+            <iconify-icon icon="solar:home-bold-duotone"></iconify-icon> Retour au tableau de bord
           </button>
         </div>
       `;

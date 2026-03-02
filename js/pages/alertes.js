@@ -30,10 +30,10 @@ const AlertesPage = {
   _template() {
     return `
       <div class="page-header">
-        <h1><i class="fas fa-bell"></i> Centre d'Alertes</h1>
+        <h1><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Centre d'Alertes</h1>
         <div class="page-actions">
-          <button class="btn btn-sm btn-secondary" id="btn-refresh-alerts"><i class="fas fa-sync-alt"></i> Actualiser</button>
-          <button class="btn btn-sm btn-secondary" id="btn-export-alerts"><i class="fas fa-file-pdf"></i> Exporter PDF</button>
+          <button class="btn btn-sm btn-secondary" id="btn-refresh-alerts"><iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser</button>
+          <button class="btn btn-sm btn-secondary" id="btn-export-alerts"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> Exporter PDF</button>
         </div>
       </div>
 
@@ -46,16 +46,16 @@ const AlertesPage = {
       <!-- Filtres par catégorie -->
       <div class="card" style="margin-bottom:var(--space-lg);padding:var(--space-sm) var(--space-md);">
         <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;align-items:center;" id="alert-filters">
-          <button class="btn btn-sm btn-primary alert-filter active" data-filter="all"><i class="fas fa-list"></i> Toutes</button>
-          <button class="btn btn-sm btn-secondary alert-filter" data-filter="critique"><i class="fas fa-exclamation-circle"></i> Critiques</button>
-          <button class="btn btn-sm btn-secondary alert-filter" data-filter="urgent"><i class="fas fa-exclamation-triangle"></i> Urgentes</button>
-          <button class="btn btn-sm btn-secondary alert-filter" data-filter="attention"><i class="fas fa-info-circle"></i> Attention</button>
+          <button class="btn btn-sm btn-primary alert-filter active" data-filter="all"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon> Toutes</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="critique"><iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon> Critiques</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="urgent"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Urgentes</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="attention"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Attention</button>
           <span style="flex:1;"></span>
-          <button class="btn btn-sm btn-secondary alert-filter" data-filter="documents"><i class="fas fa-id-card"></i> Documents</button>
-          <button class="btn btn-sm btn-secondary alert-filter" data-filter="vehicules"><i class="fas fa-car"></i> Véhicules</button>
-          <button class="btn btn-sm btn-secondary alert-filter" data-filter="versements"><i class="fas fa-money-bill"></i> Versements</button>
-          <button class="btn btn-sm btn-secondary alert-filter" data-filter="conduite"><i class="fas fa-tachometer-alt"></i> Conduite</button>
-          <button class="btn btn-sm btn-secondary alert-filter" data-filter="finance"><i class="fas fa-calculator"></i> Finance</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="documents"><iconify-icon icon="solar:user-id-bold-duotone"></iconify-icon> Documents</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="vehicules"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon> Véhicules</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="versements"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon> Versements</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="conduite"><iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon> Conduite</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="finance"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Finance</button>
         </div>
       </div>
 
@@ -65,11 +65,11 @@ const AlertesPage = {
       <!-- Charts -->
       <div class="charts-grid" style="margin-top:var(--space-lg);">
         <div class="chart-card">
-          <div class="chart-header"><div class="chart-title"><i class="fas fa-chart-pie"></i> Répartition par catégorie</div></div>
+          <div class="chart-header"><div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Répartition par catégorie</div></div>
           <div class="chart-container" style="height:280px;"><canvas id="chart-alerts-category"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-header"><div class="chart-title"><i class="fas fa-chart-bar"></i> Répartition par niveau</div></div>
+          <div class="chart-header"><div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Répartition par niveau</div></div>
           <div class="chart-container" style="height:280px;"><canvas id="chart-alerts-level"></canvas></div>
         </div>
       </div>
@@ -138,7 +138,7 @@ const AlertesPage = {
         <div class="card" style="border-left:4px solid var(--primary);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));">
           <div style="display:flex;align-items:center;gap:var(--space-md);flex-wrap:wrap;">
             <div style="width:40px;height:40px;border-radius:50%;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--primary);">
-              <i class="fas fa-paper-plane"></i>
+              <iconify-icon icon="solar:plain-bold-duotone"></iconify-icon>
             </div>
             <div style="flex:1;min-width:200px;">
               <div style="font-weight:600;font-size:var(--font-size-sm);">Notifications ce mois</div>
@@ -147,7 +147,7 @@ const AlertesPage = {
               </div>
             </div>
             <a href="#/parametres" class="btn btn-sm btn-secondary" onclick="setTimeout(()=>{const tabs=document.querySelectorAll('#settings-tabs .tab');tabs.forEach(t=>{if(t.dataset.tab==='notifications-settings'){t.click();}});},200);">
-              <i class="fas fa-cog"></i> Configurer
+              <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon> Configurer
             </a>
           </div>
         </div>
@@ -185,7 +185,7 @@ const AlertesPage = {
             chauffeurId: ch.id,
             action: 'Renouveler le document',
             actionRoute: `#/chauffeurs/${ch.id}`,
-            icon: 'fa-id-card',
+            icon: 'solar:user-id-bold-duotone',
             date: doc.dateExpiration
           });
         } else if (daysUntil <= 30) {
@@ -198,7 +198,7 @@ const AlertesPage = {
             chauffeurId: ch.id,
             action: 'Planifier le renouvellement',
             actionRoute: `#/chauffeurs/${ch.id}`,
-            icon: 'fa-id-card',
+            icon: 'solar:user-id-bold-duotone',
             date: doc.dateExpiration
           });
         } else if (daysUntil <= 90) {
@@ -211,7 +211,7 @@ const AlertesPage = {
             chauffeurId: ch.id,
             action: 'Voir la fiche chauffeur',
             actionRoute: `#/chauffeurs/${ch.id}`,
-            icon: 'fa-id-card',
+            icon: 'solar:user-id-bold-duotone',
             date: doc.dateExpiration
           });
         }
@@ -228,7 +228,7 @@ const AlertesPage = {
           chauffeurId: ch.id,
           action: 'Assigner un véhicule',
           actionRoute: `#/chauffeurs/${ch.id}`,
-          icon: 'fa-car',
+          icon: 'solar:car-bold-duotone',
           date: todayStr
         });
       }
@@ -252,7 +252,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Planifier la révision',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'fa-wrench',
+            icon: 'solar:wrench-bold-duotone',
             date: todayStr
           });
         } else if (kmRestant <= 2000) {
@@ -265,7 +265,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Planifier la révision',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'fa-wrench',
+            icon: 'solar:wrench-bold-duotone',
             date: todayStr
           });
         } else if (kmRestant <= 5000) {
@@ -278,7 +278,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Voir la fiche véhicule',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'fa-wrench',
+            icon: 'solar:wrench-bold-duotone',
             date: todayStr
           });
         }
@@ -296,7 +296,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Planifier une recharge',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'fa-battery-empty',
+            icon: 'solar:battery-charge-minimalistic-bold-duotone',
             date: todayStr
           });
         } else if (v.niveauBatterie <= 30) {
@@ -309,7 +309,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Voir le véhicule',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'fa-battery-quarter',
+            icon: 'solar:battery-low-bold-duotone',
             date: todayStr
           });
         }
@@ -365,7 +365,7 @@ const AlertesPage = {
           vehiculeId: v.id,
           action: 'Voir le véhicule',
           actionRoute: `#/vehicules/${v.id}`,
-          icon: 'fa-calendar-check',
+          icon: 'solar:calendar-mark-bold-duotone',
           date: m.prochaineDate || todayStr
         });
       });
@@ -384,7 +384,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Renouveler l\'assurance',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'fa-shield-halved',
+            icon: 'solar:shield-bold-duotone',
             date: v.dateExpirationAssurance
           });
         } else if (daysUntil <= 30) {
@@ -397,7 +397,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Contacter l\'assureur',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'fa-shield-halved',
+            icon: 'solar:shield-bold-duotone',
             date: v.dateExpirationAssurance
           });
         } else if (daysUntil <= 60) {
@@ -410,7 +410,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Voir le véhicule',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'fa-shield-halved',
+            icon: 'solar:shield-bold-duotone',
             date: v.dateExpirationAssurance
           });
         }
@@ -443,7 +443,7 @@ const AlertesPage = {
         chauffeurId: chId,
         action: 'Voir les versements',
         actionRoute: '#/versements',
-        icon: 'fa-money-bill-transfer',
+        icon: 'solar:transfer-horizontal-bold-duotone',
         date: vrs[vrs.length - 1].date
       });
     });
@@ -468,7 +468,7 @@ const AlertesPage = {
         chauffeurId: chId,
         action: 'Voir les versements',
         actionRoute: '#/versements',
-        icon: 'fa-money-bill-transfer',
+        icon: 'solar:transfer-horizontal-bold-duotone',
         date: vrs[vrs.length - 1].date
       });
     });
@@ -483,7 +483,7 @@ const AlertesPage = {
         description: `${enAttente.length} versement${enAttente.length > 1 ? 's' : ''} à valider pour un total de ${Utils.formatCurrency(enAttente.reduce((s, v) => s + v.commission, 0))}`,
         action: 'Valider les versements',
         actionRoute: '#/versements',
-        icon: 'fa-clock',
+        icon: 'solar:clock-circle-bold-duotone',
         date: todayStr
       });
     }
@@ -503,7 +503,7 @@ const AlertesPage = {
           chauffeurId: ch.id,
           action: 'Voir l\'analyse GPS',
           actionRoute: '#/gps-conduite',
-          icon: 'fa-tachometer-alt',
+          icon: 'solar:speedometer-bold-duotone',
           date: latestGps.date
         });
       } else if (latestGps && latestGps.scoreGlobal < 70) {
@@ -516,7 +516,7 @@ const AlertesPage = {
           chauffeurId: ch.id,
           action: 'Voir l\'analyse GPS',
           actionRoute: '#/gps-conduite',
-          icon: 'fa-tachometer-alt',
+          icon: 'solar:speedometer-bold-duotone',
           date: latestGps.date
         });
       }
@@ -537,7 +537,7 @@ const AlertesPage = {
         description: `${facturesRetard.length} facture${facturesRetard.length > 1 ? 's' : ''} impayée${facturesRetard.length > 1 ? 's' : ''} pour un total de ${Utils.formatCurrency(totalRetard)}`,
         action: 'Voir les factures',
         actionRoute: '#/comptabilite',
-        icon: 'fa-file-invoice',
+        icon: 'solar:file-text-bold-duotone',
         date: todayStr
       });
     }
@@ -552,7 +552,7 @@ const AlertesPage = {
         description: `Montant total en attente : ${Utils.formatCurrency(totalAttente)}`,
         action: 'Voir les factures',
         actionRoute: '#/comptabilite',
-        icon: 'fa-file-invoice',
+        icon: 'solar:file-text-bold-duotone',
         date: todayStr
       });
     }
@@ -580,7 +580,7 @@ const AlertesPage = {
           description: `Dépensé ${Utils.formatCurrency(spent)} sur ${Utils.formatCurrency(monthlyBudget)} prévu (${pct}%). Dépassement : ${Utils.formatCurrency(depassement)}`,
           action: 'Voir le budget',
           actionRoute: '#/comptabilite',
-          icon: 'fa-bullseye',
+          icon: 'solar:target-bold-duotone',
           date: todayStr
         });
       }
@@ -602,28 +602,28 @@ const AlertesPage = {
 
     document.getElementById('alerts-kpis').innerHTML = `
       <div class="kpi-card red">
-        <div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div>
+        <div class="kpi-icon"><iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon></div>
         <div class="kpi-value" style="color:var(--danger);">${critiques}</div>
         <div class="kpi-label">Alertes critiques</div>
-        <div class="kpi-trend down"><i class="fas fa-fire"></i> Action immédiate requise</div>
+        <div class="kpi-trend down"><iconify-icon icon="solar:fire-bold-duotone"></iconify-icon> Action immédiate requise</div>
       </div>
       <div class="kpi-card yellow">
-        <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
         <div class="kpi-value" style="color:var(--warning);">${urgentes}</div>
         <div class="kpi-label">Alertes urgentes</div>
-        <div class="kpi-trend down"><i class="fas fa-clock"></i> À traiter cette semaine</div>
+        <div class="kpi-trend down"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> À traiter cette semaine</div>
       </div>
       <div class="kpi-card cyan">
-        <div class="kpi-icon"><i class="fas fa-info-circle"></i></div>
+        <div class="kpi-icon"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon></div>
         <div class="kpi-value">${attention}</div>
         <div class="kpi-label">Points d'attention</div>
-        <div class="kpi-trend"><i class="fas fa-eye"></i> À surveiller</div>
+        <div class="kpi-trend"><iconify-icon icon="solar:eye-bold"></iconify-icon> À surveiller</div>
       </div>
       <div class="kpi-card ${alerts.length === 0 ? 'green' : ''}">
-        <div class="kpi-icon"><i class="fas fa-bell"></i></div>
+        <div class="kpi-icon"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon></div>
         <div class="kpi-value">${alerts.length}</div>
         <div class="kpi-label">Total alertes</div>
-        ${alerts.length === 0 ? '<div class="kpi-trend up"><i class="fas fa-check"></i> Tout est en ordre !</div>' : ''}
+        ${alerts.length === 0 ? '<div class="kpi-trend up"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tout est en ordre !</div>' : ''}
       </div>
     `;
   },
@@ -643,7 +643,7 @@ const AlertesPage = {
     if (filtered.length === 0) {
       container.innerHTML = `
         <div class="card" style="text-align:center;padding:var(--space-2xl);">
-          <i class="fas fa-check-circle" style="font-size:48px;color:var(--success);margin-bottom:var(--space-md);"></i>
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:48px;color:var(--success);margin-bottom:var(--space-md);"></iconify-icon>
           <h3 style="margin-bottom:var(--space-sm);">Aucune alerte ${this._currentFilter !== 'all' ? 'dans cette catégorie' : ''}</h3>
           <p style="color:var(--text-muted);">${this._currentFilter === 'all' ? 'Tout est en ordre ! Continuez ainsi.' : 'Pas d\'alerte pour ce filtre.'}</p>
         </div>
@@ -653,34 +653,34 @@ const AlertesPage = {
 
     container.innerHTML = filtered.map(alert => {
       const niveauConfig = {
-        critique: { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.3)', icon: 'fa-exclamation-circle', label: 'CRITIQUE' },
-        urgent: { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.3)', icon: 'fa-exclamation-triangle', label: 'URGENT' },
-        attention: { color: '#22d3ee', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.3)', icon: 'fa-info-circle', label: 'ATTENTION' }
+        critique: { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.3)', icon: 'solar:danger-circle-bold-duotone', label: 'CRITIQUE' },
+        urgent: { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.3)', icon: 'solar:danger-triangle-bold-duotone', label: 'URGENT' },
+        attention: { color: '#22d3ee', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.3)', icon: 'solar:info-circle-bold-duotone', label: 'ATTENTION' }
       };
       const cfg = niveauConfig[alert.niveau] || niveauConfig.attention;
 
       const catConfig = {
-        documents: { icon: 'fa-id-card', label: 'Documents' },
-        vehicules: { icon: 'fa-car', label: 'Véhicules' },
-        versements: { icon: 'fa-money-bill-transfer', label: 'Versements' },
-        conduite: { icon: 'fa-tachometer-alt', label: 'Conduite' },
-        finance: { icon: 'fa-calculator', label: 'Finance' }
+        documents: { icon: 'solar:user-id-bold-duotone', label: 'Documents' },
+        vehicules: { icon: 'solar:car-bold-duotone', label: 'Véhicules' },
+        versements: { icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements' },
+        conduite: { icon: 'solar:speedometer-bold-duotone', label: 'Conduite' },
+        finance: { icon: 'solar:calculator-bold-duotone', label: 'Finance' }
       };
-      const catCfg = catConfig[alert.categorie] || { icon: 'fa-bell', label: alert.categorie };
+      const catCfg = catConfig[alert.categorie] || { icon: 'solar:bell-bing-bold-duotone', label: alert.categorie };
 
       return `
         <div class="card" style="margin-bottom:var(--space-sm);padding:var(--space-md);border-left:4px solid ${cfg.color};background:${cfg.bg};border-color:${cfg.border};">
           <div style="display:flex;align-items:flex-start;gap:var(--space-md);">
             <!-- Icône niveau -->
             <div style="width:42px;height:42px;border-radius:var(--radius-sm);background:${cfg.color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <i class="fas ${alert.icon || cfg.icon}" style="color:${cfg.color};font-size:16px;"></i>
+              <iconify-icon icon="${alert.icon || cfg.icon}" style="color:${cfg.color};font-size:16px;"></iconify-icon>
             </div>
 
             <!-- Contenu -->
             <div style="flex:1;min-width:0;">
               <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:4px;flex-wrap:wrap;">
                 <span style="font-size:9px;font-weight:700;color:${cfg.color};background:${cfg.color}22;padding:2px 8px;border-radius:10px;letter-spacing:0.5px;">${cfg.label}</span>
-                <span style="font-size:9px;font-weight:600;color:var(--text-muted);background:var(--bg-tertiary);padding:2px 8px;border-radius:10px;"><i class="fas ${catCfg.icon}" style="font-size:8px;margin-right:4px;"></i>${catCfg.label}</span>
+                <span style="font-size:9px;font-weight:600;color:var(--text-muted);background:var(--bg-tertiary);padding:2px 8px;border-radius:10px;"><iconify-icon icon="${catCfg.icon}" style="font-size:8px;margin-right:4px;"></iconify-icon>${catCfg.label}</span>
               </div>
               <div style="font-weight:600;font-size:var(--font-size-sm);margin-bottom:4px;">${alert.titre}</div>
               <div style="font-size:var(--font-size-xs);color:var(--text-muted);line-height:1.5;">${alert.description}</div>
@@ -689,7 +689,7 @@ const AlertesPage = {
             <!-- Action -->
             ${alert.actionRoute ? `
               <a href="${alert.actionRoute}" class="btn btn-sm btn-secondary" style="flex-shrink:0;white-space:nowrap;">
-                ${alert.action} <i class="fas fa-arrow-right" style="font-size:10px;margin-left:4px;"></i>
+                ${alert.action} <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
               </a>
             ` : ''}
           </div>

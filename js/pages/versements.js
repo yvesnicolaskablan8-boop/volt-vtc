@@ -65,30 +65,30 @@ const VersementsPage = {
   _template(d) {
     return `
       <div class="page-header">
-        <h1><i class="fas fa-money-bill-transfer"></i> Versements</h1>
+        <h1><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon> Versements</h1>
         <div class="page-actions">
-          <button class="btn btn-primary" id="btn-add-versement"><i class="fas fa-plus"></i> Nouveau versement</button>
+          <button class="btn btn-primary" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouveau versement</button>
         </div>
       </div>
 
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
         <div class="kpi-card">
-          <div class="kpi-icon"><i class="fas fa-coins"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalCommission)}</div>
           <div class="kpi-label">Commission attendue (mois)</div>
         </div>
         <div class="kpi-card green">
-          <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
           <div class="kpi-label">Montant versé (mois)</div>
         </div>
         <div class="kpi-card ${d.tauxRecouvrement >= 80 ? 'cyan' : 'red'}">
-          <div class="kpi-icon"><i class="fas fa-percentage"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.tauxRecouvrement.toFixed(1)}%</div>
           <div class="kpi-label">Taux de recouvrement</div>
         </div>
         <div class="kpi-card red">
-          <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.byStatus.retard}</div>
           <div class="kpi-label">Versements en retard</div>
         </div>
@@ -97,7 +97,7 @@ const VersementsPage = {
       <div class="charts-grid">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-pie"></i> Statut des versements</div>
+            <div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Statut des versements</div>
           </div>
           <div class="chart-container" style="height:250px;">
             <canvas id="chart-versements-status"></canvas>
@@ -106,7 +106,7 @@ const VersementsPage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-line"></i> Évolution hebdomadaire</div>
+            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Évolution hebdomadaire</div>
           </div>
           <div class="chart-container" style="height:250px;">
             <canvas id="chart-versements-weekly"></canvas>
@@ -254,7 +254,7 @@ const VersementsPage = {
           { label: 'Statut', key: 'statut', render: (v) => {
               let html = Utils.statusBadge(v.statut);
               if (v.soumisParChauffeur) {
-                html += ' <span class="badge badge-info" style="font-size:0.65rem;"><i class="fas fa-mobile-alt"></i> Chauffeur</span>';
+                html += ' <span class="badge badge-info" style="font-size:0.65rem;"><iconify-icon icon="solar:smartphone-bold-duotone"></iconify-icon> Chauffeur</span>';
               }
               return html;
             }
@@ -265,9 +265,9 @@ const VersementsPage = {
         actions: (v) => {
           let btns = '';
           if (v.statut === 'en_attente' || v.statut === 'retard') {
-            btns += `<button class="btn btn-sm btn-success" onclick="VersementsPage._validate('${v.id}')" title="Valider"><i class="fas fa-check"></i></button> `;
+            btns += `<button class="btn btn-sm btn-success" onclick="VersementsPage._validate('${v.id}')" title="Valider"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button> `;
           }
-          btns += `<button class="btn btn-sm btn-secondary" onclick="VersementsPage._edit('${v.id}')" title="Modifier"><i class="fas fa-edit"></i></button>`;
+          btns += `<button class="btn btn-sm btn-secondary" onclick="VersementsPage._edit('${v.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>`;
           return btns;
         }
       });
@@ -317,7 +317,7 @@ const VersementsPage = {
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form('<i class="fas fa-money-bill-transfer text-blue"></i> Nouveau versement', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:transfer-horizontal-bold-duotone" class="text-blue"></iconify-icon> Nouveau versement', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -359,7 +359,7 @@ const VersementsPage = {
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form('<i class="fas fa-edit text-blue"></i> Modifier versement', FormBuilder.build(fields, versement), () => {
+    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier versement', FormBuilder.build(fields, versement), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
       values.commission = Math.round(values.montantBrut * 0.20 * 100) / 100;

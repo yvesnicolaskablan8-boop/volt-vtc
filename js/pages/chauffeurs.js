@@ -17,7 +17,7 @@ const ChauffeursPage = {
     const container = document.getElementById('page-content');
     const chauffeur = Store.findById('chauffeurs', id);
     if (!chauffeur) {
-      container.innerHTML = '<div class="empty-state"><i class="fas fa-user-slash"></i><h3>Chauffeur non trouvé</h3></div>';
+      container.innerHTML = '<div class="empty-state"><iconify-icon icon="solar:user-cross-bold-duotone"></iconify-icon><h3>Chauffeur non trouvé</h3></div>';
       return;
     }
     container.innerHTML = this._detailTemplate(chauffeur);
@@ -44,9 +44,9 @@ const ChauffeursPage = {
 
     return `
       <div class="page-header">
-        <h1><i class="fas fa-id-card"></i> Chauffeurs</h1>
+        <h1><iconify-icon icon="solar:user-id-bold-duotone"></iconify-icon> Chauffeurs</h1>
         <div class="page-actions">
-          <button class="btn btn-primary" id="btn-add-chauffeur"><i class="fas fa-plus"></i> Ajouter</button>
+          <button class="btn btn-primary" id="btn-add-chauffeur"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter</button>
         </div>
       </div>
 
@@ -105,8 +105,8 @@ const ChauffeursPage = {
       pageSize: 10,
       onRowClick: (id) => Router.navigate(`/chauffeurs/${id}`),
       actions: (c) => `
-        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); ChauffeursPage._edit('${c.id}')" title="Modifier"><i class="fas fa-edit"></i></button>
-        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); ChauffeursPage._delete('${c.id}')" title="Supprimer"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); ChauffeursPage._edit('${c.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); ChauffeursPage._delete('${c.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
       `
     });
 
@@ -124,12 +124,12 @@ const ChauffeursPage = {
     return `
       <div class="page-header">
         <h1>
-          <a href="#/chauffeurs" style="color:var(--text-muted)"><i class="fas fa-arrow-left"></i></a>
+          <a href="#/chauffeurs" style="color:var(--text-muted)"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></a>
           Fiche chauffeur
         </h1>
         <div class="page-actions">
-          <button class="btn btn-secondary" onclick="ChauffeursPage._edit('${c.id}')"><i class="fas fa-edit"></i> Modifier</button>
-          <button class="btn btn-danger" onclick="ChauffeursPage._delete('${c.id}')"><i class="fas fa-trash"></i> Supprimer</button>
+          <button class="btn btn-secondary" onclick="ChauffeursPage._edit('${c.id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>
+          <button class="btn btn-danger" onclick="ChauffeursPage._delete('${c.id}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer</button>
         </div>
       </div>
 
@@ -176,16 +176,16 @@ const ChauffeursPage = {
         <!-- Liaison Yango -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-taxi" style="color:#FC4C02"></i> Liaison Yango</span>
+            <span class="card-title"><iconify-icon icon="solar:taxi-bold-duotone" style="color:#FC4C02"></iconify-icon> Liaison Yango</span>
             ${c.yangoDriverId
-              ? '<span class="badge badge-success"><i class="fas fa-link"></i> Lié</span>'
-              : '<span class="badge badge-warning"><i class="fas fa-unlink"></i> Non lié</span>'}
+              ? '<span class="badge badge-success"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lié</span>'
+              : '<span class="badge badge-warning"><iconify-icon icon="solar:link-broken-bold-duotone"></iconify-icon> Non lié</span>'}
           </div>
           ${c.yangoDriverId ? `
             <div style="font-size:var(--font-size-sm);margin-bottom:8px;">
               <span class="text-muted">Yango ID :</span> <code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:11px;">${c.yangoDriverId}</code>
               <button class="btn btn-sm btn-danger" style="margin-left:8px;" onclick="ChauffeursPage._unlinkYango('${c.id}')">
-                <i class="fas fa-unlink"></i> Délier
+                <iconify-icon icon="solar:link-broken-bold-duotone"></iconify-icon> Délier
               </button>
             </div>
           ` : `
@@ -193,7 +193,7 @@ const ChauffeursPage = {
               Ce chauffeur n'est pas encore lié a un profil Yango. Cliquez ci-dessous pour rechercher et lier manuellement.
             </div>
             <button class="btn btn-primary btn-sm" onclick="ChauffeursPage._searchYangoDriver('${c.id}')">
-              <i class="fas fa-search"></i> Rechercher sur Yango
+              <iconify-icon icon="solar:magnifer-bold-duotone"></iconify-icon> Rechercher sur Yango
             </button>
             <div id="yango-search-results" style="margin-top:10px;"></div>
           `}
@@ -203,7 +203,7 @@ const ChauffeursPage = {
         ${c.yangoDriverId ? `
         <div class="card" id="yango-ca-card" style="border-top:3px solid #FC4C02;">
           <div class="card-header">
-            <span class="card-title"><i class="fas fa-wallet" style="color:#FC4C02"></i> CA Yango</span>
+            <span class="card-title"><iconify-icon icon="solar:wallet-bold-duotone" style="color:#FC4C02"></iconify-icon> CA Yango</span>
             <div style="display:flex;align-items:center;gap:8px;">
               <input type="date" id="yango-ca-date" class="form-control"
                 style="width:auto;font-size:12px;padding:4px 8px;min-height:auto;"
@@ -214,7 +214,7 @@ const ChauffeursPage = {
           </div>
           <div id="yango-ca-content" class="card-body">
             <div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-xs);">
-              <i class="fas fa-spinner fa-spin"></i> Chargement des données Yango...
+              <iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement des données Yango...
             </div>
           </div>
         </div>
@@ -241,7 +241,7 @@ const ChauffeursPage = {
       <div class="charts-grid" style="margin-top:var(--space-lg);">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-radar"></i> Scores de conduite</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon> Scores de conduite</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-driver-scores"></canvas>
@@ -250,7 +250,7 @@ const ChauffeursPage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-line"></i> Historique versements</div>
+            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Historique versements</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-driver-payments"></canvas>
@@ -440,12 +440,12 @@ const ChauffeursPage = {
     const liveBadge = document.getElementById('yango-ca-live');
     if (liveBadge) liveBadge.style.display = isToday ? '' : 'none';
 
-    container.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-xs);"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+    container.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-xs);"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>';
 
     const stats = await Store.getYangoDriverStats(chauffeur.yangoDriverId, isToday ? null : selectedDate);
 
     if (!stats || stats.error) {
-      container.innerHTML = `<div style="text-align:center;padding:var(--space-md);color:var(--danger);font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> ${stats?.details || stats?.error || 'Erreur'}</div>`;
+      container.innerHTML = `<div style="text-align:center;padding:var(--space-md);color:var(--danger);font-size:var(--font-size-xs);"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${stats?.details || stats?.error || 'Erreur'}</div>`;
       return;
     }
 
@@ -457,19 +457,19 @@ const ChauffeursPage = {
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
           <div style="font-size:var(--font-size-lg);font-weight:600;color:#22c55e;">${Utils.formatCurrency(stats.totalCash)}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-money-bill-wave" style="font-size:9px"></i> Espèces</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:money-bag-bold-duotone" style="font-size:9px"></iconify-icon> Espèces</div>
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
           <div style="font-size:var(--font-size-lg);font-weight:600;color:#3b82f6;">${Utils.formatCurrency(stats.totalCard)}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-credit-card" style="font-size:9px"></i> Carte</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:card-bold-duotone" style="font-size:9px"></iconify-icon> Carte</div>
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
           <div style="font-size:var(--font-size-lg);font-weight:600;">${stats.nbCourses}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-taxi" style="font-size:9px"></i> Courses</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:taxi-bold-duotone" style="font-size:9px"></iconify-icon> Courses</div>
         </div>
       </div>
       <div style="display:flex;justify-content:center;gap:var(--space-md);margin-top:var(--space-sm);padding-top:var(--space-sm);border-top:1px solid var(--border-color);font-size:var(--font-size-xs);color:var(--text-muted);">
-        ${isToday ? '<span><i class="fas fa-circle" style="color:#FC4C02;font-size:6px;vertical-align:middle"></i> Temps réel</span>' : `<span><i class="fas fa-calendar"></i> ${Utils.formatDate(selectedDate)}</span>`}
+        ${isToday ? '<span><iconify-icon icon="solar:record-circle-bold-duotone" style="color:#FC4C02;font-size:6px;vertical-align:middle"></iconify-icon> Temps réel</span>' : `<span><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> ${Utils.formatDate(selectedDate)}</span>`}
         <span>Maj: ${new Date(stats.derniereMaj).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}</span>
       </div>
     `;
@@ -513,7 +513,7 @@ const ChauffeursPage = {
     const formHtml = FormBuilder.build(fields);
 
     this._currentEditId = null; // Mode creation
-    Modal.form('<i class="fas fa-user-plus text-blue"></i> Nouveau chauffeur', formHtml, () => {
+    Modal.form('<iconify-icon icon="solar:user-plus-bold-duotone" class="text-blue"></iconify-icon> Nouveau chauffeur', formHtml, () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
 
@@ -548,7 +548,7 @@ const ChauffeursPage = {
     const formHtml = FormBuilder.build(fields, chauffeur);
 
     this._currentEditId = id; // Mode edition
-    Modal.form('<i class="fas fa-user-edit text-blue"></i> Modifier chauffeur', formHtml, () => {
+    Modal.form('<iconify-icon icon="solar:user-pen-bold-duotone" class="text-blue"></iconify-icon> Modifier chauffeur', formHtml, () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
 
@@ -609,7 +609,7 @@ const ChauffeursPage = {
       btn.type = 'button';
       btn.className = 'btn btn-secondary quick-add-vehicle-btn';
       btn.style.cssText = 'white-space:nowrap;margin-top:0;height:38px;padding:0 12px;';
-      btn.innerHTML = '<i class="fas fa-plus"></i> <i class="fas fa-car" style="font-size:11px;"></i>';
+      btn.innerHTML = '<iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> <iconify-icon icon="solar:car-bold-duotone" style="font-size:11px;"></iconify-icon>';
       btn.title = 'Créer un véhicule rapidement';
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -642,7 +642,7 @@ const ChauffeursPage = {
       btn.type = 'button';
       btn.className = 'btn btn-secondary yango-search-form-btn';
       btn.style.cssText = 'white-space:nowrap;margin-top:0;height:38px;padding:0 12px;';
-      btn.innerHTML = '<i class="fas fa-search"></i> Yango';
+      btn.innerHTML = '<iconify-icon icon="solar:magnifer-bold-duotone"></iconify-icon> Yango';
       btn.title = 'Rechercher un chauffeur sur Yango';
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -669,12 +669,12 @@ const ChauffeursPage = {
     const nom = (body.querySelector('[name="nom"]')?.value || '').trim();
     const telephone = (body.querySelector('[name="telephone"]')?.value || '').trim();
 
-    container.innerHTML = '<div style="padding:8px;font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Recherche des chauffeurs Yango...</div>';
+    container.innerHTML = '<div style="padding:8px;font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Recherche des chauffeurs Yango...</div>';
 
     try {
       const res = await Store.getYangoDriversForLinking();
       if (!res || !res.drivers) {
-        container.innerHTML = '<div style="color:#ef4444;font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> Impossible de charger les chauffeurs Yango</div>';
+        container.innerHTML = '<div style="color:#ef4444;font-size:var(--font-size-xs);"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Impossible de charger les chauffeurs Yango</div>';
         return;
       }
 
@@ -715,8 +715,8 @@ const ChauffeursPage = {
           <input type="text" class="form-control" id="yango-form-filter-input" placeholder="Filtrer par nom..." style="font-size:var(--font-size-xs);padding:6px 10px;"
             oninput="ChauffeursPage._filterYangoFormResults()">
         </div>
-        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#22c55e;margin-bottom:6px;"><i class="fas fa-star"></i> ${matchCount} correspondance(s) probable(s)</div>` : ''}
-        ${(!prenom && !nom && !telephone) ? '<div style="font-size:var(--font-size-xs);color:var(--warning);margin-bottom:6px;"><i class="fas fa-info-circle"></i> Remplissez nom/téléphone pour un meilleur tri</div>' : ''}
+        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#22c55e;margin-bottom:6px;"><iconify-icon icon="solar:star-bold-duotone"></iconify-icon> ${matchCount} correspondance(s) probable(s)</div>` : ''}
+        ${(!prenom && !nom && !telephone) ? '<div style="font-size:var(--font-size-xs);color:var(--warning);margin-bottom:6px;"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Remplissez nom/téléphone pour un meilleur tri</div>' : ''}
         <div id="yango-form-drivers-list" style="max-height:200px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);">
           ${this._renderYangoFormDriversList(top)}
         </div>
@@ -726,7 +726,7 @@ const ChauffeursPage = {
       // Stocker pour le filtre
       this._yangoFormDriversCache = scored;
     } catch (err) {
-      container.innerHTML = `<div style="color:#ef4444;font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> Erreur: ${err.message}</div>`;
+      container.innerHTML = `<div style="color:#ef4444;font-size:var(--font-size-xs);"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Erreur: ${err.message}</div>`;
     }
   },
 
@@ -737,13 +737,13 @@ const ChauffeursPage = {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border-color);font-size:var(--font-size-xs);${d._score >= 80 ? 'background:rgba(34,197,94,0.06);' : ''}">
         <div style="flex:1;">
           <div style="font-weight:500;">
-            ${d._score >= 80 ? '<i class="fas fa-star" style="color:#22c55e;font-size:9px;"></i> ' : ''}
+            ${d._score >= 80 ? '<iconify-icon icon="solar:star-bold-duotone" style="color:#22c55e;font-size:9px;"></iconify-icon> ' : ''}
             ${d.prenom} ${d.nom}
           </div>
           <div style="color:var(--text-muted);font-size:10px;">${d.telephone || 'Pas de tel'} &bull; ${d.workStatus || '?'}</div>
         </div>
         <button class="btn btn-sm btn-primary" onclick="ChauffeursPage._linkYangoFromForm('${d.id}', '${(d.prenom + ' ' + d.nom).replace(/'/g, "\\'")}')">
-          <i class="fas fa-link"></i> Lier
+          <iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier
         </button>
       </div>
     `).join('');
@@ -781,10 +781,10 @@ const ChauffeursPage = {
     if (container) {
       container.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-sm);font-size:var(--font-size-xs);margin-top:4px;">
-          <i class="fas fa-check-circle" style="color:#22c55e;"></i>
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon>
           <span>Lié à <strong>${yangoNom}</strong> (${yangoId})</span>
           <button type="button" class="btn btn-sm" style="margin-left:auto;padding:2px 8px;font-size:10px;" onclick="ChauffeursPage._unlinkYangoFromForm()">
-            <i class="fas fa-times"></i>
+            <iconify-icon icon="solar:close-circle-bold"></iconify-icon>
           </button>
         </div>
       `;
@@ -841,7 +841,7 @@ const ChauffeursPage = {
     Modal.close();
 
     setTimeout(() => {
-      Modal.form('<i class="fas fa-car text-blue"></i> Création rapide véhicule', quickFormHtml, () => {
+      Modal.form('<iconify-icon icon="solar:car-bold-duotone" class="text-blue"></iconify-icon> Création rapide véhicule', quickFormHtml, () => {
         const body = document.getElementById('modal-body');
         if (!FormBuilder.validate(body, quickFields)) return;
 
@@ -899,8 +899,8 @@ const ChauffeursPage = {
 
     const isEdit = savedValues._editId;
     const title = isEdit
-      ? '<i class="fas fa-user-edit text-blue"></i> Modifier chauffeur'
-      : '<i class="fas fa-user-plus text-blue"></i> Nouveau chauffeur';
+      ? '<iconify-icon icon="solar:user-pen-bold-duotone" class="text-blue"></iconify-icon> Modifier chauffeur'
+      : '<iconify-icon icon="solar:user-plus-bold-duotone" class="text-blue"></iconify-icon> Nouveau chauffeur';
 
     setTimeout(() => {
       Modal.form(title, formHtml, () => {
@@ -949,12 +949,12 @@ const ChauffeursPage = {
     const chauffeur = Store.findById('chauffeurs', chauffeurId);
     if (!chauffeur) return;
 
-    container.innerHTML = '<div style="padding:8px;font-size:var(--font-size-xs);color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Recherche des chauffeurs Yango...</div>';
+    container.innerHTML = '<div style="padding:8px;font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Recherche des chauffeurs Yango...</div>';
 
     try {
       const res = await Store.getYangoDriversForLinking();
       if (!res || !res.drivers) {
-        container.innerHTML = '<div style="color:#ef4444;font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> Impossible de charger les chauffeurs Yango</div>';
+        container.innerHTML = '<div style="color:#ef4444;font-size:var(--font-size-xs);"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Impossible de charger les chauffeurs Yango</div>';
         return;
       }
 
@@ -998,7 +998,7 @@ const ChauffeursPage = {
           <input type="text" class="form-control" id="yango-search-input" placeholder="Filtrer par nom..." style="font-size:var(--font-size-xs);padding:6px 10px;"
             oninput="ChauffeursPage._filterYangoResults()">
         </div>
-        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#22c55e;margin-bottom:6px;"><i class="fas fa-star"></i> ${matchCount} correspondance(s) probable(s)</div>` : ''}
+        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#22c55e;margin-bottom:6px;"><iconify-icon icon="solar:star-bold-duotone"></iconify-icon> ${matchCount} correspondance(s) probable(s)</div>` : ''}
         <div id="yango-drivers-list" style="max-height:250px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);">
           ${this._renderYangoDriversList(top, chauffeurId)}
         </div>
@@ -1009,7 +1009,7 @@ const ChauffeursPage = {
       this._yangoDriversCache = scored;
       this._yangoLinkChauffeurId = chauffeurId;
     } catch (err) {
-      container.innerHTML = `<div style="color:#ef4444;font-size:var(--font-size-xs);"><i class="fas fa-exclamation-triangle"></i> Erreur: ${err.message}</div>`;
+      container.innerHTML = `<div style="color:#ef4444;font-size:var(--font-size-xs);"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Erreur: ${err.message}</div>`;
     }
   },
 
@@ -1020,13 +1020,13 @@ const ChauffeursPage = {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border-color);font-size:var(--font-size-xs);${d._score >= 80 ? 'background:rgba(34,197,94,0.06);' : ''}">
         <div style="flex:1;">
           <div style="font-weight:500;">
-            ${d._score >= 80 ? '<i class="fas fa-star" style="color:#22c55e;font-size:9px;"></i> ' : ''}
+            ${d._score >= 80 ? '<iconify-icon icon="solar:star-bold-duotone" style="color:#22c55e;font-size:9px;"></iconify-icon> ' : ''}
             ${d.prenom} ${d.nom}
           </div>
           <div style="color:var(--text-muted);font-size:10px;">${d.telephone || 'Pas de tel'} &bull; ${d.workStatus || '?'}</div>
         </div>
         <button class="btn btn-sm btn-primary" onclick="ChauffeursPage._linkYango('${chauffeurId}', '${d.id}', '${(d.prenom + ' ' + d.nom).replace(/'/g, "\\'")}')">
-          <i class="fas fa-link"></i> Lier
+          <iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier
         </button>
       </div>
     `).join('');

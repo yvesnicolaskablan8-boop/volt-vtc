@@ -85,24 +85,24 @@ const Utils = {
   // Status badge HTML
   statusBadge(statut) {
     const config = {
-      actif: { class: 'badge-success', icon: 'fa-circle', label: 'Actif' },
-      inactif: { class: 'badge-danger', icon: 'fa-circle', label: 'Inactif' },
-      suspendu: { class: 'badge-warning', icon: 'fa-circle', label: 'Suspendu' },
-      en_service: { class: 'badge-success', icon: 'fa-circle', label: 'En service' },
-      en_maintenance: { class: 'badge-warning', icon: 'fa-wrench', label: 'Maintenance' },
-      hors_service: { class: 'badge-danger', icon: 'fa-circle-xmark', label: 'Hors service' },
-      valide: { class: 'badge-success', icon: 'fa-check', label: 'Validé' },
-      en_attente: { class: 'badge-warning', icon: 'fa-clock', label: 'En attente' },
-      retard: { class: 'badge-danger', icon: 'fa-exclamation-triangle', label: 'En retard' },
-      partiel: { class: 'badge-info', icon: 'fa-adjust', label: 'Partiel' },
-      terminee: { class: 'badge-success', icon: 'fa-check', label: 'Terminée' },
-      en_cours: { class: 'badge-info', icon: 'fa-spinner', label: 'En cours' },
-      annulee: { class: 'badge-danger', icon: 'fa-times', label: 'Annulée' },
-      expire: { class: 'badge-danger', icon: 'fa-exclamation-circle', label: 'Expiré' },
-      a_renouveler: { class: 'badge-warning', icon: 'fa-exclamation-circle', label: 'À renouveler' }
+      actif: { class: 'badge-success', icon: 'solar:record-circle-bold-duotone', label: 'Actif' },
+      inactif: { class: 'badge-danger', icon: 'solar:record-circle-bold-duotone', label: 'Inactif' },
+      suspendu: { class: 'badge-warning', icon: 'solar:record-circle-bold-duotone', label: 'Suspendu' },
+      en_service: { class: 'badge-success', icon: 'solar:record-circle-bold-duotone', label: 'En service' },
+      en_maintenance: { class: 'badge-warning', icon: 'solar:wrench-bold-duotone', label: 'Maintenance' },
+      hors_service: { class: 'badge-danger', icon: 'solar:close-circle-bold-duotone', label: 'Hors service' },
+      valide: { class: 'badge-success', icon: 'solar:check-circle-bold-duotone', label: 'Validé' },
+      en_attente: { class: 'badge-warning', icon: 'solar:clock-circle-bold-duotone', label: 'En attente' },
+      retard: { class: 'badge-danger', icon: 'solar:danger-triangle-bold-duotone', label: 'En retard' },
+      partiel: { class: 'badge-info', icon: 'solar:pie-chart-2-bold-duotone', label: 'Partiel' },
+      terminee: { class: 'badge-success', icon: 'solar:check-circle-bold-duotone', label: 'Terminée' },
+      en_cours: { class: 'badge-info', icon: 'solar:refresh-bold', label: 'En cours' },
+      annulee: { class: 'badge-danger', icon: 'solar:close-circle-bold', label: 'Annulée' },
+      expire: { class: 'badge-danger', icon: 'solar:danger-circle-bold-duotone', label: 'Expiré' },
+      a_renouveler: { class: 'badge-warning', icon: 'solar:danger-circle-bold-duotone', label: 'À renouveler' }
     };
-    const c = config[statut] || { class: 'badge-neutral', icon: 'fa-circle', label: statut };
-    return `<span class="badge ${c.class}"><i class="fas ${c.icon}" style="font-size:6px"></i> ${c.label}</span>`;
+    const c = config[statut] || { class: 'badge-neutral', icon: 'solar:record-circle-bold-duotone', label: statut };
+    return `<span class="badge ${c.class}"><iconify-icon icon="${c.icon}" style="font-size:6px"></iconify-icon> ${c.label}</span>`;
   },
 
   // Score class based on value

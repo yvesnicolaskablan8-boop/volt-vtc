@@ -52,7 +52,7 @@ const Table = {
                 ${columns.map((col, i) => `
                   <th class="${sortCol === i ? 'sorted' : ''}" data-col="${i}" ${col.sortable !== false ? 'data-sortable="true"' : ''}>
                     ${col.label}
-                    ${col.sortable !== false ? `<span class="sort-icon"><i class="fas ${sortCol === i ? (sortDir === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort'}"></i></span>` : ''}
+                    ${col.sortable !== false ? `<span class="sort-icon"><iconify-icon icon="${sortCol === i ? (sortDir === 'asc' ? 'solar:sort-from-bottom-to-top-bold' : 'solar:sort-from-top-to-bottom-bold') : 'solar:sort-bold'}"></iconify-icon></span>` : ''}
                   </th>
                 `).join('')}
                 ${actions ? '<th>Actions</th>' : ''}
@@ -75,7 +75,7 @@ const Table = {
             <div class="table-pagination">
               <span>${start + 1}-${Math.min(start + pageSize, filteredData.length)} sur ${filteredData.length}</span>
               <div class="pagination-controls">
-                <button class="page-btn" data-page="prev" ${currentPage <= 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>
+                <button class="page-btn" data-page="prev" ${currentPage <= 1 ? 'disabled' : ''}><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
                 ${Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                   let p;
                   if (totalPages <= 5) p = i + 1;
@@ -84,7 +84,7 @@ const Table = {
                   else p = currentPage - 2 + i;
                   return `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
                 }).join('')}
-                <button class="page-btn" data-page="next" ${currentPage >= totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>
+                <button class="page-btn" data-page="next" ${currentPage >= totalPages ? 'disabled' : ''}><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
               </div>
             </div>
           ` : `

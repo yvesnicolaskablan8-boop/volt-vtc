@@ -29,10 +29,10 @@ const MessageriePage = {
   _template() {
     return `
       <div class="page-header">
-        <h1><i class="fas fa-comments"></i> Messagerie</h1>
+        <h1><iconify-icon icon="solar:chat-round-dots-bold-duotone"></iconify-icon> Messagerie</h1>
         <div class="page-actions">
-          <button class="btn btn-sm btn-primary" id="btn-new-conv"><i class="fas fa-plus"></i> Nouvelle conversation</button>
-          <button class="btn btn-sm btn-secondary" id="btn-toggle-archived"><i class="fas fa-archive"></i> Archivées</button>
+          <button class="btn btn-sm btn-primary" id="btn-new-conv"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouvelle conversation</button>
+          <button class="btn btn-sm btn-secondary" id="btn-toggle-archived"><iconify-icon icon="solar:archive-bold-duotone"></iconify-icon> Archivées</button>
         </div>
       </div>
 
@@ -43,14 +43,14 @@ const MessageriePage = {
             <input type="text" id="msg-search" placeholder="Rechercher..." class="form-input" style="width:100%;">
           </div>
           <div id="msg-conv-list" class="msg-conv-list">
-            <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+            <div class="loading-spinner"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>
           </div>
         </div>
 
         <!-- Colonne droite : fil de messages -->
         <div class="msg-chat-col" id="msg-chat-col">
           <div class="msg-empty-state">
-            <i class="fas fa-comments" style="font-size:3rem;opacity:0.3;"></i>
+            <iconify-icon icon="solar:chat-round-dots-bold-duotone" style="font-size:3rem;opacity:0.3;"></iconify-icon>
             <p style="margin-top:var(--space-md);opacity:0.5;">Sélectionnez une conversation</p>
           </div>
         </div>
@@ -171,7 +171,7 @@ const MessageriePage = {
         padding: var(--space-sm) var(--space-lg); font-size: 0.85rem;
         opacity: 0.8;
       }
-      .msg-bubble-call i { margin-right: 6px; }
+      .msg-bubble-call iconify-icon { margin-right: 6px; }
       .msg-bubble-system {
         align-self: center; text-align: center;
         font-size: 0.8rem; opacity: 0.5; padding: var(--space-xs) 0;
@@ -214,8 +214,8 @@ const MessageriePage = {
     archBtn?.addEventListener('click', () => {
       const showArchived = archBtn.classList.toggle('active');
       archBtn.innerHTML = showArchived
-        ? '<i class="fas fa-inbox"></i> Actives'
-        : '<i class="fas fa-archive"></i> Archivées';
+        ? '<iconify-icon icon="solar:inbox-bold-duotone"></iconify-icon> Actives'
+        : '<iconify-icon icon="solar:archive-bold-duotone"></iconify-icon> Archivées';
       this._loadConversations(showArchived ? 'archivee' : 'active');
     });
 
@@ -291,10 +291,10 @@ const MessageriePage = {
         if (container) {
           container.innerHTML = `
             <div style="text-align:center;padding:var(--space-xl);opacity:0.6;">
-              <i class="fas fa-exclamation-circle" style="font-size:2rem;color:var(--danger);"></i>
+              <iconify-icon icon="solar:danger-circle-bold-duotone" style="font-size:2rem;color:var(--danger);"></iconify-icon>
               <p style="margin-top:var(--space-sm);">${e.message || 'Erreur de connexion'}</p>
               <button class="btn btn-sm btn-secondary" style="margin-top:var(--space-md);" onclick="MessageriePage._loadConversations()">
-                <i class="fas fa-redo"></i> Réessayer
+                <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Réessayer
               </button>
             </div>
           `;
@@ -310,7 +310,7 @@ const MessageriePage = {
     if (this._conversations.length === 0) {
       container.innerHTML = `
         <div style="text-align:center;padding:var(--space-xl);opacity:0.5;">
-          <i class="fas fa-inbox" style="font-size:2rem;"></i>
+          <iconify-icon icon="solar:inbox-bold-duotone" style="font-size:2rem;"></iconify-icon>
           <p style="margin-top:var(--space-sm);">Aucune conversation</p>
         </div>
       `;
@@ -411,9 +411,9 @@ const MessageriePage = {
           <div class="msg-chat-header-subject">${conv.sujet ? this._esc(conv.sujet) : 'Conversation directe'} ${conv.chauffeurTelephone ? '— ' + this._esc(conv.chauffeurTelephone) : ''}</div>
         </div>
         <div class="msg-chat-actions">
-          ${conv.chauffeurTelephone ? `<button class="btn btn-sm btn-success" id="btn-call-chauffeur" title="Appeler"><i class="fas fa-phone"></i> Appeler</button>` : ''}
+          ${conv.chauffeurTelephone ? `<button class="btn btn-sm btn-success" id="btn-call-chauffeur" title="Appeler"><iconify-icon icon="solar:phone-bold-duotone"></iconify-icon> Appeler</button>` : ''}
           <button class="btn btn-sm btn-secondary" id="btn-archive-conv" title="${isArchived ? 'Réactiver' : 'Archiver'}">
-            <i class="fas fa-${isArchived ? 'inbox' : 'archive'}"></i>
+            <iconify-icon icon="${isArchived ? 'solar:inbox-bold-duotone' : 'solar:archive-bold-duotone'}"></iconify-icon>
           </button>
         </div>
       </div>
@@ -424,7 +424,7 @@ const MessageriePage = {
 
       <div class="msg-chat-input">
         <textarea id="msg-input" placeholder="Écrire un message..." rows="1"></textarea>
-        <button class="btn btn-primary" id="btn-send-msg"><i class="fas fa-paper-plane"></i></button>
+        <button class="btn btn-primary" id="btn-send-msg"><iconify-icon icon="solar:plain-bold-duotone"></iconify-icon></button>
       </div>
     `;
 
@@ -455,18 +455,18 @@ const MessageriePage = {
   _renderMessage(msg) {
     if (msg.type === 'appel') {
       const statutIcon = {
-        completed: 'fa-phone',
-        'no-answer': 'fa-phone-slash',
-        busy: 'fa-phone-slash',
-        failed: 'fa-times-circle',
-        canceled: 'fa-times-circle',
-        initiated: 'fa-phone-volume',
-        ringing: 'fa-phone-volume'
-      }[msg.callData?.statut] || 'fa-phone';
+        completed: 'solar:phone-bold-duotone',
+        'no-answer': 'solar:phone-bold-duotone',
+        busy: 'solar:phone-bold-duotone',
+        failed: 'solar:close-circle-bold-duotone',
+        canceled: 'solar:close-circle-bold-duotone',
+        initiated: 'solar:phone-calling-bold-duotone',
+        ringing: 'solar:phone-calling-bold-duotone'
+      }[msg.callData?.statut] || 'solar:phone-bold-duotone';
 
       return `
         <div class="msg-bubble-call">
-          <i class="fas ${statutIcon}"></i>
+          <iconify-icon icon="${statutIcon}"></iconify-icon>
           ${this._esc(msg.contenu)}
           <div style="font-size:0.7rem;opacity:0.5;margin-top:2px;">${this._formatDateTime(msg.dateCreation)}</div>
         </div>
@@ -476,7 +476,7 @@ const MessageriePage = {
     if (msg.type === 'systeme') {
       return `
         <div class="msg-bubble-system">
-          <i class="fas fa-info-circle"></i> ${this._esc(msg.contenu)}
+          <iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> ${this._esc(msg.contenu)}
         </div>
       `;
     }
@@ -605,7 +605,7 @@ const MessageriePage = {
       if (col) {
         col.innerHTML = `
           <div class="msg-empty-state">
-            <i class="fas fa-comments" style="font-size:3rem;opacity:0.3;"></i>
+            <iconify-icon icon="solar:chat-round-dots-bold-duotone" style="font-size:3rem;opacity:0.3;"></iconify-icon>
             <p style="margin-top:var(--space-md);opacity:0.5;">Sélectionnez une conversation</p>
           </div>
         `;

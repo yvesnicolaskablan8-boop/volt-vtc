@@ -180,39 +180,39 @@ const MotivationPage = {
 
   _template(d) {
     const alerteIcons = {
-      score_baisse: 'fa-arrow-trend-down', faible_activite: 'fa-clock',
-      inactif: 'fa-user-slash', retards_versements: 'fa-money-bill-wave',
-      score_faible: 'fa-shield-halved'
+      score_baisse: 'solar:arrow-down-bold', faible_activite: 'solar:clock-circle-bold-duotone',
+      inactif: 'solar:user-cross-bold-duotone', retards_versements: 'solar:money-bag-bold-duotone',
+      score_faible: 'solar:danger-triangle-bold-duotone'
     };
     const alerteColors = { critique: '#ef4444', haute: '#f59e0b' };
 
     return `
       <div class="page-header">
-        <h1><i class="fas fa-fire"></i> Motivation &amp; Engagement</h1>
+        <h1><iconify-icon icon="solar:fire-bold-duotone"></iconify-icon> Motivation &amp; Engagement</h1>
         <div class="page-actions">
-          <button class="btn btn-secondary" onclick="MotivationPage.render()"><i class="fas fa-sync-alt"></i> Actualiser</button>
+          <button class="btn btn-secondary" onclick="MotivationPage.render()"><iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser</button>
         </div>
       </div>
 
       <!-- KPIs -->
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
         <div class="kpi-card ${d.avgEngagement >= 70 ? 'green' : d.avgEngagement >= 50 ? 'yellow' : 'red'}">
-          <div class="kpi-icon"><i class="fas fa-fire"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:fire-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.avgEngagement}<span style="font-size:var(--font-size-sm);color:var(--text-muted)">/100</span></div>
           <div class="kpi-label">Score engagement moyen</div>
         </div>
         <div class="kpi-card cyan">
-          <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.avgActivite}<span style="font-size:var(--font-size-sm);color:var(--text-muted)">h/j</span></div>
           <div class="kpi-label">Activit&eacute; moy. (7j)</div>
         </div>
         <div class="kpi-card ${d.totalInactifs > 0 ? 'red' : 'green'}">
-          <div class="kpi-icon"><i class="fas fa-user-slash"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:user-cross-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.totalInactifs}<span style="font-size:var(--font-size-sm);color:var(--text-muted)">/${d.totalChauffeurs}</span></div>
           <div class="kpi-label">Inactifs (&gt;7j)</div>
         </div>
         <div class="kpi-card ${d.totalRetards > 0 ? 'yellow' : 'green'}">
-          <div class="kpi-icon"><i class="fas fa-money-bill-wave"></i></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.totalRetards}</div>
           <div class="kpi-label">Versements en retard</div>
         </div>
@@ -222,7 +222,7 @@ const MotivationPage = {
       <div class="charts-grid" style="margin-bottom:var(--space-lg);">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-pie"></i> Distribution engagement</div>
+            <div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Distribution engagement</div>
           </div>
           <div class="chart-container" style="height:260px;">
             <canvas id="chart-engagement-distrib"></canvas>
@@ -230,7 +230,7 @@ const MotivationPage = {
         </div>
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><i class="fas fa-chart-bar"></i> Top 10 — Score engagement</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Top 10 — Score engagement</div>
           </div>
           <div class="chart-container" style="height:260px;">
             <canvas id="chart-engagement-top"></canvas>
@@ -242,12 +242,12 @@ const MotivationPage = {
       ${d.alertes.length > 0 ? `
       <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid ${d.alertes[0].severity === 'critique' ? '#ef4444' : '#f59e0b'};">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Alertes d&eacute;sengagement (${d.alertes.length})</span>
+          <span class="card-title"><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#ef4444;"></iconify-icon> Alertes d&eacute;sengagement (${d.alertes.length})</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           ${d.alertes.slice(0, 8).map(a => `
             <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);cursor:pointer;" onclick="Router.navigate('/chauffeurs/${a.chauffeurId}')">
-              <i class="fas ${alerteIcons[a.type] || 'fa-exclamation'}" style="color:${alerteColors[a.severity]};font-size:0.85rem;width:20px;text-align:center;flex-shrink:0;"></i>
+              <iconify-icon icon="${alerteIcons[a.type] || 'solar:danger-triangle-bold-duotone'}" style="color:${alerteColors[a.severity]};font-size:0.85rem;width:20px;text-align:center;flex-shrink:0;"></iconify-icon>
               <div style="flex:1;min-width:0;">
                 <span style="font-size:var(--font-size-sm);font-weight:600;">${a.prenom} ${a.nom}</span>
                 <span style="font-size:var(--font-size-xs);color:var(--text-muted);margin-left:6px;">${a.detail}</span>
@@ -261,7 +261,7 @@ const MotivationPage = {
       ` : `
       <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid #22c55e;">
         <div style="display:flex;align-items:center;gap:10px;padding:4px;">
-          <i class="fas fa-check-circle" style="color:#22c55e;font-size:1.2rem;"></i>
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;font-size:1.2rem;"></iconify-icon>
           <span style="font-size:var(--font-size-sm);font-weight:600;color:#22c55e;">Aucune alerte — tous les chauffeurs sont engag&eacute;s !</span>
         </div>
       </div>
@@ -270,7 +270,7 @@ const MotivationPage = {
       <!-- Classement complet -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-ranking-star"></i> Classement des chauffeurs</span>
+          <span class="card-title"><iconify-icon icon="solar:star-bold-duotone"></iconify-icon> Classement des chauffeurs</span>
           <span style="font-size:var(--font-size-xs);color:var(--text-muted);">${d.totalChauffeurs} chauffeurs actifs</span>
         </div>
         <div id="ranking-table"></div>
@@ -286,9 +286,9 @@ const MotivationPage = {
           label: '#', key: 'rank',
           render: (r, i) => {
             const idx = d.ranking.indexOf(r) + 1;
-            const medal = idx === 1 ? '<i class="fas fa-trophy" style="color:#facc15;"></i>' :
-                          idx === 2 ? '<i class="fas fa-medal" style="color:#94a3b8;"></i>' :
-                          idx === 3 ? '<i class="fas fa-medal" style="color:#cd7f32;"></i>' :
+            const medal = idx === 1 ? '<iconify-icon icon="solar:cup-bold-duotone" style="color:#facc15;"></iconify-icon>' :
+                          idx === 2 ? '<iconify-icon icon="solar:medal-ribbons-star-bold-duotone" style="color:#94a3b8;"></iconify-icon>' :
+                          idx === 3 ? '<iconify-icon icon="solar:medal-ribbons-star-bold-duotone" style="color:#cd7f32;"></iconify-icon>' :
                           '<span style="color:var(--text-muted);">' + idx + '</span>';
             return medal;
           }
@@ -312,7 +312,7 @@ const MotivationPage = {
           label: 'Conduite', key: 'scoreConduite',
           render: (r) => `
             <span style="font-weight:600;color:${r.scoreConduite >= 70 ? '#22c55e' : r.scoreConduite >= 50 ? '#f59e0b' : '#ef4444'};">${r.scoreConduite}</span>
-            ${r.scoreTrend !== 0 ? `<span style="font-size:10px;color:${r.scoreTrend > 0 ? '#22c55e' : '#ef4444'};margin-left:4px;"><i class="fas fa-arrow-${r.scoreTrend > 0 ? 'up' : 'down'}"></i>${Math.abs(r.scoreTrend)}</span>` : ''}
+            ${r.scoreTrend !== 0 ? `<span style="font-size:10px;color:${r.scoreTrend > 0 ? '#22c55e' : '#ef4444'};margin-left:4px;"><iconify-icon icon="solar:arrow-${r.scoreTrend > 0 ? 'up' : 'down'}-bold"></iconify-icon>${Math.abs(r.scoreTrend)}</span>` : ''}
           `
         },
         {

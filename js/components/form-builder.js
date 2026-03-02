@@ -51,8 +51,8 @@ const FormBuilder = {
               ${field.minlength ? `minlength="${field.minlength}"` : ''}
               autocomplete="new-password">
             <button type="button" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;"
-              onclick="const i=this.previousElementSibling;i.type=i.type==='password'?'text':'password';this.querySelector('i').className=i.type==='password'?'fas fa-eye':'fas fa-eye-slash';">
-              <i class="fas fa-eye"></i>
+              onclick="const i=this.previousElementSibling;i.type=i.type==='password'?'text':'password';this.querySelector('iconify-icon').setAttribute('icon',i.type==='password'?'solar:eye-bold':'solar:eye-closed-bold');">
+              <iconify-icon icon="solar:eye-bold"></iconify-icon>
             </button>
           </div>`;
           break;
