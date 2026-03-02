@@ -91,7 +91,7 @@ const ParametresPage = {
   _renderAccount() {
     const session = Auth.getSession();
     if (!session) return '<div class="card"><p>Vous devez être connecté.</p></div>';
-    const user = Store.findById('users', session.id) || session;
+    const user = Store.findById('users', session.userId) || session;
 
     return `
       <div class="grid-2" style="gap:var(--space-lg);">
