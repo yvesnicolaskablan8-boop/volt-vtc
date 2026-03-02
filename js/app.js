@@ -42,7 +42,7 @@ const ThemeManager = {
     // Update icon
     const icon = document.getElementById('theme-icon');
     if (icon) {
-      icon.className = theme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+      icon.setAttribute('icon', theme === 'dark' ? 'solar:moon-bold' : 'solar:sun-bold-duotone');
     }
 
     // Reconfigure Chart.js colors for the theme
@@ -217,7 +217,8 @@ const App = {
         const input = document.getElementById('login-password');
         if (input) {
           input.type = input.type === 'password' ? 'text' : 'password';
-          newBtn.querySelector('i').className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+          const ico = newBtn.querySelector('iconify-icon');
+          if (ico) ico.setAttribute('icon', input.type === 'password' ? 'solar:eye-bold' : 'solar:eye-closed-bold');
         }
       });
     }
@@ -231,7 +232,8 @@ const App = {
         const input = document.getElementById('new-password');
         if (input) {
           input.type = input.type === 'password' ? 'text' : 'password';
-          newBtn.querySelector('i').className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+          const ico = newBtn.querySelector('iconify-icon');
+          if (ico) ico.setAttribute('icon', input.type === 'password' ? 'solar:eye-bold' : 'solar:eye-closed-bold');
         }
       });
     }
@@ -245,7 +247,8 @@ const App = {
         const input = document.getElementById('confirm-password');
         if (input) {
           input.type = input.type === 'password' ? 'text' : 'password';
-          newBtn.querySelector('i').className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+          const ico = newBtn.querySelector('iconify-icon');
+          if (ico) ico.setAttribute('icon', input.type === 'password' ? 'solar:eye-bold' : 'solar:eye-closed-bold');
         }
       });
     }
@@ -264,7 +267,7 @@ const App = {
     // Disable button
     if (loginBtn) {
       loginBtn.disabled = true;
-      loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
+      loginBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Connexion...';
     }
 
     try {
@@ -298,7 +301,7 @@ const App = {
     } finally {
       if (loginBtn) {
         loginBtn.disabled = false;
-        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Se connecter';
+        loginBtn.innerHTML = '<iconify-icon icon="solar:login-2-bold-duotone"></iconify-icon> Se connecter';
       }
     }
   },
@@ -365,7 +368,7 @@ const App = {
 
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+      btn.innerHTML = '<iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Enregistrement...';
     }
 
     try {
@@ -387,7 +390,7 @@ const App = {
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-lock"></i> Définir le mot de passe';
+        btn.innerHTML = '<iconify-icon icon="solar:lock-bold-duotone"></iconify-icon> Définir le mot de passe';
       }
     }
   },
@@ -395,7 +398,7 @@ const App = {
   _showLoginError(msg) {
     const el = document.getElementById('login-error');
     if (el) {
-      el.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${msg}`;
+      el.innerHTML = `<iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> ${msg}`;
       el.style.display = 'flex';
     }
   },
@@ -408,7 +411,7 @@ const App = {
   _showSetPasswordError(msg) {
     const el = document.getElementById('set-password-error');
     if (el) {
-      el.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${msg}`;
+      el.innerHTML = `<iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> ${msg}`;
       el.style.display = 'flex';
     }
   },

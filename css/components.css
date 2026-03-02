@@ -43,9 +43,9 @@
 
 .card-title {
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
-  letter-spacing: 0;
+  letter-spacing: 0.04em;
 }
 
 /* ========== KPI CARDS ========== */
@@ -80,17 +80,21 @@
 .kpi-card.cyan { border-top-color: rgba(34, 211, 238, 0.4); }
 
 .kpi-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-sm);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   margin-bottom: var(--space-md);
   background: var(--volt-blue-glow);
   color: var(--volt-blue);
   transition: transform var(--transition-fast);
+}
+
+.kpi-icon iconify-icon {
+  font-size: 1.25rem;
 }
 
 .kpi-card:hover .kpi-icon {
@@ -104,7 +108,7 @@
 
 .kpi-value {
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -183,18 +187,18 @@
 }
 
 .btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .btn-primary {
-  background: var(--volt-blue);
+  background: linear-gradient(135deg, var(--volt-blue), var(--volt-blue-dim));
   color: white;
   border-color: var(--volt-blue);
 }
 
 .btn-primary:hover {
-  background: var(--volt-blue-dim);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background: linear-gradient(135deg, var(--volt-blue-dim), var(--volt-blue));
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
 }
 
 .btn-secondary {
@@ -354,7 +358,7 @@
 }
 
 .data-table tbody td {
-  padding: var(--space-sm) var(--space-md);
+  padding: 10px var(--space-md);
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   vertical-align: middle;
@@ -427,6 +431,7 @@
 .form-control {
   width: 100%;
   padding: var(--space-sm) var(--space-md);
+  min-height: 42px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
@@ -535,8 +540,8 @@ textarea.form-control {
 }
 
 .modal-close {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -544,6 +549,10 @@ textarea.form-control {
   color: var(--text-muted);
   cursor: pointer;
   transition: all var(--transition-fast);
+}
+
+.modal-close iconify-icon {
+  font-size: 20px;
 }
 
 .modal-close:hover {
@@ -605,6 +614,13 @@ textarea.form-control {
 
 .toast-icon {
   font-size: var(--font-size-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast-icon iconify-icon {
+  font-size: 20px;
 }
 
 .toast-success .toast-icon { color: var(--success); }
@@ -719,7 +735,8 @@ textarea.form-control {
   color: var(--text-muted);
 }
 
-.empty-state i {
+.empty-state i,
+.empty-state iconify-icon {
   font-size: 48px;
   margin-bottom: var(--space-md);
   opacity: 0.3;
@@ -1207,9 +1224,11 @@ textarea.form-control {
   opacity: 0.6;
 }
 
-.login-footer i {
+.login-footer i,
+.login-footer iconify-icon {
   margin-right: 4px;
   color: rgba(59, 130, 246, 0.5);
+  vertical-align: -2px;
 }
 
 .login-setpwd-icon {
@@ -1243,8 +1262,10 @@ textarea.form-control {
   color: var(--primary);
 }
 
-.login-back-btn i {
+.login-back-btn i,
+.login-back-btn iconify-icon {
   margin-right: 6px;
+  vertical-align: -2px;
 }
 
 .login-version {
@@ -1272,7 +1293,8 @@ textarea.form-control {
   min-height: 400px;
 }
 
-.access-restricted i {
+.access-restricted i,
+.access-restricted iconify-icon {
   font-size: 64px;
   color: var(--text-muted);
   opacity: 0.3;

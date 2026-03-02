@@ -79,7 +79,9 @@
     margin: 2px var(--space-xs);
   }
 
-  .nav-item i {
+  .nav-item i,
+  .nav-item iconify-icon,
+  .nav-item .nav-icon {
     font-size: var(--font-size-lg);
   }
 
@@ -507,7 +509,8 @@
     padding: var(--space-xl) var(--space-md);
   }
 
-  .access-restricted i {
+  .access-restricted i,
+  .access-restricted iconify-icon {
     font-size: 48px;
   }
 
@@ -565,7 +568,8 @@
     font-size: 10px;
   }
 
-  .kpi-card i {
+  .kpi-card i,
+  .kpi-card iconify-icon {
     font-size: var(--font-size-base);
   }
 
@@ -797,8 +801,10 @@ body.volt-native-app .sidebar-overlay.active {
     -webkit-user-select: none;
   }
 
-  .bottom-nav-item i {
-    font-size: 20px;
+  .bottom-nav-item i,
+  .bottom-nav-item iconify-icon,
+  .bottom-nav-item .nav-icon {
+    font-size: 22px;
     margin-bottom: 3px;
     transition: transform 0.15s ease, color 0.15s ease;
   }
@@ -813,7 +819,9 @@ body.volt-native-app .sidebar-overlay.active {
     color: var(--volt-blue);
   }
 
-  .bottom-nav-item.active i {
+  .bottom-nav-item.active i,
+  .bottom-nav-item.active iconify-icon,
+  .bottom-nav-item.active .nav-icon {
     transform: scale(1.15);
   }
 
@@ -836,7 +844,9 @@ body.volt-native-app .sidebar-overlay.active {
     opacity: 0.7;
   }
 
-  .bottom-nav-item:active i {
+  .bottom-nav-item:active i,
+  .bottom-nav-item:active iconify-icon,
+  .bottom-nav-item:active .nav-icon {
     transform: scale(0.9);
   }
 
@@ -882,7 +892,8 @@ body.volt-native-app .sidebar-overlay.active {
     color: var(--volt-blue);
   }
 
-  body.volt-has-bottomnav .breadcrumb-back i {
+  body.volt-has-bottomnav .breadcrumb-back i,
+  body.volt-has-bottomnav .breadcrumb-back iconify-icon {
     font-size: 16px;
   }
 }
@@ -935,7 +946,8 @@ body.volt-native-app.volt-has-bottomnav .header-toggle {
   color: var(--text-primary);
 }
 
-.menu-page-header h1 i {
+.menu-page-header h1 i,
+.menu-page-header h1 iconify-icon {
   color: var(--volt-blue);
 }
 
@@ -972,7 +984,7 @@ body.volt-native-app.volt-has-bottomnav .header-toggle {
 .menu-grid-icon {
   width: 48px;
   height: 48px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -32,13 +32,13 @@ const Header = {
     if (!breadcrumb) return;
 
     const backBtn = backRoute
-      ? `<a href="#${backRoute}" class="breadcrumb-back"><i class="fas fa-arrow-left"></i></a>`
+      ? `<a href="#${backRoute}" class="breadcrumb-back"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></a>`
       : '';
 
     breadcrumb.innerHTML = `
       ${backBtn}
       <span class="text-muted">Volt</span>
-      <i class="fas fa-chevron-right text-muted" style="font-size: 10px;"></i>
+      <iconify-icon icon="solar:alt-arrow-right-bold" class="text-muted" style="font-size: 12px;"></iconify-icon>
       <span class="current">${title}</span>
     `;
   },
@@ -182,7 +182,7 @@ const Header = {
         if (notifList) {
           notifList.innerHTML = `
             <div class="empty-state" style="padding: 24px;">
-              <i class="fas fa-bell-slash"></i>
+              <iconify-icon icon="solar:bell-off-bold-duotone"></iconify-icon>
               <p style="font-size: 12px;">Aucune notification</p>
             </div>
           `;
@@ -219,7 +219,7 @@ const Header = {
     const retardCount = versementsRetard.filter(v => v.statut === 'retard').length;
     if (retardCount > 0) {
       notifications.push({
-        icon: 'fa-exclamation-triangle',
+        icon: 'solar:danger-triangle-bold-duotone',
         iconBg: 'rgba(239, 68, 68, 0.15)',
         iconColor: '#ef4444',
         text: `<strong>${retardCount} versement${retardCount > 1 ? 's' : ''}</strong> en retard`,
@@ -231,7 +231,7 @@ const Header = {
     const attenteCount = versementsRetard.filter(v => v.statut === 'en_attente').length;
     if (attenteCount > 0) {
       notifications.push({
-        icon: 'fa-clock',
+        icon: 'solar:clock-circle-bold-duotone',
         iconBg: 'rgba(245, 158, 11, 0.15)',
         iconColor: '#f59e0b',
         text: `<strong>${attenteCount} versement${attenteCount > 1 ? 's' : ''}</strong> en attente de validation`,
@@ -242,7 +242,7 @@ const Header = {
     // Documents expirés
     docsExpires.slice(0, 3).forEach(({ chauffeur, doc }) => {
       notifications.push({
-        icon: doc.statut === 'expire' ? 'fa-file-circle-xmark' : 'fa-file-circle-exclamation',
+        icon: doc.statut === 'expire' ? 'solar:file-remove-bold-duotone' : 'solar:file-corrupted-bold-duotone',
         iconBg: doc.statut === 'expire' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
         iconColor: doc.statut === 'expire' ? '#ef4444' : '#f59e0b',
         text: `<strong>${doc.nom}</strong> de ${chauffeur.prenom} ${chauffeur.nom} ${doc.statut === 'expire' ? 'expiré' : 'à renouveler'}`,
@@ -260,7 +260,7 @@ const Header = {
     if (notifications.length === 0) {
       list.innerHTML = `
         <div class="empty-state" style="padding: 24px;">
-          <i class="fas fa-bell-slash"></i>
+          <iconify-icon icon="solar:bell-off-bold-duotone"></iconify-icon>
           <p style="font-size: 12px;">Aucune notification</p>
         </div>
       `;
@@ -270,7 +270,7 @@ const Header = {
     list.innerHTML = notifications.map(n => `
       <div class="notif-item">
         <div class="notif-icon" style="background:${n.iconBg}; color:${n.iconColor}">
-          <i class="fas ${n.icon}"></i>
+          <iconify-icon icon="${n.icon}"></iconify-icon>
         </div>
         <div class="notif-text">${n.text}</div>
         <div class="notif-time">${n.time}</div>

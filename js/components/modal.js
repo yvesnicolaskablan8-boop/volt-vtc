@@ -56,7 +56,7 @@ const Modal = {
 
   confirm(title, message, onConfirm) {
     this.open({
-      title: `<i class="fas fa-exclamation-triangle text-warning"></i> ${title}`,
+      title: `<iconify-icon icon="solar:danger-triangle-bold-duotone" class="text-warning"></iconify-icon> ${title}`,
       body: `<p>${message}</p>`,
       footer: `
         <button class="btn btn-secondary" data-action="cancel">Annuler</button>
@@ -75,7 +75,7 @@ const Modal = {
       body: formHtml,
       footer: `
         <button class="btn btn-secondary" data-action="cancel">Annuler</button>
-        <button class="btn btn-primary" data-action="confirm"><i class="fas fa-save"></i> Enregistrer</button>
+        <button class="btn btn-primary" data-action="confirm"><iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Enregistrer</button>
       `,
       size,
       onConfirm: () => {

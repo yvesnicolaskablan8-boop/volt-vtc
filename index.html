@@ -16,8 +16,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Font Awesome -->
+  <!-- Font Awesome (legacy — pages JS still use it) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Iconify (Solar icons — modern icon system) -->
+  <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
   <!-- Leaflet (carte GPS temps réel) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -62,31 +65,31 @@
           <div class="login-error" id="login-error" style="display:none;"></div>
           <form id="login-form" autocomplete="off">
             <div class="form-group">
-              <label class="form-label"><i class="fas fa-envelope" style="margin-right:6px;color:var(--primary);font-size:12px;"></i>Adresse email</label>
+              <label class="form-label"><iconify-icon icon="solar:letter-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Adresse email</label>
               <input type="email" class="form-control login-input" id="login-email" placeholder="votre@email.com" required autocomplete="username">
             </div>
             <div class="form-group">
-              <label class="form-label"><i class="fas fa-lock" style="margin-right:6px;color:var(--primary);font-size:12px;"></i>Mot de passe</label>
+              <label class="form-label"><iconify-icon icon="solar:lock-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Mot de passe</label>
               <div style="position:relative;">
                 <input type="password" class="form-control login-input" id="login-password" placeholder="Votre mot de passe" required autocomplete="current-password">
                 <button type="button" class="login-toggle-pwd" id="login-toggle-pwd">
-                  <i class="fas fa-eye"></i>
+                  <iconify-icon icon="solar:eye-bold" style="font-size:18px;"></iconify-icon>
                 </button>
               </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block login-submit" id="login-btn">
-              <i class="fas fa-sign-in-alt"></i> Se connecter
+              <iconify-icon icon="solar:login-2-bold-duotone"></iconify-icon> Se connecter
             </button>
           </form>
           <div class="login-footer">
-            <i class="fas fa-shield-halved"></i> Connexion sécurisée
+            <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Connexion sécurisée
           </div>
         </div>
 
         <!-- Set Password Form (first login / must change) -->
         <div id="set-password-section" style="display:none;">
           <div class="login-setpwd-icon">
-            <i class="fas fa-key"></i>
+            <iconify-icon icon="solar:key-bold-duotone" style="font-size:32px;"></iconify-icon>
           </div>
           <h2 class="login-title" id="set-password-title">Définir votre mot de passe</h2>
           <p class="login-subtitle" id="set-password-subtitle">Bienvenue ! Créez votre mot de passe pour accéder à l'application.</p>
@@ -94,29 +97,29 @@
           <form id="set-password-form" autocomplete="off">
             <input type="hidden" id="set-password-user-id">
             <div class="form-group">
-              <label class="form-label"><i class="fas fa-lock" style="margin-right:6px;color:var(--primary);font-size:12px;"></i>Nouveau mot de passe</label>
+              <label class="form-label"><iconify-icon icon="solar:lock-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Nouveau mot de passe</label>
               <div style="position:relative;">
                 <input type="password" class="form-control login-input" id="new-password" placeholder="Minimum 6 caractères" required minlength="6" autocomplete="new-password">
                 <button type="button" class="login-toggle-pwd" id="new-pwd-toggle">
-                  <i class="fas fa-eye"></i>
+                  <iconify-icon icon="solar:eye-bold" style="font-size:18px;"></iconify-icon>
                 </button>
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label"><i class="fas fa-check-circle" style="margin-right:6px;color:var(--primary);font-size:12px;"></i>Confirmer le mot de passe</label>
+              <label class="form-label"><iconify-icon icon="solar:check-circle-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Confirmer le mot de passe</label>
               <div style="position:relative;">
                 <input type="password" class="form-control login-input" id="confirm-password" placeholder="Retapez le mot de passe" required minlength="6" autocomplete="new-password">
                 <button type="button" class="login-toggle-pwd" id="confirm-pwd-toggle">
-                  <i class="fas fa-eye"></i>
+                  <iconify-icon icon="solar:eye-bold" style="font-size:18px;"></iconify-icon>
                 </button>
               </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block login-submit" id="set-password-btn">
-              <i class="fas fa-lock"></i> Définir le mot de passe
+              <iconify-icon icon="solar:lock-bold-duotone"></iconify-icon> Définir le mot de passe
             </button>
           </form>
           <button type="button" class="login-back-btn" onclick="document.getElementById('login-form-section').style.display='';document.getElementById('set-password-section').style.display='none';">
-            <i class="fas fa-arrow-left"></i> Retour à la connexion
+            <iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon> Retour à la connexion
           </button>
         </div>
       </div>
@@ -140,69 +143,69 @@
       <nav class="sidebar-nav" id="sidebar-nav">
         <div class="nav-section-title">Principal</div>
         <a class="nav-item active" href="#/dashboard" data-route="/dashboard">
-          <i class="fas fa-gauge-high"></i>
+          <iconify-icon icon="solar:speedometer-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Tableau de bord</span>
         </a>
         <a class="nav-item" href="#/yango" data-route="/yango">
-          <i class="fas fa-taxi"></i>
+          <iconify-icon icon="solar:taxi-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Yango Fleet</span>
         </a>
         <a class="nav-item" href="#/chauffeurs" data-route="/chauffeurs">
-          <i class="fas fa-id-card"></i>
+          <iconify-icon icon="solar:user-id-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Chauffeurs</span>
         </a>
         <a class="nav-item" href="#/motivation" data-route="/motivation">
-          <i class="fas fa-fire"></i>
+          <iconify-icon icon="solar:fire-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Engagement</span>
         </a>
         <a class="nav-item" href="#/vehicules" data-route="/vehicules">
-          <i class="fas fa-car"></i>
+          <iconify-icon icon="solar:car-bold-duotone" class="nav-icon"></iconify-icon>
           <span>V&eacute;hicules</span>
         </a>
         <a class="nav-item" href="#/maintenances" data-route="/maintenances">
-          <i class="fas fa-tools"></i>
+          <iconify-icon icon="solar:wrench-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Maintenances</span>
         </a>
         <a class="nav-item" href="#/planning" data-route="/planning">
-          <i class="fas fa-calendar-alt"></i>
+          <iconify-icon icon="solar:calendar-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Planning</span>
         </a>
 
         <div class="nav-section-title">Finances</div>
         <a class="nav-item" href="#/versements" data-route="/versements">
-          <i class="fas fa-money-bill-transfer"></i>
+          <iconify-icon icon="solar:transfer-horizontal-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Versements</span>
         </a>
         <a class="nav-item" href="#/rentabilite" data-route="/rentabilite">
-          <i class="fas fa-chart-pie"></i>
+          <iconify-icon icon="solar:pie-chart-2-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Rentabilit&eacute;</span>
         </a>
         <a class="nav-item" href="#/comptabilite" data-route="/comptabilite">
-          <i class="fas fa-calculator"></i>
+          <iconify-icon icon="solar:calculator-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Comptabilit&eacute;</span>
         </a>
 
         <div class="nav-section-title">Suivi</div>
         <a class="nav-item" href="#/messagerie" data-route="/messagerie">
-          <i class="fas fa-comments"></i>
+          <iconify-icon icon="solar:chat-round-dots-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Messagerie</span>
         </a>
         <a class="nav-item" href="#/gps-conduite" data-route="/gps-conduite">
-          <i class="fas fa-satellite-dish"></i>
+          <iconify-icon icon="solar:map-arrow-right-bold-duotone" class="nav-icon"></iconify-icon>
           <span>GPS &amp; Conduite</span>
         </a>
         <a class="nav-item" href="#/alertes" data-route="/alertes">
-          <i class="fas fa-bell"></i>
+          <iconify-icon icon="solar:bell-bing-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Alertes</span>
         </a>
         <a class="nav-item" href="#/rapports" data-route="/rapports">
-          <i class="fas fa-file-export"></i>
+          <iconify-icon icon="solar:file-download-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Rapports</span>
         </a>
 
         <div class="nav-section-title">Syst&egrave;me</div>
         <a class="nav-item" href="#/parametres" data-route="/parametres">
-          <i class="fas fa-cog"></i>
+          <iconify-icon icon="solar:settings-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Param&egrave;tres</span>
         </a>
       </nav>
@@ -221,24 +224,24 @@
       <header class="header">
         <div class="header-left">
           <button class="header-toggle" id="sidebar-toggle">
-            <i class="fas fa-bars"></i>
+            <iconify-icon icon="solar:hamburger-menu-bold" style="font-size:20px;"></iconify-icon>
           </button>
           <div class="header-breadcrumb" id="header-breadcrumb">
             <span class="text-muted">Volt</span>
-            <i class="fas fa-chevron-right text-muted" style="font-size: 10px;"></i>
+            <iconify-icon icon="solar:alt-arrow-right-bold" class="text-muted" style="font-size: 12px;"></iconify-icon>
             <span class="current">Tableau de bord</span>
           </div>
         </div>
         <div class="header-right">
           <button class="theme-toggle" id="theme-toggle" title="Changer de thème">
-            <i class="fas fa-moon" id="theme-icon"></i>
+            <iconify-icon icon="solar:moon-bold" id="theme-icon" style="font-size:18px;"></iconify-icon>
           </button>
           <div class="header-search">
-            <i class="fas fa-search"></i>
+            <iconify-icon icon="solar:magnifer-bold" style="font-size:16px;"></iconify-icon>
             <input type="text" placeholder="Rechercher..." id="global-search">
           </div>
           <div class="header-notifications" id="notifications-toggle">
-            <i class="fas fa-bell"></i>
+            <iconify-icon icon="solar:bell-bing-bold-duotone" style="font-size:20px;"></iconify-icon>
             <span class="badge-count" id="notif-count">3</span>
             <div class="notif-dropdown" id="notif-dropdown">
               <div class="notif-dropdown-header">
@@ -251,7 +254,7 @@
           <div class="header-user" id="header-user-toggle">
             <div class="header-user-avatar">YN</div>
             <span class="header-user-name">Yves Nicolas</span>
-            <i class="fas fa-chevron-down header-user-chevron"></i>
+            <iconify-icon icon="solar:alt-arrow-down-bold" class="header-user-chevron" style="font-size:14px;"></iconify-icon>
             <!-- User Dropdown -->
             <div class="header-user-dropdown" id="user-dropdown">
               <div class="user-dropdown-header">
@@ -263,16 +266,16 @@
               </div>
               <div class="user-dropdown-divider"></div>
               <button class="user-dropdown-item" id="user-dropdown-profile">
-                <i class="fas fa-user-circle"></i>
+                <iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon>
                 <span>Mon compte</span>
               </button>
               <button class="user-dropdown-item" id="user-dropdown-settings">
-                <i class="fas fa-cog"></i>
+                <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
                 <span>Paramètres</span>
               </button>
               <div class="user-dropdown-divider"></div>
               <button class="user-dropdown-item user-dropdown-logout" id="user-dropdown-logout">
-                <i class="fas fa-sign-out-alt"></i>
+                <iconify-icon icon="solar:logout-2-bold-duotone"></iconify-icon>
                 <span>Déconnexion</span>
               </button>
             </div>
@@ -289,23 +292,23 @@
     <!-- Bottom Navigation (mobile only, hidden on desktop via CSS) -->
     <nav class="bottom-nav" id="bottom-nav">
       <div class="bottom-nav-item active" data-route="/dashboard">
-        <i class="fas fa-gauge-high"></i>
+        <iconify-icon icon="solar:speedometer-bold-duotone" class="nav-icon"></iconify-icon>
         <span>Dashboard</span>
       </div>
       <div class="bottom-nav-item" data-route="/chauffeurs">
-        <i class="fas fa-id-card"></i>
+        <iconify-icon icon="solar:user-id-bold-duotone" class="nav-icon"></iconify-icon>
         <span>Chauffeurs</span>
       </div>
       <div class="bottom-nav-item" data-route="/planning">
-        <i class="fas fa-calendar-alt"></i>
+        <iconify-icon icon="solar:calendar-bold-duotone" class="nav-icon"></iconify-icon>
         <span>Planning</span>
       </div>
       <div class="bottom-nav-item" data-route="/vehicules">
-        <i class="fas fa-car"></i>
+        <iconify-icon icon="solar:car-bold-duotone" class="nav-icon"></iconify-icon>
         <span>Véhicules</span>
       </div>
       <div class="bottom-nav-item" data-route="/menu">
-        <i class="fas fa-grip"></i>
+        <iconify-icon icon="solar:widget-bold-duotone" class="nav-icon"></iconify-icon>
         <span>Menu</span>
       </div>
     </nav>
@@ -319,7 +322,7 @@
     <div class="modal" id="modal-container">
       <div class="modal-header">
         <h2 id="modal-title"></h2>
-        <button class="modal-close" id="modal-close"><i class="fas fa-times"></i></button>
+        <button class="modal-close" id="modal-close"><iconify-icon icon="solar:close-circle-bold" style="font-size:20px;"></iconify-icon></button>
       </div>
       <div class="modal-body" id="modal-body"></div>
       <div class="modal-footer" id="modal-footer"></div>
