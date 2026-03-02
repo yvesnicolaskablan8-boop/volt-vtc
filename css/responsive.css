@@ -931,8 +931,6 @@ body.volt-native-app.volt-has-bottomnav .header-toggle {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
-  position: relative;
-  z-index: 10;
 }
 
 .menu-grid-item:active {
@@ -976,24 +974,6 @@ body.volt-native-app.volt-has-bottomnav .header-toggle {
   .menu-grid-label {
     font-size: 10px;
   }
-}
-
-/* ========== FORCE OVERLAYS NON-BLOCKING (mobile safety) ========== */
-#modal-overlay:not(.active) {
-  pointer-events: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-#login-overlay.hidden {
-  pointer-events: none !important;
-  visibility: hidden !important;
-}
-
-/* Ensure menu grid items are always clickable above any overlay */
-.menu-grid {
-  position: relative;
-  z-index: 10;
 }
 
 /* ========== PRINT ========== */
