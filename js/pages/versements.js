@@ -295,6 +295,15 @@ const VersementsPage = {
 
   _add() {
     const chauffeurs = Store.get('chauffeurs').filter(c => c.statut === 'actif');
+    const session = Auth.getSession();
+    const isAdmin = session && session.role === 'Administrateur';
+    const statusOptions = [
+      { value: 'valide', label: 'Validé' },
+      { value: 'en_attente', label: 'En attente' },
+      { value: 'retard', label: 'En retard' },
+      { value: 'partiel', label: 'Partiel' }
+    ];
+    if (isAdmin) statusOptions.push({ value: 'annulee', label: 'Annulé' });
     const fields = [
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, placeholder: 'Sélectionner...', options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-start' },
@@ -307,13 +316,7 @@ const VersementsPage = {
       { type: 'row-end' },
       { type: 'row-start' },
       { name: 'montantVerse', label: 'Montant versé (FCFA)', type: 'number', min: 0, step: 0.01, required: true },
-      { name: 'statut', label: 'Statut', type: 'select', options: [
-        { value: 'valide', label: 'Validé' },
-        { value: 'en_attente', label: 'En attente' },
-        { value: 'retard', label: 'En retard' },
-        { value: 'partiel', label: 'Partiel' },
-        { value: 'annulee', label: 'Annulé' }
-      ]},
+      { name: 'statut', label: 'Statut', type: 'select', options: statusOptions },
       { type: 'row-end' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
@@ -345,19 +348,22 @@ const VersementsPage = {
     const versement = Store.findById('versements', id);
     if (!versement) return;
     const chauffeurs = Store.get('chauffeurs');
+    const session = Auth.getSession();
+    const isAdmin = session && session.role === 'Administrateur';
+    const editStatusOptions = [
+      { value: 'valide', label: 'Validé' },
+      { value: 'en_attente', label: 'En attente' },
+      { value: 'retard', label: 'En retard' },
+      { value: 'partiel', label: 'Partiel' }
+    ];
+    if (isAdmin) editStatusOptions.push({ value: 'annulee', label: 'Annulé' });
     const fields = [
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-start' },
       { name: 'montantBrut', label: 'Montant brut (FCFA)', type: 'number', min: 0, step: 0.01 },
       { name: 'montantVerse', label: 'Montant versé (FCFA)', type: 'number', min: 0, step: 0.01 },
       { type: 'row-end' },
-      { name: 'statut', label: 'Statut', type: 'select', options: [
-        { value: 'valide', label: 'Validé' },
-        { value: 'en_attente', label: 'En attente' },
-        { value: 'retard', label: 'En retard' },
-        { value: 'partiel', label: 'Partiel' },
-        { value: 'annulee', label: 'Annulé' }
-      ]},
+      { name: 'statut', label: 'Statut', type: 'select', options: editStatusOptions },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
