@@ -312,7 +312,7 @@ const VersementsPage = {
         { value: 'en_attente', label: 'En attente' },
         { value: 'retard', label: 'En retard' },
         { value: 'partiel', label: 'Partiel' },
-        { value: 'supprime', label: 'Supprimé' }
+        { value: 'annulee', label: 'Annulé' }
       ]},
       { type: 'row-end' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
@@ -356,7 +356,7 @@ const VersementsPage = {
         { value: 'en_attente', label: 'En attente' },
         { value: 'retard', label: 'En retard' },
         { value: 'partiel', label: 'Partiel' },
-        { value: 'supprime', label: 'Supprimé' }
+        { value: 'annulee', label: 'Annulé' }
       ]},
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
