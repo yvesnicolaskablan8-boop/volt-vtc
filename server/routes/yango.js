@@ -813,13 +813,18 @@ router.get('/stats', async (req, res) => {
         arrivee: o.route?.[1]?.address?.fullname || o.address_to?.fullname || ''
       }));
 
+    // Filter drivers: only show Volt-registered chauffeurs, use Volt names
+    const voltDrivers = drivers
+      .filter(d => voltYangoIds.has(d.id))
+      .map(d => ({ ...d, nom: voltNameMap[d.id] || d.nom }));
+
     res.json({
       chauffeurs: {
-        total: driversData.total || drivers.length,
-        enLigne: drivers.filter(d => d.statut === 'en_ligne').length,
-        occupes: drivers.filter(d => d.statut === 'occupe').length,
-        horsLigne: drivers.filter(d => d.statut === 'hors_ligne').length,
-        liste: drivers
+        total: voltDrivers.length,
+        enLigne: voltDrivers.filter(d => d.statut === 'en_ligne').length,
+        occupes: voltDrivers.filter(d => d.statut === 'occupe').length,
+        horsLigne: voltDrivers.filter(d => d.statut === 'hors_ligne').length,
+        liste: voltDrivers
       },
       courses: {
         aujourd_hui: hasWorkRuleFilter ? todayOrders.length : (ordersToday.total || todayOrders.length),
