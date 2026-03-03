@@ -82,17 +82,21 @@ const App = {
         .catch(err => console.warn('SW registration failed:', err));
     }
 
-    // Check authentication
-    if (Auth.isLoggedIn()) {
-      // Validate token server-side before granting access
+    // Check authentication — token in localStorage persists across tabs/refresh
+    const token = Auth.getToken();
+    if (token) {
       try {
         const apiBase = Store._apiBase || '/api';
         const res = await fetch(apiBase + '/auth/me', {
-          headers: { 'Authorization': 'Bearer ' + Auth.getToken() }
+          headers: { 'Authorization': 'Bearer ' + token }
         });
 
         if (res.ok) {
-          // Token valid — load data and show app
+          const userData = await res.json();
+          // Recreate session from server response (handles new tabs & refreshes)
+          if (userData && userData.id) {
+            Auth.createSession(userData);
+          }
           await Store.initialize();
           const user = Auth.getCurrentUser();
           if (user && user.statut === 'actif') {
@@ -108,10 +112,15 @@ const App = {
           this._showLogin();
         }
       } catch (err) {
-        // API unreachable — keep session if token exists (cold start / network issue)
-        console.warn('API injoignable — session locale conservée');
-        await Store.initialize();
-        this._showApp();
+        // API unreachable — keep session if it exists (cold start / network issue)
+        if (Auth.getSession()) {
+          console.warn('API injoignable — session locale conservée');
+          await Store.initialize();
+          this._showApp();
+        } else {
+          console.warn('API injoignable et pas de session — connexion requise');
+          this._showLogin();
+        }
       }
     } else {
       this._showLogin();
