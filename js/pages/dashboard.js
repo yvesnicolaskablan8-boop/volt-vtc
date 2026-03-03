@@ -203,9 +203,11 @@ const DashboardPage = {
       const avg = driverAvg[item.chauffeurId];
       item.estimatedCommission = avg ? Math.round(avg.total / avg.count) : 0;
     });
+    // Filtrer : ne garder que les chauffeurs qui doivent réellement (commission > 0)
+    const filteredUnpaid = unpaidItems.filter(i => i.estimatedCommission > 0);
     // Trier par date décroissante
-    unpaidItems.sort((a, b) => b.date.localeCompare(a.date));
-    const totalUnpaid = unpaidItems.reduce((s, i) => s + i.estimatedCommission, 0);
+    filteredUnpaid.sort((a, b) => b.date.localeCompare(a.date));
+    const totalUnpaid = filteredUnpaid.reduce((s, i) => s + i.estimatedCommission, 0);
 
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
@@ -214,7 +216,7 @@ const DashboardPage = {
       monthlyRevenue, weeklyPayments,
       coursesByType, typeLabels, vehicleProfit,
       recentVersements, chauffeurs, vehiculesTotal: vehicules.length,
-      maintenanceAlerts, unpaidItems, totalUnpaid
+      maintenanceAlerts, unpaidItems: filteredUnpaid, totalUnpaid
     };
   },
 
@@ -646,9 +648,14 @@ const DashboardPage = {
           <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">
             ${item.estimatedCommission > 0 ? '~' + Utils.formatCurrency(item.estimatedCommission) : Utils.formatCurrency(0)}
           </div>
-          <button class="btn btn-sm ${hasJustif ? 'btn-secondary' : 'btn-primary'}" onclick="event.stopPropagation();DashboardPage._addJustification('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}')" style="margin-top:4px;">
-            <iconify-icon icon="solar:document-add-bold-duotone"></iconify-icon> ${hasJustif ? 'Modifier' : 'Justifier'}
-          </button>
+          <div style="display:flex;gap:4px;margin-top:4px;">
+            <button class="btn btn-sm btn-success" onclick="event.stopPropagation();DashboardPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.estimatedCommission})">
+              <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Payer
+            </button>
+            <button class="btn btn-sm ${hasJustif ? 'btn-secondary' : 'btn-outline'}" onclick="event.stopPropagation();DashboardPage._addJustification('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}')">
+              <iconify-icon icon="solar:document-add-bold-duotone"></iconify-icon> ${hasJustif ? 'Modifier' : 'Justifier'}
+            </button>
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -703,6 +710,92 @@ const DashboardPage = {
 
         Modal.close();
         Toast.success('Justificatif enregistr\u00e9');
+        this.render();
+      }
+    );
+  },
+
+  _payReceipt(chauffeurId, date, planningId, versementId, estimatedAmount) {
+    const versements = Store.get('versements') || [];
+    const existing = versementId && versementId !== 'null' ? versements.find(v => v.id === versementId) : versements.find(v => v.chauffeurId === chauffeurId && v.date === date);
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const ch = chauffeurs.find(c => c.id === chauffeurId);
+    const name = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+
+    const fields = [
+      { type: 'heading', label: `Paiement pour ${name} \u2014 ${date}` },
+      { type: 'row-start' },
+      { name: 'montantVerse', label: 'Montant vers\u00e9', type: 'number', required: true, min: 0, step: 100, default: estimatedAmount || 0, placeholder: 'Montant en FCFA...' },
+      { name: 'moyenPaiement', label: 'Moyen de paiement', type: 'select', required: true, options: [
+        { value: 'especes', label: 'Esp\u00e8ces' },
+        { value: 'mobile_money', label: 'Mobile Money' },
+        { value: 'wave', label: 'Wave' },
+        { value: 'orange_money', label: 'Orange Money' },
+        { value: 'virement', label: 'Virement bancaire' },
+        { value: 'cheque', label: 'Ch\u00e8que' },
+        { value: 'autre', label: 'Autre' }
+      ]},
+      { type: 'row-end' },
+      { name: 'referencePaiement', label: 'R\u00e9f\u00e9rence / N\u00b0 transaction', type: 'text', placeholder: 'Num\u00e9ro de transaction, re\u00e7u...' },
+      { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2, placeholder: 'Notes sur le paiement...' }
+    ];
+
+    const existingValues = existing ? {
+      montantVerse: existing.montantVerse || estimatedAmount || 0,
+      moyenPaiement: existing.moyenPaiement || '',
+      referencePaiement: existing.referencePaiement || '',
+      commentaire: existing.commentaire || ''
+    } : {};
+
+    Modal.form(
+      '<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#22c55e;"></iconify-icon> Encaisser la recette',
+      FormBuilder.build(fields, existingValues),
+      () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, fields)) return;
+        const values = FormBuilder.getValues(body);
+        const montant = parseFloat(values.montantVerse) || 0;
+
+        if (montant <= 0) {
+          Toast.error('Le montant doit \u00eatre sup\u00e9rieur \u00e0 0');
+          return;
+        }
+
+        const commission = Math.round(montant * 0.20);
+
+        if (existing) {
+          Store.update('versements', existing.id, {
+            montantBrut: montant,
+            commission,
+            montantNet: montant - commission,
+            montantVerse: montant,
+            statut: 'valide',
+            moyenPaiement: values.moyenPaiement,
+            referencePaiement: values.referencePaiement,
+            commentaire: values.commentaire,
+            dateValidation: new Date().toISOString()
+          });
+        } else {
+          Store.add('versements', {
+            id: Utils.generateId('VRS'),
+            chauffeurId,
+            date,
+            periode: '',
+            montantBrut: montant,
+            commission,
+            montantNet: montant - commission,
+            montantVerse: montant,
+            statut: 'valide',
+            moyenPaiement: values.moyenPaiement,
+            referencePaiement: values.referencePaiement,
+            commentaire: values.commentaire,
+            dateValidation: new Date().toISOString(),
+            dateCreation: new Date().toISOString()
+          });
+        }
+
+        Modal.close();
+        Toast.success('Paiement enregistr\u00e9 \u2014 ' + Utils.formatCurrency(montant));
         this.render();
       }
     );

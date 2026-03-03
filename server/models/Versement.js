@@ -20,6 +20,8 @@ const versementSchema = new mongoose.Schema({
   deadlineDate: String,
   justification: String,
   justificationDate: String,
+  moyenPaiement: String,
+  referencePaiement: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {
   toJSON: {
