@@ -193,7 +193,38 @@ const PlanningPage = {
   },
 
   _shiftTypeColor(type) {
-    return { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6' }[type] || '#64748b';
+    return { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6', custom: '#6366f1' }[type] || '#64748b';
+  },
+
+  // Helpers pour créneaux personnalisés (acceptent l'objet shift complet)
+  _getShiftTimeLabel(shift) {
+    if (shift.heureDebut && shift.heureFin) {
+      return `${shift.heureDebut} - ${shift.heureFin}`;
+    }
+    return this._shiftTypeLabel(shift.typeCreneaux);
+  },
+
+  _getShiftTimeShort(shift) {
+    if (shift.heureDebut && shift.heureFin) {
+      const h = parseInt(shift.heureDebut);
+      return h + 'h';
+    }
+    return this._shiftTypeShort(shift.typeCreneaux);
+  },
+
+  _getShiftColor(shift) {
+    if (shift.heureDebut && shift.heureFin && (!shift.typeCreneaux || shift.typeCreneaux === 'custom')) {
+      return '#6366f1';
+    }
+    return this._shiftTypeColor(shift.typeCreneaux);
+  },
+
+  // Mapping presets pour auto-remplir les heures
+  _shiftPresets: {
+    matin: ['06:00', '14:00'],
+    apres_midi: ['14:00', '22:00'],
+    journee: ['08:00', '20:00'],
+    nuit: ['22:00', '06:00']
   },
 
   // =================== VUE SEMAINE ===================
@@ -248,6 +279,7 @@ const PlanningPage = {
           <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> Après-midi</span>
           <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;vertical-align:middle;"></span> Journée</span>
           <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#8b5cf6;vertical-align:middle;"></span> Nuit</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6366f1;vertical-align:middle;"></span> Personnalisé</span>
           <span style="margin-left:var(--space-md);font-weight:600;color:var(--text-secondary);">Absences :</span>
           <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#64748b;vertical-align:middle;"></span> Repos</span>
           <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444;vertical-align:middle;"></span> Maladie</span>
@@ -298,8 +330,8 @@ const PlanningPage = {
                   if (shifts.length > 0) {
                     return `<td style="padding:4px;text-align:center;${isToday ? 'background:rgba(59,130,246,0.05);' : ''}">
                       ${shifts.map(s => `
-                        <div style="background:${this._shiftTypeColor(s.typeCreneaux)}22;border:1px solid ${this._shiftTypeColor(s.typeCreneaux)}44;border-radius:6px;padding:6px 4px;margin-bottom:2px;cursor:pointer;" onclick="PlanningPage._editShift('${s.id}')" title="${this._shiftTypeLabel(s.typeCreneaux)}">
-                          <div style="font-size:12px;font-weight:700;color:${this._shiftTypeColor(s.typeCreneaux)};">${this._shiftTypeShort(s.typeCreneaux)}</div>
+                        <div style="background:${this._getShiftColor(s)}22;border:1px solid ${this._getShiftColor(s)}44;border-radius:6px;padding:6px 4px;margin-bottom:2px;cursor:pointer;" onclick="PlanningPage._editShift('${s.id}')" title="${this._getShiftTimeLabel(s)}">
+                          <div style="font-size:12px;font-weight:700;color:${this._getShiftColor(s)};">${this._getShiftTimeShort(s)}</div>
                         </div>
                       `).join('')}
                     </td>`;
@@ -386,8 +418,8 @@ const PlanningPage = {
                   if (shifts.length > 0) {
                     const s = shifts[0];
                     return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(59,130,246,0.05);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
-                      <div style="width:24px;height:24px;border-radius:4px;background:${this._shiftTypeColor(s.typeCreneaux)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._shiftTypeLabel(s.typeCreneaux)}" onclick="PlanningPage._editShift('${s.id}')">
-                        ${this._shiftTypeShort(s.typeCreneaux)}
+                      <div style="width:24px;height:24px;border-radius:4px;background:${this._getShiftColor(s)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._getShiftTimeLabel(s)}" onclick="PlanningPage._editShift('${s.id}')">
+                        ${this._getShiftTimeShort(s)}
                       </div>
                     </td>`;
                   }
@@ -419,7 +451,7 @@ const PlanningPage = {
       let joursTravailes = 0;
       let joursAbsents = 0;
       let joursNonPlanifies = 0;
-      const shiftTypes = { matin: 0, apres_midi: 0, journee: 0, nuit: 0 };
+      const shiftTypes = { matin: 0, apres_midi: 0, journee: 0, nuit: 0, custom: 0 };
       const absTypes = { repos: 0, conge: 0, maladie: 0, formation: 0, personnel: 0, suspension: 0 };
 
       for (let d = 1; d <= daysInMonth; d++) {
@@ -433,7 +465,10 @@ const PlanningPage = {
           if (absTypes[type] !== undefined) absTypes[type]++;
         } else if (shifts.length > 0) {
           joursTravailes++;
-          shifts.forEach(s => { if (shiftTypes[s.typeCreneaux] !== undefined) shiftTypes[s.typeCreneaux]++; });
+          shifts.forEach(s => {
+            const key = (s.heureDebut && s.heureFin && (!s.typeCreneaux || s.typeCreneaux === 'custom')) ? 'custom' : s.typeCreneaux;
+            if (shiftTypes[key] !== undefined) shiftTypes[key]++;
+          });
         } else {
           joursNonPlanifies++;
         }
@@ -645,12 +680,17 @@ const PlanningPage = {
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, placeholder: 'Choisir un chauffeur...', options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })), default: preselectedChId || '' },
       { name: 'date', label: 'Date', type: 'date', required: true, default: preselectedDate || new Date().toISOString().split('T')[0] },
       { type: 'row-end' },
-      { name: 'typeCreneaux', label: 'Créneau', type: 'select', required: true, options: [
+      { name: 'typeCreneaux', label: 'Créneau type', type: 'select', required: false, options: [
+        { value: 'custom', label: 'Personnalisé' },
         { value: 'matin', label: 'Matin (6h - 14h)' },
         { value: 'apres_midi', label: 'Après-midi (14h - 22h)' },
         { value: 'journee', label: 'Journée complète (8h - 20h)' },
         { value: 'nuit', label: 'Nuit (22h - 6h)' }
-      ]},
+      ], default: 'custom' },
+      { type: 'row-start' },
+      { name: 'heureDebut', label: 'Heure début', type: 'time', required: true, default: '06:00' },
+      { name: 'heureFin', label: 'Heure fin', type: 'time', required: true, default: '00:00' },
+      { type: 'row-end' },
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2, placeholder: 'Zone, client particulier, instructions...' }
     ];
 
@@ -663,27 +703,48 @@ const PlanningPage = {
       Toast.success('Créneau ajouté');
       this._renderView();
     });
+
+    // Auto-remplir les heures quand on choisit un preset
+    this._bindShiftPresetListener();
   },
 
   _editShift(id) {
     const shift = Store.findById('planning', id);
     if (!shift) return;
     const chauffeurs = this._getChauffeurs().filter(c => c.statut === 'actif');
+
+    // Déduire heureDebut/heureFin depuis le preset si ancien enregistrement
+    const editValues = { ...shift };
+    if (!editValues.heureDebut && editValues.typeCreneaux && this._shiftPresets[editValues.typeCreneaux]) {
+      editValues.heureDebut = this._shiftPresets[editValues.typeCreneaux][0];
+      editValues.heureFin = this._shiftPresets[editValues.typeCreneaux][1];
+    }
+    if (!editValues.heureDebut) {
+      editValues.typeCreneaux = 'custom';
+      editValues.heureDebut = '06:00';
+      editValues.heureFin = '00:00';
+    }
+
     const fields = [
       { type: 'row-start' },
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { name: 'date', label: 'Date', type: 'date', required: true },
       { type: 'row-end' },
-      { name: 'typeCreneaux', label: 'Créneau', type: 'select', required: true, options: [
+      { name: 'typeCreneaux', label: 'Créneau type', type: 'select', required: false, options: [
+        { value: 'custom', label: 'Personnalisé' },
         { value: 'matin', label: 'Matin (6h - 14h)' },
         { value: 'apres_midi', label: 'Après-midi (14h - 22h)' },
         { value: 'journee', label: 'Journée complète (8h - 20h)' },
         { value: 'nuit', label: 'Nuit (22h - 6h)' }
       ]},
+      { type: 'row-start' },
+      { name: 'heureDebut', label: 'Heure début', type: 'time', required: true },
+      { name: 'heureFin', label: 'Heure fin', type: 'time', required: true },
+      { type: 'row-end' },
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier le créneau', FormBuilder.build(fields, shift), () => {
+    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier le créneau', FormBuilder.build(fields, editValues), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       Store.update('planning', id, FormBuilder.getValues(body));
@@ -709,6 +770,26 @@ const PlanningPage = {
           this._renderView();
         };
         footer.insertBefore(delBtn, footer.firstChild);
+      }
+    }, 50);
+
+    // Auto-remplir les heures quand on choisit un preset
+    this._bindShiftPresetListener();
+  },
+
+  _bindShiftPresetListener() {
+    setTimeout(() => {
+      const selectType = document.querySelector('[name="typeCreneaux"]');
+      const inputDebut = document.querySelector('[name="heureDebut"]');
+      const inputFin = document.querySelector('[name="heureFin"]');
+      if (selectType && inputDebut && inputFin) {
+        selectType.addEventListener('change', () => {
+          const p = this._shiftPresets[selectType.value];
+          if (p) {
+            inputDebut.value = p[0];
+            inputFin.value = p[1];
+          }
+        });
       }
     }, 50);
   },

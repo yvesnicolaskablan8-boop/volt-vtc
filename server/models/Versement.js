@@ -18,6 +18,8 @@ const versementSchema = new mongoose.Schema({
   enRetard: { type: Boolean, default: false },
   penaliteMontant: { type: Number, default: 0 },
   deadlineDate: String,
+  justification: String,
+  justificationDate: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {
   toJSON: {

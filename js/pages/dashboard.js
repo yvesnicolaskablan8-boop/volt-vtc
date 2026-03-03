@@ -147,6 +147,66 @@ const DashboardPage = {
     const ordre = { en_retard: 0, urgent: 1 };
     maintenanceAlerts.sort((a, b) => (ordre[a.statut] || 9) - (ordre[b.statut] || 9));
 
+    // =================== RECETTES IMPAYÉES ===================
+    const planning = Store.get('planning') || [];
+    const absences = Store.get('absences') || [];
+    const today = now.toISOString().split('T')[0];
+
+    // Limiter aux 30 derniers jours
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const minDate = thirtyDaysAgo.toISOString().split('T')[0];
+
+    // Dédupliquer par (chauffeurId, date) — un seul impayé par jour même si 2 shifts
+    const scheduledDays = new Map();
+    planning.filter(p => p.date <= today && p.date >= minDate).forEach(p => {
+      const key = `${p.chauffeurId}|${p.date}`;
+      if (!scheduledDays.has(key)) scheduledDays.set(key, p);
+    });
+
+    // Vérifier les versements
+    const unpaidItems = [];
+    scheduledDays.forEach((p) => {
+      // Skip si absence
+      const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
+      if (hasAbsence) return;
+      // Skip si chauffeur inactif
+      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
+      if (!ch || ch.statut === 'inactif') return;
+      // Vérifier si versement valide existe
+      const hasValidPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && v.statut === 'valide');
+      if (!hasValidPayment) {
+        // Chercher un versement existant (même non validé) pour la justification
+        const existing = versements.find(v => v.chauffeurId === p.chauffeurId && v.date === p.date);
+        unpaidItems.push({
+          planningId: p.id,
+          chauffeurId: p.chauffeurId,
+          date: p.date,
+          typeCreneaux: p.typeCreneaux,
+          heureDebut: p.heureDebut,
+          heureFin: p.heureFin,
+          estimatedCommission: 0,
+          justification: existing ? existing.justification : null,
+          versementId: existing ? existing.id : null
+        });
+      }
+    });
+
+    // Calculer commission estimée (moyenne historique par chauffeur)
+    const driverAvg = {};
+    versements.filter(v => v.statut === 'valide' && v.commission > 0).forEach(v => {
+      if (!driverAvg[v.chauffeurId]) driverAvg[v.chauffeurId] = { total: 0, count: 0 };
+      driverAvg[v.chauffeurId].total += v.commission;
+      driverAvg[v.chauffeurId].count++;
+    });
+    unpaidItems.forEach(item => {
+      const avg = driverAvg[item.chauffeurId];
+      item.estimatedCommission = avg ? Math.round(avg.total / avg.count) : 0;
+    });
+    // Trier par date décroissante
+    unpaidItems.sort((a, b) => b.date.localeCompare(a.date));
+    const totalUnpaid = unpaidItems.reduce((s, i) => s + i.estimatedCommission, 0);
+
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
       activeCount, vehiclesActifs, vehiclesEV, vehiclesThermique,
@@ -154,7 +214,7 @@ const DashboardPage = {
       monthlyRevenue, weeklyPayments,
       coursesByType, typeLabels, vehicleProfit,
       recentVersements, chauffeurs, vehiculesTotal: vehicules.length,
-      maintenanceAlerts
+      maintenanceAlerts, unpaidItems, totalUnpaid
     };
   },
 
@@ -207,6 +267,9 @@ const DashboardPage = {
 
       <!-- Maintenance Alerts -->
       ${this._renderMaintenanceAlerts(d)}
+
+      <!-- Recettes impayées -->
+      ${this._renderUnpaidSection(d)}
 
       <!-- Charts Row 1 -->
       <div class="charts-grid">
@@ -523,6 +586,126 @@ const DashboardPage = {
         ${moreText}
       </div>
     </div>`;
+  },
+
+  // =================== RECETTES IMPAYÉES ===================
+
+  _renderUnpaidSection(d) {
+    if (!d.unpaidItems || d.unpaidItems.length === 0) return '';
+
+    const rows = d.unpaidItems.slice(0, 5).map(item => {
+      const ch = d.chauffeurs.find(c => c.id === item.chauffeurId);
+      const name = ch ? `${ch.prenom} ${ch.nom}` : item.chauffeurId;
+      const hasJustif = !!item.justification;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:var(--font-size-sm);font-weight:500;">${name}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${item.heureDebut && item.heureFin ? ' \u2014 ' + item.heureDebut + ' \u00e0 ' + item.heureFin : ''}</div>
+          ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--volt-blue);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
+        </div>
+        <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;flex-shrink:0;margin-left:8px;">
+          ${item.estimatedCommission > 0 ? '~' + Utils.formatCurrency(item.estimatedCommission) : 'N/A'}
+        </div>
+      </div>`;
+    }).join('');
+
+    const moreText = d.unpaidItems.length > 5 ? `<div style="text-align:center;padding:4px;font-size:var(--font-size-xs);color:var(--text-muted);">+ ${d.unpaidItems.length - 5} autre(s)...</div>` : '';
+
+    return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #ef4444;cursor:pointer;" onclick="DashboardPage._showUnpaidDetails()">
+      <div class="card-header">
+        <span class="card-title"><iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes impay\u00e9es (${d.unpaidItems.length})</span>
+        <span style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${d.totalUnpaid > 0 ? '~' + Utils.formatCurrency(d.totalUnpaid) : ''}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${rows}
+        ${moreText}
+      </div>
+    </div>`;
+  },
+
+  _showUnpaidDetails() {
+    const data = this._getData();
+    if (!data.unpaidItems || data.unpaidItems.length === 0) {
+      Toast.info('Aucune recette impay\u00e9e');
+      return;
+    }
+
+    const rows = data.unpaidItems.map(item => {
+      const ch = data.chauffeurs.find(c => c.id === item.chauffeurId);
+      const name = ch ? `${ch.prenom} ${ch.nom}` : item.chauffeurId;
+      const hasJustif = !!item.justification;
+      const creneauLabel = item.heureDebut && item.heureFin ? `${item.heureDebut} \u00e0 ${item.heureFin}` : (item.typeCreneaux || '');
+
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:var(--font-size-sm);font-weight:600;">${name}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${creneauLabel ? ' \u2014 ' + creneauLabel : ''}</div>
+          ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--volt-blue);margin-top:2px;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">
+            ${item.estimatedCommission > 0 ? '~' + Utils.formatCurrency(item.estimatedCommission) : 'N/A'}
+          </div>
+          <button class="btn btn-sm ${hasJustif ? 'btn-secondary' : 'btn-primary'}" onclick="event.stopPropagation();DashboardPage._addJustification('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}')" style="margin-top:4px;">
+            <iconify-icon icon="solar:document-add-bold-duotone"></iconify-icon> ${hasJustif ? 'Modifier' : 'Justifier'}
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+
+    Modal.open({
+      title: '<iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes impay\u00e9es (' + data.unpaidItems.length + ')',
+      body: `<div style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;">${rows}</div>`,
+      footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>',
+      size: 'large'
+    });
+  },
+
+  _addJustification(chauffeurId, date, planningId, versementId) {
+    const versements = Store.get('versements') || [];
+    const existing = versementId && versementId !== 'null' ? versements.find(v => v.id === versementId) : versements.find(v => v.chauffeurId === chauffeurId && v.date === date);
+
+    const fields = [
+      { name: 'justification', label: 'Justificatif / Raison', type: 'textarea', rows: 3, placeholder: 'Expliquer pourquoi la recette n\'a pas \u00e9t\u00e9 pay\u00e9e...', required: true }
+    ];
+
+    const existingValues = existing ? { justification: existing.justification || '' } : {};
+
+    Modal.form(
+      '<iconify-icon icon="solar:document-add-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Justifier l\'impay\u00e9',
+      FormBuilder.build(fields, existingValues),
+      () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, fields)) return;
+        const values = FormBuilder.getValues(body);
+
+        if (existing) {
+          Store.update('versements', existing.id, {
+            justification: values.justification,
+            justificationDate: new Date().toISOString()
+          });
+        } else {
+          Store.add('versements', {
+            id: Utils.generateId('VRS'),
+            chauffeurId,
+            date,
+            periode: '',
+            montantBrut: 0,
+            commission: 0,
+            montantNet: 0,
+            montantVerse: 0,
+            statut: 'en_attente',
+            justification: values.justification,
+            justificationDate: new Date().toISOString(),
+            dateCreation: new Date().toISOString()
+          });
+        }
+
+        Modal.close();
+        Toast.success('Justificatif enregistr\u00e9');
+        this.render();
+      }
+    );
   },
 
   refresh() {

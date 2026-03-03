@@ -60,6 +60,8 @@ router.get('/dashboard', async (req, res, next) => {
     if (planningToday) {
       creneauJour = {
         type: planningToday.typeCreneaux,
+        heureDebut: planningToday.heureDebut || null,
+        heureFin: planningToday.heureFin || null,
         notes: planningToday.notes
       };
     }

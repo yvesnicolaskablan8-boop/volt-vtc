@@ -33,6 +33,7 @@ const FormBuilder = {
         case 'email':
         case 'tel':
         case 'date':
+        case 'time':
         case 'number':
           input = `<input type="${field.type}" class="form-control" name="${field.name}" value="${this._escapeAttr(val)}"
             ${field.placeholder ? `placeholder="${field.placeholder}"` : ''}
