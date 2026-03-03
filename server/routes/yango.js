@@ -1023,11 +1023,7 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
           const finance = aggregateTransactions(transactionsData);
           commissionYango = finance.commissionYango;
           commissionPartenaire = finance.commissionPartenaire;
-          if (totalCA === 0 && finance.totalCA > 0) {
-            totalCA = finance.totalCA;
-            totalCash = finance.totalCash;
-            totalCard = finance.totalCard;
-          }
+          // Orders are authoritative for CA — transactions only provide commissions
         }
       } catch (e) {
         console.warn('driver-stats: transactions skipped:', e.message);
