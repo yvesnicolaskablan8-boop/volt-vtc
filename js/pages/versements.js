@@ -301,9 +301,9 @@ const VersementsPage = {
       { value: 'valide', label: 'Validé' },
       { value: 'en_attente', label: 'En attente' },
       { value: 'retard', label: 'En retard' },
-      { value: 'partiel', label: 'Partiel' }
+      { value: 'partiel', label: 'Partiel' },
+      { value: 'annulee', label: 'Annulé', disabled: !isAdmin }
     ];
-    if (isAdmin) statusOptions.push({ value: 'annulee', label: 'Annulé' });
     const fields = [
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, placeholder: 'Sélectionner...', options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-start' },
@@ -354,9 +354,9 @@ const VersementsPage = {
       { value: 'valide', label: 'Validé' },
       { value: 'en_attente', label: 'En attente' },
       { value: 'retard', label: 'En retard' },
-      { value: 'partiel', label: 'Partiel' }
+      { value: 'partiel', label: 'Partiel' },
+      { value: 'annulee', label: 'Annulé', disabled: !isAdmin }
     ];
-    if (isAdmin) editStatusOptions.push({ value: 'annulee', label: 'Annulé' });
     const fields = [
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-start' },

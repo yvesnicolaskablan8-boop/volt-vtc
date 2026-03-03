@@ -64,7 +64,8 @@ const FormBuilder = {
             ${(field.options || []).map(opt => {
               const optVal = typeof opt === 'object' ? opt.value : opt;
               const optLabel = typeof opt === 'object' ? opt.label : opt;
-              return `<option value="${optVal}" ${String(val) === String(optVal) ? 'selected' : ''}>${optLabel}</option>`;
+              const optDisabled = typeof opt === 'object' && opt.disabled;
+              return `<option value="${optVal}" ${String(val) === String(optVal) ? 'selected' : ''} ${optDisabled ? 'disabled style="color:var(--text-muted)"' : ''}>${optLabel}</option>`;
             }).join('')}
           </select>`;
           break;
