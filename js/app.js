@@ -84,14 +84,32 @@ const App = {
 
     // Check authentication
     if (Auth.isLoggedIn()) {
-      // Load data from API into cache
-      await Store.initialize();
+      // Validate token server-side before granting access
+      try {
+        const apiBase = Store._apiBase || '/api';
+        const res = await fetch(apiBase + '/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + Auth.getToken() }
+        });
 
-      // Verify user still exists and is active
-      const user = Auth.getCurrentUser();
-      if (user && user.statut === 'actif') {
-        this._showApp();
-      } else {
+        if (res.ok) {
+          // Token valid — load data and show app
+          await Store.initialize();
+          const user = Auth.getCurrentUser();
+          if (user && user.statut === 'actif') {
+            this._showApp();
+          } else {
+            Auth.destroySession();
+            this._showLogin();
+          }
+        } else {
+          // Token expired or invalid (401/403)
+          console.warn('Token invalide ou expiré — déconnexion');
+          Auth.destroySession();
+          this._showLogin();
+        }
+      } catch (err) {
+        // API unreachable — force login (no offline access without valid token)
+        console.warn('API injoignable — authentification requise');
         Auth.destroySession();
         this._showLogin();
       }
