@@ -604,7 +604,7 @@ const DashboardPage = {
           ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--volt-blue);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
         </div>
         <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;flex-shrink:0;margin-left:8px;">
-          ${item.estimatedCommission > 0 ? '~' + Utils.formatCurrency(item.estimatedCommission) : 'N/A'}
+          ${item.estimatedCommission > 0 ? '~' + Utils.formatCurrency(item.estimatedCommission) : Utils.formatCurrency(0)}
         </div>
       </div>`;
     }).join('');
@@ -614,7 +614,7 @@ const DashboardPage = {
     return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #ef4444;cursor:pointer;" onclick="DashboardPage._showUnpaidDetails()">
       <div class="card-header">
         <span class="card-title"><iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes impay\u00e9es (${d.unpaidItems.length})</span>
-        <span style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${d.totalUnpaid > 0 ? '~' + Utils.formatCurrency(d.totalUnpaid) : ''}</span>
+        <span style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${d.totalUnpaid > 0 ? '~' + Utils.formatCurrency(d.totalUnpaid) : Utils.formatCurrency(0)}</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${rows}
@@ -644,7 +644,7 @@ const DashboardPage = {
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">
-            ${item.estimatedCommission > 0 ? '~' + Utils.formatCurrency(item.estimatedCommission) : 'N/A'}
+            ${item.estimatedCommission > 0 ? '~' + Utils.formatCurrency(item.estimatedCommission) : Utils.formatCurrency(0)}
           </div>
           <button class="btn btn-sm ${hasJustif ? 'btn-secondary' : 'btn-primary'}" onclick="event.stopPropagation();DashboardPage._addJustification('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}')" style="margin-top:4px;">
             <iconify-icon icon="solar:document-add-bold-duotone"></iconify-icon> ${hasJustif ? 'Modifier' : 'Justifier'}
