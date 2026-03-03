@@ -931,52 +931,93 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       ? customTo.toISOString()
       : now.toISOString();
 
-    // Global timeout 12s — abort everything if too slow
-    const globalTimeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout global 12s dépassé')), 12000)
-    );
+    // Strategy: try orders API first (fast & reliable), then optionally transactions
+    // Orders API works in ~5s, transactions API often hangs for individual drivers
 
-    const fetchData = async () => {
-      // Run transactions & orders in PARALLEL instead of sequentially
-      const driverIds = new Set([yangoDriverId]);
-      const [transactions, ordersResult] = await Promise.all([
-        fetchAllTransactions(from, to, driverIds),
-        yangoFetch('/v1/parks/orders/list', {
-          limit: 100,
-          query: {
-            park: {
-              id: process.env.YANGO_PARK_ID,
-              order: { booked_at: { from, to } }
-            }
+    let ordersData = null;
+    let transactionsData = null;
+
+    // 1. Fetch orders (primary source — fast)
+    try {
+      ordersData = await yangoFetch('/v1/parks/orders/list', {
+        limit: 100,
+        query: {
+          park: {
+            id: process.env.YANGO_PARK_ID,
+            order: { booked_at: { from, to } }
           }
-        }).catch(e => {
-          console.warn('driver-stats: orders fetch failed:', e.message);
-          return null;
-        })
+        }
+      });
+    } catch (e) {
+      console.warn('driver-stats: orders fetch failed:', e.message);
+    }
+
+    // Filter orders for this driver
+    const driverOrders = ordersData
+      ? (ordersData.orders || []).filter(o => o.driver && o.driver.id === yangoDriverId)
+      : [];
+    const completedOrders = driverOrders.filter(o => o.status === 'complete');
+    const nbCourses = completedOrders.length;
+
+    // Calculate CA from orders if available
+    let totalCA = 0, totalCash = 0, totalCard = 0;
+    let commissionYango = 0, commissionPartenaire = 0;
+
+    if (completedOrders.length > 0) {
+      // Use order prices for CA calculation
+      for (const order of completedOrders) {
+        const price = parseFloat(order.price || 0);
+        totalCA += price;
+        if (order.payment_method === 'cash' || order.payment_method === 'corp') {
+          totalCash += price;
+        } else {
+          totalCard += price;
+        }
+      }
+      totalCA = Math.round(totalCA);
+      totalCash = Math.round(totalCash);
+      totalCard = Math.round(totalCard);
+    }
+
+    // 2. Try transactions as secondary source (with short 8s timeout)
+    // Only if we need commission data or as fallback
+    try {
+      const txnTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Transactions timeout 8s')), 8000)
+      );
+      const driverIds = new Set([yangoDriverId]);
+      transactionsData = await Promise.race([
+        fetchAllTransactions(from, to, driverIds),
+        txnTimeout
       ]);
 
-      const finance = aggregateTransactions(transactions);
-      const nbCourses = ordersResult
-        ? (ordersResult.orders || []).filter(
-            o => o.driver && o.driver.id === yangoDriverId && o.status === 'complete'
-          ).length
-        : finance.nbCoursesCash + finance.nbCoursesCard;
+      if (transactionsData && transactionsData.length > 0) {
+        const finance = aggregateTransactions(transactionsData);
+        // Use transaction data if it has better info
+        if (finance.totalCA > 0) {
+          totalCA = finance.totalCA;
+          totalCash = finance.totalCash;
+          totalCard = finance.totalCard;
+        }
+        commissionYango = finance.commissionYango;
+        commissionPartenaire = finance.commissionPartenaire;
+      }
+    } catch (e) {
+      console.warn('driver-stats: transactions skipped (slow):', e.message);
+      // Not critical — we already have orders data
+    }
 
-      return {
-        yangoDriverId,
-        totalCA: finance.totalCA,
-        totalCash: finance.totalCash,
-        totalCard: finance.totalCard,
-        nbCourses,
-        commissionYango: finance.commissionYango,
-        commissionPartenaire: finance.commissionPartenaire,
-        derniereMaj: now.toISOString(),
-        periode: { from, to, isCustom }
-      };
-    };
-
-    const result = await Promise.race([fetchData(), globalTimeout]);
-    res.json(result);
+    res.json({
+      yangoDriverId,
+      totalCA,
+      totalCash,
+      totalCard,
+      nbCourses,
+      commissionYango,
+      commissionPartenaire,
+      derniereMaj: now.toISOString(),
+      periode: { from, to, isCustom }
+    });
   } catch (err) {
     console.error('Yango driver-stats error:', err.message);
     res.status(502).json({ error: 'Erreur API Yango', details: err.message });
