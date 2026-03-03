@@ -307,9 +307,9 @@ const DashboardPage = {
             <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
           </div>
         </div>
-        <div class="kpi-card ${d.retardCount > 0 ? 'red' : 'cyan'}">
+        <div class="kpi-card red">
           <div class="kpi-icon"><iconify-icon icon="solar:bill-cross-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.retardCount}</div>
+          <div class="kpi-value" style="color:var(--danger)">${d.retardCount}</div>
           <div class="kpi-label">Versements en retard</div>
           <div class="kpi-trend ${d.retardCount > 0 ? 'down' : 'up'}">
             <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon> ${d.activeCount} chauffeurs actifs
