@@ -126,7 +126,7 @@ async function fetchAllTransactions(from, to, driverIds = null) {
   const allTransactions = [];
   let cursor = '';
   let pageCount = 0;
-  const MAX_PAGES = 10; // Safety limit
+  const MAX_PAGES = driverIds && driverIds.size === 1 ? 3 : 10; // Fewer pages for single driver
 
   // Build transaction query — add driver_profile_id filter when available
   const transactionQuery = { event_at: { from, to } };
@@ -931,42 +931,52 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       ? customTo.toISOString()
       : now.toISOString();
 
-    // Fetch transactions for this single driver
-    const driverIds = new Set([yangoDriverId]);
-    const transactions = await fetchAllTransactions(from, to, driverIds);
-    const finance = aggregateTransactions(transactions);
+    // Global timeout 12s — abort everything if too slow
+    const globalTimeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout global 12s dépassé')), 12000)
+    );
 
-    // Fetch orders for accurate course count
-    let nbCourses = 0;
-    try {
-      const ordersData = await yangoFetch('/v1/parks/orders/list', {
-        limit: 100,
-        query: {
-          park: {
-            id: process.env.YANGO_PARK_ID,
-            order: { booked_at: { from, to } }
+    const fetchData = async () => {
+      // Run transactions & orders in PARALLEL instead of sequentially
+      const driverIds = new Set([yangoDriverId]);
+      const [transactions, ordersResult] = await Promise.all([
+        fetchAllTransactions(from, to, driverIds),
+        yangoFetch('/v1/parks/orders/list', {
+          limit: 100,
+          query: {
+            park: {
+              id: process.env.YANGO_PARK_ID,
+              order: { booked_at: { from, to } }
+            }
           }
-        }
-      });
-      nbCourses = (ordersData.orders || []).filter(
-        o => o.driver && o.driver.id === yangoDriverId && o.status === 'complete'
-      ).length;
-    } catch (e) {
-      console.warn('driver-stats: orders fetch failed:', e.message);
-      nbCourses = finance.nbCoursesCash + finance.nbCoursesCard;
-    }
+        }).catch(e => {
+          console.warn('driver-stats: orders fetch failed:', e.message);
+          return null;
+        })
+      ]);
 
-    res.json({
-      yangoDriverId,
-      totalCA: finance.totalCA,
-      totalCash: finance.totalCash,
-      totalCard: finance.totalCard,
-      nbCourses,
-      commissionYango: finance.commissionYango,
-      commissionPartenaire: finance.commissionPartenaire,
-      derniereMaj: now.toISOString(),
-      periode: { from, to, isCustom }
-    });
+      const finance = aggregateTransactions(transactions);
+      const nbCourses = ordersResult
+        ? (ordersResult.orders || []).filter(
+            o => o.driver && o.driver.id === yangoDriverId && o.status === 'complete'
+          ).length
+        : finance.nbCoursesCash + finance.nbCoursesCard;
+
+      return {
+        yangoDriverId,
+        totalCA: finance.totalCA,
+        totalCash: finance.totalCash,
+        totalCard: finance.totalCard,
+        nbCourses,
+        commissionYango: finance.commissionYango,
+        commissionPartenaire: finance.commissionPartenaire,
+        derniereMaj: now.toISOString(),
+        periode: { from, to, isCustom }
+      };
+    };
+
+    const result = await Promise.race([fetchData(), globalTimeout]);
+    res.json(result);
   } catch (err) {
     console.error('Yango driver-stats error:', err.message);
     res.status(502).json({ error: 'Erreur API Yango', details: err.message });
