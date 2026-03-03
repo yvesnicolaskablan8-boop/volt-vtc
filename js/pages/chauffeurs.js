@@ -128,6 +128,8 @@ const ChauffeursPage = {
           Fiche chauffeur
         </h1>
         <div class="page-actions">
+          <button class="btn btn-primary" onclick="ChauffeursPage._showBilanMensuel('${c.id}')"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Bilan mensuel</button>
+          <button class="btn btn-secondary" onclick="ChauffeursPage._showHistorique('${c.id}')"><iconify-icon icon="solar:history-bold-duotone"></iconify-icon> Historique</button>
           <button class="btn btn-secondary" onclick="ChauffeursPage._edit('${c.id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>
           <button class="btn btn-danger" onclick="ChauffeursPage._delete('${c.id}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer</button>
         </div>
@@ -1061,13 +1063,254 @@ const ChauffeursPage = {
 
   async _unlinkYango(chauffeurId) {
     Modal.confirm(
-      'Délier le profil Yango',
-      'Voulez-vous supprimer la liaison avec le profil Yango ? Le chauffeur ne sera plus synchronisé automatiquement.',
+      'D\u00e9lier le profil Yango',
+      'Voulez-vous supprimer la liaison avec le profil Yango ? Le chauffeur ne sera plus synchronis\u00e9 automatiquement.',
       () => {
         Store.update('chauffeurs', chauffeurId, { yangoDriverId: '' });
-        Toast.success('Liaison Yango supprimée');
+        Toast.success('Liaison Yango supprim\u00e9e');
         this.renderDetail(chauffeurId);
       }
     );
+  },
+
+  // =================== BILAN MENSUEL ===================
+
+  _showBilanMensuel(chauffeurId) {
+    const ch = Store.findById('chauffeurs', chauffeurId);
+    if (!ch) return;
+    const name = `${ch.prenom} ${ch.nom}`;
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    const monthLabel = Utils.getMonthName(thisMonth) + ' ' + thisYear;
+
+    const versements = Store.query('versements', v => v.chauffeurId === chauffeurId);
+    const planning = Store.query('planning', p => p.chauffeurId === chauffeurId);
+    const absences = Store.query('absences', a => a.chauffeurId === chauffeurId);
+    const courses = Store.query('courses', c => c.chauffeurId === chauffeurId && c.statut === 'terminee');
+
+    // Ce mois
+    const monthPlanning = planning.filter(p => {
+      const d = new Date(p.date);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+    const monthVersements = versements.filter(v => {
+      const d = new Date(v.date);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+    const monthCourses = courses.filter(c => {
+      const d = new Date(c.dateHeure);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+    const monthAbsences = absences.filter(a => {
+      const debut = new Date(a.dateDebut);
+      const fin = new Date(a.dateFin);
+      const debutMois = new Date(thisYear, thisMonth, 1);
+      const finMois = new Date(thisYear, thisMonth + 1, 0);
+      return debut <= finMois && fin >= debutMois;
+    });
+
+    const joursTravailles = new Set(monthPlanning.map(p => p.date)).size;
+    const joursAbsence = monthAbsences.reduce((s, a) => {
+      const debut = new Date(Math.max(new Date(a.dateDebut), new Date(thisYear, thisMonth, 1)));
+      const fin = new Date(Math.min(new Date(a.dateFin), new Date(thisYear, thisMonth + 1, 0)));
+      return s + Math.max(0, Math.ceil((fin - debut) / 86400000) + 1);
+    }, 0);
+
+    const redevance = ch.redevanceQuotidienne || 0;
+    const totalAttendu = joursTravailles * redevance;
+    const totalPaye = monthVersements.filter(v => v.statut === 'valide').reduce((s, v) => s + v.montantVerse, 0);
+    const totalRetard = monthVersements.filter(v => v.statut === 'retard').length;
+    const totalEnAttente = monthVersements.filter(v => v.statut === 'en_attente').length;
+    const solde = totalPaye - totalAttendu;
+    const caMois = monthCourses.reduce((s, c) => s + c.montantTTC, 0);
+
+    // Pénalités
+    const joursImpayesSansPaiement = monthPlanning.filter(p => {
+      const hasValid = versements.some(v => v.chauffeurId === chauffeurId && v.date === p.date && v.statut === 'valide');
+      return !hasValid && p.date <= now.toISOString().split('T')[0];
+    });
+    let totalPenalites = 0;
+    joursImpayesSansPaiement.forEach(p => {
+      const jours = Math.floor((now - new Date(p.date)) / 86400000);
+      if (jours > 7) totalPenalites += Math.round(redevance * 0.15);
+      else if (jours > 4) totalPenalites += Math.round(redevance * 0.10);
+      else if (jours > 2) totalPenalites += Math.round(redevance * 0.05);
+    });
+
+    const body = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div style="padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);text-align:center;">
+          <div style="font-size:var(--font-size-xl);font-weight:700;color:#3b82f6;">${joursTravailles}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Jours travaill\u00e9s</div>
+        </div>
+        <div style="padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);text-align:center;">
+          <div style="font-size:var(--font-size-xl);font-weight:700;color:#f59e0b;">${joursAbsence}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Jours d'absence</div>
+        </div>
+        <div style="padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);text-align:center;">
+          <div style="font-size:var(--font-size-xl);font-weight:700;color:#22c55e;">${Utils.formatCurrency(totalPaye)}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Redevances pay\u00e9es</div>
+        </div>
+        <div style="padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);text-align:center;">
+          <div style="font-size:var(--font-size-xl);font-weight:700;color:#ef4444;">${Utils.formatCurrency(totalAttendu)}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Redevances attendues</div>
+        </div>
+      </div>
+
+      <div style="padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:var(--font-size-sm);font-weight:600;">Solde</span>
+          <span style="font-size:var(--font-size-lg);font-weight:700;color:${solde >= 0 ? '#22c55e' : '#ef4444'};">${solde >= 0 ? '+' : ''}${Utils.formatCurrency(solde)}</span>
+        </div>
+        ${totalPenalites > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:var(--font-size-sm);color:#f59e0b;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> P\u00e9nalit\u00e9s</span>
+          <span style="font-size:var(--font-size-sm);font-weight:600;color:#f59e0b;">${Utils.formatCurrency(totalPenalites)}</span>
+        </div>` : ''}
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:var(--font-size-sm);color:var(--text-muted);">CA courses (mois)</span>
+          <span style="font-size:var(--font-size-sm);font-weight:500;">${Utils.formatCurrency(caMois)}</span>
+        </div>
+      </div>
+
+      <div style="font-size:var(--font-size-xs);color:var(--text-muted);display:flex;gap:12px;flex-wrap:wrap;">
+        <span><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon> ${monthVersements.filter(v => v.statut === 'valide').length} valid\u00e9(s)</span>
+        <span><iconify-icon icon="solar:clock-circle-bold-duotone" style="color:#f59e0b;"></iconify-icon> ${totalEnAttente} en attente</span>
+        <span><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#ef4444;"></iconify-icon> ${totalRetard} en retard</span>
+        <span><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon> ${monthCourses.length} courses</span>
+      </div>
+    `;
+
+    Modal.open({
+      title: `<iconify-icon icon="solar:chart-bold-duotone" style="color:#3b82f6;"></iconify-icon> Bilan mensuel \u2014 ${name}`,
+      body: `<div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:12px;">${monthLabel} &bull; Redevance: ${Utils.formatCurrency(redevance)}/jour</div>${body}`,
+      footer: `<button class="btn btn-secondary" onclick="ChauffeursPage._exportBilanPDF('${chauffeurId}')" style="margin-right:auto;"><iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon> PDF</button><button class="btn btn-secondary" data-action="cancel">Fermer</button>`,
+      size: 'medium'
+    });
+  },
+
+  _exportBilanPDF(chauffeurId) {
+    const ch = Store.findById('chauffeurs', chauffeurId);
+    if (!ch) return;
+    const name = `${ch.prenom} ${ch.nom}`;
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+
+    const versements = Store.query('versements', v => v.chauffeurId === chauffeurId);
+    const planning = Store.query('planning', p => p.chauffeurId === chauffeurId);
+    const monthPlanning = planning.filter(p => {
+      const d = new Date(p.date);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+    const monthVersements = versements.filter(v => {
+      const d = new Date(v.date);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+
+    const headers = ['Date', 'Cr\u00e9neau', 'Redevance', 'Vers\u00e9', 'Statut'];
+    const rows = monthPlanning.sort((a, b) => a.date.localeCompare(b.date)).map(p => {
+      const v = monthVersements.find(v => v.date === p.date);
+      return [
+        Utils.formatDate(p.date),
+        p.typeCreneaux || '',
+        Utils.formatCurrency(ch.redevanceQuotidienne || 0),
+        v ? Utils.formatCurrency(v.montantVerse) : '-',
+        v ? v.statut : 'Non pay\u00e9'
+      ];
+    });
+
+    Utils.exportPDF(`Bilan ${Utils.getMonthName(thisMonth)} ${thisYear} - ${name}`, headers, rows, {
+      orientation: 'portrait',
+      subtitle: `Chauffeur: ${name} | Redevance: ${Utils.formatCurrency(ch.redevanceQuotidienne || 0)}/jour`
+    });
+  },
+
+  // =================== HISTORIQUE COMPLET ===================
+
+  _showHistorique(chauffeurId) {
+    const ch = Store.findById('chauffeurs', chauffeurId);
+    if (!ch) return;
+    const name = `${ch.prenom} ${ch.nom}`;
+
+    const versements = Store.query('versements', v => v.chauffeurId === chauffeurId);
+    const planning = Store.query('planning', p => p.chauffeurId === chauffeurId);
+    const absences = Store.query('absences', a => a.chauffeurId === chauffeurId);
+    const courses = Store.query('courses', c => c.chauffeurId === chauffeurId);
+
+    // Assembler une timeline unifi\u00e9e
+    const timeline = [];
+
+    versements.forEach(v => {
+      timeline.push({
+        date: v.date,
+        type: 'versement',
+        icon: 'solar:hand-money-bold-duotone',
+        color: v.statut === 'valide' ? '#22c55e' : v.statut === 'retard' ? '#ef4444' : '#f59e0b',
+        label: `Versement ${v.statut === 'valide' ? 'valid\u00e9' : v.statut === 'retard' ? 'en retard' : v.statut}`,
+        detail: `${Utils.formatCurrency(v.montantVerse)}${v.moyenPaiement ? ' \u2014 ' + v.moyenPaiement : ''}`,
+        extra: v.justification ? `<div style="font-size:10px;color:var(--volt-blue);margin-top:2px;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${v.justification}</div>` : ''
+      });
+    });
+
+    absences.forEach(a => {
+      const typeLabels = { repos: 'Repos', conge: 'Cong\u00e9', maladie: 'Maladie', formation: 'Formation', personnel: 'Personnel', suspension: 'Suspension' };
+      timeline.push({
+        date: a.dateDebut,
+        type: 'absence',
+        icon: 'solar:calendar-mark-bold-duotone',
+        color: a.type === 'suspension' ? '#ef4444' : a.type === 'maladie' ? '#f59e0b' : '#8b5cf6',
+        label: `${typeLabels[a.type] || a.type}`,
+        detail: `${Utils.formatDate(a.dateDebut)} au ${Utils.formatDate(a.dateFin)}`,
+        extra: a.motif ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${a.motif}</div>` : ''
+      });
+    });
+
+    planning.slice(-50).forEach(p => {
+      timeline.push({
+        date: p.date,
+        type: 'planning',
+        icon: 'solar:clock-circle-bold-duotone',
+        color: '#3b82f6',
+        label: `Shift ${p.typeCreneaux || ''}`,
+        detail: p.heureDebut && p.heureFin ? `${p.heureDebut} \u00e0 ${p.heureFin}` : p.typeCreneaux || '',
+        extra: ''
+      });
+    });
+
+    // Trier par date d\u00e9croissante
+    timeline.sort((a, b) => b.date.localeCompare(a.date));
+
+    const rows = timeline.slice(0, 80).map(item => `
+      <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color);">
+        <div style="flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:${item.color}15;">
+          <iconify-icon icon="${item.icon}" style="color:${item.color};font-size:14px;"></iconify-icon>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div style="font-size:var(--font-size-sm);font-weight:600;">${item.label}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);flex-shrink:0;">${Utils.formatDate(item.date)}</div>
+          </div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${item.detail}</div>
+          ${item.extra}
+        </div>
+      </div>
+    `).join('');
+
+    const stats = `
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+        <span class="badge badge-info"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> ${versements.length} versements</span>
+        <span class="badge badge-warning"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon> ${absences.length} absences</span>
+        <span class="badge badge-success"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> ${planning.length} shifts</span>
+        <span class="badge badge-neutral"><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon> ${courses.length} courses</span>
+      </div>
+    `;
+
+    Modal.open({
+      title: `<iconify-icon icon="solar:history-bold-duotone" style="color:#3b82f6;"></iconify-icon> Historique \u2014 ${name}`,
+      body: stats + `<div style="max-height:55vh;overflow-y:auto;">${rows || '<div style="text-align:center;color:var(--text-muted);padding:20px;">Aucun historique</div>'}</div>`,
+      footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>',
+      size: 'large'
+    });
   }
 };

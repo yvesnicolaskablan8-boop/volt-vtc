@@ -3,17 +3,52 @@
  */
 const DashboardPage = {
   _charts: [],
+  _refreshInterval: null,
+  _lastData: null,
 
   render() {
     const container = document.getElementById('page-content');
     const data = this._getData();
+    this._lastData = data;
     container.innerHTML = this._template(data);
     this._loadCharts(data);
+    this._startAutoRefresh();
   },
 
   destroy() {
     this._charts.forEach(c => c.destroy());
     this._charts = [];
+    this._stopAutoRefresh();
+  },
+
+  _startAutoRefresh() {
+    this._stopAutoRefresh();
+    this._refreshInterval = setInterval(() => {
+      this._silentRefresh();
+    }, 30000);
+  },
+
+  _stopAutoRefresh() {
+    if (this._refreshInterval) {
+      clearInterval(this._refreshInterval);
+      this._refreshInterval = null;
+    }
+  },
+
+  _silentRefresh() {
+    const indicator = document.getElementById('live-indicator');
+    if (indicator) {
+      indicator.classList.add('pulse');
+      setTimeout(() => indicator.classList.remove('pulse'), 1500);
+    }
+    this.destroy();
+    const container = document.getElementById('page-content');
+    if (!container) return;
+    const data = this._getData();
+    this._lastData = data;
+    container.innerHTML = this._template(data);
+    this._loadCharts(data);
+    this._startAutoRefresh();
   },
 
   _getData() {
@@ -181,6 +216,13 @@ const DashboardPage = {
       if (!hasValidPayment) {
         // Chercher un versement existant (même non validé) pour la justification
         const existing = versements.find(v => v.chauffeurId === p.chauffeurId && v.date === p.date);
+        // Calcul pénalités progressives
+        const joursRetard = Math.floor((now - new Date(p.date)) / 86400000);
+        let tauxPenalite = 0;
+        if (joursRetard > 7) tauxPenalite = 0.15;
+        else if (joursRetard > 4) tauxPenalite = 0.10;
+        else if (joursRetard > 2) tauxPenalite = 0.05;
+        const penalite = Math.round(redevance * tauxPenalite);
         unpaidItems.push({
           planningId: p.id,
           chauffeurId: p.chauffeurId,
@@ -189,6 +231,10 @@ const DashboardPage = {
           heureDebut: p.heureDebut,
           heureFin: p.heureFin,
           montantDu: redevance,
+          joursRetard,
+          tauxPenalite,
+          penalite,
+          totalDu: redevance + penalite,
           justification: existing ? existing.justification : null,
           versementId: existing ? existing.id : null
         });
@@ -198,6 +244,19 @@ const DashboardPage = {
     // Trier par date décroissante
     unpaidItems.sort((a, b) => b.date.localeCompare(a.date));
     const totalUnpaid = unpaidItems.reduce((s, i) => s + i.montantDu, 0);
+    const totalPenalites = unpaidItems.reduce((s, i) => s + i.penalite, 0);
+
+    // =================== DÉPENSES VÉHICULES ===================
+    const depenses = Store.get('depenses') || [];
+    const monthDepenses = depenses.filter(dep => {
+      const d = new Date(dep.date);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+    const totalDepensesMois = monthDepenses.reduce((s, d) => s + (d.montant || 0), 0);
+    const depensesByType = {};
+    monthDepenses.forEach(d => {
+      depensesByType[d.typeDepense] = (depensesByType[d.typeDepense] || 0) + d.montant;
+    });
 
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
@@ -206,7 +265,8 @@ const DashboardPage = {
       monthlyRevenue, weeklyPayments,
       coursesByType, typeLabels, vehicleProfit,
       recentVersements, chauffeurs, vehiculesTotal: vehicules.length,
-      maintenanceAlerts, unpaidItems, totalUnpaid
+      maintenanceAlerts, unpaidItems, totalUnpaid, totalPenalites,
+      depenses, monthDepenses, totalDepensesMois, depensesByType, vehicules
     };
   },
 
@@ -215,9 +275,19 @@ const DashboardPage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Tableau de bord</h1>
         <div class="page-actions">
+          <span id="live-indicator" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:#22c55e;background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:20px;font-weight:600;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite;"></span> EN DIRECT
+          </span>
+          <button class="btn btn-secondary" onclick="DashboardPage._sendPaymentReminders()" title="Envoyer rappels de paiement"><iconify-icon icon="solar:bell-bold-duotone"></iconify-icon> Rappels</button>
+          <button class="btn btn-secondary" onclick="DashboardPage._sendAnnouncement()" title="Envoyer annonce"><iconify-icon icon="solar:letter-bold-duotone"></iconify-icon></button>
           <button class="btn btn-secondary" onclick="DashboardPage.refresh()"><iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser</button>
         </div>
       </div>
+      <style>
+        @keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+        #live-indicator.pulse { animation: flash-indicator 1.5s; }
+        @keyframes flash-indicator { 0% { background:rgba(34,197,94,0.3); } 100% { background:rgba(34,197,94,0.1); } }
+      </style>
 
       <!-- KPI Cards -->
       <div class="grid-4">
@@ -293,6 +363,9 @@ const DashboardPage = {
         </div>
       </div>
 
+      <!-- Dépenses véhicules -->
+      ${this._renderDepensesSection(d)}
+
       <!-- Bottom section -->
       <div class="charts-grid" style="margin-top: var(--space-lg);">
         <div class="chart-card">
@@ -317,7 +390,7 @@ const DashboardPage = {
                 <div style="display:flex; align-items:center; justify-content:space-between; padding:8px; border-radius:var(--radius-sm); background:var(--bg-tertiary);">
                   <div>
                     <div style="font-size:var(--font-size-sm); font-weight:500;">${name}</div>
-                    <div style="font-size:var(--font-size-xs); color:var(--text-muted);">${v.periode} - ${Utils.formatDate(v.date)}</div>
+                    <div style="font-size:var(--font-size-xs); color:var(--text-muted);">${v.moyenPaiement || v.periode || ''} - ${Utils.formatDate(v.date)}</div>
                   </div>
                   <div style="text-align:right;">
                     <div style="font-size:var(--font-size-sm); font-weight:600;" class="tabular-nums">${Utils.formatCurrency(v.montantVerse)}</div>
@@ -592,11 +665,12 @@ const DashboardPage = {
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
         <div style="min-width:0;flex:1;">
           <div style="font-size:var(--font-size-sm);font-weight:500;">${name}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${item.heureDebut && item.heureFin ? ' \u2014 ' + item.heureDebut + ' \u00e0 ' + item.heureFin : ''}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${item.heureDebut && item.heureFin ? ' \u2014 ' + item.heureDebut + ' \u00e0 ' + item.heureFin : ''} &bull; ${item.joursRetard}j de retard</div>
           ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--volt-blue);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
         </div>
-        <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;flex-shrink:0;margin-left:8px;">
-          ${Utils.formatCurrency(item.montantDu)}
+        <div style="text-align:right;flex-shrink:0;margin-left:8px;">
+          <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">${Utils.formatCurrency(item.montantDu)}</div>
+          ${item.penalite > 0 ? `<div style="font-size:10px;color:#f59e0b;font-weight:600;">+ ${Utils.formatCurrency(item.penalite)} p\u00e9nalit\u00e9</div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -606,7 +680,10 @@ const DashboardPage = {
     return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #ef4444;cursor:pointer;" onclick="DashboardPage._showUnpaidDetails()">
       <div class="card-header">
         <span class="card-title"><iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes impay\u00e9es (${d.unpaidItems.length})</span>
-        <span style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${Utils.formatCurrency(d.totalUnpaid)}</span>
+        <div style="text-align:right;">
+          <div style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${Utils.formatCurrency(d.totalUnpaid)}</div>
+          ${d.totalPenalites > 0 ? `<div style="font-size:var(--font-size-xs);color:#f59e0b;font-weight:600;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> + ${Utils.formatCurrency(d.totalPenalites)} p\u00e9nalit\u00e9s</div>` : ''}
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${rows}
@@ -622,24 +699,75 @@ const DashboardPage = {
       return;
     }
 
-    const rows = data.unpaidItems.map(item => {
-      const ch = data.chauffeurs.find(c => c.id === item.chauffeurId);
+    // Stocker pour filtrage
+    this._unpaidData = data;
+    this._unpaidFilters = { chauffeurId: '', dateFrom: '', dateTo: '', minRetard: 0 };
+
+    const chauffeurIds = [...new Set(data.unpaidItems.map(i => i.chauffeurId))];
+    const chauffeurOptions = chauffeurIds.map(id => {
+      const ch = data.chauffeurs.find(c => c.id === id);
+      return ch ? `<option value="${id}">${ch.prenom} ${ch.nom}</option>` : '';
+    }).join('');
+
+    const filtersHtml = `
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:1;min-width:140px;">
+          <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Chauffeur</label>
+          <select class="form-control" id="unpaid-filter-chauffeur" style="font-size:var(--font-size-xs);padding:6px 8px;" onchange="DashboardPage._applyUnpaidFilters()">
+            <option value="">Tous</option>
+            ${chauffeurOptions}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Du</label>
+          <input type="date" class="form-control" id="unpaid-filter-from" style="font-size:var(--font-size-xs);padding:6px 8px;" onchange="DashboardPage._applyUnpaidFilters()">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Au</label>
+          <input type="date" class="form-control" id="unpaid-filter-to" style="font-size:var(--font-size-xs);padding:6px 8px;" onchange="DashboardPage._applyUnpaidFilters()">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Retard min (j)</label>
+          <input type="number" class="form-control" id="unpaid-filter-retard" min="0" value="0" style="font-size:var(--font-size-xs);padding:6px 8px;width:80px;" onchange="DashboardPage._applyUnpaidFilters()">
+        </div>
+        <button class="btn btn-sm btn-success" onclick="DashboardPage._exportUnpaidExcel()" title="Exporter en Excel">
+          <iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon> Excel
+        </button>
+      </div>
+      <div id="unpaid-summary" style="display:flex;gap:12px;margin-bottom:8px;font-size:var(--font-size-xs);padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);"></div>
+    `;
+
+    const rows = this._renderUnpaidRows(data.unpaidItems, data.chauffeurs);
+
+    Modal.open({
+      title: '<iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes impay\u00e9es (' + data.unpaidItems.length + ')',
+      body: filtersHtml + `<div id="unpaid-rows-container" style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto;">${rows}</div>`,
+      footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>',
+      size: 'large'
+    });
+
+    this._updateUnpaidSummary(data.unpaidItems);
+  },
+
+  _renderUnpaidRows(items, chauffeurs) {
+    return items.map(item => {
+      const ch = chauffeurs.find(c => c.id === item.chauffeurId);
       const name = ch ? `${ch.prenom} ${ch.nom}` : item.chauffeurId;
       const hasJustif = !!item.justification;
       const creneauLabel = item.heureDebut && item.heureFin ? `${item.heureDebut} \u00e0 ${item.heureFin}` : (item.typeCreneaux || '');
+      const penaliteHtml = item.penalite > 0 ? `<div style="font-size:10px;color:#f59e0b;font-weight:600;">+ ${Utils.formatCurrency(item.penalite)} (${Math.round(item.tauxPenalite*100)}%)</div>` : '';
 
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${name}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${creneauLabel ? ' \u2014 ' + creneauLabel : ''}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${creneauLabel ? ' \u2014 ' + creneauLabel : ''} &bull; <span style="color:${item.joursRetard > 4 ? '#ef4444' : '#f59e0b'};font-weight:600;">${item.joursRetard}j de retard</span></div>
           ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--volt-blue);margin-top:2px;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">
-            ${Utils.formatCurrency(item.montantDu)}
-          </div>
+          <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">${Utils.formatCurrency(item.montantDu)}</div>
+          ${penaliteHtml}
           <div style="display:flex;gap:4px;margin-top:4px;">
-            <button class="btn btn-sm btn-success" onclick="event.stopPropagation();DashboardPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.montantDu})">
+            <button class="btn btn-sm btn-success" onclick="event.stopPropagation();DashboardPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.totalDu})">
               <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Payer
             </button>
             <button class="btn btn-sm ${hasJustif ? 'btn-secondary' : 'btn-outline'}" onclick="event.stopPropagation();DashboardPage._addJustification('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}')">
@@ -649,13 +777,72 @@ const DashboardPage = {
         </div>
       </div>`;
     }).join('');
+  },
 
-    Modal.open({
-      title: '<iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes impay\u00e9es (' + data.unpaidItems.length + ')',
-      body: `<div style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;">${rows}</div>`,
-      footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>',
-      size: 'large'
+  _updateUnpaidSummary(items) {
+    const el = document.getElementById('unpaid-summary');
+    if (!el) return;
+    const total = items.reduce((s, i) => s + i.montantDu, 0);
+    const totalPen = items.reduce((s, i) => s + i.penalite, 0);
+    const avgRetard = items.length > 0 ? Math.round(items.reduce((s, i) => s + i.joursRetard, 0) / items.length) : 0;
+    el.innerHTML = `
+      <div><strong>${items.length}</strong> impay\u00e9(s)</div>
+      <div>Total: <strong style="color:#ef4444;">${Utils.formatCurrency(total)}</strong></div>
+      ${totalPen > 0 ? `<div>P\u00e9nalit\u00e9s: <strong style="color:#f59e0b;">${Utils.formatCurrency(totalPen)}</strong></div>` : ''}
+      <div>Retard moy: <strong>${avgRetard}j</strong></div>
+    `;
+  },
+
+  _applyUnpaidFilters() {
+    if (!this._unpaidData) return;
+    let items = [...this._unpaidData.unpaidItems];
+
+    const chauffeurId = document.getElementById('unpaid-filter-chauffeur')?.value;
+    const dateFrom = document.getElementById('unpaid-filter-from')?.value;
+    const dateTo = document.getElementById('unpaid-filter-to')?.value;
+    const minRetard = parseInt(document.getElementById('unpaid-filter-retard')?.value) || 0;
+
+    if (chauffeurId) items = items.filter(i => i.chauffeurId === chauffeurId);
+    if (dateFrom) items = items.filter(i => i.date >= dateFrom);
+    if (dateTo) items = items.filter(i => i.date <= dateTo);
+    if (minRetard > 0) items = items.filter(i => i.joursRetard >= minRetard);
+
+    const container = document.getElementById('unpaid-rows-container');
+    if (container) container.innerHTML = this._renderUnpaidRows(items, this._unpaidData.chauffeurs);
+    this._updateUnpaidSummary(items);
+  },
+
+  _exportUnpaidExcel() {
+    const data = this._unpaidData || this._getData();
+    let items = [...data.unpaidItems];
+
+    // Appliquer les filtres actifs
+    const chauffeurId = document.getElementById('unpaid-filter-chauffeur')?.value;
+    const dateFrom = document.getElementById('unpaid-filter-from')?.value;
+    const dateTo = document.getElementById('unpaid-filter-to')?.value;
+    const minRetard = parseInt(document.getElementById('unpaid-filter-retard')?.value) || 0;
+    if (chauffeurId) items = items.filter(i => i.chauffeurId === chauffeurId);
+    if (dateFrom) items = items.filter(i => i.date >= dateFrom);
+    if (dateTo) items = items.filter(i => i.date <= dateTo);
+    if (minRetard > 0) items = items.filter(i => i.joursRetard >= minRetard);
+
+    const headers = ['Chauffeur', 'Date', 'Cr\u00e9neau', 'Montant d\u00fb', 'Jours retard', 'Taux p\u00e9nalit\u00e9', 'P\u00e9nalit\u00e9', 'Total d\u00fb', 'Justification'];
+    const rows = items.map(i => {
+      const ch = data.chauffeurs.find(c => c.id === i.chauffeurId);
+      return [
+        ch ? `${ch.prenom} ${ch.nom}` : i.chauffeurId,
+        i.date,
+        i.heureDebut && i.heureFin ? `${i.heureDebut}-${i.heureFin}` : i.typeCreneaux || '',
+        i.montantDu,
+        i.joursRetard,
+        `${Math.round(i.tauxPenalite * 100)}%`,
+        i.penalite,
+        i.totalDu,
+        i.justification || ''
+      ];
     });
+    Utils.exportCSV(headers, rows, `volt-impayes-${new Date().toISOString().split('T')[0]}.csv`);
+    Toast.success(`${items.length} impay\u00e9(s) export\u00e9(s) en Excel`);
   },
 
   _addJustification(chauffeurId, date, planningId, versementId) {
@@ -775,6 +962,18 @@ const DashboardPage = {
 
         Modal.close();
         Toast.success('Paiement enregistr\u00e9 \u2014 ' + Utils.formatCurrency(montant));
+
+        // Proposer le PDF
+        setTimeout(() => {
+          Modal.confirm(
+            'G\u00e9n\u00e9rer le re\u00e7u PDF ?',
+            `Voulez-vous g\u00e9n\u00e9rer un re\u00e7u PDF pour ce paiement de <strong>${Utils.formatCurrency(montant)}</strong> ?`,
+            () => {
+              this._generateReceiptPDF(chauffeurId, date, montant, values.moyenPaiement, values.referencePaiement);
+            }
+          );
+        }, 300);
+
         this.render();
       }
     );
@@ -783,6 +982,391 @@ const DashboardPage = {
   refresh() {
     this.destroy();
     this.render();
-    Toast.info('Tableau de bord actualise');
+    Toast.info('Tableau de bord actualis\u00e9');
+  },
+
+  // =================== NOTIFICATIONS PUSH ===================
+
+  _sendPaymentReminders() {
+    const data = this._lastData || this._getData();
+    if (!data.unpaidItems || data.unpaidItems.length === 0) {
+      Toast.info('Aucun impay\u00e9 \u00e0 notifier');
+      return;
+    }
+
+    // Regrouper par chauffeur
+    const byDriver = {};
+    data.unpaidItems.forEach(item => {
+      if (!byDriver[item.chauffeurId]) byDriver[item.chauffeurId] = [];
+      byDriver[item.chauffeurId].push(item);
+    });
+
+    const drivers = Object.keys(byDriver);
+    const lines = drivers.map(id => {
+      const ch = data.chauffeurs.find(c => c.id === id);
+      const name = ch ? `${ch.prenom} ${ch.nom}` : id;
+      const count = byDriver[id].length;
+      const total = byDriver[id].reduce((s, i) => s + i.totalDu, 0);
+      return `<div style="font-size:var(--font-size-xs);padding:4px 0;"><strong>${name}</strong> \u2014 ${count} impay\u00e9(s), ${Utils.formatCurrency(total)}</div>`;
+    }).join('');
+
+    Modal.open({
+      title: '<iconify-icon icon="solar:bell-bold-duotone" style="color:#3b82f6;"></iconify-icon> Envoyer des rappels',
+      body: `
+        <div style="margin-bottom:12px;font-size:var(--font-size-sm);">${drivers.length} chauffeur(s) concern\u00e9(s) :</div>
+        <div style="max-height:200px;overflow-y:auto;background:var(--bg-tertiary);padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:12px;">${lines}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <label style="font-size:var(--font-size-sm);font-weight:500;">Canal :</label>
+          <select class="form-control" id="notif-canal" style="width:auto;font-size:var(--font-size-xs);">
+            <option value="push">Push notification</option>
+            <option value="sms">SMS</option>
+            <option value="both">Push + SMS</option>
+          </select>
+        </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Un rappel de paiement sera envoy\u00e9 \u00e0 chaque chauffeur concern\u00e9.</div>
+      `,
+      footer: `<button class="btn btn-primary" onclick="DashboardPage._confirmSendReminders()"><iconify-icon icon="solar:bell-bold-duotone"></iconify-icon> Envoyer</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`,
+      size: 'medium'
+    });
+  },
+
+  async _confirmSendReminders() {
+    const canal = document.getElementById('notif-canal')?.value || 'push';
+    Modal.close();
+    Toast.info('Envoi des rappels en cours...');
+
+    try {
+      const res = await fetch(Store._apiBase + '/notifications/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('volt_token')
+        },
+        body: JSON.stringify({
+          titre: 'Rappel de paiement',
+          message: 'Vous avez des redevances en attente de paiement. Veuillez r\u00e9gulariser votre situation dans les plus brefs d\u00e9lais.',
+          canal
+        })
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        Toast.success(`${result.sent || 0} rappel(s) envoy\u00e9(s) avec succ\u00e8s`);
+      } else {
+        Toast.error('Erreur lors de l\'envoi des rappels');
+      }
+    } catch (err) {
+      // Fallback: log locally
+      const data = this._lastData || this._getData();
+      const notifications = data.unpaidItems.map(item => ({
+        id: Utils.generateId('NTF'),
+        chauffeurId: item.chauffeurId,
+        type: 'deadline_rappel',
+        titre: 'Rappel de paiement',
+        message: `Redevance du ${Utils.formatDate(item.date)} en attente: ${Utils.formatCurrency(item.totalDu)}`,
+        canal,
+        statut: 'envoyee',
+        dateCreation: new Date().toISOString()
+      }));
+      notifications.forEach(n => Store.add('notifications', n));
+      Toast.success(`${notifications.length} rappel(s) enregistr\u00e9(s)`);
+    }
+  },
+
+  _sendAnnouncement() {
+    const fields = [
+      { name: 'titre', label: 'Titre', type: 'text', required: true, placeholder: 'Titre de l\'annonce...' },
+      { name: 'message', label: 'Message', type: 'textarea', rows: 4, required: true, placeholder: 'Contenu de l\'annonce...' },
+      { name: 'canal', label: 'Canal', type: 'select', options: [
+        { value: 'push', label: 'Push notification' },
+        { value: 'sms', label: 'SMS' },
+        { value: 'both', label: 'Push + SMS' }
+      ]}
+    ];
+
+    Modal.form(
+      '<iconify-icon icon="solar:letter-bold-duotone" style="color:#3b82f6;"></iconify-icon> Envoyer une annonce',
+      FormBuilder.build(fields),
+      async () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, fields)) return;
+        const values = FormBuilder.getValues(body);
+
+        Modal.close();
+        Toast.info('Envoi en cours...');
+
+        try {
+          const res = await fetch(Store._apiBase + '/notifications/send', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + localStorage.getItem('volt_token')
+            },
+            body: JSON.stringify(values)
+          });
+
+          if (res.ok) {
+            const result = await res.json();
+            Toast.success(`Annonce envoy\u00e9e \u00e0 ${result.sent || 0} chauffeur(s)`);
+          } else {
+            Toast.error('Erreur lors de l\'envoi');
+          }
+        } catch (err) {
+          Toast.error('API indisponible \u2014 annonce non envoy\u00e9e');
+        }
+      }
+    );
+  },
+
+  // =================== DÉPENSES VÉHICULES ===================
+
+  _renderDepensesSection(d) {
+    const typeLabels = { carburant: 'Carburant', peage: 'P\u00e9age', lavage: 'Lavage', assurance: 'Assurance', reparation: 'R\u00e9paration', stationnement: 'Stationnement', autre: 'Autre' };
+    const typeIcons = { carburant: 'solar:gas-station-bold-duotone', peage: 'solar:road-bold-duotone', lavage: 'solar:washing-machine-bold-duotone', assurance: 'solar:shield-check-bold-duotone', reparation: 'solar:wrench-bold-duotone', stationnement: 'solar:map-point-bold-duotone', autre: 'solar:bag-bold-duotone' };
+
+    const typeEntries = Object.entries(d.depensesByType || {}).sort((a, b) => b[1] - a[1]);
+    const recentDeps = (d.depenses || []).sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5);
+
+    return `<div class="card" style="margin-top:var(--space-lg);">
+      <div class="card-header">
+        <span class="card-title"><iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> D\u00e9penses v\u00e9hicules (${Utils.getMonthShort(new Date().getMonth())})</span>
+        <div style="display:flex;gap:6px;">
+          <span style="font-size:var(--font-size-base);font-weight:700;color:#f59e0b;">${Utils.formatCurrency(d.totalDepensesMois)}</span>
+          <button class="btn btn-sm btn-primary" onclick="DashboardPage._addDepense()"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon></button>
+          ${d.depenses && d.depenses.length > 0 ? `<button class="btn btn-sm btn-secondary" onclick="DashboardPage._showDepenses()"><iconify-icon icon="solar:list-bold"></iconify-icon></button>` : ''}
+        </div>
+      </div>
+      ${typeEntries.length > 0 ? `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          ${typeEntries.map(([type, montant]) => `
+            <div style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:var(--font-size-xs);">
+              <iconify-icon icon="${typeIcons[type] || 'solar:bag-bold-duotone'}" style="color:#f59e0b;"></iconify-icon>
+              <span>${typeLabels[type] || type}</span>
+              <strong>${Utils.formatCurrency(montant)}</strong>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        ${recentDeps.map(dep => {
+          const veh = d.vehicules.find(v => v.id === dep.vehiculeId);
+          const vehLabel = veh ? `${veh.marque} ${veh.modele}` : dep.vehiculeId || '';
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <iconify-icon icon="${typeIcons[dep.typeDepense] || 'solar:bag-bold-duotone'}" style="color:#f59e0b;"></iconify-icon>
+              <div>
+                <span style="font-weight:500;">${typeLabels[dep.typeDepense] || dep.typeDepense}</span>
+                <span style="color:var(--text-muted);"> \u2014 ${vehLabel}</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="color:var(--text-muted);">${Utils.formatDate(dep.date)}</span>
+              <strong>${Utils.formatCurrency(dep.montant)}</strong>
+            </div>
+          </div>`;
+        }).join('')}
+        ${recentDeps.length === 0 ? '<div style="text-align:center;padding:12px;font-size:var(--font-size-xs);color:var(--text-muted);">Aucune d\u00e9pense enregistr\u00e9e ce mois</div>' : ''}
+      </div>
+    </div>`;
+  },
+
+  _addDepense() {
+    const vehicules = Store.get('vehicules') || [];
+    const fields = [
+      { name: 'vehiculeId', label: 'V\u00e9hicule', type: 'select', required: true, placeholder: 'S\u00e9lectionner...', options: vehicules.map(v => ({ value: v.id, label: `${v.marque} ${v.modele} (${v.immatriculation})` })) },
+      { type: 'row-start' },
+      { name: 'typeDepense', label: 'Type de d\u00e9pense', type: 'select', required: true, options: [
+        { value: 'carburant', label: 'Carburant' },
+        { value: 'peage', label: 'P\u00e9age' },
+        { value: 'lavage', label: 'Lavage' },
+        { value: 'assurance', label: 'Assurance' },
+        { value: 'reparation', label: 'R\u00e9paration' },
+        { value: 'stationnement', label: 'Stationnement' },
+        { value: 'autre', label: 'Autre' }
+      ]},
+      { name: 'montant', label: 'Montant (FCFA)', type: 'number', required: true, min: 0, step: 100 },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'date', label: 'Date', type: 'date', required: true, default: new Date().toISOString().split('T')[0] },
+      { name: 'kilometrage', label: 'Kilom\u00e9trage', type: 'number', min: 0 },
+      { type: 'row-end' },
+      { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2, placeholder: 'D\u00e9tails de la d\u00e9pense...' }
+    ];
+
+    Modal.form(
+      '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> Nouvelle d\u00e9pense',
+      FormBuilder.build(fields),
+      () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, fields)) return;
+        const values = FormBuilder.getValues(body);
+
+        Store.add('depenses', {
+          id: Utils.generateId('DEP'),
+          ...values,
+          montant: parseFloat(values.montant) || 0,
+          dateCreation: new Date().toISOString()
+        });
+
+        Modal.close();
+        Toast.success('D\u00e9pense enregistr\u00e9e \u2014 ' + Utils.formatCurrency(values.montant));
+        this.render();
+      }
+    );
+  },
+
+  _showDepenses() {
+    const depenses = (Store.get('depenses') || []).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const vehicules = Store.get('vehicules') || [];
+    const typeLabels = { carburant: 'Carburant', peage: 'P\u00e9age', lavage: 'Lavage', assurance: 'Assurance', reparation: 'R\u00e9paration', stationnement: 'Stationnement', autre: 'Autre' };
+
+    if (depenses.length === 0) {
+      Toast.info('Aucune d\u00e9pense enregistr\u00e9e');
+      return;
+    }
+
+    // R\u00e9sum\u00e9 par v\u00e9hicule
+    const byVehicle = {};
+    depenses.forEach(d => {
+      if (!byVehicle[d.vehiculeId]) byVehicle[d.vehiculeId] = 0;
+      byVehicle[d.vehiculeId] += d.montant || 0;
+    });
+
+    const summaryHtml = Object.entries(byVehicle).map(([vId, total]) => {
+      const v = vehicules.find(x => x.id === vId);
+      return `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:var(--font-size-xs);"><span>${v ? `${v.marque} ${v.modele}` : vId}</span><strong>${Utils.formatCurrency(total)}</strong></div>`;
+    }).join('');
+
+    const rows = depenses.map(d => {
+      const v = vehicules.find(x => x.id === d.vehiculeId);
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
+        <div>
+          <div style="font-size:var(--font-size-sm);font-weight:500;">${typeLabels[d.typeDepense] || d.typeDepense}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${v ? `${v.marque} ${v.modele}` : ''} &bull; ${Utils.formatDate(d.date)}</div>
+          ${d.commentaire ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${d.commentaire}</div>` : ''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:var(--font-size-sm);font-weight:600;color:#f59e0b;">${Utils.formatCurrency(d.montant)}</div>
+          <button class="btn btn-sm btn-danger" style="margin-top:4px;padding:2px 6px;" onclick="DashboardPage._deleteDepense('${d.id}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+        </div>
+      </div>`;
+    }).join('');
+
+    const totalAll = depenses.reduce((s, d) => s + (d.montant || 0), 0);
+
+    Modal.open({
+      title: `<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> D\u00e9penses (${depenses.length})`,
+      body: `
+        <div style="padding:8px 12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:12px;">
+          <div style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Par v\u00e9hicule</div>
+          ${summaryHtml}
+          <div style="border-top:1px solid var(--border-color);margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-size:var(--font-size-sm);font-weight:700;">
+            <span>Total</span><span style="color:#f59e0b;">${Utils.formatCurrency(totalAll)}</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;">${rows}</div>
+      `,
+      footer: `<button class="btn btn-success" onclick="DashboardPage._exportDepensesExcel()"><iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon> Excel</button><button class="btn btn-secondary" data-action="cancel">Fermer</button>`,
+      size: 'large'
+    });
+  },
+
+  _deleteDepense(id) {
+    Store.delete('depenses', id);
+    Toast.success('D\u00e9pense supprim\u00e9e');
+    Modal.close();
+    this.render();
+  },
+
+  _exportDepensesExcel() {
+    const depenses = (Store.get('depenses') || []).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const vehicules = Store.get('vehicules') || [];
+    const typeLabels = { carburant: 'Carburant', peage: 'P\u00e9age', lavage: 'Lavage', assurance: 'Assurance', reparation: 'R\u00e9paration', stationnement: 'Stationnement', autre: 'Autre' };
+
+    const headers = ['Date', 'V\u00e9hicule', 'Type', 'Montant', 'Kilom\u00e9trage', 'Commentaire'];
+    const rows = depenses.map(d => {
+      const v = vehicules.find(x => x.id === d.vehiculeId);
+      return [d.date, v ? `${v.marque} ${v.modele}` : d.vehiculeId, typeLabels[d.typeDepense] || d.typeDepense, d.montant, d.kilometrage || '', d.commentaire || ''];
+    });
+    Utils.exportCSV(headers, rows, `volt-depenses-${new Date().toISOString().split('T')[0]}.csv`);
+    Toast.success(`${depenses.length} d\u00e9pense(s) export\u00e9e(s)`);
+  },
+
+  // =================== EXPORT PDF REÇU ===================
+
+  _generateReceiptPDF(chauffeurId, date, montant, moyenPaiement, reference) {
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const ch = chauffeurs.find(c => c.id === chauffeurId);
+    const name = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+    const settings = Store.get('settings') || {};
+    const entreprise = settings.entreprise || {};
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('portrait', 'mm', 'a5');
+
+    // En-tête
+    doc.setFillColor(59, 130, 246);
+    doc.rect(0, 0, 148, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.text('VOLT VTC', 14, 14);
+    doc.setFontSize(10);
+    doc.text('Re\u00e7u de paiement', 14, 22);
+    doc.setFontSize(8);
+    doc.text(`N\u00b0 ${Utils.generateId('REC')}`, 100, 14);
+    doc.text(new Date().toLocaleDateString('fr-FR'), 100, 20);
+
+    // Infos entreprise
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(8);
+    let y = 38;
+    if (entreprise.nom) { doc.text(entreprise.nom, 14, y); y += 5; }
+    if (entreprise.adresse) { doc.text(entreprise.adresse, 14, y); y += 5; }
+    if (entreprise.telephone) { doc.text(`T\u00e9l: ${entreprise.telephone}`, 14, y); y += 5; }
+
+    // Ligne de s\u00e9paration
+    y += 3;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(14, y, 134, y);
+    y += 8;
+
+    // D\u00e9tails du paiement
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(11);
+    doc.text('D\u00e9tails du paiement', 14, y);
+    y += 10;
+
+    doc.setFontSize(9);
+    const details = [
+      ['Chauffeur', name],
+      ['Date', Utils.formatDate(date)],
+      ['Montant', Utils.formatCurrency(montant)],
+      ['Moyen de paiement', moyenPaiement || '-'],
+      ['R\u00e9f\u00e9rence', reference || '-'],
+      ['Date de validation', new Date().toLocaleDateString('fr-FR')]
+    ];
+
+    details.forEach(([label, value]) => {
+      doc.setTextColor(100, 116, 139);
+      doc.text(label, 14, y);
+      doc.setTextColor(15, 23, 42);
+      doc.setFont(undefined, 'bold');
+      doc.text(String(value), 70, y);
+      doc.setFont(undefined, 'normal');
+      y += 7;
+    });
+
+    // Pied de page
+    y += 10;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(14, y, 134, y);
+    y += 8;
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Ce document fait office de re\u00e7u de paiement.', 14, y);
+    doc.text('G\u00e9n\u00e9r\u00e9 automatiquement par Volt VTC.', 14, y + 5);
+
+    doc.save(`recu-${name.replace(/\s+/g, '-')}-${date}.pdf`);
+    Toast.success('Re\u00e7u PDF g\u00e9n\u00e9r\u00e9');
   }
 };

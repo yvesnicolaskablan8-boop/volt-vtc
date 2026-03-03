@@ -268,6 +268,9 @@ const VersementsPage = {
             btns += `<button class="btn btn-sm btn-success" onclick="VersementsPage._validate('${v.id}')" title="Valider"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button> `;
           }
           btns += `<button class="btn btn-sm btn-secondary" onclick="VersementsPage._edit('${v.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>`;
+          if (v.statut === 'valide') {
+            btns += ` <button class="btn btn-sm btn-outline" onclick="VersementsPage._exportReceipt('${v.id}')" title="Re\u00e7u PDF"><iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon></button>`;
+          }
           return btns;
         }
       });
@@ -387,8 +390,14 @@ const VersementsPage = {
       statut: 'valide',
       dateValidation: new Date().toISOString()
     });
-    Toast.success('Versement validé');
+    Toast.success('Versement valid\u00e9');
     this.render();
     Header.refreshNotifications();
+  },
+
+  _exportReceipt(id) {
+    const v = Store.findById('versements', id);
+    if (!v) return;
+    DashboardPage._generateReceiptPDF(v.chauffeurId, v.date, v.montantVerse, v.moyenPaiement, v.referencePaiement);
   }
 };

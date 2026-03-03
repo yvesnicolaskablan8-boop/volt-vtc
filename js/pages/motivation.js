@@ -186,6 +186,39 @@ const MotivationPage = {
     };
     const alerteColors = { critique: '#ef4444', haute: '#f59e0b' };
 
+    // Calcul bonus/malus
+    const bonusMalusData = d.ranking.map(r => {
+      let bonus = 0;
+      let malus = 0;
+      const reasons = [];
+
+      // Bonus: engagement >= 80
+      if (r.engagementScore >= 80) { bonus += 5000; reasons.push({ type: 'bonus', text: 'Engagement excellent (+5 000)' }); }
+      // Bonus: ponctualit\u00e9 100%
+      if (r.tauxPonctualite === 100 && r.joursTravailles >= 20) { bonus += 3000; reasons.push({ type: 'bonus', text: 'Ponctualit\u00e9 parfaite (+3 000)' }); }
+      // Bonus: conduite >= 85
+      if (r.scoreConduite >= 85) { bonus += 2000; reasons.push({ type: 'bonus', text: 'Conduite exemplaire (+2 000)' }); }
+      // Bonus: >= 25 jours travaill\u00e9s
+      if (r.joursTravailles >= 25) { bonus += 2000; reasons.push({ type: 'bonus', text: 'Assiduit\u00e9 (+2 000)' }); }
+
+      // Malus: retards versements
+      if (r.versementsRetard >= 3) { malus += 5000; reasons.push({ type: 'malus', text: `${r.versementsRetard} retards paiement (-5 000)` }); }
+      else if (r.versementsRetard >= 1) { malus += 2000; reasons.push({ type: 'malus', text: `${r.versementsRetard} retard(s) paiement (-2 000)` }); }
+      // Malus: score conduite < 50
+      if (r.scoreConduite < 50) { malus += 3000; reasons.push({ type: 'malus', text: 'Conduite dangereuse (-3 000)' }); }
+      // Malus: faible activit\u00e9
+      if (r.activiteMoyH < 4 && r.activiteMoyH > 0) { malus += 2000; reasons.push({ type: 'malus', text: 'Faible activit\u00e9 (-2 000)' }); }
+      // Malus: < 15 jours travaill\u00e9s
+      if (r.joursTravailles < 15 && r.joursTravailles > 0) { malus += 1500; reasons.push({ type: 'malus', text: 'Pr\u00e9sence insuffisante (-1 500)' }); }
+
+      return { ...r, bonus, malus, net: bonus - malus, reasons };
+    });
+
+    const totalBonus = bonusMalusData.reduce((s, r) => s + r.bonus, 0);
+    const totalMalus = bonusMalusData.reduce((s, r) => s + r.malus, 0);
+    const eligibleBonus = bonusMalusData.filter(r => r.net > 0).length;
+    const penalises = bonusMalusData.filter(r => r.net < 0).length;
+
     return `
       <div class="page-header">
         <h1><iconify-icon icon="solar:fire-bold-duotone"></iconify-icon> Motivation &amp; Engagement</h1>
@@ -215,6 +248,36 @@ const MotivationPage = {
           <div class="kpi-icon"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.totalRetards}</div>
           <div class="kpi-label">Versements en retard</div>
+        </div>
+      </div>
+
+      <!-- Bonus / Malus Section -->
+      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid #22c55e;">
+        <div class="card-header">
+          <span class="card-title"><iconify-icon icon="solar:medal-ribbons-star-bold-duotone" style="color:#facc15;"></iconify-icon> Bonus / Malus du mois</span>
+          <div style="display:flex;gap:12px;font-size:var(--font-size-xs);">
+            <span style="color:#22c55e;font-weight:600;"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon> ${Utils.formatCurrency(totalBonus)}</span>
+            <span style="color:#ef4444;font-weight:600;"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon> ${Utils.formatCurrency(totalMalus)}</span>
+            <span style="font-weight:600;">${eligibleBonus} bonus / ${penalises} malus</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">
+          ${bonusMalusData.filter(r => r.net !== 0).sort((a, b) => b.net - a.net).map(r => {
+            const isPositive = r.net > 0;
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);cursor:pointer;" onclick="Router.navigate('/chauffeurs/${r.id}')">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="avatar" style="width:28px;height:28px;font-size:10px;background:${Utils.getAvatarColor(r.id)}">${Utils.getInitials(r.prenom, r.nom)}</div>
+                <div>
+                  <div style="font-size:var(--font-size-sm);font-weight:600;">${r.prenom} ${r.nom}</div>
+                  <div style="font-size:10px;color:var(--text-muted);">${r.reasons.map(rr => `<span style="color:${rr.type === 'bonus' ? '#22c55e' : '#ef4444'};">${rr.text}</span>`).join(' &bull; ')}</div>
+                </div>
+              </div>
+              <div style="font-size:var(--font-size-sm);font-weight:700;color:${isPositive ? '#22c55e' : '#ef4444'};">
+                ${isPositive ? '+' : ''}${Utils.formatCurrency(r.net)}
+              </div>
+            </div>`;
+          }).join('')}
+          ${bonusMalusData.filter(r => r.net !== 0).length === 0 ? '<div style="text-align:center;padding:12px;font-size:var(--font-size-xs);color:var(--text-muted);">Aucun bonus/malus ce mois</div>' : ''}
         </div>
       </div>
 
