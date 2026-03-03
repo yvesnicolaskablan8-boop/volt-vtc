@@ -109,7 +109,8 @@ let _ordersCacheKey = ''; // from+to key
 const ORDERS_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
 async function getCachedOrders(from, to) {
-  const cacheKey = `${from}|${to}`;
+  // Use date-only key so "today" requests share cache regardless of exact timestamp
+  const cacheKey = `${from.substring(0, 10)}|${to.substring(0, 10)}`;
   const now = Date.now();
   if (_ordersCache && _ordersCacheKey === cacheKey && (now - _ordersCacheTime) < ORDERS_CACHE_TTL) {
     console.log('driver-stats: using cached orders');
@@ -941,49 +942,57 @@ function mapOrderStatus(status) {
  * Revenue for a single driver. Defaults to today if no dates.
  */
 router.get('/driver-stats/:yangoDriverId', async (req, res) => {
-  try {
-    const { yangoDriverId } = req.params;
-    if (!yangoDriverId) {
-      return res.status(400).json({ error: 'yangoDriverId requis' });
+  const { yangoDriverId } = req.params;
+  if (!yangoDriverId) {
+    return res.status(400).json({ error: 'yangoDriverId requis' });
+  }
+
+  const now = new Date();
+  const customFrom = req.query.from ? new Date(req.query.from) : null;
+  const customTo = req.query.to ? new Date(req.query.to) : null;
+  const isCustom = customFrom && !isNaN(customFrom.getTime());
+
+  const from = isCustom
+    ? customFrom.toISOString()
+    : new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const to = (customTo && !isNaN(customTo.getTime()))
+    ? customTo.toISOString()
+    : now.toISOString();
+
+  // Result defaults — always return something
+  let totalCA = 0, totalCash = 0, totalCard = 0;
+  let nbCourses = 0, commissionYango = 0, commissionPartenaire = 0;
+  let sent = false;
+
+  // Global safety timeout: respond with whatever we have after 20s
+  const safetyTimer = setTimeout(() => {
+    if (!sent) {
+      sent = true;
+      console.warn('driver-stats: global 20s timeout, returning partial data');
+      res.json({
+        yangoDriverId, totalCA, totalCash, totalCard, nbCourses,
+        commissionYango, commissionPartenaire,
+        derniereMaj: now.toISOString(),
+        periode: { from, to, isCustom },
+        partial: true
+      });
     }
+  }, 20000);
 
-    const now = new Date();
-    const customFrom = req.query.from ? new Date(req.query.from) : null;
-    const customTo = req.query.to ? new Date(req.query.to) : null;
-    const isCustom = customFrom && !isNaN(customFrom.getTime());
-
-    const from = isCustom
-      ? customFrom.toISOString()
-      : new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const to = (customTo && !isNaN(customTo.getTime()))
-      ? customTo.toISOString()
-      : now.toISOString();
-
-    // Strategy: orders API with cache (fast), then optional transactions for commissions
-
-    let ordersData = null;
-    let transactionsData = null;
-
+  try {
     // 1. Fetch orders (cached — shared across drivers, TTL 2min)
+    let ordersData = null;
     try {
       ordersData = await getCachedOrders(from, to);
     } catch (e) {
       console.warn('driver-stats: orders fetch failed:', e.message);
     }
 
-    // Filter orders for this driver
-    const driverOrders = ordersData
-      ? (ordersData.orders || []).filter(o => o.driver && o.driver.id === yangoDriverId)
-      : [];
-    const completedOrders = driverOrders.filter(o => o.status === 'complete');
-    const nbCourses = completedOrders.length;
+    if (!sent && ordersData) {
+      const driverOrders = (ordersData.orders || []).filter(o => o.driver && o.driver.id === yangoDriverId);
+      const completedOrders = driverOrders.filter(o => o.status === 'complete');
+      nbCourses = completedOrders.length;
 
-    // Calculate CA from orders if available
-    let totalCA = 0, totalCash = 0, totalCard = 0;
-    let commissionYango = 0, commissionPartenaire = 0;
-
-    if (completedOrders.length > 0) {
-      // Use order prices for CA calculation
       for (const order of completedOrders) {
         const price = parseFloat(order.price || 0);
         totalCA += price;
@@ -998,47 +1007,50 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       totalCard = Math.round(totalCard);
     }
 
-    // 2. Try transactions for commission data only (short 5s timeout)
-    try {
-      const txnTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Transactions timeout 5s')), 5000)
-      );
-      const driverIds = new Set([yangoDriverId]);
-      transactionsData = await Promise.race([
-        fetchAllTransactions(from, to, driverIds),
-        txnTimeout
-      ]);
+    // 2. Try transactions for commission data (short 5s timeout)
+    if (!sent) {
+      try {
+        const txnTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Transactions timeout 5s')), 5000)
+        );
+        const driverIds = new Set([yangoDriverId]);
+        const transactionsData = await Promise.race([
+          fetchAllTransactions(from, to, driverIds),
+          txnTimeout
+        ]);
 
-      if (transactionsData && transactionsData.length > 0) {
-        const finance = aggregateTransactions(transactionsData);
-        commissionYango = finance.commissionYango;
-        commissionPartenaire = finance.commissionPartenaire;
-        // Only override CA if orders gave 0 but transactions have data
-        if (totalCA === 0 && finance.totalCA > 0) {
-          totalCA = finance.totalCA;
-          totalCash = finance.totalCash;
-          totalCard = finance.totalCard;
+        if (transactionsData && transactionsData.length > 0) {
+          const finance = aggregateTransactions(transactionsData);
+          commissionYango = finance.commissionYango;
+          commissionPartenaire = finance.commissionPartenaire;
+          if (totalCA === 0 && finance.totalCA > 0) {
+            totalCA = finance.totalCA;
+            totalCash = finance.totalCash;
+            totalCard = finance.totalCard;
+          }
         }
+      } catch (e) {
+        console.warn('driver-stats: transactions skipped:', e.message);
       }
-    } catch (e) {
-      console.warn('driver-stats: transactions skipped (slow):', e.message);
-      // Not critical — we already have orders data
     }
 
-    res.json({
-      yangoDriverId,
-      totalCA,
-      totalCash,
-      totalCard,
-      nbCourses,
-      commissionYango,
-      commissionPartenaire,
-      derniereMaj: now.toISOString(),
-      periode: { from, to, isCustom }
-    });
+    if (!sent) {
+      sent = true;
+      clearTimeout(safetyTimer);
+      res.json({
+        yangoDriverId, totalCA, totalCash, totalCard, nbCourses,
+        commissionYango, commissionPartenaire,
+        derniereMaj: now.toISOString(),
+        periode: { from, to, isCustom }
+      });
+    }
   } catch (err) {
-    console.error('Yango driver-stats error:', err.message);
-    res.status(502).json({ error: 'Erreur API Yango', details: err.message });
+    clearTimeout(safetyTimer);
+    if (!sent) {
+      sent = true;
+      console.error('Yango driver-stats error:', err.message);
+      res.status(502).json({ error: 'Erreur API Yango', details: err.message });
+    }
   }
 });
 
