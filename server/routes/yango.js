@@ -27,7 +27,9 @@ async function yangoFetch(endpoint, body = {}) {
   }
 
   console.log(`Yango API call: POST ${endpoint}`);
-  console.log('Yango request body:', JSON.stringify(body, null, 2));
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
   const res = await fetch(`${YANGO_BASE}${endpoint}`, {
     method: 'POST',
@@ -37,8 +39,10 @@ async function yangoFetch(endpoint, body = {}) {
       'X-API-Key': apiKey,
       'Accept-Language': 'fr'
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal: controller.signal
   });
+  clearTimeout(timeout);
 
   const text = await res.text();
   console.log(`Yango API response ${res.status}:`, text.substring(0, 500));
@@ -69,6 +73,9 @@ async function yangoGet(endpoint, params = {}) {
 
   console.log(`Yango API call: GET ${url.toString()}`);
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
   const res = await fetch(url.toString(), {
     method: 'GET',
     headers: {
@@ -76,8 +83,10 @@ async function yangoGet(endpoint, params = {}) {
       'X-API-Key': apiKey,
       'X-Park-ID': parkId,
       'Accept-Language': 'fr'
-    }
+    },
+    signal: controller.signal
   });
+  clearTimeout(timeout);
 
   const text = await res.text();
   console.log(`Yango GET response ${res.status}:`, text.substring(0, 500));

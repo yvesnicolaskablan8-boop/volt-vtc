@@ -448,7 +448,10 @@ const ChauffeursPage = {
     const stats = await Store.getYangoDriverStats(chauffeur.yangoDriverId, isToday ? null : selectedDate);
 
     if (!stats || stats.error) {
-      container.innerHTML = `<div style="text-align:center;padding:var(--space-md);color:var(--danger);font-size:var(--font-size-xs);"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${stats?.details || stats?.error || 'Erreur'}</div>`;
+      container.innerHTML = `<div style="text-align:center;padding:var(--space-md);font-size:var(--font-size-xs);">
+        <div style="color:var(--danger);margin-bottom:8px;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${stats?.details || stats?.error || 'Erreur'}</div>
+        <button class="btn btn-sm btn-secondary" onclick="ChauffeursPage._loadYangoCA('${chauffeurId}')"><iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Réessayer</button>
+      </div>`;
       return;
     }
 
