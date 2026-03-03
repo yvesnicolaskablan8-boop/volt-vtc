@@ -725,7 +725,7 @@ const DashboardPage = {
     const fields = [
       { type: 'heading', label: `Paiement pour ${name} \u2014 ${date}` },
       { type: 'row-start' },
-      { name: 'montantVerse', label: 'Montant vers\u00e9', type: 'number', required: true, min: 0, step: 100, default: estimatedAmount || 0, placeholder: 'Montant en FCFA...' },
+      { name: 'montantVerse', label: 'Commission vers\u00e9e (FCFA)', type: 'number', required: true, min: 0, step: 100, default: estimatedAmount || 0, placeholder: 'Montant de la commission...' },
       { name: 'moyenPaiement', label: 'Moyen de paiement', type: 'select', required: true, options: [
         { value: 'especes', label: 'Esp\u00e8ces' },
         { value: 'mobile_money', label: 'Mobile Money' },
@@ -761,13 +761,16 @@ const DashboardPage = {
           return;
         }
 
-        const commission = Math.round(montant * 0.20);
+        // Le montant saisi = la commission (ce que le chauffeur verse à Volt)
+        const commission = montant;
+        const montantBrut = Math.round(montant / 0.20);
+        const montantNet = montantBrut - commission;
 
         if (existing) {
           Store.update('versements', existing.id, {
-            montantBrut: montant,
+            montantBrut,
             commission,
-            montantNet: montant - commission,
+            montantNet,
             montantVerse: montant,
             statut: 'valide',
             moyenPaiement: values.moyenPaiement,
@@ -781,9 +784,9 @@ const DashboardPage = {
             chauffeurId,
             date,
             periode: '',
-            montantBrut: montant,
+            montantBrut,
             commission,
-            montantNet: montant - commission,
+            montantNet,
             montantVerse: montant,
             statut: 'valide',
             moyenPaiement: values.moyenPaiement,
