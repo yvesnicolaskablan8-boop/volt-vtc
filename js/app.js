@@ -93,13 +93,10 @@ const App = {
 
         if (res.ok) {
           const userData = await res.json();
-          // Recreate session from server response (handles new tabs & refreshes)
-          if (userData && userData.id) {
+          // Recreate session from /auth/me response (handles new tabs & refreshes)
+          if (userData && userData.id && userData.statut === 'actif') {
             Auth.createSession(userData);
-          }
-          await Store.initialize();
-          const user = Auth.getCurrentUser();
-          if (user && user.statut === 'actif') {
+            await Store.initialize();
             this._showApp();
           } else {
             Auth.destroySession();
