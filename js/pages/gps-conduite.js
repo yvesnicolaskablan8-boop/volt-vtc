@@ -213,7 +213,7 @@ const GpsConduitePage = {
           <div style="font-size:13px;min-width:160px;">
             <strong>${pos.prenom} ${pos.nom}</strong><br>
             ${pos.vehicule ? `<span style="color:#666;">${pos.vehicule}</span><br>` : ''}
-            ${pos.speed != null ? `<iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon> ${pos.speed} km/h<br>` : ''}
+            ${pos.speed != null ? `<iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> ${pos.speed} km/h<br>` : ''}
             <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> ${ageMin < 1 ? 'À l\'instant' : `Il y a ${ageMin} min`}
             ${isStale ? '<br><span style="color:#ef4444;font-weight:600;">⚠ Signal ancien</span>' : ''}
           </div>
@@ -232,7 +232,7 @@ const GpsConduitePage = {
               border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);
               ${pos.heading != null ? `transform:rotate(${pos.heading}deg);` : ''}
             ">
-              <iconify-icon icon="solar:${pos.heading != null ? 'map-arrow-right-bold-duotone' : 'car-bold-duotone'}" style="font-size:14px;"></iconify-icon>
+              <iconify-icon icon="solar:${pos.heading != null ? 'map-arrow-right-bold-duotone' : 'wheel-bold-duotone'}" style="font-size:14px;"></iconify-icon>
             </div>
           `,
           iconSize: [32, 32],
@@ -375,7 +375,7 @@ const GpsConduitePage = {
 
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon> Score global</div>
+            <div class="chart-title"><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Score global</div>
           </div>
           <div class="chart-container" style="height:300px;">
             <canvas id="chart-gps-gauge"></canvas>

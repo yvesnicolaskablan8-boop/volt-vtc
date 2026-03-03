@@ -62,7 +62,7 @@ const MaintenancesPage = {
 
     return `
       <div class="page-header">
-        <h1><iconify-icon icon="solar:wrench-bold-duotone"></iconify-icon> Maintenances planifi&eacute;es</h1>
+        <h1><iconify-icon icon="solar:tuning-2-bold-duotone"></iconify-icon> Maintenances planifi&eacute;es</h1>
         <div class="page-actions">
           <div class="badge ${stats.countRetard > 0 ? 'badge-danger' : stats.countUrgent > 0 ? 'badge-warning' : 'badge-success'}" style="padding:6px 12px;font-size:var(--font-size-sm);">
             ${stats.countRetard > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon> ${stats.countRetard} en retard` : stats.countUrgent > 0 ? `<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${stats.countUrgent} urgentes` : '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Flotte OK'}
@@ -229,7 +229,7 @@ const MaintenancesPage = {
         },
         actions: (m) => `
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); Router.navigate('/vehicules/${m.vehiculeId}')" title="Voir vehicule">
-            <iconify-icon icon="solar:car-bold-duotone"></iconify-icon>
+            <iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon>
           </button>
         `
       });

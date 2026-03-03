@@ -89,7 +89,7 @@ const Utils = {
       inactif: { class: 'badge-danger', icon: 'solar:record-circle-bold-duotone', label: 'Inactif' },
       suspendu: { class: 'badge-warning', icon: 'solar:record-circle-bold-duotone', label: 'Suspendu' },
       en_service: { class: 'badge-success', icon: 'solar:record-circle-bold-duotone', label: 'En service' },
-      en_maintenance: { class: 'badge-warning', icon: 'solar:wrench-bold-duotone', label: 'Maintenance' },
+      en_maintenance: { class: 'badge-warning', icon: 'solar:tuning-2-bold-duotone', label: 'Maintenance' },
       hors_service: { class: 'badge-danger', icon: 'solar:close-circle-bold-duotone', label: 'Hors service' },
       valide: { class: 'badge-success', icon: 'solar:check-circle-bold-duotone', label: 'Validé' },
       en_attente: { class: 'badge-warning', icon: 'solar:clock-circle-bold-duotone', label: 'En attente' },

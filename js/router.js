@@ -111,6 +111,32 @@ const Router = {
     } else {
       config.page.render();
     }
+
+    // Force dynamic iconify-icon elements to render
+    this._refreshIcons();
+  },
+
+  /**
+   * Ensure all dynamically-added <iconify-icon> elements render their SVG.
+   * The web component can miss elements inserted via innerHTML in bulk,
+   * so we reset the icon attribute on any that haven't rendered yet.
+   */
+  _refreshIcons() {
+    const refresh = () => {
+      document.querySelectorAll('iconify-icon').forEach(el => {
+        if (!el.shadowRoot || !el.shadowRoot.querySelector('svg')) {
+          const name = el.getAttribute('icon');
+          if (name) {
+            el.removeAttribute('icon');
+            requestAnimationFrame(() => el.setAttribute('icon', name));
+          }
+        }
+      });
+    };
+    // Multiple passes: icons may need time to fetch from CDN
+    setTimeout(refresh, 100);
+    setTimeout(refresh, 600);
+    setTimeout(refresh, 1800);
   },
 
   _matchRoute(hash) {

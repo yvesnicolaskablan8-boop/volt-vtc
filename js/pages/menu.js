@@ -8,9 +8,9 @@ const MenuPage = {
 
     // All pages NOT present in bottom nav tabs (Dashboard, Chauffeurs, Planning, Vehicules)
     const menuItems = [
-      { route: '/yango', icon: 'solar:taxi-bold-duotone', label: 'Yango Fleet', color: '#facc15' },
+      { route: '/yango', icon: 'solar:bus-bold-duotone', label: 'Yango Fleet', color: '#facc15' },
       { route: '/motivation', icon: 'solar:fire-bold-duotone', label: 'Engagement', color: '#f97316' },
-      { route: '/maintenances', icon: 'solar:wrench-bold-duotone', label: 'Maintenances', color: '#06b6d4' },
+      { route: '/maintenances', icon: 'solar:tuning-2-bold-duotone', label: 'Maintenances', color: '#06b6d4' },
       { route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements', color: '#22c55e' },
       { route: '/rentabilite', icon: 'solar:pie-chart-2-bold-duotone', label: 'Rentabilité', color: '#8b5cf6' },
       { route: '/comptabilite', icon: 'solar:calculator-bold-duotone', label: 'Comptabilité', color: '#3b82f6' },

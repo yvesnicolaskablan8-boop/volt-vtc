@@ -52,9 +52,9 @@ const AlertesPage = {
           <button class="btn btn-sm btn-secondary alert-filter" data-filter="attention"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Attention</button>
           <span style="flex:1;"></span>
           <button class="btn btn-sm btn-secondary alert-filter" data-filter="documents"><iconify-icon icon="solar:user-id-bold-duotone"></iconify-icon> Documents</button>
-          <button class="btn btn-sm btn-secondary alert-filter" data-filter="vehicules"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon> Véhicules</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="vehicules"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Véhicules</button>
           <button class="btn btn-sm btn-secondary alert-filter" data-filter="versements"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon> Versements</button>
-          <button class="btn btn-sm btn-secondary alert-filter" data-filter="conduite"><iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon> Conduite</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="conduite"><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Conduite</button>
           <button class="btn btn-sm btn-secondary alert-filter" data-filter="finance"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Finance</button>
         </div>
       </div>
@@ -228,7 +228,7 @@ const AlertesPage = {
           chauffeurId: ch.id,
           action: 'Assigner un véhicule',
           actionRoute: `#/chauffeurs/${ch.id}`,
-          icon: 'solar:car-bold-duotone',
+          icon: 'solar:wheel-bold-duotone',
           date: todayStr
         });
       }
@@ -252,7 +252,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Planifier la révision',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'solar:wrench-bold-duotone',
+            icon: 'solar:tuning-2-bold-duotone',
             date: todayStr
           });
         } else if (kmRestant <= 2000) {
@@ -265,7 +265,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Planifier la révision',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'solar:wrench-bold-duotone',
+            icon: 'solar:tuning-2-bold-duotone',
             date: todayStr
           });
         } else if (kmRestant <= 5000) {
@@ -278,7 +278,7 @@ const AlertesPage = {
             vehiculeId: v.id,
             action: 'Voir la fiche véhicule',
             actionRoute: `#/vehicules/${v.id}`,
-            icon: 'solar:wrench-bold-duotone',
+            icon: 'solar:tuning-2-bold-duotone',
             date: todayStr
           });
         }
@@ -503,7 +503,7 @@ const AlertesPage = {
           chauffeurId: ch.id,
           action: 'Voir l\'analyse GPS',
           actionRoute: '#/gps-conduite',
-          icon: 'solar:speedometer-bold-duotone',
+          icon: 'solar:spedometer-max-bold-duotone',
           date: latestGps.date
         });
       } else if (latestGps && latestGps.scoreGlobal < 70) {
@@ -516,7 +516,7 @@ const AlertesPage = {
           chauffeurId: ch.id,
           action: 'Voir l\'analyse GPS',
           actionRoute: '#/gps-conduite',
-          icon: 'solar:speedometer-bold-duotone',
+          icon: 'solar:spedometer-max-bold-duotone',
           date: latestGps.date
         });
       }
@@ -661,9 +661,9 @@ const AlertesPage = {
 
       const catConfig = {
         documents: { icon: 'solar:user-id-bold-duotone', label: 'Documents' },
-        vehicules: { icon: 'solar:car-bold-duotone', label: 'Véhicules' },
+        vehicules: { icon: 'solar:wheel-bold-duotone', label: 'Véhicules' },
         versements: { icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements' },
-        conduite: { icon: 'solar:speedometer-bold-duotone', label: 'Conduite' },
+        conduite: { icon: 'solar:spedometer-max-bold-duotone', label: 'Conduite' },
         finance: { icon: 'solar:calculator-bold-duotone', label: 'Finance' }
       };
       const catCfg = catConfig[alert.categorie] || { icon: 'solar:bell-bing-bold-duotone', label: alert.categorie };

@@ -20,7 +20,7 @@ const RapportsPage = {
     const reports = [
       { id: 'bilan-mensuel', icon: 'solar:calendar-bold-duotone', color: 'var(--volt-blue)', title: 'Bilan mensuel', desc: "Synthese mensuelle du CA, des courses et des versements" },
       { id: 'fiche-chauffeur', icon: 'solar:user-id-bold-duotone', color: 'var(--volt-cyan)', title: 'Fiche chauffeur', desc: 'Rapport individuel : courses, versements, score conduite' },
-      { id: 'fiche-vehicule', icon: 'solar:car-bold-duotone', color: 'var(--success)', title: 'Fiche vehicule', desc: 'Rapport couts et revenus par vehicule' },
+      { id: 'fiche-vehicule', icon: 'solar:wheel-bold-duotone', color: 'var(--success)', title: 'Fiche vehicule', desc: 'Rapport couts et revenus par vehicule' },
       { id: 'etat-versements', icon: 'solar:transfer-horizontal-bold-duotone', color: 'var(--warning)', title: 'Etat des versements', desc: 'Versements en attente, en retard ou partiels' },
       { id: 'analyse-rentabilite', icon: 'solar:pie-chart-2-bold-duotone', color: 'var(--danger)', title: 'Analyse rentabilite', desc: 'Comparaison de rentabilite de la flotte' },
       { id: 'bilan-conduite', icon: 'solar:map-arrow-right-bold-duotone', color: 'var(--volt-yellow)', title: 'Bilan conduite', desc: "Scores et incidents de conduite de l'ensemble des chauffeurs" }

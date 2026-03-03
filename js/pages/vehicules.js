@@ -16,7 +16,7 @@ const VehiculesPage = {
     const container = document.getElementById('page-content');
     const vehicule = Store.findById('vehicules', id);
     if (!vehicule) {
-      container.innerHTML = '<div class="empty-state"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon><h3>Véhicule non trouvé</h3></div>';
+      container.innerHTML = '<div class="empty-state"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon><h3>Véhicule non trouvé</h3></div>';
       return;
     }
     container.innerHTML = this._detailTemplate(vehicule);
@@ -44,7 +44,7 @@ const VehiculesPage = {
 
     return `
       <div class="page-header">
-        <h1><iconify-icon icon="solar:car-bold-duotone"></iconify-icon> Véhicules</h1>
+        <h1><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Véhicules</h1>
         <div class="page-actions">
           <button class="btn btn-primary" id="btn-add-vehicule"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter</button>
         </div>
@@ -152,7 +152,7 @@ const VehiculesPage = {
       : '<span class="badge badge-neutral"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:8px"></iconify-icon> Thermique</span>';
 
     const avatarBg = isEV ? 'var(--volt-yellow)' : 'var(--volt-blue)';
-    const avatarIcon = isEV ? 'solar:bolt-circle-bold-duotone' : 'solar:car-bold-duotone';
+    const avatarIcon = isEV ? 'solar:bolt-circle-bold-duotone' : 'solar:wheel-bold-duotone';
 
     return `
       <div class="page-header">
@@ -163,7 +163,7 @@ const VehiculesPage = {
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="VehiculesPage._edit('${v.id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>
           <button class="btn btn-primary" onclick="VehiculesPage._addPlanifiedMaintenance('${v.id}')"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon> Planifier</button>
-          <button class="btn btn-warning" onclick="VehiculesPage._addMaintenance('${v.id}')"><iconify-icon icon="solar:wrench-bold-duotone"></iconify-icon> Maintenance</button>
+          <button class="btn btn-warning" onclick="VehiculesPage._addMaintenance('${v.id}')"><iconify-icon icon="solar:tuning-2-bold-duotone"></iconify-icon> Maintenance</button>
         </div>
       </div>
 
@@ -528,7 +528,7 @@ const VehiculesPage = {
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
           <div style="font-size:var(--font-size-lg);font-weight:600;">${stats.nbCourses}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:taxi-bold-duotone" style="font-size:9px"></iconify-icon> Courses</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:bus-bold-duotone" style="font-size:9px"></iconify-icon> Courses</div>
         </div>
       </div>
       <div style="display:flex;justify-content:center;gap:var(--space-md);margin-top:var(--space-sm);padding-top:var(--space-sm);border-top:1px solid var(--border-color);font-size:var(--font-size-xs);color:var(--text-muted);">
@@ -598,7 +598,7 @@ const VehiculesPage = {
 
   _add() {
     const fields = this._getFormFields();
-    Modal.form('<iconify-icon icon="solar:car-bold-duotone" class="text-blue"></iconify-icon> Nouveau véhicule', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:wheel-bold-duotone" class="text-blue"></iconify-icon> Nouveau véhicule', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -640,7 +640,7 @@ const VehiculesPage = {
     const vehicule = Store.findById('vehicules', id);
     if (!vehicule) return;
     const fields = this._getFormFields();
-    Modal.form('<iconify-icon icon="solar:car-bold-duotone" class="text-blue"></iconify-icon> Modifier véhicule', FormBuilder.build(fields, vehicule), () => {
+    Modal.form('<iconify-icon icon="solar:wheel-bold-duotone" class="text-blue"></iconify-icon> Modifier véhicule', FormBuilder.build(fields, vehicule), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       Store.update('vehicules', id, FormBuilder.getValues(body));
@@ -688,7 +688,7 @@ const VehiculesPage = {
       { type: 'row-end' }
     ];
 
-    Modal.form('<iconify-icon icon="solar:wrench-bold-duotone" class="text-warning"></iconify-icon> Nouvelle maintenance', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:tuning-2-bold-duotone" class="text-warning"></iconify-icon> Nouvelle maintenance', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);

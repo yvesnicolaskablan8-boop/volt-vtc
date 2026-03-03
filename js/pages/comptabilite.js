@@ -925,16 +925,16 @@ const ComptabilitePage = {
   _renderCategories() {
     const recCats = [
       { id: 'commissions_courses', label: 'Commissions courses', desc: 'Commissions reçues sur les courses des chauffeurs', icon: 'solar:transfer-horizontal-bold-duotone', color: '#22c55e' },
-      { id: 'courses_directes', label: 'Courses directes', desc: 'Paiement direct de courses (app & téléphone)', icon: 'solar:car-bold-duotone', color: '#3b82f6' },
+      { id: 'courses_directes', label: 'Courses directes', desc: 'Paiement direct de courses (app & téléphone)', icon: 'solar:wheel-bold-duotone', color: '#3b82f6' },
       { id: 'commission_yango', label: 'Commission Yango (3%)', desc: 'Commission de 3% reversee par Yango sur le CA de la flotte', icon: 'solar:hand-money-bold-duotone', color: '#FC4C02' },
       { id: 'frais_service', label: 'Frais de service', desc: 'Frais de service des plateformes (Yango, Bolt)', icon: 'solar:smartphone-bold-duotone', color: '#8b5cf6' },
-      { id: 'location_vehicule', label: 'Location véhicule', desc: 'Location de véhicule à un tiers', icon: 'solar:car-bold-duotone', color: '#f59e0b' },
+      { id: 'location_vehicule', label: 'Location véhicule', desc: 'Location de véhicule à un tiers', icon: 'solar:wheel-bold-duotone', color: '#f59e0b' },
       { id: 'autres_recettes', label: 'Autres recettes', desc: 'Autres sources de revenus', icon: 'solar:add-circle-bold-duotone', color: '#22d3ee' }
     ];
 
     const depCats = [
       { id: 'carburant', label: 'Carburant', desc: 'Essence, gasoil, recharge électrique', icon: 'solar:gas-station-bold-duotone', color: '#ef4444' },
-      { id: 'maintenance', label: 'Maintenance', desc: 'Révisions, réparations, pneus, freins', icon: 'solar:wrench-bold-duotone', color: '#f59e0b' },
+      { id: 'maintenance', label: 'Maintenance', desc: 'Révisions, réparations, pneus, freins', icon: 'solar:tuning-2-bold-duotone', color: '#f59e0b' },
       { id: 'assurance', label: 'Assurance', desc: 'Assurance véhicules, RC Pro', icon: 'solar:shield-bold-duotone', color: '#3b82f6' },
       { id: 'leasing', label: 'Leasing véhicules', desc: 'Mensualités de crédit-bail', icon: 'solar:document-bold-duotone', color: '#8b5cf6' },
       { id: 'salaires', label: 'Salaires', desc: 'Salaires des employés (hors chauffeurs)', icon: 'solar:users-group-rounded-bold-duotone', color: '#ec4899' },

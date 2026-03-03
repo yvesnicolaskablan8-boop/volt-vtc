@@ -31,7 +31,7 @@ const EtatLieuxPage = {
       <div style="border-radius:1.5rem;overflow:hidden;background:white;box-shadow:0 1px 6px rgba(0,0,0,0.06);border:1px solid #f1f5f9">
         <!-- Vehicle header -->
         <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:1.5rem;color:white;text-align:center">
-          <iconify-icon icon="solar:car-bold-duotone" style="font-size:3rem;opacity:0.8"></iconify-icon>
+          <iconify-icon icon="solar:wheel-bold-duotone" style="font-size:3rem;opacity:0.8"></iconify-icon>
           <div style="font-size:1rem;font-weight:700;margin-top:8px">${v.marque || ''} ${v.modele || ''}</div>
           <div style="font-size:0.8rem;opacity:0.7">${v.immatriculation || 'Non assigne'}</div>
         </div>

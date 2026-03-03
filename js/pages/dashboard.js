@@ -161,7 +161,7 @@ const DashboardPage = {
   _template(d) {
     return `
       <div class="page-header">
-        <h1><iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon> Tableau de bord</h1>
+        <h1><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Tableau de bord</h1>
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="DashboardPage.refresh()"><iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser</button>
         </div>
@@ -194,7 +194,7 @@ const DashboardPage = {
           </div>
         </div>
         <div class="kpi-card yellow">
-          <div class="kpi-icon"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.vehiclesActifs}</div>
           <div class="kpi-label">Vehicules en service</div>
           <div class="kpi-trend neutral">
@@ -515,7 +515,7 @@ const DashboardPage = {
 
     return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid ${borderColor};">
       <div class="card-header">
-        <span class="card-title"><iconify-icon icon="solar:wrench-bold-duotone" style="color:${borderColor};"></iconify-icon> Alertes maintenance (${d.maintenanceAlerts.length})</span>
+        <span class="card-title"><iconify-icon icon="solar:tuning-2-bold-duotone" style="color:${borderColor};"></iconify-icon> Alertes maintenance (${d.maintenanceAlerts.length})</span>
         <a href="#/maintenances" class="btn btn-sm btn-secondary">Voir tout</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">

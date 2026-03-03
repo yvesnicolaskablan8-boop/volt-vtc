@@ -33,7 +33,7 @@ const YangoPage = {
     const today = new Date().toISOString().split('T')[0];
     return `
       <div class="page-header">
-        <h1><iconify-icon icon="solar:taxi-bold-duotone" style="color:#FC4C02"></iconify-icon> Yango Fleet</h1>
+        <h1><iconify-icon icon="solar:bus-bold-duotone" style="color:#FC4C02"></iconify-icon> Yango Fleet</h1>
         <div class="page-actions">
           <div class="yango-filter-group">
             <select id="yp-work-rule-select" class="yango-filter-select" onchange="YangoPage._onWorkRuleChange()" title="Filtrer par categorie">
@@ -113,7 +113,7 @@ const YangoPage = {
           <div class="kpi-trend neutral" id="yp-ca-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
         <div class="kpi-card yango-kpi">
-          <div class="kpi-icon yango-icon-blue"><iconify-icon icon="solar:taxi-bold-duotone"></iconify-icon></div>
+          <div class="kpi-icon yango-icon-blue"><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon></div>
           <div class="kpi-value" id="yp-courses-today"><div class="yango-skeleton"></div></div>
           <div class="kpi-label" id="yp-courses-label">Courses aujourd'hui</div>
           <div class="kpi-trend neutral" id="yp-courses-detail"><div class="yango-skeleton-sm"></div></div>
@@ -625,14 +625,14 @@ const YangoPage = {
 
     if (!courses || courses.length === 0) {
       const emptyMsg = this._datePreset === 'today' ? "Aucune course aujourd'hui" : `Aucune course pour cette periode`;
-      container.innerHTML = `<div class="yango-empty"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon><span>${emptyMsg}</span></div>`;
+      container.innerHTML = `<div class="yango-empty"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon><span>${emptyMsg}</span></div>`;
       return;
     }
 
     const statusIcons = {
-      en_route: { icon: 'solar:car-bold-duotone', color: '#3b82f6' },
+      en_route: { icon: 'solar:wheel-bold-duotone', color: '#3b82f6' },
       en_attente: { icon: 'solar:hourglass-bold-duotone', color: '#f59e0b' },
-      en_course: { icon: 'solar:taxi-bold-duotone', color: '#22c55e' },
+      en_course: { icon: 'solar:bus-bold-duotone', color: '#22c55e' },
       terminee: { icon: 'solar:check-circle-bold-duotone', color: '#22c55e' },
       annulee: { icon: 'solar:close-circle-bold', color: '#ef4444' },
       recherche: { icon: 'solar:magnifer-bold-duotone', color: '#8b5cf6' },

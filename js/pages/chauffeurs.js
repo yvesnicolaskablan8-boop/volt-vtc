@@ -176,7 +176,7 @@ const ChauffeursPage = {
         <!-- Liaison Yango -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><iconify-icon icon="solar:taxi-bold-duotone" style="color:#FC4C02"></iconify-icon> Liaison Yango</span>
+            <span class="card-title"><iconify-icon icon="solar:bus-bold-duotone" style="color:#FC4C02"></iconify-icon> Liaison Yango</span>
             ${c.yangoDriverId
               ? '<span class="badge badge-success"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lié</span>'
               : '<span class="badge badge-warning"><iconify-icon icon="solar:link-broken-bold-duotone"></iconify-icon> Non lié</span>'}
@@ -465,7 +465,7 @@ const ChauffeursPage = {
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
           <div style="font-size:var(--font-size-lg);font-weight:600;">${stats.nbCourses}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:taxi-bold-duotone" style="font-size:9px"></iconify-icon> Courses</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:bus-bold-duotone" style="font-size:9px"></iconify-icon> Courses</div>
         </div>
       </div>
       <div style="display:flex;justify-content:center;gap:var(--space-md);margin-top:var(--space-sm);padding-top:var(--space-sm);border-top:1px solid var(--border-color);font-size:var(--font-size-xs);color:var(--text-muted);">
@@ -609,7 +609,7 @@ const ChauffeursPage = {
       btn.type = 'button';
       btn.className = 'btn btn-secondary quick-add-vehicle-btn';
       btn.style.cssText = 'white-space:nowrap;margin-top:0;height:38px;padding:0 12px;';
-      btn.innerHTML = '<iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> <iconify-icon icon="solar:car-bold-duotone" style="font-size:11px;"></iconify-icon>';
+      btn.innerHTML = '<iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> <iconify-icon icon="solar:wheel-bold-duotone" style="font-size:11px;"></iconify-icon>';
       btn.title = 'Créer un véhicule rapidement';
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -841,7 +841,7 @@ const ChauffeursPage = {
     Modal.close();
 
     setTimeout(() => {
-      Modal.form('<iconify-icon icon="solar:car-bold-duotone" class="text-blue"></iconify-icon> Création rapide véhicule', quickFormHtml, () => {
+      Modal.form('<iconify-icon icon="solar:wheel-bold-duotone" class="text-blue"></iconify-icon> Création rapide véhicule', quickFormHtml, () => {
         const body = document.getElementById('modal-body');
         if (!FormBuilder.validate(body, quickFields)) return;
 

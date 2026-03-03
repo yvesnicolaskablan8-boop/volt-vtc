@@ -75,7 +75,7 @@ const ProfilPage = {
         </div>
         <div style="text-align:center;padding:1rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03)">
           <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(249,115,22,0.08);color:#f97316;display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
-            <iconify-icon icon="solar:car-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+            <iconify-icon icon="solar:wheel-bold-duotone" style="font-size:1.25rem"></iconify-icon>
           </div>
           <div style="font-size:1.25rem;font-weight:800;color:#0f172a">${vehicule ? vehicule.immatriculation || 'Oui' : '--'}</div>
           <div style="font-size:0.65rem;color:#94a3b8;font-weight:600;text-transform:uppercase">Vehicule</div>
@@ -157,7 +157,7 @@ const ProfilPage = {
       <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
           <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(6,182,212,0.08);color:#06b6d4;display:flex;align-items:center;justify-content:center">
-            <iconify-icon icon="solar:car-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            <iconify-icon icon="solar:wheel-bold-duotone" style="font-size:1.2rem"></iconify-icon>
           </div>
           <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Vehicule assigne</div>
         </div>

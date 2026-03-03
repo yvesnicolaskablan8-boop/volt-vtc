@@ -52,6 +52,7 @@ const ThemeManager = {
       if (typeof Router !== 'undefined' && Router._currentPage && Router._currentPage.destroy) {
         Router._currentPage.destroy();
         Router._currentPage.render();
+        if (Router._refreshIcons) Router._refreshIcons();
       }
     }
   },
@@ -135,6 +136,11 @@ const App = {
       BottomNav.init();
       // Re-navigate to current page
       Router._handleRoute();
+    }
+
+    // Ensure shell icons (sidebar, header, bottom-nav) render
+    if (typeof Router !== 'undefined' && Router._refreshIcons) {
+      Router._refreshIcons();
     }
   },
 

@@ -13,7 +13,7 @@ const ParametresPage = {
   _modules: [
     { key: 'dashboard', label: 'Tableau de bord', icon: 'solar:widget-bold-duotone' },
     { key: 'chauffeurs', label: 'Chauffeurs', icon: 'solar:user-id-bold-duotone' },
-    { key: 'vehicules', label: 'Véhicules', icon: 'solar:car-bold-duotone' },
+    { key: 'vehicules', label: 'Véhicules', icon: 'solar:wheel-bold-duotone' },
     { key: 'planning', label: 'Planning', icon: 'solar:calendar-bold-duotone' },
     { key: 'versements', label: 'Versements', icon: 'solar:transfer-horizontal-bold-duotone' },
     { key: 'rentabilite', label: 'Rentabilité', icon: 'solar:pie-chart-bold-duotone' },
@@ -561,7 +561,7 @@ const ParametresPage = {
     const chauffeurOptions = chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom} (${c.telephone || ''})</option>`).join('');
     const chauffeurSection = `
       <div id="chauffeur-section" style="display:none;margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--volt-blue);background:rgba(59,130,246,0.05);">
-        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon> Configuration compte chauffeur</h4>
+        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Configuration compte chauffeur</h4>
         <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-md);">
           <div class="form-group" style="flex:1;margin-bottom:0;">
             <label class="form-label">Chauffeur lié *</label>
@@ -887,7 +887,7 @@ const ParametresPage = {
     const chauffeurOptions = chauffeurs.map(c => `<option value="${c.id}" ${user.chauffeurId === c.id ? 'selected' : ''}>${c.prenom} ${c.nom} (${c.telephone || ''})</option>`).join('');
     const editChauffeurSection = `
       <div id="chauffeur-section" style="display:${user.role === 'chauffeur' ? 'block' : 'none'};margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--volt-blue);background:rgba(59,130,246,0.05);">
-        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><iconify-icon icon="solar:car-bold-duotone"></iconify-icon> Configuration compte chauffeur</h4>
+        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Configuration compte chauffeur</h4>
         <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-md);">
           <div class="form-group" style="flex:1;margin-bottom:0;">
             <label class="form-label">Chauffeur lié *</label>
@@ -1792,7 +1792,7 @@ const ParametresPage = {
       <div class="grid-2" style="gap:var(--space-lg);margin-top:var(--space-lg);">
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><iconify-icon icon="solar:speedometer-bold-duotone" style="color:#ef4444;"></iconify-icon> Score de conduite</span>
+            <span class="card-title"><iconify-icon icon="solar:spedometer-max-bold-duotone" style="color:#ef4444;"></iconify-icon> Score de conduite</span>
           </div>
           <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
