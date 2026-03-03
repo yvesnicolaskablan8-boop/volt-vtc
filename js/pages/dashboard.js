@@ -173,6 +173,9 @@ const DashboardPage = {
       // Skip si chauffeur inactif
       const ch = chauffeurs.find(c => c.id === p.chauffeurId);
       if (!ch || ch.statut === 'inactif') return;
+      // Skip si chauffeur n'a pas de redevance définie
+      const redevance = ch.redevanceQuotidienne || 0;
+      if (redevance <= 0) return;
       // Vérifier si versement valide existe
       const hasValidPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && v.statut === 'valide');
       if (!hasValidPayment) {
@@ -185,29 +188,16 @@ const DashboardPage = {
           typeCreneaux: p.typeCreneaux,
           heureDebut: p.heureDebut,
           heureFin: p.heureFin,
-          estimatedCommission: 0,
+          montantDu: redevance,
           justification: existing ? existing.justification : null,
           versementId: existing ? existing.id : null
         });
       }
     });
 
-    // Calculer commission estimée (moyenne historique par chauffeur)
-    const driverAvg = {};
-    versements.filter(v => v.statut === 'valide' && v.commission > 0).forEach(v => {
-      if (!driverAvg[v.chauffeurId]) driverAvg[v.chauffeurId] = { total: 0, count: 0 };
-      driverAvg[v.chauffeurId].total += v.commission;
-      driverAvg[v.chauffeurId].count++;
-    });
-    unpaidItems.forEach(item => {
-      const avg = driverAvg[item.chauffeurId];
-      item.estimatedCommission = avg ? Math.round(avg.total / avg.count) : 0;
-    });
-    // Filtrer : ne garder que les chauffeurs qui doivent réellement (commission > 0)
-    const filteredUnpaid = unpaidItems.filter(i => i.estimatedCommission > 0);
     // Trier par date décroissante
-    filteredUnpaid.sort((a, b) => b.date.localeCompare(a.date));
-    const totalUnpaid = filteredUnpaid.reduce((s, i) => s + i.estimatedCommission, 0);
+    unpaidItems.sort((a, b) => b.date.localeCompare(a.date));
+    const totalUnpaid = unpaidItems.reduce((s, i) => s + i.montantDu, 0);
 
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
@@ -216,7 +206,7 @@ const DashboardPage = {
       monthlyRevenue, weeklyPayments,
       coursesByType, typeLabels, vehicleProfit,
       recentVersements, chauffeurs, vehiculesTotal: vehicules.length,
-      maintenanceAlerts, unpaidItems: filteredUnpaid, totalUnpaid
+      maintenanceAlerts, unpaidItems, totalUnpaid
     };
   },
 
@@ -606,7 +596,7 @@ const DashboardPage = {
           ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--volt-blue);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
         </div>
         <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;flex-shrink:0;margin-left:8px;">
-          ${item.estimatedCommission > 0 ? '~' + Utils.formatCurrency(item.estimatedCommission) : Utils.formatCurrency(0)}
+          ${Utils.formatCurrency(item.montantDu)}
         </div>
       </div>`;
     }).join('');
@@ -616,7 +606,7 @@ const DashboardPage = {
     return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #ef4444;cursor:pointer;" onclick="DashboardPage._showUnpaidDetails()">
       <div class="card-header">
         <span class="card-title"><iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes impay\u00e9es (${d.unpaidItems.length})</span>
-        <span style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${d.totalUnpaid > 0 ? '~' + Utils.formatCurrency(d.totalUnpaid) : Utils.formatCurrency(0)}</span>
+        <span style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${Utils.formatCurrency(d.totalUnpaid)}</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${rows}
@@ -646,10 +636,10 @@ const DashboardPage = {
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">
-            ${item.estimatedCommission > 0 ? '~' + Utils.formatCurrency(item.estimatedCommission) : Utils.formatCurrency(0)}
+            ${Utils.formatCurrency(item.montantDu)}
           </div>
           <div style="display:flex;gap:4px;margin-top:4px;">
-            <button class="btn btn-sm btn-success" onclick="event.stopPropagation();DashboardPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.estimatedCommission})">
+            <button class="btn btn-sm btn-success" onclick="event.stopPropagation();DashboardPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.montantDu})">
               <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Payer
             </button>
             <button class="btn btn-sm ${hasJustif ? 'btn-secondary' : 'btn-outline'}" onclick="event.stopPropagation();DashboardPage._addJustification('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}')">
@@ -697,9 +687,6 @@ const DashboardPage = {
             chauffeurId,
             date,
             periode: '',
-            montantBrut: 0,
-            commission: 0,
-            montantNet: 0,
             montantVerse: 0,
             statut: 'en_attente',
             justification: values.justification,
@@ -715,7 +702,7 @@ const DashboardPage = {
     );
   },
 
-  _payReceipt(chauffeurId, date, planningId, versementId, estimatedAmount) {
+  _payReceipt(chauffeurId, date, planningId, versementId, montantDu) {
     const versements = Store.get('versements') || [];
     const existing = versementId && versementId !== 'null' ? versements.find(v => v.id === versementId) : versements.find(v => v.chauffeurId === chauffeurId && v.date === date);
     const chauffeurs = Store.get('chauffeurs') || [];
@@ -725,7 +712,7 @@ const DashboardPage = {
     const fields = [
       { type: 'heading', label: `Paiement pour ${name} \u2014 ${date}` },
       { type: 'row-start' },
-      { name: 'montantVerse', label: 'Commission vers\u00e9e (FCFA)', type: 'number', required: true, min: 0, step: 100, default: estimatedAmount || 0, placeholder: 'Montant de la commission...' },
+      { name: 'montantVerse', label: 'Montant vers\u00e9 (FCFA)', type: 'number', required: true, min: 0, step: 100, default: montantDu || 0, placeholder: 'Montant de la redevance...' },
       { name: 'moyenPaiement', label: 'Moyen de paiement', type: 'select', required: true, options: [
         { value: 'especes', label: 'Esp\u00e8ces' },
         { value: 'mobile_money', label: 'Mobile Money' },
@@ -741,7 +728,7 @@ const DashboardPage = {
     ];
 
     const existingValues = existing ? {
-      montantVerse: existing.montantVerse || estimatedAmount || 0,
+      montantVerse: existing.montantVerse || montantDu || 0,
       moyenPaiement: existing.moyenPaiement || '',
       referencePaiement: existing.referencePaiement || '',
       commentaire: existing.commentaire || ''
@@ -761,16 +748,8 @@ const DashboardPage = {
           return;
         }
 
-        // Le montant saisi = la commission (ce que le chauffeur verse à Volt)
-        const commission = montant;
-        const montantBrut = Math.round(montant / 0.20);
-        const montantNet = montantBrut - commission;
-
         if (existing) {
           Store.update('versements', existing.id, {
-            montantBrut,
-            commission,
-            montantNet,
             montantVerse: montant,
             statut: 'valide',
             moyenPaiement: values.moyenPaiement,
@@ -784,9 +763,6 @@ const DashboardPage = {
             chauffeurId,
             date,
             periode: '',
-            montantBrut,
-            commission,
-            montantNet,
             montantVerse: montant,
             statut: 'valide',
             moyenPaiement: values.moyenPaiement,

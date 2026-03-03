@@ -27,6 +27,7 @@ const chauffeurSchema = new mongoose.Schema({
   vehiculeAssigne: String,
   photo: String,
   documents: [documentSchema],
+  redevanceQuotidienne: { type: Number, default: 0 },
   noteInterne: String,
   location: {
     lat: Number,
