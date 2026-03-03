@@ -108,10 +108,10 @@ const App = {
           this._showLogin();
         }
       } catch (err) {
-        // API unreachable — force login (no offline access without valid token)
-        console.warn('API injoignable — authentification requise');
-        Auth.destroySession();
-        this._showLogin();
+        // API unreachable — keep session if token exists (cold start / network issue)
+        console.warn('API injoignable — session locale conservée');
+        await Store.initialize();
+        this._showApp();
       }
     } else {
       this._showLogin();
