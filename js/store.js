@@ -314,7 +314,7 @@ const Store = {
       const qs = params.toString();
       const url = this._apiBase + '/yango/driver-stats/' + encodeURIComponent(yangoDriverId) + (qs ? '?' + qs : '');
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
+      const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
       const res = await fetch(url, {
         headers: this._headers(),
         signal: controller.signal

@@ -102,6 +102,34 @@ async function yangoGet(endpoint, params = {}) {
   }
 }
 
+// Cache for park orders (shared across driver-stats requests)
+let _ordersCache = null;
+let _ordersCacheTime = 0;
+let _ordersCacheKey = ''; // from+to key
+const ORDERS_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+async function getCachedOrders(from, to) {
+  const cacheKey = `${from}|${to}`;
+  const now = Date.now();
+  if (_ordersCache && _ordersCacheKey === cacheKey && (now - _ordersCacheTime) < ORDERS_CACHE_TTL) {
+    console.log('driver-stats: using cached orders');
+    return _ordersCache;
+  }
+  const data = await yangoFetch('/v1/parks/orders/list', {
+    limit: 100,
+    query: {
+      park: {
+        id: process.env.YANGO_PARK_ID,
+        order: { booked_at: { from, to } }
+      }
+    }
+  });
+  _ordersCache = data;
+  _ordersCacheTime = now;
+  _ordersCacheKey = cacheKey;
+  return data;
+}
+
 // Cache for work rules (refreshed every 10 minutes)
 let _workRulesCache = null;
 let _workRulesCacheTime = 0;
@@ -931,23 +959,14 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       ? customTo.toISOString()
       : now.toISOString();
 
-    // Strategy: try orders API first (fast & reliable), then optionally transactions
-    // Orders API works in ~5s, transactions API often hangs for individual drivers
+    // Strategy: orders API with cache (fast), then optional transactions for commissions
 
     let ordersData = null;
     let transactionsData = null;
 
-    // 1. Fetch orders (primary source — fast)
+    // 1. Fetch orders (cached — shared across drivers, TTL 2min)
     try {
-      ordersData = await yangoFetch('/v1/parks/orders/list', {
-        limit: 100,
-        query: {
-          park: {
-            id: process.env.YANGO_PARK_ID,
-            order: { booked_at: { from, to } }
-          }
-        }
-      });
+      ordersData = await getCachedOrders(from, to);
     } catch (e) {
       console.warn('driver-stats: orders fetch failed:', e.message);
     }
@@ -979,11 +998,10 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       totalCard = Math.round(totalCard);
     }
 
-    // 2. Try transactions as secondary source (with short 8s timeout)
-    // Only if we need commission data or as fallback
+    // 2. Try transactions for commission data only (short 5s timeout)
     try {
       const txnTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Transactions timeout 8s')), 8000)
+        setTimeout(() => reject(new Error('Transactions timeout 5s')), 5000)
       );
       const driverIds = new Set([yangoDriverId]);
       transactionsData = await Promise.race([
@@ -993,14 +1011,14 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
 
       if (transactionsData && transactionsData.length > 0) {
         const finance = aggregateTransactions(transactionsData);
-        // Use transaction data if it has better info
-        if (finance.totalCA > 0) {
+        commissionYango = finance.commissionYango;
+        commissionPartenaire = finance.commissionPartenaire;
+        // Only override CA if orders gave 0 but transactions have data
+        if (totalCA === 0 && finance.totalCA > 0) {
           totalCA = finance.totalCA;
           totalCash = finance.totalCash;
           totalCard = finance.totalCard;
         }
-        commissionYango = finance.commissionYango;
-        commissionPartenaire = finance.commissionPartenaire;
       }
     } catch (e) {
       console.warn('driver-stats: transactions skipped (slow):', e.message);
