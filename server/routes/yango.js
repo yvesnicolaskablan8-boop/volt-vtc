@@ -9,10 +9,44 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 
-// All Yango routes require authentication
-router.use(authMiddleware);
-
 const Chauffeur = require('../models/Chauffeur');
+
+// ===== TEMPORARY: photo-test endpoint (no auth) =====
+router.get('/drivers/photo-test', async (req, res) => {
+  try {
+    const data = await yangoFetch('/v1/parks/driver-profiles/list', {
+      fields: {
+        account: ['balance', 'currency'],
+        car: ['brand', 'model', 'color', 'number', 'year'],
+        current_status: ['status', 'status_updated_at'],
+        driver_profile: [
+          'id', 'first_name', 'last_name', 'phones', 'work_status',
+          'work_rule_id', 'created_date', 'hire_date',
+          'photo', 'photo_url', 'avatar_url', 'driver_license'
+        ]
+      },
+      limit: 1,
+      offset: 0,
+      query: {
+        park: {
+          id: process.env.YANGO_PARK_ID,
+          driver_profile: { work_status: ['working'] }
+        }
+      }
+    });
+    res.json({
+      message: 'Raw Yango response for photo field discovery',
+      raw_profile: data.driver_profiles?.[0] || null,
+      all_keys: data.driver_profiles?.[0] ? Object.keys(data.driver_profiles[0]) : [],
+      driver_profile_keys: data.driver_profiles?.[0]?.driver_profile ? Object.keys(data.driver_profiles[0].driver_profile) : []
+    });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// All other Yango routes require authentication
+router.use(authMiddleware);
 
 const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
 
@@ -313,45 +347,6 @@ router.get('/work-rules', async (req, res) => {
   } catch (err) {
     console.error('Yango work-rules error:', err.message);
     res.status(502).json({ error: 'Erreur API Yango', details: err.message });
-  }
-});
-
-/**
- * GET /api/yango/drivers/photo-test
- * Test endpoint: fetch one driver with ALL possible fields to discover photo data
- */
-router.get('/drivers/photo-test', async (req, res) => {
-  try {
-    const data = await yangoFetch('/v1/parks/driver-profiles/list', {
-      fields: {
-        account: ['balance', 'currency'],
-        car: ['brand', 'model', 'color', 'number', 'year'],
-        current_status: ['status', 'status_updated_at'],
-        driver_profile: [
-          'id', 'first_name', 'last_name', 'phones', 'work_status',
-          'work_rule_id', 'created_date', 'hire_date',
-          'photo', 'photo_url', 'avatar_url', 'driver_license'
-        ]
-      },
-      limit: 1,
-      offset: 0,
-      query: {
-        park: {
-          id: process.env.YANGO_PARK_ID,
-          driver_profile: { work_status: ['working'] }
-        }
-      }
-    });
-
-    // Return the raw response so we can see all available fields
-    res.json({
-      message: 'Raw Yango response for photo field discovery',
-      raw_profile: data.driver_profiles?.[0] || null,
-      all_keys: data.driver_profiles?.[0] ? Object.keys(data.driver_profiles[0]) : [],
-      driver_profile_keys: data.driver_profiles?.[0]?.driver_profile ? Object.keys(data.driver_profiles[0].driver_profile) : []
-    });
-  } catch (err) {
-    res.status(502).json({ error: err.message });
   }
 });
 
