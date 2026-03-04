@@ -247,10 +247,8 @@ const VersementsPage = {
           },
           { label: 'Période', key: 'periode' },
           { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) },
-          { label: 'Brut', key: 'montantBrut', render: (v) => Utils.formatCurrency(v.montantBrut) },
-          { label: 'Commission', key: 'commission', render: (v) => Utils.formatCurrency(v.commission) },
           { label: 'Versé', key: 'montantVerse', render: (v) => `<strong>${Utils.formatCurrency(v.montantVerse)}</strong>`, primary: true },
-          { label: 'Courses', key: 'nombreCourses' },
+          { label: 'Courses', key: 'nombreCourses', render: (v) => v.nombreCourses > 0 ? `<span style="font-weight:600;">${v.nombreCourses}</span>` : '<span style="color:var(--text-muted);">-</span>' },
           { label: 'Statut', key: 'statut', render: (v) => {
               let html = Utils.statusBadge(v.statut);
               if (v.soumisParChauffeur) {
@@ -314,28 +312,41 @@ const VersementsPage = {
       { name: 'periode', label: 'Période (ex: 2025-S08)', type: 'text', required: true },
       { type: 'row-end' },
       { type: 'row-start' },
-      { name: 'montantBrut', label: 'Montant brut (FCFA)', type: 'number', min: 0, step: 0.01, required: true },
-      { name: 'nombreCourses', label: 'Nombre de courses', type: 'number', min: 0, required: true },
-      { type: 'row-end' },
-      { type: 'row-start' },
       { name: 'montantVerse', label: 'Montant versé (FCFA)', type: 'number', min: 0, step: 0.01, required: true },
       { name: 'statut', label: 'Statut', type: 'select', options: statusOptions },
       { type: 'row-end' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form('<iconify-icon icon="solar:transfer-horizontal-bold-duotone" class="text-blue"></iconify-icon> Nouveau versement', FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:transfer-horizontal-bold-duotone" class="text-blue"></iconify-icon> Nouveau versement', FormBuilder.build(fields), async () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
       const chauffeur = Store.findById('chauffeurs', values.chauffeurId);
 
+      // Récupérer les stats Yango (courses, CA) pour ce chauffeur à cette date
+      let nombreCourses = 0;
+      let montantBrut = values.montantVerse;
+      if (chauffeur && chauffeur.yangoDriverId && values.date) {
+        try {
+          const stats = await Store.getYangoDriverStats(chauffeur.yangoDriverId, values.date);
+          if (stats && !stats.error) {
+            nombreCourses = stats.nbCourses || 0;
+            montantBrut = stats.totalCA || values.montantVerse;
+          }
+        } catch (e) {
+          console.warn('Versement: impossible de récupérer les stats Yango', e);
+        }
+      }
+
       const versement = {
         id: Utils.generateId('VRS'),
         ...values,
         vehiculeId: chauffeur ? chauffeur.vehiculeAssigne : null,
-        commission: Math.round(values.montantBrut * 0.20 * 100) / 100,
-        montantNet: Math.round(values.montantBrut * 0.80 * 100) / 100,
+        montantBrut,
+        nombreCourses,
+        commission: 0,
+        montantNet: values.montantVerse,
         dateValidation: values.statut === 'valide' ? new Date().toISOString() : null,
         dateCreation: new Date().toISOString()
       };
@@ -363,18 +374,18 @@ const VersementsPage = {
     const fields = [
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-start' },
-      { name: 'montantBrut', label: 'Montant brut (FCFA)', type: 'number', min: 0, step: 0.01 },
       { name: 'montantVerse', label: 'Montant versé (FCFA)', type: 'number', min: 0, step: 0.01 },
-      { type: 'row-end' },
       { name: 'statut', label: 'Statut', type: 'select', options: editStatusOptions },
+      { type: 'row-end' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
     Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier versement', FormBuilder.build(fields, versement), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
-      values.commission = Math.round(values.montantBrut * 0.20 * 100) / 100;
-      values.montantNet = Math.round(values.montantBrut * 0.80 * 100) / 100;
+      values.montantBrut = values.montantVerse;
+      values.montantNet = values.montantVerse;
+      values.commission = 0;
       if (values.statut === 'valide' && !versement.dateValidation) {
         values.dateValidation = new Date().toISOString();
       }
