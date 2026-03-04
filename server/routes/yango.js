@@ -117,7 +117,7 @@ async function getCachedOrders(from, to) {
     return _ordersCache;
   }
   const data = await yangoFetch('/v1/parks/orders/list', {
-    limit: 100,
+    limit: 500,
     query: {
       park: {
         id: process.env.YANGO_PARK_ID,
@@ -985,53 +985,54 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
   }, 20000);
 
   try {
-    // 1. Fetch orders (cached — shared across drivers, TTL 2min)
-    let ordersData = null;
+    // Primary: transactions (filtered by driver, paginated, reliable)
+    const driverIds = new Set([yangoDriverId]);
     try {
-      ordersData = await getCachedOrders(from, to);
-    } catch (e) {
-      console.warn('driver-stats: orders fetch failed:', e.message);
-    }
+      const txnTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Transactions timeout 10s')), 10000)
+      );
+      const transactionsData = await Promise.race([
+        fetchAllTransactions(from, to, driverIds),
+        txnTimeout
+      ]);
 
-    if (!sent && ordersData) {
-      const driverOrders = (ordersData.orders || []).filter(o => o.driver && o.driver.id === yangoDriverId);
-      const completedOrders = driverOrders.filter(o => o.status === 'complete');
-      nbCourses = completedOrders.length;
-
-      for (const order of completedOrders) {
-        const price = parseFloat(order.price || 0);
-        totalCA += price;
-        if (order.payment_method === 'cash' || order.payment_method === 'corp') {
-          totalCash += price;
-        } else {
-          totalCard += price;
-        }
+      if (transactionsData && transactionsData.length > 0) {
+        const finance = aggregateTransactions(transactionsData);
+        totalCA = finance.totalCA;
+        totalCash = finance.totalCash;
+        totalCard = finance.totalCard;
+        nbCourses = finance.nbCoursesCash + finance.nbCoursesCard;
+        commissionYango = finance.commissionYango;
+        commissionPartenaire = finance.commissionPartenaire;
       }
-      totalCA = Math.round(totalCA);
-      totalCash = Math.round(totalCash);
-      totalCard = Math.round(totalCard);
+    } catch (e) {
+      console.warn('driver-stats: transactions failed, falling back to orders:', e.message);
     }
 
-    // 2. Try transactions for commission data (short 5s timeout)
-    if (!sent) {
+    // Fallback: orders (only if transactions returned nothing)
+    if (!sent && totalCA === 0 && nbCourses === 0) {
       try {
-        const txnTimeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Transactions timeout 5s')), 5000)
-        );
-        const driverIds = new Set([yangoDriverId]);
-        const transactionsData = await Promise.race([
-          fetchAllTransactions(from, to, driverIds),
-          txnTimeout
-        ]);
+        const ordersData = await getCachedOrders(from, to);
+        if (ordersData) {
+          const driverOrders = (ordersData.orders || []).filter(o => o.driver && o.driver.id === yangoDriverId);
+          const completedOrders = driverOrders.filter(o => o.status === 'complete');
+          nbCourses = completedOrders.length;
 
-        if (transactionsData && transactionsData.length > 0) {
-          const finance = aggregateTransactions(transactionsData);
-          commissionYango = finance.commissionYango;
-          commissionPartenaire = finance.commissionPartenaire;
-          // Orders are authoritative for CA — transactions only provide commissions
+          for (const order of completedOrders) {
+            const price = parseFloat(order.price || 0);
+            totalCA += price;
+            if (order.payment_method === 'cash' || order.payment_method === 'corp') {
+              totalCash += price;
+            } else {
+              totalCard += price;
+            }
+          }
+          totalCA = Math.round(totalCA);
+          totalCash = Math.round(totalCash);
+          totalCard = Math.round(totalCard);
         }
       } catch (e) {
-        console.warn('driver-stats: transactions skipped:', e.message);
+        console.warn('driver-stats: orders fallback also failed:', e.message);
       }
     }
 
