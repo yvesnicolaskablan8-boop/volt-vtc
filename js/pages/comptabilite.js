@@ -185,7 +185,10 @@ const ComptabilitePage = {
             <span>Commission Partenaire</span>
             <span class="yango-badge-live">REVENU</span>
           </div>
-          <div class="yango-section-actions">
+          <div class="yango-section-actions" style="display:flex;align-items:center;gap:8px;">
+            <input type="date" id="cy-date-from" style="padding:4px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:var(--font-size-xs);" />
+            <span style="color:var(--text-muted);font-size:var(--font-size-xs);">au</span>
+            <input type="date" id="cy-date-to" style="padding:4px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:var(--font-size-xs);" />
             <button class="btn btn-sm yango-refresh-btn" onclick="ComptabilitePage._loadYangoCommission()" id="compta-yango-refresh">
               <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
             </button>
@@ -195,12 +198,12 @@ const ComptabilitePage = {
           <div class="kpi-card yango-kpi" style="border-top-color:rgba(34, 197, 94, 0.5) !important;">
             <div class="kpi-icon yango-icon-green"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
             <div class="kpi-value" id="cy-comm-mois" style="color:var(--success)"><div class="yango-skeleton"></div></div>
-            <div class="kpi-label">Commission du mois</div>
+            <div class="kpi-label" id="cy-comm-mois-label">Commission du mois</div>
           </div>
           <div class="kpi-card yango-kpi" style="border-top-color:rgba(34, 197, 94, 0.5) !important;">
             <div class="kpi-icon yango-icon-green"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
             <div class="kpi-value" id="cy-comm-jour" style="color:var(--success)"><div class="yango-skeleton"></div></div>
-            <div class="kpi-label">Commission aujourd'hui</div>
+            <div class="kpi-label" id="cy-comm-jour-label">Commission aujourd'hui</div>
           </div>
         </div>
         <div style="margin-top:var(--space-sm);padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
@@ -257,7 +260,8 @@ const ComptabilitePage = {
   },
 
   _loadOverviewCharts() {
-    // Load Yango commission data
+    // Init date pickers and load Yango commission data
+    this._initYangoDatePickers();
     this._loadYangoCommission();
 
     const ops = this._getOperations();
@@ -982,12 +986,43 @@ const ComptabilitePage = {
 
   // ========================= YANGO COMMISSION =========================
 
+  _initYangoDatePickers() {
+    const fromInput = document.getElementById('cy-date-from');
+    const toInput = document.getElementById('cy-date-to');
+    if (!fromInput || !toInput) return;
+
+    // Default: 1st of current month → today
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const today = now.toISOString().split('T')[0];
+    fromInput.value = monthStart;
+    toInput.value = today;
+
+    // Reload on date change
+    fromInput.addEventListener('change', () => this._loadYangoCommission());
+    toInput.addEventListener('change', () => this._loadYangoCommission());
+  },
+
   async _loadYangoCommission() {
     const refreshBtn = document.getElementById('compta-yango-refresh');
     if (refreshBtn) { refreshBtn.classList.add('spinning'); refreshBtn.disabled = true; }
 
     try {
-      const stats = await Store.getYangoStats();
+      // Read selected dates
+      const fromInput = document.getElementById('cy-date-from');
+      const toInput = document.getElementById('cy-date-to');
+      const fromDate = fromInput?.value;
+      const toDate = toInput?.value;
+
+      let dateRange = null;
+      if (fromDate && toDate) {
+        dateRange = {
+          from: new Date(fromDate + 'T00:00:00').toISOString(),
+          to: new Date(toDate + 'T23:59:59').toISOString()
+        };
+      }
+
+      const stats = await Store.getYangoStats(null, dateRange);
       if (!stats || stats.error) {
         this._showYangoCommissionError();
         return;
@@ -995,14 +1030,27 @@ const ComptabilitePage = {
 
       this._yangoStats = stats;
       const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      const setLabel = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-      // Utiliser commissionPartenaire (partner_ride_fee) = votre vraie commission
-      // PAS commissionYango qui est la commission que Yango preleve sur les courses
-      const commMonth = stats.commissionPartenaire?.mois || 0;
+      // commissionPartenaire = votre vraie commission (partner_ride_fee)
+      const commPeriod = stats.commissionPartenaire?.mois || 0;
       const commToday = stats.commissionPartenaire?.aujourd_hui || 0;
 
-      setVal('cy-comm-mois', Utils.formatCurrency(commMonth));
+      setVal('cy-comm-mois', Utils.formatCurrency(commPeriod));
       setVal('cy-comm-jour', Utils.formatCurrency(commToday));
+
+      // Update labels based on date range
+      const isCustom = dateRange !== null;
+      if (isCustom) {
+        const from = new Date(fromDate);
+        const to = new Date(toDate);
+        const label = `${from.toLocaleDateString('fr-FR', {day:'2-digit',month:'short'})} - ${to.toLocaleDateString('fr-FR', {day:'2-digit',month:'short'})}`;
+        setLabel('cy-comm-mois-label', `Commission ${label}`);
+        setLabel('cy-comm-jour-label', `Commission aujourd'hui`);
+      } else {
+        setLabel('cy-comm-mois-label', 'Commission du mois');
+        setLabel('cy-comm-jour-label', `Commission aujourd'hui`);
+      }
     } catch (err) {
       console.error('Yango commission load error:', err);
       this._showYangoCommissionError();
