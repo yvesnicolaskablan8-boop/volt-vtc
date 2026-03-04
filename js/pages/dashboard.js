@@ -89,8 +89,11 @@ const DashboardPage = {
     // Versements en retard
     const retardCount = versements.filter(v => v.statut === 'retard').length;
 
-    // Active drivers
+    // Drivers count
+    const totalChauffeurs = chauffeurs.length;
     const activeCount = chauffeurs.filter(c => c.statut === 'actif').length;
+    const suspendusCount = chauffeurs.filter(c => c.statut === 'suspendu').length;
+    const inactifsCount = chauffeurs.filter(c => c.statut === 'inactif').length;
 
     // Vehicles in service
     const vehiclesActifs = vehicules.filter(v => v.statut === 'en_service').length;
@@ -260,7 +263,8 @@ const DashboardPage = {
 
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
-      activeCount, vehiclesActifs, vehiclesEV, vehiclesThermique,
+      totalChauffeurs, activeCount, suspendusCount, inactifsCount,
+      vehiclesActifs, vehiclesEV, vehiclesThermique,
       monthCourses: monthCourses.length,
       monthlyRevenue, weeklyPayments,
       coursesByType, typeLabels, vehicleProfit,
@@ -307,12 +311,14 @@ const DashboardPage = {
             <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
           </div>
         </div>
-        <div class="kpi-card red">
-          <div class="kpi-icon"><iconify-icon icon="solar:bill-cross-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" style="color:var(--danger)">${d.retardCount}</div>
-          <div class="kpi-label">Versements en retard</div>
-          <div class="kpi-trend ${d.retardCount > 0 ? 'down' : 'up'}">
-            <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon> ${d.activeCount} chauffeurs actifs
+        <div class="kpi-card cyan">
+          <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${d.totalChauffeurs}</div>
+          <div class="kpi-label">Chauffeurs</div>
+          <div class="kpi-trend up">
+            <iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--success);font-size:6px"></iconify-icon> ${d.activeCount} actifs
+            ${d.suspendusCount > 0 ? `<span style="margin:0 2px">&bull;</span><iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--warning);font-size:6px"></iconify-icon> ${d.suspendusCount} susp.` : ''}
+            ${d.inactifsCount > 0 ? `<span style="margin:0 2px">&bull;</span><iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--danger);font-size:6px"></iconify-icon> ${d.inactifsCount} inact.` : ''}
           </div>
         </div>
         <div class="kpi-card yellow">
