@@ -14,18 +14,21 @@ const Chauffeur = require('../models/Chauffeur');
 // ===== TEMPORARY: photo-test endpoint (no auth) =====
 router.get('/drivers/photo-test', async (req, res) => {
   try {
+    // Try ALL known valid fields to see what comes back
     const data = await yangoFetch('/v1/parks/driver-profiles/list', {
       fields: {
         account: ['balance', 'currency'],
-        car: ['brand', 'model', 'color', 'number', 'year'],
+        car: ['brand', 'model', 'color', 'number', 'year', 'vin', 'callsign', 'category'],
         current_status: ['status', 'status_updated_at'],
         driver_profile: [
-          'id', 'first_name', 'last_name', 'phones', 'work_status',
-          'work_rule_id', 'created_date', 'hire_date',
-          'photo', 'photo_url', 'avatar_url', 'driver_license'
+          'id', 'first_name', 'last_name', 'middle_name', 'phones',
+          'work_status', 'work_rule_id', 'created_date', 'hire_date',
+          'email', 'address', 'balance_limit', 'driver_license',
+          'check_message', 'payment_service_id', 'providers',
+          'car_id', 'comment', 'rating'
         ]
       },
-      limit: 1,
+      limit: 2,
       offset: 0,
       query: {
         park: {
@@ -34,11 +37,17 @@ router.get('/drivers/photo-test', async (req, res) => {
         }
       }
     });
+
+    // Return everything
+    const profile = data.driver_profiles?.[0];
     res.json({
-      message: 'Raw Yango response for photo field discovery',
-      raw_profile: data.driver_profiles?.[0] || null,
-      all_keys: data.driver_profiles?.[0] ? Object.keys(data.driver_profiles[0]) : [],
-      driver_profile_keys: data.driver_profiles?.[0]?.driver_profile ? Object.keys(data.driver_profiles[0].driver_profile) : []
+      total: data.total,
+      all_top_keys: profile ? Object.keys(profile) : [],
+      driver_profile_keys: profile?.driver_profile ? Object.keys(profile.driver_profile) : [],
+      car_keys: profile?.car ? Object.keys(profile.car) : [],
+      account_keys: profile?.accounts?.[0] ? Object.keys(profile.accounts[0]) : [],
+      raw_profile_0: profile || null,
+      raw_profile_1: data.driver_profiles?.[1] || null
     });
   } catch (err) {
     res.status(502).json({ error: err.message });
