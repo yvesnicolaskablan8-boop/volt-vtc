@@ -5,6 +5,7 @@ const DashboardPage = {
   _charts: [],
   _refreshInterval: null,
   _lastData: null,
+  _selectedPeriod: null, // null = mois courant (temps réel), 'YYYY-MM' = mois spécifique
 
   render() {
     const container = document.getElementById('page-content');
@@ -12,7 +13,8 @@ const DashboardPage = {
     this._lastData = data;
     container.innerHTML = this._template(data);
     this._loadCharts(data);
-    this._startAutoRefresh();
+    this._bindPeriodSelector();
+    if (this._isCurrentMonth()) this._startAutoRefresh(); else this._stopAutoRefresh();
   },
 
   destroy() {
@@ -35,7 +37,30 @@ const DashboardPage = {
     }
   },
 
+  _isCurrentMonth() {
+    if (!this._selectedPeriod) return true;
+    const now = new Date();
+    const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return this._selectedPeriod === current;
+  },
+
+  _bindPeriodSelector() {
+    const input = document.getElementById('dashboard-period');
+    if (input) {
+      input.addEventListener('change', () => this._onPeriodChange(input.value));
+    }
+  },
+
+  _onPeriodChange(value) {
+    const now = new Date();
+    const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    this._selectedPeriod = (value === current) ? null : value;
+    this.destroy();
+    this.render();
+  },
+
   _silentRefresh() {
+    if (!this._isCurrentMonth()) return; // Don't auto-refresh historical data
     const indicator = document.getElementById('live-indicator');
     if (indicator) {
       indicator.classList.add('pulse');
@@ -48,6 +73,7 @@ const DashboardPage = {
     this._lastData = data;
     container.innerHTML = this._template(data);
     this._loadCharts(data);
+    this._bindPeriodSelector();
     this._startAutoRefresh();
   },
 
@@ -57,8 +83,15 @@ const DashboardPage = {
     const versements = Store.get('versements');
     const courses = Store.get('courses');
     const now = new Date();
-    const thisMonth = now.getMonth();
-    const thisYear = now.getFullYear();
+    let thisMonth, thisYear;
+    if (this._selectedPeriod) {
+      const [y, m] = this._selectedPeriod.split('-').map(Number);
+      thisYear = y;
+      thisMonth = m - 1; // JS months are 0-indexed
+    } else {
+      thisMonth = now.getMonth();
+      thisYear = now.getFullYear();
+    }
 
     // This month courses
     const monthCourses = courses.filter(c => {
@@ -188,12 +221,15 @@ const DashboardPage = {
     // =================== RECETTES IMPAYÉES ===================
     const planning = Store.get('planning') || [];
     const absences = Store.get('absences') || [];
-    const today = now.toISOString().split('T')[0];
+    // Pour le mois sélectionné, limiter au dernier jour du mois
+    const periodEnd = this._selectedPeriod
+      ? new Date(thisYear, thisMonth + 1, 0) // dernier jour du mois sélectionné
+      : now;
+    const today = periodEnd.toISOString().split('T')[0];
 
-    // Limiter aux 30 derniers jours
-    const thirtyDaysAgo = new Date(now);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const minDate = thirtyDaysAgo.toISOString().split('T')[0];
+    // Limiter au mois sélectionné
+    const periodStart = new Date(thisYear, thisMonth, 1);
+    const minDate = periodStart.toISOString().split('T')[0];
 
     // Dédupliquer par (chauffeurId, date) — un seul impayé par jour même si 2 shifts
     const scheduledDays = new Map();
@@ -289,9 +325,12 @@ const DashboardPage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Tableau de bord</h1>
         <div class="page-actions">
-          <span id="live-indicator" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:#22c55e;background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:20px;font-weight:600;">
+          <input type="month" id="dashboard-period" class="form-control" value="${this._selectedPeriod || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`}" style="width:160px;font-size:var(--font-size-xs);padding:4px 8px;">
+          ${this._isCurrentMonth() ? `<span id="live-indicator" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:#22c55e;background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:20px;font-weight:600;">
             <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite;"></span> EN DIRECT
-          </span>
+          </span>` : `<span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:var(--text-muted);background:var(--bg-tertiary);padding:4px 10px;border-radius:20px;font-weight:600;">
+            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:12px;"></iconify-icon> HISTORIQUE
+          </span>`}
           <button class="btn btn-secondary" onclick="DashboardPage._shareWhatsApp()" title="Partager sur WhatsApp" style="background:#25D366;color:#fff;border-color:#25D366;"><iconify-icon icon="mdi:whatsapp"></iconify-icon></button>
           <button class="btn btn-secondary" onclick="DashboardPage._sendPaymentReminders()" title="Envoyer rappels de paiement"><iconify-icon icon="solar:bell-bold-duotone"></iconify-icon> Rappels</button>
           <button class="btn btn-secondary" onclick="DashboardPage._sendAnnouncement()" title="Envoyer annonce"><iconify-icon icon="solar:letter-bold-duotone"></iconify-icon></button>
@@ -332,7 +371,7 @@ const DashboardPage = {
             ${d.inactifsCount > 0 ? `<span style="margin:0 2px">&bull;</span><iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--danger);font-size:6px"></iconify-icon> ${d.inactifsCount} inact.` : ''}
           </div>
         </div>
-        <a href="#/alertes" class="kpi-card ${d.alertesCritiques > 0 ? 'red' : d.alertesTotal > 0 ? 'yellow' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
+        <a href="#/alertes" class="kpi-card ${d.alertesTotal > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.alertesTotal}</div>
           <div class="kpi-label">Alertes actives</div>
