@@ -14,18 +14,17 @@ const Chauffeur = require('../models/Chauffeur');
 // ===== TEMPORARY: photo-test endpoint (no auth) =====
 router.get('/drivers/photo-test', async (req, res) => {
   try {
-    // Try ALL known valid fields to see what comes back
+    // Use only known-good fields + try a few extras one by one
     const data = await yangoFetch('/v1/parks/driver-profiles/list', {
       fields: {
         account: ['balance', 'currency'],
-        car: ['brand', 'model', 'color', 'number', 'year', 'vin', 'callsign', 'category'],
+        car: ['brand', 'model', 'color', 'number', 'year'],
         current_status: ['status', 'status_updated_at'],
         driver_profile: [
           'id', 'first_name', 'last_name', 'middle_name', 'phones',
           'work_status', 'work_rule_id', 'created_date', 'hire_date',
-          'email', 'address', 'balance_limit', 'driver_license',
-          'check_message', 'payment_service_id', 'providers',
-          'car_id', 'comment', 'rating'
+          'balance_limit', 'check_message', 'payment_service_id',
+          'car_id', 'comment'
         ]
       },
       limit: 2,
