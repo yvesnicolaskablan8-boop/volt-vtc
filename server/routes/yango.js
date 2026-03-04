@@ -11,47 +11,7 @@ const authMiddleware = require('../middleware/auth');
 
 const Chauffeur = require('../models/Chauffeur');
 
-// ===== TEMPORARY: photo-test endpoint (no auth) =====
-router.get('/drivers/photo-test', async (req, res) => {
-  try {
-    // Use only known-good fields + try a few extras one by one
-    const data = await yangoFetch('/v1/parks/driver-profiles/list', {
-      fields: {
-        account: ['balance', 'currency'],
-        car: ['brand', 'model', 'color', 'number', 'year'],
-        current_status: ['status', 'status_updated_at'],
-        driver_profile: [
-          'id', 'first_name', 'last_name', 'middle_name', 'phones',
-          'work_status', 'work_rule_id', 'created_date', 'hire_date'
-        ]
-      },
-      limit: 2,
-      offset: 0,
-      query: {
-        park: {
-          id: process.env.YANGO_PARK_ID,
-          driver_profile: { work_status: ['working'] }
-        }
-      }
-    });
-
-    // Return everything
-    const profile = data.driver_profiles?.[0];
-    res.json({
-      total: data.total,
-      all_top_keys: profile ? Object.keys(profile) : [],
-      driver_profile_keys: profile?.driver_profile ? Object.keys(profile.driver_profile) : [],
-      car_keys: profile?.car ? Object.keys(profile.car) : [],
-      account_keys: profile?.accounts?.[0] ? Object.keys(profile.accounts[0]) : [],
-      raw_profile_0: profile || null,
-      raw_profile_1: data.driver_profiles?.[1] || null
-    });
-  } catch (err) {
-    res.status(502).json({ error: err.message });
-  }
-});
-
-// All other Yango routes require authentication
+// All Yango routes require authentication
 router.use(authMiddleware);
 
 const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
