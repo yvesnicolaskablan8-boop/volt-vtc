@@ -181,7 +181,7 @@ const ChauffeursPage = {
             <div><span class="text-muted">Début contrat</span><br><strong>${Utils.formatDate(c.dateDebutContrat)}</strong></div>
             <div><span class="text-muted">Véhicule</span><br><strong>${vehicule ? `${vehicule.marque} ${vehicule.modele} (${vehicule.immatriculation})` : 'Non assigné'}</strong></div>
             <div><span class="text-muted">Fin contrat</span><br><strong>${c.dateFinContrat ? Utils.formatDate(c.dateFinContrat) : 'En cours'}</strong></div>
-            <div><span class="text-muted">Redevance quotidienne</span><br><strong style="color:${c.redevanceQuotidienne > 0 ? 'var(--volt-blue)' : 'var(--text-muted)'}">${c.redevanceQuotidienne > 0 ? Utils.formatCurrency(c.redevanceQuotidienne) + ' / jour' : 'Non définie'}</strong></div>
+            <div><span class="text-muted">Recette quotidienne</span><br><strong style="color:${c.redevanceQuotidienne > 0 ? 'var(--volt-blue)' : 'var(--text-muted)'}">${c.redevanceQuotidienne > 0 ? Utils.formatCurrency(c.redevanceQuotidienne) + ' / jour' : 'Non définie'}</strong></div>
           </div>
         </div>
 
@@ -697,7 +697,7 @@ const ChauffeursPage = {
       { type: 'row-end' },
       { name: 'vehiculeAssigne', label: 'Véhicule assigné', type: 'select', placeholder: 'Sélectionner...', options: vehicules.map(v => ({ value: v.id, label: `${v.marque} ${v.modele} (${v.immatriculation})` })) },
       { type: 'row-start' },
-      { name: 'redevanceQuotidienne', label: 'Redevance quotidienne (FCFA)', type: 'number', min: 0, step: 500, placeholder: 'Montant journalier à verser', default: 0 },
+      { name: 'redevanceQuotidienne', label: 'Recette quotidienne (FCFA)', type: 'number', min: 0, step: 500, placeholder: 'Montant journalier à verser', default: 0 },
       { name: 'objectifCA', label: 'Objectif CA journalier (FCFA)', type: 'number', min: 0, step: 1000, placeholder: 'Ex: 30000', default: 0 },
       { type: 'row-end' },
       { type: 'divider' },
