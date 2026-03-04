@@ -10,6 +10,7 @@
  * 6. Chauffeurs sans véhicule assigné
  * 7. Factures impayées ou en retard
  * 8. Budgets dépassés
+ * 9. Objectif CA Yango non atteint (vérifié sur la veille)
  */
 const AlertesPage = {
   _charts: [],
@@ -56,6 +57,7 @@ const AlertesPage = {
           <button class="btn btn-sm btn-secondary alert-filter" data-filter="versements"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon> Versements</button>
           <button class="btn btn-sm btn-secondary alert-filter" data-filter="conduite"><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Conduite</button>
           <button class="btn btn-sm btn-secondary alert-filter" data-filter="finance"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Finance</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="yango"><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon> Yango</button>
         </div>
       </div>
 
@@ -95,7 +97,7 @@ const AlertesPage = {
         btn.classList.remove('btn-secondary');
         btn.classList.add('active');
         this._currentFilter = btn.dataset.filter;
-        this._renderAlertsList(this._generateAllAlerts());
+        this._renderAlertsList(this._allAlerts || this._generateAllAlerts());
       });
     });
   },
@@ -105,10 +107,14 @@ const AlertesPage = {
     this._charts = [];
 
     const alerts = this._generateAllAlerts();
+    this._allAlerts = alerts;
     this._renderKPIs(alerts);
     this._renderAlertsList(alerts);
     this._renderCharts(alerts);
     this._loadNotifStats();
+
+    // Load Yango objectif alerts asynchronously
+    this._checkYangoObjectifs();
   },
 
   async _loadNotifStats() {
@@ -593,6 +599,65 @@ const AlertesPage = {
     return alerts;
   },
 
+  // =================== ALERTES YANGO (async) ===================
+
+  async _checkYangoObjectifs() {
+    const chauffeurs = (Store.get('chauffeurs') || []).filter(c =>
+      c.statut === 'actif' && c.yangoDriverId && c.objectifCA > 0
+    );
+    if (chauffeurs.length === 0) return;
+
+    // Check yesterday (completed day)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const yangoAlerts = [];
+    const results = await Promise.allSettled(
+      chauffeurs.map(c => Store.getYangoDriverStats(c.yangoDriverId, yesterdayStr))
+    );
+
+    results.forEach((result, i) => {
+      const c = chauffeurs[i];
+      if (result.status !== 'fulfilled' || !result.value || result.value.error) return;
+
+      const stats = result.value;
+      const objectif = c.objectifCA;
+      const ca = stats.totalCA || 0;
+      const pct = Math.round((ca / objectif) * 100);
+
+      if (ca < objectif) {
+        const nom = `${c.prenom} ${c.nom}`;
+        const niveau = pct < 50 ? 'critique' : pct < 80 ? 'urgent' : 'attention';
+        yangoAlerts.push({
+          id: `YOBJ-${c.id}`,
+          categorie: 'yango',
+          niveau,
+          titre: `Objectif CA non atteint (${pct}%)`,
+          description: `${nom} — CA Yango hier : ${Utils.formatCurrency(ca)} sur ${Utils.formatCurrency(objectif)} (${stats.nbCourses} courses). Manque ${Utils.formatCurrency(objectif - ca)}.`,
+          chauffeurId: c.id,
+          action: 'Voir le chauffeur',
+          actionRoute: `#/chauffeurs/${c.id}`,
+          icon: 'solar:target-bold-duotone',
+          date: yesterdayStr
+        });
+      }
+    });
+
+    if (yangoAlerts.length > 0) {
+      // Merge with existing alerts and re-render
+      const niveauOrder = { critique: 0, urgent: 1, attention: 2 };
+      this._allAlerts = [...this._allAlerts, ...yangoAlerts];
+      this._allAlerts.sort((a, b) => (niveauOrder[a.niveau] || 3) - (niveauOrder[b.niveau] || 3));
+
+      this._charts.forEach(c => c.destroy());
+      this._charts = [];
+      this._renderKPIs(this._allAlerts);
+      this._renderAlertsList(this._allAlerts);
+      this._renderCharts(this._allAlerts);
+    }
+  },
+
   // =================== RENDERING ===================
 
   _renderKPIs(alerts) {
@@ -664,7 +729,8 @@ const AlertesPage = {
         vehicules: { icon: 'solar:wheel-bold-duotone', label: 'Véhicules' },
         versements: { icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements' },
         conduite: { icon: 'solar:spedometer-max-bold-duotone', label: 'Conduite' },
-        finance: { icon: 'solar:calculator-bold-duotone', label: 'Finance' }
+        finance: { icon: 'solar:calculator-bold-duotone', label: 'Finance' },
+        yango: { icon: 'solar:bus-bold-duotone', label: 'Yango' }
       };
       const catCfg = catConfig[alert.categorie] || { icon: 'solar:bell-bing-bold-duotone', label: alert.categorie };
 
@@ -702,8 +768,8 @@ const AlertesPage = {
     // By category
     const catCounts = {};
     alerts.forEach(a => { catCounts[a.categorie] = (catCounts[a.categorie] || 0) + 1; });
-    const catLabels = { documents: 'Documents', vehicules: 'Véhicules', versements: 'Versements', conduite: 'Conduite', finance: 'Finance' };
-    const catColors = { documents: '#3b82f6', vehicules: '#f59e0b', versements: '#ef4444', conduite: '#8b5cf6', finance: '#22c55e' };
+    const catLabels = { documents: 'Documents', vehicules: 'Véhicules', versements: 'Versements', conduite: 'Conduite', finance: 'Finance', yango: 'Yango' };
+    const catColors = { documents: '#3b82f6', vehicules: '#f59e0b', versements: '#ef4444', conduite: '#8b5cf6', finance: '#22c55e', yango: '#FC4C02' };
     const catEntries = Object.entries(catCounts);
 
     const ctx1 = document.getElementById('chart-alerts-category');
