@@ -353,7 +353,7 @@ const DashboardPage = {
             <iconify-icon icon="solar:arrow-${d.caTrend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(d.caTrend).toFixed(1)}%
           </div>
         </div>
-        <div class="kpi-card green">
+        <div class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}">
           <div class="kpi-icon"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
           <div class="kpi-label">Versements recus ce mois</div>
