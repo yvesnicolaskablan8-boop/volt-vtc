@@ -29,8 +29,9 @@ const VersementsPage = {
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     });
 
-    const totalCommission = monthVers.reduce((s, v) => s + v.commission, 0);
-    const totalVerse = monthVers.reduce((s, v) => s + v.montantVerse, 0);
+    const activeVers = monthVers.filter(v => v.statut !== 'supprime');
+    const totalCommission = activeVers.reduce((s, v) => s + v.commission, 0);
+    const totalVerse = activeVers.reduce((s, v) => s + v.montantVerse, 0);
     const tauxRecouvrement = totalCommission > 0 ? (totalVerse / totalCommission) * 100 : 0;
 
     const byStatus = {
@@ -55,7 +56,7 @@ const VersementsPage = {
 
       weeklyEvo.push({
         label: `S${Utils.getWeekNumber(weekStart)}`,
-        total: weekVers.reduce((s, v) => s + v.montantVerse, 0)
+        total: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0)
       });
     }
 

@@ -28,7 +28,7 @@ const RentabilitePage = {
       const vVersements = versements.filter(vs => vs.vehiculeId === v.id);
 
       // Revenue (company commission = 20% of rides)
-      const totalRevenue = vVersements.reduce((s, vs) => s + vs.montantVerse, 0);
+      const totalRevenue = vVersements.filter(vs => vs.statut !== 'supprime').reduce((s, vs) => s + vs.montantVerse, 0);
       const totalCA = vCourses.reduce((s, c) => s + c.montantTTC, 0);
 
       // Months in service

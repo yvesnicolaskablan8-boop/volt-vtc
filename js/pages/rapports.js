@@ -430,8 +430,9 @@ const RapportsPage = {
         const d = new Date(v.date);
         return d.getMonth() === m.getMonth() && d.getFullYear() === m.getFullYear();
       });
-      verseData.push(Math.round(monthVers.reduce((s, v) => s + v.montantVerse, 0)));
-      commissionData.push(Math.round(monthVers.reduce((s, v) => s + v.commission, 0)));
+      const activeMonthVers = monthVers.filter(v => v.statut !== 'supprime');
+      verseData.push(Math.round(activeMonthVers.reduce((s, v) => s + v.montantVerse, 0)));
+      commissionData.push(Math.round(activeMonthVers.reduce((s, v) => s + v.commission, 0)));
     }
 
     const ctx = document.getElementById('chart-rapport-versements');
@@ -645,7 +646,7 @@ const RapportsPage = {
         byDriver[c.chauffeurId].ca += c.montantTTC;
       }
     });
-    versements.forEach(v => {
+    versements.filter(v => v.statut !== 'supprime').forEach(v => {
       if (byDriver[v.chauffeurId]) {
         byDriver[v.chauffeurId].verse += v.montantVerse;
         byDriver[v.chauffeurId].commission += v.commission;
@@ -723,7 +724,7 @@ const RapportsPage = {
     return {
       title: 'Etat des versements impayes',
       headers: ['Chauffeur', 'Periode', 'Date', 'Commission (FCFA)', 'Verse (FCFA)', 'Reste du (FCFA)', 'Statut'],
-      rows: versements.sort((a, b) => b.date.localeCompare(a.date)).map(v => {
+      rows: versements.filter(v => v.statut !== 'supprime').sort((a, b) => b.date.localeCompare(a.date)).map(v => {
         const c = chauffeurs.find(x => x.id === v.chauffeurId);
         return [
           c ? `${c.prenom} ${c.nom}` : v.chauffeurId,
@@ -749,7 +750,7 @@ const RapportsPage = {
       headers: ['Vehicule', 'Energie', 'Type acq.', 'Prix achat (FCFA)', 'CA genere (FCFA)', 'Couts maint. (FCFA)', 'Assurance/an (FCFA)', 'Profit estime (FCFA)', 'ROI (%)'],
       rows: vehicules.map(v => {
         const vCourses = courses.filter(c => c.vehiculeId === v.id);
-        const revenue = versements.filter(vs => vs.vehiculeId === v.id).reduce((s, vs) => s + vs.montantVerse, 0);
+        const revenue = versements.filter(vs => vs.vehiculeId === v.id && vs.statut !== 'supprime').reduce((s, vs) => s + vs.montantVerse, 0);
         const maintenance = (v.coutsMaintenance || []).reduce((s, m) => s + m.montant, 0);
         const months = Math.max(1, Math.round((now - new Date(v.dateCreation)) / (30 * 24 * 60 * 60 * 1000)));
         const isEV = v.typeEnergie === 'electrique';

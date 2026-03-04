@@ -84,7 +84,7 @@ const DashboardPage = {
       const d = new Date(v.date);
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     });
-    const totalVerse = monthVersements.reduce((s, v) => s + v.montantVerse, 0);
+    const totalVerse = monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
 
     // Versements en retard
     const retardCount = versements.filter(v => v.statut === 'retard').length;
@@ -130,8 +130,8 @@ const DashboardPage = {
 
       weeklyPayments.push({
         label: `S${Utils.getWeekNumber(weekStart)}`,
-        verse: weekVers.reduce((s, v) => s + v.montantVerse, 0),
-        attendu: weekVers.reduce((s, v) => s + v.commission, 0)
+        verse: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0),
+        attendu: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.commission, 0)
       });
     }
 

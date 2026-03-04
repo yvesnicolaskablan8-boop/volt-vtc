@@ -117,7 +117,7 @@ const ChauffeursPage = {
     const versements = Store.query('versements', v => v.chauffeurId === c.id);
     const courses = Store.query('courses', cr => cr.chauffeurId === c.id && cr.statut === 'terminee');
     const totalCA = courses.reduce((s, cr) => s + cr.montantTTC, 0);
-    const totalVerse = versements.reduce((s, v) => s + v.montantVerse, 0);
+    const totalVerse = versements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
     const color = Utils.getAvatarColor(c.id);
 
     return `
@@ -350,7 +350,7 @@ const ChauffeursPage = {
     }
 
     // Payment history chart
-    const versements = Store.query('versements', v => v.chauffeurId === chauffeur.id)
+    const versements = Store.query('versements', v => v.chauffeurId === chauffeur.id && v.statut !== 'supprime')
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(-12);
 
