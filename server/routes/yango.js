@@ -155,7 +155,7 @@ async function fetchAllTransactions(from, to, driverIds = null) {
   const allTransactions = [];
   let cursor = '';
   let pageCount = 0;
-  const MAX_PAGES = driverIds && driverIds.size === 1 ? 3 : 10; // Fewer pages for single driver
+  const MAX_PAGES = 10; // API driver_profile_id filter unreliable, always fetch all
 
   // Build transaction query — add driver_profile_id filter when available
   const transactionQuery = { event_at: { from, to } };
@@ -183,8 +183,8 @@ async function fetchAllTransactions(from, to, driverIds = null) {
     pageCount++;
   } while (cursor && pageCount < MAX_PAGES);
 
-  // If multiple drivers filter is active, filter client-side
-  if (driverIds && driverIds.size > 1) {
+  // Always filter client-side when driverIds provided (API filter unreliable)
+  if (driverIds && driverIds.size > 0) {
     return allTransactions.filter(t => t.driver_profile_id && driverIds.has(t.driver_profile_id));
   }
 
