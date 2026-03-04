@@ -98,6 +98,7 @@ const Utils = {
       terminee: { class: 'badge-success', icon: 'solar:check-circle-bold-duotone', label: 'Terminée' },
       en_cours: { class: 'badge-info', icon: 'solar:refresh-bold', label: 'En cours' },
       annulee: { class: 'badge-danger', icon: 'solar:close-circle-bold', label: 'Annulée' },
+      supprime: { class: 'badge-danger', icon: 'solar:trash-bin-trash-bold-duotone', label: 'Supprimé' },
       expire: { class: 'badge-danger', icon: 'solar:danger-circle-bold-duotone', label: 'Expiré' },
       a_renouveler: { class: 'badge-warning', icon: 'solar:danger-circle-bold-duotone', label: 'À renouveler' }
     };

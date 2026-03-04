@@ -247,7 +247,7 @@ const VersementsPage = {
           },
           { label: 'Période', key: 'periode' },
           { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) },
-          { label: 'Versé', key: 'montantVerse', render: (v) => `<strong>${Utils.formatCurrency(v.montantVerse)}</strong>`, primary: true },
+          { label: 'Versé', key: 'montantVerse', render: (v) => v.statut === 'supprime' ? `<span style="text-decoration:line-through;color:var(--text-muted);">${Utils.formatCurrency(v.montantVerse)}</span>` : `<strong>${Utils.formatCurrency(v.montantVerse)}</strong>`, primary: true },
           { label: 'Courses', key: 'nombreCourses', render: (v) => `<span data-yango-courses="${v.id}">${v.nombreCourses > 0 ? `<span style="font-weight:600;">${v.nombreCourses}</span>` : '<iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:12px;color:var(--text-muted);"></iconify-icon>'}</span>` },
           { label: 'Statut', key: 'statut', render: (v) => {
               let html = Utils.statusBadge(v.statut);
@@ -344,7 +344,7 @@ const VersementsPage = {
       { value: 'en_attente', label: 'En attente' },
       { value: 'retard', label: 'En retard' },
       { value: 'partiel', label: 'Partiel' },
-      { value: 'annulee', label: 'Annulé', disabled: !isAdmin }
+      { value: 'supprime', label: 'Supprimer', disabled: !isAdmin }
     ];
     const fields = [
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, placeholder: 'Sélectionner...', options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
@@ -410,7 +410,7 @@ const VersementsPage = {
       { value: 'en_attente', label: 'En attente' },
       { value: 'retard', label: 'En retard' },
       { value: 'partiel', label: 'Partiel' },
-      { value: 'annulee', label: 'Annulé', disabled: !isAdmin }
+      { value: 'supprime', label: 'Supprimer', disabled: !isAdmin }
     ];
     const fields = [
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
