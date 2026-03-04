@@ -22,8 +22,7 @@ router.get('/drivers/photo-test', async (req, res) => {
         current_status: ['status', 'status_updated_at'],
         driver_profile: [
           'id', 'first_name', 'last_name', 'middle_name', 'phones',
-          'work_status', 'work_rule_id', 'created_date', 'hire_date',
-          'check_message', 'car_id', 'comment'
+          'work_status', 'work_rule_id', 'created_date', 'hire_date'
         ]
       },
       limit: 2,
