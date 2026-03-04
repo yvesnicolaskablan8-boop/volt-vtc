@@ -232,6 +232,21 @@ const ChauffeursPage = {
         </div>
         ` : ''}
 
+        <!-- Historique performance 30j -->
+        ${c.yangoDriverId ? `
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><iconify-icon icon="solar:graph-up-bold-duotone" style="color:#3b82f6;"></iconify-icon> Historique 30 jours</span>
+          </div>
+          <div style="height:200px;">
+            <canvas id="chart-perf-30j"></canvas>
+          </div>
+          <div id="perf-30j-loading" style="text-align:center;padding:var(--space-sm);color:var(--text-muted);font-size:var(--font-size-xs);">
+            <iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement de l'historique...
+          </div>
+        </div>
+        ` : ''}
+
         <!-- Documents -->
         <div class="card">
           <div class="card-header"><span class="card-title">Documents</span></div>
@@ -433,6 +448,7 @@ const ChauffeursPage = {
     if (chauffeur && chauffeur.yangoDriverId) {
       // Load Yango CA on page load
       this._loadYangoCA(chauffeur.id);
+      this._loadPerf30j(chauffeur);
 
       // Wire date picker change
       const dateInput = document.getElementById('yango-ca-date');
@@ -503,6 +519,106 @@ const ChauffeursPage = {
         <span>Maj: ${new Date(stats.derniereMaj).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}</span>
       </div>
     `;
+  },
+
+  async _loadPerf30j(chauffeur) {
+    const canvas = document.getElementById('chart-perf-30j');
+    const loading = document.getElementById('perf-30j-loading');
+    if (!canvas || !chauffeur.yangoDriverId) return;
+
+    const days = [];
+    const now = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days.push(d.toISOString().split('T')[0]);
+    }
+
+    // Fetch les 30 derniers jours (batch de 5)
+    const results = {};
+    for (let i = 0; i < days.length; i += 5) {
+      const batch = days.slice(i, i + 5);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (date) => {
+          const stats = await Store.getYangoDriverStats(chauffeur.yangoDriverId, date);
+          return { date, stats };
+        })
+      );
+      batchResults.forEach(r => {
+        if (r.status === 'fulfilled' && r.value.stats && !r.value.stats.error) {
+          results[r.value.date] = r.value.stats;
+        }
+      });
+    }
+
+    if (loading) loading.style.display = 'none';
+
+    const labels = days.map(d => { const dt = new Date(d); return `${dt.getDate()}/${dt.getMonth()+1}`; });
+    const caData = days.map(d => results[d] ? (results[d].totalCA || 0) : 0);
+    const coursesData = days.map(d => results[d] ? (results[d].nbCourses || 0) : 0);
+    const objectif = chauffeur.objectifCA || 0;
+
+    if (this._perf30jChart) this._perf30jChart.destroy();
+    this._perf30jChart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'CA',
+            data: caData,
+            backgroundColor: caData.map(v => objectif > 0 && v >= objectif ? 'rgba(34,197,94,0.7)' : 'rgba(252,76,2,0.6)'),
+            borderRadius: 3,
+            yAxisID: 'y',
+            order: 2
+          },
+          {
+            label: 'Courses',
+            data: coursesData,
+            type: 'line',
+            borderColor: '#3b82f6',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            tension: 0.4,
+            yAxisID: 'y1',
+            order: 1
+          },
+          ...(objectif > 0 ? [{
+            label: 'Objectif',
+            data: days.map(() => objectif),
+            type: 'line',
+            borderColor: 'rgba(239,68,68,0.5)',
+            borderDash: [5, 5],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+            yAxisID: 'y',
+            order: 0
+          }] : [])
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: true, position: 'top', labels: { font: { size: 10 }, padding: 8, usePointStyle: true } },
+          tooltip: {
+            callbacks: {
+              title: (items) => items[0]?.label || '',
+              label: (ctx) => ctx.dataset.label === 'CA' || ctx.dataset.label === 'Objectif' ? `${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}` : `${ctx.dataset.label}: ${ctx.raw}`
+            }
+          }
+        },
+        scales: {
+          y: { beginAtZero: true, position: 'left', ticks: { callback: v => v >= 1000 ? Math.round(v/1000) + 'k' : v, font: { size: 9 } } },
+          y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { font: { size: 9 } } },
+          x: { ticks: { font: { size: 8 }, maxRotation: 0 } }
+        }
+      }
+    });
   },
 
   // ======== PHOTO UPLOAD ========
@@ -580,7 +696,10 @@ const ChauffeursPage = {
       ]},
       { type: 'row-end' },
       { name: 'vehiculeAssigne', label: 'Véhicule assigné', type: 'select', placeholder: 'Sélectionner...', options: vehicules.map(v => ({ value: v.id, label: `${v.marque} ${v.modele} (${v.immatriculation})` })) },
-      { name: 'redevanceQuotidienne', label: 'Redevance quotidienne (FCFA)', type: 'number', min: 0, step: 500, placeholder: 'Montant que le chauffeur doit verser chaque jour', default: 0 },
+      { type: 'row-start' },
+      { name: 'redevanceQuotidienne', label: 'Redevance quotidienne (FCFA)', type: 'number', min: 0, step: 500, placeholder: 'Montant journalier à verser', default: 0 },
+      { name: 'objectifCA', label: 'Objectif CA journalier (FCFA)', type: 'number', min: 0, step: 1000, placeholder: 'Ex: 30000', default: 0 },
+      { type: 'row-end' },
       { type: 'divider' },
       { type: 'heading', label: 'Liaison Yango' },
       { name: 'yangoDriverId', label: 'Yango Driver ID', type: 'text', placeholder: 'Ex: abc123... (sera rempli auto par la sync ou manuellement)' },

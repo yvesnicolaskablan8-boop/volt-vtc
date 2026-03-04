@@ -82,6 +82,19 @@ const App = {
         .catch(err => console.warn('SW registration failed:', err));
     }
 
+    // PWA Install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._deferredPrompt = e;
+      this._showInstallButton();
+    });
+
+    window.addEventListener('appinstalled', () => {
+      this._deferredPrompt = null;
+      this._hideInstallButton();
+      if (typeof Toast !== 'undefined') Toast.success('Volt VTC installé !');
+    });
+
     // Check authentication — token in localStorage persists across tabs/refresh
     const token = Auth.getToken();
     if (token) {
@@ -524,6 +537,37 @@ const App = {
     }
     this._showLogin();
     Toast.show('Déconnexion réussie.', 'info');
+  },
+
+  // PWA Install
+  _deferredPrompt: null,
+
+  _showInstallButton() {
+    const headerRight = document.querySelector('.header-right');
+    if (!headerRight || document.getElementById('btn-install-pwa')) return;
+    const btn = document.createElement('button');
+    btn.id = 'btn-install-pwa';
+    btn.className = 'btn btn-primary';
+    btn.title = 'Installer Volt VTC';
+    btn.style.cssText = 'font-size:12px;padding:6px 12px;gap:4px;animation:pulse-dot 2s infinite;';
+    btn.innerHTML = '<iconify-icon icon="solar:download-minimalistic-bold-duotone"></iconify-icon> Installer';
+    btn.addEventListener('click', () => this._installPWA());
+    headerRight.insertBefore(btn, headerRight.firstChild);
+  },
+
+  _hideInstallButton() {
+    const btn = document.getElementById('btn-install-pwa');
+    if (btn) btn.remove();
+  },
+
+  async _installPWA() {
+    if (!this._deferredPrompt) return;
+    this._deferredPrompt.prompt();
+    const { outcome } = await this._deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      this._hideInstallButton();
+    }
+    this._deferredPrompt = null;
   }
 };
 

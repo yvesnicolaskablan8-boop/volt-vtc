@@ -28,6 +28,7 @@ const chauffeurSchema = new mongoose.Schema({
   photo: String,
   documents: [documentSchema],
   redevanceQuotidienne: { type: Number, default: 0 },
+  objectifCA: { type: Number, default: 0 },
   noteInterne: String,
   location: {
     lat: Number,

@@ -284,6 +284,7 @@ const DashboardPage = {
           <span id="live-indicator" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:#22c55e;background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:20px;font-weight:600;">
             <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite;"></span> EN DIRECT
           </span>
+          <button class="btn btn-secondary" onclick="DashboardPage._shareWhatsApp()" title="Partager sur WhatsApp" style="background:#25D366;color:#fff;border-color:#25D366;"><iconify-icon icon="mdi:whatsapp"></iconify-icon></button>
           <button class="btn btn-secondary" onclick="DashboardPage._sendPaymentReminders()" title="Envoyer rappels de paiement"><iconify-icon icon="solar:bell-bold-duotone"></iconify-icon> Rappels</button>
           <button class="btn btn-secondary" onclick="DashboardPage._sendAnnouncement()" title="Envoyer annonce"><iconify-icon icon="solar:letter-bold-duotone"></iconify-icon></button>
           <button class="btn btn-secondary" onclick="DashboardPage.refresh()"><iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser</button>
@@ -334,6 +335,22 @@ const DashboardPage = {
           </div>
         </div>
       </div>
+
+      <!-- Alerte chauffeurs non liés à Yango -->
+      ${(() => {
+        const unlinked = d.chauffeurs.filter(c => c.statut === 'actif' && !c.yangoDriverId);
+        if (unlinked.length === 0) return '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;margin-bottom:var(--space-md);background:rgba(252,76,2,0.1);border:1px solid rgba(252,76,2,0.3);border-radius:var(--radius-md);font-size:var(--font-size-xs);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <iconify-icon icon="solar:link-broken-bold-duotone" style="color:#FC4C02;font-size:16px;"></iconify-icon>
+            <span><strong>${unlinked.length} chauffeur${unlinked.length > 1 ? 's' : ''}</strong> non lié${unlinked.length > 1 ? 's' : ''} à Yango : ${unlinked.map(c => c.prenom).join(', ')}</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;" onclick="DashboardPage._syncYangoDrivers()"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier automatiquement</button>
+            <a href="#/yango" class="btn btn-sm btn-secondary">Yango Fleet</a>
+          </div>
+        </div>`;
+      })()}
 
       <!-- Activité Yango en temps réel -->
       <div class="card" style="margin-bottom:var(--space-lg);">
@@ -483,6 +500,7 @@ const DashboardPage = {
             <tr>
               <th>Chauffeur</th>
               <th style="text-align:right;">CA</th>
+              <th style="text-align:center;">Objectif</th>
               <th style="text-align:right;">Courses</th>
               <th style="text-align:right;">Espèces</th>
               <th style="text-align:right;">Carte</th>
@@ -492,13 +510,24 @@ const DashboardPage = {
             ${rows.map(r => {
               const c = r.chauffeur;
               const s = r.stats;
+              const objectif = c.objectifCA || 0;
+              const ca = s.totalCA || 0;
+              const pct = objectif > 0 ? Math.min(100, Math.round(ca / objectif * 100)) : null;
+              const pctColor = pct >= 100 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
               return `
                 <tr style="cursor:pointer;" onclick="Router.navigate('/chauffeurs/${c.id}')">
                   <td style="display:flex;align-items:center;gap:8px;">
                     ${Utils.getAvatarHtml(c, '', 'width:28px;height:28px;font-size:10px;flex-shrink:0;')}
                     <span style="font-weight:500;">${c.prenom} ${c.nom}</span>
                   </td>
-                  <td style="text-align:right;font-weight:700;color:#FC4C02;">${Utils.formatCurrency(s.totalCA || 0)}</td>
+                  <td style="text-align:right;font-weight:700;color:#FC4C02;">${Utils.formatCurrency(ca)}</td>
+                  <td style="text-align:center;min-width:100px;">${pct !== null ? `
+                    <div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+                      <div style="flex:1;max-width:60px;height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden;">
+                        <div style="width:${pct}%;height:100%;background:${pctColor};border-radius:3px;transition:width 0.3s;"></div>
+                      </div>
+                      <span style="font-size:10px;font-weight:600;color:${pctColor};">${pct}%</span>
+                    </div>` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}</td>
                   <td style="text-align:right;font-weight:600;">${s.nbCourses || 0}</td>
                   <td style="text-align:right;color:#22c55e;">${Utils.formatCurrency(s.totalCash || 0)}</td>
                   <td style="text-align:right;color:#3b82f6;">${Utils.formatCurrency(s.totalCard || 0)}</td>
@@ -1083,6 +1112,44 @@ const DashboardPage = {
         this.render();
       }
     );
+  },
+
+  async _syncYangoDrivers() {
+    Toast.info('Synchronisation Yango en cours...');
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const result = await Store.triggerYangoSync(today);
+      if (result && !result.error) {
+        const matched = result.matched || result.matchedCount || 0;
+        Toast.success(`Sync terminée — ${matched} chauffeur(s) liés`);
+        await Store.initialize();
+        this.render();
+      } else {
+        Toast.error(result?.details || result?.error || 'Erreur de synchronisation');
+      }
+    } catch (e) {
+      Toast.error('Impossible de contacter l\'API Yango');
+    }
+  },
+
+  _shareWhatsApp() {
+    const d = this._lastData || this._getData();
+    const today = new Date().toLocaleDateString('fr-FR');
+    const text = [
+      `📊 *VOLT VTC — Résumé du ${today}*`,
+      '',
+      `💰 CA du mois: ${Utils.formatCurrency(d.caThisMonth)}`,
+      `✅ Versements reçus: ${Utils.formatCurrency(d.totalVerse)}`,
+      `👥 Chauffeurs actifs: ${d.activeCount}/${d.totalChauffeurs}`,
+      `🚗 Véhicules en service: ${d.vehiclesActifs}`,
+      d.retardCount > 0 ? `⚠️ Versements en retard: ${d.retardCount}` : '',
+      d.unpaidItems.length > 0 ? `🔴 Recettes impayées: ${d.unpaidItems.length} (${Utils.formatCurrency(d.totalUnpaid)})` : '',
+      '',
+      '📱 _Envoyé depuis Volt VTC_'
+    ].filter(Boolean).join('\n');
+
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
   },
 
   refresh() {
