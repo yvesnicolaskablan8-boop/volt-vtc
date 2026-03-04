@@ -698,7 +698,7 @@ const ChauffeursPage = {
       { name: 'vehiculeAssigne', label: 'Véhicule assigné', type: 'select', placeholder: 'Sélectionner...', options: vehicules.map(v => ({ value: v.id, label: `${v.marque} ${v.modele} (${v.immatriculation})` })) },
       { type: 'row-start' },
       { name: 'redevanceQuotidienne', label: 'Recette quotidienne (FCFA)', type: 'number', min: 0, step: 500, placeholder: 'Montant journalier à verser', default: 0 },
-      { name: 'objectifCA', label: 'Objectif CA journalier (FCFA)', type: 'number', min: 0, step: 1000, placeholder: 'Ex: 30000', default: 0 },
+      { name: 'objectifCA', label: 'Objectif CA Yango journalier (FCFA)', type: 'number', min: 0, step: 1000, placeholder: 'Ex: 30000', default: 0 },
       { type: 'row-end' },
       { type: 'divider' },
       { type: 'heading', label: 'Liaison Yango' },
