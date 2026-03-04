@@ -16,6 +16,7 @@ const ComptabilitePage = {
   _charts: [],
   _currentTab: 'overview',
   _yangoStats: null,
+  _todayCommission: null,
 
   render() {
     const container = document.getElementById('page-content');
@@ -27,6 +28,7 @@ const ComptabilitePage = {
   destroy() {
     this._charts.forEach(c => c.destroy());
     this._charts = [];
+    this._todayCommission = null;
   },
 
   _template() {
@@ -1008,7 +1010,13 @@ const ComptabilitePage = {
     if (refreshBtn) { refreshBtn.classList.add('spinning'); refreshBtn.disabled = true; }
 
     try {
-      // Read selected dates
+      // Fetch today's real commission once (without custom range)
+      if (this._todayCommission === null) {
+        const todayStats = await Store.getYangoStats(null, null);
+        this._todayCommission = todayStats?.commissionPartenaire?.aujourd_hui || 0;
+      }
+
+      // Read selected dates for period
       const fromInput = document.getElementById('cy-date-from');
       const toInput = document.getElementById('cy-date-to');
       const fromDate = fromInput?.value;
@@ -1032,24 +1040,20 @@ const ComptabilitePage = {
       const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
       const setLabel = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-      // commissionPartenaire = votre vraie commission (partner_ride_fee)
+      // Period commission from selected range
       const commPeriod = stats.commissionPartenaire?.mois || 0;
-      const commToday = stats.commissionPartenaire?.aujourd_hui || 0;
 
       setVal('cy-comm-mois', Utils.formatCurrency(commPeriod));
-      setVal('cy-comm-jour', Utils.formatCurrency(commToday));
+      setVal('cy-comm-jour', Utils.formatCurrency(this._todayCommission));
 
-      // Update labels based on date range
-      const isCustom = dateRange !== null;
-      if (isCustom) {
+      // Update period label based on date range
+      if (dateRange) {
         const from = new Date(fromDate);
         const to = new Date(toDate);
         const label = `${from.toLocaleDateString('fr-FR', {day:'2-digit',month:'short'})} - ${to.toLocaleDateString('fr-FR', {day:'2-digit',month:'short'})}`;
         setLabel('cy-comm-mois-label', `Commission ${label}`);
-        setLabel('cy-comm-jour-label', `Commission aujourd'hui`);
       } else {
         setLabel('cy-comm-mois-label', 'Commission du mois');
-        setLabel('cy-comm-jour-label', `Commission aujourd'hui`);
       }
     } catch (err) {
       console.error('Yango commission load error:', err);
