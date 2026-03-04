@@ -248,7 +248,7 @@ const VersementsPage = {
           { label: 'Période', key: 'periode' },
           { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) },
           { label: 'Versé', key: 'montantVerse', render: (v) => `<strong>${Utils.formatCurrency(v.montantVerse)}</strong>`, primary: true },
-          { label: 'Courses', key: 'nombreCourses', render: (v) => v.nombreCourses > 0 ? `<span style="font-weight:600;">${v.nombreCourses}</span>` : '<span style="color:var(--text-muted);">-</span>' },
+          { label: 'Courses', key: 'nombreCourses', render: (v) => `<span data-yango-courses="${v.id}">${v.nombreCourses > 0 ? `<span style="font-weight:600;">${v.nombreCourses}</span>` : '<iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:12px;color:var(--text-muted);"></iconify-icon>'}</span>` },
           { label: 'Statut', key: 'statut', render: (v) => {
               let html = Utils.statusBadge(v.statut);
               if (v.soumisParChauffeur) {
@@ -275,6 +275,7 @@ const VersementsPage = {
     };
 
     renderTable(versements);
+    this._loadYangoCourses(versements, d.chauffeurs);
 
     // Filters
     const filterChauffeur = document.getElementById('filter-chauffeur');
@@ -285,6 +286,7 @@ const VersementsPage = {
       if (filterChauffeur.value) filtered = filtered.filter(v => v.chauffeurId === filterChauffeur.value);
       if (filterStatut.value) filtered = filtered.filter(v => v.statut === filterStatut.value);
       renderTable(filtered);
+      this._loadYangoCourses(filtered, d.chauffeurs);
     };
 
     filterChauffeur.addEventListener('change', applyFilters);
@@ -292,6 +294,45 @@ const VersementsPage = {
 
     // Add button
     document.getElementById('btn-add-versement').addEventListener('click', () => this._add());
+  },
+
+  async _loadYangoCourses(versements, chauffeurs) {
+    // Regrouper par chauffeur+date pour éviter les appels dupliqués
+    const calls = {};
+    versements.forEach(v => {
+      if (!v.date || !v.chauffeurId) return;
+      const c = chauffeurs.find(x => x.id === v.chauffeurId);
+      if (!c || !c.yangoDriverId) return;
+      const key = `${c.yangoDriverId}_${v.date}`;
+      if (!calls[key]) calls[key] = { yangoId: c.yangoDriverId, date: v.date, versementIds: [] };
+      calls[key].versementIds.push(v.id);
+    });
+
+    // Lancer les appels en parallèle (max 5 simultanés)
+    const entries = Object.values(calls);
+    for (let i = 0; i < entries.length; i += 5) {
+      const batch = entries.slice(i, i + 5);
+      const results = await Promise.allSettled(
+        batch.map(async (entry) => {
+          const stats = await Store.getYangoDriverStats(entry.yangoId, entry.date);
+          return { ...entry, stats };
+        })
+      );
+
+      results.forEach(r => {
+        if (r.status !== 'fulfilled') return;
+        const { versementIds, stats } = r.value;
+        const nb = (stats && !stats.error) ? (stats.nbCourses || 0) : null;
+        versementIds.forEach(id => {
+          const cell = document.querySelector(`[data-yango-courses="${id}"]`);
+          if (cell) {
+            cell.innerHTML = nb !== null && nb > 0
+              ? `<span style="font-weight:600;">${nb}</span>`
+              : `<span style="color:var(--text-muted);">${nb === 0 ? '0' : '-'}</span>`;
+          }
+        });
+      });
+    }
   },
 
   _add() {

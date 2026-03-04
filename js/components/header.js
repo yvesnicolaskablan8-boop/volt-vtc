@@ -6,6 +6,7 @@ const Header = {
 
   init() {
     this._cleanup();
+    this._initRefreshButton();
     this._initThemeToggle();
     this._initNotifications();
     this._initSearch();
@@ -139,6 +140,27 @@ const Header = {
       };
       this._on('logoutClick', logoutBtn, 'click', logoutHandler);
     }
+  },
+
+  _initRefreshButton() {
+    const btn = document.getElementById('btn-refresh-page');
+    if (!btn) return;
+    const handler = async () => {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.style.animation = 'spin 0.8s linear infinite';
+      btn.disabled = true;
+      try {
+        await Store.initialize();
+        Router._handleRoute();
+        if (typeof Toast !== 'undefined') Toast.success('Données actualisées');
+      } catch (e) {
+        console.warn('Refresh failed:', e);
+        if (typeof Toast !== 'undefined') Toast.error('Erreur lors de l\'actualisation');
+      }
+      btn.disabled = false;
+      if (icon) icon.style.animation = '';
+    };
+    this._on('refreshClick', btn, 'click', handler);
   },
 
   _initThemeToggle() {
