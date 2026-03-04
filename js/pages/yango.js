@@ -185,6 +185,23 @@ const YangoPage = {
         </div>
       </div>
 
+      <!-- Activité Volt — Chauffeurs liés -->
+      <div class="card" style="margin-top:var(--space-lg);">
+        <div class="card-header">
+          <span class="card-title" style="display:flex;align-items:center;gap:8px;">
+            <iconify-icon icon="solar:chart-2-bold-duotone" style="color:#FC4C02;"></iconify-icon> Activité Volt — Aujourd'hui
+            <span style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>
+          </span>
+        </div>
+        <div id="yp-volt-activity">
+          <div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:var(--font-size-sm);">
+            <iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:20px;"></iconify-icon>
+            <div style="margin-top:8px;">Chargement...</div>
+          </div>
+        </div>
+      </div>
+      <style>@keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }</style>
+
       <!-- Synchronisation Yango → Volt -->
       <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
         <div class="card-header">
@@ -248,6 +265,7 @@ const YangoPage = {
       this._renderDriversTable(stats.chauffeurs?.liste || []);
       this._renderRecentCourses(stats.courses?.recentes || []);
       this._renderTopDrivers(stats.topChauffeurs || []);
+      this._loadVoltActivity();
 
       // Update sync status badge
       try {
@@ -847,6 +865,134 @@ const YangoPage = {
         ` : ''}
       </div>
     `;
+  },
+
+  // =================== VOLT ACTIVITY (per-chauffeur stats) ===================
+
+  async _loadVoltActivity() {
+    const container = document.getElementById('yp-volt-activity');
+    if (!container) return;
+
+    const chauffeurs = Store.get('chauffeurs');
+    const activeChauffeurs = chauffeurs.filter(c => c.statut === 'actif');
+    const linked = activeChauffeurs.filter(c => c.yangoDriverId);
+    const unlinked = activeChauffeurs.filter(c => !c.yangoDriverId);
+
+    // Render unlinked banner above the table
+    let bannerHtml = '';
+    if (unlinked.length > 0) {
+      bannerHtml = `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;margin-bottom:var(--space-md);background:rgba(252,76,2,0.1);border:1px solid rgba(252,76,2,0.3);border-radius:var(--radius-md);font-size:var(--font-size-xs);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <iconify-icon icon="solar:link-broken-bold-duotone" style="color:#FC4C02;font-size:16px;"></iconify-icon>
+          <span><strong>${unlinked.length} chauffeur${unlinked.length > 1 ? 's' : ''}</strong> non lié${unlinked.length > 1 ? 's' : ''} à Yango : ${unlinked.map(c => c.prenom).join(', ')}</span>
+        </div>
+        <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;" onclick="YangoPage._syncVoltYango()"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier automatiquement</button>
+      </div>`;
+    }
+
+    if (linked.length === 0) {
+      container.innerHTML = bannerHtml + '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-sm);">Aucun chauffeur Volt avec ID Yango configuré</div>';
+      return;
+    }
+
+    // Fetch stats en parallèle
+    const results = await Promise.allSettled(
+      linked.map(async (c) => {
+        const stats = await Store.getYangoDriverStats(c.yangoDriverId, null);
+        return { chauffeur: c, stats };
+      })
+    );
+
+    const rows = results
+      .filter(r => r.status === 'fulfilled' && r.value.stats && !r.value.stats.error)
+      .map(r => r.value)
+      .sort((a, b) => (b.stats.totalCA || 0) - (a.stats.totalCA || 0));
+
+    const errCount = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.stats && r.value.stats.error)).length;
+
+    if (rows.length === 0) {
+      container.innerHTML = bannerHtml + `<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-sm);">
+        <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:var(--warning);"></iconify-icon> Impossible de charger les données
+      </div>`;
+      return;
+    }
+
+    const totalCA = rows.reduce((s, r) => s + (r.stats.totalCA || 0), 0);
+    const totalCourses = rows.reduce((s, r) => s + (r.stats.nbCourses || 0), 0);
+
+    container.innerHTML = `
+      ${bannerHtml}
+      <div style="display:flex;gap:var(--space-lg);margin-bottom:var(--space-md);padding:0 var(--space-sm);">
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
+          Total flotte Volt : <strong style="color:#FC4C02;font-size:var(--font-size-sm);">${Utils.formatCurrency(totalCA)}</strong>
+        </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
+          Courses : <strong style="color:var(--text-primary);font-size:var(--font-size-sm);">${totalCourses}</strong>
+        </div>
+        ${errCount > 0 ? `<div style="font-size:var(--font-size-xs);color:var(--warning);">${errCount} chauffeur(s) non chargé(s)</div>` : ''}
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" style="margin:0;">
+          <thead>
+            <tr>
+              <th>Chauffeur</th>
+              <th style="text-align:right;">CA</th>
+              <th style="text-align:center;">Objectif</th>
+              <th style="text-align:right;">Courses</th>
+              <th style="text-align:right;">Espèces</th>
+              <th style="text-align:right;">Carte</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => {
+              const c = r.chauffeur;
+              const s = r.stats;
+              const objectif = c.objectifCA || 0;
+              const ca = s.totalCA || 0;
+              const pct = objectif > 0 ? Math.min(100, Math.round(ca / objectif * 100)) : null;
+              const pctColor = pct >= 100 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
+              return `
+                <tr style="cursor:pointer;" onclick="Router.navigate('/chauffeurs/${c.id}')">
+                  <td style="display:flex;align-items:center;gap:8px;">
+                    ${typeof Utils !== 'undefined' && Utils.getAvatarHtml ? Utils.getAvatarHtml(c, '', 'width:28px;height:28px;font-size:10px;flex-shrink:0;') : `<div class="avatar-sm">${(c.prenom[0] + c.nom[0]).toUpperCase()}</div>`}
+                    <span style="font-weight:500;">${c.prenom} ${c.nom}</span>
+                  </td>
+                  <td style="text-align:right;font-weight:700;color:#FC4C02;">${Utils.formatCurrency(ca)}</td>
+                  <td style="text-align:center;min-width:100px;">${pct !== null ? `
+                    <div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+                      <div style="flex:1;max-width:60px;height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden;">
+                        <div style="width:${pct}%;height:100%;background:${pctColor};border-radius:3px;transition:width 0.3s;"></div>
+                      </div>
+                      <span style="font-size:10px;font-weight:600;color:${pctColor};">${pct}%</span>
+                    </div>` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}</td>
+                  <td style="text-align:right;font-weight:600;">${s.nbCourses || 0}</td>
+                  <td style="text-align:right;color:#22c55e;">${Utils.formatCurrency(s.totalCash || 0)}</td>
+                  <td style="text-align:right;color:#3b82f6;">${Utils.formatCurrency(s.totalCard || 0)}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  },
+
+  async _syncVoltYango() {
+    Toast.info('Synchronisation Yango en cours...');
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const result = await Store.triggerYangoSync(today);
+      if (result && !result.error) {
+        const matched = result.matched || result.matchedCount || 0;
+        Toast.success(`Sync terminée — ${matched} chauffeur(s) liés`);
+        await Store.initialize();
+        this._loadVoltActivity();
+      } else {
+        Toast.error(result?.details || result?.error || 'Erreur de synchronisation');
+      }
+    } catch (e) {
+      Toast.error('Impossible de contacter l\'API Yango');
+    }
   },
 
   // =================== ERROR ===================

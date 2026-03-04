@@ -12,7 +12,6 @@ const DashboardPage = {
     this._lastData = data;
     container.innerHTML = this._template(data);
     this._loadCharts(data);
-    this._loadYangoActivity(data);
     this._startAutoRefresh();
   },
 
@@ -49,7 +48,6 @@ const DashboardPage = {
     this._lastData = data;
     container.innerHTML = this._template(data);
     this._loadCharts(data);
-    this._loadYangoActivity(data);
     this._startAutoRefresh();
   },
 
@@ -336,38 +334,6 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Alerte chauffeurs non liés à Yango -->
-      ${(() => {
-        const unlinked = d.chauffeurs.filter(c => c.statut === 'actif' && !c.yangoDriverId);
-        if (unlinked.length === 0) return '';
-        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;margin-bottom:var(--space-md);background:rgba(252,76,2,0.1);border:1px solid rgba(252,76,2,0.3);border-radius:var(--radius-md);font-size:var(--font-size-xs);">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <iconify-icon icon="solar:link-broken-bold-duotone" style="color:#FC4C02;font-size:16px;"></iconify-icon>
-            <span><strong>${unlinked.length} chauffeur${unlinked.length > 1 ? 's' : ''}</strong> non lié${unlinked.length > 1 ? 's' : ''} à Yango : ${unlinked.map(c => c.prenom).join(', ')}</span>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;" onclick="DashboardPage._syncYangoDrivers()"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier automatiquement</button>
-            <a href="#/yango" class="btn btn-sm btn-secondary">Yango Fleet</a>
-          </div>
-        </div>`;
-      })()}
-
-      <!-- Activité Yango en temps réel -->
-      <div class="card" style="margin-bottom:var(--space-lg);">
-        <div class="card-header">
-          <span class="card-title" style="display:flex;align-items:center;gap:8px;">
-            <iconify-icon icon="solar:chart-2-bold-duotone" style="color:#FC4C02;"></iconify-icon> Activité Yango — Aujourd'hui
-            <span style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>
-          </span>
-        </div>
-        <div id="yango-activity-container">
-          <div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:var(--font-size-sm);">
-            <iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:20px;"></iconify-icon>
-            <div style="margin-top:8px;">Chargement des données Yango...</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Maintenance Alerts -->
       ${this._renderMaintenanceAlerts(d)}
 
@@ -442,100 +408,6 @@ const DashboardPage = {
             }).join('')}
           </div>
         </div>
-      </div>
-    `;
-  },
-
-  // =================== YANGO ACTIVITY ===================
-
-  async _loadYangoActivity(d) {
-    const container = document.getElementById('yango-activity-container');
-    if (!container) return;
-
-    const activeChauffeurs = d.chauffeurs.filter(c => c.statut === 'actif' && c.yangoDriverId);
-    if (activeChauffeurs.length === 0) {
-      container.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-sm);">Aucun chauffeur avec ID Yango configuré</div>';
-      return;
-    }
-
-    // Fetch en parallèle pour tous les chauffeurs actifs
-    const results = await Promise.allSettled(
-      activeChauffeurs.map(async (c) => {
-        const stats = await Store.getYangoDriverStats(c.yangoDriverId, null); // null = aujourd'hui
-        return { chauffeur: c, stats };
-      })
-    );
-
-    // Construire les données
-    const rows = results
-      .filter(r => r.status === 'fulfilled' && r.value.stats && !r.value.stats.error)
-      .map(r => r.value)
-      .sort((a, b) => (b.stats.totalCA || 0) - (a.stats.totalCA || 0));
-
-    const errCount = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.stats && r.value.stats.error)).length;
-
-    if (rows.length === 0) {
-      container.innerHTML = `<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-sm);">
-        <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:var(--warning);"></iconify-icon> Impossible de charger les données Yango
-      </div>`;
-      return;
-    }
-
-    const totalCA = rows.reduce((s, r) => s + (r.stats.totalCA || 0), 0);
-    const totalCourses = rows.reduce((s, r) => s + (r.stats.nbCourses || 0), 0);
-
-    container.innerHTML = `
-      <div style="display:flex;gap:var(--space-lg);margin-bottom:var(--space-md);padding:0 var(--space-sm);">
-        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
-          Total flotte : <strong style="color:#FC4C02;font-size:var(--font-size-sm);">${Utils.formatCurrency(totalCA)}</strong>
-        </div>
-        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
-          Courses : <strong style="color:var(--text-primary);font-size:var(--font-size-sm);">${totalCourses}</strong>
-        </div>
-        ${errCount > 0 ? `<div style="font-size:var(--font-size-xs);color:var(--warning);">${errCount} chauffeur(s) non chargé(s)</div>` : ''}
-      </div>
-      <div style="overflow-x:auto;">
-        <table class="data-table" style="margin:0;">
-          <thead>
-            <tr>
-              <th>Chauffeur</th>
-              <th style="text-align:right;">CA</th>
-              <th style="text-align:center;">Objectif</th>
-              <th style="text-align:right;">Courses</th>
-              <th style="text-align:right;">Espèces</th>
-              <th style="text-align:right;">Carte</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(r => {
-              const c = r.chauffeur;
-              const s = r.stats;
-              const objectif = c.objectifCA || 0;
-              const ca = s.totalCA || 0;
-              const pct = objectif > 0 ? Math.min(100, Math.round(ca / objectif * 100)) : null;
-              const pctColor = pct >= 100 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
-              return `
-                <tr style="cursor:pointer;" onclick="Router.navigate('/chauffeurs/${c.id}')">
-                  <td style="display:flex;align-items:center;gap:8px;">
-                    ${Utils.getAvatarHtml(c, '', 'width:28px;height:28px;font-size:10px;flex-shrink:0;')}
-                    <span style="font-weight:500;">${c.prenom} ${c.nom}</span>
-                  </td>
-                  <td style="text-align:right;font-weight:700;color:#FC4C02;">${Utils.formatCurrency(ca)}</td>
-                  <td style="text-align:center;min-width:100px;">${pct !== null ? `
-                    <div style="display:flex;align-items:center;gap:4px;justify-content:center;">
-                      <div style="flex:1;max-width:60px;height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden;">
-                        <div style="width:${pct}%;height:100%;background:${pctColor};border-radius:3px;transition:width 0.3s;"></div>
-                      </div>
-                      <span style="font-size:10px;font-weight:600;color:${pctColor};">${pct}%</span>
-                    </div>` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}</td>
-                  <td style="text-align:right;font-weight:600;">${s.nbCourses || 0}</td>
-                  <td style="text-align:right;color:#22c55e;">${Utils.formatCurrency(s.totalCash || 0)}</td>
-                  <td style="text-align:right;color:#3b82f6;">${Utils.formatCurrency(s.totalCard || 0)}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
       </div>
     `;
   },
@@ -1112,24 +984,6 @@ const DashboardPage = {
         this.render();
       }
     );
-  },
-
-  async _syncYangoDrivers() {
-    Toast.info('Synchronisation Yango en cours...');
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const result = await Store.triggerYangoSync(today);
-      if (result && !result.error) {
-        const matched = result.matched || result.matchedCount || 0;
-        Toast.success(`Sync terminée — ${matched} chauffeur(s) liés`);
-        await Store.initialize();
-        this.render();
-      } else {
-        Toast.error(result?.details || result?.error || 'Erreur de synchronisation');
-      }
-    } catch (e) {
-      Toast.error('Impossible de contacter l\'API Yango');
-    }
   },
 
   _shareWhatsApp() {
