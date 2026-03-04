@@ -71,9 +71,8 @@ const ChauffeursPage = {
         {
           label: 'Chauffeur', key: 'nom', primary: true,
           render: (c) => {
-            const color = Utils.getAvatarColor(c.id);
             return `<div class="flex items-center gap-sm">
-              <div class="avatar avatar-sm" style="background:${color}">${Utils.getInitials(c.prenom, c.nom)}</div>
+              ${Utils.getAvatarHtml(c, 'avatar-sm')}
               <div><div style="font-weight:500">${c.prenom} ${c.nom}</div><div style="font-size:11px;color:var(--text-muted)">${c.email}</div></div>
             </div>`;
           },
@@ -135,8 +134,18 @@ const ChauffeursPage = {
         </div>
       </div>
 
+      <style>.driver-photo-upload:hover .photo-overlay{opacity:1!important;}</style>
       <div class="detail-header">
-        <div class="avatar avatar-xl" style="background:${color}">${Utils.getInitials(c.prenom, c.nom)}</div>
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div class="driver-photo-upload" id="photo-upload-zone" style="position:relative;cursor:pointer;" title="Cliquer pour changer la photo">
+            ${Utils.getAvatarHtml(c, 'avatar-xl')}
+            <div class="photo-overlay" style="position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;">
+              <iconify-icon icon="solar:camera-bold-duotone" style="color:#fff;font-size:24px;"></iconify-icon>
+            </div>
+            <input type="file" id="photo-file-input" accept="image/*" style="display:none">
+          </div>
+          ${c.photo ? '<button class="btn btn-sm btn-danger" id="btn-delete-photo" style="margin-top:8px;font-size:11px;"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer photo</button>' : ''}
+        </div>
         <div class="detail-info">
           <h2>${c.prenom} ${c.nom} ${Utils.statusBadge(c.statut)}</h2>
           <p>${c.email} &bull; ${c.telephone}</p>
@@ -406,6 +415,21 @@ const ChauffeursPage = {
   },
 
   _bindDetailEvents(chauffeur) {
+    // Photo upload events
+    const uploadZone = document.getElementById('photo-upload-zone');
+    const fileInput = document.getElementById('photo-file-input');
+    if (uploadZone && fileInput) {
+      uploadZone.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => this._handlePhotoUpload(chauffeur.id));
+    }
+    const deletePhotoBtn = document.getElementById('btn-delete-photo');
+    if (deletePhotoBtn) {
+      deletePhotoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._deletePhoto(chauffeur.id);
+      });
+    }
+
     if (chauffeur && chauffeur.yangoDriverId) {
       // Load Yango CA on page load
       this._loadYangoCA(chauffeur.id);
@@ -479,6 +503,55 @@ const ChauffeursPage = {
         <span>Maj: ${new Date(stats.derniereMaj).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}</span>
       </div>
     `;
+  },
+
+  // ======== PHOTO UPLOAD ========
+
+  _handlePhotoUpload(chauffeurId) {
+    const fileInput = document.getElementById('photo-file-input');
+    if (!fileInput || !fileInput.files[0]) return;
+
+    const file = fileInput.files[0];
+    if (!file.type.startsWith('image/')) {
+      Toast.error('Veuillez sélectionner une image');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 200;
+        let w = img.width, h = img.height;
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const base64 = canvas.toDataURL('image/jpeg', 0.7);
+
+        Store.update('chauffeurs', chauffeurId, { photo: base64 });
+        Toast.success('Photo mise à jour');
+        this.renderDetail(chauffeurId);
+      };
+      img.onerror = () => Toast.error('Image invalide');
+      img.src = e.target.result;
+    };
+    reader.onerror = () => Toast.error('Erreur de lecture du fichier');
+    reader.readAsDataURL(file);
+  },
+
+  _deletePhoto(chauffeurId) {
+    Modal.confirm(
+      'Supprimer la photo',
+      'Voulez-vous supprimer la photo de ce chauffeur ?',
+      () => {
+        Store.update('chauffeurs', chauffeurId, { photo: null });
+        Toast.success('Photo supprimée');
+        this.renderDetail(chauffeurId);
+      }
+    );
   },
 
   // CRUD operations

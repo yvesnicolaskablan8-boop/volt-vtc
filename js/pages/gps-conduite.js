@@ -109,7 +109,7 @@ const GpsConduitePage = {
                  data-driver="${c.id}"
                  style="cursor:pointer;transition:all 0.2s;${this._selectedDriver === c.id ? 'border-color:var(--volt-blue);box-shadow:var(--shadow-glow);' : ''}">
               <div style="display:flex;align-items:center;gap:12px;">
-                <div class="avatar" style="background:${Utils.getAvatarColor(c.id)}">${Utils.getInitials(c.prenom, c.nom)}</div>
+                ${Utils.getAvatarHtml(c)}
                 <div style="flex:1;">
                   <div style="font-weight:600;font-size:var(--font-size-sm);">${c.prenom} ${c.nom}</div>
                   <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
@@ -301,7 +301,7 @@ const GpsConduitePage = {
     const analysisContainer = document.getElementById('driver-analysis');
     analysisContainer.innerHTML = `
       <h2 style="margin-bottom:var(--space-lg);display:flex;align-items:center;gap:var(--space-sm);">
-        <div class="avatar" style="background:${Utils.getAvatarColor(driverId)}">${Utils.getInitials(chauffeur.prenom, chauffeur.nom)}</div>
+        ${Utils.getAvatarHtml(chauffeur)}
         Analyse - ${chauffeur.prenom} ${chauffeur.nom}
       </h2>
 

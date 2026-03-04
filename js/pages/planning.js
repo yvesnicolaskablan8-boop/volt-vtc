@@ -306,7 +306,7 @@ const PlanningPage = {
               <tr style="border-bottom:1px solid var(--border-color);">
                 <td style="padding:10px 16px;position:sticky;left:0;background:var(--bg-secondary);z-index:1;">
                   <div style="display:flex;align-items:center;gap:8px;">
-                    <div style="width:32px;height:32px;border-radius:50%;background:${Utils.getAvatarColor(ch.id)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0;">${Utils.getInitials(ch.prenom, ch.nom)}</div>
+                    ${Utils.getAvatarHtml(ch, '', 'width:32px;height:32px;font-size:11px;flex-shrink:0;')}
                     <div>
                       <div style="font-size:var(--font-size-sm);font-weight:500;">${ch.prenom} ${ch.nom}</div>
                       <div style="font-size:10px;color:var(--text-muted);">${ch.vehiculeAssigne || 'Pas de véhicule'}</div>
@@ -398,7 +398,7 @@ const PlanningPage = {
               <tr style="border-bottom:1px solid var(--border-color);">
                 <td style="padding:6px 12px;position:sticky;left:0;background:var(--bg-secondary);z-index:1;">
                   <div style="display:flex;align-items:center;gap:6px;">
-                    <div style="width:24px;height:24px;border-radius:50%;background:${Utils.getAvatarColor(ch.id)};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#fff;">${Utils.getInitials(ch.prenom, ch.nom)}</div>
+                    ${Utils.getAvatarHtml(ch, '', 'width:24px;height:24px;font-size:9px;')}
                     <span style="font-size:var(--font-size-xs);font-weight:500;">${ch.prenom} ${ch.nom.charAt(0)}.</span>
                   </div>
                 </td>
@@ -529,7 +529,7 @@ const PlanningPage = {
                 <tr style="border-bottom:1px solid var(--border-color);">
                   <td style="padding:10px 12px;">
                     <div style="display:flex;align-items:center;gap:8px;">
-                      <div style="width:28px;height:28px;border-radius:50%;background:${Utils.getAvatarColor(st.chauffeur.id)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;">${Utils.getInitials(st.chauffeur.prenom, st.chauffeur.nom)}</div>
+                      ${Utils.getAvatarHtml(st.chauffeur, '', 'width:28px;height:28px;font-size:10px;')}
                       <span style="font-size:var(--font-size-sm);font-weight:500;">${st.chauffeur.prenom} ${st.chauffeur.nom}</span>
                     </div>
                   </td>

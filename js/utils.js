@@ -105,6 +105,17 @@ const Utils = {
     return `<span class="badge ${c.class}"><iconify-icon icon="${c.icon}" style="font-size:6px"></iconify-icon> ${c.label}</span>`;
   },
 
+  // Photo-aware avatar HTML (returns <img> if photo exists, else colored initials circle)
+  getAvatarHtml(chauffeur, sizeClass = '', style = '') {
+    const initials = Utils.getInitials(chauffeur.prenom, chauffeur.nom);
+    const color = Utils.getAvatarColor(chauffeur.id);
+    const cls = `avatar${sizeClass ? ' ' + sizeClass : ''}`;
+    if (chauffeur.photo) {
+      return `<img src="${chauffeur.photo}" alt="${initials}" class="${cls}" style="object-fit:cover;${style}">`;
+    }
+    return `<div class="${cls}" style="background:${color};${style}">${initials}</div>`;
+  },
+
   // Score class based on value
   scoreClass(score) {
     if (score >= 85) return 'score-excellent';
