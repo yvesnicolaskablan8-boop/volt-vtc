@@ -261,6 +261,15 @@ const DashboardPage = {
       depensesByType[d.typeDepense] = (depensesByType[d.typeDepense] || 0) + d.montant;
     });
 
+    // Alertes count (reuse AlertesPage generator if available)
+    let alertesTotal = 0, alertesCritiques = 0, alertesUrgentes = 0;
+    try {
+      const allAlerts = typeof AlertesPage !== 'undefined' ? AlertesPage._generateAllAlerts() : [];
+      alertesTotal = allAlerts.length;
+      alertesCritiques = allAlerts.filter(a => a.niveau === 'critique').length;
+      alertesUrgentes = allAlerts.filter(a => a.niveau === 'urgent').length;
+    } catch (e) { /* AlertesPage not loaded yet */ }
+
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount,
@@ -270,7 +279,8 @@ const DashboardPage = {
       coursesByType, typeLabels, vehicleProfit,
       recentVersements, chauffeurs, vehiculesTotal: vehicules.length,
       maintenanceAlerts, unpaidItems, totalUnpaid, totalPenalites,
-      depenses, monthDepenses, totalDepensesMois, depensesByType, vehicules
+      depenses, monthDepenses, totalDepensesMois, depensesByType, vehicules,
+      alertesTotal, alertesCritiques, alertesUrgentes
     };
   },
 
@@ -322,16 +332,14 @@ const DashboardPage = {
             ${d.inactifsCount > 0 ? `<span style="margin:0 2px">&bull;</span><iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--danger);font-size:6px"></iconify-icon> ${d.inactifsCount} inact.` : ''}
           </div>
         </div>
-        <div class="kpi-card yellow">
-          <div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.vehiclesActifs}</div>
-          <div class="kpi-label">Vehicules en service</div>
-          <div class="kpi-trend neutral">
-            <iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--volt-yellow)"></iconify-icon> ${d.vehiclesEV} EV
-            <span style="margin:0 2px">&bull;</span>
-            <iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon> ${d.vehiclesThermique} therm.
+        <a href="#/alertes" class="kpi-card ${d.alertesCritiques > 0 ? 'red' : d.alertesTotal > 0 ? 'yellow' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
+          <div class="kpi-icon"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${d.alertesTotal}</div>
+          <div class="kpi-label">Alertes actives</div>
+          <div class="kpi-trend ${d.alertesCritiques > 0 ? 'down' : d.alertesTotal === 0 ? 'up' : ''}">
+            ${d.alertesCritiques > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone" style="color:var(--danger)"></iconify-icon> ${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}` : d.alertesTotal === 0 ? '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tout est en ordre' : `<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.alertesUrgentes} urgente${d.alertesUrgentes > 1 ? 's' : ''}`}
           </div>
-        </div>
+        </a>
       </div>
 
       <!-- Maintenance Alerts -->
