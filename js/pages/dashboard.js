@@ -12,6 +12,7 @@ const DashboardPage = {
     this._lastData = data;
     container.innerHTML = this._template(data);
     this._loadCharts(data);
+    this._loadYangoActivity(data);
     this._startAutoRefresh();
   },
 
@@ -48,6 +49,7 @@ const DashboardPage = {
     this._lastData = data;
     container.innerHTML = this._template(data);
     this._loadCharts(data);
+    this._loadYangoActivity(data);
     this._startAutoRefresh();
   },
 
@@ -333,6 +335,22 @@ const DashboardPage = {
         </div>
       </div>
 
+      <!-- Activité Yango en temps réel -->
+      <div class="card" style="margin-bottom:var(--space-lg);">
+        <div class="card-header">
+          <span class="card-title" style="display:flex;align-items:center;gap:8px;">
+            <iconify-icon icon="solar:chart-2-bold-duotone" style="color:#FC4C02;"></iconify-icon> Activité Yango — Aujourd'hui
+            <span style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>
+          </span>
+        </div>
+        <div id="yango-activity-container">
+          <div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:var(--font-size-sm);">
+            <iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:20px;"></iconify-icon>
+            <div style="margin-top:8px;">Chargement des données Yango...</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Maintenance Alerts -->
       ${this._renderMaintenanceAlerts(d)}
 
@@ -407,6 +425,88 @@ const DashboardPage = {
             }).join('')}
           </div>
         </div>
+      </div>
+    `;
+  },
+
+  // =================== YANGO ACTIVITY ===================
+
+  async _loadYangoActivity(d) {
+    const container = document.getElementById('yango-activity-container');
+    if (!container) return;
+
+    const activeChauffeurs = d.chauffeurs.filter(c => c.statut === 'actif' && c.yangoDriverId);
+    if (activeChauffeurs.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-sm);">Aucun chauffeur avec ID Yango configuré</div>';
+      return;
+    }
+
+    // Fetch en parallèle pour tous les chauffeurs actifs
+    const results = await Promise.allSettled(
+      activeChauffeurs.map(async (c) => {
+        const stats = await Store.getYangoDriverStats(c.yangoDriverId, null); // null = aujourd'hui
+        return { chauffeur: c, stats };
+      })
+    );
+
+    // Construire les données
+    const rows = results
+      .filter(r => r.status === 'fulfilled' && r.value.stats && !r.value.stats.error)
+      .map(r => r.value)
+      .sort((a, b) => (b.stats.totalCA || 0) - (a.stats.totalCA || 0));
+
+    const errCount = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.stats && r.value.stats.error)).length;
+
+    if (rows.length === 0) {
+      container.innerHTML = `<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-sm);">
+        <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:var(--warning);"></iconify-icon> Impossible de charger les données Yango
+      </div>`;
+      return;
+    }
+
+    const totalCA = rows.reduce((s, r) => s + (r.stats.totalCA || 0), 0);
+    const totalCourses = rows.reduce((s, r) => s + (r.stats.nbCourses || 0), 0);
+
+    container.innerHTML = `
+      <div style="display:flex;gap:var(--space-lg);margin-bottom:var(--space-md);padding:0 var(--space-sm);">
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
+          Total flotte : <strong style="color:#FC4C02;font-size:var(--font-size-sm);">${Utils.formatCurrency(totalCA)}</strong>
+        </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
+          Courses : <strong style="color:var(--text-primary);font-size:var(--font-size-sm);">${totalCourses}</strong>
+        </div>
+        ${errCount > 0 ? `<div style="font-size:var(--font-size-xs);color:var(--warning);">${errCount} chauffeur(s) non chargé(s)</div>` : ''}
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" style="margin:0;">
+          <thead>
+            <tr>
+              <th>Chauffeur</th>
+              <th style="text-align:right;">CA</th>
+              <th style="text-align:right;">Courses</th>
+              <th style="text-align:right;">Espèces</th>
+              <th style="text-align:right;">Carte</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => {
+              const c = r.chauffeur;
+              const s = r.stats;
+              return `
+                <tr style="cursor:pointer;" onclick="Router.navigate('/chauffeurs/${c.id}')">
+                  <td style="display:flex;align-items:center;gap:8px;">
+                    ${Utils.getAvatarHtml(c, '', 'width:28px;height:28px;font-size:10px;flex-shrink:0;')}
+                    <span style="font-weight:500;">${c.prenom} ${c.nom}</span>
+                  </td>
+                  <td style="text-align:right;font-weight:700;color:#FC4C02;">${Utils.formatCurrency(s.totalCA || 0)}</td>
+                  <td style="text-align:right;font-weight:600;">${s.nbCourses || 0}</td>
+                  <td style="text-align:right;color:#22c55e;">${Utils.formatCurrency(s.totalCash || 0)}</td>
+                  <td style="text-align:right;color:#3b82f6;">${Utils.formatCurrency(s.totalCard || 0)}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
       </div>
     `;
   },
