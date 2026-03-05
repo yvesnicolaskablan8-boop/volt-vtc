@@ -5,6 +5,7 @@
 const ChauffeursPage = {
   _charts: [],
   _table: null,
+  _detailChart: null,
 
   render() {
     const container = document.getElementById('page-content');
@@ -23,11 +24,18 @@ const ChauffeursPage = {
     container.innerHTML = this._detailTemplate(chauffeur);
     this._loadDetailCharts(chauffeur);
     this._bindDetailEvents(chauffeur);
+    setTimeout(() => {
+      this._loadVersementsChart(chauffeur.id);
+    }, 100);
   },
 
   destroy() {
     this._charts.forEach(c => c.destroy());
     this._charts = [];
+    if (this._detailChart) {
+      this._detailChart.destroy();
+      this._detailChart = null;
+    }
     if (this._yangoRefreshInterval) {
       clearInterval(this._yangoRefreshInterval);
       this._yangoRefreshInterval = null;
@@ -185,6 +193,49 @@ const ChauffeursPage = {
           </div>
         </div>
 
+        <!-- Documents & Expirations -->
+        <div class="card">
+          <div class="card-header"><span class="card-title"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> Documents</span></div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            ${(() => {
+              const docItems = [
+                { label: 'Permis de conduire', date: c.dateExpirationPermis },
+                { label: 'Carte VTC', date: c.dateExpirationVTC },
+                { label: 'Visite médicale', date: c.dateExpirationVisite }
+              ];
+              const now = new Date();
+              return docItems.map(item => {
+                if (!item.date) {
+                  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">' +
+                    '<div style="font-size:var(--font-size-sm);font-weight:500;">' + item.label + '</div>' +
+                    '<span class="badge" style="background:var(--bg-tertiary);color:var(--text-muted);">Non renseigné</span>' +
+                  '</div>';
+                }
+                const expDate = new Date(item.date);
+                const daysUntil = Math.ceil((expDate - now) / 86400000);
+                let badgeStyle, badgeText;
+                if (daysUntil < 0) {
+                  badgeStyle = 'background:var(--danger);color:#fff;';
+                  badgeText = 'Expiré depuis ' + Math.abs(daysUntil) + 'j';
+                } else if (daysUntil <= 30) {
+                  badgeStyle = 'background:var(--warning);color:#fff;';
+                  badgeText = 'Expire dans ' + daysUntil + 'j';
+                } else {
+                  badgeStyle = 'background:var(--success);color:#fff;';
+                  badgeText = 'Valide';
+                }
+                return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">' +
+                  '<div>' +
+                    '<div style="font-size:var(--font-size-sm);font-weight:500;">' + item.label + '</div>' +
+                    '<div style="font-size:var(--font-size-xs);color:var(--text-muted);">Expire le ' + Utils.formatDate(item.date) + '</div>' +
+                  '</div>' +
+                  '<span class="badge" style="' + badgeStyle + '">' + badgeText + '</span>' +
+                '</div>';
+              }).join('');
+            })()}
+          </div>
+        </div>
+
         <!-- Liaison Yango -->
         <div class="card">
           <div class="card-header">
@@ -282,6 +333,16 @@ const ChauffeursPage = {
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-driver-payments"></canvas>
           </div>
+        </div>
+      </div>
+
+      <!-- Historique versements -->
+      <div class="card" style="margin-top:var(--space-md);">
+        <div class="card-header">
+          <span class="card-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Historique des versements</span>
+        </div>
+        <div style="height:250px;">
+          <canvas id="chart-versements-history"></canvas>
         </div>
       </div>
 
@@ -426,6 +487,74 @@ const ChauffeursPage = {
       ],
       data: recentCourses,
       pageSize: 10
+    });
+  },
+
+  _loadVersementsChart(chauffeurId) {
+    const ctx = document.getElementById('chart-versements-history');
+    if (!ctx) return;
+
+    const versements = Store.get('versements').filter(v => v.chauffeurId === chauffeurId && v.statut !== 'supprime');
+    const now = new Date();
+    const labels = [];
+    const dataVerse = [];
+    const dataAttendu = [];
+
+    const ch = Store.findById('chauffeurs', chauffeurId);
+    const redevance = ch ? (ch.redevanceQuotidienne || 0) : 0;
+
+    for (let i = 11; i >= 0; i--) {
+      const m = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthNum = m.getMonth();
+      const yearNum = m.getFullYear();
+
+      labels.push(Utils.getMonthShort(monthNum));
+
+      const monthVers = versements.filter(v => {
+        const d = new Date(v.date);
+        return d.getMonth() === monthNum && d.getFullYear() === yearNum;
+      });
+
+      dataVerse.push(monthVers.reduce((s, v) => s + v.montantVerse, 0));
+
+      // Planning days for this chauffeur this month
+      const planning = Store.get('planning') || [];
+      const planDays = planning.filter(p => {
+        const d = new Date(p.date);
+        return p.chauffeurId === chauffeurId && d.getMonth() === monthNum && d.getFullYear() === yearNum;
+      });
+      const uniqueDays = new Set(planDays.map(p => p.date)).size;
+      dataAttendu.push(uniqueDays * redevance);
+    }
+
+    if (this._detailChart) this._detailChart.destroy();
+    this._detailChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Versé',
+            data: dataVerse,
+            backgroundColor: 'rgba(34, 197, 94, 0.7)',
+            borderRadius: 4
+          },
+          {
+            label: 'Attendu',
+            data: dataAttendu,
+            backgroundColor: 'rgba(59, 130, 246, 0.3)',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: v => Utils.formatCurrency(v) } }
+        }
+      }
     });
   },
 
@@ -686,6 +815,7 @@ const ChauffeursPage = {
       { name: 'dateNaissance', label: 'Date de naissance', type: 'date' },
       { name: 'numeroPermis', label: 'N° Permis', type: 'text' },
       { type: 'row-end' },
+      { name: 'dateExpirationPermis', label: 'Expiration permis', type: 'date' },
       { name: 'adresse', label: 'Adresse', type: 'text' },
       { type: 'row-start' },
       { name: 'dateDebutContrat', label: 'Début contrat', type: 'date', required: true },
@@ -695,7 +825,14 @@ const ChauffeursPage = {
         { value: 'suspendu', label: 'Suspendu' }
       ]},
       { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'dateExpirationVTC', label: 'Expiration carte VTC', type: 'date' },
+      { name: 'dateExpirationVisite', label: 'Prochaine visite médicale', type: 'date' },
+      { type: 'row-end' },
+      { type: 'row-start' },
       { name: 'vehiculeAssigne', label: 'Véhicule assigné', type: 'select', placeholder: 'Sélectionner...', options: vehicules.map(v => ({ value: v.id, label: `${v.marque} ${v.modele} (${v.immatriculation})` })) },
+      { name: 'parcId', label: 'Parc', type: 'select', placeholder: 'Aucun parc', options: (Store.get('parcs') || []).map(p => ({ value: p.id, label: p.nom })) },
+      { type: 'row-end' },
       { type: 'row-start' },
       { name: 'redevanceQuotidienne', label: 'Recette quotidienne (FCFA)', type: 'number', min: 0, step: 500, placeholder: 'Montant journalier à verser', default: 0 },
       { name: 'objectifCA', label: 'Objectif CA Yango journalier (FCFA)', type: 'number', min: 0, step: 1000, placeholder: 'Ex: 30000', default: 0 },

@@ -63,6 +63,116 @@ const ThemeManager = {
 };
 
 /**
+ * NotificationManager - Browser push notifications for reminders
+ */
+const NotificationManager = {
+  _permission: 'default',
+
+  async init() {
+    if (!('Notification' in window)) return;
+    this._permission = Notification.permission;
+
+    // Check for unpaid reminders every hour
+    setInterval(() => this._checkReminders(), 3600000);
+    // Initial check after 5 seconds
+    setTimeout(() => this._checkReminders(), 5000);
+  },
+
+  async requestPermission() {
+    if (!('Notification' in window)) {
+      Toast.warning('Les notifications ne sont pas supportées par ce navigateur');
+      return false;
+    }
+    const result = await Notification.requestPermission();
+    this._permission = result;
+    return result === 'granted';
+  },
+
+  send(title, body, options = {}) {
+    if (this._permission !== 'granted') return;
+    try {
+      const notif = new Notification(title, {
+        body,
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: options.tag || 'volt-notification',
+        ...options
+      });
+      if (options.onclick) {
+        notif.onclick = options.onclick;
+      }
+      // Auto close after 10 seconds
+      setTimeout(() => notif.close(), 10000);
+    } catch (e) { console.warn('Notification error:', e); }
+  },
+
+  _checkReminders() {
+    if (this._permission !== 'granted') return;
+
+    const settings = Store.get('settings') || {};
+    if (settings.preferences && settings.preferences.notifications && !settings.preferences.notifications.versements) return;
+
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const planning = Store.get('planning') || [];
+    const versements = Store.get('versements') || [];
+    const chauffeurs = Store.get('chauffeurs') || [];
+
+    // Check if there are unpaid receipts for today
+    const todayShifts = planning.filter(p => p.date === today);
+    const unpaidToday = [];
+
+    todayShifts.forEach(p => {
+      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
+      if (!ch || ch.statut !== 'actif') return;
+      const hasPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === today && v.statut === 'valide');
+      if (!hasPayment && (ch.redevanceQuotidienne || 0) > 0) {
+        unpaidToday.push(ch);
+      }
+    });
+
+    if (unpaidToday.length > 0 && now.getHours() >= 18) {
+      // Only remind in the evening
+      const lastReminder = localStorage.getItem('volt_last_reminder');
+      if (lastReminder === today) return; // Already reminded today
+
+      this.send(
+        `${unpaidToday.length} recette${unpaidToday.length > 1 ? 's' : ''} en attente`,
+        `${unpaidToday.map(c => c.prenom).join(', ')} — Versements du ${Utils.formatDate(today)} non reçus`,
+        { tag: 'volt-unpaid-reminder' }
+      );
+
+      localStorage.setItem('volt_last_reminder', today);
+    }
+
+    // Check document expiry
+    chauffeurs.forEach(ch => {
+      const dates = [
+        { field: 'dateExpirationPermis', label: 'Permis' },
+        { field: 'dateExpirationVTC', label: 'Carte VTC' },
+        { field: 'dateExpirationVisite', label: 'Visite médicale' }
+      ];
+      dates.forEach(({ field, label }) => {
+        if (ch[field]) {
+          const diff = Math.ceil((new Date(ch[field]) - now) / 86400000);
+          if (diff >= 0 && diff <= 7) {
+            const tag = `volt-doc-${ch.id}-${field}`;
+            const lastNotif = localStorage.getItem(tag);
+            if (lastNotif === today) return;
+            this.send(
+              `${label} expire bientôt`,
+              `Le ${label.toLowerCase()} de ${ch.prenom} ${ch.nom} expire dans ${diff} jour${diff > 1 ? 's' : ''}`,
+              { tag }
+            );
+            localStorage.setItem(tag, today);
+          }
+        }
+      });
+    });
+  }
+};
+
+/**
  * App - Bootstrap and initialization with authentication
  */
 const App = {
@@ -138,6 +248,9 @@ const App = {
 
     // Detect native WebView app and force mobile mode
     this._applyMobileMode();
+
+    // Initialize browser notifications
+    NotificationManager.init();
 
     console.log('Volt VTC Management v2.0.0 initialized (API mode)');
     console.log(`Data size: ${Store.getStorageSize().kb} Ko`);

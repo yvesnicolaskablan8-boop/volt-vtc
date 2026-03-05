@@ -1,11 +1,34 @@
 /**
- * AccueilPage — Tableau de bord chauffeur
+ * AccueilPage — Tableau de bord chauffeur (enhanced)
  */
 const AccueilPage = {
   async render(container) {
     container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
 
-    const data = await DriverStore.getDashboard();
+    // Fetch dashboard + planning + versements en parallele
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    // Planning: de aujourd'hui a +5 jours
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() + 5);
+    const endStr = endDate.toISOString().split('T')[0];
+    // Debut de semaine (lundi) pour compter les shifts de la semaine
+    const dayOfWeek = today.getDay();
+    const mondayOffset = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    const weekStart = new Date(today);
+    weekStart.setDate(mondayOffset);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekStartStr = weekStart.toISOString().split('T')[0];
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const weekEndStr = weekEnd.toISOString().split('T')[0];
+
+    const [data, planningData, versements] = await Promise.all([
+      DriverStore.getDashboard(),
+      DriverStore.getPlanning(weekStartStr, endStr),
+      DriverStore.getVersements()
+    ]);
+
     if (!data) {
       container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Impossible de charger le tableau de bord</p></div>';
       return;
@@ -13,8 +36,13 @@ const AccueilPage = {
 
     const chauffeur = data.chauffeur || {};
     const prenom = chauffeur.prenom || 'Chauffeur';
-    const today = new Date();
     const dateStr = today.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    // Salutation selon l'heure
+    const hour = today.getHours();
+    let greeting = 'Bonjour';
+    if (hour >= 18) greeting = 'Bonsoir';
+    else if (hour < 5) greeting = 'Bonne nuit';
 
     // Creneau du jour
     const creneauLabels = {
@@ -23,8 +51,22 @@ const AccueilPage = {
       journee: 'Journee (8h-20h)',
       nuit: 'Nuit (22h-6h)'
     };
+    const creneauIcons = {
+      matin: 'solar:sunrise-bold-duotone',
+      apres_midi: 'solar:sun-bold-duotone',
+      journee: 'solar:sun-2-bold-duotone',
+      nuit: 'solar:moon-bold-duotone'
+    };
+    const creneauGradients = {
+      matin: 'linear-gradient(135deg, #f59e0b, #d97706)',
+      apres_midi: 'linear-gradient(135deg, #f97316, #ea580c)',
+      journee: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+      nuit: 'linear-gradient(135deg, #6366f1, #4f46e5)'
+    };
     const creneau = data.creneauJour;
     const creneauText = creneau ? creneauLabels[creneau.type] || creneau.type : null;
+    const creneauIcon = creneau ? (creneauIcons[creneau.type] || 'solar:clock-circle-bold-duotone') : null;
+    const creneauGrad = creneau ? (creneauGradients[creneau.type] || creneauGradients.journee) : null;
 
     // Vehicule
     const v = data.vehicule;
@@ -34,7 +76,6 @@ const AccueilPage = {
 
     // Score
     const score = data.scoreConduite || 0;
-    const scoreClass = score >= 70 ? 'good' : score >= 50 ? 'medium' : 'bad';
 
     // Countdown deadline
     let countdownHTML = '';
@@ -43,47 +84,226 @@ const AccueilPage = {
       countdownHTML = DriverCountdown.renderWidget();
     }
 
+    // === Build planning map ===
+    const planningMap = {};
+    if (planningData) planningData.forEach(p => { planningMap[p.date] = p; });
+    const dayNames = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+    const shortLabels = { matin: 'Matin', apres_midi: 'Apres-midi', journee: 'Journee', nuit: 'Nuit' };
+    const badgeColors = {
+      matin: { bg: '#fef3c7', color: '#92400e' },
+      apres_midi: { bg: '#fed7aa', color: '#9a3412' },
+      journee: { bg: '#dbeafe', color: '#1e40af' },
+      nuit: { bg: '#e0e7ff', color: '#3730a3' }
+    };
+
+    // === Upcoming shifts (next 5 days, excluding today) ===
+    const upcomingDays = [];
+    for (let i = 1; i <= 5; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() + i);
+      const dStr = d.toISOString().split('T')[0];
+      upcomingDays.push({ date: d, dateStr: dStr, planning: planningMap[dStr] || null });
+    }
+
+    let upcomingHTML = '';
+    const upcomingItems = upcomingDays.map(item => {
+      const d = item.date;
+      const p = item.planning;
+      const dayLabel = dayNames[d.getDay()];
+
+      if (p) {
+        const bc = badgeColors[p.typeCreneaux] || { bg: '#f1f5f9', color: '#475569' };
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:white;border-radius:12px;border:1px solid #f1f5f9">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:40px;text-align:center">
+                <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase">${dayLabel}</div>
+                <div style="font-size:0.95rem;font-weight:800;color:#0f172a">${d.getDate()}</div>
+              </div>
+              <div style="width:1px;height:28px;background:#e2e8f0"></div>
+              <span style="font-size:0.82rem;font-weight:600;color:#334155">${shortLabels[p.typeCreneaux] || p.typeCreneaux}</span>
+            </div>
+            <span style="padding:4px 10px;border-radius:999px;background:${bc.bg};color:${bc.color};font-size:0.7rem;font-weight:700">${shortLabels[p.typeCreneaux] || p.typeCreneaux}</span>
+          </div>`;
+      } else {
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#fafafa;border-radius:12px;border:1px dashed #e2e8f0">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:40px;text-align:center">
+                <div style="font-size:0.7rem;font-weight:700;color:#cbd5e1;text-transform:uppercase">${dayLabel}</div>
+                <div style="font-size:0.95rem;font-weight:800;color:#cbd5e1">${d.getDate()}</div>
+              </div>
+              <div style="width:1px;height:28px;background:#e2e8f0"></div>
+              <span style="font-size:0.82rem;font-weight:500;color:#94a3b8">Pas de creneau</span>
+            </div>
+            <span style="padding:4px 10px;border-radius:999px;background:#f1f5f9;color:#94a3b8;font-size:0.7rem;font-weight:600">--</span>
+          </div>`;
+      }
+    }).join('');
+
+    upcomingHTML = `
+      <div style="margin-bottom:1.5rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8">Prochains jours</h3>
+          <button onclick="DriverRouter.navigate('planning')" style="border:none;background:none;font-size:0.75rem;font-weight:600;color:#3b82f6;cursor:pointer;font-family:inherit;padding:4px 8px">Voir tout</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${upcomingItems}
+        </div>
+      </div>`;
+
+    // === Shifts count this week ===
+    let shiftsThisWeek = 0;
+    if (planningData) {
+      planningData.forEach(p => {
+        if (p.date >= weekStartStr && p.date <= weekEndStr) shiftsThisWeek++;
+      });
+    }
+    // Count today if creneau exists but not in planning response
+    if (creneau && !planningMap[todayStr]) {
+      shiftsThisWeek++;
+    }
+
+    // === Monthly payment stats ===
+    const monthStr = today.toISOString().slice(0, 7);
+    let totalNetMois = stats.totalNet || 0;
+    let versementCount = 0;
+    if (versements && Array.isArray(versements)) {
+      const versMois = versements.filter(vi => vi.date && vi.date.startsWith(monthStr));
+      versementCount = versMois.length;
+      if (totalNetMois === 0 && versMois.length > 0) {
+        totalNetMois = versMois.reduce((s, vi) => s + (vi.montantNet || 0), 0);
+      }
+    }
+    const monthlyTarget = data.objectifMensuel || stats.objectifMensuel || 0;
+    const paymentPct = monthlyTarget > 0 ? Math.min(100, Math.round((totalNetMois / monthlyTarget) * 100)) : 0;
+
+    // Payment progress card
+    const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
+    let paymentProgressHTML = '';
+    if (monthlyTarget > 0) {
+      const progressColor = paymentPct >= 80 ? '#22c55e' : paymentPct >= 50 ? '#f59e0b' : '#3b82f6';
+      paymentProgressHTML = `
+        <div onclick="DriverRouter.navigate('versements')" style="cursor:pointer;padding:1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:1.25rem;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <iconify-icon icon="solar:chart-2-bold-duotone" style="font-size:1.1rem;color:${progressColor}"></iconify-icon>
+              <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8">Versements ${monthNames[today.getMonth()]}</span>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-linear" style="color:#cbd5e1"></iconify-icon>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">
+            <span style="font-size:1.5rem;font-weight:900;color:#0f172a">${this._formatCurrency(totalNetMois)}</span>
+            <span style="font-size:0.75rem;font-weight:500;color:#94a3b8">/ ${this._formatCurrency(monthlyTarget)}</span>
+          </div>
+          <div style="height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;margin-bottom:6px">
+            <div style="height:100%;width:${paymentPct}%;background:${progressColor};border-radius:4px;transition:width 0.8s ease"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:#94a3b8">
+            <span>${paymentPct}% de l'objectif</span>
+            <span>${versementCount} versement${versementCount > 1 ? 's' : ''}</span>
+          </div>
+        </div>`;
+    }
+
+    // === Today's shift card ===
+    let todayShiftHTML = '';
+    if (creneau) {
+      todayShiftHTML = `
+        <div style="border-radius:1.25rem;background:${creneauGrad};padding:1.25rem;color:white;margin-bottom:1.25rem;box-shadow:0 4px 16px rgba(0,0,0,0.12)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;opacity:0.9">
+            <iconify-icon icon="${creneauIcon}" style="font-size:1.3rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">Creneau du jour</span>
+          </div>
+          <div style="font-size:1.4rem;font-weight:900;margin-bottom:6px">${creneauText}</div>
+          ${v ? `<div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;opacity:0.85;margin-top:4px">
+            <iconify-icon icon="solar:wheel-bold-duotone" style="font-size:1rem"></iconify-icon>
+            ${v.marque || ''} ${v.modele || ''} ${v.immatriculation ? '(' + v.immatriculation + ')' : ''}
+          </div>` : ''}
+          ${creneau.notes ? `<div style="margin-top:10px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.15);font-size:0.78rem">${creneau.notes}</div>` : ''}
+        </div>`;
+    } else {
+      todayShiftHTML = `
+        <div style="border-radius:1.25rem;background:white;border:2px dashed #e2e8f0;padding:1.5rem;margin-bottom:1.25rem;text-align:center">
+          <iconify-icon icon="solar:calendar-minimalistic-bold-duotone" style="font-size:2.5rem;color:#cbd5e1;display:block;margin-bottom:8px"></iconify-icon>
+          <div style="font-size:0.95rem;font-weight:700;color:#64748b;margin-bottom:4px">Pas de creneau aujourd'hui</div>
+          <div style="font-size:0.78rem;color:#94a3b8">Profitez de votre journee de repos</div>
+        </div>`;
+    }
+
+    // === Next shift info when no shift today ===
+    let nextShiftHTML = '';
+    if (!creneau) {
+      const nextShift = upcomingDays.find(d => d.planning);
+      if (nextShift) {
+        const ns = nextShift.date;
+        const nsLabel = ns.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        nextShiftHTML = `
+          <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:1rem;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.12);margin-bottom:1.25rem">
+            <div style="width:42px;height:42px;border-radius:12px;background:rgba(59,130,246,0.1);color:#3b82f6;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em">Prochain creneau</div>
+              <div style="font-size:0.9rem;font-weight:700;color:#0f172a">${nsLabel}</div>
+              <div style="font-size:0.78rem;color:#3b82f6;font-weight:600">${shortLabels[nextShift.planning.typeCreneaux] || nextShift.planning.typeCreneaux}</div>
+            </div>
+          </div>`;
+      }
+    }
+
     container.innerHTML = `
       <!-- Greeting -->
-      <div style="margin-bottom:1.5rem">
-        <h2 style="font-size:1.65rem;font-weight:800;color:#0f172a">Bonjour, ${prenom} !</h2>
+      <div style="margin-bottom:1.25rem">
+        <h2 style="font-size:1.65rem;font-weight:800;color:#0f172a">${greeting}, ${prenom} !</h2>
         <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.875rem;font-weight:500;color:#64748b">
           <iconify-icon icon="solar:calendar-date-bold-duotone" style="color:#3b82f6;font-size:1.1rem"></iconify-icon>
-          ${dateStr}
+          ${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
         </div>
       </div>
 
       <!-- Countdown deadline versement -->
       ${countdownHTML}
 
-      <!-- Planning du jour -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem;border-radius:1rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:1rem">
-        <div style="display:flex;align-items:center;gap:12px;font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">
-          <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1.25rem;color:#94a3b8"></iconify-icon>
-          Aujourd'hui
+      <!-- Creneau du jour -->
+      ${todayShiftHTML}
+
+      <!-- Prochain creneau (si pas de creneau aujourd'hui) -->
+      ${nextShiftHTML}
+
+      <!-- Quick Stats (2x2 grid) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem">
+        <div onclick="AccueilPage._showScoreDetail()" style="cursor:pointer;padding:14px;border-radius:1rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8">Score conduite</span>
+            <iconify-icon icon="solar:alt-arrow-right-linear" style="color:#cbd5e1;font-size:0.9rem"></iconify-icon>
+          </div>
+          <div style="font-size:1.5rem;font-weight:900;color:${score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444'}">${score}<span style="font-size:0.85rem;font-weight:600;color:#94a3b8">/100</span></div>
         </div>
-        ${creneau
-          ? `<span style="padding:6px 12px;border-radius:999px;background:#3b82f6;color:white;font-size:0.75rem;font-weight:700">${creneauText}</span>`
-          : `<span style="padding:6px 12px;border-radius:999px;background:#f1f5f9;color:#64748b;font-size:0.75rem;font-weight:700">Pas de creneau</span>`
-        }
+        <div onclick="DriverRouter.navigate('versements')" style="cursor:pointer;padding:14px;border-radius:1rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8">Net du mois</span>
+            <iconify-icon icon="solar:alt-arrow-right-linear" style="color:#cbd5e1;font-size:0.9rem"></iconify-icon>
+          </div>
+          <div style="font-size:1.3rem;font-weight:900;color:#0f172a">${this._formatCurrency(totalNetMois)}</div>
+        </div>
+        <div onclick="DriverRouter.navigate('planning')" style="cursor:pointer;padding:14px;border-radius:1rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8">Creneaux semaine</span>
+            <iconify-icon icon="solar:alt-arrow-right-linear" style="color:#cbd5e1;font-size:0.9rem"></iconify-icon>
+          </div>
+          <div style="font-size:1.5rem;font-weight:900;color:#0f172a">${shiftsThisWeek}</div>
+        </div>
+        <div style="padding:14px;border-radius:1rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+          <div style="margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8">Versements ce mois</span>
+          </div>
+          <div style="font-size:1.5rem;font-weight:900;color:#0f172a">${versementCount}</div>
+        </div>
       </div>
 
-      <!-- KPIs (2 cols) -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
-        <div onclick="AccueilPage._showScoreDetail()" style="cursor:pointer;padding:1rem;border-radius:1rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8">Score conduite</span>
-            <iconify-icon icon="solar:alt-arrow-right-linear" style="color:#cbd5e1"></iconify-icon>
-          </div>
-          <div style="font-size:1.5rem;font-weight:900;color:${score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444'}">${score}/100</div>
-        </div>
-        <div style="padding:1rem;border-radius:1rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
-          <div style="margin-bottom:4px">
-            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8">Versements du mois</span>
-          </div>
-          <div style="font-size:1.5rem;font-weight:900">${this._formatCurrency(stats.totalNet || 0)}</div>
-        </div>
-      </div>
+      <!-- Monthly payment progress bar -->
+      ${paymentProgressHTML}
 
       <!-- Activite Yango -->
       <div class="card" id="yango-activity-card" style="display:none;">
@@ -98,6 +318,9 @@ const AccueilPage = {
 
       <!-- Alertes maintenance vehicule -->
       <div id="maintenance-alerts"></div>
+
+      <!-- Prochains jours -->
+      ${upcomingHTML}
 
       <!-- Actions rapides -->
       <div style="margin-bottom:1rem">

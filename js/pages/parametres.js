@@ -57,6 +57,7 @@ const ParametresPage = {
         <div class="tab" data-tab="preferences"><iconify-icon icon="solar:tuning-bold-duotone"></iconify-icon> Préférences</div>
         <div class="tab" data-tab="versements-settings"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon> Versements</div>
         <div class="tab" data-tab="notifications-settings"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Notifications</div>
+        <div class="tab" data-tab="parcs"><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Parcs</div>
       </div>
 
       <div id="settings-content"></div>
@@ -83,6 +84,7 @@ const ParametresPage = {
       case 'preferences': ct.innerHTML = this._renderPreferences(); this._bindPreferencesEvents(); break;
       case 'versements-settings': ct.innerHTML = this._renderVersementsSettings(); this._bindVersementsSettingsEvents(); break;
       case 'notifications-settings': ct.innerHTML = this._renderNotificationsSettings(); this._bindNotificationsSettingsEvents(); break;
+      case 'parcs': ct.innerHTML = this._renderParcs(); this._bindParcsEvents(); break;
     }
   },
 
@@ -1313,14 +1315,16 @@ const ParametresPage = {
   },
 
   _bindPreferencesEvents() {
-    // Theme radio buttons — apply immediately
+    // Theme radio buttons — apply immediately via ThemeManager
     document.querySelectorAll('input[name="pref-theme"]').forEach(radio => {
       radio.addEventListener('change', () => {
         const theme = radio.value;
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('volt_theme', theme);
-        if (typeof Utils !== 'undefined' && Utils.configureChartDefaults) {
-          Utils.configureChartDefaults();
+        if (typeof ThemeManager !== 'undefined') {
+          ThemeManager._applyTheme(theme, false);
+          localStorage.setItem('volt_theme', theme);
+        } else {
+          document.documentElement.setAttribute('data-theme', theme);
+          localStorage.setItem('volt_theme', theme);
         }
       });
     });
@@ -1969,6 +1973,227 @@ const ParametresPage = {
       settings.notifications = notifications;
       Store.set('settings', settings);
       Toast.success('Configuration des notifications sauvegardee');
+    });
+  },
+
+  // ========================= ONGLET PARCS =========================
+
+  _renderParcs() {
+    const parcs = Store.get('parcs') || [];
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const vehicules = Store.get('vehicules') || [];
+    const parcActif = localStorage.getItem('volt_parc_actif') || '';
+
+    return `
+      <div class="grid-2" style="gap:var(--space-lg);">
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Gestion des parcs</span>
+              <button class="btn btn-sm btn-primary" id="btn-add-parc"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouveau parc</button>
+            </div>
+            <p style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:var(--space-md);">
+              Organisez vos véhicules et chauffeurs en parcs pour une gestion multi-sites. Le filtre parc s'applique sur tout le tableau de bord.
+            </p>
+
+            ${parcs.length === 0 ? `
+              <div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);">
+                <iconify-icon icon="solar:garage-bold-duotone" style="font-size:48px;opacity:0.3;"></iconify-icon>
+                <p style="margin-top:var(--space-sm);">Aucun parc créé. Créez votre premier parc pour organiser votre flotte.</p>
+              </div>
+            ` : `
+              <!-- Filtre parc actif -->
+              <div style="margin-bottom:var(--space-md);padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);display:flex;align-items:center;gap:10px;">
+                <iconify-icon icon="solar:filter-bold-duotone" style="color:var(--volt-blue);"></iconify-icon>
+                <span style="font-size:var(--font-size-sm);font-weight:600;">Parc actif :</span>
+                <select class="form-control" id="select-parc-actif" style="flex:1;max-width:200px;">
+                  <option value="">Tous les parcs</option>
+                  ${parcs.map(p => `<option value="${p.id}" ${parcActif === p.id ? 'selected' : ''}>${p.nom}</option>`).join('')}
+                </select>
+              </div>
+
+              ${parcs.map(p => {
+                const nbChauffeurs = chauffeurs.filter(c => c.parcId === p.id).length;
+                const nbVehicules = vehicules.filter(v => v.parcId === p.id).length;
+                return `
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:var(--radius-sm);background:var(--bg-tertiary);margin-bottom:8px;border-left:4px solid ${p.couleur || 'var(--volt-blue)'};">
+                    <div>
+                      <div style="font-weight:600;">${p.nom}</div>
+                      <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
+                        <iconify-icon icon="solar:user-bold-duotone"></iconify-icon> ${nbChauffeurs} chauffeur${nbChauffeurs > 1 ? 's' : ''}
+                        <span style="margin:0 6px;">•</span>
+                        <iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> ${nbVehicules} véhicule${nbVehicules > 1 ? 's' : ''}
+                        ${p.adresse ? `<span style="margin:0 6px;">•</span><iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon> ${p.adresse}` : ''}
+                      </div>
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-sm btn-secondary" onclick="ParametresPage._editParc('${p.id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+                      <button class="btn btn-sm btn-danger" onclick="ParametresPage._deleteParc('${p.id}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            `}
+          </div>
+        </div>
+
+        <!-- Aide -->
+        <div>
+          <div class="card" style="border-left:4px solid var(--volt-blue);">
+            <div style="display:flex;align-items:flex-start;gap:var(--space-sm);">
+              <iconify-icon icon="solar:lightbulb-bold-duotone" style="color:var(--volt-blue);font-size:20px;flex-shrink:0;"></iconify-icon>
+              <div>
+                <p style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:8px;">Comment utiliser les parcs ?</p>
+                <ul style="font-size:var(--font-size-xs);color:var(--text-muted);padding-left:16px;display:flex;flex-direction:column;gap:6px;">
+                  <li>Créez un parc pour chaque site ou zone géographique</li>
+                  <li>Assignez vos chauffeurs et véhicules à un parc via leur fiche</li>
+                  <li>Filtrez le tableau de bord par parc pour une vue ciblée</li>
+                  <li>Le parc actif filtre automatiquement toutes les données</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          ${parcs.length > 0 ? `
+            <div class="card" style="margin-top:var(--space-md);">
+              <div class="card-header">
+                <span class="card-title">Répartition</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${parcs.map(p => {
+                  const nbC = chauffeurs.filter(c => c.parcId === p.id).length;
+                  const nbV = vehicules.filter(v => v.parcId === p.id).length;
+                  const total = nbC + nbV;
+                  const maxTotal = Math.max(...parcs.map(pp => chauffeurs.filter(c => c.parcId === pp.id).length + vehicules.filter(v => v.parcId === pp.id).length), 1);
+                  const pct = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
+                  return `
+                    <div>
+                      <div style="display:flex;justify-content:space-between;font-size:var(--font-size-xs);margin-bottom:4px;">
+                        <span style="font-weight:600;">${p.nom}</span>
+                        <span style="color:var(--text-muted);">${total} éléments</span>
+                      </div>
+                      <div style="height:6px;border-radius:3px;background:var(--bg-tertiary);overflow:hidden;">
+                        <div style="height:100%;width:${pct}%;background:${p.couleur || 'var(--volt-blue)'};border-radius:3px;transition:width 0.3s;"></div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:var(--font-size-xs);margin-bottom:4px;">
+                    <span style="font-weight:600;color:var(--text-muted);">Non assignés</span>
+                    <span style="color:var(--text-muted);">${chauffeurs.filter(c => !c.parcId).length + vehicules.filter(v => !v.parcId).length} éléments</span>
+                  </div>
+                  <div style="height:6px;border-radius:3px;background:var(--bg-tertiary);overflow:hidden;">
+                    <div style="height:100%;width:${Math.max(...parcs.map(pp => chauffeurs.filter(c => c.parcId === pp.id).length + vehicules.filter(v => v.parcId === pp.id).length), 1) > 0 ? ((chauffeurs.filter(c => !c.parcId).length + vehicules.filter(v => !v.parcId).length) / Math.max(...parcs.map(pp => chauffeurs.filter(c => c.parcId === pp.id).length + vehicules.filter(v => v.parcId === pp.id).length), 1)) * 100 : 0}%;background:var(--text-muted);border-radius:3px;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  },
+
+  _bindParcsEvents() {
+    document.getElementById('btn-add-parc')?.addEventListener('click', () => this._addParc());
+
+    document.getElementById('select-parc-actif')?.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val) {
+        localStorage.setItem('volt_parc_actif', val);
+      } else {
+        localStorage.removeItem('volt_parc_actif');
+      }
+      Toast.success(val ? 'Parc actif mis à jour' : 'Filtre parc désactivé');
+    });
+  },
+
+  _addParc() {
+    const fields = [
+      { name: 'nom', label: 'Nom du parc', type: 'text', required: true, placeholder: 'Ex: Abidjan Nord' },
+      { name: 'adresse', label: 'Adresse / Zone', type: 'text', placeholder: 'Ex: Cocody, Abidjan' },
+      { name: 'couleur', label: 'Couleur', type: 'select', options: [
+        { value: '#3b82f6', label: '🔵 Bleu' },
+        { value: '#22c55e', label: '🟢 Vert' },
+        { value: '#f59e0b', label: '🟡 Orange' },
+        { value: '#ef4444', label: '🔴 Rouge' },
+        { value: '#8b5cf6', label: '🟣 Violet' },
+        { value: '#06b6d4', label: '🔵 Cyan' }
+      ]},
+      { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
+    ];
+
+    Modal.form('<iconify-icon icon="solar:garage-bold-duotone" class="text-blue"></iconify-icon> Nouveau parc', FormBuilder.build(fields), () => {
+      const body = document.getElementById('modal-body');
+      if (!FormBuilder.validate(body, fields)) return;
+      const values = FormBuilder.getValues(body);
+
+      const parcs = Store.get('parcs') || [];
+      parcs.push({ id: Utils.generateId('PRC'), ...values, dateCreation: new Date().toISOString() });
+      Store.set('parcs', parcs);
+      Modal.close();
+      Toast.success('Parc créé');
+      this._renderTab('parcs');
+    });
+  },
+
+  _editParc(id) {
+    const parcs = Store.get('parcs') || [];
+    const parc = parcs.find(p => p.id === id);
+    if (!parc) return;
+
+    const fields = [
+      { name: 'nom', label: 'Nom du parc', type: 'text', required: true },
+      { name: 'adresse', label: 'Adresse / Zone', type: 'text' },
+      { name: 'couleur', label: 'Couleur', type: 'select', options: [
+        { value: '#3b82f6', label: '🔵 Bleu' },
+        { value: '#22c55e', label: '🟢 Vert' },
+        { value: '#f59e0b', label: '🟡 Orange' },
+        { value: '#ef4444', label: '🔴 Rouge' },
+        { value: '#8b5cf6', label: '🟣 Violet' },
+        { value: '#06b6d4', label: '🔵 Cyan' }
+      ]},
+      { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
+    ];
+
+    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier le parc', FormBuilder.build(fields, parc), () => {
+      const body = document.getElementById('modal-body');
+      if (!FormBuilder.validate(body, fields)) return;
+      const values = FormBuilder.getValues(body);
+      Object.assign(parc, values);
+      Store.set('parcs', parcs);
+      Modal.close();
+      Toast.success('Parc modifié');
+      this._renderTab('parcs');
+    });
+  },
+
+  _deleteParc(id) {
+    const parcs = Store.get('parcs') || [];
+    const parc = parcs.find(p => p.id === id);
+    if (!parc) return;
+
+    Modal.confirm('Supprimer le parc', `Voulez-vous supprimer le parc <strong>${parc.nom}</strong> ? Les chauffeurs et véhicules associés seront désassignés.`, () => {
+      // Remove parc from entities
+      const chauffeurs = Store.get('chauffeurs') || [];
+      chauffeurs.filter(c => c.parcId === id).forEach(c => {
+        Store.update('chauffeurs', c.id, { parcId: '' });
+      });
+      const vehicules = Store.get('vehicules') || [];
+      vehicules.filter(v => v.parcId === id).forEach(v => {
+        Store.update('vehicules', v.id, { parcId: '' });
+      });
+
+      const filtered = parcs.filter(p => p.id !== id);
+      Store.set('parcs', filtered);
+
+      if (localStorage.getItem('volt_parc_actif') === id) {
+        localStorage.removeItem('volt_parc_actif');
+      }
+
+      Toast.success('Parc supprimé');
+      this._renderTab('parcs');
     });
   }
 };

@@ -254,6 +254,15 @@ const Utils = {
     return months[monthIndex];
   },
 
+  /**
+   * Returns the chart segment border color matching the card background.
+   * In dark mode: #111827, in light mode: #ffffff.
+   */
+  chartBorderColor() {
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    return isDark ? '#111827' : '#ffffff';
+  },
+
   // Chart.js theme-aware defaults
   configureChartDefaults() {
     if (typeof Chart === 'undefined') return;

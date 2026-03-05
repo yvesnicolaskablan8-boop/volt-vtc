@@ -238,6 +238,51 @@ const AlertesPage = {
           date: todayStr
         });
       }
+
+      // Documents chauffeur (champs date directe)
+      const docFieldsChauffeur = [
+        { field: 'dateExpirationPermis', label: 'Permis de conduire', labelCourt: 'Permis' },
+        { field: 'dateExpirationVTC', label: 'Carte VTC', labelCourt: 'Carte VTC' },
+        { field: 'dateExpirationVisite', label: 'Visite médicale', labelCourt: 'Visite médicale' }
+      ];
+      docFieldsChauffeur.forEach(({ field, label, labelCourt }) => {
+        if (!ch[field]) return;
+        const expDate = new Date(ch[field]);
+        const daysUntil = Math.ceil((expDate - now) / 86400000);
+        if (daysUntil < 0) {
+          alerts.push({
+            id: Utils.generateId('ALR'),
+            type: 'document',
+            categorie: 'documents',
+            niveau: 'critique',
+            titre: `${labelCourt} expiré — ${nom}`,
+            description: `Le ${label.toLowerCase()} de ${nom} a expiré le ${Utils.formatDate(ch[field])} (il y a ${Math.abs(daysUntil)} jours)`,
+            date: new Date().toISOString(),
+            source: 'chauffeurs',
+            sourceId: ch.id,
+            chauffeurId: ch.id,
+            action: 'Voir la fiche chauffeur',
+            actionRoute: `#/chauffeurs/${ch.id}`,
+            icon: 'solar:user-id-bold-duotone'
+          });
+        } else if (daysUntil <= 30) {
+          alerts.push({
+            id: Utils.generateId('ALR'),
+            type: 'document',
+            categorie: 'documents',
+            niveau: 'urgent',
+            titre: `${labelCourt} expire bientôt — ${nom}`,
+            description: `Le ${label.toLowerCase()} de ${nom} expire le ${Utils.formatDate(ch[field])} (dans ${daysUntil} jours)`,
+            date: new Date().toISOString(),
+            source: 'chauffeurs',
+            sourceId: ch.id,
+            chauffeurId: ch.id,
+            action: 'Planifier le renouvellement',
+            actionRoute: `#/chauffeurs/${ch.id}`,
+            icon: 'solar:user-id-bold-duotone'
+          });
+        }
+      });
     });
 
     // 2. Véhicules
@@ -418,6 +463,45 @@ const AlertesPage = {
             actionRoute: `#/vehicules/${v.id}`,
             icon: 'solar:shield-bold-duotone',
             date: v.dateExpirationAssurance
+          });
+        }
+      }
+
+      // Contrôle technique véhicule
+      if (v.dateExpirationControleTech) {
+        const expDate = new Date(v.dateExpirationControleTech);
+        const daysUntil = Math.ceil((expDate - now) / 86400000);
+        if (daysUntil < 0) {
+          alerts.push({
+            id: Utils.generateId('ALR'),
+            type: 'document',
+            categorie: 'vehicules',
+            niveau: 'critique',
+            titre: `Contrôle technique expiré`,
+            description: `${label} — Contrôle technique expiré depuis ${Math.abs(daysUntil)} jours (${Utils.formatDate(v.dateExpirationControleTech)})`,
+            date: new Date().toISOString(),
+            source: 'vehicules',
+            sourceId: v.id,
+            vehiculeId: v.id,
+            action: 'Planifier le contrôle technique',
+            actionRoute: `#/vehicules/${v.id}`,
+            icon: 'solar:shield-bold-duotone'
+          });
+        } else if (daysUntil <= 30) {
+          alerts.push({
+            id: Utils.generateId('ALR'),
+            type: 'document',
+            categorie: 'vehicules',
+            niveau: 'urgent',
+            titre: `Contrôle technique expire bientôt`,
+            description: `${label} — Contrôle technique expire dans ${daysUntil} jours (${Utils.formatDate(v.dateExpirationControleTech)})`,
+            date: new Date().toISOString(),
+            source: 'vehicules',
+            sourceId: v.id,
+            vehiculeId: v.id,
+            action: 'Planifier le contrôle technique',
+            actionRoute: `#/vehicules/${v.id}`,
+            icon: 'solar:shield-bold-duotone'
           });
         }
       }
@@ -782,7 +866,7 @@ const AlertesPage = {
           datasets: [{
             data: catEntries.map(([, v]) => v),
             backgroundColor: catEntries.map(([k]) => catColors[k] || '#64748b'),
-            borderColor: '#111827', borderWidth: 2,
+            borderColor: Utils.chartBorderColor(), borderWidth: 2,
             hoverOffset: 12
           }]
         },

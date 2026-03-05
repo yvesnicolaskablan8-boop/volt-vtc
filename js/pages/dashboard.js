@@ -297,6 +297,10 @@ const DashboardPage = {
     const totalUnpaid = unpaidItems.reduce((s, i) => s + i.montantDu, 0);
     const totalPenalites = unpaidItems.reduce((s, i) => s + i.penalite, 0);
 
+    // Taux de recouvrement
+    const totalAttendu = unpaidItems.reduce((s, i) => s + i.montantDu, 0) + monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
+    const tauxRecouvrement = totalAttendu > 0 ? Math.round((totalVerse / totalAttendu) * 100) : 100;
+
     // =================== DÉPENSES VÉHICULES ===================
     const depenses = Store.get('depenses') || [];
     const monthDepenses = depenses.filter(dep => {
@@ -333,6 +337,7 @@ const DashboardPage = {
       maintenanceAlerts, unpaidItems, totalUnpaid, totalPenalites,
       depenses, monthDepenses, totalDepensesMois, depensesByType, vehicules,
       alertesTotal, alertesCritiques, alertesUrgentes,
+      tauxRecouvrement, totalAttendu,
       periodLabel, isSpecificDay
     };
   },
@@ -395,6 +400,83 @@ const DashboardPage = {
             ${d.alertesCritiques > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone" style="color:var(--danger)"></iconify-icon> ${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}` : d.alertesTotal === 0 ? '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tout est en ordre' : `<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.alertesUrgentes} urgente${d.alertesUrgentes > 1 ? 's' : ''}`}
           </div>
         </a>
+      </div>
+
+      <!-- KPI Row 2 -->
+      <div class="grid-4" style="margin-top:var(--space-sm);">
+        <div class="kpi-card ${d.tauxRecouvrement >= 80 ? 'green' : d.tauxRecouvrement >= 50 ? '' : 'red'}">
+          <div class="kpi-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${d.tauxRecouvrement}%</div>
+          <div class="kpi-label">Taux de recouvrement</div>
+          <div class="kpi-trend ${d.tauxRecouvrement >= 80 ? 'up' : 'down'}">
+            <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> ${Utils.formatCurrency(d.totalVerse)} / ${Utils.formatCurrency(d.totalAttendu)}
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon"><iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${d.monthCourses}</div>
+          <div class="kpi-label">Courses — ${d.periodLabel}</div>
+          <div class="kpi-trend up">
+            <iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon> Terminées
+          </div>
+        </div>
+        <a href="#/vehicules" class="kpi-card" style="text-decoration:none;color:inherit;cursor:pointer;">
+          <div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${d.vehiclesActifs}</div>
+          <div class="kpi-label">Véhicules en service</div>
+          <div class="kpi-trend up">
+            ⚡ ${d.vehiclesEV} élec. <span style="margin:0 2px">&bull;</span> ⛽ ${d.vehiclesThermique} therm.
+          </div>
+        </a>
+        <div class="kpi-card ${d.totalDepensesMois > 0 ? '' : 'green'}">
+          <div class="kpi-icon"><iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${Utils.formatCurrency(d.totalDepensesMois)}</div>
+          <div class="kpi-label">Dépenses — ${d.periodLabel}</div>
+          <div class="kpi-trend ${d.totalDepensesMois > 0 ? 'down' : 'up'}">
+            <iconify-icon icon="solar:tag-bold-duotone"></iconify-icon> ${Object.keys(d.depensesByType).length} catégories
+          </div>
+        </div>
+      </div>
+
+      <!-- Récap quotidien -->
+      <div class="card" style="margin-top:var(--space-md);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));border:1px solid var(--border-color);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <iconify-icon icon="solar:clipboard-list-bold-duotone" style="font-size:24px;color:var(--volt-blue);"></iconify-icon>
+          <div>
+            <div style="font-weight:700;font-size:var(--font-size-md);">Récap du ${d.periodLabel}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Vue d'ensemble de la journée</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
+            <iconify-icon icon="solar:users-group-rounded-bold-duotone" style="font-size:20px;color:var(--volt-cyan);"></iconify-icon>
+            <div>
+              <div style="font-weight:600;font-size:var(--font-size-sm);">${d.programmesCount} chauffeur${d.programmesCount > 1 ? 's' : ''} programmé${d.programmesCount > 1 ? 's' : ''}</div>
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">sur ${d.activeCount} actifs</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
+            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:20px;color:${d.unpaidItems.length > 0 ? 'var(--danger)' : 'var(--success)'};"></iconify-icon>
+            <div>
+              <div style="font-weight:600;font-size:var(--font-size-sm);">${d.unpaidItems.length > 0 ? d.unpaidItems.length + ' recette' + (d.unpaidItems.length > 1 ? 's' : '') + ' impayée' + (d.unpaidItems.length > 1 ? 's' : '') : 'Aucune recette impayée'}</div>
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${d.unpaidItems.length > 0 ? Utils.formatCurrency(d.totalUnpaid) + ' à recouvrer' : 'Tout est à jour ✓'}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
+            <iconify-icon icon="solar:shield-warning-bold-duotone" style="font-size:20px;color:${d.maintenanceAlerts.length > 0 ? 'var(--warning)' : 'var(--success)'};"></iconify-icon>
+            <div>
+              <div style="font-weight:600;font-size:var(--font-size-sm);">${d.maintenanceAlerts.length > 0 ? d.maintenanceAlerts.length + ' alerte' + (d.maintenanceAlerts.length > 1 ? 's' : '') + ' maintenance' : 'Aucune alerte maintenance'}</div>
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${d.maintenanceAlerts.length > 0 ? 'Action requise' : 'Flotte en bon état ✓'}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
+            <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:20px;color:var(--volt-blue);"></iconify-icon>
+            <div>
+              <div style="font-weight:600;font-size:var(--font-size-sm);">${Utils.formatCurrency(d.caThisMonth)} CA</div>
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${d.monthCourses} course${d.monthCourses > 1 ? 's' : ''} terminée${d.monthCourses > 1 ? 's' : ''}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Maintenance Alerts -->
@@ -495,7 +577,7 @@ const DashboardPage = {
             fill: true,
             borderWidth: 2,
             pointBackgroundColor: '#3b82f6',
-            pointBorderColor: '#111827',
+            pointBorderColor: Utils.chartBorderColor(),
             pointBorderWidth: 2,
             pointHoverRadius: 8,
             pointHoverBorderWidth: 3,
@@ -603,7 +685,7 @@ const DashboardPage = {
           datasets: [{
             data: types.map(t => d.coursesByType[t]),
             backgroundColor: colors.slice(0, types.length),
-            borderColor: '#111827',
+            borderColor: Utils.chartBorderColor(),
             borderWidth: 2,
             hoverOffset: 12
           }]

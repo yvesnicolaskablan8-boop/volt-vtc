@@ -68,6 +68,8 @@ const VersementsPage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon> Versements</h1>
         <div class="page-actions">
+          <button class="btn btn-secondary" onclick="VersementsPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
+          <button class="btn btn-secondary" onclick="VersementsPage._exportCSV()"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> CSV</button>
           <button class="btn btn-primary" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouveau versement</button>
         </div>
       </div>
@@ -151,7 +153,7 @@ const VersementsPage = {
           datasets: [{
             data: statusKeys.map(k => d.byStatus[k]),
             backgroundColor: ['#22c55e', '#f59e0b', '#ef4444', '#3b82f6'],
-            borderColor: '#111827',
+            borderColor: Utils.chartBorderColor(),
             borderWidth: 2,
             hoverOffset: 12
           }]
@@ -452,5 +454,59 @@ const VersementsPage = {
     const v = Store.findById('versements', id);
     if (!v) return;
     DashboardPage._generateReceiptPDF(v.chauffeurId, v.date, v.montantVerse, v.moyenPaiement, v.referencePaiement);
+  },
+
+  _exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const versements = Store.get('versements').filter(v => v.statut !== 'supprime');
+    const chauffeurs = Store.get('chauffeurs');
+
+    doc.setFontSize(18);
+    doc.text('Rapport des Versements', 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    const rows = versements.slice(0, 50).map(v => {
+      const ch = chauffeurs.find(c => c.id === v.chauffeurId);
+      return [
+        ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId,
+        Utils.formatDate(v.date),
+        Utils.formatCurrency(v.montantVerse),
+        v.statut
+      ];
+    });
+
+    doc.autoTable({
+      head: [['Chauffeur', 'Date', 'Montant', 'Statut']],
+      body: rows,
+      startY: 36,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+
+    doc.save('versements-volt.pdf');
+    Toast.success('PDF exporté');
+  },
+
+  _exportCSV() {
+    const versements = Store.get('versements').filter(v => v.statut !== 'supprime');
+    const chauffeurs = Store.get('chauffeurs');
+
+    let csv = 'Chauffeur,Date,Montant,Statut,Commentaire\n';
+    versements.forEach(v => {
+      const ch = chauffeurs.find(c => c.id === v.chauffeurId);
+      const name = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+      csv += `"${name}","${v.date}","${v.montantVerse}","${v.statut}","${(v.commentaire || '').replace(/"/g, '""')}"\n`;
+    });
+
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'versements-volt.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    Toast.success('CSV exporté');
   }
 };

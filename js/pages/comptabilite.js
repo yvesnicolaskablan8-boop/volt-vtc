@@ -36,6 +36,8 @@ const ComptabilitePage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Comptabilité</h1>
         <div class="page-actions">
+          <button class="btn btn-secondary" onclick="ComptabilitePage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
+          <button class="btn btn-secondary" onclick="ComptabilitePage._exportCSV()"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> CSV</button>
           <button class="btn btn-success" id="btn-add-recette"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Encaissement</button>
           <button class="btn btn-danger" id="btn-add-depense"><iconify-icon icon="solar:minus-circle-bold-duotone"></iconify-icon> Décaissement</button>
         </div>
@@ -338,7 +340,7 @@ const ComptabilitePage = {
           datasets: [{
             data: depensesData,
             backgroundColor: catColors.slice(0, cats.length),
-            borderColor: '#111827',
+            borderColor: Utils.chartBorderColor(),
             borderWidth: 2,
             hoverOffset: 12
           }]
@@ -1272,5 +1274,92 @@ const ComptabilitePage = {
     Store.update('factures', id, { statut: 'payee' });
     Toast.success('Facture marquée comme payée');
     this._renderTab('factures');
+  },
+
+  _exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const ops = this._getOperations().sort((a, b) => b.date.localeCompare(a.date));
+    const factures = this._getFactures();
+
+    doc.setFontSize(18);
+    doc.text('Rapport Comptable', 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    // Summary
+    const recettes = ops.filter(o => o.type === 'recette').reduce((s, o) => s + o.montant, 0);
+    const depenses = ops.filter(o => o.type === 'depense').reduce((s, o) => s + o.montant, 0);
+    const resultat = recettes - depenses;
+    doc.setFontSize(11);
+    doc.text(`Total encaissements : ${Utils.formatCurrency(recettes)}`, 14, 40);
+    doc.text(`Total décaissements : ${Utils.formatCurrency(depenses)}`, 14, 46);
+    doc.text(`Résultat net : ${Utils.formatCurrency(resultat)}`, 14, 52);
+
+    // Operations table
+    doc.setFontSize(13);
+    doc.text('Journal des opérations', 14, 64);
+
+    const rows = ops.slice(0, 60).map(o => [
+      Utils.formatDate(o.date),
+      o.type === 'recette' ? 'Encaissement' : 'Décaissement',
+      this._catLabel(o.categorie),
+      o.description || '',
+      `${o.type === 'recette' ? '+' : '-'}${Utils.formatCurrency(o.montant)}`,
+      o.reference || ''
+    ]);
+
+    doc.autoTable({
+      head: [['Date', 'Type', 'Catégorie', 'Description', 'Montant', 'Réf.']],
+      body: rows,
+      startY: 68,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+
+    // Factures table if any
+    if (factures.length > 0) {
+      const lastY = doc.lastAutoTable.finalY + 12;
+      doc.setFontSize(13);
+      doc.text('Factures', 14, lastY);
+
+      const fRows = factures.slice(0, 30).map(f => [
+        f.numero || f.id,
+        f.type === 'client' ? 'Client' : 'Fournisseur',
+        Utils.formatDate(f.date),
+        Utils.formatCurrency(f.montantTTC || f.montant || 0),
+        f.statut
+      ]);
+
+      doc.autoTable({
+        head: [['Numéro', 'Type', 'Date', 'Montant TTC', 'Statut']],
+        body: fRows,
+        startY: lastY + 4,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [59, 130, 246] }
+      });
+    }
+
+    doc.save('comptabilite-volt.pdf');
+    Toast.success('PDF exporté');
+  },
+
+  _exportCSV() {
+    const ops = this._getOperations().sort((a, b) => b.date.localeCompare(a.date));
+
+    let csv = 'Date,Type,Catégorie,Description,Montant,Référence,Mode paiement\n';
+    ops.forEach(o => {
+      const montant = o.type === 'recette' ? o.montant : -o.montant;
+      csv += `"${Utils.formatDate(o.date)}","${o.type === 'recette' ? 'Encaissement' : 'Décaissement'}","${this._catLabel(o.categorie)}","${(o.description || '').replace(/"/g, '""')}","${montant}","${o.reference || ''}","${o.modePaiement || ''}"\n`;
+    });
+
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'comptabilite-volt.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    Toast.success('CSV exporté');
   }
 };

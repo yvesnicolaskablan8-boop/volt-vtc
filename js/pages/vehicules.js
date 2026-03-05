@@ -4,6 +4,7 @@
  */
 const VehiculesPage = {
   _charts: [],
+  _carburantChart: null,
 
   render() {
     const container = document.getElementById('page-content');
@@ -27,6 +28,10 @@ const VehiculesPage = {
   destroy() {
     this._charts.forEach(c => c.destroy());
     this._charts = [];
+    if (this._carburantChart) {
+      this._carburantChart.destroy();
+      this._carburantChart = null;
+    }
     if (this._yangoRefreshInterval) {
       clearInterval(this._yangoRefreshInterval);
       this._yangoRefreshInterval = null;
@@ -329,6 +334,9 @@ const VehiculesPage = {
         ${this._renderPlanifiedMaintenances(v)}
       </div>
 
+      <!-- Carburant / Énergie -->
+      ${this._renderCarburantSection(v)}
+
       <!-- Maintenance history -->
       <div class="card" style="margin-top:var(--space-lg);">
         <div class="card-header">
@@ -459,6 +467,9 @@ const VehiculesPage = {
       data: (v.coutsMaintenance || []).sort((a, b) => b.date.localeCompare(a.date)),
       pageSize: 10
     });
+
+    // Load carburant chart
+    this._loadCarburantChart(v.id);
   },
 
   _bindDetailEvents(vehicule) {
@@ -592,7 +603,10 @@ const VehiculesPage = {
       { name: 'assureur', label: 'Assureur', type: 'text' },
       { name: 'primeAnnuelle', label: 'Prime annuelle (FCFA)', type: 'number', min: 0 },
       { type: 'row-end' },
-      { name: 'chauffeurAssigne', label: 'Chauffeur assigné', type: 'select', placeholder: 'Sélectionner...', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) }
+      { type: 'row-start' },
+      { name: 'chauffeurAssigne', label: 'Chauffeur assigné', type: 'select', placeholder: 'Sélectionner...', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
+      { name: 'parcId', label: 'Parc', type: 'select', placeholder: 'Aucun parc', options: (Store.get('parcs') || []).map(p => ({ value: p.id, label: p.nom })) },
+      { type: 'row-end' }
     ];
   },
 
@@ -1096,5 +1110,165 @@ const VehiculesPage = {
         this.renderDetail(vehiculeId);
       }
     );
+  },
+
+  // ========================= CARBURANT / ÉNERGIE =========================
+
+  _renderCarburantSection(vehicule) {
+    const depenses = Store.get('depenses') || [];
+    const carburant = depenses.filter(d => d.vehiculeId === vehicule.id && (d.typeDepense === 'carburant' || d.typeDepense === 'recharge'));
+    const isEV = vehicule.typeEnergie === 'electrique';
+
+    // Last 6 months
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const m = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+      const monthCarb = carburant.filter(c => {
+        const d = new Date(c.date);
+        return d >= m && d <= monthEnd;
+      });
+      months.push({
+        label: Utils.getMonthShort(m.getMonth()),
+        total: monthCarb.reduce((s, c) => s + (c.montant || 0), 0),
+        litres: monthCarb.reduce((s, c) => s + (c.quantite || 0), 0)
+      });
+    }
+
+    const totalCarburant = carburant.reduce((s, c) => s + (c.montant || 0), 0);
+    const totalLitres = carburant.reduce((s, c) => s + (c.quantite || 0), 0);
+    const avgConsommation = vehicule.kilometrage > 0 && totalLitres > 0
+      ? (totalLitres / (vehicule.kilometrage / 100)).toFixed(1)
+      : vehicule.consommation || 0;
+
+    return `
+      <div class="card" style="margin-top:var(--space-md);">
+        <div class="card-header">
+          <span class="card-title"><iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon> ${isEV ? 'Recharges' : 'Carburant'}</span>
+          <button class="btn btn-sm btn-primary" onclick="VehiculesPage._addCarburant('${vehicule.id}')">
+            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> ${isEV ? 'Recharge' : 'Plein'}
+          </button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+          <div style="text-align:center;padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
+            <div style="font-size:var(--font-size-lg);font-weight:700;color:var(--volt-blue);">${Utils.formatCurrency(totalCarburant)}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Total dépensé</div>
+          </div>
+          <div style="text-align:center;padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
+            <div style="font-size:var(--font-size-lg);font-weight:700;color:var(--success);">${totalLitres.toFixed(1)} ${isEV ? 'kWh' : 'L'}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Total ${isEV ? 'rechargé' : 'consommé'}</div>
+          </div>
+          <div style="text-align:center;padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
+            <div style="font-size:var(--font-size-lg);font-weight:700;color:var(--warning);">${avgConsommation} ${isEV ? 'kWh' : 'L'}/100km</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Consommation moy.</div>
+          </div>
+        </div>
+        <div style="height:200px;">
+          <canvas id="chart-carburant"></canvas>
+        </div>
+        ${carburant.length > 0 ? `
+          <div style="margin-top:12px;">
+            <div style="font-size:var(--font-size-xs);font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Derniers pleins</div>
+            ${carburant.sort((a,b) => b.date.localeCompare(a.date)).slice(0, 5).map(c => `
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:var(--font-size-xs);">
+                <span>${Utils.formatDate(c.date)}</span>
+                <span>${(c.quantite || 0).toFixed(1)} ${isEV ? 'kWh' : 'L'}</span>
+                <span style="font-weight:600;">${Utils.formatCurrency(c.montant || 0)}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  },
+
+  _loadCarburantChart(vehiculeId) {
+    const ctx = document.getElementById('chart-carburant');
+    if (!ctx) return;
+
+    const depenses = Store.get('depenses') || [];
+    const vehicule = Store.findById('vehicules', vehiculeId);
+    const isEV = vehicule && vehicule.typeEnergie === 'electrique';
+    const carburant = depenses.filter(d => d.vehiculeId === vehiculeId && (d.typeDepense === 'carburant' || d.typeDepense === 'recharge'));
+
+    const now = new Date();
+    const labels = [];
+    const data = [];
+    for (let i = 5; i >= 0; i--) {
+      const m = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+      labels.push(Utils.getMonthShort(m.getMonth()));
+      const monthTotal = carburant.filter(c => {
+        const d = new Date(c.date);
+        return d >= m && d <= monthEnd;
+      }).reduce((s, c) => s + (c.montant || 0), 0);
+      data.push(monthTotal);
+    }
+
+    if (this._carburantChart) this._carburantChart.destroy();
+    this._carburantChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: isEV ? 'Recharges' : 'Carburant',
+          data,
+          backgroundColor: isEV ? 'rgba(34, 197, 94, 0.7)' : 'rgba(245, 158, 11, 0.7)',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => Utils.formatCurrency(v) } } }
+      }
+    });
+  },
+
+  _addCarburant(vehiculeId) {
+    const vehicule = Store.findById('vehicules', vehiculeId);
+    const isEV = vehicule && vehicule.typeEnergie === 'electrique';
+
+    const fields = [
+      { name: 'date', label: 'Date', type: 'date', required: true, default: new Date().toISOString().split('T')[0] },
+      { type: 'row-start' },
+      { name: 'quantite', label: isEV ? 'kWh rechargés' : 'Litres', type: 'number', min: 0, step: 0.1, required: true },
+      { name: 'montant', label: 'Coût (FCFA)', type: 'number', min: 0, required: true },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'kilometrage', label: 'Kilométrage actuel', type: 'number', min: 0, default: vehicule ? vehicule.kilometrage : 0 },
+      { name: 'station', label: isEV ? 'Station de charge' : 'Station service', type: 'text', placeholder: 'Nom de la station' },
+      { type: 'row-end' },
+      { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
+    ];
+
+    Modal.form(`<iconify-icon icon="solar:gas-station-bold-duotone" class="text-blue"></iconify-icon> ${isEV ? 'Nouvelle recharge' : 'Nouveau plein'}`, FormBuilder.build(fields), () => {
+      const body = document.getElementById('modal-body');
+      if (!FormBuilder.validate(body, fields)) return;
+      const values = FormBuilder.getValues(body);
+
+      Store.add('depenses', {
+        id: Utils.generateId('DEP'),
+        vehiculeId,
+        typeDepense: isEV ? 'recharge' : 'carburant',
+        date: values.date,
+        montant: values.montant,
+        quantite: values.quantite,
+        station: values.station,
+        notes: values.notes,
+        dateCreation: new Date().toISOString()
+      });
+
+      // Update vehicle km
+      if (values.kilometrage && vehicule) {
+        Store.update('vehicules', vehiculeId, { kilometrage: values.kilometrage });
+      }
+
+      Modal.close();
+      Toast.success(isEV ? 'Recharge enregistrée' : 'Plein enregistré');
+      this.renderDetail(vehiculeId);
+    });
   }
 };

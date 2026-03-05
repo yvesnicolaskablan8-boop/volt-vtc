@@ -39,6 +39,8 @@ const PlanningPage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning Chauffeurs</h1>
         <div class="page-actions">
+          <button class="btn btn-secondary" onclick="PlanningPage._showTemplates()"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon> Modèles</button>
+          <button class="btn btn-secondary" onclick="PlanningPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
           <button class="btn btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Déclarer une absence</button>
           <button class="btn btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Ajouter un créneau</button>
         </div>
@@ -329,16 +331,16 @@ const PlanningPage = {
                   }
 
                   if (shifts.length > 0) {
-                    return `<td style="padding:4px;text-align:center;${isToday ? 'background:rgba(59,130,246,0.05);' : ''}">
+                    return `<td style="padding:4px;text-align:center;${isToday ? 'background:rgba(59,130,246,0.05);' : ''}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')" ondragenter="this.style.background='rgba(59,130,246,0.1)'" ondragleave="this.style.background='${isToday ? 'rgba(59,130,246,0.05)' : ''}'">
                       ${shifts.map(s => `
-                        <div style="background:${this._getShiftColor(s)}22;border:1px solid ${this._getShiftColor(s)}44;border-radius:6px;padding:6px 4px;margin-bottom:2px;cursor:pointer;" onclick="PlanningPage._editShift('${s.id}')" title="${this._getShiftTimeLabel(s)}">
+                        <div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="background:${this._getShiftColor(s)}22;border:1px solid ${this._getShiftColor(s)}44;border-radius:6px;padding:6px 4px;margin-bottom:2px;cursor:grab;" onclick="PlanningPage._editShift('${s.id}')" title="${this._getShiftTimeLabel(s)}">
                           <div style="font-size:12px;font-weight:700;color:${this._getShiftColor(s)};">${this._getShiftTimeShort(s)}</div>
                         </div>
                       `).join('')}
                     </td>`;
                   }
 
-                  return `<td style="padding:4px;text-align:center;${isToday ? 'background:rgba(59,130,246,0.05);' : ''}">
+                  return `<td style="padding:4px;text-align:center;${isToday ? 'background:rgba(59,130,246,0.05);' : ''}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')" ondragenter="this.style.background='rgba(59,130,246,0.1)'" ondragleave="this.style.background='${isToday ? 'rgba(59,130,246,0.05)' : ''}'">
                     <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="border:1px dashed var(--border-color);border-radius:6px;padding:8px 4px;cursor:pointer;opacity:0.4;transition:all 0.2s;" onmouseenter="this.style.opacity='1';this.style.borderColor='var(--volt-blue)'" onmouseleave="this.style.opacity='0.4';this.style.borderColor='var(--border-color)'">
                       <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:10px;color:var(--text-muted);"></iconify-icon>
                     </div>
@@ -662,7 +664,7 @@ const PlanningPage = {
           datasets: [{
             data: absEntries.map(([, v]) => v),
             backgroundColor: absEntries.map(([k]) => this._absenceTypeColor(k)),
-            borderColor: '#111827', borderWidth: 2,
+            borderColor: Utils.chartBorderColor(), borderWidth: 2,
             hoverOffset: 12
           }]
         },
@@ -737,6 +739,73 @@ const PlanningPage = {
 
     // Auto-remplir les heures quand on choisit un preset
     this._bindShiftPresetListener();
+  },
+
+  // =================== DRAG & DROP ===================
+
+  _draggedShiftId: null,
+
+  _onDragStart(event, shiftId) {
+    this._draggedShiftId = shiftId;
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', shiftId);
+    event.target.style.opacity = '0.5';
+  },
+
+  _onDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  },
+
+  _onDrop(event, targetChauffeurId, targetDate) {
+    event.preventDefault();
+    event.currentTarget.style.background = '';
+
+    const shiftId = this._draggedShiftId;
+    if (!shiftId) return;
+
+    const shift = Store.findById('planning', shiftId);
+    if (!shift) return;
+
+    // Pas de changement si même chauffeur et même date
+    if (shift.chauffeurId === targetChauffeurId && shift.date === targetDate) {
+      this._draggedShiftId = null;
+      return;
+    }
+
+    // Vérifier doublon à la destination
+    const planning = Store.get('planning') || [];
+    const exists = planning.some(p =>
+      p.id !== shiftId &&
+      p.chauffeurId === targetChauffeurId &&
+      p.date === targetDate &&
+      p.heureDebut === shift.heureDebut &&
+      p.heureFin === shift.heureFin
+    );
+
+    if (exists) {
+      Toast.error('Ce créneau existe déjà à cette date');
+      this._draggedShiftId = null;
+      return;
+    }
+
+    // Vérifier absence à la destination
+    const absences = this._getDriverAbsencesForDate(targetChauffeurId, targetDate);
+    if (absences.length > 0) {
+      Toast.error('Ce chauffeur est absent ce jour-là');
+      this._draggedShiftId = null;
+      return;
+    }
+
+    // Mettre à jour le créneau
+    Store.update('planning', shiftId, {
+      chauffeurId: targetChauffeurId,
+      date: targetDate
+    });
+
+    this._draggedShiftId = null;
+    Toast.success('Créneau déplacé');
+    this._renderView();
   },
 
   _editShift(id) {
@@ -916,5 +985,163 @@ const PlanningPage = {
         };
       }
     }, 50);
+  },
+
+  _showTemplates() {
+    const templates = Store.get('planningTemplates') || [];
+
+    let body = '<div style="margin-bottom:16px;">';
+    body += '<button class="btn btn-primary btn-sm" onclick="PlanningPage._saveCurrentWeekAsTemplate()"><iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Sauvegarder la semaine actuelle</button>';
+    body += '</div>';
+
+    if (templates.length === 0) {
+      body += '<p style="color:var(--text-muted);text-align:center;padding:20px;">Aucun modèle sauvegardé.<br>Sauvegardez une semaine de planning pour créer votre premier modèle.</p>';
+    } else {
+      body += templates.map(t => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);margin-bottom:8px;">
+          <div>
+            <div style="font-weight:600;">${t.name}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${t.shifts.length} créneau${t.shifts.length > 1 ? 'x' : ''} — Créé le ${Utils.formatDate(t.dateCreation)}</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-sm btn-primary" onclick="PlanningPage._applyTemplate('${t.id}')"><iconify-icon icon="solar:play-bold"></iconify-icon> Appliquer</button>
+            <button class="btn btn-sm btn-danger" onclick="PlanningPage._deleteTemplate('${t.id}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    Modal.open({ title: '<iconify-icon icon="solar:copy-bold-duotone" class="text-blue"></iconify-icon> Modèles de planning', body, footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>' });
+  },
+
+  _saveCurrentWeekAsTemplate() {
+    const weekStart = new Date(this._currentWeekStart);
+    const planning = Store.get('planning') || [];
+
+    // Get all shifts for the current week
+    const weekShifts = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      const dateStr = this._dateStr(d);
+      const dayShifts = planning.filter(p => p.date === dateStr);
+      dayShifts.forEach(s => {
+        weekShifts.push({
+          dayOfWeek: i, // 0=lundi, 1=mardi...
+          chauffeurId: s.chauffeurId,
+          typeCreneaux: s.typeCreneaux,
+          heureDebut: s.heureDebut,
+          heureFin: s.heureFin,
+          notes: s.notes || ''
+        });
+      });
+    }
+
+    if (weekShifts.length === 0) {
+      Toast.warning('Aucun créneau cette semaine à sauvegarder');
+      return;
+    }
+
+    // Ask for name
+    const name = prompt('Nom du modèle :', `Semaine type — ${weekShifts.length} créneaux`);
+    if (!name) return;
+
+    const templates = Store.get('planningTemplates') || [];
+    templates.push({
+      id: Utils.generateId('TPL'),
+      name,
+      shifts: weekShifts,
+      dateCreation: new Date().toISOString().split('T')[0]
+    });
+    Store.set('planningTemplates', templates);
+    Modal.close();
+    Toast.success('Modèle sauvegardé');
+    this._showTemplates();
+  },
+
+  _applyTemplate(templateId) {
+    const templates = Store.get('planningTemplates') || [];
+    const tpl = templates.find(t => t.id === templateId);
+    if (!tpl) return;
+
+    Modal.confirm('Appliquer le modèle ?', `Voulez-vous appliquer le modèle <strong>${tpl.name}</strong> à la semaine actuelle ? Les créneaux existants ne seront pas supprimés, seuls les nouveaux seront ajoutés.`, () => {
+      const weekStart = new Date(this._currentWeekStart);
+      const planning = Store.get('planning') || [];
+      let added = 0;
+
+      tpl.shifts.forEach(s => {
+        const d = new Date(weekStart);
+        d.setDate(d.getDate() + s.dayOfWeek);
+        const dateStr = this._dateStr(d);
+
+        // Check for duplicate
+        const exists = planning.some(p =>
+          p.chauffeurId === s.chauffeurId &&
+          p.date === dateStr &&
+          p.heureDebut === s.heureDebut &&
+          p.heureFin === s.heureFin
+        );
+
+        if (!exists) {
+          Store.add('planning', {
+            id: Utils.generateId('PLN'),
+            chauffeurId: s.chauffeurId,
+            date: dateStr,
+            typeCreneaux: s.typeCreneaux,
+            heureDebut: s.heureDebut,
+            heureFin: s.heureFin,
+            notes: s.notes,
+            dateCreation: new Date().toISOString()
+          });
+          added++;
+        }
+      });
+
+      Modal.close();
+      Toast.success(`${added} créneau${added > 1 ? 'x' : ''} ajouté${added > 1 ? 's' : ''}`);
+      this._renderView();
+    });
+  },
+
+  _deleteTemplate(templateId) {
+    const templates = Store.get('planningTemplates') || [];
+    const filtered = templates.filter(t => t.id !== templateId);
+    Store.set('planningTemplates', filtered);
+    Toast.success('Modèle supprimé');
+    this._showTemplates();
+  },
+
+  _exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape');
+    const planning = Store.get('planning') || [];
+    const chauffeurs = Store.get('chauffeurs').filter(c => c.statut === 'actif');
+
+    doc.setFontSize(18);
+    doc.text('Planning des Chauffeurs', 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+
+    const rows = planning.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 80).map(p => {
+      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
+      return [
+        ch ? `${ch.prenom} ${ch.nom}` : p.chauffeurId,
+        Utils.formatDate(p.date),
+        p.typeCreneaux || 'custom',
+        `${p.heureDebut || ''} - ${p.heureFin || ''}`,
+        p.notes || ''
+      ];
+    });
+
+    doc.autoTable({
+      head: [['Chauffeur', 'Date', 'Type', 'Horaires', 'Notes']],
+      body: rows,
+      startY: 36,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+
+    doc.save('planning-volt.pdf');
+    Toast.success('PDF exporté');
   }
 };
