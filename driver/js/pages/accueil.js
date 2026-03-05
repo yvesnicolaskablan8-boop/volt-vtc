@@ -102,12 +102,7 @@ const AccueilPage = {
           ${creneau.notes ? `<div style="margin-top:10px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.15);font-size:0.78rem">${creneau.notes}</div>` : ''}
         </div>`;
     } else {
-      todayShiftHTML = `
-        <div style="border-radius:1.25rem;background:white;border:2px dashed #e2e8f0;padding:1.5rem;margin-bottom:1.25rem;text-align:center">
-          <iconify-icon icon="solar:calendar-minimalistic-bold-duotone" style="font-size:2.5rem;color:#cbd5e1;display:block;margin-bottom:8px"></iconify-icon>
-          <div style="font-size:0.95rem;font-weight:700;color:#64748b;margin-bottom:4px">Pas de creneau aujourd'hui</div>
-          <div style="font-size:0.78rem;color:#94a3b8">Profitez de votre journee de repos</div>
-        </div>`;
+      todayShiftHTML = '';
     }
 
     // === Next shift info when no shift today ===
