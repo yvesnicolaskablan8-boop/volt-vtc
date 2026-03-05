@@ -22,13 +22,14 @@ router.get('/', async (req, res, next) => {
     const Settings = require('../models/Settings');
     const Signalement = require('../models/Signalement');
     const Pointage = require('../models/Pointage');
+    const ConduiteBrute = require('../models/ConduiteBrute');
 
     // Fetch all collections in parallel
     const [
       chauffeurs, vehicules, courses, versements,
       gps, comptabilite, factures, budgets,
       planning, absences, users, settingsDoc, signalements,
-      pointages
+      pointages, conduiteBrute
     ] = await Promise.all([
       Chauffeur.find().lean(),
       Vehicule.find().lean(),
@@ -43,7 +44,8 @@ router.get('/', async (req, res, next) => {
       User.find().lean(),
       Settings.findOne().lean(),
       Signalement.find().lean(),
-      Pointage.find().lean()
+      Pointage.find().lean(),
+      ConduiteBrute.find().lean()
     ]);
 
     // Clean MongoDB fields (_id, __v) from all documents
@@ -71,6 +73,7 @@ router.get('/', async (req, res, next) => {
       users: cleanUsers,
       signalements: clean(signalements),
       pointages: clean(pointages),
+      conduiteBrute: clean(conduiteBrute),
       settings
     });
   } catch (err) {

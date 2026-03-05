@@ -249,6 +249,7 @@ const Store = {
       users: [],
       signalements: [],
       pointages: [],
+      conduiteBrute: [],
       settings: { entreprise: {}, preferences: {} }
     };
   },

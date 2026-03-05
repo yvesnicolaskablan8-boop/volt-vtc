@@ -194,6 +194,20 @@ const DriverStore = {
     return this._post('/location', { lat, lng, speed, heading, accuracy });
   },
 
+  // ===== BEHAVIOR / ANALYSE CONDUITE =====
+
+  sendBehaviorEvents(batch) {
+    return this._post('/behavior/events', batch);
+  },
+
+  finalizeBehaviorSession() {
+    return this._post('/behavior/finalize', {});
+  },
+
+  getBehaviorStatus() {
+    return this._get('/behavior/status');
+  },
+
   // ===== MAINTENANCES =====
 
   getMaintenances() {

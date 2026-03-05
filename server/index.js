@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -32,6 +32,7 @@ app.use('/api/absences', require('./routes/crud')('Absence'));
 app.use('/api/users', require('./routes/crud')('User'));
 app.use('/api/signalements', require('./routes/crud')('Signalement'));
 app.use('/api/pointages', require('./routes/crud')('Pointage'));
+app.use('/api/conduiteBrute', require('./routes/crud')('ConduiteBrute'));
 app.use('/api/yango', require('./routes/yango'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));

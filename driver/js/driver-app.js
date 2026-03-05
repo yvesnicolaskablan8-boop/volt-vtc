@@ -259,13 +259,18 @@ const DriverApp = {
     const sendPosition = () => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          DriverStore.sendLocation(
-            pos.coords.latitude,
-            pos.coords.longitude,
-            pos.coords.speed != null ? Math.round(pos.coords.speed * 3.6) : null,
-            pos.coords.heading,
-            pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null
-          );
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const speed = pos.coords.speed != null ? Math.round(pos.coords.speed * 3.6) : null;
+          const heading = pos.coords.heading;
+          const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null;
+
+          DriverStore.sendLocation(lat, lng, speed, heading, accuracy);
+
+          // Alimenter le module d'analyse de conduite avec la position GPS
+          if (typeof DriverBehavior !== 'undefined' && DriverBehavior._active) {
+            DriverBehavior.updatePosition(lat, lng, speed, heading);
+          }
         },
         (err) => console.warn('[Geo] Erreur:', err.message),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 }

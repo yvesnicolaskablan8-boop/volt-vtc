@@ -208,6 +208,7 @@ const AccueilPage = {
     if (serviceJour) {
       if (serviceJour.statut === 'en_service') {
         this._startServiceTimer(serviceJour.heureDebut, serviceJour.evenements);
+        this._resumeBehaviorIfActive(serviceJour);
       } else if (serviceJour.statut === 'pause') {
         this._startPauseTimer(serviceJour.evenements);
       }
@@ -655,6 +656,12 @@ const AccueilPage = {
     }
 
     if (statut === 'en_service') {
+      const behaviorState = typeof DriverBehavior !== 'undefined' ? DriverBehavior.getState() : null;
+      const isTracking = behaviorState && behaviorState.active;
+      const score = isTracking ? behaviorState.score : '--';
+      const scoreColor = isTracking ? (behaviorState.score >= 70 ? '#fff' : behaviorState.score >= 50 ? '#fef3c7' : '#fecaca') : '#fff';
+      const counters = isTracking ? behaviorState.counters : { freinagesBrusques: 0, accelerationsBrusques: 0, viragesAgressifs: 0, excesVitesse: 0 };
+
       return `
         <div id="service-card" style="border-radius:1.25rem;background:linear-gradient(135deg,#22c55e,#16a34a);padding:1.25rem;margin-bottom:1.25rem;color:white;box-shadow:0 4px 16px rgba(34,197,94,0.2)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -664,7 +671,41 @@ const AccueilPage = {
             </div>
             <span id="service-timer" style="font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums">--:--:--</span>
           </div>
-          <div style="display:flex;gap:10px;margin-top:14px">
+
+          <!-- Analyse conduite en direct -->
+          <div id="behavior-live" style="background:rgba(0,0,0,0.15);border-radius:0.75rem;padding:10px 12px;margin-bottom:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <iconify-icon icon="solar:shield-check-bold-duotone" style="font-size:0.9rem"></iconify-icon>
+                <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;opacity:0.85">Conduite${isTracking ? '' : ' (capteurs inactifs)'}</span>
+              </div>
+              <span id="behavior-live-score" style="font-size:1.1rem;font-weight:900;color:${scoreColor}">${score}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+              <div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:6px;padding:6px 2px">
+                <iconify-icon icon="solar:hand-shake-bold-duotone" style="font-size:0.8rem;opacity:0.9"></iconify-icon>
+                <div id="behavior-count-freinage" style="font-size:0.85rem;font-weight:800">${counters.freinagesBrusques}</div>
+                <div style="font-size:0.55rem;opacity:0.7">Freinages</div>
+              </div>
+              <div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:6px;padding:6px 2px">
+                <iconify-icon icon="solar:rocket-2-bold-duotone" style="font-size:0.8rem;opacity:0.9"></iconify-icon>
+                <div id="behavior-count-acceleration" style="font-size:0.85rem;font-weight:800">${counters.accelerationsBrusques}</div>
+                <div style="font-size:0.55rem;opacity:0.7">Accel.</div>
+              </div>
+              <div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:6px;padding:6px 2px">
+                <iconify-icon icon="solar:route-bold-duotone" style="font-size:0.8rem;opacity:0.9"></iconify-icon>
+                <div id="behavior-count-virage" style="font-size:0.85rem;font-weight:800">${counters.viragesAgressifs}</div>
+                <div style="font-size:0.55rem;opacity:0.7">Virages</div>
+              </div>
+              <div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:6px;padding:6px 2px">
+                <iconify-icon icon="solar:speed-bold-duotone" style="font-size:0.8rem;opacity:0.9"></iconify-icon>
+                <div id="behavior-count-vitesse" style="font-size:0.85rem;font-weight:800">${counters.excesVitesse}</div>
+                <div style="font-size:0.55rem;opacity:0.7">Vitesse</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px">
             <button onclick="AccueilPage._pauseService()" style="flex:1;padding:12px;border-radius:0.75rem;border:none;background:rgba(255,255,255,0.2);color:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit">
               <iconify-icon icon="solar:pause-bold" style="margin-right:4px"></iconify-icon> Faire une pause
             </button>
@@ -704,13 +745,18 @@ const AccueilPage = {
       const debut = new Date(serviceJour.heureDebut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       const fin = new Date(serviceJour.heureFin).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
+      // Score conduite (si disponible via behaviorScores)
+      const bs = serviceJour.behaviorScores;
+      const scoreGlobal = bs ? bs.scoreGlobal : null;
+      const scoreColor = scoreGlobal !== null ? (scoreGlobal >= 80 ? '#22c55e' : scoreGlobal >= 50 ? '#f59e0b' : '#ef4444') : '#94a3b8';
+
       return `
         <div id="service-card" style="border-radius:1.25rem;background:white;border:1px solid #e2e8f0;padding:1.25rem;margin-bottom:1.25rem">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
             <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:1.2rem;color:#22c55e"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b">Journee terminee</span>
           </div>
-          <div style="display:flex;gap:12px;text-align:center">
+          <div style="display:flex;gap:12px;text-align:center;margin-bottom:${scoreGlobal !== null ? '12px' : '0'}">
             <div style="flex:1;background:#f8fafc;border-radius:0.75rem;padding:10px 8px">
               <div style="font-size:0.68rem;color:#94a3b8">Duree travail</div>
               <div style="font-size:1.1rem;font-weight:800;color:#0f172a">${dureeH}h${String(dureeM).padStart(2, '0')}</div>
@@ -724,6 +770,15 @@ const AccueilPage = {
               <div style="font-size:0.85rem;font-weight:700;color:#0f172a">${debut} - ${fin}</div>
             </div>
           </div>
+          ${scoreGlobal !== null ? `
+          <div style="background:#f8fafc;border-radius:0.75rem;padding:12px;display:flex;align-items:center;gap:12px">
+            <div style="width:48px;height:48px;border-radius:50%;background:${scoreColor};display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.1rem;flex-shrink:0">${scoreGlobal}</div>
+            <div style="flex:1">
+              <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:2px">Score conduite</div>
+              <div style="font-size:0.68rem;color:#94a3b8">${scoreGlobal >= 80 ? 'Excellente conduite' : scoreGlobal >= 50 ? 'Conduite correcte, des ameliorations possibles' : 'Attention a votre conduite'}</div>
+            </div>
+            <iconify-icon icon="solar:shield-check-bold-duotone" style="font-size:1.5rem;color:${scoreColor}"></iconify-icon>
+          </div>` : ''}
         </div>`;
     }
 
@@ -731,8 +786,20 @@ const AccueilPage = {
   },
 
   async _startService() {
+    // Demander la permission capteurs AVANT l'appel API (geste utilisateur requis par iOS)
+    if (typeof DriverBehavior !== 'undefined') {
+      await DriverBehavior.requestPermission();
+    }
+
     const result = await DriverStore.startService();
     if (result && !result.error) {
+      // Demarrer l'analyse de conduite
+      if (typeof DriverBehavior !== 'undefined' && DriverBehavior._permissionGranted) {
+        DriverBehavior.start();
+        DriverBehavior.onEvent((event, counters, score) => {
+          this._updateBehaviorUI(event, counters, score);
+        });
+      }
       DriverToast.show('Service demarre !', 'success');
       this.render(document.getElementById('app-content'));
     } else {
@@ -743,6 +810,7 @@ const AccueilPage = {
   async _pauseService() {
     const result = await DriverStore.pauseService();
     if (result && !result.error) {
+      if (typeof DriverBehavior !== 'undefined') DriverBehavior.pause();
       DriverToast.show('Pause en cours', 'info');
       this.render(document.getElementById('app-content'));
     } else {
@@ -753,6 +821,7 @@ const AccueilPage = {
   async _resumeService() {
     const result = await DriverStore.resumeService();
     if (result && !result.error) {
+      if (typeof DriverBehavior !== 'undefined') DriverBehavior.resume();
       DriverToast.show('Service repris !', 'success');
       this.render(document.getElementById('app-content'));
     } else {
@@ -772,12 +841,70 @@ const AccueilPage = {
 
   async _confirmEndService() {
     DriverModal.close();
+    // Arreter l'analyse de conduite
+    if (typeof DriverBehavior !== 'undefined') DriverBehavior.stop();
     const result = await DriverStore.endService();
     if (result && !result.error) {
-      DriverToast.show('Journee terminee !', 'success');
+      if (result.behaviorScores) {
+        DriverToast.show(`Journee terminee ! Score conduite : ${result.behaviorScores.scoreGlobal}/100`, 'success', 4000);
+      } else {
+        DriverToast.show('Journee terminee !', 'success');
+      }
       this.render(document.getElementById('app-content'));
     } else {
       DriverToast.show(result?.error || 'Erreur', 'error');
+    }
+  },
+
+  // =================== BEHAVIOR UI UPDATES ===================
+
+  _updateBehaviorUI(event, counters, score) {
+    // Mettre a jour le score en direct
+    const scoreEl = document.getElementById('behavior-live-score');
+    if (scoreEl) {
+      scoreEl.textContent = score;
+      scoreEl.style.color = score >= 70 ? '#fff' : score >= 50 ? '#fef3c7' : '#fecaca';
+    }
+
+    // Mettre a jour les compteurs
+    const countEls = {
+      'behavior-count-freinage': counters.freinagesBrusques,
+      'behavior-count-acceleration': counters.accelerationsBrusques,
+      'behavior-count-virage': counters.viragesAgressifs,
+      'behavior-count-vitesse': counters.excesVitesse
+    };
+    for (const [id, val] of Object.entries(countEls)) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val || 0;
+    }
+
+    // Toast d'alerte
+    const labels = {
+      freinage: 'Freinage brusque detecte',
+      acceleration: 'Acceleration brusque detectee',
+      virage: 'Virage agressif detecte',
+      exces_vitesse: 'Exces de vitesse detecte'
+    };
+    const toastType = event.severite === 'severe' ? 'error' : 'warning';
+    DriverToast.show(labels[event.type] || 'Evenement detecte', toastType, 2000);
+  },
+
+  // Demarrer le behavior tracking si le service est deja en cours (retour sur la page)
+  _resumeBehaviorIfActive(serviceJour) {
+    if (!serviceJour || serviceJour.statut !== 'en_service') return;
+    if (typeof DriverBehavior === 'undefined') return;
+
+    // Si pas deja actif, demarrer (sans requestPermission car deja accorde ou pas de geste disponible)
+    if (!DriverBehavior._active && DriverBehavior._permissionGranted) {
+      DriverBehavior.start();
+      DriverBehavior.onEvent((event, counters, score) => {
+        this._updateBehaviorUI(event, counters, score);
+      });
+    } else if (DriverBehavior._active) {
+      // Re-enregistrer le callback UI
+      DriverBehavior.onEvent((event, counters, score) => {
+        this._updateBehaviorUI(event, counters, score);
+      });
     }
   },
 
