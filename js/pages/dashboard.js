@@ -232,7 +232,6 @@ const DashboardPage = {
     maintenanceAlerts.sort((a, b) => (ordre[a.statut] || 9) - (ordre[b.statut] || 9));
 
     // =================== RECETTES IMPAYÉES ===================
-    const planning = Store.get('planning') || [];
     const absences = Store.get('absences') || [];
     // Pour le mois sélectionné, limiter au dernier jour du mois
     const periodEnd = this._selectedPeriod
