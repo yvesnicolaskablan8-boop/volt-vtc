@@ -136,6 +136,11 @@ const DashboardPage = {
     const suspendusCount = chauffeurs.filter(c => c.statut === 'suspendu').length;
     const inactifsCount = chauffeurs.filter(c => c.statut === 'inactif').length;
 
+    // Chauffeurs programmés à la date sélectionnée
+    const planning = Store.get('planning') || [];
+    const programmesIds = [...new Set(planning.filter(p => p.date === dayFilter).map(p => p.chauffeurId))];
+    const programmesCount = programmesIds.length;
+
     // Vehicles in service
     const vehiclesActifs = vehicules.filter(v => v.statut === 'en_service').length;
     const vehiclesEV = vehicules.filter(v => v.typeEnergie === 'electrique').length;
@@ -320,7 +325,7 @@ const DashboardPage = {
 
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
-      totalChauffeurs, activeCount, suspendusCount, inactifsCount,
+      totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
       vehiclesActifs, vehiclesEV, vehiclesThermique,
       monthCourses: monthCourses.length,
       monthlyRevenue, weeklyPayments,
@@ -375,14 +380,12 @@ const DashboardPage = {
             <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
           </div>
         </a>
-        <a href="#/chauffeurs" class="kpi-card cyan" style="text-decoration:none;color:inherit;cursor:pointer;">
+        <a href="#/planning" class="kpi-card cyan" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.totalChauffeurs}</div>
-          <div class="kpi-label">Chauffeurs</div>
+          <div class="kpi-value">${d.programmesCount}</div>
+          <div class="kpi-label">Chauffeurs programmés — ${d.periodLabel}</div>
           <div class="kpi-trend up">
-            <iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--success);font-size:6px"></iconify-icon> ${d.activeCount} actifs
-            ${d.suspendusCount > 0 ? `<span style="margin:0 2px">&bull;</span><iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--warning);font-size:6px"></iconify-icon> ${d.suspendusCount} susp.` : ''}
-            ${d.inactifsCount > 0 ? `<span style="margin:0 2px">&bull;</span><iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--danger);font-size:6px"></iconify-icon> ${d.inactifsCount} inact.` : ''}
+            <iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--success);font-size:6px"></iconify-icon> ${d.activeCount} actifs sur ${d.totalChauffeurs}
           </div>
         </a>
         <a href="#/alertes" class="kpi-card ${d.alertesTotal > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
