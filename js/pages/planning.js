@@ -276,15 +276,15 @@ const PlanningPage = {
       <div class="card" style="margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);">
         <div style="display:flex;gap:var(--space-md);flex-wrap:wrap;align-items:center;font-size:var(--font-size-xs);">
           <span style="font-weight:600;color:var(--text-secondary);">Créneaux :</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#22c55e;vertical-align:middle;"></span> Matin</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> Après-midi</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;vertical-align:middle;"></span> Journée</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#8b5cf6;vertical-align:middle;"></span> Nuit</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6366f1;vertical-align:middle;"></span> Personnalisé</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#22c55e;vertical-align:middle;"></span> <strong>M</strong> Matin</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> <strong>AM</strong> Après-midi</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;vertical-align:middle;"></span> <strong>J</strong> Journée</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#8b5cf6;vertical-align:middle;"></span> <strong>N</strong> Nuit</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6366f1;vertical-align:middle;"></span> <strong>P</strong> Personnalisé</span>
           <span style="margin-left:var(--space-md);font-weight:600;color:var(--text-secondary);">Absences :</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#64748b;vertical-align:middle;"></span> Repos</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444;vertical-align:middle;"></span> Maladie</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> Congé</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#64748b;vertical-align:middle;"></span> <strong>R</strong> Repos</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444;vertical-align:middle;"></span> <strong>M</strong> Maladie</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> <strong>C</strong> Congé</span>
         </div>
       </div>
 
@@ -380,6 +380,22 @@ const PlanningPage = {
     }
 
     return `
+      <!-- Légende -->
+      <div class="card" style="margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);">
+        <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;align-items:center;font-size:var(--font-size-xs);">
+          <span style="font-weight:600;color:var(--text-secondary);">Créneaux :</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#22c55e;vertical-align:middle;"></span> <strong>M</strong> Matin</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> <strong>AM</strong> Après-midi</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;vertical-align:middle;"></span> <strong>J</strong> Journée</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#8b5cf6;vertical-align:middle;"></span> <strong>N</strong> Nuit</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6366f1;vertical-align:middle;"></span> <strong>P</strong> Personnalisé</span>
+          <span style="margin-left:var(--space-sm);font-weight:600;color:var(--text-secondary);">Absences :</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#64748b;vertical-align:middle;"></span> <strong>R</strong> Repos</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444;vertical-align:middle;"></span> <strong>M</strong> Maladie</span>
+          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> <strong>C</strong> Congé</span>
+        </div>
+      </div>
+
       <div class="card" style="padding:0;overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;min-width:${daysInMonth * 36 + 180}px;">
           <thead>
