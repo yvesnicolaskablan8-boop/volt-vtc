@@ -105,8 +105,8 @@ const DashboardPage = {
       selectedDay = null; // today / live
     }
 
-    // Filter: if a specific day is selected (not current month), filter by day; otherwise by month
-    const isSpecificDay = selectedDay && !this._isCurrentMonth();
+    // Filter: if a specific day is selected (not today), filter by that day
+    const isSpecificDay = !!selectedDay;
     const dayFilter = isSpecificDay ? selectedDay : null;
 
     // This month/day courses
