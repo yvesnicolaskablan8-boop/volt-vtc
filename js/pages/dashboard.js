@@ -14,7 +14,7 @@ const DashboardPage = {
     container.innerHTML = this._template(data);
     this._loadCharts(data);
     this._bindPeriodSelector();
-    if (this._isCurrentMonth()) this._startAutoRefresh(); else this._stopAutoRefresh();
+    if (this._isToday()) this._startAutoRefresh(); else this._stopAutoRefresh();
   },
 
   destroy() {
@@ -40,8 +40,13 @@ const DashboardPage = {
   _isCurrentMonth() {
     if (!this._selectedPeriod) return true;
     const now = new Date();
-    const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    return this._selectedPeriod === current;
+    const sel = new Date(this._selectedPeriod);
+    return sel.getMonth() === now.getMonth() && sel.getFullYear() === now.getFullYear();
+  },
+
+  _isToday() {
+    if (!this._selectedPeriod) return true;
+    return this._selectedPeriod === new Date().toISOString().split('T')[0];
   },
 
   _bindPeriodSelector() {
@@ -52,15 +57,14 @@ const DashboardPage = {
   },
 
   _onPeriodChange(value) {
-    const now = new Date();
-    const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    this._selectedPeriod = (value === current) ? null : value;
+    const today = new Date().toISOString().split('T')[0];
+    this._selectedPeriod = (value === today) ? null : value;
     this.destroy();
     this.render();
   },
 
   _silentRefresh() {
-    if (!this._isCurrentMonth()) return; // Don't auto-refresh historical data
+    if (!this._isToday()) return; // Don't auto-refresh historical data
     const indicator = document.getElementById('live-indicator');
     if (indicator) {
       indicator.classList.add('pulse');
@@ -83,19 +87,26 @@ const DashboardPage = {
     const versements = Store.get('versements');
     const courses = Store.get('courses');
     const now = new Date();
-    let thisMonth, thisYear;
+    let thisMonth, thisYear, selectedDay;
     if (this._selectedPeriod) {
-      const [y, m] = this._selectedPeriod.split('-').map(Number);
-      thisYear = y;
-      thisMonth = m - 1; // JS months are 0-indexed
+      const sel = new Date(this._selectedPeriod);
+      thisYear = sel.getFullYear();
+      thisMonth = sel.getMonth();
+      selectedDay = this._selectedPeriod; // 'YYYY-MM-DD'
     } else {
       thisMonth = now.getMonth();
       thisYear = now.getFullYear();
+      selectedDay = null; // today / live
     }
 
-    // This month courses
+    // Filter: if a specific day is selected (not current month), filter by day; otherwise by month
+    const isSpecificDay = selectedDay && !this._isCurrentMonth();
+    const dayFilter = isSpecificDay ? selectedDay : null;
+
+    // This month/day courses
     const monthCourses = courses.filter(c => {
       const d = new Date(c.dateHeure);
+      if (dayFilter) return c.dateHeure && c.dateHeure.startsWith(dayFilter) && c.statut === 'terminee';
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear && c.statut === 'terminee';
     });
 
@@ -112,8 +123,9 @@ const DashboardPage = {
     const caLastMonth = lastMonthCourses.reduce((s, c) => s + c.montantTTC, 0);
     const caTrend = caLastMonth > 0 ? ((caThisMonth - caLastMonth) / caLastMonth) * 100 : 0;
 
-    // Versements this month
+    // Versements this month/day
     const monthVersements = versements.filter(v => {
+      if (dayFilter) return v.date === dayFilter;
       const d = new Date(v.date);
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     });
@@ -288,6 +300,7 @@ const DashboardPage = {
     // =================== DÉPENSES VÉHICULES ===================
     const depenses = Store.get('depenses') || [];
     const monthDepenses = depenses.filter(dep => {
+      if (dayFilter) return dep.date === dayFilter;
       const d = new Date(dep.date);
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     });
@@ -306,6 +319,8 @@ const DashboardPage = {
       alertesUrgentes = allAlerts.filter(a => a.niveau === 'urgent').length;
     } catch (e) { /* AlertesPage not loaded yet */ }
 
+    const periodLabel = dayFilter ? Utils.formatDate(dayFilter) : Utils.getMonthName(thisMonth) + ' ' + thisYear;
+
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount,
@@ -316,7 +331,8 @@ const DashboardPage = {
       recentVersements, chauffeurs, vehiculesTotal: vehicules.length,
       maintenanceAlerts, unpaidItems, totalUnpaid, totalPenalites,
       depenses, monthDepenses, totalDepensesMois, depensesByType, vehicules,
-      alertesTotal, alertesCritiques, alertesUrgentes
+      alertesTotal, alertesCritiques, alertesUrgentes,
+      periodLabel, isSpecificDay
     };
   },
 
@@ -325,11 +341,11 @@ const DashboardPage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Tableau de bord</h1>
         <div class="page-actions">
-          <input type="month" id="dashboard-period" class="form-control" value="${this._selectedPeriod || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`}" style="width:160px;font-size:var(--font-size-xs);padding:4px 8px;">
-          ${this._isCurrentMonth() ? `<span id="live-indicator" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:#22c55e;background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:20px;font-weight:600;">
+          <input type="date" id="dashboard-period" class="form-control" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" style="width:155px;font-size:var(--font-size-xs);padding:4px 8px;">
+          ${this._isToday() ? `<span id="live-indicator" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:#22c55e;background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:20px;font-weight:600;">
             <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite;"></span> EN DIRECT
           </span>` : `<span style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:var(--text-muted);background:var(--bg-tertiary);padding:4px 10px;border-radius:20px;font-weight:600;">
-            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:12px;"></iconify-icon> HISTORIQUE
+            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:12px;"></iconify-icon> ${this._isCurrentMonth() ? 'CE MOIS' : 'HISTORIQUE'}
           </span>`}
           <button class="btn btn-secondary" onclick="DashboardPage._shareWhatsApp()" title="Partager sur WhatsApp" style="background:#25D366;color:#fff;border-color:#25D366;"><iconify-icon icon="mdi:whatsapp"></iconify-icon></button>
           <button class="btn btn-secondary" onclick="DashboardPage._sendPaymentReminders()" title="Envoyer rappels de paiement"><iconify-icon icon="solar:bell-bold-duotone"></iconify-icon> Rappels</button>
@@ -348,7 +364,7 @@ const DashboardPage = {
         <div class="kpi-card">
           <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.caThisMonth)}</div>
-          <div class="kpi-label">Chiffre d'affaires du mois</div>
+          <div class="kpi-label">CA ${d.isSpecificDay ? 'du jour' : 'du mois'}</div>
           <div class="kpi-trend ${d.caTrend >= 0 ? 'up' : 'down'}">
             <iconify-icon icon="solar:arrow-${d.caTrend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(d.caTrend).toFixed(1)}%
           </div>
@@ -356,7 +372,7 @@ const DashboardPage = {
         <div class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}">
           <div class="kpi-icon"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="kpi-label">Versements recus ce mois</div>
+          <div class="kpi-label">Versements ${d.isSpecificDay ? 'du jour' : 'du mois'}</div>
           <div class="kpi-trend ${d.retardCount > 0 ? 'down' : 'up'}">
             <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
           </div>
