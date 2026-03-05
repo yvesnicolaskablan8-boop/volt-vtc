@@ -10,6 +10,7 @@ const Settings = require('../models/Settings');
 const Notification = require('../models/Notification');
 const PushSubscription = require('../models/PushSubscription');
 const Conversation = require('../models/Conversation');
+const Pointage = require('../models/Pointage');
 const { getNextDeadline, calculatePenalty } = require('../utils/deadline');
 const notifService = require('../utils/notification-service');
 
@@ -25,7 +26,7 @@ router.get('/dashboard', async (req, res, next) => {
     const monthStart = today.slice(0, 7); // YYYY-MM
 
     // Recuperer toutes les donnees en parallele
-    const [chauffeur, planningToday, versementsMois, signalements, gpsRecent, settings] = await Promise.all([
+    const [chauffeur, planningToday, versementsMois, signalements, gpsRecent, settings, pointageToday] = await Promise.all([
       Chauffeur.findOne({ id: chauffeurId }).lean(),
       Planning.findOne({ chauffeurId, date: today }).lean(),
       Versement.find({
@@ -37,7 +38,8 @@ router.get('/dashboard', async (req, res, next) => {
         statut: { $in: ['ouvert', 'en_cours'] }
       }).lean(),
       Gps.find({ chauffeurId }).sort({ date: -1 }).limit(1).lean(),
-      Settings.findOne().lean()
+      Settings.findOne().lean(),
+      Pointage.findOne({ chauffeurId, date: today }).lean()
     ]);
 
     // Vehicule assigne
@@ -94,6 +96,12 @@ router.get('/dashboard', async (req, res, next) => {
       scoreConduite: dernierGps ? dernierGps.scoreGlobal : scoreConduite,
       alertesActives: signalements.length,
       dateJour: today,
+      serviceJour: pointageToday ? (() => {
+        const { _id, __v, ...p } = pointageToday;
+        return { statut: p.statut, heureDebut: p.heureDebut, heureFin: p.heureFin,
+                 dureeTotaleMinutes: p.dureeTotaleMinutes, dureePauseMinutes: p.dureePauseMinutes,
+                 evenements: p.evenements };
+      })() : null,
       deadline: await (async () => {
         const vs = settings && settings.versements;
         if (!vs || !vs.deadlineType) return null;
@@ -212,6 +220,123 @@ router.post('/absences', async (req, res, next) => {
 
     await absence.save();
     res.status(201).json(absence.toJSON());
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== SERVICE / POINTAGE ===================
+
+// GET /api/driver/service/today — Statut du service pour aujourd'hui
+router.get('/service/today', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const today = new Date().toISOString().split('T')[0];
+    const pointage = await Pointage.findOne({ chauffeurId, date: today }).lean();
+    if (!pointage) return res.json({ pointage: null });
+    const { _id, __v, ...clean } = pointage;
+    res.json({ pointage: clean });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/driver/service/start — Commencer le service
+router.post('/service/start', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toISOString();
+
+    const existing = await Pointage.findOne({ chauffeurId, date: today }).lean();
+    if (existing) {
+      return res.status(400).json({ error: 'Service deja commence aujourd\'hui' });
+    }
+
+    const id = 'PTG-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+    const pointage = new Pointage({
+      id, chauffeurId, date: today, statut: 'en_service',
+      evenements: [{ type: 'debut', heure: now }],
+      heureDebut: now, dateCreation: now
+    });
+    await pointage.save();
+    res.status(201).json(pointage.toJSON());
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/driver/service/pause — Mettre en pause
+router.post('/service/pause', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toISOString();
+
+    const pointage = await Pointage.findOne({ chauffeurId, date: today });
+    if (!pointage) return res.status(400).json({ error: 'Aucun service en cours' });
+    if (pointage.statut !== 'en_service') return res.status(400).json({ error: 'Le service n\'est pas en cours' });
+
+    pointage.evenements.push({ type: 'pause', heure: now });
+    pointage.statut = 'pause';
+    await pointage.save();
+    res.json(pointage.toJSON());
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/driver/service/resume — Reprendre le service
+router.post('/service/resume', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toISOString();
+
+    const pointage = await Pointage.findOne({ chauffeurId, date: today });
+    if (!pointage) return res.status(400).json({ error: 'Aucun service en cours' });
+    if (pointage.statut !== 'pause') return res.status(400).json({ error: 'Le service n\'est pas en pause' });
+
+    pointage.evenements.push({ type: 'reprise', heure: now });
+    pointage.statut = 'en_service';
+    await pointage.save();
+    res.json(pointage.toJSON());
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/driver/service/end — Terminer la journee
+router.post('/service/end', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toISOString();
+
+    const pointage = await Pointage.findOne({ chauffeurId, date: today });
+    if (!pointage) return res.status(400).json({ error: 'Aucun service en cours' });
+    if (pointage.statut === 'termine') return res.status(400).json({ error: 'Le service est deja termine' });
+
+    pointage.evenements.push({ type: 'fin', heure: now });
+    pointage.statut = 'termine';
+    pointage.heureFin = now;
+
+    // Calculer les durees
+    const debut = new Date(pointage.heureDebut);
+    const fin = new Date(now);
+    let pauseMs = 0;
+    let pauseStart = null;
+    for (const evt of pointage.evenements) {
+      if (evt.type === 'pause') pauseStart = new Date(evt.heure);
+      else if (evt.type === 'reprise' && pauseStart) { pauseMs += new Date(evt.heure) - pauseStart; pauseStart = null; }
+    }
+    if (pauseStart) pauseMs += fin - pauseStart;
+
+    pointage.dureeTotaleMinutes = Math.round((fin - debut - pauseMs) / 60000);
+    pointage.dureePauseMinutes = Math.round(pauseMs / 60000);
+
+    await pointage.save();
+    res.json(pointage.toJSON());
   } catch (err) {
     next(err);
   }

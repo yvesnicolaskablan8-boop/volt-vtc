@@ -81,6 +81,10 @@ const AccueilPage = {
       upcomingDays.push({ date: d, dateStr: dStr, planning: planningMap[dStr] || null });
     }
 
+    // === Service card ===
+    const serviceJour = data.serviceJour || null;
+    const serviceCardHTML = this._buildServiceCard(creneau, serviceJour);
+
     // === Today's shift card ===
     let todayShiftHTML = '';
     if (creneau) {
@@ -143,6 +147,9 @@ const AccueilPage = {
       <!-- Creneau du jour -->
       ${todayShiftHTML}
 
+      <!-- Service / Pointage -->
+      ${serviceCardHTML}
+
       <!-- Prochain creneau (si pas de creneau aujourd'hui) -->
       ${nextShiftHTML}
 
@@ -195,6 +202,15 @@ const AccueilPage = {
     // Demarrer le timer du countdown apres le render
     if (data.deadline && data.deadline.configured) {
       DriverCountdown.startTimer();
+    }
+
+    // Demarrer le timer du service si en cours
+    if (serviceJour) {
+      if (serviceJour.statut === 'en_service') {
+        this._startServiceTimer(serviceJour.heureDebut, serviceJour.evenements);
+      } else if (serviceJour.statut === 'pause') {
+        this._startPauseTimer(serviceJour.evenements);
+      }
     }
 
     // Charger l'activite Yango en arriere plan
@@ -604,7 +620,204 @@ const AccueilPage = {
     }
   },
 
+  // =================== SERVICE / POINTAGE ===================
+
+  _serviceTimerInterval: null,
+
+  _buildServiceCard(creneau, serviceJour) {
+    if (!creneau) return '';
+    const statut = serviceJour ? serviceJour.statut : null;
+
+    if (!statut) {
+      return `
+        <div id="service-card" style="border-radius:1.25rem;background:white;border:1px solid #e2e8f0;padding:1.25rem;margin-bottom:1.25rem">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <iconify-icon icon="solar:play-circle-bold-duotone" style="font-size:1.3rem;color:#22c55e"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b">Mon service</span>
+          </div>
+          <button onclick="AccueilPage._startService()" style="width:100%;padding:14px;border-radius:1rem;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(34,197,94,0.3)">
+            <iconify-icon icon="solar:play-bold" style="margin-right:6px"></iconify-icon> Commencer mon service
+          </button>
+        </div>`;
+    }
+
+    if (statut === 'en_service') {
+      return `
+        <div id="service-card" style="border-radius:1.25rem;background:linear-gradient(135deg,#22c55e,#16a34a);padding:1.25rem;margin-bottom:1.25rem;color:white;box-shadow:0 4px 16px rgba(34,197,94,0.2)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="width:8px;height:8px;border-radius:50%;background:white;box-shadow:0 0 0 3px rgba(255,255,255,0.3);animation:pulse 2s infinite"></span>
+              <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">En service</span>
+            </div>
+            <span id="service-timer" style="font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums">--:--:--</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button onclick="AccueilPage._pauseService()" style="flex:1;padding:12px;border-radius:0.75rem;border:none;background:rgba(255,255,255,0.2);color:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit">
+              <iconify-icon icon="solar:pause-bold" style="margin-right:4px"></iconify-icon> Faire une pause
+            </button>
+            <button onclick="AccueilPage._endService()" style="flex:1;padding:12px;border-radius:0.75rem;border:none;background:rgba(255,255,255,0.2);color:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit">
+              <iconify-icon icon="solar:stop-bold" style="margin-right:4px"></iconify-icon> Terminer
+            </button>
+          </div>
+        </div>`;
+    }
+
+    if (statut === 'pause') {
+      return `
+        <div id="service-card" style="border-radius:1.25rem;background:linear-gradient(135deg,#f59e0b,#d97706);padding:1.25rem;margin-bottom:1.25rem;color:white;box-shadow:0 4px 16px rgba(245,158,11,0.2)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <iconify-icon icon="solar:pause-bold" style="font-size:1rem"></iconify-icon>
+              <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">En pause</span>
+            </div>
+            <span id="pause-timer" style="font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums">--:--</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button onclick="AccueilPage._resumeService()" style="flex:1;padding:12px;border-radius:0.75rem;border:none;background:rgba(255,255,255,0.25);color:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit">
+              <iconify-icon icon="solar:play-bold" style="margin-right:4px"></iconify-icon> Reprendre
+            </button>
+            <button onclick="AccueilPage._endService()" style="flex:1;padding:12px;border-radius:0.75rem;border:none;background:rgba(255,255,255,0.15);color:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit">
+              <iconify-icon icon="solar:stop-bold" style="margin-right:4px"></iconify-icon> Terminer
+            </button>
+          </div>
+        </div>`;
+    }
+
+    if (statut === 'termine') {
+      const dureeH = Math.floor(serviceJour.dureeTotaleMinutes / 60);
+      const dureeM = serviceJour.dureeTotaleMinutes % 60;
+      const pauseH = Math.floor(serviceJour.dureePauseMinutes / 60);
+      const pauseM = serviceJour.dureePauseMinutes % 60;
+      const debut = new Date(serviceJour.heureDebut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const fin = new Date(serviceJour.heureFin).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+      return `
+        <div id="service-card" style="border-radius:1.25rem;background:white;border:1px solid #e2e8f0;padding:1.25rem;margin-bottom:1.25rem">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:1.2rem;color:#22c55e"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b">Journee terminee</span>
+          </div>
+          <div style="display:flex;gap:12px;text-align:center">
+            <div style="flex:1;background:#f8fafc;border-radius:0.75rem;padding:10px 8px">
+              <div style="font-size:0.68rem;color:#94a3b8">Duree travail</div>
+              <div style="font-size:1.1rem;font-weight:800;color:#0f172a">${dureeH}h${String(dureeM).padStart(2, '0')}</div>
+            </div>
+            <div style="flex:1;background:#f8fafc;border-radius:0.75rem;padding:10px 8px">
+              <div style="font-size:0.68rem;color:#94a3b8">Pause</div>
+              <div style="font-size:1.1rem;font-weight:800;color:#f59e0b">${pauseH}h${String(pauseM).padStart(2, '0')}</div>
+            </div>
+            <div style="flex:1;background:#f8fafc;border-radius:0.75rem;padding:10px 8px">
+              <div style="font-size:0.68rem;color:#94a3b8">Horaires</div>
+              <div style="font-size:0.85rem;font-weight:700;color:#0f172a">${debut} - ${fin}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    return '';
+  },
+
+  async _startService() {
+    const result = await DriverStore.startService();
+    if (result && !result.error) {
+      DriverToast.show('Service demarre !', 'success');
+      this.render(document.getElementById('app-content'));
+    } else {
+      DriverToast.show(result?.error || 'Erreur', 'error');
+    }
+  },
+
+  async _pauseService() {
+    const result = await DriverStore.pauseService();
+    if (result && !result.error) {
+      DriverToast.show('Pause en cours', 'info');
+      this.render(document.getElementById('app-content'));
+    } else {
+      DriverToast.show(result?.error || 'Erreur', 'error');
+    }
+  },
+
+  async _resumeService() {
+    const result = await DriverStore.resumeService();
+    if (result && !result.error) {
+      DriverToast.show('Service repris !', 'success');
+      this.render(document.getElementById('app-content'));
+    } else {
+      DriverToast.show(result?.error || 'Erreur', 'error');
+    }
+  },
+
+  _endService() {
+    DriverModal.show('Terminer la journee ?',
+      '<p style="font-size:0.9rem;color:var(--text-secondary)">Etes-vous sur de vouloir terminer votre service pour aujourd\'hui ?</p>',
+      [
+        { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
+        { label: 'Terminer', class: 'btn btn-danger', onclick: 'AccueilPage._confirmEndService()' }
+      ]
+    );
+  },
+
+  async _confirmEndService() {
+    DriverModal.close();
+    const result = await DriverStore.endService();
+    if (result && !result.error) {
+      DriverToast.show('Journee terminee !', 'success');
+      this.render(document.getElementById('app-content'));
+    } else {
+      DriverToast.show(result?.error || 'Erreur', 'error');
+    }
+  },
+
+  _startServiceTimer(heureDebut, evenements) {
+    this._stopServiceTimer();
+    const updateTimer = () => {
+      const timerEl = document.getElementById('service-timer');
+      if (!timerEl) { this._stopServiceTimer(); return; }
+      const debut = new Date(heureDebut);
+      const now = new Date();
+      let pauseMs = 0;
+      let pauseStart = null;
+      for (const evt of evenements) {
+        if (evt.type === 'pause') pauseStart = new Date(evt.heure);
+        else if (evt.type === 'reprise' && pauseStart) { pauseMs += new Date(evt.heure) - pauseStart; pauseStart = null; }
+      }
+      const elapsedMs = now - debut - pauseMs;
+      const h = Math.floor(elapsedMs / 3600000);
+      const m = Math.floor((elapsedMs % 3600000) / 60000);
+      const s = Math.floor((elapsedMs % 60000) / 1000);
+      timerEl.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    };
+    updateTimer();
+    this._serviceTimerInterval = setInterval(updateTimer, 1000);
+  },
+
+  _startPauseTimer(evenements) {
+    this._stopServiceTimer();
+    const lastPause = [...evenements].reverse().find(e => e.type === 'pause');
+    if (!lastPause) return;
+    const updateTimer = () => {
+      const timerEl = document.getElementById('pause-timer');
+      if (!timerEl) { this._stopServiceTimer(); return; }
+      const pauseStart = new Date(lastPause.heure);
+      const now = new Date();
+      const elapsedMs = now - pauseStart;
+      const m = Math.floor(elapsedMs / 60000);
+      const s = Math.floor((elapsedMs % 60000) / 1000);
+      timerEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    };
+    updateTimer();
+    this._serviceTimerInterval = setInterval(updateTimer, 1000);
+  },
+
+  _stopServiceTimer() {
+    if (this._serviceTimerInterval) {
+      clearInterval(this._serviceTimerInterval);
+      this._serviceTimerInterval = null;
+    }
+  },
+
   destroy() {
     DriverCountdown.stopTimer();
+    this._stopServiceTimer();
   }
 };

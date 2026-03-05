@@ -248,6 +248,7 @@ const Store = {
       absences: [],
       users: [],
       signalements: [],
+      pointages: [],
       settings: { entreprise: {}, preferences: {} }
     };
   },

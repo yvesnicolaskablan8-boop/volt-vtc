@@ -31,6 +31,7 @@ app.use('/api/planning', require('./routes/crud')('Planning'));
 app.use('/api/absences', require('./routes/crud')('Absence'));
 app.use('/api/users', require('./routes/crud')('User'));
 app.use('/api/signalements', require('./routes/crud')('Signalement'));
+app.use('/api/pointages', require('./routes/crud')('Pointage'));
 app.use('/api/yango', require('./routes/yango'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));

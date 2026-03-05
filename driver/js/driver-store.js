@@ -86,6 +86,28 @@ const DriverStore = {
     return this._post('/absences', data);
   },
 
+  // ===== SERVICE / POINTAGE =====
+
+  getServiceToday() {
+    return this._get('/service/today');
+  },
+
+  startService() {
+    return this._post('/service/start', {});
+  },
+
+  pauseService() {
+    return this._post('/service/pause', {});
+  },
+
+  resumeService() {
+    return this._post('/service/resume', {});
+  },
+
+  endService() {
+    return this._post('/service/end', {});
+  },
+
   getDeadline() {
     return this._get('/deadline');
   },

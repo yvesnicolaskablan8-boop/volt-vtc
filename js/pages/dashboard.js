@@ -323,6 +323,14 @@ const DashboardPage = {
       alertesUrgentes = allAlerts.filter(a => a.niveau === 'urgent').length;
     } catch (e) { /* AlertesPage not loaded yet */ }
 
+    // Pointage / Service du jour
+    const pointages = Store.get('pointages') || [];
+    const todayPointages = pointages.filter(p => p.date === dayFilter);
+    const serviceEnCours = todayPointages.filter(p => p.statut === 'en_service').length;
+    const serviceEnPause = todayPointages.filter(p => p.statut === 'pause').length;
+    const serviceTermine = todayPointages.filter(p => p.statut === 'termine').length;
+    const servicePasCommence = Math.max(0, programmesCount - todayPointages.length);
+
     const periodLabel = Utils.formatDate(dayFilter);
     const isSpecificDay = true;
 
@@ -338,6 +346,7 @@ const DashboardPage = {
       depenses, monthDepenses, totalDepensesMois, depensesByType, vehicules,
       alertesTotal, alertesCritiques, alertesUrgentes,
       tauxRecouvrement, totalAttendu,
+      serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence,
       periodLabel, isSpecificDay
     };
   },
@@ -453,6 +462,18 @@ const DashboardPage = {
             <div>
               <div style="font-weight:600;font-size:var(--font-size-sm);">${d.programmesCount} chauffeur${d.programmesCount > 1 ? 's' : ''} programmé${d.programmesCount > 1 ? 's' : ''}</div>
               <div style="font-size:var(--font-size-xs);color:var(--text-muted);">sur ${d.activeCount} actifs</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
+            <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:20px;color:var(--success);"></iconify-icon>
+            <div>
+              <div style="font-weight:600;font-size:var(--font-size-sm);">Pointage du jour</div>
+              <div style="font-size:var(--font-size-xs);display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+                <span style="color:var(--success);">${d.serviceEnCours} en service</span>
+                <span style="color:var(--warning);">${d.serviceEnPause} en pause</span>
+                <span style="color:var(--text-muted);">${d.serviceTermine} terminé${d.serviceTermine > 1 ? 's' : ''}</span>
+                ${d.servicePasCommence > 0 ? `<span style="color:var(--danger);">${d.servicePasCommence} pas commencé${d.servicePasCommence > 1 ? 's' : ''}</span>` : ''}
+              </div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">

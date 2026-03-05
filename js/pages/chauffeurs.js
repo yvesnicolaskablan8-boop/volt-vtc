@@ -101,7 +101,17 @@ const ChauffeursPage = {
         },
         {
           label: 'Statut', key: 'statut',
-          render: (c) => Utils.statusBadge(c.statut)
+          render: (c) => {
+            const today = new Date().toISOString().split('T')[0];
+            const ptg = (Store.get('pointages') || []).find(p => p.chauffeurId === c.id && p.date === today);
+            let badge = Utils.statusBadge(c.statut);
+            if (ptg) {
+              const labels = { en_service: 'En service', pause: 'En pause', termine: 'Terminé' };
+              const colors = { en_service: '#22c55e', pause: '#f59e0b', termine: '#94a3b8' };
+              badge += `<br><span style="font-size:0.65rem;font-weight:600;color:${colors[ptg.statut]}">${labels[ptg.statut]}</span>`;
+            }
+            return badge;
+          }
         },
         {
           label: 'Contrat', key: 'dateDebutContrat',
@@ -155,7 +165,14 @@ const ChauffeursPage = {
           ${c.photo ? '<button class="btn btn-sm btn-danger" id="btn-delete-photo" style="margin-top:8px;font-size:11px;"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer photo</button>' : ''}
         </div>
         <div class="detail-info">
-          <h2>${c.prenom} ${c.nom} ${Utils.statusBadge(c.statut)}</h2>
+          <h2>${c.prenom} ${c.nom} ${Utils.statusBadge(c.statut)}${(() => {
+            const today = new Date().toISOString().split('T')[0];
+            const ptg = (Store.get('pointages') || []).find(p => p.chauffeurId === c.id && p.date === today);
+            if (!ptg) return '';
+            const labels = { en_service: 'En service', pause: 'En pause', termine: 'Terminé' };
+            const colors = { en_service: '#22c55e', pause: '#f59e0b', termine: '#94a3b8' };
+            return ` <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600;background:${colors[ptg.statut]}20;color:${colors[ptg.statut]};margin-left:6px">${labels[ptg.statut]}</span>`;
+          })()}</h2>
           <p>${c.email} &bull; ${c.telephone}</p>
           <div class="detail-stats">
             <div class="detail-stat">
