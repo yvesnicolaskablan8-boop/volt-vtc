@@ -1087,7 +1087,10 @@ const ChauffeursPage = {
         // Rouvrir le formulaire chauffeur avec le vehicule pre-selectionne
         savedValues.vehiculeAssigne = vehicule.id;
         this._reopenChauffeurForm(savedValues);
-      }, 'modal-md');
+      }, 'modal-md', () => {
+        // Annulation : rouvrir le formulaire chauffeur avec les valeurs sauvegardées
+        this._reopenChauffeurForm(savedValues);
+      });
     }, 200);
   },
 

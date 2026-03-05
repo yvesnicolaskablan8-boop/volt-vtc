@@ -3,24 +3,25 @@
  */
 const Modal = {
   _onConfirm: null,
+  _onCancel: null,
   _isOpen: false,
 
   init() {
     const overlay = document.getElementById('modal-overlay');
     const closeBtn = document.getElementById('modal-close');
 
-    closeBtn.addEventListener('click', () => this.close());
+    closeBtn.addEventListener('click', () => this.cancel());
     overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) this.close();
+      if (e.target === overlay) this.cancel();
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this._isOpen) this.close();
+      if (e.key === 'Escape' && this._isOpen) this.cancel();
     });
   },
 
   open(options = {}) {
-    const { title = '', body = '', footer = '', size = '', onConfirm = null } = options;
+    const { title = '', body = '', footer = '', size = '', onConfirm = null, onCancel = null } = options;
 
     document.getElementById('modal-title').innerHTML = title;
     document.getElementById('modal-body').innerHTML = body;
@@ -30,6 +31,7 @@ const Modal = {
     modal.className = `modal ${size}`;
 
     this._onConfirm = onConfirm;
+    this._onCancel = onCancel;
     this._isOpen = true;
 
     document.getElementById('modal-overlay').classList.add('active');
@@ -44,14 +46,24 @@ const Modal = {
 
     const cancelBtn = document.querySelector('#modal-footer [data-action="cancel"]');
     if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => this.close());
+      cancelBtn.addEventListener('click', () => this.cancel());
     }
+  },
+
+  cancel() {
+    const onCancel = this._onCancel;
+    document.getElementById('modal-overlay').classList.remove('active');
+    this._isOpen = false;
+    this._onConfirm = null;
+    this._onCancel = null;
+    if (onCancel) onCancel();
   },
 
   close() {
     document.getElementById('modal-overlay').classList.remove('active');
     this._isOpen = false;
     this._onConfirm = null;
+    this._onCancel = null;
   },
 
   confirm(title, message, onConfirm) {
@@ -69,7 +81,7 @@ const Modal = {
     });
   },
 
-  form(title, formHtml, onSubmit, size = '') {
+  form(title, formHtml, onSubmit, size = '', onCancel = null) {
     this.open({
       title,
       body: formHtml,
@@ -80,7 +92,8 @@ const Modal = {
       size,
       onConfirm: () => {
         if (onSubmit) onSubmit();
-      }
+      },
+      onCancel
     });
   }
 };
