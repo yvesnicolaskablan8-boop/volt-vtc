@@ -28,7 +28,6 @@ const DriverApp = {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       this._deferredPrompt = e;
-      this._showInstallButton();
     });
 
     window.addEventListener('appinstalled', () => {
@@ -36,6 +35,9 @@ const DriverApp = {
       this._hideInstallButton();
       if (typeof DriverToast !== 'undefined') DriverToast.show('Volt Chauffeur installé !', 'success');
     });
+
+    // Setup install button
+    this._setupInstallButton();
 
     // Setup login form
     this._setupLoginForm();
@@ -283,33 +285,38 @@ const DriverApp = {
 
   // =================== PWA INSTALL ===================
 
-  _showInstallButton() {
-    const headerActions = document.querySelector('.header-actions');
-    if (!headerActions || document.getElementById('btn-install-pwa')) return;
-
-    const btn = document.createElement('button');
-    btn.id = 'btn-install-pwa';
-    btn.className = 'header-btn';
-    btn.title = 'Installer l\'application';
-    btn.style.cssText = 'background:var(--primary,#3b82f6);color:#fff;border-radius:20px;padding:6px 14px;font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer;';
-    btn.innerHTML = '<iconify-icon icon="solar:download-minimalistic-bold-duotone" style="font-size:1.1rem;"></iconify-icon> Installer';
+  _setupInstallButton() {
+    const btn = document.getElementById('btn-install-pwa');
+    if (!btn) return;
     btn.addEventListener('click', () => this._installPWA());
-    headerActions.insertBefore(btn, headerActions.firstChild);
+
+    // Masquer si déjà installé (mode standalone)
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      btn.style.display = 'none';
+    }
   },
 
   _hideInstallButton() {
     const btn = document.getElementById('btn-install-pwa');
-    if (btn) btn.remove();
+    if (btn) btn.style.display = 'none';
   },
 
   async _installPWA() {
-    if (!this._deferredPrompt) return;
-    this._deferredPrompt.prompt();
-    const { outcome } = await this._deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      this._hideInstallButton();
+    if (this._deferredPrompt) {
+      this._deferredPrompt.prompt();
+      const { outcome } = await this._deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        this._hideInstallButton();
+      }
+      this._deferredPrompt = null;
+    } else {
+      // Pas de prompt natif — afficher les instructions manuelles
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const msg = isIOS
+        ? 'Pour installer : appuyez sur le bouton <strong>Partager</strong> (↑) puis <strong>Sur l\'écran d\'accueil</strong>'
+        : 'Pour installer : ouvrez le menu du navigateur (⋮) puis <strong>Installer l\'application</strong> ou <strong>Ajouter à l\'écran d\'accueil</strong>';
+      DriverToast.show(msg, 'info');
     }
-    this._deferredPrompt = null;
   },
 
   _setupLoginForm() {
