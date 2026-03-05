@@ -421,12 +421,12 @@ const DashboardPage = {
             <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> ${Utils.formatCurrency(d.totalVerse)} / ${Utils.formatCurrency(d.totalAttendu)}
           </div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-icon"><iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.monthCourses}</div>
-          <div class="kpi-label">Courses — ${d.periodLabel}</div>
-          <div class="kpi-trend up">
-            <iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon> Terminées
+        <div class="kpi-card ${d.serviceEnCours > 0 ? 'green' : ''}">
+          <div class="kpi-icon"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${d.serviceEnCours + d.serviceEnPause + d.serviceTermine}/${d.programmesCount}</div>
+          <div class="kpi-label">Pointage du jour</div>
+          <div class="kpi-trend ${d.servicePasCommence > 0 ? 'down' : 'up'}">
+            <span style="color:var(--success)">${d.serviceEnCours} actif${d.serviceEnCours > 1 ? 's' : ''}</span> · <span style="color:var(--warning)">${d.serviceEnPause} pause</span> · ${d.serviceTermine} fini${d.serviceTermine > 1 ? 's' : ''}
           </div>
         </div>
         <a href="#/vehicules" class="kpi-card" style="text-decoration:none;color:inherit;cursor:pointer;">
@@ -462,18 +462,6 @@ const DashboardPage = {
             <div>
               <div style="font-weight:600;font-size:var(--font-size-sm);">${d.programmesCount} chauffeur${d.programmesCount > 1 ? 's' : ''} programmé${d.programmesCount > 1 ? 's' : ''}</div>
               <div style="font-size:var(--font-size-xs);color:var(--text-muted);">sur ${d.activeCount} actifs</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
-            <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:20px;color:var(--success);"></iconify-icon>
-            <div>
-              <div style="font-weight:600;font-size:var(--font-size-sm);">Pointage du jour</div>
-              <div style="font-size:var(--font-size-xs);display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
-                <span style="color:var(--success);">${d.serviceEnCours} en service</span>
-                <span style="color:var(--warning);">${d.serviceEnPause} en pause</span>
-                <span style="color:var(--text-muted);">${d.serviceTermine} terminé${d.serviceTermine > 1 ? 's' : ''}</span>
-                ${d.servicePasCommence > 0 ? `<span style="color:var(--danger);">${d.servicePasCommence} pas commencé${d.servicePasCommence > 1 ? 's' : ''}</span>` : ''}
-              </div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
