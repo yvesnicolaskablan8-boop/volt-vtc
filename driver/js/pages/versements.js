@@ -229,14 +229,8 @@ const VersementsPage = {
           <input type="date" name="date" required value="${now.toISOString().split('T')[0]}">
         </div>
         <div class="form-group">
-          <label>Montant brut (FCFA)</label>
-          <input type="number" name="montantBrut" required min="1" placeholder="0" inputmode="numeric"
-                 oninput="VersementsPage._calcCommission(this.value)">
-        </div>
-        <div id="commission-preview" style="font-size:0.82rem;color:var(--text-secondary);margin:-8px 0 12px;padding:0 4px"></div>
-        <div class="form-group">
-          <label>Nombre de courses</label>
-          <input type="number" name="nombreCourses" min="0" placeholder="0" inputmode="numeric">
+          <label>Montant (FCFA)</label>
+          <input type="number" name="montantBrut" required min="1" placeholder="0" inputmode="numeric">
         </div>
         <div class="form-group">
           <label>Commentaire (optionnel)</label>
@@ -251,25 +245,12 @@ const VersementsPage = {
     ]);
   },
 
-  _calcCommission(val) {
-    const el = document.getElementById('commission-preview');
-    if (!el) return;
-    const brut = parseInt(val) || 0;
-    const commission = Math.round(brut * 0.20);
-    const net = brut - commission;
-    if (brut > 0) {
-      el.textContent = `Commission: ${commission.toLocaleString('fr-FR')} FCFA • Net: ${net.toLocaleString('fr-FR')} FCFA`;
-    } else {
-      el.textContent = '';
-    }
-  },
-
   async _submitVersement() {
-    const values = DriverModal.getFormValues(['date', 'periode', 'montantBrut', 'nombreCourses', 'commentaire']);
+    const values = DriverModal.getFormValues(['date', 'periode', 'montantBrut', 'commentaire']);
 
     const montant = parseInt(values.montantBrut);
     if (!montant || montant <= 0) {
-      DriverToast.show('Montant brut requis', 'error');
+      DriverToast.show('Montant requis', 'error');
       return;
     }
 
@@ -277,7 +258,6 @@ const VersementsPage = {
       date: values.date,
       periode: values.periode,
       montantBrut: montant,
-      nombreCourses: parseInt(values.nombreCourses) || 0,
       commentaire: values.commentaire
     });
 
