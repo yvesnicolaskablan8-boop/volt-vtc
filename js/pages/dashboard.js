@@ -347,7 +347,7 @@ const DashboardPage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Tableau de bord</h1>
         <div class="page-actions">
-          <input type="date" id="dashboard-period" class="form-control" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" style="width:155px;font-size:var(--font-size-xs);padding:4px 8px;">
+          <input type="date" id="dashboard-period" class="form-control" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="width:155px;font-size:var(--font-size-xs);padding:4px 8px;">
           ${this._selectedPeriod ? `<button class="btn btn-sm btn-secondary" onclick="DashboardPage._resetToToday()" style="font-size:var(--font-size-xs);padding:4px 10px;">
             <iconify-icon icon="solar:restart-bold"></iconify-icon> Aujourd'hui
           </button>` : ''}
