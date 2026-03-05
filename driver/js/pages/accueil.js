@@ -625,7 +625,6 @@ const AccueilPage = {
   _serviceTimerInterval: null,
 
   _buildServiceCard(creneau, serviceJour) {
-    if (!creneau) return '';
     const statut = serviceJour ? serviceJour.statut : null;
 
     if (!statut) {
