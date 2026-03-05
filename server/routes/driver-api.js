@@ -248,6 +248,12 @@ router.post('/service/start', async (req, res, next) => {
     const today = new Date().toISOString().split('T')[0];
     const now = new Date().toISOString();
 
+    // Verifier que le chauffeur est programme aujourd'hui
+    const planningToday = await Planning.findOne({ chauffeurId, date: today }).lean();
+    if (!planningToday) {
+      return res.status(400).json({ error: 'Vous n\'etes pas programme aujourd\'hui' });
+    }
+
     const existing = await Pointage.findOne({ chauffeurId, date: today }).lean();
     if (existing) {
       return res.status(400).json({ error: 'Service deja commence aujourd\'hui' });
