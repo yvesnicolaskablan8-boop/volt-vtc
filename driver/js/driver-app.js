@@ -2,6 +2,8 @@
  * DriverApp — Bootstrap de l'application chauffeur PWA
  */
 const DriverApp = {
+  _deferredPrompt: null,
+
   init() {
     // Register service worker
     if ('serviceWorker' in navigator) {
@@ -21,6 +23,19 @@ const DriverApp = {
         }
       });
     }
+
+    // PWA Install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._deferredPrompt = e;
+      this._showInstallButton();
+    });
+
+    window.addEventListener('appinstalled', () => {
+      this._deferredPrompt = null;
+      this._hideInstallButton();
+      if (typeof DriverToast !== 'undefined') DriverToast.show('Volt Chauffeur installé !', 'success');
+    });
 
     // Setup login form
     this._setupLoginForm();
@@ -264,6 +279,37 @@ const DriverApp = {
       clearInterval(this._locationInterval);
       this._locationInterval = null;
     }
+  },
+
+  // =================== PWA INSTALL ===================
+
+  _showInstallButton() {
+    const headerActions = document.querySelector('.header-actions');
+    if (!headerActions || document.getElementById('btn-install-pwa')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'btn-install-pwa';
+    btn.className = 'header-btn';
+    btn.title = 'Installer l\'application';
+    btn.style.cssText = 'background:var(--primary,#3b82f6);color:#fff;border-radius:20px;padding:6px 14px;font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:6px;border:none;cursor:pointer;';
+    btn.innerHTML = '<iconify-icon icon="solar:download-minimalistic-bold-duotone" style="font-size:1.1rem;"></iconify-icon> Installer';
+    btn.addEventListener('click', () => this._installPWA());
+    headerActions.insertBefore(btn, headerActions.firstChild);
+  },
+
+  _hideInstallButton() {
+    const btn = document.getElementById('btn-install-pwa');
+    if (btn) btn.remove();
+  },
+
+  async _installPWA() {
+    if (!this._deferredPrompt) return;
+    this._deferredPrompt.prompt();
+    const { outcome } = await this._deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      this._hideInstallButton();
+    }
+    this._deferredPrompt = null;
   },
 
   _setupLoginForm() {
