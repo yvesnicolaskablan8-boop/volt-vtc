@@ -420,7 +420,7 @@ const PlanningPage = {
                     const s = shifts[0];
                     return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(59,130,246,0.05);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                       <div style="width:24px;height:24px;border-radius:4px;background:${this._getShiftColor(s)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._getShiftTimeLabel(s)}" onclick="PlanningPage._editShift('${s.id}')">
-                        ${this._getShiftTimeShort(s)}
+                        ${this._shiftTypeShort(s.typeCreneaux)}
                       </div>
                     </td>`;
                   }
