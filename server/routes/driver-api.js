@@ -99,6 +99,14 @@ router.get('/dashboard', async (req, res, next) => {
         if (!vs || !vs.deadlineType) return null;
         const info = getNextDeadline(vs);
         if (!info) return null;
+        // Verifier si le chauffeur etait programme dans la periode courante
+        const prevDateStr = info.previousDeadline.toISOString().split('T')[0];
+        const deadlineDateStr = info.deadlineDate.toISOString().split('T')[0];
+        const wasScheduled = await Planning.findOne({
+          chauffeurId,
+          date: { $gte: prevDateStr, $lte: deadlineDateStr }
+        }).lean();
+        if (!wasScheduled) return null;
         // Verifier si un versement a deja ete fait pour la periode en cours
         const versementPeriode = await Versement.findOne({
           chauffeurId,
@@ -222,6 +230,15 @@ router.get('/deadline', async (req, res, next) => {
     }
     const info = getNextDeadline(vs);
     if (!info) return res.json({ configured: false });
+
+    // Verifier si le chauffeur etait programme dans la periode courante
+    const prevDateStr = info.previousDeadline.toISOString().split('T')[0];
+    const deadlineDateStr = info.deadlineDate.toISOString().split('T')[0];
+    const wasScheduled = await Planning.findOne({
+      chauffeurId,
+      date: { $gte: prevDateStr, $lte: deadlineDateStr }
+    }).lean();
+    if (!wasScheduled) return res.json({ configured: false });
 
     // Verifier si un versement a deja ete fait pour la periode en cours
     const versementPeriode = await Versement.findOne({
