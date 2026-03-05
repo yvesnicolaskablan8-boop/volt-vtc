@@ -276,6 +276,19 @@ body {
   transform: scale(0.9);
 }
 
+#btn-install-pwa {
+  width: auto;
+  height: 36px;
+  background: #3b82f6;
+  color: #fff;
+  border-radius: 20px;
+  padding: 0 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  gap: 5px;
+  white-space: nowrap;
+}
+
 /* Main Content */
 .app-content {
   flex: 1;
