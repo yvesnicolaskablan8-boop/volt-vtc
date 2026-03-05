@@ -368,23 +368,23 @@ const DashboardPage = {
 
       <!-- KPI Cards -->
       <div class="grid-4">
-        <div class="kpi-card">
+        <a href="#/rapports" class="kpi-card" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.caThisMonth)}</div>
           <div class="kpi-label">CA — ${d.periodLabel}</div>
           <div class="kpi-trend ${d.caTrend >= 0 ? 'up' : 'down'}">
             <iconify-icon icon="solar:arrow-${d.caTrend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(d.caTrend).toFixed(1)}%
           </div>
-        </div>
-        <div class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}">
+        </a>
+        <a href="#/versements" class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
           <div class="kpi-label">Versements — ${d.periodLabel}</div>
           <div class="kpi-trend ${d.retardCount > 0 ? 'down' : 'up'}">
             <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
           </div>
-        </div>
-        <div class="kpi-card cyan">
+        </a>
+        <a href="#/chauffeurs" class="kpi-card cyan" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.totalChauffeurs}</div>
           <div class="kpi-label">Chauffeurs</div>
@@ -393,7 +393,7 @@ const DashboardPage = {
             ${d.suspendusCount > 0 ? `<span style="margin:0 2px">&bull;</span><iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--warning);font-size:6px"></iconify-icon> ${d.suspendusCount} susp.` : ''}
             ${d.inactifsCount > 0 ? `<span style="margin:0 2px">&bull;</span><iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--danger);font-size:6px"></iconify-icon> ${d.inactifsCount} inact.` : ''}
           </div>
-        </div>
+        </a>
         <a href="#/alertes" class="kpi-card ${d.alertesTotal > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.alertesTotal}</div>
