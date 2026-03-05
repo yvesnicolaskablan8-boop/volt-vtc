@@ -818,6 +818,8 @@ const DashboardPage = {
   },
 
   _renderUnpaidRows(items, chauffeurs) {
+    const session = Auth.getSession();
+    const isAdmin = session && session.role === 'Administrateur';
     return items.map(item => {
       const ch = chauffeurs.find(c => c.id === item.chauffeurId);
       const name = ch ? `${ch.prenom} ${ch.nom}` : item.chauffeurId;
@@ -834,13 +836,16 @@ const DashboardPage = {
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">${Utils.formatCurrency(item.montantDu)}</div>
           ${penaliteHtml}
-          <div style="display:flex;gap:4px;margin-top:4px;">
+          <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
             <button class="btn btn-sm btn-success" onclick="event.stopPropagation();DashboardPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.totalDu})">
               <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Payer
             </button>
             <button class="btn btn-sm ${hasJustif ? 'btn-secondary' : 'btn-outline'}" onclick="event.stopPropagation();DashboardPage._addJustification('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}')">
               <iconify-icon icon="solar:document-add-bold-duotone"></iconify-icon> ${hasJustif ? 'Modifier' : 'Justifier'}
             </button>
+            ${isAdmin ? `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();DashboardPage._deleteReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}')">
+              <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer
+            </button>` : ''}
           </div>
         </div>
       </div>`;
@@ -1042,6 +1047,51 @@ const DashboardPage = {
           );
         }, 300);
 
+        this.render();
+      }
+    );
+  },
+
+  _deleteReceipt(chauffeurId, date, planningId, versementId) {
+    const session = Auth.getSession();
+    const isAdmin = session && session.role === 'Administrateur';
+    if (!isAdmin) {
+      Toast.error('Seul un administrateur peut supprimer une recette');
+      return;
+    }
+
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const ch = chauffeurs.find(c => c.id === chauffeurId);
+    const name = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+
+    Modal.confirm(
+      'Supprimer cette recette ?',
+      `Voulez-vous supprimer la recette de <strong>${name}</strong> du <strong>${Utils.formatDate(date)}</strong> ? Cette action marquera la recette comme supprimée.`,
+      () => {
+        const versements = Store.get('versements') || [];
+        const existing = versementId && versementId !== 'null' ? versements.find(v => v.id === versementId) : versements.find(v => v.chauffeurId === chauffeurId && v.date === date);
+
+        if (existing) {
+          Store.update('versements', existing.id, {
+            statut: 'supprime',
+            dateSuppression: new Date().toISOString()
+          });
+        } else {
+          Store.add('versements', {
+            id: Utils.generateId('VRS'),
+            chauffeurId,
+            date,
+            periode: '',
+            montantVerse: 0,
+            statut: 'supprime',
+            commentaire: 'Supprimé depuis le tableau de bord',
+            dateSuppression: new Date().toISOString(),
+            dateCreation: new Date().toISOString()
+          });
+        }
+
+        Modal.close();
+        Toast.success('Recette supprimée');
         this.render();
       }
     );
