@@ -93,21 +93,11 @@ const DashboardPage = {
     const versements = Store.get('versements');
     const courses = Store.get('courses');
     const now = new Date();
-    let thisMonth, thisYear, selectedDay;
-    if (this._selectedPeriod) {
-      const sel = new Date(this._selectedPeriod);
-      thisYear = sel.getFullYear();
-      thisMonth = sel.getMonth();
-      selectedDay = this._selectedPeriod; // 'YYYY-MM-DD'
-    } else {
-      thisMonth = now.getMonth();
-      thisYear = now.getFullYear();
-      selectedDay = null; // today / live
-    }
-
-    // Filter: if a specific day is selected (not today), filter by that day
-    const isSpecificDay = !!selectedDay;
-    const dayFilter = isSpecificDay ? selectedDay : null;
+    const selectedDay = this._selectedPeriod || now.toISOString().split('T')[0];
+    const sel = new Date(selectedDay);
+    const thisMonth = sel.getMonth();
+    const thisYear = sel.getFullYear();
+    const dayFilter = selectedDay;
 
     // This month/day courses
     const monthCourses = courses.filter(c => {
@@ -325,7 +315,8 @@ const DashboardPage = {
       alertesUrgentes = allAlerts.filter(a => a.niveau === 'urgent').length;
     } catch (e) { /* AlertesPage not loaded yet */ }
 
-    const periodLabel = dayFilter ? Utils.formatDate(dayFilter) : Utils.getMonthName(thisMonth) + ' ' + thisYear;
+    const periodLabel = Utils.formatDate(dayFilter);
+    const isSpecificDay = true;
 
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
