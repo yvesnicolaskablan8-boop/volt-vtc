@@ -699,6 +699,20 @@ const PlanningPage = {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
+
+      // Vérifier doublon : même chauffeur, même date, même créneau horaire
+      const planning = Store.get('planning') || [];
+      const doublon = planning.find(p =>
+        p.chauffeurId === values.chauffeurId &&
+        p.date === values.date &&
+        p.heureDebut === values.heureDebut &&
+        p.heureFin === values.heureFin
+      );
+      if (doublon) {
+        Toast.error('Ce créneau existe déjà pour ce chauffeur à cette date');
+        return;
+      }
+
       Store.add('planning', { id: Utils.generateId('PLN'), ...values, dateCreation: new Date().toISOString() });
       Modal.close();
       Toast.success('Créneau ajouté');
@@ -748,7 +762,23 @@ const PlanningPage = {
     Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier le créneau', FormBuilder.build(fields, editValues), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
-      Store.update('planning', id, FormBuilder.getValues(body));
+      const values = FormBuilder.getValues(body);
+
+      // Vérifier doublon : même chauffeur, même date, même créneau horaire (exclure le créneau en cours d'édition)
+      const planning = Store.get('planning') || [];
+      const doublon = planning.find(p =>
+        p.id !== id &&
+        p.chauffeurId === values.chauffeurId &&
+        p.date === values.date &&
+        p.heureDebut === values.heureDebut &&
+        p.heureFin === values.heureFin
+      );
+      if (doublon) {
+        Toast.error('Ce créneau existe déjà pour ce chauffeur à cette date');
+        return;
+      }
+
+      Store.update('planning', id, values);
       Modal.close();
       Toast.success('Créneau modifié');
       this._renderView();
