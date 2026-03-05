@@ -628,6 +628,20 @@ const AccueilPage = {
     const statut = serviceJour ? serviceJour.statut : null;
 
     if (!statut) {
+      // Pas de créneau = pas de bouton commencer
+      if (!creneau) {
+        return `
+        <div id="service-card" style="border-radius:1.25rem;background:white;border:1px solid #e2e8f0;padding:1.25rem;margin-bottom:1.25rem">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1.3rem;color:#94a3b8"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b">Mon service</span>
+          </div>
+          <div style="text-align:center;padding:8px 0">
+            <div style="font-size:0.88rem;font-weight:600;color:#64748b;margin-bottom:4px">Vous n'etes pas programme aujourd'hui</div>
+            <div style="font-size:0.78rem;color:#94a3b8">Consultez votre planning pour voir vos prochains creneaux</div>
+          </div>
+        </div>`;
+      }
       return `
         <div id="service-card" style="border-radius:1.25rem;background:white;border:1px solid #e2e8f0;padding:1.25rem;margin-bottom:1.25rem">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
