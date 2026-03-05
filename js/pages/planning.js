@@ -189,7 +189,7 @@ const PlanningPage = {
   },
 
   _shiftTypeShort(type) {
-    return { matin: 'M', apres_midi: 'AM', journee: 'J', nuit: 'N' }[type] || '?';
+    return { matin: 'M', apres_midi: 'AM', journee: 'J', nuit: 'N', custom: 'P' }[type] || '?';
   },
 
   _shiftTypeColor(type) {
@@ -206,8 +206,9 @@ const PlanningPage = {
 
   _getShiftTimeShort(shift) {
     if (shift.heureDebut && shift.heureFin) {
-      const h = parseInt(shift.heureDebut);
-      return h + 'h';
+      const hd = parseInt(shift.heureDebut);
+      const hf = parseInt(shift.heureFin);
+      return `${hd}h-${hf}h`;
     }
     return this._shiftTypeShort(shift.typeCreneaux);
   },
