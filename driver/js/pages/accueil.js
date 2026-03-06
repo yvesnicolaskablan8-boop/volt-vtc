@@ -859,10 +859,25 @@ const AccueilPage = {
   },
 
   async _startService() {
-    // Verifier si la checklist vehicule a ete faite aujourd'hui
+    // Verifier si l'etat des lieux a ete fait aujourd'hui (OBLIGATOIRE)
+    const etatLieux = await DriverStore.getEtatLieuxToday();
+    if (!etatLieux || !etatLieux.id) {
+      DriverModal.show('Etat des lieux requis', `
+        <div style="text-align:center;padding:0.5rem 0">
+          <iconify-icon icon="solar:shield-warning-bold-duotone" style="font-size:3rem;color:#f59e0b;display:block;margin-bottom:12px"></iconify-icon>
+          <p style="font-size:0.9rem;font-weight:700;color:var(--text-primary)">Etat des lieux obligatoire</p>
+          <p style="font-size:0.82rem;color:var(--text-secondary);margin-top:6px">Vous devez effectuer l'etat des lieux de votre vehicule avant de pouvoir commencer votre service.</p>
+        </div>
+      `, [
+        { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
+        { label: 'Faire l\'etat des lieux', class: 'btn btn-primary', onclick: 'DriverModal.close(); DriverRouter.navigate("etat-lieux")' }
+      ]);
+      return;
+    }
+
+    // Verifier la checklist vehicule (optionnel)
     const checklist = await DriverStore.getChecklistToday();
     if (!checklist || !checklist.id) {
-      // Proposer de faire l'inspection
       DriverModal.show('Inspection vehicule', `
         <div style="text-align:center;padding:0.5rem 0">
           <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:3rem;color:#3b82f6;display:block;margin-bottom:12px"></iconify-icon>

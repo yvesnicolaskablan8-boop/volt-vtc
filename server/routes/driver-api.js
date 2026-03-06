@@ -500,6 +500,33 @@ router.post('/versements', async (req, res, next) => {
   }
 });
 
+// =================== ETAT DES LIEUX ===================
+
+// GET /api/driver/etat-lieux/today — Verifier si l'etat des lieux a ete fait aujourd'hui
+router.get('/etat-lieux/today', async (req, res, next) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const signalement = await Signalement.findOne({
+      chauffeurId: req.user.chauffeurId,
+      titre: /etat des lieux/i,
+      dateSignalement: { $gte: today, $lt: tomorrow }
+    }).lean();
+
+    if (signalement) {
+      const { _id, __v, ...clean } = signalement;
+      res.json(clean);
+    } else {
+      res.json(null);
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
 // =================== SIGNALEMENTS ===================
 
 // GET /api/driver/signalements — Signalements du chauffeur

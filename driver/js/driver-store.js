@@ -128,6 +128,10 @@ const DriverStore = {
     return this._post('/signalements', data);
   },
 
+  getEtatLieuxToday() {
+    return this._get('/etat-lieux/today');
+  },
+
   getProfil() {
     return this._get('/profil');
   },
