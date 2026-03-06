@@ -12,6 +12,8 @@ const contraventionSchema = new mongoose.Schema({
   statut: { type: String, default: 'impayee' },
   moyenPaiement: String,
   datePaiement: String,
+  waveCheckoutId: String,
+  waveTransactionId: String,
   motifContestation: String,
   commentaire: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }

@@ -143,6 +143,9 @@ const ContraventionsPage = {
           { label: 'Montant', key: 'montant', render: (v) => Utils.formatCurrency(v.montant || 0) },
           { label: 'Statut', key: 'statut', render: (v) => {
             let html = statusBadge(v.statut);
+            if (v.moyenPaiement === 'wave') {
+              html += ' <span class="badge" style="font-size:0.65rem;background:rgba(13,110,253,0.1);color:#0D6EFD;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
+            }
             if (v.motifContestation) {
               html += ` <span title="${v.motifContestation}" style="cursor:help;font-size:0.7rem;color:#94a3b8"><iconify-icon icon="solar:chat-round-dots-bold"></iconify-icon></span>`;
             }
@@ -152,6 +155,7 @@ const ContraventionsPage = {
             let btns = `<button class="btn-icon" title="Modifier" onclick="ContraventionsPage._edit('${v.id}')"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>`;
             if (v.statut === 'impayee' || v.statut === 'contestee') {
               btns += ` <button class="btn-icon btn-success" title="Marquer pay\u00e9e" onclick="ContraventionsPage._markPaid('${v.id}')"><iconify-icon icon="solar:check-circle-bold"></iconify-icon></button>`;
+              btns += ` <button class="btn-icon" title="Payer via Wave" onclick="ContraventionsPage._payWave('${v.id}')" style="color:#0D6EFD"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></button>`;
             }
             btns += ` <button class="btn-icon btn-danger" title="Supprimer" onclick="ContraventionsPage._delete('${v.id}')"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>`;
             return btns;
@@ -375,5 +379,47 @@ const ContraventionsPage = {
     Store.delete('contraventions', id);
     Toast.show('Contravention supprim\u00e9e', 'success');
     this.render();
+  },
+
+  async _payWave(id) {
+    const contraventions = Store.get('contraventions') || [];
+    const c = contraventions.find(x => x.id === id);
+    if (!c) return;
+
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const ch = chauffeurs.find(x => x.id === c.chauffeurId);
+    const name = ch ? `${ch.prenom} ${ch.nom}` : c.chauffeurId;
+
+    if (!confirm(`Payer la contravention de ${name} (${Utils.formatCurrency(c.montant)}) via Wave ?`)) return;
+
+    Toast.show('Redirection vers Wave...', 'info');
+
+    try {
+      const apiBase = Store._apiBase || '/api';
+      const res = await fetch(apiBase + '/contraventions/wave/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (localStorage.getItem('volt_token') || '')
+        },
+        body: JSON.stringify({ contraventionId: id })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        Toast.show(data.error || 'Erreur Wave', 'error');
+        return;
+      }
+
+      if (data.waveLaunchUrl) {
+        window.open(data.waveLaunchUrl, '_blank');
+      } else {
+        Toast.show('URL de paiement non disponible', 'error');
+      }
+    } catch (err) {
+      console.error('Wave checkout error:', err);
+      Toast.show('Erreur de connexion', 'error');
+    }
   }
 };

@@ -1,5 +1,6 @@
 const express = require('express');
 const Versement = require('../models/Versement');
+const Contravention = require('../models/Contravention');
 
 const router = express.Router();
 
@@ -15,7 +16,34 @@ router.post('/webhook', async (req, res) => {
       return res.status(200).json({ received: true });
     }
 
-    // Trouver le versement correspondant
+    // Determiner si c'est un versement (VRS-) ou une contravention (CTR-)
+    if (client_reference.startsWith('CTR-')) {
+      // Contravention
+      const contravention = await Contravention.findOne({
+        $or: [
+          { id: client_reference },
+          { waveCheckoutId: id }
+        ]
+      });
+
+      if (!contravention) {
+        console.warn('[Wave Webhook] Contravention non trouvee pour', client_reference);
+        return res.status(200).json({ received: true });
+      }
+
+      if (payment_status === 'succeeded' && contravention.statut !== 'payee') {
+        contravention.statut = 'payee';
+        contravention.moyenPaiement = 'wave';
+        contravention.waveTransactionId = transaction_id || '';
+        contravention.datePaiement = new Date().toISOString();
+        await contravention.save();
+        console.log('[Wave Webhook] Contravention payee:', contravention.id);
+      }
+
+      return res.status(200).json({ received: true });
+    }
+
+    // Versement (VRS- ou autre)
     const versement = await Versement.findOne({
       $or: [
         { id: client_reference },
@@ -37,7 +65,6 @@ router.post('/webhook', async (req, res) => {
       await versement.save();
       console.log('[Wave Webhook] Versement valide:', versement.id);
     } else if (payment_status === 'cancelled') {
-      // Supprimer le versement en attente si le paiement est annule
       if (versement.statut === 'en_attente') {
         await Versement.deleteOne({ id: versement.id });
         console.log('[Wave Webhook] Versement supprime (paiement annule):', versement.id);

@@ -121,17 +121,11 @@ const VersementsPage = {
         </div>
       </div>
 
-      <!-- Boutons de versement -->
-      <div style="display:flex;gap:10px;margin-bottom:1.5rem">
-        <!-- Bouton Wave -->
-        <button onclick="VersementsPage._payerWave()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:1rem;border-radius:1.25rem;border:none;background:linear-gradient(135deg,#1B98F5,#0D6EFD);color:white;font-size:0.9rem;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(13,110,253,0.3);transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+      <!-- Bouton de versement Wave -->
+      <div style="margin-bottom:1.5rem">
+        <button onclick="VersementsPage._payerWave()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:1rem;border-radius:1.25rem;border:none;background:linear-gradient(135deg,#1B98F5,#0D6EFD);color:white;font-size:0.9rem;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(13,110,253,0.3);transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
           <iconify-icon icon="solar:wallet-money-bold" style="font-size:1.3rem"></iconify-icon>
           Payer via Wave
-        </button>
-        <!-- Bouton classique -->
-        <button onclick="VersementsPage._nouveauVersement()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:1rem;border-radius:1.25rem;border:2px solid #e2e8f0;background:white;color:#334155;font-size:0.9rem;font-weight:800;cursor:pointer;font-family:inherit;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
-          <iconify-icon icon="solar:add-circle-bold" style="font-size:1.3rem"></iconify-icon>
-          Faire un versement
         </button>
       </div>
 
