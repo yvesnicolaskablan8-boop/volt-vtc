@@ -34,6 +34,17 @@
   <link rel="stylesheet" href="css/charts.css">
   <link rel="stylesheet" href="css/animations.css">
   <link rel="stylesheet" href="css/responsive.css">
+
+  <!-- Prevent flash of login screen on refresh when already authenticated -->
+  <script>
+    if (localStorage.getItem('volt_token')) {
+      document.documentElement.classList.add('volt-has-token');
+    }
+  </script>
+  <style>
+    .volt-has-token .login-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
+    .volt-has-token .app-container { display: block !important; }
+  </style>
 </head>
 <body>
   <!-- Login Overlay -->
@@ -179,6 +190,10 @@
         <a class="nav-item" href="#/contraventions" data-route="/contraventions">
           <iconify-icon icon="solar:document-text-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Contraventions</span>
+        </a>
+        <a class="nav-item" href="#/depenses" data-route="/depenses">
+          <iconify-icon icon="solar:wallet-2-bold-duotone" class="nav-icon"></iconify-icon>
+          <span>D&eacute;penses</span>
         </a>
         <a class="nav-item" href="#/rentabilite" data-route="/rentabilite">
           <iconify-icon icon="solar:pie-chart-2-bold-duotone" class="nav-icon"></iconify-icon>
@@ -370,6 +385,7 @@
   <script src="js/pages/maintenances.js"></script>
   <script src="js/pages/motivation.js"></script>
   <script src="js/pages/contraventions.js"></script>
+  <script src="js/pages/depenses.js"></script>
   <script src="js/pages/menu.js"></script>
   <script src="js/components/bottom-nav.js"></script>
   <script src="js/router.js"></script>

@@ -300,6 +300,9 @@ const App = {
   },
 
   _showLogin() {
+    // Remove fast-hide class so login overlay becomes visible
+    document.documentElement.classList.remove('volt-has-token');
+
     // Show login overlay
     const loginOverlay = document.getElementById('login-overlay');
     if (loginOverlay) {

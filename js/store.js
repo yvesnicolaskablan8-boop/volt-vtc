@@ -251,6 +251,7 @@ const Store = {
       pointages: [],
       conduiteBrute: [],
       checklistVehicules: [],
+      depenses: [],
       settings: { entreprise: {}, preferences: {} }
     };
   },
