@@ -203,6 +203,10 @@ const AccueilPage = {
             <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:1.75rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Voir mon<br>planning</span>
           </button>
+          <button onclick="DriverRouter.navigate('contraventions')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(239,68,68,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.75rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Mes<br>contraventions</span>
+          </button>
           <button onclick="DriverRouter.navigate('contraventions')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:linear-gradient(135deg,#1B98F5,#0D6EFD);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(13,110,253,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
             <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:1.75rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Payer<br>via Wave</span>
