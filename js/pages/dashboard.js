@@ -5,7 +5,8 @@ const DashboardPage = {
   _charts: [],
   _refreshInterval: null,
   _lastData: null,
-  _selectedPeriod: null, // null = mois courant (temps réel), 'YYYY-MM' = mois spécifique
+  _selectedPeriod: null, // null = today/current month
+  _monthView: false, // false = jour, true = mois entier
 
   render() {
     const container = document.getElementById('page-content');
@@ -45,6 +46,7 @@ const DashboardPage = {
   },
 
   _isToday() {
+    if (this._monthView) return false;
     if (!this._selectedPeriod) return true;
     return this._selectedPeriod === new Date().toISOString().split('T')[0];
   },
@@ -63,8 +65,15 @@ const DashboardPage = {
     this.render();
   },
 
+  _toggleMonthView() {
+    this._monthView = !this._monthView;
+    this.destroy();
+    this.render();
+  },
+
   _resetToToday() {
     this._selectedPeriod = null;
+    this._monthView = false;
     this.destroy();
     this.render();
   },
@@ -97,14 +106,19 @@ const DashboardPage = {
     const sel = new Date(selectedDay);
     const thisMonth = sel.getMonth();
     const thisYear = sel.getFullYear();
-    const dayFilter = selectedDay;
+    const isMonthView = this._monthView;
+    const dayFilter = isMonthView ? null : selectedDay;
+
+    // Filter helper: filtre par jour ou par mois selon le mode
+    const matchesPeriod = (dateStr) => {
+      if (!dateStr) return false;
+      if (dayFilter) return dateStr.startsWith(dayFilter);
+      const d = new Date(dateStr);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    };
 
     // This month/day courses
-    const monthCourses = courses.filter(c => {
-      const d = new Date(c.dateHeure);
-      if (dayFilter) return c.dateHeure && c.dateHeure.startsWith(dayFilter) && c.statut === 'terminee';
-      return d.getMonth() === thisMonth && d.getFullYear() === thisYear && c.statut === 'terminee';
-    });
+    const monthCourses = courses.filter(c => matchesPeriod(c.dateHeure) && c.statut === 'terminee');
 
     // Last month courses for comparison
     const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
@@ -119,11 +133,8 @@ const DashboardPage = {
     const caLastMonth = lastMonthCourses.reduce((s, c) => s + c.montantTTC, 0);
     const caTrend = caLastMonth > 0 ? ((caThisMonth - caLastMonth) / caLastMonth) * 100 : 0;
 
-    // Versements — toujours par mois (les versements couvrent des périodes, pas un jour précis)
-    const monthVersements = versements.filter(v => {
-      const d = new Date(v.date);
-      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-    });
+    // Versements — relatif à la période sélectionnée (jour ou mois)
+    const monthVersements = versements.filter(v => matchesPeriod(v.date));
     const totalVerse = monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
 
     // Versements en retard — sera recalculé à partir de unpaidItems plus bas
@@ -135,9 +146,9 @@ const DashboardPage = {
     const suspendusCount = chauffeurs.filter(c => c.statut === 'suspendu').length;
     const inactifsCount = chauffeurs.filter(c => c.statut === 'inactif').length;
 
-    // Chauffeurs programmés à la date sélectionnée
+    // Chauffeurs programmés à la période sélectionnée
     const planning = Store.get('planning') || [];
-    const programmesIds = [...new Set(planning.filter(p => p.date === dayFilter).map(p => p.chauffeurId))];
+    const programmesIds = [...new Set(planning.filter(p => matchesPeriod(p.date)).map(p => p.chauffeurId))];
     const programmesCount = programmesIds.length;
 
     // Vehicles in service
@@ -305,11 +316,7 @@ const DashboardPage = {
 
     // =================== DÉPENSES VÉHICULES ===================
     const depenses = Store.get('depenses') || [];
-    const monthDepenses = depenses.filter(dep => {
-      if (dayFilter) return dep.date === dayFilter;
-      const d = new Date(dep.date);
-      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-    });
+    const monthDepenses = depenses.filter(dep => matchesPeriod(dep.date));
     const totalDepensesMois = monthDepenses.reduce((s, d) => s + (d.montant || 0), 0);
     const depensesByType = {};
     monthDepenses.forEach(d => {
@@ -327,16 +334,15 @@ const DashboardPage = {
 
     // Pointage / Service du jour
     const pointages = Store.get('pointages') || [];
-    const todayPointages = pointages.filter(p => p.date === dayFilter);
+    const todayPointages = pointages.filter(p => matchesPeriod(p.date));
     const serviceEnCours = todayPointages.filter(p => p.statut === 'en_service').length;
     const serviceEnPause = todayPointages.filter(p => p.statut === 'pause').length;
     const serviceTermine = todayPointages.filter(p => p.statut === 'termine').length;
     const servicePasCommence = Math.max(0, programmesCount - todayPointages.length);
 
-    const periodLabel = Utils.formatDate(dayFilter);
     const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
     const monthLabel = monthNames[thisMonth] + ' ' + thisYear;
-    const isSpecificDay = true;
+    const periodLabel = isMonthView ? monthLabel : Utils.formatDate(selectedDay);
 
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
@@ -351,7 +357,7 @@ const DashboardPage = {
       alertesTotal, alertesCritiques, alertesUrgentes,
       tauxRecouvrement, totalAttendu,
       serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence,
-      periodLabel, monthLabel, isSpecificDay
+      periodLabel, monthLabel, isMonthView
     };
   },
 
@@ -361,7 +367,10 @@ const DashboardPage = {
         <h1><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Tableau de bord</h1>
         <div class="page-actions">
           <input type="date" id="dashboard-period" class="form-control" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="width:155px;font-size:var(--font-size-xs);padding:4px 8px;">
-          ${this._selectedPeriod ? `<button class="btn btn-sm btn-secondary" onclick="DashboardPage._resetToToday()" style="font-size:var(--font-size-xs);padding:4px 10px;">
+          <button class="btn btn-sm ${this._monthView ? 'btn-primary' : 'btn-secondary'}" onclick="DashboardPage._toggleMonthView()" style="font-size:var(--font-size-xs);padding:4px 10px;" title="${this._monthView ? 'Voir le jour' : 'Voir le mois entier'}">
+            <iconify-icon icon="${this._monthView ? 'solar:calendar-minimalistic-bold' : 'solar:calendar-bold-duotone'}"></iconify-icon> ${this._monthView ? 'Mois' : 'Jour'}
+          </button>
+          ${this._selectedPeriod || this._monthView ? `<button class="btn btn-sm btn-secondary" onclick="DashboardPage._resetToToday()" style="font-size:var(--font-size-xs);padding:4px 10px;">
             <iconify-icon icon="solar:restart-bold"></iconify-icon> Aujourd'hui
           </button>` : ''}
           ${this._isToday() ? `<span id="live-indicator" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:#22c55e;background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:20px;font-weight:600;">
@@ -392,7 +401,7 @@ const DashboardPage = {
         <a href="#/versements" class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="kpi-label">Versements — ${d.monthLabel}</div>
+          <div class="kpi-label">Versements — ${d.periodLabel}</div>
           <div class="kpi-trend ${d.retardCount > 0 ? 'down' : 'up'}">
             <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
           </div>
