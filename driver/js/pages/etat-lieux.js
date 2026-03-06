@@ -105,11 +105,11 @@ const EtatLieuxPage = {
 
     // Submit to API
     try {
-      const result = await DriverStore._post('/signalements', {
-        type: 'etat_lieux',
+      const result = await DriverStore.createSignalement({
+        type: 'autre',
         titre: 'Etat des lieux - Debut de service',
         description: `Points verifies: ${checkedCount}/5. ${notes ? 'Notes: ' + notes : ''}`,
-        urgence: 'faible'
+        urgence: 'normale'
       });
 
       if (result && !result.error) {

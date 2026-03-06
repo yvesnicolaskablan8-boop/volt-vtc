@@ -176,7 +176,9 @@ const SignalementsPage = {
     btn.parentElement.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     // Set hidden input
-    const hiddenInput = btn.closest('form').querySelector('[name="type"]');
+    const form = btn.closest('form');
+    if (!form) return;
+    const hiddenInput = form.querySelector('[name="type"]');
     if (hiddenInput) hiddenInput.value = btn.getAttribute('data-type');
   },
 

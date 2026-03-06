@@ -47,6 +47,7 @@ const DriverApp = {
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () => {
         const route = DriverRouter.getCurrentRoute();
+        if (!route) return;
         const page = DriverRouter._routes[route];
         if (page) {
           const content = document.getElementById('app-content');

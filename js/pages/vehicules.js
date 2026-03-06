@@ -707,6 +707,7 @@ const VehiculesPage = {
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
       const vehicule = Store.findById('vehicules', id);
+      if (!vehicule) { Toast.error('Véhicule introuvable'); Modal.close(); return; }
       const maintenance = { id: Utils.generateId('MNT'), ...values };
       vehicule.coutsMaintenance = vehicule.coutsMaintenance || [];
       vehicule.coutsMaintenance.push(maintenance);

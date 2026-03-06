@@ -275,11 +275,15 @@ const DriverStore = {
 
   async _delete(path, body) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
       const res = await fetch(this._apiBase + path, {
         method: 'DELETE',
         headers: this._headers(),
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       if (res.status === 401) { DriverAuth.logout(); return null; }
       const data = await res.json();
       if (!res.ok) return { error: data.error || `Erreur ${res.status}` };

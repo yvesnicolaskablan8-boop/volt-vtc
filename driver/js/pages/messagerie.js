@@ -106,8 +106,8 @@ const MessageriePage = {
     this._currentConv = conv;
     this._renderChat();
 
-    // Mark as read
-    DriverStore.markConversationRead(convId);
+    // Mark as read (fire and forget but await to ensure it completes)
+    await DriverStore.markConversationRead(convId);
   },
 
   // =================== RENDER LIST ===================
