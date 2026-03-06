@@ -3,6 +3,7 @@
  */
 const VersementsPage = {
   _charts: [],
+  _selectedPeriod: null, // null = mois courant, 'YYYY-MM-DD' = date spécifique
 
   render() {
     const container = document.getElementById('page-content');
@@ -10,6 +11,7 @@ const VersementsPage = {
     container.innerHTML = this._template(data);
     this._loadCharts(data);
     this._bindEvents(data);
+    this._bindPeriodSelector();
   },
 
   destroy() {
@@ -17,29 +19,56 @@ const VersementsPage = {
     this._charts = [];
   },
 
+  _onPeriodChange(value) {
+    const today = new Date().toISOString().split('T')[0];
+    this._selectedPeriod = (value === today) ? null : value;
+    this.destroy();
+    this.render();
+  },
+
+  _resetToToday() {
+    this._selectedPeriod = null;
+    this.destroy();
+    this.render();
+  },
+
+  _bindPeriodSelector() {
+    const input = document.getElementById('versements-period');
+    if (input) {
+      input.addEventListener('change', () => this._onPeriodChange(input.value));
+    }
+  },
+
   _getData() {
     const versements = Store.get('versements');
     const chauffeurs = Store.get('chauffeurs');
     const now = new Date();
-    const thisMonth = now.getMonth();
-    const thisYear = now.getFullYear();
+    const selectedDay = this._selectedPeriod || now.toISOString().split('T')[0];
+    const sel = new Date(selectedDay);
+    const thisMonth = sel.getMonth();
+    const thisYear = sel.getFullYear();
 
+    // Filtrer par jour si date sélectionnée, sinon par mois
     const monthVers = versements.filter(v => {
+      if (this._selectedPeriod) return v.date === selectedDay;
       const d = new Date(v.date);
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     });
 
     const activeVers = monthVers.filter(v => v.statut !== 'supprime');
-    const totalCommission = activeVers.reduce((s, v) => s + v.commission, 0);
-    const totalVerse = activeVers.reduce((s, v) => s + v.montantVerse, 0);
-    const tauxRecouvrement = totalCommission > 0 ? (totalVerse / totalCommission) * 100 : 0;
+    const totalCommission = activeVers.reduce((s, v) => s + (v.commission || 0), 0);
+    const totalVerse = activeVers.reduce((s, v) => s + (v.montantVerse || 0), 0);
+    const tauxRecouvrement = totalCommission > 0 ? (totalVerse / totalCommission) * 100 : (totalVerse > 0 ? 100 : 0);
 
+    // Compter les statuts pour la période sélectionnée
     const byStatus = {
-      valide: versements.filter(v => v.statut === 'valide').length,
-      en_attente: versements.filter(v => v.statut === 'en_attente').length,
-      retard: versements.filter(v => v.statut === 'retard').length,
-      partiel: versements.filter(v => v.statut === 'partiel').length
+      valide: monthVers.filter(v => v.statut === 'valide').length,
+      en_attente: monthVers.filter(v => v.statut === 'en_attente').length,
+      retard: monthVers.filter(v => v.statut === 'retard').length,
+      partiel: monthVers.filter(v => v.statut === 'partiel').length
     };
+
+    const periodLabel = Utils.formatDate(selectedDay);
 
     // Weekly evolution (last 12 weeks)
     const weeklyEvo = [];
@@ -56,11 +85,11 @@ const VersementsPage = {
 
       weeklyEvo.push({
         label: `S${Utils.getWeekNumber(weekStart)}`,
-        total: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0)
+        total: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + (v.montantVerse || 0), 0)
       });
     }
 
-    return { versements, chauffeurs, totalCommission, totalVerse, tauxRecouvrement, byStatus, weeklyEvo };
+    return { versements, chauffeurs, totalCommission, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay };
   },
 
   _template(d) {
@@ -68,6 +97,10 @@ const VersementsPage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon> Versements</h1>
         <div class="page-actions">
+          <input type="date" id="versements-period" class="form-control" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="width:155px;font-size:var(--font-size-xs);padding:4px 8px;">
+          ${this._selectedPeriod ? `<button class="btn btn-sm btn-secondary" onclick="VersementsPage._resetToToday()" style="font-size:var(--font-size-xs);padding:4px 10px;">
+            <iconify-icon icon="solar:restart-bold"></iconify-icon> Aujourd'hui
+          </button>` : ''}
           <button class="btn btn-secondary" onclick="VersementsPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
           <button class="btn btn-secondary" onclick="VersementsPage._exportCSV()"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> CSV</button>
           <button class="btn btn-primary" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouveau versement</button>
@@ -78,12 +111,12 @@ const VersementsPage = {
         <div class="kpi-card">
           <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalCommission)}</div>
-          <div class="kpi-label">Commission attendue (mois)</div>
+          <div class="kpi-label">Commission attendue — ${d.periodLabel}</div>
         </div>
         <div class="kpi-card green">
           <div class="kpi-icon"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="kpi-label">Montant versé (mois)</div>
+          <div class="kpi-label">Montant versé — ${d.periodLabel}</div>
         </div>
         <div class="kpi-card ${d.tauxRecouvrement >= 80 ? 'cyan' : 'red'}">
           <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
