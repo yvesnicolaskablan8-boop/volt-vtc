@@ -14,6 +14,27 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/driver/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/driver/icons/icon-192.png">
 
+  <!-- Force SW + cache update -->
+  <script>
+  (function(){
+    var APP_VERSION = 7;
+    var stored = parseInt(localStorage.getItem('volt_driver_version') || '0');
+    if (stored < APP_VERSION && 'serviceWorker' in navigator) {
+      localStorage.setItem('volt_driver_version', APP_VERSION);
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        var p = regs.map(function(r) { return r.unregister(); });
+        return Promise.all(p);
+      }).then(function() {
+        return caches.keys();
+      }).then(function(keys) {
+        return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+      }).then(function() {
+        window.location.reload(true);
+      });
+    }
+  })();
+  </script>
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
