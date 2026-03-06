@@ -91,6 +91,7 @@ const Auth = {
       '/maintenances': 'vehicules',
       '/planning': 'planning',
       '/versements': 'versements',
+      '/contraventions': 'contraventions',
       '/rentabilite': 'rentabilite',
       '/comptabilite': 'comptabilite',
       '/gps-conduite': 'gps_conduite',

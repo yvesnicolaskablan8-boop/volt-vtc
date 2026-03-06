@@ -16,6 +16,7 @@ const ParametresPage = {
     { key: 'vehicules', label: 'Véhicules', icon: 'solar:wheel-bold-duotone' },
     { key: 'planning', label: 'Planning', icon: 'solar:calendar-bold-duotone' },
     { key: 'versements', label: 'Versements', icon: 'solar:transfer-horizontal-bold-duotone' },
+    { key: 'contraventions', label: 'Contraventions', icon: 'solar:document-text-bold-duotone' },
     { key: 'rentabilite', label: 'Rentabilité', icon: 'solar:pie-chart-bold-duotone' },
     { key: 'comptabilite', label: 'Comptabilité', icon: 'solar:calculator-bold-duotone' },
     { key: 'gps_conduite', label: 'GPS & Conduite', icon: 'solar:satellite-bold-duotone' },
@@ -26,11 +27,11 @@ const ParametresPage = {
 
   // =================== ROLE TEMPLATES ===================
   _roleTemplates: {
-    'Administrateur': { dashboard: true, chauffeurs: true, vehicules: true, planning: true, versements: true, rentabilite: true, comptabilite: true, gps_conduite: true, alertes: true, rapports: true, parametres: true },
-    'Manager': { dashboard: true, chauffeurs: true, vehicules: true, planning: true, versements: true, rentabilite: true, comptabilite: true, gps_conduite: true, alertes: true, rapports: true, parametres: false },
-    'Opérateur': { dashboard: true, chauffeurs: true, vehicules: true, planning: true, versements: false, rentabilite: false, comptabilite: false, gps_conduite: false, alertes: false, rapports: false, parametres: false },
-    'Comptable': { dashboard: true, chauffeurs: false, vehicules: false, planning: false, versements: true, rentabilite: true, comptabilite: true, gps_conduite: false, alertes: false, rapports: true, parametres: false },
-    'Superviseur': { dashboard: true, chauffeurs: false, vehicules: false, planning: false, versements: false, rentabilite: false, comptabilite: false, gps_conduite: true, alertes: true, rapports: true, parametres: false }
+    'Administrateur': { dashboard: true, chauffeurs: true, vehicules: true, planning: true, versements: true, contraventions: true, rentabilite: true, comptabilite: true, gps_conduite: true, alertes: true, rapports: true, parametres: true },
+    'Manager': { dashboard: true, chauffeurs: true, vehicules: true, planning: true, versements: true, contraventions: true, rentabilite: true, comptabilite: true, gps_conduite: true, alertes: true, rapports: true, parametres: false },
+    'Opérateur': { dashboard: true, chauffeurs: true, vehicules: true, planning: true, versements: false, contraventions: false, rentabilite: false, comptabilite: false, gps_conduite: false, alertes: false, rapports: false, parametres: false },
+    'Comptable': { dashboard: true, chauffeurs: false, vehicules: false, planning: false, versements: true, contraventions: true, rentabilite: true, comptabilite: true, gps_conduite: false, alertes: false, rapports: true, parametres: false },
+    'Superviseur': { dashboard: true, chauffeurs: false, vehicules: false, planning: false, versements: false, contraventions: false, rentabilite: false, comptabilite: false, gps_conduite: true, alertes: true, rapports: true, parametres: false }
   },
 
   render() {

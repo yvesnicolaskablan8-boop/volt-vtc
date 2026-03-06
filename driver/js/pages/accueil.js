@@ -191,31 +191,19 @@ const AccueilPage = {
       <div style="margin-bottom:1rem">
         <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:1rem">Actions rapides</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-          <button onclick="DriverRouter.navigate('versements')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(34,197,94,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(34,197,94,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
-            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:1.75rem"></iconify-icon>
-            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Faire un<br>versement</span>
-          </button>
-          <button onclick="DriverRouter.navigate('versements')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:#4f46e5;color:white;cursor:pointer;box-shadow:0 4px 12px rgba(79,70,229,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
-            <iconify-icon icon="solar:history-bold-duotone" style="font-size:1.75rem"></iconify-icon>
-            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Historique<br>versements</span>
-          </button>
           <button onclick="DriverRouter.navigate('etat-lieux')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:#f59e0b;color:white;cursor:pointer;box-shadow:0 4px 12px rgba(245,158,11,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
             <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:1.75rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Etat des<br>lieux</span>
-          </button>
-          <button onclick="AccueilPage._demanderAbsence()" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(59,130,246,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
-            <iconify-icon icon="solar:calendar-mark-bold-duotone" style="font-size:1.75rem"></iconify-icon>
-            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Demander une<br>absence</span>
           </button>
           <button onclick="DriverRouter.navigate('planning')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(6,182,212,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(6,182,212,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
             <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:1.75rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Voir mon<br>planning</span>
           </button>
-          <button onclick="DriverRouter.navigate('trajets')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(139,92,246,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(139,92,246,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
-            <iconify-icon icon="solar:route-bold-duotone" style="font-size:1.75rem"></iconify-icon>
-            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Mes<br>trajets</span>
+          <button onclick="DriverRouter.navigate('contraventions')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(239,68,68,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.75rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Mes<br>contraventions</span>
           </button>
-          <button onclick="DriverRouter.navigate('support')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(239,68,68,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+          <button onclick="DriverRouter.navigate('support')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(107,114,128,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(107,114,128,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
             <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.75rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Support &<br>Assistance</span>
           </button>
