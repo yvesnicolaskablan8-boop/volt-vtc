@@ -64,9 +64,36 @@ const VersementsPage = {
     const byStatus = {
       valide: monthVers.filter(v => v.statut === 'valide').length,
       en_attente: monthVers.filter(v => v.statut === 'en_attente').length,
-      retard: monthVers.filter(v => v.statut === 'retard').length,
+      retard: 0, // sera recalculé ci-dessous via le planning
       partiel: monthVers.filter(v => v.statut === 'partiel').length
     };
+
+    // Calculer les retards via le planning (jours programmés sans versement validé)
+    const planning = Store.get('planning') || [];
+    const absences = Store.get('absences') || [];
+    const periodEnd = this._selectedPeriod
+      ? new Date(thisYear, thisMonth + 1, 0)
+      : now;
+    const todayStr = periodEnd.toISOString().split('T')[0];
+    const periodStart = new Date(thisYear, thisMonth, 1);
+    const minDate = periodStart.toISOString().split('T')[0];
+
+    const scheduledDays = new Map();
+    planning.filter(p => p.date <= todayStr && p.date >= minDate).forEach(p => {
+      const key = `${p.chauffeurId}|${p.date}`;
+      if (!scheduledDays.has(key)) scheduledDays.set(key, p);
+    });
+
+    scheduledDays.forEach((p) => {
+      const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
+      if (hasAbsence) return;
+      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
+      if (!ch || ch.statut === 'inactif') return;
+      const redevance = ch.redevanceQuotidienne || 0;
+      if (redevance <= 0) return;
+      const hasValidPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && v.statut === 'valide');
+      if (!hasValidPayment) byStatus.retard++;
+    });
 
     const periodLabel = Utils.formatDate(selectedDay);
 
