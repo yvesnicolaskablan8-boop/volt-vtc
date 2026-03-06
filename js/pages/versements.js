@@ -160,7 +160,6 @@ const VersementsPage = {
           <select class="form-control" id="filter-statut" style="width:160px;">
             <option value="">Tous statuts</option>
             <option value="valide">Validé</option>
-            <option value="en_attente">En attente</option>
             <option value="retard">En retard</option>
             <option value="partiel">Partiel</option>
           </select>
@@ -264,7 +263,7 @@ const VersementsPage = {
   },
 
   _bindEvents(d) {
-    const versements = d.versements.sort((a, b) => b.date.localeCompare(a.date));
+    const versements = d.versements.filter(v => v.statut !== 'en_attente').sort((a, b) => b.date.localeCompare(a.date));
 
     const renderTable = (data) => {
       Table.create({

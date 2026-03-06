@@ -68,10 +68,10 @@ const ContraventionsPage = {
 
       <!-- KPIs -->
       <div class="kpi-grid grid-4">
-        <div class="kpi-card kpi-danger">
+        <div class="kpi-card kpi-danger" id="kpi-total-impaye" style="cursor:pointer" title="Cliquer pour voir les d\u00e9tails">
           <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(data.totalImpaye)}</div>
-          <div class="kpi-label">Total impay\u00e9</div>
+          <div class="kpi-label">Total impay\u00e9 <iconify-icon icon="solar:eye-bold" style="font-size:0.75rem;vertical-align:middle;opacity:0.6"></iconify-icon></div>
         </div>
         <div class="kpi-card">
           <div class="kpi-icon"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
@@ -183,8 +183,64 @@ const ContraventionsPage = {
     document.getElementById('filter-chauffeur').addEventListener('change', applyFilters);
     document.getElementById('filter-statut').addEventListener('change', applyFilters);
 
+    // KPI Total impayé — click to show details
+    document.getElementById('kpi-total-impaye').addEventListener('click', () => {
+      this._showImpayeesDetail(data, chauffeurMap, typeLabels);
+    });
+
     // Add button
     document.getElementById('btn-add-contravention').addEventListener('click', () => this._add(data.chauffeurs));
+  },
+
+  _showImpayeesDetail(data, chauffeurMap, typeLabels) {
+    const impayees = data.contraventions.filter(c => c.statut === 'impayee');
+    const total = impayees.reduce((s, c) => s + (c.montant || 0), 0);
+
+    // Regrouper par chauffeur
+    const byChauffeur = {};
+    impayees.forEach(c => {
+      const name = chauffeurMap[c.chauffeurId] || c.chauffeurId;
+      if (!byChauffeur[name]) byChauffeur[name] = { items: [], total: 0 };
+      byChauffeur[name].items.push(c);
+      byChauffeur[name].total += (c.montant || 0);
+    });
+
+    let html = `
+      <div style="margin-bottom:1rem;padding:1rem;border-radius:0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:700;color:#ef4444">${impayees.length} contravention${impayees.length > 1 ? 's' : ''} impay\u00e9e${impayees.length > 1 ? 's' : ''}</span>
+          <span style="font-weight:900;font-size:1.1rem;color:#ef4444">${Utils.formatCurrency(total)}</span>
+        </div>
+      </div>
+    `;
+
+    // D\u00e9tail par chauffeur
+    Object.entries(byChauffeur).sort((a, b) => b[1].total - a[1].total).forEach(([name, group]) => {
+      html += `
+        <div style="margin-bottom:1rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;padding-bottom:0.25rem;border-bottom:1px solid #e2e8f0">
+            <span style="font-weight:800;font-size:0.9rem">${name}</span>
+            <span style="font-weight:700;color:#ef4444;font-size:0.85rem">${Utils.formatCurrency(group.total)}</span>
+          </div>
+          ${group.items.map(c => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.5rem;font-size:0.82rem;border-radius:0.5rem;margin-bottom:2px;background:#f8fafc">
+              <span style="color:#64748b">${Utils.formatDate(c.date)} \u00b7 ${typeLabels[c.type] || c.type}${c.lieu ? ' \u00b7 ' + c.lieu : ''}</span>
+              <span style="font-weight:700">${Utils.formatCurrency(c.montant || 0)}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    });
+
+    if (impayees.length === 0) {
+      html = '<div style="text-align:center;padding:2rem;color:#94a3b8">Aucune contravention impay\u00e9e</div>';
+    }
+
+    Modal.form(
+      '<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#ef4444"></iconify-icon> D\u00e9tail des contraventions impay\u00e9es',
+      `<div style="max-height:60vh;overflow-y:auto">${html}</div>`,
+      null
+    );
   },
 
   _add(chauffeurs) {
