@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volt-vtc-v31';
+const CACHE_NAME = 'volt-vtc-v32';
 const ASSETS = [
   './',
   './index.html',
