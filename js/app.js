@@ -187,9 +187,32 @@ const App = {
 
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('SW registered, scope:', reg.scope))
+      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+        .then(reg => {
+          console.log('SW registered, scope:', reg.scope);
+          // Vérifier les mises à jour toutes les 60s
+          setInterval(() => reg.update(), 60000);
+          // Si un nouveau SW est en attente, l'activer
+          reg.addEventListener('updatefound', () => {
+            const newSW = reg.installing;
+            if (newSW) {
+              newSW.addEventListener('statechange', () => {
+                if (newSW.state === 'activated') {
+                  console.log('New SW activated, reloading...');
+                  window.location.reload();
+                }
+              });
+            }
+          });
+        })
         .catch(err => console.warn('SW registration failed:', err));
+      // Recharger si le controller change (nouveau SW prend le contrôle)
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!this._swReloading) {
+          this._swReloading = true;
+          window.location.reload();
+        }
+      });
     }
 
     // PWA Install prompt

@@ -7,9 +7,28 @@ const DriverApp = {
   init() {
     // Register service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/driver/sw.js')
-        .then(() => console.log('SW registered'))
+      navigator.serviceWorker.register('/driver/sw.js', { updateViaCache: 'none' })
+        .then(reg => {
+          console.log('SW registered');
+          setInterval(() => reg.update(), 60000);
+          reg.addEventListener('updatefound', () => {
+            const newSW = reg.installing;
+            if (newSW) {
+              newSW.addEventListener('statechange', () => {
+                if (newSW.state === 'activated') {
+                  window.location.reload();
+                }
+              });
+            }
+          });
+        })
         .catch(err => console.warn('SW registration failed:', err));
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!this._swReloading) {
+          this._swReloading = true;
+          window.location.reload();
+        }
+      });
     }
 
     // Ecouter les messages du Service Worker (notification click)
