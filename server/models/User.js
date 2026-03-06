@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema({
     vehicules: { type: Boolean, default: false },
     planning: { type: Boolean, default: false },
     versements: { type: Boolean, default: false },
+    contraventions: { type: Boolean, default: false },
     rentabilite: { type: Boolean, default: false },
     comptabilite: { type: Boolean, default: false },
     gps_conduite: { type: Boolean, default: false },
