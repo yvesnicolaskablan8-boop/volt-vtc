@@ -366,10 +366,7 @@ const DashboardPage = {
           ${this._isToday() ? `<span id="live-indicator" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:#22c55e;background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:20px;font-weight:600;">
             <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite;"></span> EN DIRECT
           </span>` : ''}
-          <button class="btn btn-secondary" onclick="DashboardPage._shareWhatsApp()" title="Partager sur WhatsApp" style="background:#25D366;color:#fff;border-color:#25D366;"><iconify-icon icon="mdi:whatsapp"></iconify-icon></button>
-          <button class="btn btn-secondary" onclick="DashboardPage._sendPaymentReminders()" title="Envoyer rappels de paiement"><iconify-icon icon="solar:bell-bold-duotone"></iconify-icon> Rappels</button>
           <button class="btn btn-secondary" onclick="DashboardPage._sendAnnouncement()" title="Envoyer annonce"><iconify-icon icon="solar:letter-bold-duotone"></iconify-icon></button>
-          <button class="btn btn-secondary" onclick="DashboardPage.refresh()"><iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser</button>
         </div>
       </div>
       <style>

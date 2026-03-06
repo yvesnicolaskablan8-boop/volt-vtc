@@ -31,13 +31,13 @@ const Auth = {
       permissions: user.permissions,
       loginTime: new Date().toISOString()
     };
-    sessionStorage.setItem(this._SESSION_KEY, JSON.stringify(session));
+    localStorage.setItem(this._SESSION_KEY, JSON.stringify(session));
     return session;
   },
 
   getSession() {
     try {
-      const data = sessionStorage.getItem(this._SESSION_KEY);
+      const data = localStorage.getItem(this._SESSION_KEY);
       return data ? JSON.parse(data) : null;
     } catch (e) {
       return null;
@@ -45,7 +45,7 @@ const Auth = {
   },
 
   destroySession() {
-    sessionStorage.removeItem(this._SESSION_KEY);
+    localStorage.removeItem(this._SESSION_KEY);
     this.removeToken();
   },
 
@@ -68,7 +68,7 @@ const Auth = {
       session.role = user.role;
       session.prenom = user.prenom;
       session.nom = user.nom;
-      sessionStorage.setItem(this._SESSION_KEY, JSON.stringify(session));
+      localStorage.setItem(this._SESSION_KEY, JSON.stringify(session));
     }
   },
 

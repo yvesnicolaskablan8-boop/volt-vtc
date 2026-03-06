@@ -618,9 +618,6 @@ const App = {
           .header-toggle {
             display: none !important;
           }
-          .header-search {
-            display: none !important;
-          }
           .header-user-name,
           .header-user-chevron {
             display: none !important;
