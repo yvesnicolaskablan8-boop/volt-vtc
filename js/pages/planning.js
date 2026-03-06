@@ -13,6 +13,7 @@ const PlanningPage = {
   _currentView: 'week',
   _currentWeekStart: null,
   _currentMonth: null,
+  _filterChauffeurId: '',
 
   render() {
     const now = new Date();
@@ -55,10 +56,16 @@ const PlanningPage = {
             <button class="btn btn-sm btn-secondary" id="btn-next"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
             <button class="btn btn-sm btn-secondary" id="btn-today" style="margin-left:var(--space-sm);">Aujourd'hui</button>
           </div>
-          <div class="tabs" id="planning-view-tabs" style="margin:0;">
-            <div class="tab active" data-view="week"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Semaine</div>
-            <div class="tab" data-view="month"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
-            <div class="tab" data-view="stats"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Statistiques</div>
+          <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;">
+            <select class="form-control" id="filter-planning-chauffeur" style="width:200px;font-size:var(--font-size-xs);padding:4px 8px;">
+              <option value="">Tous les chauffeurs</option>
+              ${(Store.get('chauffeurs') || []).filter(c => c.statut !== 'inactif').map(c => `<option value="${c.id}" ${this._filterChauffeurId === c.id ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`).join('')}
+            </select>
+            <div class="tabs" id="planning-view-tabs" style="margin:0;">
+              <div class="tab active" data-view="week"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Semaine</div>
+              <div class="tab" data-view="month"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
+              <div class="tab" data-view="stats"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Statistiques</div>
+            </div>
           </div>
         </div>
       </div>
@@ -88,6 +95,11 @@ const PlanningPage = {
         this._currentView = tab.dataset.view;
         this._renderView();
       });
+    });
+
+    document.getElementById('filter-planning-chauffeur').addEventListener('change', (e) => {
+      this._filterChauffeurId = e.target.value;
+      this._renderView();
     });
 
     document.getElementById('btn-add-absence').addEventListener('click', () => this._addAbsence());
@@ -233,7 +245,10 @@ const PlanningPage = {
   // =================== VUE SEMAINE ===================
 
   _renderWeekView() {
-    const chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    let chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    if (this._filterChauffeurId) {
+      chauffeurs = chauffeurs.filter(c => c.id === this._filterChauffeurId);
+    }
     const days = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(this._currentWeekStart);
@@ -367,7 +382,10 @@ const PlanningPage = {
   // =================== VUE MOIS ===================
 
   _renderMonthView() {
-    const chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    let chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    if (this._filterChauffeurId) {
+      chauffeurs = chauffeurs.filter(c => c.id === this._filterChauffeurId);
+    }
     const year = this._currentMonth.getFullYear();
     const month = this._currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
