@@ -12,6 +12,7 @@ const PushSubscription = require('../models/PushSubscription');
 const Conversation = require('../models/Conversation');
 const Pointage = require('../models/Pointage');
 const ConduiteBrute = require('../models/ConduiteBrute');
+const ChecklistVehicule = require('../models/ChecklistVehicule');
 const { getNextDeadline, calculatePenalty } = require('../utils/deadline');
 const notifService = require('../utils/notification-service');
 
@@ -519,7 +520,7 @@ router.get('/signalements', async (req, res, next) => {
 // POST /api/driver/signalements — Creer un signalement
 router.post('/signalements', async (req, res, next) => {
   try {
-    const { type, titre, description, urgence, localisation } = req.body;
+    const { type, titre, description, urgence, localisation, position } = req.body;
 
     if (!type || !titre) {
       return res.status(400).json({ error: 'Type et titre requis' });
@@ -534,7 +535,7 @@ router.post('/signalements', async (req, res, next) => {
     // Generer un ID unique
     const id = 'SIG-' + Math.random().toString(36).substr(2, 6).toUpperCase();
 
-    const signalement = new Signalement({
+    const sigData = {
       id,
       chauffeurId,
       vehiculeId,
@@ -546,8 +547,12 @@ router.post('/signalements', async (req, res, next) => {
       localisation: localisation || '',
       dateSignalement: new Date().toISOString(),
       dateCreation: new Date().toISOString()
-    });
+    };
+    if (position && position.lat && position.lng) {
+      sigData.position = { lat: position.lat, lng: position.lng };
+    }
 
+    const signalement = new Signalement(sigData);
     await signalement.save();
     res.status(201).json(signalement.toJSON());
   } catch (err) {
@@ -1053,6 +1058,230 @@ router.put('/messages/:id/read', async (req, res, next) => {
     await conv.save();
 
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== TRAJETS / HISTORIQUE ===================
+
+// GET /api/driver/trajets — Historique des trajets avec GPS samples
+router.get('/trajets', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const { from, to } = req.query;
+
+    const query = { chauffeurId };
+    if (from || to) {
+      query.date = {};
+      if (from) query.date.$gte = from;
+      if (to) query.date.$lte = to;
+    }
+
+    const records = await ConduiteBrute.find(query)
+      .sort({ date: -1 })
+      .limit(30)
+      .lean();
+
+    const result = records.map(({ _id, __v, ...r }) => ({
+      date: r.date,
+      gpsSamples: r.gpsSamples || [],
+      evenements: r.evenements || [],
+      stats: r.stats || {},
+      compteurs: r.compteurs || {},
+      sessionDebut: r.sessionDebut,
+      sessionFin: r.sessionFin,
+      scoreCalcule: r.scoreCalcule
+    }));
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== CHECKLIST VEHICULE ===================
+
+// GET /api/driver/checklist/today — Checklist du jour
+router.get('/checklist/today', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const today = new Date().toISOString().split('T')[0];
+    const id = `CHK-${chauffeurId}-${today}`;
+
+    const checklist = await ChecklistVehicule.findOne({ id }).lean();
+    if (!checklist) {
+      return res.json({ exists: false });
+    }
+
+    const { _id, __v, ...rest } = checklist;
+    res.json({ exists: true, checklist: rest });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/driver/checklist — Soumettre la checklist du jour
+router.post('/checklist', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const today = new Date().toISOString().split('T')[0];
+    const id = `CHK-${chauffeurId}-${today}`;
+
+    const chauffeur = await Chauffeur.findOne({ id: chauffeurId }).lean();
+    const vehiculeId = chauffeur ? chauffeur.vehiculeAssigne : null;
+
+    const { items, commentaireGeneral } = req.body;
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ error: 'Items requis' });
+    }
+
+    const hasProblems = items.some(i => i.statut === 'probleme');
+    const resultat = hasProblems ? 'problemes_detectes' : 'ok';
+
+    const checklist = await ChecklistVehicule.findOneAndUpdate(
+      { id },
+      {
+        id, chauffeurId, vehiculeId, date: today,
+        items, resultat, commentaireGeneral,
+        dateCreation: new Date().toISOString()
+      },
+      { upsert: true, new: true }
+    );
+
+    // Si problemes detectes, creer un signalement auto
+    if (hasProblems) {
+      const problemes = items.filter(i => i.statut === 'probleme');
+      const labels = {
+        pneus: 'Pneus', feux: 'Feux', retroviseurs: 'Retroviseurs',
+        proprete_interieur: 'Proprete interieur', proprete_exterieur: 'Proprete exterieur',
+        niveau_huile: 'Niveau huile', freins: 'Freins', ceintures: 'Ceintures',
+        climatisation: 'Climatisation', documents_bord: 'Documents de bord'
+      };
+      const listeProb = problemes.map(p => labels[p.nom] || p.nom).join(', ');
+
+      const sigId = 'SIG-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+      const sig = new Signalement({
+        id: sigId, chauffeurId, vehiculeId,
+        type: 'panne',
+        titre: `Checklist : probleme(s) detecte(s)`,
+        description: `Items signales : ${listeProb}. ${commentaireGeneral || ''}`,
+        urgence: 'normale', statut: 'ouvert',
+        dateSignalement: new Date().toISOString(),
+        dateCreation: new Date().toISOString()
+      });
+      await sig.save();
+    }
+
+    res.status(201).json(checklist.toJSON());
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== CLASSEMENT ===================
+
+// GET /api/driver/classement — Classement anonymise des chauffeurs
+router.get('/classement', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+
+    const chauffeurs = await Chauffeur.find({ statut: 'actif' })
+      .select('id prenom scoreConduite')
+      .sort({ scoreConduite: -1 })
+      .lean();
+
+    const classement = chauffeurs.map((c, i) => ({
+      rang: i + 1,
+      prenom: c.id === chauffeurId ? c.prenom : (c.prenom ? c.prenom.charAt(0) + '***' : '***'),
+      score: c.scoreConduite || 80,
+      estMoi: c.id === chauffeurId
+    }));
+
+    res.json(classement);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== RESUME HEBDOMADAIRE ===================
+
+// GET /api/driver/resume-hebdo — Resume de la semaine
+router.get('/resume-hebdo', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 6);
+    const fromStr = weekStart.toISOString().split('T')[0];
+    const toStr = now.toISOString().split('T')[0];
+
+    // GPS records de la semaine
+    const gpsRecords = await Gps.find({
+      chauffeurId,
+      date: { $gte: fromStr, $lte: toStr }
+    }).sort({ date: -1 }).lean();
+
+    if (gpsRecords.length === 0) {
+      return res.json({ hasData: false });
+    }
+
+    let totalMinutes = 0;
+    let totalDistance = 0;
+    let totalScore = 0;
+    let totalEvents = 0;
+    let joursActifs = 0;
+    let scores = [];
+
+    for (const g of gpsRecords) {
+      const evt = g.evenements || {};
+      const conduite = evt.tempsConduite || 0;
+      const dist = evt.distanceParcourue || 0;
+      const events = (evt.freinagesBrusques || 0) + (evt.accelerationsBrusques || 0) +
+        (evt.viragesAgressifs || 0) + (evt.excesVitesse || 0);
+
+      if (conduite > 0 || dist > 0) joursActifs++;
+      totalMinutes += conduite;
+      totalDistance += dist;
+      totalEvents += events;
+      if (g.scoreGlobal) {
+        totalScore += g.scoreGlobal;
+        scores.push(g.scoreGlobal);
+      }
+    }
+
+    const scoreMoyen = scores.length > 0 ? Math.round(totalScore / scores.length) : null;
+
+    // Tendance : comparer avec la semaine precedente
+    const prevStart = new Date(weekStart);
+    prevStart.setDate(prevStart.getDate() - 7);
+    const prevEnd = new Date(weekStart);
+    prevEnd.setDate(prevEnd.getDate() - 1);
+    const prevGps = await Gps.find({
+      chauffeurId,
+      date: { $gte: prevStart.toISOString().split('T')[0], $lte: prevEnd.toISOString().split('T')[0] }
+    }).lean();
+
+    let tendance = 'stable';
+    if (prevGps.length > 0 && scoreMoyen !== null) {
+      const prevScores = prevGps.filter(g => g.scoreGlobal).map(g => g.scoreGlobal);
+      if (prevScores.length > 0) {
+        const prevMoyen = Math.round(prevScores.reduce((a, b) => a + b, 0) / prevScores.length);
+        if (scoreMoyen > prevMoyen + 3) tendance = 'amelioration';
+        else if (scoreMoyen < prevMoyen - 3) tendance = 'degradation';
+      }
+    }
+
+    res.json({
+      hasData: true,
+      heuresTravail: Math.round(totalMinutes / 60 * 10) / 10,
+      distanceKm: Math.round(totalDistance * 10) / 10,
+      scoreMoyen,
+      nbEvenements: totalEvents,
+      tendance,
+      joursActifs,
+      periode: { from: fromStr, to: toStr }
+    });
   } catch (err) {
     next(err);
   }

@@ -121,6 +121,11 @@ async function runChecks() {
     // === CHECK 4 : Maintenances planifiees ===
     await checkMaintenancesPlanifiees(chauffeurs, canal);
 
+    // === CHECK 5 : Resume hebdomadaire (dimanche) ===
+    if (now.getDay() === 0) {
+      await checkWeeklySummary(chauffeurs, canal);
+    }
+
   } catch (err) {
     console.error('[NotifCron] Erreur:', err.message);
   }
@@ -403,6 +408,50 @@ async function checkMaintenancesPlanifiees(chauffeurs, canal) {
     }
   } catch (err) {
     console.error('[NotifCron] Erreur check maintenances:', err.message);
+  }
+}
+
+// ===================== CHECK : RESUME HEBDOMADAIRE =====================
+
+async function checkWeeklySummary(chauffeurs, canal) {
+  try {
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(monday.getDate() - 6);
+    const mondayStr = monday.toISOString().split('T')[0];
+    const todayStr = now.toISOString().split('T')[0];
+
+    for (const c of chauffeurs) {
+      const key = `weekly_summary_${c.id}_${todayStr}`;
+      if (_sentToday.has(key)) continue;
+
+      // Fetch GPS data de la semaine
+      const gpsRecords = await Gps.find({
+        chauffeurId: c.id,
+        date: { $gte: mondayStr, $lte: todayStr }
+      }).lean();
+
+      if (gpsRecords.length === 0) continue;
+
+      const totalDistance = gpsRecords.reduce((sum, g) => sum + (g.distanceKm || 0), 0);
+      const totalHeures = gpsRecords.reduce((sum, g) => sum + (g.heuresConduite || 0), 0);
+      const avgScore = Math.round(gpsRecords.reduce((sum, g) => sum + (g.scoreGlobal || 0), 0) / gpsRecords.length);
+      const joursActifs = gpsRecords.length;
+
+      const message = `${c.prenom}, votre semaine en resume : ${joursActifs} jour(s) actif(s), ${Math.round(totalDistance)} km, ${totalHeures.toFixed(1)}h de conduite. Score moyen : ${avgScore}/100. Bonne semaine !`;
+
+      await notifService.notify(
+        c.id,
+        'resume_hebdo',
+        'Resume de la semaine',
+        message,
+        canal,
+        { url: '/driver/#/accueil' }
+      );
+      _sentToday.add(key);
+    }
+  } catch (err) {
+    console.error('[NotifCron] Erreur check weekly summary:', err.message);
   }
 }
 

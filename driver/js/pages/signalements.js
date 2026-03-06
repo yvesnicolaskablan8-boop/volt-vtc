@@ -16,8 +16,24 @@ const SignalementsPage = {
     const resolus = signalements.filter(s => s.statut === 'resolu' || s.statut === 'ferme');
 
     container.innerHTML = `
-      <!-- Bouton signaler -->
-      <button class="btn btn-danger btn-block btn-lg" onclick="SignalementsPage._nouveauSignalement()">
+      <!-- Boutons signalement rapide 1-clic -->
+      <div style="display:flex;gap:10px;margin-bottom:1.25rem">
+        <button onclick="SignalementsPage._quickReport('panne')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:1rem;border-radius:1.25rem;border:none;background:rgba(245,158,11,0.1);cursor:pointer;font-family:inherit;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+          <span style="font-size:1.5rem">🚗</span>
+          <span style="font-size:0.7rem;font-weight:700;color:#f59e0b">Panne</span>
+        </button>
+        <button onclick="SignalementsPage._quickReport('accident')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:1rem;border-radius:1.25rem;border:none;background:rgba(239,68,68,0.1);cursor:pointer;font-family:inherit;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+          <span style="font-size:1.5rem">💥</span>
+          <span style="font-size:0.7rem;font-weight:700;color:#ef4444">Accident</span>
+        </button>
+        <button onclick="SignalementsPage._quickReport('agression')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:1rem;border-radius:1.25rem;border:none;background:rgba(220,38,38,0.1);cursor:pointer;font-family:inherit;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+          <span style="font-size:1.5rem">🚨</span>
+          <span style="font-size:0.7rem;font-weight:700;color:#dc2626">Urgence</span>
+        </button>
+      </div>
+
+      <!-- Bouton signaler (formulaire complet) -->
+      <button class="btn btn-danger btn-block btn-lg" onclick="SignalementsPage._nouveauSignalement()" style="margin-bottom:1.25rem">
         <i class="fas fa-exclamation-triangle"></i> Signaler un probleme
       </button>
 
@@ -176,10 +192,113 @@ const SignalementsPage = {
       return;
     }
 
+    // Capturer la position GPS si disponible
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+      });
+      values.position = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    } catch (e) {
+      // Position non disponible — pas grave
+    }
+
     const result = await DriverStore.createSignalement(values);
     if (result && !result.error) {
       DriverModal.close();
       DriverToast.show('Signalement envoye', 'success');
+      this.render(document.getElementById('app-content'));
+    } else {
+      DriverToast.show(result?.error || 'Erreur', 'error');
+    }
+  },
+
+  // Signalement rapide en 1 clic avec geolocalisation auto
+  _quickReport(type) {
+    const typeLabels = {
+      panne: 'Panne vehicule',
+      accident: 'Accident',
+      agression: 'Urgence / Agression'
+    };
+    const urgenceMap = {
+      panne: 'haute',
+      accident: 'critique',
+      agression: 'critique'
+    };
+
+    // Capturer la position pendant qu'on montre le modal
+    let capturedPosition = null;
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          capturedPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          // Mettre a jour l'affichage position dans le modal
+          const posEl = document.getElementById('quick-report-position');
+          if (posEl) {
+            posEl.textContent = `${capturedPosition.lat.toFixed(4)}, ${capturedPosition.lng.toFixed(4)}`;
+            posEl.style.color = '#22c55e';
+          }
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+
+    const titre = typeLabels[type] || type;
+    const urgence = urgenceMap[type] || 'haute';
+
+    const modalHTML = `
+      <div style="text-align:center;padding:0.5rem 0">
+        <div style="font-size:3rem;margin-bottom:12px">${type === 'panne' ? '🚗' : type === 'accident' ? '💥' : '🚨'}</div>
+        <h3 style="font-size:1.1rem;font-weight:800;color:var(--text-primary);margin-bottom:8px">${titre}</h3>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:0.8rem;color:var(--text-muted);margin-bottom:16px">
+          <iconify-icon icon="solar:map-point-bold" style="font-size:1rem;color:#3b82f6"></iconify-icon>
+          Position : <span id="quick-report-position" style="font-weight:600;color:#f59e0b">Capture en cours...</span>
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-secondary)">Urgence : <strong style="color:#ef4444">${urgence}</strong></p>
+        <textarea id="quick-report-desc" rows="2" placeholder="Details rapides (optionnel)..." style="width:100%;margin-top:12px;padding:10px;border-radius:10px;border:1px solid var(--border-color);font-family:inherit;font-size:0.85rem;resize:none;background:var(--bg-tertiary);color:var(--text-primary)"></textarea>
+      </div>
+    `;
+
+    DriverModal.show('Signalement rapide', modalHTML, [
+      { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
+      { label: 'Confirmer & Envoyer', class: 'btn btn-danger', onclick: `SignalementsPage._submitQuickReport('${type}')` }
+    ]);
+
+    // Stocker la reference pour soumission
+    this._quickReportPosition = () => capturedPosition;
+    this._quickReportType = type;
+  },
+
+  async _submitQuickReport(type) {
+    const typeLabels = {
+      panne: 'Panne vehicule',
+      accident: 'Accident',
+      agression: 'Urgence / Agression'
+    };
+    const urgenceMap = {
+      panne: 'haute',
+      accident: 'critique',
+      agression: 'critique'
+    };
+
+    const desc = document.getElementById('quick-report-desc')?.value.trim() || '';
+    const position = this._quickReportPosition ? this._quickReportPosition() : null;
+
+    const data = {
+      type: type === 'agression' ? 'agression' : type,
+      titre: typeLabels[type] || type,
+      description: desc,
+      urgence: urgenceMap[type] || 'haute'
+    };
+    if (position) {
+      data.position = position;
+      data.localisation = `GPS: ${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`;
+    }
+
+    const result = await DriverStore.createSignalement(data);
+    if (result && !result.error) {
+      DriverModal.close();
+      DriverToast.show('Signalement envoye !', 'success');
       this.render(document.getElementById('app-content'));
     } else {
       DriverToast.show(result?.error || 'Erreur', 'error');

@@ -186,12 +186,19 @@ const AccueilPage = {
             <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:1.75rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Voir mon<br>planning</span>
           </button>
+          <button onclick="DriverRouter.navigate('trajets')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(139,92,246,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(139,92,246,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            <iconify-icon icon="solar:route-bold-duotone" style="font-size:1.75rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Mes<br>trajets</span>
+          </button>
           <button onclick="DriverRouter.navigate('support')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(239,68,68,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
             <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.75rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Support &<br>Assistance</span>
           </button>
         </div>
       </div>
+
+      <!-- Resume hebdomadaire (dimanche) -->
+      <div id="weekly-summary-card"></div>
     `;
 
     // Demarrer le timer du countdown apres le render
@@ -214,6 +221,9 @@ const AccueilPage = {
 
     // Charger les alertes maintenance vehicule
     this._loadMaintenanceAlerts();
+
+    // Charger le resume hebdomadaire (dimanche ou toujours pour info)
+    this._loadWeeklySummary();
   },
 
   _formatCurrency(amount) {
@@ -566,6 +576,57 @@ const AccueilPage = {
     }
   },
 
+  async _loadWeeklySummary() {
+    const container = document.getElementById('weekly-summary-card');
+    if (!container) return;
+
+    try {
+      const summary = await DriverStore.getResumeHebdo();
+      if (!summary || summary.error) {
+        container.style.display = 'none';
+        return;
+      }
+
+      const scoreColor = (summary.scoreMoyen || 0) >= 70 ? '#22c55e' : (summary.scoreMoyen || 0) >= 50 ? '#f59e0b' : '#ef4444';
+      const tendanceIcon = summary.tendance === 'up' ? '↑' : summary.tendance === 'down' ? '↓' : '→';
+      const tendanceColor = summary.tendance === 'up' ? '#22c55e' : summary.tendance === 'down' ? '#ef4444' : '#94a3b8';
+
+      container.innerHTML = `
+        <div style="border-radius:1.5rem;background:linear-gradient(135deg,#6366f1,#4f46e5);padding:1.25rem;color:white;margin-bottom:1.25rem;box-shadow:0 4px 16px rgba(99,102,241,0.2)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;opacity:0.9">
+            <iconify-icon icon="solar:chart-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">Resume de la semaine</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div style="text-align:center">
+              <div style="font-size:1.4rem;font-weight:900">${summary.joursActifs || 0}</div>
+              <div style="font-size:0.65rem;opacity:0.8;font-weight:600">Jours actifs</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:1.4rem;font-weight:900">${Math.round(summary.distanceKm || 0)}</div>
+              <div style="font-size:0.65rem;opacity:0.8;font-weight:600">km parcourus</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:1.4rem;font-weight:900">${(summary.heuresTravail || 0).toFixed(1)}h</div>
+              <div style="font-size:0.65rem;opacity:0.8;font-weight:600">de conduite</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.15)">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:0.8rem;font-weight:600;opacity:0.85">Score moyen</span>
+              <span style="font-size:1.1rem;font-weight:900">${summary.scoreMoyen || '--'}/100</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:2rem;background:rgba(255,255,255,0.15)">
+              <span style="font-size:0.9rem;color:${tendanceColor}">${tendanceIcon}</span>
+              <span style="font-size:0.7rem;font-weight:600;opacity:0.9">${summary.tendance === 'up' ? 'En hausse' : summary.tendance === 'down' ? 'En baisse' : 'Stable'}</span>
+            </div>
+          </div>
+        </div>`;
+    } catch (e) {
+      container.style.display = 'none';
+    }
+  },
+
   _demanderAbsence() {
     const formHTML = `
       <form class="driver-form" onsubmit="return false">
@@ -781,6 +842,26 @@ const AccueilPage = {
   },
 
   async _startService() {
+    // Verifier si la checklist vehicule a ete faite aujourd'hui
+    const checklist = await DriverStore.getChecklistToday();
+    if (!checklist || !checklist.id) {
+      // Proposer de faire l'inspection
+      DriverModal.show('Inspection vehicule', `
+        <div style="text-align:center;padding:0.5rem 0">
+          <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:3rem;color:#3b82f6;display:block;margin-bottom:12px"></iconify-icon>
+          <p style="font-size:0.9rem;color:var(--text-secondary)">Vous n'avez pas encore fait l'inspection de votre vehicule aujourd'hui.</p>
+        </div>
+      `, [
+        { label: 'Passer', class: 'btn btn-outline', onclick: 'DriverModal.close(); AccueilPage._doStartService()' },
+        { label: 'Faire l\'inspection', class: 'btn btn-primary', onclick: 'DriverModal.close(); DriverRouter.navigate("checklist")' }
+      ]);
+      return;
+    }
+
+    this._doStartService();
+  },
+
+  async _doStartService() {
     // Demander la permission capteurs AVANT l'appel API (geste utilisateur requis par iOS)
     if (typeof DriverBehavior !== 'undefined') {
       await DriverBehavior.requestPermission();

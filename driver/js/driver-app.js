@@ -74,6 +74,10 @@ const DriverApp = {
       });
     }
 
+    // Apply saved dark mode theme
+    const savedTheme = localStorage.getItem('volt_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
     // Register pages
     DriverRouter.register('accueil', AccueilPage);
     DriverRouter.register('planning', PlanningPage);
@@ -86,6 +90,9 @@ const DriverApp = {
     if (typeof EtatLieuxPage !== 'undefined') DriverRouter.register('etat-lieux', EtatLieuxPage);
     if (typeof DocumentsPage !== 'undefined') DriverRouter.register('documents', DocumentsPage);
     if (typeof SupportPage !== 'undefined') DriverRouter.register('support', SupportPage);
+    if (typeof TrajetsPage !== 'undefined') DriverRouter.register('trajets', TrajetsPage);
+    if (typeof ChecklistPage !== 'undefined') DriverRouter.register('checklist', ChecklistPage);
+    if (typeof ClassementPage !== 'undefined') DriverRouter.register('classement', ClassementPage);
 
     // Check auth
     if (DriverAuth.isLoggedIn()) {

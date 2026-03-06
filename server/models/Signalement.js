@@ -23,6 +23,10 @@ const signalementSchema = new mongoose.Schema({
   },
   commentaireAdmin: String,
   localisation: String,
+  position: {
+    lat: Number,
+    lng: Number
+  },
   dateSignalement: { type: String, default: () => new Date().toISOString() },
   dateResolution: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }

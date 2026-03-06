@@ -33,6 +33,7 @@ app.use('/api/users', require('./routes/crud')('User'));
 app.use('/api/signalements', require('./routes/crud')('Signalement'));
 app.use('/api/pointages', require('./routes/crud')('Pointage'));
 app.use('/api/conduiteBrute', require('./routes/crud')('ConduiteBrute'));
+app.use('/api/checklistVehicules', require('./routes/crud')('ChecklistVehicule'));
 app.use('/api/yango', require('./routes/yango'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));

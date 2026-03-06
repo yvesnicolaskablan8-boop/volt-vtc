@@ -208,6 +208,38 @@ const DriverStore = {
     return this._get('/behavior/status');
   },
 
+  // ===== TRAJETS =====
+
+  getTrajets(from, to) {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const qs = params.toString();
+    return this._get('/trajets' + (qs ? '?' + qs : ''));
+  },
+
+  // ===== CHECKLIST VEHICULE =====
+
+  getChecklistToday() {
+    return this._get('/checklist/today');
+  },
+
+  submitChecklist(data) {
+    return this._post('/checklist', data);
+  },
+
+  // ===== CLASSEMENT =====
+
+  getClassement() {
+    return this._get('/classement');
+  },
+
+  // ===== RESUME HEBDO =====
+
+  getResumeHebdo() {
+    return this._get('/resume-hebdo');
+  },
+
   // ===== MAINTENANCES =====
 
   getMaintenances() {

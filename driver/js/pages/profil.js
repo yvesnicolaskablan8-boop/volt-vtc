@@ -226,10 +226,34 @@ const ProfilPage = {
       </div>
       ` : ''}
 
+      <!-- Preferences -->
+      <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+          <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(99,102,241,0.08);color:#6366f1;display:flex;align-items:center;justify-content:center">
+            <iconify-icon icon="solar:settings-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+          </div>
+          <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Preferences</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:1rem;background:#f8fafc">
+          <div style="display:flex;align-items:center;gap:10px">
+            <iconify-icon icon="solar:moon-bold-duotone" style="font-size:1.2rem;color:#6366f1"></iconify-icon>
+            <span style="font-size:0.88rem;font-weight:600;color:#0f172a">Mode sombre</span>
+          </div>
+          <button class="dark-mode-toggle ${document.documentElement.getAttribute('data-theme') === 'dark' ? 'active' : ''}" onclick="ProfilPage._toggleDarkMode(this)" id="dark-mode-btn"></button>
+        </div>
+      </div>
+
       <!-- Actions -->
       <div style="margin-bottom:1.5rem">
         <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:1rem">Actions</h3>
         <div style="display:flex;flex-direction:column;gap:10px">
+          <button onclick="DriverRouter.navigate('classement')" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
+            <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(245,158,11,0.08);color:#f59e0b;display:flex;align-items:center;justify-content:center">
+              <iconify-icon icon="solar:cup-star-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+            </div>
+            <span style="font-size:0.9rem;font-weight:700;color:#0f172a">Voir le classement</span>
+          </button>
+
           <button onclick="ProfilPage._changerPin()" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
             <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(59,130,246,0.08);color:#3b82f6;display:flex;align-items:center;justify-content:center">
               <iconify-icon icon="solar:key-bold-duotone" style="font-size:1.25rem"></iconify-icon>
@@ -255,6 +279,15 @@ const ProfilPage = {
 
       <div style="height:20px"></div>
     `;
+  },
+
+  _toggleDarkMode(btn) {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const newTheme = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('volt_theme', newTheme);
+    btn.classList.toggle('active', newTheme === 'dark');
+    DriverToast.show(newTheme === 'dark' ? 'Mode sombre active' : 'Mode clair active', 'success');
   },
 
   _changerPin() {
