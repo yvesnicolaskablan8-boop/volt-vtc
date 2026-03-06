@@ -250,6 +250,10 @@ const DriverStore = {
     return this._put('/contraventions/' + id + '/contester', { motif });
   },
 
+  createWaveContraventionCheckout(contraventionId) {
+    return this._post('/contraventions/wave/checkout', { contraventionId });
+  },
+
   // ===== WAVE PAIEMENT =====
 
   createWaveCheckout(data) {

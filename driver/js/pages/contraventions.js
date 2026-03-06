@@ -5,6 +5,8 @@ const ContraventionsDriverPage = {
   async render(container) {
     container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
 
+    this._checkWaveReturn();
+
     const contraventions = await DriverStore.getContraventions();
 
     if (!contraventions) {
@@ -97,15 +99,20 @@ const ContraventionsDriverPage = {
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
               <span style="font-size:0.72rem;color:#94a3b8;font-weight:500">${date}${c.lieu ? ' \u00b7 ' + c.lieu : ''}</span>
-              <span style="padding:2px 10px;border-radius:2rem;background:${sc.bg};color:${sc.color};font-size:0.65rem;font-weight:700">${sc.label}</span>
+              <span style="padding:2px 10px;border-radius:2rem;background:${sc.bg};color:${sc.color};font-size:0.65rem;font-weight:700">${sc.label}</span>${c.moyenPaiement === 'wave' ? ' <span style="padding:2px 8px;border-radius:2rem;background:rgba(13,110,253,0.08);color:#0D6EFD;font-size:0.6rem;font-weight:700"><iconify-icon icon="solar:wallet-money-bold" style="font-size:0.65rem;vertical-align:middle"></iconify-icon> Wave</span>' : ''}
             </div>
             ${c.description ? `<div style="font-size:0.75rem;color:#64748b;margin-top:2px">${c.description}</div>` : ''}
             ${c.commentaire ? `<div style="font-size:0.72rem;color:#3b82f6;margin-top:4px;font-style:italic"><iconify-icon icon="solar:chat-round-dots-bold" style="font-size:0.75rem;vertical-align:middle"></iconify-icon> ${c.commentaire}</div>` : ''}
             ${c.motifContestation ? `<div style="font-size:0.72rem;color:#f59e0b;margin-top:4px;font-style:italic"><iconify-icon icon="solar:chat-round-line-bold" style="font-size:0.75rem;vertical-align:middle"></iconify-icon> Motif: ${c.motifContestation}</div>` : ''}
             ${c.statut === 'impayee' ? `
-              <button onclick="ContraventionsDriverPage._contester('${c.id}')" style="margin-top:8px;padding:6px 16px;border-radius:2rem;border:1.5px solid #f59e0b;background:rgba(245,158,11,0.06);color:#f59e0b;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit">
-                <iconify-icon icon="solar:chat-round-dots-bold" style="font-size:0.8rem;vertical-align:middle"></iconify-icon> Contester
-              </button>
+              <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                <button onclick="ContraventionsDriverPage._payWave('${c.id}')" style="padding:6px 16px;border-radius:2rem;border:none;background:linear-gradient(135deg,#1B98F5,#0D6EFD);color:white;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(13,110,253,0.2)">
+                  <iconify-icon icon="solar:wallet-money-bold" style="font-size:0.8rem;vertical-align:middle"></iconify-icon> Payer via Wave
+                </button>
+                <button onclick="ContraventionsDriverPage._contester('${c.id}')" style="padding:6px 16px;border-radius:2rem;border:1.5px solid #f59e0b;background:rgba(245,158,11,0.06);color:#f59e0b;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit">
+                  <iconify-icon icon="solar:chat-round-dots-bold" style="font-size:0.8rem;vertical-align:middle"></iconify-icon> Contester
+                </button>
+              </div>
             ` : ''}
           </div>
         </div>
@@ -191,6 +198,41 @@ const ContraventionsDriverPage = {
       this.render(document.getElementById('app-content'));
     } else {
       DriverToast.show(result?.error || 'Erreur', 'error');
+    }
+  },
+
+  async _payWave(id) {
+    const contraventions = await DriverStore.getContraventions();
+    const c = contraventions ? contraventions.find(x => x.id === id) : null;
+    if (!c) return;
+
+    if (!confirm(`Payer cette contravention de ${this._formatCurrency(c.montant || 0)} via Wave ?`)) return;
+
+    DriverToast.show('Redirection vers Wave...', 'info');
+
+    const result = await DriverStore.createWaveContraventionCheckout(id);
+
+    if (result && result.waveLaunchUrl) {
+      window.location.href = result.waveLaunchUrl;
+    } else {
+      DriverToast.show(result?.error || 'Erreur Wave', 'error');
+    }
+  },
+
+  _checkWaveReturn() {
+    const hash = window.location.hash;
+    if (!hash.includes('wave=')) return;
+
+    const params = new URLSearchParams(hash.split('?')[1] || '');
+    const waveStatus = params.get('wave');
+
+    // Nettoyer l'URL
+    window.location.hash = '#/contraventions';
+
+    if (waveStatus === 'success') {
+      DriverToast.show('Paiement Wave effectue avec succes !', 'success');
+    } else if (waveStatus === 'error') {
+      DriverToast.show('Le paiement Wave a echoue ou a ete annule', 'error');
     }
   },
 
