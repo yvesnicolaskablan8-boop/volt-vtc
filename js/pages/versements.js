@@ -287,7 +287,9 @@ const VersementsPage = {
           { label: 'Courses', key: 'nombreCourses', render: (v) => `<span data-yango-courses="${v.id}">${v.nombreCourses > 0 ? `<span style="font-weight:600;">${v.nombreCourses}</span>` : '<iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:12px;color:var(--text-muted);"></iconify-icon>'}</span>` },
           { label: 'Statut', key: 'statut', render: (v) => {
               let html = Utils.statusBadge(v.statut);
-              if (v.soumisParChauffeur) {
+              if (v.moyenPaiement === 'wave') {
+                html += ' <span class="badge" style="font-size:0.65rem;background:rgba(13,110,253,0.1);color:#0D6EFD;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
+              } else if (v.soumisParChauffeur) {
                 html += ' <span class="badge badge-info" style="font-size:0.65rem;"><iconify-icon icon="solar:smartphone-bold-duotone"></iconify-icon> Chauffeur</span>';
               }
               return html;

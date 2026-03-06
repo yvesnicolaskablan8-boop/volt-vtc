@@ -1,5 +1,5 @@
 /**
- * VersementsPage — Versements et historique
+ * VersementsPage — Versements et historique avec paiement Wave
  */
 const VersementsPage = {
   async render(container) {
@@ -15,6 +15,9 @@ const VersementsPage = {
       container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Impossible de charger les versements</p></div>';
       return;
     }
+
+    // Verifier si on revient d'un paiement Wave (params dans le hash)
+    this._checkWaveReturn(versements);
 
     // Stats du mois en cours
     const now = new Date();
@@ -116,11 +119,19 @@ const VersementsPage = {
         </div>
       </div>
 
-      <!-- Bouton nouveau versement -->
-      <button onclick="VersementsPage._nouveauVersement()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:1rem;border-radius:1.25rem;border:none;background:#22c55e;color:white;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:1.5rem;box-shadow:0 4px 12px rgba(34,197,94,0.25);transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
-        <iconify-icon icon="solar:add-circle-bold" style="font-size:1.3rem"></iconify-icon>
-        Faire un versement
-      </button>
+      <!-- Boutons de versement -->
+      <div style="display:flex;gap:10px;margin-bottom:1.5rem">
+        <!-- Bouton Wave -->
+        <button onclick="VersementsPage._payerWave()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:1rem;border-radius:1.25rem;border:none;background:linear-gradient(135deg,#1B98F5,#0D6EFD);color:white;font-size:0.9rem;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(13,110,253,0.3);transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+          <iconify-icon icon="solar:wallet-money-bold" style="font-size:1.3rem"></iconify-icon>
+          Payer via Wave
+        </button>
+        <!-- Bouton classique -->
+        <button onclick="VersementsPage._nouveauVersement()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:1rem;border-radius:1.25rem;border:2px solid #e2e8f0;background:white;color:#334155;font-size:0.9rem;font-weight:800;cursor:pointer;font-family:inherit;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+          <iconify-icon icon="solar:add-circle-bold" style="font-size:1.3rem"></iconify-icon>
+          Declarer
+        </button>
+      </div>
 
       <!-- Historique -->
       <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:1rem">Historique</h3>
@@ -186,11 +197,22 @@ const VersementsPage = {
     };
     const sc = statusColors[v.statut] || statusColors.en_attente;
     const date = v.date ? new Date(v.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '--';
-    const iconName = v.statut === 'valide' ? 'solar:check-circle-bold' : v.statut === 'retard' ? 'solar:danger-triangle-bold' : 'solar:clock-circle-bold';
+    const iconName = v.moyenPaiement === 'wave'
+      ? 'solar:wallet-money-bold'
+      : v.statut === 'valide' ? 'solar:check-circle-bold'
+      : v.statut === 'retard' ? 'solar:danger-triangle-bold'
+      : 'solar:clock-circle-bold';
+
+    // Badge Wave
+    const waveBadge = v.moyenPaiement === 'wave'
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 8px;border-radius:2rem;background:rgba(13,110,253,0.08);color:#0D6EFD;font-size:0.6rem;font-weight:700;margin-left:4px">
+           <iconify-icon icon="solar:wallet-money-bold" style="font-size:0.7rem"></iconify-icon> Wave
+         </span>`
+      : '';
 
     return `
       <div style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03)">
-        <div style="width:44px;height:44px;border-radius:1rem;background:${sc.bg};color:${sc.color};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <div style="width:44px;height:44px;border-radius:1rem;background:${v.moyenPaiement === 'wave' ? 'rgba(13,110,253,0.08)' : sc.bg};color:${v.moyenPaiement === 'wave' ? '#0D6EFD' : sc.color};display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <iconify-icon icon="${iconName}" style="font-size:1.3rem"></iconify-icon>
         </div>
         <div style="flex:1;min-width:0">
@@ -200,7 +222,10 @@ const VersementsPage = {
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between">
             <span style="font-size:0.72rem;color:#94a3b8;font-weight:500">${date} ${v.periode ? ' · ' + v.periode : ''}${v.nombreCourses ? ' · ' + v.nombreCourses + ' courses' : ''}</span>
-            <span style="padding:2px 10px;border-radius:2rem;background:${sc.bg};color:${sc.color};font-size:0.65rem;font-weight:700">${statusLabels[v.statut] || v.statut}</span>
+            <span style="display:inline-flex;align-items:center;gap:3px">
+              ${waveBadge}
+              <span style="padding:2px 10px;border-radius:2rem;background:${sc.bg};color:${sc.color};font-size:0.65rem;font-weight:700">${statusLabels[v.statut] || v.statut}</span>
+            </span>
           </div>
           ${v.enRetard && v.penaliteMontant > 0 ? `
             <div style="margin-top:4px;font-size:0.7rem;color:#ef4444;font-weight:600">
@@ -212,8 +237,163 @@ const VersementsPage = {
     `;
   },
 
+  // ===== Paiement Wave =====
+
+  _payerWave() {
+    const now = new Date();
+    const oneJan = new Date(now.getFullYear(), 0, 1);
+    const weekNum = Math.ceil(((now - oneJan) / 86400000 + oneJan.getDay() + 1) / 7);
+
+    const formHTML = `
+      <form class="driver-form" onsubmit="return false">
+        <div style="display:flex;align-items:center;gap:12px;padding:1rem;border-radius:1rem;background:rgba(13,110,253,0.06);border:1.5px solid rgba(13,110,253,0.12);margin-bottom:1rem">
+          <iconify-icon icon="solar:wallet-money-bold" style="font-size:2rem;color:#0D6EFD"></iconify-icon>
+          <div>
+            <div style="font-weight:800;font-size:0.9rem;color:#0D6EFD">Paiement via Wave</div>
+            <div style="font-size:0.72rem;color:#64748b;margin-top:2px">Tu seras redirige vers Wave pour effectuer le paiement</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Periode</label>
+          <input type="text" name="periode" placeholder="ex: Semaine ${weekNum}" value="Semaine ${weekNum}">
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" name="date" required value="${now.toISOString().split('T')[0]}">
+        </div>
+        <div class="form-group">
+          <label>Montant a verser (FCFA)</label>
+          <input type="number" name="montantBrut" required min="1" placeholder="0" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label>Commentaire (optionnel)</label>
+          <textarea name="commentaire" rows="2" placeholder="Note supplementaire..."></textarea>
+        </div>
+        <div id="wave-recap" style="display:none;padding:1rem;border-radius:1rem;background:#f8fafc;border:1px solid #e2e8f0;margin-top:0.5rem">
+          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:8px">Recapitulatif</div>
+          <div id="wave-recap-content"></div>
+        </div>
+      </form>
+    `;
+
+    DriverModal.show('Payer via Wave', formHTML, [
+      { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
+      { label: 'Payer avec Wave', class: 'btn btn-primary', onclick: 'VersementsPage._submitWave()', id: 'btn-wave-pay' }
+    ]);
+
+    // Calculer recapitulatif en temps reel
+    setTimeout(() => {
+      const montantInput = document.querySelector('#modal-content [name="montantBrut"]');
+      if (montantInput) {
+        montantInput.addEventListener('input', () => this._updateWaveRecap(montantInput.value));
+      }
+    }, 100);
+  },
+
+  _updateWaveRecap(val) {
+    const montant = parseInt(val) || 0;
+    const recap = document.getElementById('wave-recap');
+    const content = document.getElementById('wave-recap-content');
+    if (!recap || !content) return;
+
+    if (montant <= 0) {
+      recap.style.display = 'none';
+      return;
+    }
+
+    const commission = Math.round(montant * 0.20);
+    const net = montant - commission;
+
+    recap.style.display = 'block';
+    content.innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px">
+        <span style="color:#64748b">Montant brut</span>
+        <span style="font-weight:700">${this._formatCurrency(montant)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px">
+        <span style="color:#64748b">Commission (20%)</span>
+        <span style="font-weight:700;color:#ef4444">-${this._formatCurrency(commission)}</span>
+      </div>
+      <div style="border-top:1px solid #e2e8f0;padding-top:6px;margin-top:6px;display:flex;justify-content:space-between;font-size:0.9rem">
+        <span style="font-weight:800;color:#0f172a">Net a payer</span>
+        <span style="font-weight:900;color:#22c55e">${this._formatCurrency(net)}</span>
+      </div>
+      <div style="margin-top:8px;font-size:0.7rem;color:#94a3b8;text-align:center">
+        <iconify-icon icon="solar:info-circle-bold" style="font-size:0.8rem;vertical-align:middle"></iconify-icon>
+        Le montant de <strong>${this._formatCurrency(montant)}</strong> sera preleve via Wave
+      </div>
+    `;
+  },
+
+  async _submitWave() {
+    const values = DriverModal.getFormValues(['date', 'periode', 'montantBrut', 'commentaire']);
+
+    const montant = parseInt(values.montantBrut);
+    if (!montant || montant <= 0) {
+      DriverToast.show('Montant requis', 'error');
+      return;
+    }
+
+    // Desactiver le bouton
+    const btn = document.getElementById('btn-wave-pay');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirection...';
+    }
+
+    const result = await DriverStore.createWaveCheckout({
+      montantBrut: montant,
+      date: values.date,
+      periode: values.periode,
+      commentaire: values.commentaire
+    });
+
+    if (result && result.waveLaunchUrl) {
+      DriverModal.close();
+      DriverToast.show('Redirection vers Wave...', 'info');
+      // Ouvrir Wave dans le navigateur (pas dans une webview)
+      window.location.href = result.waveLaunchUrl;
+    } else {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = 'Payer avec Wave';
+      }
+      DriverToast.show(result?.error || 'Erreur lors de la creation du paiement Wave', 'error');
+    }
+  },
+
+  // Verifier si on revient d'un paiement Wave
+  _checkWaveReturn(versements) {
+    const hash = window.location.hash;
+    if (!hash.includes('wave=')) return;
+
+    const params = new URLSearchParams(hash.split('?')[1] || '');
+    const waveStatus = params.get('wave');
+    const versementId = params.get('id');
+
+    // Nettoyer l'URL
+    window.location.hash = '#/versements';
+
+    if (waveStatus === 'success') {
+      DriverToast.show('Paiement Wave effectue avec succes !', 'success');
+      // Verifier le statut aupres du serveur
+      if (versementId) {
+        setTimeout(async () => {
+          const status = await DriverStore.getWaveStatus(versementId);
+          if (status && status.statut === 'valide') {
+            DriverToast.show('Versement confirme et valide !', 'success');
+            this.render(document.getElementById('app-content'));
+          }
+        }, 2000);
+      }
+    } else if (waveStatus === 'error') {
+      DriverToast.show('Le paiement Wave a echoue ou a ete annule', 'error');
+    }
+  },
+
+  // ===== Versement classique (declaration manuelle) =====
+
   _nouveauVersement() {
-    // Calculer le numero de semaine
     const now = new Date();
     const oneJan = new Date(now.getFullYear(), 0, 1);
     const weekNum = Math.ceil(((now - oneJan) / 86400000 + oneJan.getDay() + 1) / 7);
@@ -268,7 +448,6 @@ const VersementsPage = {
       } else {
         DriverToast.show('Versement enregistre avec succes', 'success');
       }
-      // Reload
       this.render(document.getElementById('app-content'));
     } else {
       DriverToast.show(result?.error || 'Erreur', 'error');

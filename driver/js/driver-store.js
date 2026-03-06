@@ -240,6 +240,16 @@ const DriverStore = {
     return this._get('/resume-hebdo');
   },
 
+  // ===== WAVE PAIEMENT =====
+
+  createWaveCheckout(data) {
+    return this._post('/wave/checkout', data);
+  },
+
+  getWaveStatus(versementId) {
+    return this._get(`/wave/status/${versementId}`);
+  },
+
   // ===== MAINTENANCES =====
 
   getMaintenances() {

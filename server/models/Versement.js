@@ -22,6 +22,8 @@ const versementSchema = new mongoose.Schema({
   justificationDate: String,
   moyenPaiement: String,
   referencePaiement: String,
+  waveCheckoutId: String,
+  waveTransactionId: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {
   toJSON: {

@@ -16,6 +16,9 @@ const ChecklistVehicule = require('../models/ChecklistVehicule');
 const { getNextDeadline, calculatePenalty } = require('../utils/deadline');
 const notifService = require('../utils/notification-service');
 
+// fetch: natif en Node 18+, fallback node-fetch sinon
+const fetch = globalThis.fetch || require('node-fetch');
+
 const router = express.Router();
 
 // =================== DASHBOARD ===================
@@ -1567,5 +1570,185 @@ async function finalizeBehaviorSession(chauffeurId, date) {
     stats: conduiteBrute.stats
   };
 }
+
+// =================== WAVE CHECKOUT ===================
+
+// POST /api/driver/wave/checkout — Creer une session Wave Checkout pour payer la redevance
+router.post('/wave/checkout', async (req, res, next) => {
+  try {
+    const { montantBrut, date, periode, commentaire } = req.body;
+
+    if (!montantBrut || montantBrut <= 0) {
+      return res.status(400).json({ error: 'Montant requis et positif' });
+    }
+
+    const chauffeurId = req.user.chauffeurId;
+    const [chauffeur, settings] = await Promise.all([
+      Chauffeur.findOne({ id: chauffeurId }).lean(),
+      Settings.findOne().lean()
+    ]);
+    const vehiculeId = chauffeur ? chauffeur.vehiculeAssigne : null;
+
+    // Calcul commission 20%
+    const commission = Math.round(montantBrut * 0.20);
+
+    // Verifier deadline et penalite
+    const vs = settings && settings.versements;
+    let enRetard = false;
+    let penaliteMontant = 0;
+    let deadlineDateStr = null;
+
+    if (vs && vs.deadlineType) {
+      const deadlineInfo = getNextDeadline(vs);
+      if (deadlineInfo) {
+        deadlineDateStr = deadlineInfo.previousDeadline.toISOString();
+        const now = new Date();
+        if (now > deadlineInfo.previousDeadline) {
+          const versementsPeriode = await Versement.find({
+            chauffeurId,
+            dateCreation: { $gte: deadlineInfo.previousDeadline.toISOString() }
+          }).lean();
+          if (versementsPeriode.length === 0) {
+            enRetard = true;
+            penaliteMontant = calculatePenalty(montantBrut, vs);
+          }
+        }
+      }
+    }
+
+    const montantNet = montantBrut - commission - penaliteMontant;
+
+    // Generer un ID unique pour le versement
+    const versementId = 'VRS-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+
+    // Creer la session Wave Checkout
+    const waveApiKey = process.env.WAVE_API_KEY;
+    if (!waveApiKey) {
+      console.error('[Wave] WAVE_API_KEY manquante dans les variables d\'environnement');
+      return res.status(500).json({ error: 'Wave API non configuree. Contactez l\'administrateur.' });
+    }
+
+    // URL de base pour les redirections
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? 'https://volt-vtc-production.up.railway.app'
+      : `http://localhost:${process.env.PORT || 3001}`;
+
+    const waveResponse = await fetch('https://api.wave.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${waveApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: String(montantBrut),
+        currency: 'XOF',
+        client_reference: versementId,
+        success_url: `${baseUrl}/driver/#/versements?wave=success&id=${versementId}`,
+        error_url: `${baseUrl}/driver/#/versements?wave=error&id=${versementId}`
+      })
+    });
+
+    if (!waveResponse.ok) {
+      const errData = await waveResponse.json().catch(() => ({}));
+      console.error('Wave checkout error:', errData);
+      return res.status(502).json({ error: errData.message || 'Erreur Wave' });
+    }
+
+    const waveSession = await waveResponse.json();
+
+    // Creer le versement en statut 'en_attente' avec le checkoutId Wave
+    const versement = new Versement({
+      id: versementId,
+      chauffeurId,
+      vehiculeId,
+      date: date || new Date().toISOString().split('T')[0],
+      periode: periode || '',
+      montantBrut,
+      commission,
+      montantNet,
+      montantVerse: 0,
+      statut: 'en_attente',
+      soumisParChauffeur: true,
+      enRetard,
+      penaliteMontant,
+      deadlineDate: deadlineDateStr,
+      moyenPaiement: 'wave',
+      waveCheckoutId: waveSession.id,
+      commentaire: commentaire || '',
+      dateCreation: new Date().toISOString()
+    });
+
+    await versement.save();
+
+    res.status(201).json({
+      versementId,
+      waveCheckoutId: waveSession.id,
+      waveLaunchUrl: waveSession.wave_launch_url,
+      montantBrut,
+      commission,
+      penaliteMontant,
+      montantNet
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/driver/wave/status/:id — Verifier le statut d'un checkout Wave
+router.get('/wave/status/:id', async (req, res, next) => {
+  try {
+    const versement = await Versement.findOne({
+      id: req.params.id,
+      chauffeurId: req.user.chauffeurId
+    }).lean();
+
+    if (!versement) {
+      return res.status(404).json({ error: 'Versement non trouve' });
+    }
+
+    if (!versement.waveCheckoutId) {
+      return res.json({ statut: versement.statut });
+    }
+
+    // Verifier le statut aupres de Wave
+    const waveApiKey = process.env.WAVE_API_KEY;
+    const waveResponse = await fetch(`https://api.wave.com/v1/checkout/sessions/${versement.waveCheckoutId}`, {
+      headers: { 'Authorization': `Bearer ${waveApiKey}` }
+    });
+
+    if (!waveResponse.ok) {
+      return res.json({ statut: versement.statut });
+    }
+
+    const waveSession = await waveResponse.json();
+
+    // Si le paiement est confirme par Wave mais pas encore mis a jour localement
+    if (waveSession.payment_status === 'succeeded' && versement.statut !== 'valide') {
+      await Versement.updateOne({ id: versement.id }, {
+        statut: 'valide',
+        montantVerse: versement.montantNet,
+        waveTransactionId: waveSession.transaction_id || '',
+        referencePaiement: waveSession.transaction_id || '',
+        dateValidation: new Date().toISOString()
+      });
+      return res.json({ statut: 'valide', waveStatus: 'succeeded' });
+    }
+
+    if (waveSession.checkout_status === 'expired') {
+      if (versement.statut === 'en_attente') {
+        await Versement.deleteOne({ id: versement.id });
+        return res.json({ statut: 'expire', waveStatus: 'expired' });
+      }
+    }
+
+    res.json({
+      statut: versement.statut,
+      waveStatus: waveSession.payment_status,
+      checkoutStatus: waveSession.checkout_status
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;

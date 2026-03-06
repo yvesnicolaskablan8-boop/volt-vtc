@@ -38,6 +38,9 @@ app.use('/api/yango', require('./routes/yango'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));
 
+// API Routes — Wave webhook (pas d'auth, Wave appelle directement)
+app.use('/api/wave', require('./routes/wave-webhook'));
+
 // API Routes — Driver (PWA chauffeur)
 app.use('/api/driver/auth', require('./routes/driver-auth'));
 app.use('/api/driver', require('./middleware/driverAuth'), require('./routes/driver-api'));
