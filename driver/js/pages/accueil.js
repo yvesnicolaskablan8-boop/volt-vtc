@@ -13,9 +13,10 @@ const AccueilPage = {
     endDate.setDate(endDate.getDate() + 5);
     const endStr = endDate.toISOString().split('T')[0];
 
-    const [data, planningData] = await Promise.all([
+    const [data, planningData, contraventionsData] = await Promise.all([
       DriverStore.getDashboard(),
-      DriverStore.getPlanning(todayStr, endStr)
+      DriverStore.getPlanning(todayStr, endStr),
+      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null)
     ]);
 
     if (!data) {
@@ -126,6 +127,27 @@ const AccueilPage = {
       }
     }
 
+    // Alerte contraventions impayees
+    let contraventionsAlertHTML = '';
+    if (contraventionsData && Array.isArray(contraventionsData)) {
+      const impayees = contraventionsData.filter(c => c.statut === 'impayee');
+      if (impayees.length > 0) {
+        const totalDu = impayees.reduce((s, c) => s + (c.montant || 0), 0);
+        contraventionsAlertHTML = `
+          <div onclick="window.location.hash='#/contraventions'" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:rgba(239,68,68,0.06);border:1.5px solid rgba(239,68,68,0.15);margin-bottom:1rem;cursor:pointer">
+            <div style="width:44px;height:44px;border-radius:1rem;background:rgba(239,68,68,0.1);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:danger-triangle-bold" style="font-size:1.5rem"></iconify-icon>
+            </div>
+            <div style="flex:1">
+              <div style="font-weight:800;font-size:0.85rem;color:#ef4444">${impayees.length} contravention${impayees.length > 1 ? 's' : ''} impayee${impayees.length > 1 ? 's' : ''}</div>
+              <div style="font-size:0.75rem;color:#64748b;margin-top:2px">Total du : ${totalDu.toLocaleString('fr-FR')} FCFA</div>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:1.2rem;color:#ef4444"></iconify-icon>
+          </div>
+        `;
+      }
+    }
+
     container.innerHTML = `
       <!-- Greeting -->
       <div style="margin-bottom:1.25rem">
@@ -135,6 +157,9 @@ const AccueilPage = {
           ${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
         </div>
       </div>
+
+      <!-- Alerte contraventions impayees -->
+      ${contraventionsAlertHTML}
 
       <!-- Countdown deadline versement -->
       ${countdownHTML}

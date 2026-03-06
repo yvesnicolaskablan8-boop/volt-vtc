@@ -106,10 +106,12 @@ const VersementsPage = {
             <span style="opacity:0.8">Total brut</span>
             <span style="font-weight:700">${this._formatCurrency(totalBrut)}</span>
           </div>
+          ${totalCommission > 0 ? `
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem">
-            <span style="opacity:0.8">Commission (20%)</span>
-            <span style="font-weight:700;color:rgba(255,255,255,0.8)">-${this._formatCurrency(totalCommission)}</span>
+            <span style="opacity:0.8">Frais Wave (1%)</span>
+            <span style="font-weight:700;color:rgba(255,255,255,0.8)">assumes par Wave</span>
           </div>
+          ` : ''}
           ${totalPenalites > 0 ? `
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem">
             <span style="opacity:0.8"><iconify-icon icon="solar:danger-triangle-bold" style="font-size:0.9rem;vertical-align:middle"></iconify-icon> Penalites</span>
@@ -301,22 +303,19 @@ const VersementsPage = {
       return;
     }
 
-    const commission = Math.round(montant * 0.20);
-    const net = montant - commission;
-
     recap.style.display = 'block';
     content.innerHTML = `
       <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px">
-        <span style="color:#64748b">Montant brut</span>
+        <span style="color:#64748b">Montant a verser</span>
         <span style="font-weight:700">${this._formatCurrency(montant)}</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px">
-        <span style="color:#64748b">Commission (20%)</span>
-        <span style="font-weight:700;color:#ef4444">-${this._formatCurrency(commission)}</span>
+        <span style="color:#64748b">Frais Wave (1%)</span>
+        <span style="font-weight:700;color:#94a3b8">inclus</span>
       </div>
       <div style="border-top:1px solid #e2e8f0;padding-top:6px;margin-top:6px;display:flex;justify-content:space-between;font-size:0.9rem">
-        <span style="font-weight:800;color:#0f172a">Net a payer</span>
-        <span style="font-weight:900;color:#22c55e">${this._formatCurrency(net)}</span>
+        <span style="font-weight:800;color:#0f172a">Total preleve</span>
+        <span style="font-weight:900;color:#22c55e">${this._formatCurrency(montant)}</span>
       </div>
       <div style="margin-top:8px;font-size:0.7rem;color:#94a3b8;text-align:center">
         <iconify-icon icon="solar:info-circle-bold" style="font-size:0.8rem;vertical-align:middle"></iconify-icon>

@@ -240,6 +240,16 @@ const DriverStore = {
     return this._get('/resume-hebdo');
   },
 
+  // ===== CONTRAVENTIONS =====
+
+  getContraventions() {
+    return this._get('/contraventions');
+  },
+
+  contesterContravention(id, motif) {
+    return this._put('/contraventions/' + id + '/contester', { motif });
+  },
+
   // ===== WAVE PAIEMENT =====
 
   createWaveCheckout(data) {

@@ -440,8 +440,8 @@ router.post('/versements', async (req, res, next) => {
     ]);
     const vehiculeId = chauffeur ? chauffeur.vehiculeAssigne : null;
 
-    // Calcul commission 20%
-    const commission = Math.round(montantBrut * 0.20);
+    // Pas de commission — seuls les frais Wave 1% s'appliquent cote prestataire
+    const commission = 0;
 
     // Verifier deadline et penalite
     const vs = settings && settings.versements;
@@ -453,20 +453,14 @@ router.post('/versements', async (req, res, next) => {
       const deadlineInfo = getNextDeadline(vs);
       if (deadlineInfo) {
         deadlineDateStr = deadlineInfo.previousDeadline.toISOString();
-        // En retard si le temps restant indique qu'on est apres la deadline precedente
-        // et qu'aucun versement n'a ete fait depuis cette deadline
         const now = new Date();
         if (now > deadlineInfo.previousDeadline) {
-          // Verifier s'il existe deja un versement dans la periode courante
           const versementsPeriode = await Versement.find({
             chauffeurId,
             dateCreation: { $gte: deadlineInfo.previousDeadline.toISOString() }
           }).lean();
 
           if (versementsPeriode.length === 0) {
-            // Premier versement de la periode — verifier si en retard
-            // En retard si la previousDeadline est passee (ce qui est toujours le cas ici)
-            // MAIS seulement si on depasse le delai depuis la previousDeadline
             enRetard = true;
             penaliteMontant = calculatePenalty(montantBrut, vs);
           }
@@ -1589,8 +1583,8 @@ router.post('/wave/checkout', async (req, res, next) => {
     ]);
     const vehiculeId = chauffeur ? chauffeur.vehiculeAssigne : null;
 
-    // Calcul commission 20%
-    const commission = Math.round(montantBrut * 0.20);
+    // Pas de commission — seuls les frais Wave 1% s'appliquent cote prestataire
+    const commission = 0;
 
     // Verifier deadline et penalite
     const vs = settings && settings.versements;
@@ -1746,6 +1740,48 @@ router.get('/wave/status/:id', async (req, res, next) => {
       waveStatus: waveSession.payment_status,
       checkoutStatus: waveSession.checkout_status
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== CONTRAVENTIONS ===================
+
+// GET /api/driver/contraventions — Contraventions du chauffeur
+router.get('/contraventions', async (req, res, next) => {
+  try {
+    const Contravention = require('../models/Contravention');
+    const contraventions = await Contravention.find({ chauffeurId: req.user.chauffeurId })
+      .sort({ date: -1 }).lean();
+    const clean = contraventions.map(({ _id, __v, ...rest }) => rest);
+    res.json(clean);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/driver/contraventions/:id/contester — Contester une contravention
+router.put('/contraventions/:id/contester', async (req, res, next) => {
+  try {
+    const Contravention = require('../models/Contravention');
+    const contravention = await Contravention.findOne({
+      id: req.params.id,
+      chauffeurId: req.user.chauffeurId
+    });
+
+    if (!contravention) {
+      return res.status(404).json({ error: 'Contravention non trouvee' });
+    }
+
+    if (contravention.statut !== 'impayee') {
+      return res.status(400).json({ error: 'Seule une contravention impayee peut etre contestee' });
+    }
+
+    contravention.statut = 'contestee';
+    contravention.motifContestation = req.body.motif || '';
+    await contravention.save();
+
+    res.json(contravention.toJSON());
   } catch (err) {
     next(err);
   }
