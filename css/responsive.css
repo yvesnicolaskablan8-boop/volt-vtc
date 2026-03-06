@@ -288,6 +288,11 @@
     font-size: var(--font-size-lg);
   }
 
+  .page-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
   /* === GRIDS === */
   .grid-4, .grid-3 {
     grid-template-columns: repeat(2, 1fr);
@@ -529,6 +534,64 @@
   }
 }
 
+/* ========== MOBILE GLOBAL OVERRIDES ========== */
+@media (max-width: 768px) {
+  /* Force all inline-styled inputs/selects to respect viewport */
+  .page-actions input[type="date"],
+  .page-actions input[type="text"],
+  .page-actions input[type="number"],
+  .page-actions select,
+  .table-toolbar input[type="date"],
+  .table-toolbar input[type="text"],
+  .table-toolbar input[type="number"],
+  .table-toolbar select,
+  .card-header input[type="date"],
+  .card-header select {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    width: auto !important;
+    flex: 1 1 auto;
+  }
+
+  /* Inline tables with min-width: wrap in scrollable container */
+  table[style*="min-width"] {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Charts height reduce for mobile */
+  .chart-card canvas {
+    max-height: 220px !important;
+  }
+
+  /* Inline grids with fixed columns → stack */
+  div[style*="grid-template-columns: 160px"],
+  div[style*="grid-template-columns:160px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Flex containers in page-actions wrap */
+  .page-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Filter selects/inputs full width */
+  .page-actions > select,
+  .page-actions > input,
+  .page-actions > div {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0 !important;
+  }
+
+  /* Card headers with actions */
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
 /* ========== SMALL MOBILE ========== */
 @media (max-width: 480px) {
   #page-content {
@@ -718,7 +781,14 @@ body.volt-native-app .header-toggle {
 
 body.volt-mobile .header-search,
 body.volt-native-app .header-search {
-  display: none;
+  flex: 1;
+  min-width: 0;
+}
+
+body.volt-mobile .header-search input,
+body.volt-native-app .header-search input {
+  width: 100%;
+  font-size: var(--font-size-xs);
 }
 
 body.volt-mobile .header-user-name,

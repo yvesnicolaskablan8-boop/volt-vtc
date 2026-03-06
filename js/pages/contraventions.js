@@ -193,10 +193,9 @@ const ContraventionsPage = {
       { value: 'autre', label: 'Autre' }
     ];
 
-    Modal.show({
-      title: 'Nouvelle contravention',
-      content: `
-        <form id="form-contravention" class="modal-form">
+    Modal.form(
+      '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#3b82f6;"></iconify-icon> Nouvelle contravention',
+      `<form id="form-contravention" class="modal-form">
           <div class="form-group">
             <label>Chauffeur *</label>
             <select name="chauffeurId" required>
@@ -230,13 +229,9 @@ const ContraventionsPage = {
             <label>Commentaire admin</label>
             <textarea name="commentaire" rows="2" placeholder="Note interne..."></textarea>
           </div>
-        </form>
-      `,
-      actions: [
-        { label: 'Annuler', class: 'btn btn-outline', onclick: () => Modal.close() },
-        { label: 'Enregistrer', class: 'btn btn-primary', onclick: () => this._saveNew() }
-      ]
-    });
+        </form>`,
+      () => this._saveNew()
+    );
   },
 
   async _saveNew() {
@@ -246,7 +241,7 @@ const ContraventionsPage = {
     const montant = parseInt(fd.get('montant'));
 
     if (!chauffeurId || !montant) {
-      Utils.toast('Chauffeur et montant requis', 'error');
+      Toast.show('Chauffeur et montant requis', 'error');
       return;
     }
 
@@ -268,7 +263,7 @@ const ContraventionsPage = {
 
     Store.add('contraventions', contravention);
     Modal.close();
-    Utils.toast('Contravention ajout\u00e9e', 'success');
+    Toast.show('Contravention ajout\u00e9e', 'success');
     this.render();
   },
 
@@ -287,10 +282,9 @@ const ContraventionsPage = {
       { value: 'autre', label: 'Autre' }
     ];
 
-    Modal.show({
-      title: 'Modifier contravention',
-      content: `
-        <form id="form-contravention-edit" class="modal-form">
+    Modal.form(
+      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;"></iconify-icon> Modifier contravention',
+      `<form id="form-contravention-edit" class="modal-form">
           <div class="form-group">
             <label>Chauffeur</label>
             <select name="chauffeurId">
@@ -337,13 +331,9 @@ const ContraventionsPage = {
             <div style="padding:0.75rem;background:rgba(245,158,11,0.08);border-radius:0.5rem;font-size:0.85rem;color:#92400e">${c.motifContestation}</div>
           </div>
           ` : ''}
-        </form>
-      `,
-      actions: [
-        { label: 'Annuler', class: 'btn btn-outline', onclick: () => Modal.close() },
-        { label: 'Sauvegarder', class: 'btn btn-primary', onclick: () => this._saveEdit(id) }
-      ]
-    });
+        </form>`,
+      () => this._saveEdit(id)
+    );
   },
 
   _saveEdit(id) {
@@ -366,7 +356,7 @@ const ContraventionsPage = {
 
     Store.update('contraventions', id, updates);
     Modal.close();
-    Utils.toast('Contravention mise \u00e0 jour', 'success');
+    Toast.show('Contravention mise \u00e0 jour', 'success');
     this.render();
   },
 
@@ -376,14 +366,14 @@ const ContraventionsPage = {
       statut: 'payee',
       datePaiement: new Date().toISOString()
     });
-    Utils.toast('Contravention marqu\u00e9e comme pay\u00e9e', 'success');
+    Toast.show('Contravention marqu\u00e9e comme pay\u00e9e', 'success');
     this.render();
   },
 
   _delete(id) {
     if (!confirm('Supprimer cette contravention ?')) return;
     Store.delete('contraventions', id);
-    Utils.toast('Contravention supprim\u00e9e', 'success');
+    Toast.show('Contravention supprim\u00e9e', 'success');
     this.render();
   }
 };
