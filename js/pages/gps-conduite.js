@@ -97,8 +97,14 @@ const GpsConduitePage = {
         </div>
       </div>
 
+      <!-- Driver search filter -->
+      <div style="margin-bottom:var(--space-md);position:relative;">
+        <iconify-icon icon="solar:magnifer-bold-duotone" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
+        <input type="text" id="gps-driver-search" placeholder="Rechercher un chauffeur par nom..." style="width:100%;padding:12px 14px 12px 42px;border-radius:var(--radius-md);border:1px solid var(--border-color);font-size:var(--font-size-sm);font-family:inherit;background:var(--bg-secondary);color:var(--text-primary);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--volt-blue)'" onblur="this.style.borderColor='var(--border-color)'">
+      </div>
+
       <!-- Driver selector + Fleet scores -->
-      <div class="grid-3" style="margin-bottom:var(--space-lg);">
+      <div id="gps-drivers-grid" class="grid-3" style="margin-bottom:var(--space-lg);">
         ${chauffeurs.map(c => {
           const gps = allGps.filter(g => g.chauffeurId === c.id).sort((a, b) => b.date.localeCompare(a.date));
           const latest = gps[0];
@@ -156,6 +162,21 @@ const GpsConduitePage = {
         this._renderDriverAnalysis(this._selectedDriver);
       });
     });
+
+    // Search filter by driver name
+    const searchInput = document.getElementById('gps-driver-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase().trim();
+        document.querySelectorAll('.driver-score-card').forEach(card => {
+          const driverId = card.dataset.driver;
+          const ch = chauffeurs.find(c => c.id === driverId);
+          if (!ch) return;
+          const fullName = `${ch.prenom} ${ch.nom}`.toLowerCase();
+          card.style.display = (!query || fullName.includes(query)) ? '' : 'none';
+        });
+      });
+    }
   },
 
   // =================== REAL-TIME MAP ===================

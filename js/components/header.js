@@ -308,40 +308,143 @@ const Header = {
     if (input._voltSearchInit) return;
     input._voltSearchInit = true;
 
-    input.addEventListener('input', Utils.debounce((e) => {
-      const query = e.target.value.trim().toLowerCase();
-      if (query.length < 2) return;
+    // Create dropdown container
+    let dropdown = document.getElementById('global-search-dropdown');
+    if (!dropdown) {
+      dropdown = document.createElement('div');
+      dropdown.id = 'global-search-dropdown';
+      dropdown.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);max-height:380px;overflow-y:auto;z-index:1000;display:none;margin-top:4px;';
+      input.parentElement.style.position = 'relative';
+      input.parentElement.appendChild(dropdown);
+    }
 
-      // Search across chauffeurs and véhicules
+    const showResults = (query) => {
+      if (query.length < 1) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
       const chauffeurs = Store.query('chauffeurs', c =>
         `${c.prenom} ${c.nom}`.toLowerCase().includes(query) ||
-        c.telephone.includes(query) ||
-        c.email.toLowerCase().includes(query)
-      );
+        (c.telephone && c.telephone.includes(query)) ||
+        (c.email && c.email.toLowerCase().includes(query))
+      ).slice(0, 5);
 
       const vehicules = Store.query('vehicules', v =>
         `${v.marque} ${v.modele}`.toLowerCase().includes(query) ||
-        v.immatriculation.toLowerCase().includes(query)
-      );
+        (v.immatriculation && v.immatriculation.toLowerCase().includes(query))
+      ).slice(0, 5);
 
-      if (chauffeurs.length === 1) {
-        Router.navigate(`/chauffeurs/${chauffeurs[0].id}`);
-        input.value = '';
-      } else if (vehicules.length === 1) {
-        Router.navigate(`/vehicules/${vehicules[0].id}`);
-        input.value = '';
-      } else if (chauffeurs.length > 0) {
-        Router.navigate('/chauffeurs');
-        input.value = '';
-      } else if (vehicules.length > 0) {
-        Router.navigate('/vehicules');
-        input.value = '';
+      // Pages de navigation
+      const pages = [
+        { label: 'Tableau de bord', route: '/dashboard', icon: 'solar:spedometer-max-bold-duotone' },
+        { label: 'Chauffeurs', route: '/chauffeurs', icon: 'solar:users-group-rounded-bold-duotone' },
+        { label: 'Véhicules', route: '/vehicules', icon: 'solar:wheel-bold-duotone' },
+        { label: 'Versements', route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone' },
+        { label: 'Planning', route: '/planning', icon: 'solar:calendar-bold-duotone' },
+        { label: 'Messagerie', route: '/messagerie', icon: 'solar:chat-round-dots-bold-duotone' },
+        { label: 'GPS & Conduite', route: '/gps-conduite', icon: 'solar:map-arrow-right-bold-duotone' },
+        { label: 'Alertes', route: '/alertes', icon: 'solar:bell-bing-bold-duotone' },
+        { label: 'Rapports', route: '/rapports', icon: 'solar:chart-bold-duotone' },
+        { label: 'Maintenances', route: '/maintenances', icon: 'solar:settings-bold-duotone' },
+        { label: 'Rentabilité', route: '/rentabilite', icon: 'solar:graph-up-bold-duotone' },
+        { label: 'Comptabilité', route: '/comptabilite', icon: 'solar:calculator-bold-duotone' },
+        { label: 'Engagement', route: '/engagement', icon: 'solar:star-bold-duotone' },
+        { label: 'Paramètres', route: '/parametres', icon: 'solar:settings-minimalistic-bold-duotone' }
+      ].filter(p => p.label.toLowerCase().includes(query));
+
+      if (chauffeurs.length === 0 && vehicules.length === 0 && pages.length === 0) {
+        dropdown.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:var(--font-size-sm);">Aucun résultat pour « ' + query + ' »</div>';
+        dropdown.style.display = 'block';
+        return;
       }
-    }, 500));
 
-    input.addEventListener('keydown', (e) => {
+      let html = '';
+
+      if (chauffeurs.length > 0) {
+        html += '<div style="padding:8px 14px 4px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;">Chauffeurs</div>';
+        chauffeurs.forEach(c => {
+          const initials = ((c.prenom?.[0] || '') + (c.nom?.[0] || '')).toUpperCase();
+          html += `<a href="#/chauffeurs/${c.id}" class="search-result-item" style="display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;color:var(--text-primary);cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background=''">
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--volt-blue);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${initials}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:var(--font-size-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.prenom} ${c.nom}</div>
+              <div style="font-size:10px;color:var(--text-muted);">${c.telephone || ''} · ${c.statut}</div>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-bold" style="color:var(--text-muted);font-size:14px;"></iconify-icon>
+          </a>`;
+        });
+      }
+
+      if (vehicules.length > 0) {
+        html += '<div style="padding:8px 14px 4px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;border-top:1px solid var(--border-color);">Véhicules</div>';
+        vehicules.forEach(v => {
+          html += `<a href="#/vehicules/${v.id}" class="search-result-item" style="display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;color:var(--text-primary);cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background=''">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(34,197,94,0.1);color:#22c55e;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <iconify-icon icon="solar:wheel-bold-duotone" style="font-size:16px;"></iconify-icon>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:var(--font-size-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.marque} ${v.modele}</div>
+              <div style="font-size:10px;color:var(--text-muted);">${v.immatriculation} · ${v.statut}</div>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-bold" style="color:var(--text-muted);font-size:14px;"></iconify-icon>
+          </a>`;
+        });
+      }
+
+      if (pages.length > 0) {
+        html += '<div style="padding:8px 14px 4px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;border-top:1px solid var(--border-color);">Pages</div>';
+        pages.forEach(p => {
+          html += `<a href="#${p.route}" class="search-result-item" style="display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;color:var(--text-primary);cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background=''">
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <iconify-icon icon="${p.icon}" style="font-size:16px;color:var(--text-muted);"></iconify-icon>
+            </div>
+            <div style="font-weight:600;font-size:var(--font-size-sm);">${p.label}</div>
+            <iconify-icon icon="solar:alt-arrow-right-bold" style="color:var(--text-muted);font-size:14px;margin-left:auto;"></iconify-icon>
+          </a>`;
+        });
+      }
+
+      dropdown.innerHTML = html;
+      dropdown.style.display = 'block';
+
+      // Close dropdown + clear input when clicking a result
+      dropdown.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => {
+          dropdown.style.display = 'none';
+          input.value = '';
+        });
+      });
+    };
+
+    this._on('searchInput', input, 'input', Utils.debounce((e) => {
+      showResults(e.target.value.trim().toLowerCase());
+    }, 200));
+
+    this._on('searchKeydown', input, 'keydown', (e) => {
+      if (e.key === 'Escape') {
+        dropdown.style.display = 'none';
+        input.value = '';
+        input.blur();
+      }
       if (e.key === 'Enter') {
-        input.dispatchEvent(new Event('input'));
+        const firstLink = dropdown.querySelector('a');
+        if (firstLink) {
+          firstLink.click();
+        }
+      }
+    });
+
+    // Focus → show results if query exists
+    this._on('searchFocus', input, 'focus', () => {
+      const q = input.value.trim().toLowerCase();
+      if (q.length >= 1) showResults(q);
+    });
+
+    // Close dropdown on outside click
+    this._on('searchOutside', document, 'click', (e) => {
+      if (!input.parentElement.contains(e.target)) {
+        dropdown.style.display = 'none';
       }
     });
   },

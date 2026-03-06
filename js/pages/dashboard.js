@@ -127,8 +127,8 @@ const DashboardPage = {
     });
     const totalVerse = monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
 
-    // Versements en retard
-    const retardCount = versements.filter(v => v.statut === 'retard').length;
+    // Versements en retard — sera recalculé à partir de unpaidItems plus bas
+    let retardCount = versements.filter(v => v.statut === 'retard').length;
 
     // Drivers count
     const totalChauffeurs = chauffeurs.length;
@@ -296,6 +296,9 @@ const DashboardPage = {
     unpaidItems.sort((a, b) => b.date.localeCompare(a.date));
     const totalUnpaid = unpaidItems.reduce((s, i) => s + i.montantDu, 0);
     const totalPenalites = unpaidItems.reduce((s, i) => s + i.penalite, 0);
+
+    // Recalculer retardCount = nombre de jours impayés pour la période sélectionnée
+    retardCount = unpaidItems.length;
 
     // Taux de recouvrement
     const totalAttendu = unpaidItems.reduce((s, i) => s + i.montantDu, 0) + monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
