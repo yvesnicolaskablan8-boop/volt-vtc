@@ -119,9 +119,8 @@ const DashboardPage = {
     const caLastMonth = lastMonthCourses.reduce((s, c) => s + c.montantTTC, 0);
     const caTrend = caLastMonth > 0 ? ((caThisMonth - caLastMonth) / caLastMonth) * 100 : 0;
 
-    // Versements this month/day
+    // Versements — toujours par mois (les versements couvrent des périodes, pas un jour précis)
     const monthVersements = versements.filter(v => {
-      if (dayFilter) return v.date === dayFilter;
       const d = new Date(v.date);
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     });
@@ -335,6 +334,8 @@ const DashboardPage = {
     const servicePasCommence = Math.max(0, programmesCount - todayPointages.length);
 
     const periodLabel = Utils.formatDate(dayFilter);
+    const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const monthLabel = monthNames[thisMonth] + ' ' + thisYear;
     const isSpecificDay = true;
 
     return {
@@ -350,7 +351,7 @@ const DashboardPage = {
       alertesTotal, alertesCritiques, alertesUrgentes,
       tauxRecouvrement, totalAttendu,
       serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence,
-      periodLabel, isSpecificDay
+      periodLabel, monthLabel, isSpecificDay
     };
   },
 
@@ -391,7 +392,7 @@ const DashboardPage = {
         <a href="#/versements" class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="kpi-label">Versements — ${d.periodLabel}</div>
+          <div class="kpi-label">Versements — ${d.monthLabel}</div>
           <div class="kpi-trend ${d.retardCount > 0 ? 'down' : 'up'}">
             <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
           </div>
