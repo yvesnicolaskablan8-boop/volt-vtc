@@ -131,7 +131,7 @@ const VersementsPage = {
         <!-- Bouton classique -->
         <button onclick="VersementsPage._nouveauVersement()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:1rem;border-radius:1.25rem;border:2px solid #e2e8f0;background:white;color:#334155;font-size:0.9rem;font-weight:800;cursor:pointer;font-family:inherit;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
           <iconify-icon icon="solar:add-circle-bold" style="font-size:1.3rem"></iconify-icon>
-          Declarer
+          Faire un versement
         </button>
       </div>
 
