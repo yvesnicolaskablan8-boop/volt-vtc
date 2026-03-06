@@ -11,7 +11,7 @@ const Store = {
   _cache: null,
   _apiBase: window.location.hostname === 'localhost'
     ? 'http://localhost:3001/api'
-    : 'https://volt-vtc-production.up.railway.app/api',
+    : '/api',
 
   // =================== INITIALIZATION ===================
 
