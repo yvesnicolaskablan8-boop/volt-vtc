@@ -225,11 +225,16 @@ const App = {
             Auth.destroySession();
             this._showLogin();
           }
-        } else {
-          // Token expired or invalid (401/403)
+        } else if (res.status === 401 || res.status === 403) {
+          // Token expired or invalid — force logout
           console.warn('Token invalide ou expiré — déconnexion');
           Auth.destroySession();
           this._showLogin();
+        } else {
+          // Server error (500, 503...) — keep session with cached data
+          console.warn('Erreur serveur', res.status, '— session locale conservée');
+          await Store.initialize();
+          this._showApp();
         }
       } catch (err) {
         // API unreachable — keep session if it exists (cold start / network issue)

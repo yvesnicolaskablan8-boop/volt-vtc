@@ -53,7 +53,7 @@ router.post('/login', async (req, res, next) => {
         permissions: user.permissions
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '90d' }
     );
 
     // Update last login
@@ -107,7 +107,7 @@ router.post('/set-password', async (req, res, next) => {
         permissions: user.permissions
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '90d' }
     );
 
     res.json({ success: true, token, user: user.toJSON() });

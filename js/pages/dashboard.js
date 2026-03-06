@@ -366,7 +366,10 @@ const DashboardPage = {
           ${this._isToday() ? `<span id="live-indicator" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:#22c55e;background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:20px;font-weight:600;">
             <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite;"></span> EN DIRECT
           </span>` : ''}
-          <button class="btn btn-secondary" onclick="DashboardPage._sendAnnouncement()" title="Envoyer annonce"><iconify-icon icon="solar:letter-bold-duotone"></iconify-icon></button>
+          <div style="position:relative;">
+            <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
+            <input type="text" id="dashboard-search" class="form-control" placeholder="Rechercher un chauffeur..." style="padding-left:32px;font-size:var(--font-size-xs);width:200px;" oninput="DashboardPage._filterByDriver(this.value)">
+          </div>
         </div>
       </div>
       <style>
@@ -1188,6 +1191,55 @@ const DashboardPage = {
         this.render();
       }
     );
+  },
+
+  _filterByDriver(query) {
+    // Remove existing dropdown
+    const existing = document.getElementById('dashboard-search-dropdown');
+    if (existing) existing.remove();
+
+    if (!query || query.trim().length < 2) return;
+
+    const q = query.toLowerCase().trim();
+    const chauffeurs = Store.get('chauffeurs').filter(c =>
+      (`${c.prenom} ${c.nom}`).toLowerCase().includes(q) ||
+      (c.telephone || '').includes(q)
+    ).slice(0, 8);
+
+    if (chauffeurs.length === 0) return;
+
+    const input = document.getElementById('dashboard-search');
+    if (!input) return;
+    const parent = input.parentElement;
+
+    const dropdown = document.createElement('div');
+    dropdown.id = 'dashboard-search-dropdown';
+    dropdown.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:8px;margin-top:4px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:240px;overflow-y:auto;';
+
+    chauffeurs.forEach(c => {
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:var(--font-size-sm);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border-color);';
+      item.innerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;">${(c.prenom||'')[0]}${(c.nom||'')[0]}</div><div><div style="font-weight:600;">${c.prenom} ${c.nom}</div><div style="font-size:var(--font-size-xs);color:var(--text-muted);">${c.telephone || ''}</div></div>`;
+      item.addEventListener('click', () => {
+        dropdown.remove();
+        input.value = '';
+        Router.navigate('/chauffeurs/' + c.id);
+      });
+      item.addEventListener('mouseenter', () => item.style.background = 'var(--bg-secondary)');
+      item.addEventListener('mouseleave', () => item.style.background = '');
+      dropdown.appendChild(item);
+    });
+
+    parent.appendChild(dropdown);
+
+    // Close on click outside
+    const close = (e) => {
+      if (!parent.contains(e.target)) {
+        dropdown.remove();
+        document.removeEventListener('click', close);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', close), 0);
   },
 
   _shareWhatsApp() {
