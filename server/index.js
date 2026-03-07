@@ -21,6 +21,7 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/chauffeurs', require('./routes/crud')('Chauffeur'));
 app.use('/api/vehicules', require('./routes/crud')('Vehicule'));
 app.use('/api/courses', require('./routes/crud')('Course'));
+app.use('/api/versements', require('./routes/versements-auto'));
 app.use('/api/versements', require('./routes/crud')('Versement'));
 app.use('/api/gps', require('./routes/gps-positions'));
 app.use('/api/gps', require('./routes/crud')('Gps'));

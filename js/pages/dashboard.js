@@ -10,12 +10,40 @@ const DashboardPage = {
 
   render() {
     const container = document.getElementById('page-content');
+    this._autoGenerateVersements();
     const data = this._getData();
     this._lastData = data;
     container.innerHTML = this._template(data);
     this._loadCharts(data);
     this._bindPeriodSelector();
     if (this._isToday()) this._startAutoRefresh(); else this._stopAutoRefresh();
+  },
+
+  // Auto-générer les versements du jour (1x/jour max)
+  async _autoGenerateVersements() {
+    const today = new Date().toISOString().split('T')[0];
+    const lastGen = localStorage.getItem('volt_autogen_date');
+    if (lastGen === today) return; // Déjà fait aujourd'hui
+    localStorage.setItem('volt_autogen_date', today);
+    try {
+      const res = await fetch(Store._apiBase + '/versements/auto-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Auth.getToken() },
+        body: JSON.stringify({ date: today })
+      });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.created > 0) {
+          console.log(`[Auto-versements] ${result.created} versement(s) créé(s) pour ${today}`);
+          // Recharger les données pour afficher les nouveaux versements
+          await Store.initialize();
+          this.destroy();
+          this.render();
+        }
+      }
+    } catch (e) {
+      console.warn('[Auto-versements] Erreur:', e.message);
+    }
   },
 
   destroy() {
