@@ -174,7 +174,12 @@ const DashboardPage = {
         })
         .reduce((s, v) => s + v.montantVerse, 0);
     }
-    const caTrend = caPrevPeriod > 0 ? ((caThisMonth - caPrevPeriod) / caPrevPeriod) * 100 : 0;
+    let caTrend = 0;
+    if (caPrevPeriod > 0) {
+      caTrend = ((caThisMonth - caPrevPeriod) / caPrevPeriod) * 100;
+    } else if (caThisMonth > 0) {
+      caTrend = 100; // Pas de ref précédente mais on a du CA → +100%
+    }
 
     // Versements en retard — sera recalculé à partir de unpaidItems plus bas
     let retardCount = versements.filter(v => v.statut === 'retard').length;
@@ -386,7 +391,7 @@ const DashboardPage = {
     const periodLabel = isMonthView ? monthLabel : Utils.formatDate(selectedDay);
 
     return {
-      caThisMonth, caTrend, totalVerse, retardCount,
+      caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount,
       nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
       vehiclesActifs, vehiclesEV, vehiclesThermique,
@@ -437,7 +442,7 @@ const DashboardPage = {
           <div class="kpi-value">${Utils.formatCurrency(d.caThisMonth)}</div>
           <div class="kpi-label">CA — ${d.periodLabel}</div>
           <div class="kpi-trend ${d.caTrend >= 0 ? 'up' : 'down'}">
-            <iconify-icon icon="solar:arrow-${d.caTrend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(d.caTrend).toFixed(1)}% vs ${d.isMonthView ? 'mois préc.' : 'veille'}
+            <iconify-icon icon="solar:arrow-${d.caTrend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(d.caTrend).toFixed(1)}% · ${d.isMonthView ? 'mois préc.' : 'veille'} : ${Utils.formatCurrency(d.caPrevPeriod)}
           </div>
         </a>
         <a href="#/versements" class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
