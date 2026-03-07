@@ -136,13 +136,6 @@ const DashboardPage = {
     // Versements — relatif à la période sélectionnée (jour ou mois)
     const monthVersements = versements.filter(v => matchesPeriod(v.date));
     const totalVerse = monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
-    // Debug: log pour identifier le problème de versements à 0
-    if (typeof console !== 'undefined') {
-      const allMarch = versements.filter(v => v.date && v.date.startsWith(thisYear + '-' + String(thisMonth + 1).padStart(2, '0')));
-      console.log('[Dashboard] dayFilter:', dayFilter, '| isMonthView:', isMonthView);
-      console.log('[Dashboard] Versements du mois:', allMarch.length, '| Versements filtrés:', monthVersements.length, '| Total:', totalVerse);
-      if (allMarch.length > 0) console.log('[Dashboard] Dates versements:', allMarch.map(v => v.date + '(' + v.montantVerse + ')').join(', '));
-    }
 
     // Versements en retard — sera recalculé à partir de unpaidItems plus bas
     let retardCount = versements.filter(v => v.statut === 'retard').length;
