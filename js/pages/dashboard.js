@@ -152,16 +152,29 @@ const DashboardPage = {
     // CA = recettes réellement encaissées (versements payés)
     const caThisMonth = totalVerse;
 
-    // CA période précédente pour comparaison (mois précédent)
-    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-    const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
-    const lastMonthVersements = versements.filter(v => {
-      if (!v.date || v.statut === 'supprime') return false;
-      const d = new Date(v.date);
-      return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
-    });
-    const caLastMonth = lastMonthVersements.reduce((s, v) => s + v.montantVerse, 0);
-    const caTrend = caLastMonth > 0 ? ((caThisMonth - caLastMonth) / caLastMonth) * 100 : 0;
+    // CA période précédente pour comparaison
+    let caPrevPeriod = 0;
+    if (dayFilter) {
+      // Vue jour → comparer avec la veille
+      const prevDay = new Date(sel);
+      prevDay.setDate(prevDay.getDate() - 1);
+      const prevDayStr = prevDay.toISOString().split('T')[0];
+      caPrevPeriod = versements
+        .filter(v => v.date && v.date.startsWith(prevDayStr) && v.statut !== 'supprime')
+        .reduce((s, v) => s + v.montantVerse, 0);
+    } else {
+      // Vue mois → comparer avec le mois précédent
+      const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+      const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+      caPrevPeriod = versements
+        .filter(v => {
+          if (!v.date || v.statut === 'supprime') return false;
+          const d = new Date(v.date);
+          return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+        })
+        .reduce((s, v) => s + v.montantVerse, 0);
+    }
+    const caTrend = caPrevPeriod > 0 ? ((caThisMonth - caPrevPeriod) / caPrevPeriod) * 100 : 0;
 
     // Versements en retard — sera recalculé à partir de unpaidItems plus bas
     let retardCount = versements.filter(v => v.statut === 'retard').length;
@@ -424,7 +437,7 @@ const DashboardPage = {
           <div class="kpi-value">${Utils.formatCurrency(d.caThisMonth)}</div>
           <div class="kpi-label">CA — ${d.periodLabel}</div>
           <div class="kpi-trend ${d.caTrend >= 0 ? 'up' : 'down'}">
-            <iconify-icon icon="solar:arrow-${d.caTrend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(d.caTrend).toFixed(1)}%
+            <iconify-icon icon="solar:arrow-${d.caTrend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(d.caTrend).toFixed(1)}% vs ${d.isMonthView ? 'mois préc.' : 'veille'}
           </div>
         </a>
         <a href="#/versements" class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
