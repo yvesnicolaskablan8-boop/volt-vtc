@@ -91,8 +91,8 @@ const VersementsPage = {
       if (!ch || ch.statut === 'inactif') return;
       const redevance = ch.redevanceQuotidienne || 0;
       if (redevance <= 0) return;
-      const hasValidPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && v.statut === 'valide');
-      if (!hasValidPayment) byStatus.retard++;
+      const hasValidOrDismissed = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime'));
+      if (!hasValidOrDismissed) byStatus.retard++;
     });
 
     const periodLabel = Utils.formatDate(selectedDay);

@@ -299,9 +299,9 @@ const DashboardPage = {
       // Skip si chauffeur n'a pas de redevance définie
       const redevance = ch.redevanceQuotidienne || 0;
       if (redevance <= 0) return;
-      // Vérifier si versement valide existe
-      const hasValidPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && v.statut === 'valide');
-      if (!hasValidPayment) {
+      // Vérifier si versement valide ou supprimé existe (supprimé = admin a dismissé la recette)
+      const hasValidOrDismissed = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime'));
+      if (!hasValidOrDismissed) {
         // Chercher un versement existant (même non validé) pour la justification
         const existing = versements.find(v => v.chauffeurId === p.chauffeurId && v.date === p.date);
         // Calcul pénalités progressives
