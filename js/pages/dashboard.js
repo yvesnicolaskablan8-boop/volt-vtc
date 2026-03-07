@@ -859,11 +859,11 @@ const DashboardPage = {
   _renderUnpaidSection(d) {
     if (!d.unpaidItems || d.unpaidItems.length === 0) return '';
 
-    const rows = d.unpaidItems.slice(0, 5).map(item => {
+    const rows = d.unpaidItems.map(item => {
       const ch = d.chauffeurs.find(c => c.id === item.chauffeurId);
       const name = ch ? `${ch.prenom} ${ch.nom}` : item.chauffeurId;
       const hasJustif = !!item.justification;
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
+      return `<div data-name="${name.toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
         <div style="min-width:0;flex:1;">
           <div style="font-size:var(--font-size-sm);font-weight:500;">${name}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${item.heureDebut && item.heureFin ? ' \u2014 ' + item.heureDebut + ' \u00e0 ' + item.heureFin : ''} &bull; ${item.joursRetard}j de retard</div>
@@ -876,21 +876,32 @@ const DashboardPage = {
       </div>`;
     }).join('');
 
-    const moreText = d.unpaidItems.length > 5 ? `<div style="text-align:center;padding:4px;font-size:var(--font-size-xs);color:var(--text-muted);">+ ${d.unpaidItems.length - 5} autre(s)...</div>` : '';
-
-    return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #ef4444;cursor:pointer;" onclick="DashboardPage._showUnpaidDetails()">
-      <div class="card-header">
+    return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #ef4444;">
+      <div class="card-header" style="cursor:pointer;" onclick="DashboardPage._showUnpaidDetails()">
         <span class="card-title"><iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes impay\u00e9es (${d.unpaidItems.length})</span>
         <div style="text-align:right;">
           <div style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${Utils.formatCurrency(d.totalUnpaid)}</div>
           ${d.totalPenalites > 0 ? `<div style="font-size:var(--font-size-xs);color:#f59e0b;font-weight:600;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> + ${Utils.formatCurrency(d.totalPenalites)} p\u00e9nalit\u00e9s</div>` : ''}
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="position:relative;margin-bottom:8px;">
+        <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
+        <input type="text" id="unpaid-search" class="form-control" placeholder="Rechercher un chauffeur..." style="padding-left:32px;font-size:var(--font-size-xs);" oninput="DashboardPage._filterUnpaidList(this.value)" onclick="event.stopPropagation()">
+      </div>
+      <div id="unpaid-list" style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;">
         ${rows}
-        ${moreText}
       </div>
     </div>`;
+  },
+
+  _filterUnpaidList(query) {
+    const container = document.getElementById('unpaid-list');
+    if (!container) return;
+    const q = query.toLowerCase().trim();
+    const items = container.querySelectorAll('[data-name]');
+    items.forEach(item => {
+      item.style.display = item.dataset.name.includes(q) ? '' : 'none';
+    });
   },
 
   _showUnpaidDetails() {

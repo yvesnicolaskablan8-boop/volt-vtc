@@ -138,6 +138,28 @@ const ChauffeursPage = {
     const totalVerse = versements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
     const color = Utils.getAvatarColor(c.id);
 
+    // Calculer les impayés de ce chauffeur
+    const planning = Store.get('planning') || [];
+    const absences = Store.get('absences') || [];
+    const allVersements = Store.get('versements') || [];
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const redevance = c.redevanceQuotidienne || 0;
+    let impayeCount = 0;
+    let impayeTotal = 0;
+    if (redevance > 0) {
+      const daysMap = new Map();
+      planning.filter(p => p.chauffeurId === c.id && p.date <= todayStr).forEach(p => {
+        if (!daysMap.has(p.date)) daysMap.set(p.date, p);
+      });
+      daysMap.forEach((p) => {
+        const hasAbsence = absences.some(a => a.chauffeurId === c.id && p.date >= a.dateDebut && p.date <= a.dateFin);
+        if (hasAbsence) return;
+        const hasPaid = allVersements.some(v => v.chauffeurId === c.id && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime'));
+        if (!hasPaid) { impayeCount++; impayeTotal += redevance; }
+      });
+    }
+
     return `
       <div class="page-header">
         <h1>
@@ -182,6 +204,10 @@ const ChauffeursPage = {
             <div class="detail-stat">
               <div class="detail-stat-value">${courses.length}</div>
               <div class="detail-stat-label">Courses</div>
+            </div>
+            <div class="detail-stat">
+              <div class="detail-stat-value" style="${impayeTotal > 0 ? 'color:#ef4444;font-weight:700' : ''}">${impayeTotal > 0 ? Utils.formatCurrency(impayeTotal) : '0'}</div>
+              <div class="detail-stat-label">${impayeCount > 0 ? `<span style="color:#ef4444">${impayeCount} Impayé${impayeCount > 1 ? 's' : ''}</span>` : '✓ À jour'}</div>
             </div>
             <div class="detail-stat">
               <div class="detail-stat-value">${Utils.formatCurrency(totalVerse)}</div>
