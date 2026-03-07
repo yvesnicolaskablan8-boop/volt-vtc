@@ -8,6 +8,7 @@ const VersementsPage = {
   render() {
     const container = document.getElementById('page-content');
     const data = this._getData();
+    this._kpiData = data;
     container.innerHTML = this._template(data);
     this._loadCharts(data);
     this._bindEvents(data);
@@ -87,6 +88,8 @@ const VersementsPage = {
     });
 
     let totalAttendu = 0;
+    const detailProgrammes = [];
+    const detailRetard = [];
     scheduledDays.forEach((p) => {
       const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
       if (hasAbsence) return;
@@ -94,9 +97,19 @@ const VersementsPage = {
       if (!ch || ch.statut === 'inactif') return;
       const redevance = ch.redevanceQuotidienne || 0;
       if (redevance <= 0) return;
+      detailProgrammes.push({ chauffeurId: p.chauffeurId, nom: ch.nom, prenom: ch.prenom, redevance, date: p.date });
       totalAttendu += redevance;
       const hasValidOrDismissed = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime'));
-      if (!hasValidOrDismissed) byStatus.retard++;
+      if (!hasValidOrDismissed) {
+        byStatus.retard++;
+        detailRetard.push({ chauffeurId: p.chauffeurId, nom: ch.nom, prenom: ch.prenom, redevance, date: p.date });
+      }
+    });
+
+    const nbChauffeursProgrammes = new Set(detailProgrammes.map(d => d.chauffeurId)).size;
+    const detailVerse = activeVers.filter(v => v.statut === 'valide' || v.statut === 'partiel').map(v => {
+      const ch = chauffeurs.find(c => c.id === v.chauffeurId);
+      return { chauffeurId: v.chauffeurId, nom: ch ? ch.nom : '?', prenom: ch ? ch.prenom : '?', montant: v.montantVerse || 0, date: v.date, statut: v.statut };
     });
 
     const tauxRecouvrement = totalAttendu > 0 ? (totalVerse / totalAttendu) * 100 : 0;
@@ -122,7 +135,7 @@ const VersementsPage = {
       });
     }
 
-    return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay };
+    return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay, detailProgrammes, detailRetard, detailVerse, nbChauffeursProgrammes };
   },
 
   _template(d) {
@@ -140,23 +153,28 @@ const VersementsPage = {
         </div>
       </div>
 
-      <div class="grid-4" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:var(--space-md);margin-bottom:var(--space-lg);">
+        <div class="kpi-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('attendu')" title="Cliquez pour voir le détail">
           <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalAttendu)}</div>
           <div class="kpi-label">Montant attendu — ${d.periodLabel}</div>
         </div>
-        <div class="kpi-card green">
+        <div class="kpi-card green" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('verse')" title="Cliquez pour voir le détail">
           <div class="kpi-icon"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
           <div class="kpi-label">Montant versé — ${d.periodLabel}</div>
         </div>
-        <div class="kpi-card ${d.tauxRecouvrement >= 80 ? 'cyan' : 'red'}">
+        <div class="kpi-card ${d.tauxRecouvrement >= 80 ? 'cyan' : 'red'}" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('taux')" title="Cliquez pour voir le détail">
           <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.tauxRecouvrement.toFixed(1)}%</div>
           <div class="kpi-label">Taux de recouvrement</div>
         </div>
-        <div class="kpi-card red">
+        <div class="kpi-card blue" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('programmes')" title="Cliquez pour voir le détail">
+          <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${d.nbChauffeursProgrammes}</div>
+          <div class="kpi-label">Chauffeurs programmés</div>
+        </div>
+        <div class="kpi-card red" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('retard')" title="Cliquez pour voir le détail">
           <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.byStatus.retard}</div>
           <div class="kpi-label">Versements en retard</div>
@@ -515,6 +533,218 @@ const VersementsPage = {
     Toast.success('Versement valid\u00e9');
     this.render();
     Header.refreshNotifications();
+  },
+
+  // =================== KPI DETAIL MODALS ===================
+
+  _showKpiDetail(type) {
+    const d = this._kpiData;
+    if (!d) return;
+    let title = '';
+    let html = '';
+
+    const thStyle = 'padding:10px 12px;text-align:left;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);';
+    const tdStyle = 'padding:10px 12px;border-bottom:1px solid var(--border-color);';
+
+    switch(type) {
+      case 'attendu': {
+        title = '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Détail — Montant attendu';
+        const byDriver = {};
+        d.detailProgrammes.forEach(p => {
+          if (!byDriver[p.chauffeurId]) byDriver[p.chauffeurId] = { nom: p.nom, prenom: p.prenom, total: 0, jours: 0, redevance: p.redevance };
+          byDriver[p.chauffeurId].total += p.redevance;
+          byDriver[p.chauffeurId].jours++;
+        });
+        const rows = Object.values(byDriver).sort((a,b) => b.total - a.total);
+        html = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Basé sur le planning et la redevance quotidienne de chaque chauffeur pour <strong>${d.periodLabel}</strong></p>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="border-bottom:2px solid var(--border-color);">
+            <th style="${thStyle}">Chauffeur</th>
+            <th style="${thStyle}text-align:center;">Jours</th>
+            <th style="${thStyle}text-align:right;">Redevance/jour</th>
+            <th style="${thStyle}text-align:right;">Total</th>
+          </tr></thead><tbody>
+          ${rows.map(r => `<tr>
+            <td style="${tdStyle}font-weight:500;">${r.prenom} ${r.nom}</td>
+            <td style="${tdStyle}text-align:center;">${r.jours}</td>
+            <td style="${tdStyle}text-align:right;">${Utils.formatCurrency(r.redevance)}</td>
+            <td style="${tdStyle}text-align:right;font-weight:600;">${Utils.formatCurrency(r.total)}</td>
+          </tr>`).join('')}
+          </tbody>
+          <tfoot><tr style="border-top:2px solid var(--border-color);">
+            <td style="padding:10px 12px;font-weight:700;">Total</td>
+            <td style="padding:10px 12px;text-align:center;font-weight:700;">${d.detailProgrammes.length} jour${d.detailProgrammes.length > 1 ? 's' : ''}</td>
+            <td></td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:1.05rem;">${Utils.formatCurrency(d.totalAttendu)}</td>
+          </tr></tfoot>
+        </table>`;
+        break;
+      }
+      case 'verse': {
+        title = '<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon> Détail — Montant versé';
+        const rows = [...d.detailVerse].sort((a,b) => b.montant - a.montant);
+        html = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Versements validés et partiels pour <strong>${d.periodLabel}</strong></p>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="border-bottom:2px solid var(--border-color);">
+            <th style="${thStyle}">Chauffeur</th>
+            <th style="${thStyle}">Date</th>
+            <th style="${thStyle}text-align:right;">Montant</th>
+            <th style="${thStyle}text-align:center;">Statut</th>
+          </tr></thead><tbody>
+          ${rows.length ? rows.map(r => `<tr>
+            <td style="${tdStyle}font-weight:500;">${r.prenom} ${r.nom}</td>
+            <td style="${tdStyle}">${Utils.formatDate(r.date)}</td>
+            <td style="${tdStyle}text-align:right;font-weight:600;">${Utils.formatCurrency(r.montant)}</td>
+            <td style="${tdStyle}text-align:center;">${Utils.statusBadge(r.statut)}</td>
+          </tr>`).join('') : `<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted);">Aucun versement pour cette période</td></tr>`}
+          </tbody>
+          ${rows.length ? `<tfoot><tr style="border-top:2px solid var(--border-color);">
+            <td colspan="2" style="padding:10px 12px;font-weight:700;">${rows.length} versement${rows.length > 1 ? 's' : ''}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:1.05rem;">${Utils.formatCurrency(d.totalVerse)}</td>
+            <td></td>
+          </tr></tfoot>` : ''}
+        </table>`;
+        break;
+      }
+      case 'taux': {
+        title = '<iconify-icon icon="solar:sale-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Détail — Taux de recouvrement';
+        const byDriver = {};
+        d.detailProgrammes.forEach(p => {
+          if (!byDriver[p.chauffeurId]) byDriver[p.chauffeurId] = { nom: p.nom, prenom: p.prenom, attendu: 0, verse: 0 };
+          byDriver[p.chauffeurId].attendu += p.redevance;
+        });
+        d.detailVerse.forEach(v => {
+          if (!byDriver[v.chauffeurId]) byDriver[v.chauffeurId] = { nom: v.nom, prenom: v.prenom, attendu: 0, verse: 0 };
+          byDriver[v.chauffeurId].verse += v.montant;
+        });
+        const rows = Object.values(byDriver).sort((a,b) => {
+          const pctA = a.attendu > 0 ? a.verse / a.attendu : 0;
+          const pctB = b.attendu > 0 ? b.verse / b.attendu : 0;
+          return pctA - pctB;
+        });
+        html = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Comparaison attendu vs versé par chauffeur — <strong>${d.periodLabel}</strong></p>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="border-bottom:2px solid var(--border-color);">
+            <th style="${thStyle}">Chauffeur</th>
+            <th style="${thStyle}text-align:right;">Attendu</th>
+            <th style="${thStyle}text-align:right;">Versé</th>
+            <th style="${thStyle}text-align:right;">Écart</th>
+            <th style="${thStyle}text-align:right;">%</th>
+          </tr></thead><tbody>
+          ${rows.map(r => {
+            const ecart = r.verse - r.attendu;
+            const pct = r.attendu > 0 ? (r.verse / r.attendu * 100) : 0;
+            const pctColor = pct >= 100 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+            return `<tr>
+              <td style="${tdStyle}font-weight:500;">${r.prenom} ${r.nom}</td>
+              <td style="${tdStyle}text-align:right;">${Utils.formatCurrency(r.attendu)}</td>
+              <td style="${tdStyle}text-align:right;font-weight:600;">${Utils.formatCurrency(r.verse)}</td>
+              <td style="${tdStyle}text-align:right;color:${ecart >= 0 ? '#22c55e' : '#ef4444'};">${ecart >= 0 ? '+' : ''}${Utils.formatCurrency(ecart)}</td>
+              <td style="${tdStyle}text-align:right;font-weight:700;color:${pctColor};">${pct.toFixed(0)}%</td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+          <tfoot><tr style="border-top:2px solid var(--border-color);">
+            <td style="padding:10px 12px;font-weight:700;">Total</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;">${Utils.formatCurrency(d.totalAttendu)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;">${Utils.formatCurrency(d.totalVerse)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;color:${d.totalVerse - d.totalAttendu >= 0 ? '#22c55e' : '#ef4444'};">${d.totalVerse - d.totalAttendu >= 0 ? '+' : ''}${Utils.formatCurrency(d.totalVerse - d.totalAttendu)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:1.05rem;">${d.tauxRecouvrement.toFixed(1)}%</td>
+          </tr></tfoot>
+        </table>`;
+        break;
+      }
+      case 'programmes': {
+        title = '<iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Chauffeurs programmés';
+        const byDriver = {};
+        d.detailProgrammes.forEach(p => {
+          if (!byDriver[p.chauffeurId]) byDriver[p.chauffeurId] = { nom: p.nom, prenom: p.prenom, redevance: p.redevance, jours: 0 };
+          byDriver[p.chauffeurId].jours++;
+        });
+        // Check which drivers have paid
+        const paidDriverIds = new Set(d.detailVerse.map(v => v.chauffeurId));
+        const retardDriverIds = new Set(d.detailRetard.map(r => r.chauffeurId));
+        const rows = Object.entries(byDriver).sort((a,b) => a[1].nom.localeCompare(b[1].nom));
+        html = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Chauffeurs planifiés (hors absences/inactifs) — <strong>${d.periodLabel}</strong></p>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="border-bottom:2px solid var(--border-color);">
+            <th style="${thStyle}">Chauffeur</th>
+            <th style="${thStyle}text-align:center;">Jours</th>
+            <th style="${thStyle}text-align:right;">Redevance/jour</th>
+            <th style="${thStyle}text-align:right;">Total attendu</th>
+            <th style="${thStyle}text-align:center;">Statut versement</th>
+          </tr></thead><tbody>
+          ${rows.map(([id, r]) => {
+            const paid = paidDriverIds.has(id);
+            const late = retardDriverIds.has(id);
+            const badge = paid ? '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:rgba(34,197,94,0.1);color:#22c55e;">Versé</span>' : late ? '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:rgba(239,68,68,0.1);color:#ef4444;">Impayé</span>' : '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:rgba(107,114,128,0.1);color:#6b7280;">—</span>';
+            return `<tr>
+              <td style="${tdStyle}font-weight:500;">${r.prenom} ${r.nom}</td>
+              <td style="${tdStyle}text-align:center;">${r.jours}</td>
+              <td style="${tdStyle}text-align:right;">${Utils.formatCurrency(r.redevance)}</td>
+              <td style="${tdStyle}text-align:right;font-weight:600;">${Utils.formatCurrency(r.redevance * r.jours)}</td>
+              <td style="${tdStyle}text-align:center;">${badge}</td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+          <tfoot><tr style="border-top:2px solid var(--border-color);">
+            <td style="padding:10px 12px;font-weight:700;">${rows.length} chauffeur${rows.length > 1 ? 's' : ''}</td>
+            <td style="padding:10px 12px;text-align:center;font-weight:700;">${d.detailProgrammes.length}</td>
+            <td></td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:1.05rem;">${Utils.formatCurrency(d.totalAttendu)}</td>
+            <td></td>
+          </tr></tfoot>
+        </table>`;
+        break;
+      }
+      case 'retard': {
+        title = '<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#ef4444;"></iconify-icon> Versements en retard';
+        const rows = [...d.detailRetard].sort((a,b) => a.date.localeCompare(b.date));
+        const totalDu = rows.reduce((s,r) => s + r.redevance, 0);
+        html = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Chauffeurs programmés n'ayant pas encore versé — <strong>${d.periodLabel}</strong></p>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="border-bottom:2px solid var(--border-color);">
+            <th style="${thStyle}">Chauffeur</th>
+            <th style="${thStyle}">Date</th>
+            <th style="${thStyle}text-align:right;">Redevance due</th>
+          </tr></thead><tbody>
+          ${rows.length ? rows.map(r => `<tr>
+            <td style="${tdStyle}font-weight:500;">${r.prenom} ${r.nom}</td>
+            <td style="${tdStyle}">${Utils.formatDate(r.date)}</td>
+            <td style="${tdStyle}text-align:right;font-weight:600;color:#ef4444;">${Utils.formatCurrency(r.redevance)}</td>
+          </tr>`).join('') : `<tr><td colspan="3" style="padding:20px;text-align:center;color:var(--text-muted);">Aucun versement en retard 🎉</td></tr>`}
+          </tbody>
+          ${rows.length ? `<tfoot><tr style="border-top:2px solid var(--border-color);">
+            <td colspan="2" style="padding:10px 12px;font-weight:700;">${rows.length} impayé${rows.length > 1 ? 's' : ''}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:1.05rem;color:#ef4444;">${Utils.formatCurrency(totalDu)}</td>
+          </tr></tfoot>` : ''}
+        </table>`;
+        break;
+      }
+    }
+    this._showKpiModal(title, html);
+  },
+
+  _showKpiModal(title, html) {
+    const existing = document.getElementById('kpi-detail-overlay');
+    if (existing) existing.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'kpi-detail-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = `
+      <div style="background:var(--bg-primary);border-radius:var(--radius-lg);padding:24px;max-width:800px;width:92%;max-height:82vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3 style="margin:0;display:flex;align-items:center;gap:8px;font-size:1.1rem;">${title}</h3>
+          <button onclick="document.getElementById('kpi-detail-overlay').remove()" style="background:var(--bg-tertiary);border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;">&times;</button>
+        </div>
+        ${html}
+      </div>
+    `;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    document.addEventListener('keydown', function handler(e) {
+      if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); }
+    });
+    document.body.appendChild(overlay);
   },
 
   _exportReceipt(id) {
