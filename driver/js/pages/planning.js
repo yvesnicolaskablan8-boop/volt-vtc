@@ -67,7 +67,8 @@ const PlanningPage = {
       matin: 'Matin',
       apres_midi: 'Apres-midi',
       journee: 'Journee',
-      nuit: 'Nuit'
+      nuit: 'Nuit',
+      custom: 'Personnalise'
     };
 
     let html = '';
@@ -84,7 +85,8 @@ const PlanningPage = {
         const typeLabels = { repos: 'Repos', conge: 'Conge', maladie: 'Maladie', formation: 'Formation', personnel: 'Personnel', suspension: 'Suspension' };
         badgeHTML = `<span class="badge ${absence.type === 'repos' ? 'repos' : 'conge'}">${typeLabels[absence.type] || absence.type}</span>`;
       } else if (p) {
-        badgeHTML = `<span class="badge ${p.typeCreneaux}">${creneauLabels[p.typeCreneaux] || p.typeCreneaux}</span>`;
+        const crLabel = (p.typeCreneaux === 'custom' && p.heureDebut && p.heureFin) ? `${p.heureDebut}-${p.heureFin}` : (creneauLabels[p.typeCreneaux] || p.typeCreneaux);
+        badgeHTML = `<span class="badge ${p.typeCreneaux}">${crLabel}</span>`;
       } else {
         badgeHTML = '<span class="badge neutral">--</span>';
       }

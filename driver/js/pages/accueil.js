@@ -45,18 +45,28 @@ const AccueilPage = {
       matin: 'solar:sunrise-bold-duotone',
       apres_midi: 'solar:sun-bold-duotone',
       journee: 'solar:sun-2-bold-duotone',
-      nuit: 'solar:moon-bold-duotone'
+      nuit: 'solar:moon-bold-duotone',
+      custom: 'solar:clock-circle-bold-duotone'
     };
     const creneauGradients = {
       matin: 'linear-gradient(135deg, #f59e0b, #d97706)',
       apres_midi: 'linear-gradient(135deg, #f97316, #ea580c)',
       journee: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-      nuit: 'linear-gradient(135deg, #6366f1, #4f46e5)'
+      nuit: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+      custom: 'linear-gradient(135deg, #6366f1, #4f46e5)'
     };
     const creneau = data.creneauJour;
-    const creneauText = creneau ? creneauLabels[creneau.type] || creneau.type : null;
+    // Pour les creneaux personnalises, afficher les heures reelles
+    let creneauText = null;
+    if (creneau) {
+      if (creneau.type === 'custom' && creneau.heureDebut && creneau.heureFin) {
+        creneauText = `Personnalise (${creneau.heureDebut}-${creneau.heureFin})`;
+      } else {
+        creneauText = creneauLabels[creneau.type] || 'Personnalise';
+      }
+    }
     const creneauIcon = creneau ? (creneauIcons[creneau.type] || 'solar:clock-circle-bold-duotone') : null;
-    const creneauGrad = creneau ? (creneauGradients[creneau.type] || creneauGradients.journee) : null;
+    const creneauGrad = creneau ? (creneauGradients[creneau.type] || creneauGradients.custom) : null;
 
     // Vehicule
     const v = data.vehicule;
@@ -71,7 +81,7 @@ const AccueilPage = {
     // === Build planning map ===
     const planningMap = {};
     if (planningData) planningData.forEach(p => { planningMap[p.date] = p; });
-    const shortLabels = { matin: 'Matin', apres_midi: 'Apres-midi', journee: 'Journee', nuit: 'Nuit' };
+    const shortLabels = { matin: 'Matin', apres_midi: 'Apres-midi', journee: 'Journee', nuit: 'Nuit', custom: 'Personnalise' };
 
     // === Upcoming shifts (next 5 days, excluding today) ===
     const upcomingDays = [];
@@ -121,31 +131,16 @@ const AccueilPage = {
             <div style="flex:1">
               <div style="font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em">Prochain creneau</div>
               <div style="font-size:0.9rem;font-weight:700;color:#0f172a">${nsLabel}</div>
-              <div style="font-size:0.78rem;color:#3b82f6;font-weight:600">${shortLabels[nextShift.planning.typeCreneaux] || nextShift.planning.typeCreneaux}</div>
+              <div style="font-size:0.78rem;color:#3b82f6;font-weight:600">${nextShift.planning.typeCreneaux === 'custom' && nextShift.planning.heureDebut && nextShift.planning.heureFin ? 'Personnalise (' + nextShift.planning.heureDebut + '-' + nextShift.planning.heureFin + ')' : (shortLabels[nextShift.planning.typeCreneaux] || nextShift.planning.typeCreneaux)}</div>
             </div>
           </div>`;
       }
     }
 
-    // Alerte contraventions impayees
-    let contraventionsAlertHTML = '';
+    // Compteur contraventions impayees (pour badge sur bouton)
+    let nbContraventionsImpayees = 0;
     if (contraventionsData && Array.isArray(contraventionsData)) {
-      const impayees = contraventionsData.filter(c => c.statut === 'impayee');
-      if (impayees.length > 0) {
-        const totalDu = impayees.reduce((s, c) => s + (c.montant || 0), 0);
-        contraventionsAlertHTML = `
-          <div onclick="window.location.hash='#/contraventions'" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:rgba(239,68,68,0.06);border:1.5px solid rgba(239,68,68,0.15);margin-bottom:1rem;cursor:pointer">
-            <div style="width:44px;height:44px;border-radius:1rem;background:rgba(239,68,68,0.1);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:danger-triangle-bold" style="font-size:1.5rem"></iconify-icon>
-            </div>
-            <div style="flex:1">
-              <div style="font-weight:800;font-size:0.85rem;color:#ef4444">${impayees.length} contravention${impayees.length > 1 ? 's' : ''} impayee${impayees.length > 1 ? 's' : ''}</div>
-              <div style="font-size:0.75rem;color:#64748b;margin-top:2px">Total du : ${totalDu.toLocaleString('fr-FR')} FCFA</div>
-            </div>
-            <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:1.2rem;color:#ef4444"></iconify-icon>
-          </div>
-        `;
-      }
+      nbContraventionsImpayees = contraventionsData.filter(c => c.statut === 'impayee').length;
     }
 
     container.innerHTML = `
@@ -157,9 +152,6 @@ const AccueilPage = {
           ${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
         </div>
       </div>
-
-      <!-- Alerte contraventions impayees -->
-      ${contraventionsAlertHTML}
 
       <!-- Countdown deadline versement -->
       ${countdownHTML}
@@ -203,7 +195,8 @@ const AccueilPage = {
             <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:1.75rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Voir mon<br>planning</span>
           </button>
-          <button onclick="DriverRouter.navigate('contraventions')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(239,68,68,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+          <button onclick="DriverRouter.navigate('contraventions')" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(239,68,68,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            ${nbContraventionsImpayees > 0 ? `<span style="position:absolute;top:8px;right:8px;min-width:22px;height:22px;border-radius:11px;background:#fff;color:#ef4444;font-size:0.7rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 2px 6px rgba(0,0,0,0.15)">${nbContraventionsImpayees}</span>` : ''}
             <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.75rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Mes<br>contraventions</span>
           </button>
