@@ -156,14 +156,8 @@ const AccueilPage = {
       <!-- Countdown deadline versement -->
       ${countdownHTML}
 
-      <!-- Creneau du jour -->
-      ${todayShiftHTML}
-
       <!-- Service / Pointage -->
       ${serviceCardHTML}
-
-      <!-- Prochain creneau (si pas de creneau aujourd'hui) -->
-      ${nextShiftHTML}
 
       <!-- Activite Yango -->
       <div class="card" id="yango-activity-card" style="display:none;">
