@@ -10,7 +10,7 @@ const MenuPage = {
     const menuItems = [
       { route: '/yango', icon: 'solar:bus-bold-duotone', label: 'Yango Fleet', color: '#facc15' },
       { route: '/motivation', icon: 'solar:fire-bold-duotone', label: 'Engagement', color: '#f97316' },
-      { route: '/maintenances', icon: 'solar:tuning-2-bold-duotone', label: 'Maintenances', color: '#06b6d4' },
+      { route: '/garage', icon: 'solar:garage-bold-duotone', label: 'Garage', color: '#06b6d4' },
       { route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements', color: '#22c55e' },
       { route: '/contraventions', icon: 'solar:document-text-bold-duotone', label: 'Contraventions', color: '#ef4444' },
       { route: '/rentabilite', icon: 'solar:pie-chart-2-bold-duotone', label: 'Rentabilité', color: '#8b5cf6' },

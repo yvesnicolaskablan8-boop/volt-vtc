@@ -346,7 +346,7 @@ const Header = {
         { label: 'GPS & Conduite', route: '/gps-conduite', icon: 'solar:map-arrow-right-bold-duotone' },
         { label: 'Alertes', route: '/alertes', icon: 'solar:bell-bing-bold-duotone' },
         { label: 'Rapports', route: '/rapports', icon: 'solar:chart-bold-duotone' },
-        { label: 'Maintenances', route: '/maintenances', icon: 'solar:settings-bold-duotone' },
+        { label: 'Garage', route: '/garage', icon: 'solar:garage-bold-duotone' },
         { label: 'Rentabilité', route: '/rentabilite', icon: 'solar:graph-up-bold-duotone' },
         { label: 'Comptabilité', route: '/comptabilite', icon: 'solar:calculator-bold-duotone' },
         { label: 'Engagement', route: '/engagement', icon: 'solar:star-bold-duotone' },

@@ -1,11 +1,80 @@
 /**
- * MaintenancesPage — Vue d'ensemble des maintenances planifiees de toute la flotte
+ * GaragePage — Module Garage avec onglets (Maintenance, etc.)
  */
-const MaintenancesPage = {
+const GaragePage = {
   _charts: [],
+  _activeTab: 'maintenance',
 
   render() {
     const container = document.getElementById('page-content');
+    container.innerHTML = this._pageTemplate();
+    this._renderTab(this._activeTab);
+    this._bindTabEvents();
+  },
+
+  destroy() {
+    this._charts.forEach(c => c.destroy());
+    this._charts = [];
+  },
+
+  _pageTemplate() {
+    return `
+      <div class="page-header">
+        <h1><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Garage</h1>
+      </div>
+
+      <!-- Onglets -->
+      <div class="garage-tabs" style="display:flex;gap:0;margin-bottom:var(--space-lg);border-bottom:2px solid var(--border-color);">
+        <button class="garage-tab active" data-tab="maintenance">
+          <iconify-icon icon="solar:tuning-2-bold-duotone"></iconify-icon> Maintenance
+        </button>
+      </div>
+
+      <!-- Contenu onglet -->
+      <div id="garage-tab-content"></div>
+
+      <style>
+        .garage-tab { background:none;border:none;padding:10px 20px;cursor:pointer;font-size:var(--font-size-sm);font-weight:600;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;display:flex;align-items:center;gap:6px; }
+        .garage-tab:hover { color:var(--text-primary);background:var(--bg-secondary);border-radius:var(--radius-md) var(--radius-md) 0 0; }
+        .garage-tab.active { color:var(--volt-orange);border-bottom-color:var(--volt-orange); }
+        .maint-filter { background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px 12px;cursor:pointer;font-size:var(--font-size-xs);transition:all 0.2s; }
+        .maint-filter.active { background:var(--volt-blue);color:white !important;border-color:var(--volt-blue); }
+        .maint-filter:hover:not(.active) { background:var(--bg-secondary); }
+        .maint-statut-badge { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600; }
+        .maint-statut-badge.en_retard { background:rgba(239,68,68,0.12);color:#ef4444; }
+        .maint-statut-badge.urgent { background:rgba(245,158,11,0.12);color:#f59e0b; }
+        .maint-statut-badge.a_venir { background:rgba(59,130,246,0.1);color:#3b82f6; }
+        .maint-statut-badge.terminee { background:rgba(34,197,94,0.1);color:#22c55e; }
+      </style>
+    `;
+  },
+
+  _bindTabEvents() {
+    document.querySelectorAll('.garage-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.garage-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        this._activeTab = tab.dataset.tab;
+        // Détruire les charts avant de changer d'onglet
+        this._charts.forEach(c => c.destroy());
+        this._charts = [];
+        this._renderTab(this._activeTab);
+      });
+    });
+  },
+
+  _renderTab(tab) {
+    const content = document.getElementById('garage-tab-content');
+    if (!content) return;
+
+    if (tab === 'maintenance') {
+      this._renderMaintenanceTab(content);
+    }
+  },
+
+  // =================== ONGLET MAINTENANCE ===================
+
+  _renderMaintenanceTab(container) {
     const vehicules = Store.get('vehicules').filter(v => v.statut === 'en_service');
     const chauffeurs = Store.get('chauffeurs');
 
@@ -39,34 +108,19 @@ const MaintenancesPage = {
     const totalCout = allMaintenances.filter(m => m.statut !== 'terminee').reduce((s, m) => s + (m.coutEstime || 0), 0);
     const vehiculesAvecMaint = new Set(allMaintenances.map(m => m.vehiculeId)).size;
 
-    container.innerHTML = this._template(allMaintenances, {
+    container.innerHTML = this._maintenanceTemplate(allMaintenances, {
       countRetard, countUrgent, countAVenir, countComplete, totalCout, vehiculesAvecMaint,
       totalVehicules: vehicules.length
     });
-    this._bindEvents(allMaintenances);
-    this._loadCharts(allMaintenances);
+    this._bindMaintenanceEvents(allMaintenances);
+    this._loadMaintenanceCharts(allMaintenances);
   },
 
-  destroy() {
-    this._charts.forEach(c => c.destroy());
-    this._charts = [];
-  },
-
-  _template(maintenances, stats) {
-    const typeLabels = {
-      vidange: 'Vidange', revision: 'Revision', pneus: 'Pneus', freins: 'Freins',
-      filtres: 'Filtres', climatisation: 'Clim.', courroie: 'Courroie',
-      controle_technique: 'CT', batterie: 'Batterie', amortisseurs: 'Amortisseurs',
-      echappement: 'Echappement', carrosserie: 'Carrosserie', autre: 'Autre'
-    };
-
+  _maintenanceTemplate(maintenances, stats) {
     return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:tuning-2-bold-duotone"></iconify-icon> Maintenances planifi&eacute;es</h1>
-        <div class="page-actions">
-          <div class="badge ${stats.countRetard > 0 ? 'badge-danger' : stats.countUrgent > 0 ? 'badge-warning' : 'badge-success'}" style="padding:6px 12px;font-size:var(--font-size-sm);">
-            ${stats.countRetard > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon> ${stats.countRetard} en retard` : stats.countUrgent > 0 ? `<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${stats.countUrgent} urgentes` : '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Flotte OK'}
-          </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);">
+        <div class="badge ${stats.countRetard > 0 ? 'badge-danger' : stats.countUrgent > 0 ? 'badge-warning' : 'badge-success'}" style="padding:6px 12px;font-size:var(--font-size-sm);">
+          ${stats.countRetard > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon> ${stats.countRetard} en retard` : stats.countUrgent > 0 ? `<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${stats.countUrgent} urgentes` : '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Flotte OK'}
         </div>
       </div>
 
@@ -134,21 +188,10 @@ const MaintenancesPage = {
         </div>
         <div id="maintenances-table"></div>
       </div>
-
-      <style>
-        .maint-filter { background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px 12px;cursor:pointer;font-size:var(--font-size-xs);transition:all 0.2s; }
-        .maint-filter.active { background:var(--volt-blue);color:white !important;border-color:var(--volt-blue); }
-        .maint-filter:hover:not(.active) { background:var(--bg-secondary); }
-        .maint-statut-badge { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600; }
-        .maint-statut-badge.en_retard { background:rgba(239,68,68,0.12);color:#ef4444; }
-        .maint-statut-badge.urgent { background:rgba(245,158,11,0.12);color:#f59e0b; }
-        .maint-statut-badge.a_venir { background:rgba(59,130,246,0.1);color:#3b82f6; }
-        .maint-statut-badge.terminee { background:rgba(34,197,94,0.1);color:#22c55e; }
-      </style>
     `;
   },
 
-  _bindEvents(maintenances) {
+  _bindMaintenanceEvents(maintenances) {
     const typeLabels = {
       vidange: 'Vidange', revision: 'Revision', pneus: 'Pneus', freins: 'Freins',
       filtres: 'Filtres', climatisation: 'Climatisation', courroie: 'Courroie',
@@ -223,7 +266,6 @@ const MaintenancesPage = {
         data: filtered,
         pageSize: 15,
         onRowClick: (id) => {
-          // Trouver le vehicule et naviguer vers sa fiche
           const maint = maintenances.find(m => m.id === id);
           if (maint) Router.navigate(`/vehicules/${maint.vehiculeId}`);
         },
@@ -248,7 +290,7 @@ const MaintenancesPage = {
     });
   },
 
-  _loadCharts(maintenances) {
+  _loadMaintenanceCharts(maintenances) {
     // Repartition par statut
     const statutCtx = document.getElementById('chart-maint-statut');
     if (statutCtx) {
@@ -298,7 +340,6 @@ const MaintenancesPage = {
       const labels = sortedTypes.map(([k]) => typeLabels[k] || k);
       const data = sortedTypes.map(([, v]) => v);
 
-      // Couleurs par statut predominant pour chaque type
       const colors = sortedTypes.map(([type]) => {
         const ofType = maintenances.filter(m => m.type === type);
         if (ofType.some(m => m.statut === 'en_retard')) return '#ef4444';

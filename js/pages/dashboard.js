@@ -244,8 +244,9 @@ const DashboardPage = {
       };
     });
 
-    // Recent activities
+    // Recent activities — exclure les versements en_attente (auto-générés, pas encore payés)
     const recentVersements = versements
+      .filter(v => v.statut !== 'en_attente')
       .sort((a, b) => new Date(b.dateCreation) - new Date(a.dateCreation))
       .slice(0, 5);
 
@@ -845,7 +846,7 @@ const DashboardPage = {
     return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid ${borderColor};">
       <div class="card-header">
         <span class="card-title"><iconify-icon icon="solar:tuning-2-bold-duotone" style="color:${borderColor};"></iconify-icon> Alertes maintenance (${d.maintenanceAlerts.length})</span>
-        <a href="#/maintenances" class="btn btn-sm btn-secondary">Voir tout</a>
+        <a href="#/garage" class="btn btn-sm btn-secondary">Voir tout</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         ${rows}
@@ -885,8 +886,8 @@ const DashboardPage = {
         </div>
       </div>
       <div style="position:relative;margin-bottom:8px;">
-        <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
-        <input type="text" id="unpaid-search" class="form-control" placeholder="Rechercher un chauffeur..." style="padding-left:32px;font-size:var(--font-size-xs);" oninput="DashboardPage._filterUnpaidList(this.value)" onclick="event.stopPropagation()">
+        <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--volt-orange);pointer-events:none;"></iconify-icon>
+        <input type="text" id="unpaid-search" class="form-control" placeholder="Rechercher un chauffeur..." style="padding-left:32px;font-size:var(--font-size-xs);border:2px solid var(--volt-orange);border-radius:var(--radius-md);background:var(--bg-primary);" oninput="DashboardPage._filterUnpaidList(this.value)" onclick="event.stopPropagation()">
       </div>
       <div id="unpaid-list" style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;">
         ${rows}

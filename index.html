@@ -14,7 +14,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 40;
+    var APP_VERSION = 41;
     var stored = parseInt(localStorage.getItem('volt_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('volt_app_version', APP_VERSION);
@@ -194,9 +194,9 @@
           <iconify-icon icon="solar:wheel-bold-duotone" class="nav-icon"></iconify-icon>
           <span>V&eacute;hicules</span>
         </a>
-        <a class="nav-item" href="#/maintenances" data-route="/maintenances">
-          <iconify-icon icon="solar:tuning-2-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Maintenances</span>
+        <a class="nav-item" href="#/garage" data-route="/garage">
+          <iconify-icon icon="solar:garage-bold-duotone" class="nav-icon"></iconify-icon>
+          <span>Garage</span>
         </a>
         <a class="nav-item" href="#/planning" data-route="/planning">
           <iconify-icon icon="solar:calendar-bold-duotone" class="nav-icon"></iconify-icon>
@@ -403,7 +403,7 @@
   <script src="js/pages/parametres.js"></script>
   <script src="js/pages/yango.js"></script>
   <script src="js/pages/messagerie.js"></script>
-  <script src="js/pages/maintenances.js"></script>
+  <script src="js/pages/garage.js"></script>
   <script src="js/pages/motivation.js"></script>
   <script src="js/pages/contraventions.js"></script>
   <script src="js/pages/depenses.js"></script>
