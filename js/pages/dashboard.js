@@ -17,7 +17,6 @@ const DashboardPage = {
     this._loadCharts(data);
     this._bindPeriodSelector();
     if (this._isToday()) this._startAutoRefresh(); else this._stopAutoRefresh();
-    this._fetchYangoCA();
   },
 
   // Auto-générer les versements du jour (1x/jour max)
@@ -64,57 +63,6 @@ const DashboardPage = {
     if (this._refreshInterval) {
       clearInterval(this._refreshInterval);
       this._refreshInterval = null;
-    }
-  },
-
-  /**
-   * Fetch real-time CA from Yango transactions API
-   * Updates the KPI card and summary with actual revenue data
-   */
-  async _fetchYangoCA() {
-    try {
-      const selectedDay = this._selectedPeriod || new Date().toISOString().split('T')[0];
-      const sel = new Date(selectedDay);
-      const isMonthView = this._monthView;
-
-      let from, to;
-      if (isMonthView) {
-        // Month view: from start of month to end of month
-        from = new Date(sel.getFullYear(), sel.getMonth(), 1).toISOString();
-        to = new Date(sel.getFullYear(), sel.getMonth() + 1, 0, 23, 59, 59).toISOString();
-      } else {
-        // Day view: from start to end of selected day
-        from = new Date(sel.getFullYear(), sel.getMonth(), sel.getDate()).toISOString();
-        to = new Date(sel.getFullYear(), sel.getMonth(), sel.getDate(), 23, 59, 59).toISOString();
-      }
-
-      const stats = await Store.getYangoStats([], { from, to });
-      if (!stats || stats.error) return;
-
-      const yangoCA = stats.chiffreAffaires?.aujourd_hui || 0;
-      const nbCourses = (stats.courses?.terminees || 0);
-
-      // Update KPI card value
-      const caValueEl = document.getElementById('kpi-ca-value');
-      if (caValueEl) caValueEl.textContent = Utils.formatCurrency(yangoCA);
-
-      // Update KPI trend with course count
-      const caTrendEl = document.getElementById('kpi-ca-trend');
-      if (caTrendEl) {
-        caTrendEl.className = 'kpi-trend up';
-        caTrendEl.innerHTML = `<iconify-icon icon="solar:route-bold-duotone"></iconify-icon> ${nbCourses} course${nbCourses > 1 ? 's' : ''} terminée${nbCourses > 1 ? 's' : ''}`;
-      }
-
-      // Update summary section
-      const summaryCA = document.getElementById('summary-ca-value');
-      if (summaryCA) summaryCA.textContent = Utils.formatCurrency(yangoCA) + ' CA';
-      const summaryCourses = document.getElementById('summary-ca-courses');
-      if (summaryCourses) summaryCourses.textContent = nbCourses + ' course' + (nbCourses > 1 ? 's' : '') + ' terminée' + (nbCourses > 1 ? 's' : '');
-
-      // Store for export/notifications
-      if (this._lastData) this._lastData.caThisMonth = yangoCA;
-    } catch (e) {
-      console.warn('[Dashboard] Yango CA fetch failed:', e.message);
     }
   },
 
@@ -174,7 +122,6 @@ const DashboardPage = {
     this._loadCharts(data);
     this._bindPeriodSelector();
     this._startAutoRefresh();
-    this._fetchYangoCA();
   },
 
   _getData() {
@@ -198,25 +145,23 @@ const DashboardPage = {
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     };
 
-    // This month/day courses
-    const monthCourses = courses.filter(c => matchesPeriod(c.dateHeure) && c.statut === 'terminee');
-
-    // Last month courses for comparison
-    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-    const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
-    const lastMonthCourses = courses.filter(c => {
-      const d = new Date(c.dateHeure);
-      return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear && c.statut === 'terminee';
-    });
-
-    // Revenue
-    const caThisMonth = monthCourses.reduce((s, c) => s + c.montantTTC, 0);
-    const caLastMonth = lastMonthCourses.reduce((s, c) => s + c.montantTTC, 0);
-    const caTrend = caLastMonth > 0 ? ((caThisMonth - caLastMonth) / caLastMonth) * 100 : 0;
-
     // Versements — relatif à la période sélectionnée (jour ou mois)
     const monthVersements = versements.filter(v => matchesPeriod(v.date));
     const totalVerse = monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
+
+    // CA = recettes réellement encaissées (versements payés)
+    const caThisMonth = totalVerse;
+
+    // CA période précédente pour comparaison (mois précédent)
+    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+    const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+    const lastMonthVersements = versements.filter(v => {
+      if (!v.date || v.statut === 'supprime') return false;
+      const d = new Date(v.date);
+      return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+    });
+    const caLastMonth = lastMonthVersements.reduce((s, v) => s + v.montantVerse, 0);
+    const caTrend = caLastMonth > 0 ? ((caThisMonth - caLastMonth) / caLastMonth) * 100 : 0;
 
     // Versements en retard — sera recalculé à partir de unpaidItems plus bas
     let retardCount = versements.filter(v => v.statut === 'retard').length;
@@ -237,18 +182,19 @@ const DashboardPage = {
     const vehiclesEV = vehicules.filter(v => v.typeEnergie === 'electrique').length;
     const vehiclesThermique = vehicules.filter(v => v.typeEnergie !== 'electrique').length;
 
-    // Monthly revenue for last 12 months
+    // Monthly revenue for last 12 months (based on versements encaissés)
     const monthlyRevenue = [];
     for (let i = 11; i >= 0; i--) {
       const m = new Date(thisYear, thisMonth - i, 1);
       const monthNum = m.getMonth();
       const yearNum = m.getFullYear();
-      const rev = courses
-        .filter(c => {
-          const d = new Date(c.dateHeure);
-          return d.getMonth() === monthNum && d.getFullYear() === yearNum && c.statut === 'terminee';
+      const rev = versements
+        .filter(v => {
+          if (!v.date || v.statut === 'supprime') return false;
+          const d = new Date(v.date);
+          return d.getMonth() === monthNum && d.getFullYear() === yearNum;
         })
-        .reduce((s, c) => s + c.montantTTC, 0);
+        .reduce((s, v) => s + v.montantVerse, 0);
       monthlyRevenue.push({ month: Utils.getMonthShort(monthNum), revenue: Math.round(rev) });
     }
 
@@ -272,7 +218,8 @@ const DashboardPage = {
       });
     }
 
-    // Courses by type
+    // Courses by type (from local courses collection, if any)
+    const monthCourses = courses.filter(c => matchesPeriod(c.dateHeure) && c.statut === 'terminee');
     const coursesByType = {};
     const typeLabels = {
       aeroport: 'Aeroport', gare: 'Gare', urbain: 'Urbain',
@@ -427,6 +374,7 @@ const DashboardPage = {
 
     return {
       caThisMonth, caTrend, totalVerse, retardCount,
+      nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
       vehiclesActifs, vehiclesEV, vehiclesThermique,
       monthCourses: monthCourses.length,
@@ -471,11 +419,11 @@ const DashboardPage = {
 
       <!-- KPI Cards -->
       <div class="grid-4">
-        <a href="#/rapports" class="kpi-card" style="text-decoration:none;color:inherit;cursor:pointer;" id="kpi-ca-card">
+        <a href="#/versements" class="kpi-card" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" id="kpi-ca-value">${Utils.formatCurrency(d.caThisMonth)}</div>
+          <div class="kpi-value">${Utils.formatCurrency(d.caThisMonth)}</div>
           <div class="kpi-label">CA — ${d.periodLabel}</div>
-          <div class="kpi-trend ${d.caTrend >= 0 ? 'up' : 'down'}" id="kpi-ca-trend">
+          <div class="kpi-trend ${d.caTrend >= 0 ? 'up' : 'down'}">
             <iconify-icon icon="solar:arrow-${d.caTrend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(d.caTrend).toFixed(1)}%
           </div>
         </a>
@@ -575,8 +523,8 @@ const DashboardPage = {
           <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
             <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:20px;color:var(--volt-blue);"></iconify-icon>
             <div>
-              <div style="font-weight:600;font-size:var(--font-size-sm);" id="summary-ca-value">${Utils.formatCurrency(d.caThisMonth)} CA</div>
-              <div style="font-size:var(--font-size-xs);color:var(--text-muted);" id="summary-ca-courses">${d.monthCourses} course${d.monthCourses > 1 ? 's' : ''} terminée${d.monthCourses > 1 ? 's' : ''}</div>
+              <div style="font-weight:600;font-size:var(--font-size-sm);">${Utils.formatCurrency(d.caThisMonth)} CA</div>
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${d.nbVersementsPeriode} versement${d.nbVersementsPeriode > 1 ? 's' : ''} encaissé${d.nbVersementsPeriode > 1 ? 's' : ''}</div>
             </div>
           </div>
         </div>
