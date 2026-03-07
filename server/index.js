@@ -38,6 +38,8 @@ app.use('/api/checklistVehicules', require('./routes/crud')('ChecklistVehicule')
 app.use('/api/contraventions', require('./routes/contravention-wave'));
 app.use('/api/contraventions', require('./routes/crud')('Contravention'));
 app.use('/api/depenses', require('./routes/crud')('Depense'));
+app.use('/api/reparations', require('./routes/crud')('Reparation'));
+app.use('/api/controlesTechniques', require('./routes/crud')('ControleTechnique'));
 app.use('/api/yango', require('./routes/yango'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));

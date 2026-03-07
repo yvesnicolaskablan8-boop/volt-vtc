@@ -252,6 +252,8 @@ const Store = {
       conduiteBrute: [],
       checklistVehicules: [],
       depenses: [],
+      reparations: [],
+      controlesTechniques: [],
       settings: { entreprise: {}, preferences: {} }
     };
   },
