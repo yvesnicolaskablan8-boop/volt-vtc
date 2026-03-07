@@ -57,10 +57,13 @@ const PlanningPage = {
             <button class="btn btn-sm btn-secondary" id="btn-today" style="margin-left:var(--space-sm);">Aujourd'hui</button>
           </div>
           <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;">
-            <select class="form-control" id="filter-planning-chauffeur" style="width:200px;font-size:var(--font-size-xs);padding:4px 8px;">
-              <option value="">Tous les chauffeurs</option>
-              ${(Store.get('chauffeurs') || []).filter(c => c.statut !== 'inactif').map(c => `<option value="${c.id}" ${this._filterChauffeurId === c.id ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`).join('')}
-            </select>
+            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px 10px;">
+              <iconify-icon icon="solar:user-bold-duotone" style="color:var(--volt-blue);font-size:16px;"></iconify-icon>
+              <select class="form-control" id="filter-planning-chauffeur" style="width:200px;font-size:var(--font-size-sm);padding:6px 8px;border:none;background:transparent;font-weight:500;">
+                <option value="">Tous les chauffeurs</option>
+                ${(Store.get('chauffeurs') || []).filter(c => c.statut !== 'inactif').map(c => `<option value="${c.id}" ${this._filterChauffeurId === c.id ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`).join('')}
+              </select>
+            </div>
             <div class="tabs" id="planning-view-tabs" style="margin:0;">
               <div class="tab active" data-view="week"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Semaine</div>
               <div class="tab" data-view="month"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>

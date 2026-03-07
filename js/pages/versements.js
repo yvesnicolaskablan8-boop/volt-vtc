@@ -56,9 +56,7 @@ const VersementsPage = {
     });
 
     const activeVers = monthVers.filter(v => v.statut !== 'supprime');
-    const totalCommission = activeVers.reduce((s, v) => s + (v.commission || 0), 0);
-    const totalVerse = activeVers.reduce((s, v) => s + (v.montantVerse || 0), 0);
-    const tauxRecouvrement = totalCommission > 0 ? (totalVerse / totalCommission) * 100 : (totalVerse > 0 ? 100 : 0);
+    const totalVerse = activeVers.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
 
     // Compter les statuts pour la période sélectionnée
     const byStatus = {
@@ -68,7 +66,7 @@ const VersementsPage = {
       partiel: monthVers.filter(v => v.statut === 'partiel').length
     };
 
-    // Calculer les retards via le planning (jours programmés sans versement validé)
+    // Calculer le montant attendu et les retards via le planning
     const planning = Store.get('planning') || [];
     const absences = Store.get('absences') || [];
     const periodEnd = this._selectedPeriod
@@ -78,12 +76,17 @@ const VersementsPage = {
     const periodStart = new Date(thisYear, thisMonth, 1);
     const minDate = periodStart.toISOString().split('T')[0];
 
+    // Pour une date sélectionnée: limiter au jour précis
+    const filterMinDate = this._selectedPeriod ? selectedDay : minDate;
+    const filterMaxDate = this._selectedPeriod ? selectedDay : todayStr;
+
     const scheduledDays = new Map();
-    planning.filter(p => p.date <= todayStr && p.date >= minDate).forEach(p => {
+    planning.filter(p => p.date >= filterMinDate && p.date <= filterMaxDate).forEach(p => {
       const key = `${p.chauffeurId}|${p.date}`;
       if (!scheduledDays.has(key)) scheduledDays.set(key, p);
     });
 
+    let totalAttendu = 0;
     scheduledDays.forEach((p) => {
       const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
       if (hasAbsence) return;
@@ -91,9 +94,12 @@ const VersementsPage = {
       if (!ch || ch.statut === 'inactif') return;
       const redevance = ch.redevanceQuotidienne || 0;
       if (redevance <= 0) return;
+      totalAttendu += redevance;
       const hasValidOrDismissed = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime'));
       if (!hasValidOrDismissed) byStatus.retard++;
     });
+
+    const tauxRecouvrement = totalAttendu > 0 ? (totalVerse / totalAttendu) * 100 : 0;
 
     const periodLabel = Utils.formatDate(selectedDay);
 
@@ -116,7 +122,7 @@ const VersementsPage = {
       });
     }
 
-    return { versements, chauffeurs, totalCommission, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay };
+    return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay };
   },
 
   _template(d) {
@@ -137,8 +143,8 @@ const VersementsPage = {
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
         <div class="kpi-card">
           <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(d.totalCommission)}</div>
-          <div class="kpi-label">Commission attendue — ${d.periodLabel}</div>
+          <div class="kpi-value">${Utils.formatCurrency(d.totalAttendu)}</div>
+          <div class="kpi-label">Montant attendu — ${d.periodLabel}</div>
         </div>
         <div class="kpi-card green">
           <div class="kpi-icon"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
