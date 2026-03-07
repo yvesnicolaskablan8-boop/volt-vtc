@@ -21,6 +21,14 @@ const GaragePage = {
     return `
       <div class="page-header">
         <h1><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Garage</h1>
+        <div class="page-actions" style="display:flex;gap:8px;">
+          <button class="btn btn-sm btn-outline" onclick="GaragePage._linkYangoVehicles()" title="Lier les v\u00e9hicules Volt aux v\u00e9hicules Yango par immatriculation">
+            <iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier \u00e0 Yango
+          </button>
+          <button class="btn btn-sm btn-outline" onclick="GaragePage._updateKmModal()" title="Mettre \u00e0 jour le kilom\u00e9trage">
+            <iconify-icon icon="solar:route-bold-duotone"></iconify-icon> Maj km
+          </button>
+        </div>
       </div>
 
       <div class="garage-tabs" style="display:flex;gap:0;margin-bottom:var(--space-lg);border-bottom:2px solid var(--border-color);overflow-x:auto;">
@@ -646,5 +654,79 @@ const GaragePage = {
         }}
       ]
     });
+  },
+
+  // =================== YANGO LIAISON + KM ===================
+
+  async _linkYangoVehicles() {
+    Toast.show('Liaison en cours...', 'info');
+    try {
+      const res = await fetch(Store._apiBase + '/yango/vehicles/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Auth.getToken() }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.linked > 0) {
+          await Store.initialize();
+          Toast.show(`${data.linked} v\u00e9hicule(s) li\u00e9(s) \u00e0 Yango !`, 'success');
+        } else if (data.already > 0) {
+          Toast.show(`Tous les v\u00e9hicules sont d\u00e9j\u00e0 li\u00e9s (${data.already})`, 'info');
+        } else {
+          const msg = data.unmatched && data.unmatched.length > 0
+            ? `Aucune correspondance. ${data.unmatched.length} v\u00e9hicule(s) sans match Yango (immatriculation diff\u00e9rente ?)`
+            : 'Aucun v\u00e9hicule \u00e0 lier';
+          Toast.show(msg, 'warning');
+        }
+      } else {
+        Toast.show('Erreur: ' + (data.error || 'inconnue'), 'error');
+      }
+    } catch (e) {
+      Toast.show('Erreur r\u00e9seau: ' + e.message, 'error');
+    }
+  },
+
+  _updateKmModal() {
+    const vehicules = Store.get('vehicules') || [];
+    const enService = vehicules.filter(v => v.statut === 'en_service');
+    const rows = enService.map(v => {
+      const linked = v.yangoVehicleId ? '<iconify-icon icon="solar:link-bold-duotone" style="color:#22c55e;" title="Li\u00e9 \u00e0 Yango"></iconify-icon>' : '<iconify-icon icon="solar:link-broken-bold-duotone" style="color:var(--text-muted);" title="Non li\u00e9"></iconify-icon>';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-color);">
+        <div style="flex:1;">
+          <span style="font-weight:500;">${v.marque} ${v.modele}</span>
+          <span style="font-size:var(--font-size-xs);color:var(--text-muted);margin-left:6px;">${v.immatriculation}</span>
+          ${linked}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input type="number" class="form-control km-input" data-id="${v.id}" value="${v.kilometrage || 0}" min="0" style="width:120px;font-size:var(--font-size-sm);text-align:right;">
+          <span style="font-size:var(--font-size-xs);color:var(--text-muted);">km</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    Modal.form(
+      '<iconify-icon icon="solar:route-bold-duotone"></iconify-icon> Mettre \u00e0 jour les kilom\u00e9trages',
+      `<div id="km-form" style="max-height:500px;overflow-y:auto;">${rows}</div>`,
+      () => {
+        const inputs = document.querySelectorAll('.km-input');
+        let updated = 0;
+        inputs.forEach(input => {
+          const id = input.dataset.id;
+          const km = parseInt(input.value) || 0;
+          const v = vehicules.find(x => x.id === id);
+          if (v && km !== (v.kilometrage || 0)) {
+            Store.update('vehicules', id, { kilometrage: km });
+            updated++;
+          }
+        });
+        Modal.close();
+        if (updated > 0) {
+          Toast.show(`${updated} kilom\u00e9trage(s) mis \u00e0 jour`, 'success');
+          this.render();
+        } else {
+          Toast.show('Aucun changement', 'info');
+        }
+      }
+    );
   }
 };

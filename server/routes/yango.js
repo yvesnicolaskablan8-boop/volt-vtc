@@ -1056,4 +1056,58 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
   }
 });
 
+// =================== VEHICLE AUTO-LINK ===================
+
+/**
+ * POST /api/yango/vehicles/link
+ * Auto-link Volt vehicles to Yango vehicles by matching immatriculation (plate number)
+ * Returns: { linked, already, unmatched }
+ */
+router.post('/vehicles/link', async (req, res) => {
+  try {
+    const Vehicule = require('../models/Vehicule');
+
+    // Fetch Yango vehicles
+    const yangoData = await yangoFetch('/v1/parks/cars/list', {
+      limit: 100, offset: 0,
+      query: { park: { id: process.env.YANGO_PARK_ID } }
+    });
+    const yangoCars = yangoData.cars || [];
+
+    // Build map: normalized immatriculation → yango car
+    const yangoMap = {};
+    yangoCars.forEach(car => {
+      const plate = (car.number || '').replace(/[\s\-\.]/g, '').toUpperCase();
+      if (plate) yangoMap[plate] = car;
+    });
+
+    // Load Volt vehicles
+    const voltVehicules = await Vehicule.find().lean();
+    let linked = 0, already = 0;
+    const unmatched = [];
+
+    for (const v of voltVehicules) {
+      const plate = (v.immatriculation || '').replace(/[\s\-\.]/g, '').toUpperCase();
+      const yangoCar = yangoMap[plate];
+
+      if (v.yangoVehicleId) {
+        already++;
+        continue;
+      }
+
+      if (yangoCar) {
+        await Vehicule.updateOne({ id: v.id }, { $set: { yangoVehicleId: yangoCar.id } });
+        linked++;
+      } else {
+        unmatched.push({ id: v.id, immatriculation: v.immatriculation, marque: v.marque, modele: v.modele });
+      }
+    }
+
+    res.json({ success: true, linked, already, unmatched, totalYango: yangoCars.length, totalVolt: voltVehicules.length });
+  } catch (err) {
+    console.error('Yango vehicle link error:', err.message);
+    res.status(500).json({ error: 'Erreur de liaison', details: err.message });
+  }
+});
+
 module.exports = router;

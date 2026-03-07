@@ -53,6 +53,7 @@ const vehiculeSchema = new mongoose.Schema({
   coutsMaintenance: [maintenanceSchema],
   maintenancesPlanifiees: [maintenancePlanifieeSchema],
   statut: { type: String, default: 'en_service' },
+  yangoVehicleId: String,
   chauffeurAssigne: String,
   consommation: Number,
   coutEnergie: Number,
