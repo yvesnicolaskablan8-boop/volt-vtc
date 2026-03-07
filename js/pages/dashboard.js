@@ -133,8 +133,12 @@ const DashboardPage = {
     const caLastMonth = lastMonthCourses.reduce((s, c) => s + c.montantTTC, 0);
     const caTrend = caLastMonth > 0 ? ((caThisMonth - caLastMonth) / caLastMonth) * 100 : 0;
 
-    // Versements — relatif à la période sélectionnée (jour ou mois)
-    const monthVersements = versements.filter(v => matchesPeriod(v.date));
+    // Versements — toujours par mois (les versements couvrent des périodes, pas un jour précis)
+    const monthVersements = versements.filter(v => {
+      if (!v.date) return false;
+      const d = new Date(v.date);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
     const totalVerse = monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
 
     // Versements en retard — sera recalculé à partir de unpaidItems plus bas
@@ -401,7 +405,7 @@ const DashboardPage = {
         <a href="#/versements" class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="kpi-label">Versements — ${d.periodLabel}</div>
+          <div class="kpi-label">Versements — ${d.monthLabel}</div>
           <div class="kpi-trend ${d.retardCount > 0 ? 'down' : 'up'}">
             <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
           </div>
