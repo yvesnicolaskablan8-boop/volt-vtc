@@ -427,5 +427,18 @@ const Store = {
       console.warn('Store: Yango drivers for linking failed:', e.message);
       return null;
     }
+  },
+
+  async getYangoVehiclesForLinking() {
+    try {
+      const res = await fetch(this._apiBase + '/yango/vehicles/all', {
+        headers: this._headers()
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.warn('Store: Yango vehicles for linking failed:', e.message);
+      return null;
+    }
   }
 };

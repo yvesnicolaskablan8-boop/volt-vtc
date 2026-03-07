@@ -22,9 +22,6 @@ const GaragePage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Garage</h1>
         <div class="page-actions" style="display:flex;gap:8px;">
-          <button class="btn btn-sm btn-outline" onclick="GaragePage._linkYangoVehicles()" title="Lier les v\u00e9hicules Volt aux v\u00e9hicules Yango par immatriculation">
-            <iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier \u00e0 Yango
-          </button>
           <button class="btn btn-sm btn-outline" onclick="GaragePage._updateKmModal()" title="Mettre \u00e0 jour le kilom\u00e9trage">
             <iconify-icon icon="solar:route-bold-duotone"></iconify-icon> Maj km
           </button>
@@ -656,35 +653,7 @@ const GaragePage = {
     });
   },
 
-  // =================== YANGO LIAISON + KM ===================
-
-  async _linkYangoVehicles() {
-    Toast.show('Liaison en cours...', 'info');
-    try {
-      const res = await fetch(Store._apiBase + '/yango/vehicles/link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Auth.getToken() }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        if (data.linked > 0) {
-          await Store.initialize();
-          Toast.show(`${data.linked} v\u00e9hicule(s) li\u00e9(s) \u00e0 Yango !`, 'success');
-        } else if (data.already > 0) {
-          Toast.show(`Tous les v\u00e9hicules sont d\u00e9j\u00e0 li\u00e9s (${data.already})`, 'info');
-        } else {
-          const msg = data.unmatched && data.unmatched.length > 0
-            ? `Aucune correspondance. ${data.unmatched.length} v\u00e9hicule(s) sans match Yango (immatriculation diff\u00e9rente ?)`
-            : 'Aucun v\u00e9hicule \u00e0 lier';
-          Toast.show(msg, 'warning');
-        }
-      } else {
-        Toast.show('Erreur: ' + (data.error || 'inconnue'), 'error');
-      }
-    } catch (e) {
-      Toast.show('Erreur r\u00e9seau: ' + e.message, 'error');
-    }
-  },
+  // =================== KM UPDATE ===================
 
   _updateKmModal() {
     const vehicules = Store.get('vehicules') || [];

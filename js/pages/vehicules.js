@@ -283,6 +283,32 @@ const VehiculesPage = {
         </div>
       </div>
 
+      <!-- Liaison Yango -->
+      <div class="card" style="margin-top:var(--space-lg);">
+        <div class="card-header">
+          <span class="card-title"><iconify-icon icon="solar:bus-bold-duotone" style="color:#FC4C02"></iconify-icon> Liaison Yango</span>
+          ${v.yangoVehicleId
+            ? '<span class="badge badge-success"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lié</span>'
+            : '<span class="badge badge-warning"><iconify-icon icon="solar:link-broken-bold-duotone"></iconify-icon> Non lié</span>'}
+        </div>
+        ${v.yangoVehicleId ? `
+          <div style="font-size:var(--font-size-sm);margin-bottom:8px;">
+            <span class="text-muted">Yango Vehicle ID :</span> <code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:11px;">${v.yangoVehicleId}</code>
+            <button class="btn btn-sm btn-danger" style="margin-left:8px;" onclick="VehiculesPage._unlinkYangoVehicle('${v.id}')">
+              <iconify-icon icon="solar:link-broken-bold-duotone"></iconify-icon> Délier
+            </button>
+          </div>
+        ` : `
+          <div style="font-size:var(--font-size-sm);color:var(--text-muted);margin-bottom:10px;">
+            Ce véhicule n'est pas encore lié à un véhicule Yango. Cliquez ci-dessous pour rechercher et lier manuellement.
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="VehiculesPage._searchYangoVehicle('${v.id}')">
+            <iconify-icon icon="solar:magnifer-bold-duotone"></iconify-icon> Rechercher sur Yango
+          </button>
+          <div id="yango-vehicle-search-results" style="margin-top:10px;"></div>
+        `}
+      </div>
+
       <!-- CA Yango (only if assigned chauffeur is linked) -->
       ${(chauffeur && chauffeur.yangoDriverId) ? `
       <div class="card" id="yango-ca-card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
@@ -606,7 +632,10 @@ const VehiculesPage = {
       { type: 'row-start' },
       { name: 'chauffeurAssigne', label: 'Chauffeur assigné', type: 'select', placeholder: 'Sélectionner...', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { name: 'parcId', label: 'Parc', type: 'select', placeholder: 'Aucun parc', options: (Store.get('parcs') || []).map(p => ({ value: p.id, label: p.nom })) },
-      { type: 'row-end' }
+      { type: 'row-end' },
+      { type: 'divider' },
+      { type: 'heading', label: 'Liaison Yango' },
+      { name: 'yangoVehicleId', label: 'Yango Vehicle ID', type: 'text', placeholder: 'Ex: abc123... (rempli auto par la recherche ou manuellement)' }
     ];
   },
 
@@ -648,6 +677,9 @@ const VehiculesPage = {
       Toast.success(`${vehicule.marque} ${vehicule.modele} ajouté`);
       this.render();
     }, 'modal-lg');
+
+    // Injecter le bouton "Rechercher sur Yango" à côté du champ yangoVehicleId
+    this._injectYangoVehicleSearchButton();
   },
 
   _edit(id) {
@@ -662,6 +694,9 @@ const VehiculesPage = {
       Toast.success('Véhicule modifié');
       if (window.location.hash.includes(id)) this.renderDetail(id); else this.render();
     }, 'modal-lg');
+
+    // Injecter le bouton "Rechercher sur Yango" à côté du champ yangoVehicleId
+    this._injectYangoVehicleSearchButton();
   },
 
   _delete(id) {
@@ -1271,5 +1306,258 @@ const VehiculesPage = {
       Toast.success(isEV ? 'Recharge enregistrée' : 'Plein enregistré');
       this.renderDetail(vehiculeId);
     });
+  },
+
+  // =================== YANGO VEHICLE LINKING ===================
+
+  async _searchYangoVehicle(vehiculeId) {
+    const container = document.getElementById('yango-vehicle-search-results');
+    if (!container) return;
+
+    const vehicule = Store.findById('vehicules', vehiculeId);
+    if (!vehicule) return;
+
+    container.innerHTML = '<div style="padding:8px;font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Recherche des véhicules Yango...</div>';
+
+    try {
+      const res = await Store.getYangoVehiclesForLinking();
+      if (!res || !res.vehicles) {
+        container.innerHTML = '<div style="color:#ef4444;font-size:var(--font-size-xs);"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Impossible de charger les véhicules Yango</div>';
+        return;
+      }
+
+      const vehicles = res.vehicles;
+      const searchPlate = (vehicule.immatriculation || '').replace(/[\s\-\.]/g, '').toUpperCase();
+      const searchName = `${vehicule.marque} ${vehicule.modele}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      // Score par pertinence : immatriculation d'abord, puis marque/modele
+      const scored = vehicles.map(v => {
+        let score = 0;
+        const yPlate = (v.immatriculation || '').replace(/[\s\-\.]/g, '').toUpperCase();
+        const yName = `${v.marque} ${v.modele}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+        // Match exact immatriculation
+        if (searchPlate.length >= 3 && yPlate === searchPlate) score += 100;
+        // Match partiel immatriculation
+        else if (searchPlate.length >= 3 && yPlate.includes(searchPlate)) score += 70;
+        else if (searchPlate.length >= 3 && searchPlate.includes(yPlate) && yPlate.length >= 3) score += 50;
+
+        // Match marque/modele
+        if (yName === searchName) score += 60;
+        else {
+          const searchWords = searchName.split(' ');
+          const yWords = yName.split(' ');
+          for (const sw of searchWords) {
+            if (sw.length >= 3 && yWords.some(yw => yw === sw)) score += 20;
+          }
+        }
+
+        return { ...v, _score: score };
+      });
+
+      scored.sort((a, b) => b._score - a._score);
+
+      const top = scored.slice(0, 20);
+      const matchCount = scored.filter(v => v._score > 0).length;
+
+      container.innerHTML = `
+        <div style="margin-bottom:8px;">
+          <input type="text" class="form-control" id="yango-vehicle-search-input" placeholder="Filtrer par immatriculation ou marque..." style="font-size:var(--font-size-xs);padding:6px 10px;"
+            oninput="VehiculesPage._filterYangoVehicleResults()">
+        </div>
+        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#22c55e;margin-bottom:6px;"><iconify-icon icon="solar:star-bold-duotone"></iconify-icon> ${matchCount} correspondance(s) probable(s)</div>` : ''}
+        <div id="yango-vehicles-list" style="max-height:250px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);">
+          ${this._renderYangoVehiclesList(top, vehiculeId)}
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${vehicles.length} véhicules Yango au total</div>
+      `;
+
+      this._yangoVehiclesCache = scored;
+      this._yangoLinkVehiculeId = vehiculeId;
+    } catch (err) {
+      container.innerHTML = `<div style="color:#ef4444;font-size:var(--font-size-xs);"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Erreur: ${err.message}</div>`;
+    }
+  },
+
+  _renderYangoVehiclesList(vehicles, vehiculeId) {
+    if (vehicles.length === 0) return '<div style="padding:12px;text-align:center;font-size:var(--font-size-xs);color:var(--text-muted);">Aucun résultat</div>';
+
+    return vehicles.map(v => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border-color);font-size:var(--font-size-xs);${v._score >= 70 ? 'background:rgba(34,197,94,0.06);' : ''}">
+        <div style="flex:1;">
+          <div style="font-weight:500;">
+            ${v._score >= 70 ? '<iconify-icon icon="solar:star-bold-duotone" style="color:#22c55e;font-size:9px;"></iconify-icon> ' : ''}
+            ${v.marque} ${v.modele}
+          </div>
+          <div style="color:var(--text-muted);font-size:10px;">${v.immatriculation || 'Pas de plaque'} &bull; ${v.couleur || '?'} &bull; ${v.annee || '?'}</div>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="VehiculesPage._linkYangoVehicle('${vehiculeId}', '${v.id}', '${(v.marque + ' ' + v.modele + ' ' + v.immatriculation).replace(/'/g, "\\'")}')">
+          <iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier
+        </button>
+      </div>
+    `).join('');
+  },
+
+  _filterYangoVehicleResults() {
+    const input = document.getElementById('yango-vehicle-search-input');
+    const list = document.getElementById('yango-vehicles-list');
+    if (!input || !list || !this._yangoVehiclesCache) return;
+
+    const query = input.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    let filtered = this._yangoVehiclesCache;
+
+    if (query) {
+      filtered = this._yangoVehiclesCache.filter(v => {
+        const name = `${v.marque} ${v.modele}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const plate = (v.immatriculation || '').toLowerCase();
+        return name.includes(query) || plate.includes(query);
+      });
+    }
+
+    list.innerHTML = this._renderYangoVehiclesList(filtered.slice(0, 30), this._yangoLinkVehiculeId);
+  },
+
+  async _linkYangoVehicle(vehiculeId, yangoId, yangoLabel) {
+    Store.update('vehicules', vehiculeId, { yangoVehicleId: yangoId });
+    Toast.success(`Véhicule lié à ${yangoLabel} sur Yango`);
+    this.renderDetail(vehiculeId);
+  },
+
+  async _unlinkYangoVehicle(vehiculeId) {
+    Modal.confirm(
+      'Délier le véhicule Yango',
+      'Voulez-vous supprimer la liaison avec le véhicule Yango ?',
+      () => {
+        Store.update('vehicules', vehiculeId, { yangoVehicleId: '' });
+        Toast.success('Liaison Yango supprimée');
+        this.renderDetail(vehiculeId);
+      }
+    );
+  },
+
+  // ======== YANGO SEARCH IN VEHICLE FORM ========
+
+  _injectYangoVehicleSearchButton() {
+    setTimeout(() => {
+      const input = document.querySelector('#modal-body [name="yangoVehicleId"]');
+      if (!input) return;
+
+      if (input.parentElement.querySelector('.yango-search-form-btn')) return;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-sm btn-outline yango-search-form-btn';
+      btn.style.cssText = 'margin-left:8px;padding:4px 10px;font-size:11px;';
+      btn.innerHTML = '<iconify-icon icon="solar:magnifer-bold-duotone"></iconify-icon> Rechercher';
+      btn.addEventListener('click', () => this._openYangoVehicleSearchInForm());
+
+      input.parentElement.style.display = 'flex';
+      input.parentElement.style.alignItems = 'center';
+      input.style.flex = '1';
+      input.parentElement.appendChild(btn);
+
+      // Container pour les résultats
+      const resultsDiv = document.createElement('div');
+      resultsDiv.id = 'yango-vehicle-form-search-results';
+      resultsDiv.style.marginTop = '4px';
+      input.parentElement.parentElement.appendChild(resultsDiv);
+    }, 200);
+  },
+
+  async _openYangoVehicleSearchInForm() {
+    const container = document.getElementById('yango-vehicle-form-search-results');
+    if (!container) return;
+
+    container.innerHTML = '<div style="padding:8px;font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>';
+
+    try {
+      const res = await Store.getYangoVehiclesForLinking();
+      if (!res || !res.vehicles) {
+        container.innerHTML = '<div style="color:#ef4444;font-size:var(--font-size-xs);">Impossible de charger les véhicules Yango</div>';
+        return;
+      }
+
+      this._yangoFormVehiclesCache = res.vehicles;
+      container.innerHTML = `
+        <div style="margin-bottom:6px;">
+          <input type="text" class="form-control" id="yango-vehicle-form-filter" placeholder="Filtrer par immatriculation ou marque..." style="font-size:var(--font-size-xs);padding:4px 8px;"
+            oninput="VehiculesPage._filterYangoFormVehicleResults()">
+        </div>
+        <div id="yango-vehicle-form-list" style="max-height:200px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);">
+          ${this._renderYangoFormVehiclesList(res.vehicles.slice(0, 20))}
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${res.vehicles.length} véhicules Yango</div>
+      `;
+    } catch (err) {
+      container.innerHTML = `<div style="color:#ef4444;font-size:var(--font-size-xs);">Erreur: ${err.message}</div>`;
+    }
+  },
+
+  _renderYangoFormVehiclesList(vehicles) {
+    if (vehicles.length === 0) return '<div style="padding:8px;text-align:center;font-size:var(--font-size-xs);color:var(--text-muted);">Aucun résultat</div>';
+    return vehicles.map(v => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-bottom:1px solid var(--border-color);font-size:var(--font-size-xs);">
+        <div style="flex:1;">
+          <span style="font-weight:500;">${v.marque} ${v.modele}</span>
+          <span style="color:var(--text-muted);margin-left:4px;">${v.immatriculation || ''}</span>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" style="padding:2px 8px;font-size:10px;" onclick="VehiculesPage._linkYangoFromVehicleForm('${v.id}', '${(v.marque + ' ' + v.modele + ' ' + (v.immatriculation || '')).replace(/'/g, "\\'")}')">
+          <iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier
+        </button>
+      </div>
+    `).join('');
+  },
+
+  _filterYangoFormVehicleResults() {
+    const input = document.getElementById('yango-vehicle-form-filter');
+    const list = document.getElementById('yango-vehicle-form-list');
+    if (!input || !list || !this._yangoFormVehiclesCache) return;
+
+    const query = input.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    let filtered = this._yangoFormVehiclesCache;
+
+    if (query) {
+      filtered = this._yangoFormVehiclesCache.filter(v => {
+        const name = `${v.marque} ${v.modele}`.toLowerCase();
+        const plate = (v.immatriculation || '').toLowerCase();
+        return name.includes(query) || plate.includes(query);
+      });
+    }
+
+    list.innerHTML = this._renderYangoFormVehiclesList(filtered.slice(0, 30));
+  },
+
+  _linkYangoFromVehicleForm(yangoId, yangoLabel) {
+    const input = document.querySelector('#modal-body [name="yangoVehicleId"]');
+    if (input) {
+      input.value = yangoId;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    const container = document.getElementById('yango-vehicle-form-search-results');
+    if (container) {
+      container.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-sm);font-size:var(--font-size-xs);margin-top:4px;">
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon>
+          <span>Lié à <strong>${yangoLabel}</strong></span>
+          <button type="button" class="btn btn-sm" style="margin-left:auto;padding:2px 8px;font-size:10px;" onclick="VehiculesPage._unlinkYangoFromVehicleForm()">
+            <iconify-icon icon="solar:close-circle-bold"></iconify-icon>
+          </button>
+        </div>
+      `;
+    }
+
+    Toast.success(`Véhicule sera lié à ${yangoLabel}`);
+  },
+
+  _unlinkYangoFromVehicleForm() {
+    const input = document.querySelector('#modal-body [name="yangoVehicleId"]');
+    if (input) {
+      input.value = '';
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    const container = document.getElementById('yango-vehicle-form-search-results');
+    if (container) container.innerHTML = '';
+    Toast.show('Liaison Yango retirée', 'info');
   }
 };

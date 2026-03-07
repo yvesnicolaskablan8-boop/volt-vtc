@@ -1056,57 +1056,53 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
   }
 });
 
-// =================== VEHICLE AUTO-LINK ===================
+// =================== VEHICLES FOR LINKING ===================
 
 /**
- * POST /api/yango/vehicles/link
- * Auto-link Volt vehicles to Yango vehicles by matching immatriculation (plate number)
- * Returns: { linked, already, unmatched }
+ * GET /api/yango/vehicles/all
+ * Fetches ALL Yango vehicles for manual linking
+ * Returns: { total, vehicles: [{ id, marque, modele, immatriculation, couleur, annee, statut }] }
  */
-router.post('/vehicles/link', async (req, res) => {
+router.get('/vehicles/all', async (req, res) => {
   try {
-    const Vehicule = require('../models/Vehicule');
+    const allVehicles = [];
+    let offset = 0;
+    const LIMIT = 100;
+    const MAX_PAGES = 5;
+    let page = 0;
 
-    // Fetch Yango vehicles
-    const yangoData = await yangoFetch('/v1/parks/cars/list', {
-      limit: 100, offset: 0,
-      query: { park: { id: process.env.YANGO_PARK_ID } }
-    });
-    const yangoCars = yangoData.cars || [];
+    do {
+      const data = await yangoFetch('/v1/parks/cars/list', {
+        limit: LIMIT,
+        offset,
+        query: { park: { id: process.env.YANGO_PARK_ID } }
+      });
 
-    // Build map: normalized immatriculation → yango car
-    const yangoMap = {};
-    yangoCars.forEach(car => {
-      const plate = (car.number || '').replace(/[\s\-\.]/g, '').toUpperCase();
-      if (plate) yangoMap[plate] = car;
-    });
-
-    // Load Volt vehicles
-    const voltVehicules = await Vehicule.find().lean();
-    let linked = 0, already = 0;
-    const unmatched = [];
-
-    for (const v of voltVehicules) {
-      const plate = (v.immatriculation || '').replace(/[\s\-\.]/g, '').toUpperCase();
-      const yangoCar = yangoMap[plate];
-
-      if (v.yangoVehicleId) {
-        already++;
-        continue;
+      const cars = data.cars || [];
+      for (const car of cars) {
+        allVehicles.push({
+          id: car.id || '',
+          marque: car.brand || '',
+          modele: car.model || '',
+          immatriculation: car.number || '',
+          couleur: car.color || '',
+          annee: car.year || '',
+          statut: car.status || ''
+        });
       }
 
-      if (yangoCar) {
-        await Vehicule.updateOne({ id: v.id }, { $set: { yangoVehicleId: yangoCar.id } });
-        linked++;
-      } else {
-        unmatched.push({ id: v.id, immatriculation: v.immatriculation, marque: v.marque, modele: v.modele });
-      }
-    }
+      if (cars.length < LIMIT) break;
+      offset += LIMIT;
+      page++;
+    } while (page < MAX_PAGES);
 
-    res.json({ success: true, linked, already, unmatched, totalYango: yangoCars.length, totalVolt: voltVehicules.length });
+    res.json({
+      total: allVehicles.length,
+      vehicles: allVehicles
+    });
   } catch (err) {
-    console.error('Yango vehicle link error:', err.message);
-    res.status(500).json({ error: 'Erreur de liaison', details: err.message });
+    console.error('Yango all vehicles error:', err.message);
+    res.status(502).json({ error: 'Erreur API Yango', details: err.message });
   }
 });
 
