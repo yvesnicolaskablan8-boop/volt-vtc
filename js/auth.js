@@ -88,7 +88,7 @@ const Auth = {
       '/motivation': 'chauffeurs',
       '/messagerie': 'chauffeurs',
       '/vehicules': 'vehicules',
-      '/garage': 'garage',
+      '/garage': 'vehicules',
       '/planning': 'planning',
       '/versements': 'versements',
       '/contraventions': 'contraventions',
