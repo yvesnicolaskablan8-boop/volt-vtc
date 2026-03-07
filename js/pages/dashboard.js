@@ -133,13 +133,16 @@ const DashboardPage = {
     const caLastMonth = lastMonthCourses.reduce((s, c) => s + c.montantTTC, 0);
     const caTrend = caLastMonth > 0 ? ((caThisMonth - caLastMonth) / caLastMonth) * 100 : 0;
 
-    // Versements — toujours par mois (les versements couvrent des périodes, pas un jour précis)
-    const monthVersements = versements.filter(v => {
-      if (!v.date) return false;
-      const d = new Date(v.date);
-      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-    });
+    // Versements — relatif à la période sélectionnée (jour ou mois)
+    const monthVersements = versements.filter(v => matchesPeriod(v.date));
     const totalVerse = monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
+    // Debug: log pour identifier le problème de versements à 0
+    if (typeof console !== 'undefined') {
+      const allMarch = versements.filter(v => v.date && v.date.startsWith(thisYear + '-' + String(thisMonth + 1).padStart(2, '0')));
+      console.log('[Dashboard] dayFilter:', dayFilter, '| isMonthView:', isMonthView);
+      console.log('[Dashboard] Versements du mois:', allMarch.length, '| Versements filtrés:', monthVersements.length, '| Total:', totalVerse);
+      if (allMarch.length > 0) console.log('[Dashboard] Dates versements:', allMarch.map(v => v.date + '(' + v.montantVerse + ')').join(', '));
+    }
 
     // Versements en retard — sera recalculé à partir de unpaidItems plus bas
     let retardCount = versements.filter(v => v.statut === 'retard').length;
@@ -247,11 +250,10 @@ const DashboardPage = {
 
     // =================== RECETTES IMPAYÉES ===================
     const absences = Store.get('absences') || [];
-    // Pour le mois sélectionné, limiter au dernier jour du mois
-    const periodEnd = this._selectedPeriod
-      ? new Date(thisYear, thisMonth + 1, 0) // dernier jour du mois sélectionné
-      : now;
-    const today = periodEnd.toISOString().split('T')[0];
+    // Limiter au jour ou mois sélectionné
+    const today = isMonthView
+      ? new Date(thisYear, thisMonth + 1, 0).toISOString().split('T')[0] // dernier jour du mois
+      : (selectedDay <= now.toISOString().split('T')[0] ? selectedDay : now.toISOString().split('T')[0]);
 
     // Limiter au mois sélectionné
     const periodStart = new Date(thisYear, thisMonth, 1);
@@ -405,7 +407,7 @@ const DashboardPage = {
         <a href="#/versements" class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="kpi-label">Versements — ${d.monthLabel}</div>
+          <div class="kpi-label">Versements — ${d.periodLabel}</div>
           <div class="kpi-trend ${d.retardCount > 0 ? 'down' : 'up'}">
             <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
           </div>
