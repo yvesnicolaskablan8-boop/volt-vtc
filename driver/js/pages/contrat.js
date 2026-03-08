@@ -67,7 +67,7 @@ const ContratPage = {
         <div style="margin-bottom:8px"><strong>P\u00e9riode d\u2019essai :</strong> 3 mois, renouvelable une fois (6 mois max)</div>
         <div style="margin-bottom:8px"><strong>Lieu :</strong> District Autonome d\u2019Abidjan et p\u00e9riph\u00e9ries</div>
         <div style="margin-bottom:8px"><strong>Organisation :</strong> Chaque v\u00e9hicule est assign\u00e9 \u00e0 deux chauffeurs qui se relaient. Le service fonctionne 7 jours sur 7.</div>
-        <div><strong>Horaires :</strong> Le planning est d\u00e9fini par roulement entre les deux chauffeurs du v\u00e9hicule. Chaque chauffeur est r\u00e9mun\u00e9r\u00e9 en fonction de son nombre de jours effectivement travaill\u00e9s. Obligations de ponctualit\u00e9, disponibilit\u00e9 sur la plateforme, restitution du v\u00e9hicule en bon \u00e9tat, respect des horaires de recharge.</div>
+        <div><strong>Horaires :</strong> Le planning est d\u00e9fini par roulement entre les deux chauffeurs du v\u00e9hicule. Chaque chauffeur est r\u00e9mun\u00e9r\u00e9 en fonction de son nombre de jours effectivement travaill\u00e9s. Obligations de ponctualit\u00e9, disponibilit\u00e9 sur la plateforme Yango via MAURALEX, restitution du v\u00e9hicule en bon \u00e9tat, respect des horaires de recharge.</div>
       `)}
 
       <!-- Article 5-7 : Rémunération -->
