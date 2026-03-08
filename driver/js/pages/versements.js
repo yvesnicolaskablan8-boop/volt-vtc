@@ -16,6 +16,9 @@ const VersementsPage = {
       return;
     }
 
+    // Stocker l'objectif de recette pour le formulaire
+    this._objectifRecette = (deadline && deadline.objectifRecette) || 0;
+
     // Verifier si on revient d'un paiement Wave (params dans le hash)
     this._checkWaveReturn(versements);
 
@@ -297,23 +300,36 @@ const VersementsPage = {
       return;
     }
 
+    const fraisWave = Math.ceil(montant * 0.01);
+    const totalPreleve = montant + fraisWave;
+
+    // Alerte si montant inferieur a l'objectif
+    const objectif = this._objectifRecette || 0;
+    const alerteHTML = (objectif > 0 && montant < objectif)
+      ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:0.75rem;background:rgba(245,158,11,0.08);border:1.5px solid rgba(245,158,11,0.2);margin-bottom:10px">
+          <iconify-icon icon="solar:danger-triangle-bold" style="font-size:1.2rem;color:#f59e0b;flex-shrink:0"></iconify-icon>
+          <div style="font-size:0.75rem;color:#92400e;font-weight:600;">Le montant est inf\u00e9rieur \u00e0 l\u2019objectif journalier de ${this._formatCurrency(objectif)}</div>
+        </div>`
+      : '';
+
     recap.style.display = 'block';
     content.innerHTML = `
+      ${alerteHTML}
       <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px">
-        <span style="color:#64748b">Montant a verser</span>
+        <span style="color:#64748b">Montant \u00e0 verser</span>
         <span style="font-weight:700">${this._formatCurrency(montant)}</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px">
         <span style="color:#64748b">Frais Wave (1%)</span>
-        <span style="font-weight:700;color:#94a3b8">inclus</span>
+        <span style="font-weight:700;color:#f59e0b">+ ${this._formatCurrency(fraisWave)}</span>
       </div>
       <div style="border-top:1px solid #e2e8f0;padding-top:6px;margin-top:6px;display:flex;justify-content:space-between;font-size:0.9rem">
-        <span style="font-weight:800;color:#0f172a">Total preleve</span>
-        <span style="font-weight:900;color:#22c55e">${this._formatCurrency(montant)}</span>
+        <span style="font-weight:800;color:#0f172a">Total pr\u00e9lev\u00e9</span>
+        <span style="font-weight:900;color:#22c55e">${this._formatCurrency(totalPreleve)}</span>
       </div>
       <div style="margin-top:8px;font-size:0.7rem;color:#94a3b8;text-align:center">
         <iconify-icon icon="solar:info-circle-bold" style="font-size:0.8rem;vertical-align:middle"></iconify-icon>
-        Le montant de <strong>${this._formatCurrency(montant)}</strong> sera preleve via Wave
+        ${this._formatCurrency(montant)} + ${this._formatCurrency(fraisWave)} de frais Wave = <strong>${this._formatCurrency(totalPreleve)}</strong> pr\u00e9lev\u00e9s
       </div>
     `;
   },

@@ -399,6 +399,7 @@ router.get('/deadline', async (req, res, next) => {
       deadlineDate: info.deadlineDate.toISOString(),
       remainingMs: info.remainingMs,
       deadlineType: vs.deadlineType,
+      objectifRecette: vs.objectifRecette || 0,
       penaliteActive: vs.penaliteActive || false,
       penaliteType: vs.penaliteType || 'pourcentage',
       penaliteValeur: vs.penaliteValeur || 0,

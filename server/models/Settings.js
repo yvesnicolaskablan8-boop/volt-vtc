@@ -23,6 +23,7 @@ const settingsSchema = new mongoose.Schema({
     deadlineType: { type: String, enum: ['quotidien', 'hebdomadaire', 'mensuel'], default: 'quotidien' },
     deadlineJour: { type: Number, default: 0 },
     deadlineHeure: { type: String, default: '23:59' },
+    objectifRecette: { type: Number, default: 0 },
     penaliteActive: { type: Boolean, default: false },
     penaliteType: { type: String, enum: ['pourcentage', 'montant_fixe'], default: 'pourcentage' },
     penaliteValeur: { type: Number, default: 5 },
