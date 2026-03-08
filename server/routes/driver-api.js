@@ -1522,10 +1522,11 @@ router.post('/wave/checkout', async (req, res, next) => {
       return res.status(500).json({ error: 'Wave API non configuree. Contactez l\'administrateur.' });
     }
 
-    // URL de base pour les redirections
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://volt-vtc-production.up.railway.app'
-      : `http://localhost:${process.env.PORT || 3001}`;
+    // URL de base pour les redirections — utiliser l'origin du frontend (Vercel), pas le backend (Railway)
+    const frontendOrigin = req.headers.origin || req.headers.referer?.replace(/\/+$/, '') || '';
+    const baseUrl = frontendOrigin || (process.env.NODE_ENV === 'production'
+      ? (process.env.FRONTEND_URL || 'https://volt-vtc-production.up.railway.app')
+      : `http://localhost:${process.env.PORT || 3001}`);
 
     const waveResponse = await fetch('https://api.wave.com/v1/checkout/sessions', {
       method: 'POST',
@@ -1720,9 +1721,11 @@ router.post('/contraventions/wave/checkout', async (req, res, next) => {
       return res.status(500).json({ error: 'Wave API non configuree' });
     }
 
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://volt-vtc-production.up.railway.app'
-      : `http://localhost:${process.env.PORT || 3001}`;
+    // URL de base — utiliser l'origin du frontend (Vercel), pas le backend (Railway)
+    const frontendOrigin = req.headers.origin || req.headers.referer?.replace(/\/+$/, '') || '';
+    const baseUrl = frontendOrigin || (process.env.NODE_ENV === 'production'
+      ? (process.env.FRONTEND_URL || 'https://volt-vtc-production.up.railway.app')
+      : `http://localhost:${process.env.PORT || 3001}`);
 
     const waveResponse = await fetch('https://api.wave.com/v1/checkout/sessions', {
       method: 'POST',
