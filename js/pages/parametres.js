@@ -382,8 +382,22 @@ const ParametresPage = {
         </div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
-        <div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div style="position:relative;">
+            <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
+            <input type="text" id="users-filter-name" class="form-control" placeholder="Filtrer par nom..." style="padding-left:32px;font-size:var(--font-size-xs);width:200px;" oninput="ParametresPage._filterUsers()">
+          </div>
+          <select id="users-filter-role" class="form-control" style="font-size:var(--font-size-xs);width:150px;" onchange="ParametresPage._filterUsers()">
+            <option value="">Tous les roles</option>
+            ${roles.map(r => `<option value="${r}">${r}</option>`).join('')}
+          </select>
+          <select id="users-filter-statut" class="form-control" style="font-size:var(--font-size-xs);width:130px;" onchange="ParametresPage._filterUsers()">
+            <option value="">Tous statuts</option>
+            <option value="actif">Actif</option>
+            <option value="inactif">Inactif</option>
+          </select>
+        </div>
         <button class="btn btn-primary" id="btn-add-user"><iconify-icon icon="solar:user-plus-bold-duotone"></iconify-icon> Nouvel utilisateur</button>
       </div>
 
@@ -391,10 +405,26 @@ const ParametresPage = {
     `;
   },
 
+  _usersTable: null,
+
+  _filterUsers() {
+    if (!this._usersTable) return;
+    const nameVal = (document.getElementById('users-filter-name')?.value || '').toLowerCase().trim();
+    const roleVal = document.getElementById('users-filter-role')?.value || '';
+    const statutVal = document.getElementById('users-filter-statut')?.value || '';
+
+    this._usersTable.filter(u => {
+      if (nameVal && !`${u.prenom} ${u.nom}`.toLowerCase().includes(nameVal) && !(u.email || '').toLowerCase().includes(nameVal)) return false;
+      if (roleVal && u.role !== roleVal) return false;
+      if (statutVal && u.statut !== statutVal) return false;
+      return true;
+    });
+  },
+
   _bindUsersEvents() {
     const users = Store.get('users') || [];
 
-    Table.create({
+    this._usersTable = Table.create({
       containerId: 'users-table',
       columns: [
         {
