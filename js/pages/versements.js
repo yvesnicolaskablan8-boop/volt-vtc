@@ -3,7 +3,7 @@
  */
 const VersementsPage = {
   _charts: [],
-  _selectedPeriod: null, // null = mois courant, 'YYYY-MM-DD' = date spécifique
+  _selectedPeriod: null, // null = aujourd'hui, 'YYYY-MM-DD' = date spécifique
 
   render() {
     const container = document.getElementById('page-content');
@@ -21,8 +21,7 @@ const VersementsPage = {
   },
 
   _onPeriodChange(value) {
-    const today = new Date().toISOString().split('T')[0];
-    this._selectedPeriod = (value === today) ? null : value;
+    this._selectedPeriod = value || null;
     this.destroy();
     this.render();
   },
@@ -49,12 +48,8 @@ const VersementsPage = {
     const thisMonth = sel.getMonth();
     const thisYear = sel.getFullYear();
 
-    // Filtrer par jour si date sélectionnée, sinon par mois
-    const monthVers = versements.filter(v => {
-      if (this._selectedPeriod) return v.date === selectedDay;
-      const d = new Date(v.date);
-      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-    });
+    // Toujours filtrer par jour (selectedDay = aujourd'hui ou date choisie)
+    const monthVers = versements.filter(v => v.date === selectedDay);
 
     const activeVers = monthVers.filter(v => v.statut !== 'supprime');
     const totalVerse = activeVers.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
@@ -70,16 +65,10 @@ const VersementsPage = {
     // Calculer le montant attendu et les retards via le planning
     const planning = Store.get('planning') || [];
     const absences = Store.get('absences') || [];
-    const periodEnd = this._selectedPeriod
-      ? new Date(thisYear, thisMonth + 1, 0)
-      : now;
-    const todayStr = periodEnd.toISOString().split('T')[0];
-    const periodStart = new Date(thisYear, thisMonth, 1);
-    const minDate = periodStart.toISOString().split('T')[0];
 
-    // Pour une date sélectionnée: limiter au jour précis
-    const filterMinDate = this._selectedPeriod ? selectedDay : minDate;
-    const filterMaxDate = this._selectedPeriod ? selectedDay : todayStr;
+    // Toujours filtrer sur le jour sélectionné
+    const filterMinDate = selectedDay;
+    const filterMaxDate = selectedDay;
 
     const scheduledDays = new Map();
     planning.filter(p => p.date >= filterMinDate && p.date <= filterMaxDate).forEach(p => {
