@@ -114,6 +114,7 @@ const DriverApp = {
     if (typeof ChecklistPage !== 'undefined') DriverRouter.register('checklist', ChecklistPage);
     if (typeof ClassementPage !== 'undefined') DriverRouter.register('classement', ClassementPage);
     if (typeof ContraventionsDriverPage !== 'undefined') DriverRouter.register('contraventions', ContraventionsDriverPage);
+    if (typeof ContratPage !== 'undefined') DriverRouter.register('contrat', ContratPage);
 
     // Check auth
     if (DriverAuth.isLoggedIn()) {

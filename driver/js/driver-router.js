@@ -38,7 +38,8 @@ const DriverRouter = {
       'etat-lieux': 'Etat des Lieux',
       documents: 'Documents & Alertes',
       support: 'Assistance',
-      contraventions: 'Mes Contraventions'
+      contraventions: 'Mes Contraventions',
+      contrat: 'Mon Contrat'
     };
     const titleEl = document.getElementById('page-title');
     if (titleEl) titleEl.textContent = titles[route] || 'Volt Chauffeur';

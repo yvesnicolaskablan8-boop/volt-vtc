@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volt-chauffeur-v10';
+const CACHE_NAME = 'volt-chauffeur-v11';
 
 const STATIC_ASSETS = [
   '/driver/',
@@ -26,7 +26,8 @@ const STATIC_ASSETS = [
   '/driver/js/pages/support.js',
   '/driver/js/pages/trajets.js',
   '/driver/js/pages/checklist.js',
-  '/driver/js/pages/classement.js'
+  '/driver/js/pages/classement.js',
+  '/driver/js/pages/contrat.js'
 ];
 
 // Install — cache static assets
