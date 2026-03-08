@@ -66,7 +66,8 @@ const ContratPage = {
         <div style="margin-bottom:8px"><strong>Poste :</strong> Chauffeur VTC au sein de la flotte electrique, operant sur la plateforme Yango</div>
         <div style="margin-bottom:8px"><strong>Periode d'essai :</strong> 3 mois, renouvelable une fois (6 mois max)</div>
         <div style="margin-bottom:8px"><strong>Lieu :</strong> District Autonome d'Abidjan et peripheries</div>
-        <div><strong>Horaires :</strong> 6 jours/semaine, repos par roulement. Obligations de ponctualite, disponibilite sur la plateforme, restitution du vehicule en bon etat, respect des horaires de recharge.</div>
+        <div style="margin-bottom:8px"><strong>Organisation :</strong> Chaque vehicule est assigne a deux chauffeurs qui se relaient. Le service fonctionne 7 jours sur 7.</div>
+        <div><strong>Horaires :</strong> Le planning est defini par roulement entre les deux chauffeurs du vehicule. Chaque chauffeur est remunere en fonction de son nombre de jours effectivement travailles. Obligations de ponctualite, disponibilite sur la plateforme, restitution du vehicule en bon etat, respect des horaires de recharge.</div>
       `)}
 
       <!-- Article 5-7 : Remuneration -->
@@ -85,6 +86,7 @@ const ContratPage = {
           Recette 100 000 = salaire 10 000 + prime 17 500 = <strong>27 500 FCFA</strong>
         </div>
         <div style="margin-bottom:8px"><strong>Objectif journalier minimum :</strong> 65 000 FCFA</div>
+        <div style="margin-bottom:8px"><strong>Remuneration au jour travaille :</strong> Le salaire et la prime sont calcules uniquement sur les jours effectivement travailles par le chauffeur.</div>
         <div style="margin-bottom:8px"><strong>Versement :</strong> quotidien en fin de service, prime le jour meme apres verification Yango Pro</div>
         <div style="font-size:0.78rem;color:#94a3b8">Sanctions progressives en cas de non-atteinte repetee (avertissement oral, ecrit, mise en demeure). Exemptions pour panne, accident, maladie justifiee, force majeure.</div>
       `)}
