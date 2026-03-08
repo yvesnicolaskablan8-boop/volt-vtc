@@ -88,6 +88,10 @@ const startServer = async () => {
 
     const notifCron = require('./utils/notification-cron');
     notifCron.start();
+
+    // Demarrer le CRON Behavior (finalisation conduite a 3h)
+    const behaviorCron = require('./utils/behavior-cron');
+    behaviorCron.start();
   });
 };
 
