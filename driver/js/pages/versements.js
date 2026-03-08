@@ -358,6 +358,10 @@ const VersementsPage = {
   // Verifier si on revient d'un paiement Wave
   _checkWaveReturn(versements) {
     const hash = window.location.hash;
+
+    // Toujours verifier les versements en attente (meme sans wave= dans l'URL)
+    this._checkPendingVersements(versements);
+
     if (!hash.includes('wave=')) return;
 
     const params = new URLSearchParams(hash.split('?')[1] || '');
@@ -381,6 +385,31 @@ const VersementsPage = {
       }
     } else if (waveStatus === 'error') {
       DriverToast.show('Le paiement Wave a echoue ou a ete annule', 'error');
+    }
+  },
+
+  // Verifier automatiquement le statut des versements Wave en attente
+  async _checkPendingVersements(versements) {
+    const pending = versements.filter(v => v.statut === 'en_attente' && v.waveCheckoutId);
+    if (pending.length === 0) return;
+
+    let updated = false;
+    for (const v of pending) {
+      try {
+        const status = await DriverStore.getWaveStatus(v.id);
+        if (status && status.statut === 'valide') {
+          updated = true;
+          DriverToast.show('Versement confirme et valide !', 'success');
+        } else if (status && status.statut === 'expire') {
+          updated = true;
+        }
+      } catch (e) {
+        console.warn('Erreur verification statut Wave:', v.id, e);
+      }
+    }
+    // Re-render si des statuts ont change
+    if (updated) {
+      this.render(document.getElementById('app-content'));
     }
   },
 
