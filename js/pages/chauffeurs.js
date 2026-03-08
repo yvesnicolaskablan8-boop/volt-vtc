@@ -5,6 +5,7 @@
 const ChauffeursPage = {
   _charts: [],
   _table: null,
+  _currentPage: 1,
   _detailChart: null,
 
   render() {
@@ -120,6 +121,8 @@ const ChauffeursPage = {
       ],
       data: chauffeurs,
       pageSize: 10,
+      initialPage: this._currentPage,
+      onPageChange: (page) => { this._currentPage = page; },
       onRowClick: (id) => Router.navigate(`/chauffeurs/${id}`),
       actions: (c) => `
         <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); ChauffeursPage._edit('${c.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>

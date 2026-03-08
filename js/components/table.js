@@ -10,10 +10,12 @@ const Table = {
       pageSize = 15,
       onRowClick = null,
       actions = null,
-      toolbar = ''
+      toolbar = '',
+      initialPage = 1,
+      onPageChange = null
     } = config;
 
-    let currentPage = 1;
+    let currentPage = initialPage;
     let sortCol = null;
     let sortDir = 'asc';
     let filteredData = [...data];
@@ -116,6 +118,7 @@ const Table = {
           if (p === 'prev') currentPage--;
           else if (p === 'next') currentPage++;
           else currentPage = parseInt(p);
+          if (onPageChange) onPageChange(currentPage);
           render();
         });
       });
@@ -142,7 +145,8 @@ const Table = {
         filteredData = data.filter(filterFn);
         currentPage = 1;
         render();
-      }
+      },
+      getPage() { return currentPage; }
     };
   }
 };
