@@ -136,6 +136,10 @@ const DriverStore = {
     return this._get('/profil');
   },
 
+  accepterContrat() {
+    return this._post('/contrat/accepter', {});
+  },
+
   getVehicule() {
     return this._get('/vehicule');
   },

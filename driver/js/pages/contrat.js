@@ -145,8 +145,108 @@ const ContratPage = {
         <div>Contrat etabli en deux exemplaires originaux.</div>
       `)}
 
+      <!-- Acceptation du contrat -->
+      ${profil.contratAccepte ? `
+        <div style="border-radius:1.25rem;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);padding:1.5rem;margin-bottom:1rem;text-align:center">
+          <div style="width:56px;height:56px;border-radius:50%;background:rgba(34,197,94,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+            <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:2rem;color:#22c55e"></iconify-icon>
+          </div>
+          <div style="font-size:1rem;font-weight:800;color:#16a34a;margin-bottom:4px">Contrat accepte</div>
+          <div style="font-size:0.78rem;color:#64748b">
+            Accepte le ${profil.contratAccepteLe ? new Date(profil.contratAccepteLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '--'}
+          </div>
+        </div>
+      ` : `
+        <div style="border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.5rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:1.25rem">
+            <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(249,115,22,0.08);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">
+              <iconify-icon icon="solar:pen-new-round-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            </div>
+            <div>
+              <div style="font-weight:800;font-size:0.95rem;color:#0f172a;margin-bottom:4px">Signature electronique</div>
+              <div style="font-size:0.78rem;color:#64748b;line-height:1.6">En cliquant sur le bouton ci-dessous, je confirme avoir lu et accepte les termes et conditions du present contrat de travail.</div>
+            </div>
+          </div>
+          <label id="contrat-checkbox-label" style="display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:1rem;background:#f8fafc;cursor:pointer;margin-bottom:1rem">
+            <input type="checkbox" id="contrat-checkbox" style="width:20px;height:20px;margin-top:2px;accent-color:#f97316;flex-shrink:0">
+            <span style="font-size:0.78rem;color:#334155;line-height:1.5">Je declare avoir pris connaissance de l'integralite du contrat et en accepter toutes les clauses.</span>
+          </label>
+          <button id="btn-accepter-contrat" disabled onclick="ContratPage._accepter()" style="width:100%;padding:14px;border-radius:1rem;background:#d1d5db;color:white;font-size:0.95rem;font-weight:800;border:none;cursor:not-allowed;font-family:inherit;transition:all 0.3s">
+            <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:1.1rem;vertical-align:middle;margin-right:6px"></iconify-icon>
+            Accepter le contrat
+          </button>
+        </div>
+      `}
+
       <div style="height:2rem"></div>
     `;
+
+    // Bind checkbox → bouton
+    if (!profil.contratAccepte) {
+      const checkbox = document.getElementById('contrat-checkbox');
+      const btn = document.getElementById('btn-accepter-contrat');
+      if (checkbox && btn) {
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            btn.disabled = false;
+            btn.style.background = 'linear-gradient(135deg,#f97316,#ea580c)';
+            btn.style.cursor = 'pointer';
+            btn.style.boxShadow = '0 4px 16px rgba(249,115,22,0.3)';
+          } else {
+            btn.disabled = true;
+            btn.style.background = '#d1d5db';
+            btn.style.cursor = 'not-allowed';
+            btn.style.boxShadow = 'none';
+          }
+        });
+      }
+    }
+  },
+
+  async _accepter() {
+    const btn = document.getElementById('btn-accepter-contrat');
+    if (!btn) return;
+
+    // Confirmation
+    DriverModal.show(
+      'Confirmer l\'acceptation',
+      `<div style="text-align:center;padding:0.5rem 0">
+        <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:3rem;color:#f97316;display:block;margin-bottom:12px"></iconify-icon>
+        <p style="font-size:0.9rem;color:var(--text-secondary);line-height:1.6">
+          Vous etes sur le point d'accepter votre contrat de travail.<br>
+          <strong>Cette action est definitive.</strong>
+        </p>
+      </div>`,
+      [
+        { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
+        { label: 'Je confirme', class: 'btn btn-primary', onclick: 'ContratPage._confirmerAcceptation()' }
+      ]
+    );
+  },
+
+  async _confirmerAcceptation() {
+    DriverModal.close();
+
+    const btn = document.getElementById('btn-accepter-contrat');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+    }
+
+    const result = await DriverStore.accepterContrat();
+
+    if (result && result.success) {
+      DriverToast.show('Contrat accepte avec succes !', 'success');
+      // Re-render la page pour afficher le statut accepte
+      const container = document.getElementById('app-content');
+      if (container) this.render(container);
+    } else {
+      DriverToast.show(result?.error || 'Erreur lors de l\'acceptation', 'error');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:1.1rem;vertical-align:middle;margin-right:6px"></iconify-icon> Accepter le contrat';
+      }
+    }
   },
 
   destroy() {}

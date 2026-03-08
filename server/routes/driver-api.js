@@ -600,6 +600,31 @@ router.get('/profil', async (req, res, next) => {
   }
 });
 
+// =================== CONTRAT ===================
+
+// POST /api/driver/contrat/accepter — Le chauffeur accepte son contrat
+router.post('/contrat/accepter', async (req, res, next) => {
+  try {
+    const result = await Chauffeur.findOneAndUpdate(
+      { id: req.user.chauffeurId },
+      {
+        $set: {
+          contratAccepte: true,
+          contratAccepteLe: new Date(),
+          contratAccepteIP: req.ip || req.headers['x-forwarded-for'] || ''
+        }
+      },
+      { new: true }
+    );
+    if (!result) {
+      return res.status(404).json({ error: 'Chauffeur introuvable' });
+    }
+    res.json({ success: true, accepteLe: result.contratAccepteLe });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // =================== VEHICULE ===================
 
 // GET /api/driver/vehicule — Vehicule assigne au chauffeur
