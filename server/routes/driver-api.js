@@ -379,12 +379,11 @@ router.get('/deadline', async (req, res, next) => {
     const info = getNextDeadline(vs);
     if (!info) return res.json({ configured: false });
 
-    // Verifier si le chauffeur etait programme dans la periode courante
-    const prevDateStr = info.previousDeadline.toISOString().split('T')[0];
-    const deadlineDateStr = info.deadlineDate.toISOString().split('T')[0];
+    // Verifier si le chauffeur est programme AUJOURD'HUI (pas dans une plage)
+    const todayStr = new Date().toISOString().split('T')[0];
     const wasScheduled = await Planning.findOne({
       chauffeurId,
-      date: { $gte: prevDateStr, $lte: deadlineDateStr }
+      date: todayStr
     }).lean();
     if (!wasScheduled) return res.json({ configured: false });
 
