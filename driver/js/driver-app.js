@@ -427,12 +427,121 @@ const DriverApp = {
       if (result.success) {
         DriverToast.show('Bienvenue !', 'success');
         this.showApp();
+      } else if (result.needsPin) {
+        // PIN non defini — afficher le formulaire de creation
+        this._showCreatePinForm(tel, result.userId);
       } else {
         errorEl.textContent = result.error;
         errorEl.style.display = 'block';
       }
 
       // Reset button
+      btn.disabled = false;
+      btn.querySelector('.btn-text').style.display = 'inline';
+      btn.querySelector('.btn-loading').style.display = 'none';
+    });
+  },
+
+  _showCreatePinForm(telephone, userId) {
+    const container = document.querySelector('.login-container');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="login-logo">
+        <div class="login-logo-icon" style="background:linear-gradient(135deg,#f59e0b,#f97316)">
+          <iconify-icon icon="solar:lock-password-bold" style="font-size:2.8rem;color:white"></iconify-icon>
+        </div>
+        <h1>Cr\u00e9er votre PIN</h1>
+        <p class="login-subtitle">Bienvenue ! Choisissez un code PIN de 4 \u00e0 6 chiffres pour s\u00e9curiser votre compte.</p>
+      </div>
+
+      <form id="create-pin-form" class="login-form" autocomplete="off">
+        <div class="form-group">
+          <label>Nouveau code PIN</label>
+          <div class="input-icon">
+            <iconify-icon icon="solar:lock-password-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            <input type="password" id="new-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="****" required autocomplete="new-password">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Confirmer le code PIN</label>
+          <div class="input-icon">
+            <iconify-icon icon="solar:lock-password-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            <input type="password" id="confirm-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="****" required autocomplete="new-password">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login" id="btn-create-pin" style="background:linear-gradient(135deg,#f59e0b,#f97316)">
+          <span class="btn-text">Valider mon PIN</span>
+          <span class="btn-loading" style="display:none"><i class="fas fa-spinner fa-spin"></i> Cr\u00e9ation...</span>
+        </button>
+      </form>
+
+      <div id="login-error" class="login-error" style="display:none"></div>
+      <p class="login-version">Volt v1.2.0 &bull; Propuls\u00e9 par Yango</p>
+    `;
+
+    const form = document.getElementById('create-pin-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const newPin = document.getElementById('new-pin').value.trim();
+      const confirmPin = document.getElementById('confirm-pin').value.trim();
+      const errorEl = document.getElementById('login-error');
+      const btn = document.getElementById('btn-create-pin');
+
+      if (!newPin || newPin.length < 4) {
+        errorEl.textContent = 'Le PIN doit contenir 4 \u00e0 6 chiffres';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      if (!/^\d{4,6}$/.test(newPin)) {
+        errorEl.textContent = 'Le PIN ne doit contenir que des chiffres';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      if (newPin !== confirmPin) {
+        errorEl.textContent = 'Les deux codes PIN ne correspondent pas';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.querySelector('.btn-text').style.display = 'none';
+      btn.querySelector('.btn-loading').style.display = 'inline';
+      errorEl.style.display = 'none';
+
+      try {
+        const apiBase = DriverAuth._apiBase;
+        const res = await fetch(apiBase + '/set-pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, pin: newPin })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          DriverToast.show('PIN cr\u00e9\u00e9 avec succ\u00e8s ! Connexion...', 'success');
+          // Auto-login avec le nouveau PIN
+          const loginResult = await DriverAuth.login(telephone, newPin);
+          if (loginResult.success) {
+            this.showApp();
+          } else {
+            errorEl.textContent = 'PIN cr\u00e9\u00e9 mais erreur de connexion. Reconnectez-vous.';
+            errorEl.style.display = 'block';
+            setTimeout(() => location.reload(), 2000);
+          }
+        } else {
+          errorEl.textContent = data.error || 'Erreur lors de la cr\u00e9ation du PIN';
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = 'Erreur de connexion au serveur';
+        errorEl.style.display = 'block';
+      }
+
       btn.disabled = false;
       btn.querySelector('.btn-text').style.display = 'inline';
       btn.querySelector('.btn-loading').style.display = 'none';

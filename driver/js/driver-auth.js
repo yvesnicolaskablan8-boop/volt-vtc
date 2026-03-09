@@ -50,6 +50,11 @@ const DriverAuth = {
         return { success: true };
       }
 
+      // PIN non defini — proposer la creation
+      if (data.needsPin) {
+        return { success: false, needsPin: true, userId: data.userId };
+      }
+
       return { success: false, error: data.error || 'Erreur de connexion' };
     } catch (e) {
       return { success: false, error: 'Impossible de se connecter au serveur' };

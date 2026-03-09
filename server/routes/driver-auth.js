@@ -31,7 +31,7 @@ router.post('/login', async (req, res, next) => {
     }
 
     if (!user.pin) {
-      return res.json({ success: false, error: 'PIN non defini. Contactez votre gestionnaire.' });
+      return res.json({ success: false, needsPin: true, userId: user.id, error: 'PIN non d\u00e9fini' });
     }
 
     // Verifier le PIN
