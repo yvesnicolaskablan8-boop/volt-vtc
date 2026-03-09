@@ -277,43 +277,88 @@ const DriverApp = {
 
   // =================== LOCATION TRACKING ===================
 
-  _locationInterval: null,
+  _watchId: null,
+  _lastSendTime: 0,
 
-  _startLocationTracking() {
+  async _startLocationTracking() {
     if (!('geolocation' in navigator)) {
       console.log('[Geo] Geolocation non supportee');
       return;
     }
 
-    const sendPosition = () => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const speed = pos.coords.speed != null ? Math.round(pos.coords.speed * 3.6) : null;
-          const heading = pos.coords.heading;
-          const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null;
-
-          DriverStore.sendLocation(lat, lng, speed, heading, accuracy);
-
-          // Alimenter le module d'analyse de conduite avec la position GPS
-          if (typeof DriverBehavior !== 'undefined' && DriverBehavior._active) {
-            DriverBehavior.updatePosition(lat, lng, speed, heading);
+    // Verifier si la permission est deja accordee (silencieux)
+    let permissionState = 'prompt';
+    if (navigator.permissions && navigator.permissions.query) {
+      try {
+        const perm = await navigator.permissions.query({ name: 'geolocation' });
+        permissionState = perm.state;
+        // Ecouter les changements de permission
+        perm.addEventListener('change', () => {
+          if (perm.state === 'granted' && !this._watchId) {
+            this._startWatch();
+          } else if (perm.state === 'denied' && this._watchId) {
+            this._stopLocationTracking();
           }
-        },
-        (err) => console.warn('[Geo] Erreur:', err.message),
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 }
-      );
-    };
+        });
+      } catch (e) {
+        // Certains navigateurs ne supportent pas permissions.query pour geolocation
+      }
+    }
 
-    sendPosition();
-    this._locationInterval = setInterval(sendPosition, 30000);
+    if (permissionState === 'granted') {
+      // Permission deja accordee — demarrer silencieusement
+      console.log('[Geo] Permission deja accordee, tracking demarre');
+      this._startWatch();
+    } else if (permissionState === 'prompt') {
+      // Premiere fois — demander la permission via un premier appel
+      console.log('[Geo] Demande de permission geolocation...');
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          console.log('[Geo] Permission accordee, tracking demarre');
+          this._startWatch();
+        },
+        (err) => console.warn('[Geo] Permission refusee ou erreur:', err.message),
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      console.log('[Geo] Permission refusee, tracking desactive');
+    }
+  },
+
+  _startWatch() {
+    if (this._watchId) return; // Deja actif
+
+    this._watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const speed = pos.coords.speed != null ? Math.round(pos.coords.speed * 3.6) : null;
+        const heading = pos.coords.heading;
+        const accuracy = pos.coords.accuracy ? Math.round(pos.coords.accuracy) : null;
+
+        // Alimenter le module d'analyse de conduite (temps reel)
+        if (typeof DriverBehavior !== 'undefined' && DriverBehavior._active) {
+          DriverBehavior.updatePosition(lat, lng, speed, heading);
+        }
+
+        // Envoyer au serveur toutes les 30 secondes max
+        const now = Date.now();
+        if (now - this._lastSendTime >= 30000) {
+          this._lastSendTime = now;
+          DriverStore.sendLocation(lat, lng, speed, heading, accuracy);
+        }
+      },
+      (err) => console.warn('[Geo] Erreur watchPosition:', err.message),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
+    console.log('[Geo] watchPosition actif (id:', this._watchId, ')');
   },
 
   _stopLocationTracking() {
-    if (this._locationInterval) {
-      clearInterval(this._locationInterval);
-      this._locationInterval = null;
+    if (this._watchId) {
+      navigator.geolocation.clearWatch(this._watchId);
+      this._watchId = null;
+      this._lastSendTime = 0;
     }
   },
 
