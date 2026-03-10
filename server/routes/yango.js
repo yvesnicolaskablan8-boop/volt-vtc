@@ -155,14 +155,11 @@ async function fetchAllTransactions(from, to, driverIds = null) {
   const allTransactions = [];
   let cursor = '';
   let pageCount = 0;
-  const MAX_PAGES = 10; // API driver_profile_id filter unreliable, always fetch all
+  const MAX_PAGES = 10;
 
-  // Build transaction query — add driver_profile_id filter when available
+  // Ne PAS ajouter driver_profile_id au filtre API — il est unreliable
+  // (retourne les transactions d'autres chauffeurs). Filtrage côté client uniquement.
   const transactionQuery = { event_at: { from, to } };
-  if (driverIds && driverIds.size === 1) {
-    const [singleId] = driverIds;
-    transactionQuery.driver_profile_id = singleId;
-  }
 
   do {
     const body = {
