@@ -275,120 +275,16 @@ const ChauffeursPage = {
       </div>
 
       <!-- Temps en ligne & Temps occupé -->
-      ${(() => {
-        const todayDate = new Date().toISOString().split('T')[0];
-        const pointagesAll = Store.get('pointages') || [];
-        const gpsAll = Store.get('gps') || [];
-        const stg = Store.get('settings') || {};
-        const objMin = stg.objectifs?.tempsEnLigneMin || 630;
-        const objH = Math.floor(objMin / 60);
-        const objLabel = objMin % 60 > 0 ? objH + 'h' + String(objMin % 60).padStart(2, '0') : objH + 'h';
-
-        // Pointage du jour
-        const ptgToday = pointagesAll.find(p => p.chauffeurId === c.id && p.date === todayDate);
-        let enLigneMin = 0;
-        let enLigneStatut = 'non_commence';
-        if (ptgToday) {
-          enLigneStatut = ptgToday.statut;
-          if (ptgToday.statut === 'termine') {
-            enLigneMin = ptgToday.dureeTotaleMinutes || 0;
-          } else if (ptgToday.heureDebut) {
-            const debut = new Date(ptgToday.heureDebut);
-            const now = new Date();
-            let pMs = 0, pStart = null;
-            for (const ev of (ptgToday.evenements || [])) {
-              if (ev.type === 'pause') pStart = new Date(ev.heure);
-              else if (ev.type === 'reprise' && pStart) { pMs += new Date(ev.heure) - pStart; pStart = null; }
-            }
-            if (ptgToday.statut === 'pause' && pStart) pMs += now - pStart;
-            enLigneMin = Math.round((now - debut - pMs) / 60000);
-          }
-        }
-        const elH = Math.floor(enLigneMin / 60);
-        const elM = enLigneMin % 60;
-        const elLabel = elH + 'h' + String(elM).padStart(2, '0');
-        const elPct = Math.min(100, Math.round((enLigneMin / objMin) * 100));
-        const elOk = enLigneMin >= objMin;
-        const elColor = elOk ? '#22c55e' : (elPct >= 50 ? '#f59e0b' : '#ef4444');
-
-        // Temps occupé Yango (aujourd'hui)
-        const gpsToday = gpsAll.find(g => g.chauffeurId === c.id && g.date === todayDate);
-        const occupeMin = gpsToday?.evenements?.tempsActiviteYango || 0;
-        const ocH = Math.floor(occupeMin / 60);
-        const ocM = occupeMin % 60;
-        const ocLabel = ocH + 'h' + String(ocM).padStart(2, '0');
-
-        // Historique 7 derniers jours
-        const last7 = [];
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(); d.setDate(d.getDate() - i);
-          const ds = d.toISOString().split('T')[0];
-          const dayLabel = d.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
-          const ptgDay = pointagesAll.find(p => p.chauffeurId === c.id && p.date === ds);
-          const gpsDay = gpsAll.find(g => g.chauffeurId === c.id && g.date === ds);
-          last7.push({
-            jour: dayLabel,
-            date: ds,
-            enLigne: ptgDay?.dureeTotaleMinutes || 0,
-            occupe: gpsDay?.evenements?.tempsActiviteYango || 0,
-            isToday: ds === todayDate
-          });
-        }
-        const maxVal = Math.max(objMin, ...last7.map(d => Math.max(d.enLigne, d.occupe)));
-
-        const barsHTML = last7.map(d => {
-          const pctEL = maxVal > 0 ? Math.round((d.enLigne / maxVal) * 100) : 0;
-          const pctOC = maxVal > 0 ? Math.round((d.occupe / maxVal) * 100) : 0;
-          return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px">' +
-            '<div style="display:flex;gap:2px;align-items:flex-end;height:50px;width:100%">' +
-              '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctEL + '%;background:' + (d.enLigne >= objMin ? '#22c55e' : '#3b82f6') + ';border-radius:2px;min-height:' + (d.enLigne > 0 ? '3px' : '0') + '"></div></div>' +
-              '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctOC + '%;background:#6366f1;border-radius:2px;min-height:' + (d.occupe > 0 ? '3px' : '0') + '"></div></div>' +
-            '</div>' +
-            '<div style="font-size:0.58rem;color:var(--text-muted);font-weight:' + (d.isToday ? '700' : '400') + '">' + d.jour + '</div>' +
-          '</div>';
-        }).join('');
-
-        // Statut labels
-        const statutLabels = { en_service: 'En service', pause: 'En pause', termine: 'Termin\u00e9', non_commence: 'Non commenc\u00e9' };
-        const statutColors = { en_service: '#22c55e', pause: '#f59e0b', termine: '#94a3b8', non_commence: '#94a3b8' };
-
-        return '<div class="card" style="margin-bottom:var(--space-lg)">' +
-          '<div class="card-header"><span class="card-title"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> Temps en ligne & Temps occup\u00e9</span>' +
-            '<span class="badge" style="background:' + statutColors[enLigneStatut] + '20;color:' + statutColors[enLigneStatut] + '">' + statutLabels[enLigneStatut] + '</span>' +
-          '</div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
-            '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
-              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-                '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
-                '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps en ligne</span>' +
-              '</div>' +
-              '<div style="font-size:1.5rem;font-weight:900;color:' + elColor + '">' + elLabel + '</div>' +
-              '<div style="height:5px;background:var(--border-color);border-radius:3px;margin-top:6px;overflow:hidden">' +
-                '<div style="height:100%;width:' + elPct + '%;background:' + elColor + ';border-radius:3px"></div>' +
-              '</div>' +
-              '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">' + elPct + '% de l\'objectif (' + objLabel + ')</div>' +
-            '</div>' +
-            '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
-              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-                '<iconify-icon icon="solar:routing-2-bold-duotone" style="font-size:1rem;color:#6366f1"></iconify-icon>' +
-                '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps occup\u00e9 (Yango)</span>' +
-              '</div>' +
-              '<div style="font-size:1.5rem;font-weight:900;color:#6366f1">' + ocLabel + '</div>' +
-              (enLigneMin > 0 ? '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Taux d\'occupation : <strong style="color:' + (occupeMin / enLigneMin >= 0.7 ? '#22c55e' : '#f59e0b') + '">' + Math.round(occupeMin / enLigneMin * 100) + '%</strong></div>' : '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Pas encore en service</div>') +
-            '</div>' +
-          '</div>' +
-          '<div style="margin-bottom:8px">' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
-              '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">7 derniers jours</span>' +
-              '<div style="display:flex;align-items:center;gap:12px;font-size:0.6rem;color:var(--text-muted)">' +
-                '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#3b82f6;margin-right:3px"></span>En ligne</span>' +
-                '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#6366f1;margin-right:3px"></span>Occup\u00e9</span>' +
-              '</div>' +
-            '</div>' +
-            '<div style="display:flex;gap:4px;align-items:flex-end">' + barsHTML + '</div>' +
-          '</div>' +
-        '</div>';
-      })()}
+      <div class="card" style="margin-bottom:var(--space-lg)">
+        <div class="card-header">
+          <span class="card-title"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> Temps en ligne & Temps occupé</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="temps-statut-badge"></span>
+            <input type="date" id="temps-date-filter" value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:0.7rem;padding:4px 8px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;">
+          </div>
+        </div>
+        <div id="temps-en-ligne-content"></div>
+      </div>
 
       <div class="grid-2">
         <!-- Info card -->
@@ -805,6 +701,15 @@ const ChauffeursPage = {
           this._loadYangoCA(chauffeur.id);
         }
       }, 120000);
+    }
+
+    // Temps en ligne & occupé — initial render + date picker
+    const tempsDateInput = document.getElementById('temps-date-filter');
+    if (tempsDateInput) {
+      this._renderTempsEnLigneCard(chauffeur.id, tempsDateInput.value);
+      tempsDateInput.addEventListener('change', () => {
+        this._renderTempsEnLigneCard(chauffeur.id, tempsDateInput.value);
+      });
     }
   },
 
@@ -1859,5 +1764,167 @@ const ChauffeursPage = {
       footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>',
       size: 'large'
     });
+  },
+
+  /**
+   * Render temps en ligne & temps occupé card content for a given date
+   */
+  _renderTempsEnLigneCard(chauffeurId, selectedDate) {
+    const container = document.getElementById('temps-en-ligne-content');
+    const badgeEl = document.getElementById('temps-statut-badge');
+    if (!container) return;
+
+    const todayDate = new Date().toISOString().split('T')[0];
+    const isToday = selectedDate === todayDate;
+    const pointagesAll = Store.get('pointages') || [];
+    const gpsAll = Store.get('gps') || [];
+    const stg = Store.get('settings') || {};
+    const objMin = stg.objectifs?.tempsEnLigneMin || 630;
+    const objH = Math.floor(objMin / 60);
+    const objLabel = objMin % 60 > 0 ? objH + 'h' + String(objMin % 60).padStart(2, '0') : objH + 'h';
+
+    // Pointage du jour sélectionné
+    const ptg = pointagesAll.find(p => p.chauffeurId === chauffeurId && p.date === selectedDate);
+    let enLigneMin = 0;
+    let enLigneStatut = 'non_commence';
+    if (ptg) {
+      enLigneStatut = ptg.statut;
+      if (ptg.statut === 'termine') {
+        enLigneMin = ptg.dureeTotaleMinutes || 0;
+      } else if (ptg.heureDebut) {
+        const debut = new Date(ptg.heureDebut);
+        const now = new Date();
+        let pMs = 0, pStart = null;
+        for (const ev of (ptg.evenements || [])) {
+          if (ev.type === 'pause') pStart = new Date(ev.heure);
+          else if (ev.type === 'reprise' && pStart) { pMs += new Date(ev.heure) - pStart; pStart = null; }
+        }
+        if (ptg.statut === 'pause' && pStart) pMs += now - pStart;
+        enLigneMin = Math.round((now - debut - pMs) / 60000);
+      }
+    }
+    const elH = Math.floor(enLigneMin / 60);
+    const elM = enLigneMin % 60;
+    const elLabel = elH + 'h' + String(elM).padStart(2, '0');
+    const elPct = Math.min(100, Math.round((enLigneMin / objMin) * 100));
+    const elColor = enLigneMin >= objMin ? '#22c55e' : (elPct >= 50 ? '#f59e0b' : '#ef4444');
+
+    // Temps occupé Yango
+    const gpsDay = gpsAll.find(g => g.chauffeurId === chauffeurId && g.date === selectedDate);
+    const occupeMin = gpsDay?.evenements?.tempsActiviteYango || 0;
+    const ocH = Math.floor(occupeMin / 60);
+    const ocM = occupeMin % 60;
+    const ocLabel = ocH + 'h' + String(ocM).padStart(2, '0');
+
+    // Taux d'occupation
+    let tauxHTML;
+    if (enLigneMin > 0) {
+      const taux = Math.round(occupeMin / enLigneMin * 100);
+      tauxHTML = '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Taux d\'occupation : <strong style="color:' + (taux >= 70 ? '#22c55e' : '#f59e0b') + '">' + taux + '%</strong></div>';
+    } else {
+      tauxHTML = '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">' + (isToday ? 'Pas encore en service' : 'Pas de service') + '</div>';
+    }
+
+    // Statut badge
+    const statutLabels = { en_service: 'En service', pause: 'En pause', termine: 'Terminé', non_commence: 'Non commencé' };
+    const statutColors = { en_service: '#22c55e', pause: '#f59e0b', termine: '#94a3b8', non_commence: '#94a3b8' };
+    if (badgeEl) {
+      if (isToday) {
+        badgeEl.innerHTML = '<span class="badge" style="background:' + statutColors[enLigneStatut] + '20;color:' + statutColors[enLigneStatut] + '">' + statutLabels[enLigneStatut] + '</span>';
+      } else {
+        // Pour les jours passés, afficher terminé ou non commencé
+        const pastStatut = ptg ? 'termine' : 'non_commence';
+        const pastLabel = ptg ? 'Terminé' : 'Pas de service';
+        badgeEl.innerHTML = '<span class="badge" style="background:' + statutColors[pastStatut] + '20;color:' + statutColors[pastStatut] + '">' + pastLabel + '</span>';
+      }
+    }
+
+    // Historique 7 jours (centrés sur la date sélectionnée)
+    const last7 = [];
+    const refDate = new Date(selectedDate + 'T12:00:00');
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(refDate); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().split('T')[0];
+      const dayLabel = d.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
+      const ptgDay = pointagesAll.find(p => p.chauffeurId === chauffeurId && p.date === ds);
+      const gDay = gpsAll.find(g => g.chauffeurId === chauffeurId && g.date === ds);
+      last7.push({
+        jour: dayLabel,
+        date: ds,
+        enLigne: ptgDay?.dureeTotaleMinutes || 0,
+        occupe: gDay?.evenements?.tempsActiviteYango || 0,
+        isSelected: ds === selectedDate
+      });
+    }
+    const maxVal = Math.max(objMin, ...last7.map(d => Math.max(d.enLigne, d.occupe)));
+
+    const barsHTML = last7.map(d => {
+      const pctEL = maxVal > 0 ? Math.round((d.enLigne / maxVal) * 100) : 0;
+      const pctOC = maxVal > 0 ? Math.round((d.occupe / maxVal) * 100) : 0;
+      return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px">' +
+        '<div style="display:flex;gap:2px;align-items:flex-end;height:50px;width:100%">' +
+          '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctEL + '%;background:' + (d.enLigne >= objMin ? '#22c55e' : '#3b82f6') + ';border-radius:2px;min-height:' + (d.enLigne > 0 ? '3px' : '0') + '"></div></div>' +
+          '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctOC + '%;background:#6366f1;border-radius:2px;min-height:' + (d.occupe > 0 ? '3px' : '0') + '"></div></div>' +
+        '</div>' +
+        '<div style="font-size:0.58rem;color:' + (d.isSelected ? 'var(--primary)' : 'var(--text-muted)') + ';font-weight:' + (d.isSelected ? '700' : '400') + '">' + d.jour + '</div>' +
+      '</div>';
+    }).join('');
+
+    // Totaux de la semaine pour les stats
+    const weekEnLigne = last7.reduce((s, d) => s + d.enLigne, 0);
+    const weekOccupe = last7.reduce((s, d) => s + d.occupe, 0);
+    const avgEnLigne = Math.round(weekEnLigne / 7);
+    const avgOccupe = Math.round(weekOccupe / 7);
+    const avgELH = Math.floor(avgEnLigne / 60);
+    const avgELM = avgEnLigne % 60;
+    const avgOCH = Math.floor(avgOccupe / 60);
+    const avgOCM = avgOccupe % 60;
+
+    container.innerHTML =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
+        '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
+          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+            '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
+            '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps en ligne</span>' +
+          '</div>' +
+          '<div style="font-size:1.5rem;font-weight:900;color:' + elColor + '">' + elLabel + '</div>' +
+          '<div style="height:5px;background:var(--border-color);border-radius:3px;margin-top:6px;overflow:hidden">' +
+            '<div style="height:100%;width:' + elPct + '%;background:' + elColor + ';border-radius:3px"></div>' +
+          '</div>' +
+          '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">' + elPct + '% de l\'objectif (' + objLabel + ')</div>' +
+        '</div>' +
+        '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
+          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+            '<iconify-icon icon="solar:routing-2-bold-duotone" style="font-size:1rem;color:#6366f1"></iconify-icon>' +
+            '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps occupé (Yango)</span>' +
+          '</div>' +
+          '<div style="font-size:1.5rem;font-weight:900;color:#6366f1">' + ocLabel + '</div>' +
+          tauxHTML +
+        '</div>' +
+      '</div>' +
+      '<div style="margin-bottom:8px">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+          '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">7 derniers jours</span>' +
+          '<div style="display:flex;align-items:center;gap:12px;font-size:0.6rem;color:var(--text-muted)">' +
+            '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#3b82f6;margin-right:3px"></span>En ligne</span>' +
+            '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#6366f1;margin-right:3px"></span>Occupé</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:4px;align-items:flex-end">' + barsHTML + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:16px;padding:8px 0;border-top:1px solid var(--border-color);margin-top:8px">' +
+        '<div style="flex:1;text-align:center">' +
+          '<div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:2px">Moy. en ligne / jour</div>' +
+          '<div style="font-size:0.85rem;font-weight:700;color:#3b82f6">' + avgELH + 'h' + String(avgELM).padStart(2, '0') + '</div>' +
+        '</div>' +
+        '<div style="flex:1;text-align:center">' +
+          '<div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:2px">Moy. occupé / jour</div>' +
+          '<div style="font-size:0.85rem;font-weight:700;color:#6366f1">' + avgOCH + 'h' + String(avgOCM).padStart(2, '0') + '</div>' +
+        '</div>' +
+        '<div style="flex:1;text-align:center">' +
+          '<div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:2px">Taux occup. moy.</div>' +
+          '<div style="font-size:0.85rem;font-weight:700;color:' + (weekEnLigne > 0 && weekOccupe / weekEnLigne >= 0.7 ? '#22c55e' : '#f59e0b') + '">' + (weekEnLigne > 0 ? Math.round(weekOccupe / weekEnLigne * 100) : 0) + '%</div>' +
+        '</div>' +
+      '</div>';
   }
 };
