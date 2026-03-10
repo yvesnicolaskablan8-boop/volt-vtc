@@ -14,6 +14,7 @@ const PlanningPage = {
   _currentWeekStart: null,
   _currentMonth: null,
   _filterChauffeurId: '',
+  _filterSearch: '',
 
   render() {
     const now = new Date();
@@ -58,11 +59,8 @@ const PlanningPage = {
           </div>
           <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;">
             <div style="display:flex;align-items:center;gap:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px 10px;">
-              <iconify-icon icon="solar:user-bold-duotone" style="color:var(--volt-blue);font-size:16px;"></iconify-icon>
-              <select class="form-control" id="filter-planning-chauffeur" style="width:200px;font-size:var(--font-size-sm);padding:6px 8px;border:none;background:transparent;font-weight:500;">
-                <option value="">Tous les chauffeurs</option>
-                ${(Store.get('chauffeurs') || []).filter(c => c.statut !== 'inactif').map(c => `<option value="${c.id}" ${this._filterChauffeurId === c.id ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`).join('')}
-              </select>
+              <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--volt-blue);font-size:16px;"></iconify-icon>
+              <input type="text" id="filter-planning-search" class="form-control" placeholder="Rechercher un chauffeur..." value="${this._filterSearch}" style="width:200px;font-size:var(--font-size-sm);padding:6px 8px;border:none;background:transparent;font-weight:500;">
             </div>
             <div class="tabs" id="planning-view-tabs" style="margin:0;">
               <div class="tab active" data-view="week"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Semaine</div>
@@ -100,8 +98,8 @@ const PlanningPage = {
       });
     });
 
-    document.getElementById('filter-planning-chauffeur').addEventListener('change', (e) => {
-      this._filterChauffeurId = e.target.value;
+    document.getElementById('filter-planning-search').addEventListener('input', (e) => {
+      this._filterSearch = e.target.value;
       this._renderView();
     });
 
@@ -249,8 +247,12 @@ const PlanningPage = {
 
   _renderWeekView() {
     let chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
-    if (this._filterChauffeurId) {
-      chauffeurs = chauffeurs.filter(c => c.id === this._filterChauffeurId);
+    if (this._filterSearch) {
+      const q = this._filterSearch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      chauffeurs = chauffeurs.filter(c => {
+        const fullName = (c.prenom + ' ' + c.nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return fullName.includes(q);
+      });
     }
     const days = [];
     for (let i = 0; i < 7; i++) {
@@ -326,13 +328,13 @@ const PlanningPage = {
             ${chauffeurs.map(ch => `
               <tr style="border-bottom:1px solid var(--border-color);">
                 <td style="padding:10px 16px;position:sticky;left:0;background:var(--bg-secondary);z-index:1;">
-                  <div style="display:flex;align-items:center;gap:8px;">
+                  <a href="#/chauffeurs/${ch.id}" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;" title="Voir le détail de ${ch.prenom} ${ch.nom}">
                     ${Utils.getAvatarHtml(ch, '', 'width:32px;height:32px;font-size:11px;flex-shrink:0;')}
                     <div>
-                      <div style="font-size:var(--font-size-sm);font-weight:500;">${ch.prenom} ${ch.nom}</div>
+                      <div style="font-size:var(--font-size-sm);font-weight:500;color:var(--text-primary);">${ch.prenom} ${ch.nom}</div>
                       <div style="font-size:10px;color:var(--text-muted);">${ch.vehiculeAssigne || 'Pas de véhicule'}</div>
                     </div>
-                  </div>
+                  </a>
                 </td>
                 ${days.map(d => {
                   const shifts = this._getDriverShiftsForDate(ch.id, d.date);
@@ -386,8 +388,12 @@ const PlanningPage = {
 
   _renderMonthView() {
     let chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
-    if (this._filterChauffeurId) {
-      chauffeurs = chauffeurs.filter(c => c.id === this._filterChauffeurId);
+    if (this._filterSearch) {
+      const q = this._filterSearch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      chauffeurs = chauffeurs.filter(c => {
+        const fullName = (c.prenom + ' ' + c.nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return fullName.includes(q);
+      });
     }
     const year = this._currentMonth.getFullYear();
     const month = this._currentMonth.getMonth();
@@ -437,10 +443,10 @@ const PlanningPage = {
             ${chauffeurs.map(ch => `
               <tr style="border-bottom:1px solid var(--border-color);">
                 <td style="padding:6px 12px;position:sticky;left:0;background:var(--bg-secondary);z-index:1;">
-                  <div style="display:flex;align-items:center;gap:6px;">
+                  <a href="#/chauffeurs/${ch.id}" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:inherit;" title="Voir le détail de ${ch.prenom} ${ch.nom}">
                     ${Utils.getAvatarHtml(ch, '', 'width:24px;height:24px;font-size:9px;')}
                     <span style="font-size:var(--font-size-xs);font-weight:500;">${ch.prenom} ${ch.nom.charAt(0)}.</span>
-                  </div>
+                  </a>
                 </td>
                 ${dayHeaders.map(d => {
                   const shifts = this._getDriverShiftsForDate(ch.id, d.date);
