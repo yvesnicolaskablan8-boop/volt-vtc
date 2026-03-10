@@ -1971,8 +1971,8 @@ const ChauffeursPage = {
         '</div>' +
       '</div>';
 
-    // Si chauffeur lié à Yango et pas de données en cache → appel API live
-    if (yangoDriverId && enLigneSource === 'none') {
+    // Si chauffeur lié à Yango → toujours appeler l'API live pour avoir le temps de travail
+    if (yangoDriverId) {
       this._fetchYangoTempsEnLigne(chauffeurId, yangoDriverId, selectedDate);
     }
   },
@@ -1985,7 +1985,7 @@ const ChauffeursPage = {
     const badgeEl = document.getElementById('temps-statut-badge');
     if (!container) return;
 
-    // Show loading in the no-data hint area
+    // Show loading indicator
     const hintEl = container.querySelector('[data-no-data-hint]');
     if (hintEl) {
       hintEl.innerHTML = '<div style="text-align:center;padding:12px">' +
@@ -2011,7 +2011,6 @@ const ChauffeursPage = {
     const hasYangoData = stats && !stats.error && ((stats.tempsActiviteMinutes || 0) > 0 || (stats.nbCourses || 0) > 0);
 
     if (hasYangoData) {
-      // Re-render with Yango data injected
       const stg = Store.get('settings') || {};
       const objMin = stg.objectifs?.tempsEnLigneMin || 630;
       const objH = Math.floor(objMin / 60);
@@ -2035,21 +2034,25 @@ const ChauffeursPage = {
         badgeEl.innerHTML = badgeHTML;
       }
 
-      // Info bar
-      const infoBar = '<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:#FC4C0210;border:1px solid #FC4C0230;border-radius:var(--radius-sm);margin-bottom:12px;font-size:0.65rem;color:#FC4C02">' +
+      // Info bar Yango
+      const infoBar = '<div data-yango-info style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:#FC4C0210;border:1px solid #FC4C0230;border-radius:var(--radius-sm);margin-bottom:12px;font-size:0.65rem;color:#FC4C02">' +
         '<iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Données en direct depuis Yango — ' + nbCourses + ' course' + (nbCourses > 1 ? 's' : '') + ' · ' + Utils.formatCurrency(totalCA) +
       '</div>';
 
-      // Replace no-data hint + KPI boxes
-      const kpiBoxes = container.querySelectorAll('[style*="grid-template-columns"]');
+      // Remove existing no-data hint or previous info bar
       const noDataHintEl = container.querySelector('[data-no-data-hint]');
       if (noDataHintEl) noDataHintEl.outerHTML = infoBar;
+      else {
+        // Insert info bar at top of container (before KPI box)
+        const existingInfo = container.querySelector('[data-yango-info]');
+        if (existingInfo) existingInfo.outerHTML = infoBar;
+        else container.insertAdjacentHTML('afterbegin', infoBar);
+      }
 
-      // KPI: Temps en ligne (or courses+CA if no time data)
-      const kpiContainer = container.querySelector('[data-kpi-box]') || (kpiBoxes.length > 0 ? kpiBoxes[0].parentElement : null);
+      // Update KPI box
+      const kpiContainer = container.querySelector('[data-kpi-box]');
       if (kpiContainer) {
         if (actMin > 0) {
-          // Données temps disponibles
           kpiContainer.innerHTML =
             '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
               '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
@@ -2063,7 +2066,6 @@ const ChauffeursPage = {
               '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">' + pct + '% de l\'objectif (' + objLabel + ')</div>' +
             '</div>';
         } else {
-          // Pas de données temps mais courses dispo → afficher courses + CA
           kpiContainer.innerHTML =
             '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
               '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
@@ -2076,7 +2078,7 @@ const ChauffeursPage = {
         }
       }
     } else {
-      // API error or genuinely no courses → remove spinner
+      // No Yango data — update hint if present, otherwise don't touch existing display
       const hintArea = container.querySelector('[data-no-data-hint]');
       if (hintArea) {
         const isError = !stats || stats.error;
