@@ -1026,10 +1026,28 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
             console.log(`driver-stats: Found ${driverOrders.length} orders (${completedOrders.length} completed) for yangoDriverId=${yangoDriverId}`);
           }
 
+          // Debug: log first order's keys and time fields to find correct field names
+          if (completedOrders.length > 0) {
+            const sample = completedOrders[0];
+            const timeFields = {};
+            for (const key of Object.keys(sample)) {
+              const val = sample[key];
+              if (typeof val === 'string' && (val.includes('T') || val.includes('202'))) {
+                timeFields[key] = val;
+              }
+            }
+            console.log('driver-stats: sample order keys:', Object.keys(sample).join(', '));
+            console.log('driver-stats: sample order time fields:', JSON.stringify(timeFields));
+            console.log('driver-stats: sample order status:', sample.status, 'booked_at:', sample.booked_at, 'ended_at:', sample.ended_at, 'started_at:', sample.started_at);
+          }
+
           // Calculate activity time from completed orders
+          // Try multiple possible field names from Yango API
           for (const order of completedOrders) {
-            if (order.started_at && order.ended_at) {
-              const diff = (new Date(order.ended_at) - new Date(order.started_at)) / 60000;
+            const start = order.started_at || order.transporting_at || order.driving_at || order.booked_at;
+            const end = order.ended_at || order.completed_at || order.finished_at;
+            if (start && end) {
+              const diff = (new Date(end) - new Date(start)) / 60000;
               if (diff > 0 && diff < 480) tempsActiviteMinutes += diff;
             }
           }
