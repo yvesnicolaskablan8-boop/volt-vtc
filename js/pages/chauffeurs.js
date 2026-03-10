@@ -713,12 +713,12 @@ const ChauffeursPage = {
       }, 120000);
     }
 
-    // Temps en ligne & occupé — initial render + date picker
+    // Temps en ligne & occupé — initial render + date picker + API live
     const tempsDateInput = document.getElementById('temps-date-filter');
     if (tempsDateInput) {
-      this._renderTempsEnLigneCard(chauffeur.id, tempsDateInput.value);
+      this._renderTempsEnLigneCard(chauffeur.id, tempsDateInput.value, chauffeur.yangoDriverId);
       tempsDateInput.addEventListener('change', () => {
-        this._renderTempsEnLigneCard(chauffeur.id, tempsDateInput.value);
+        this._renderTempsEnLigneCard(chauffeur.id, tempsDateInput.value, chauffeur.yangoDriverId);
       });
     }
   },
@@ -1779,7 +1779,7 @@ const ChauffeursPage = {
   /**
    * Render temps en ligne & temps occupé card content for a given date
    */
-  _renderTempsEnLigneCard(chauffeurId, selectedDate) {
+  _renderTempsEnLigneCard(chauffeurId, selectedDate, yangoDriverId) {
     const container = document.getElementById('temps-en-ligne-content');
     const badgeEl = document.getElementById('temps-statut-badge');
     if (!container) return;
@@ -1861,7 +1861,7 @@ const ChauffeursPage = {
     if (badgeEl) {
       let badgeHTML = '';
       if (!isToday) {
-        badgeHTML += '<button class="btn btn-sm btn-secondary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + todayDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + todayDate + '\')" style="font-size:0.6rem;padding:2px 8px;margin-right:4px">Aujourd\'hui</button>';
+        badgeHTML += '<button class="btn btn-sm btn-secondary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + todayDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + todayDate + '\',\'' + (yangoDriverId || '') + '\')" style="font-size:0.6rem;padding:2px 8px;margin-right:4px">Aujourd\'hui</button>';
       }
       if (isToday && ptg) {
         badgeHTML += '<span class="badge" style="background:' + statutColors[enLigneStatut] + '20;color:' + statutColors[enLigneStatut] + '">' + statutLabels[enLigneStatut] + '</span>';
@@ -1884,12 +1884,12 @@ const ChauffeursPage = {
 
     let noDataHint = '';
     if (!hasAnyData) {
-      let hintMsg = '<div style="text-align:center;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-md);margin-bottom:16px">' +
+      let hintMsg = '<div data-no-data-hint style="text-align:center;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-md);margin-bottom:16px">' +
         '<iconify-icon icon="solar:calendar-search-bold-duotone" style="font-size:1.5rem;color:var(--text-muted);margin-bottom:4px"></iconify-icon>' +
         '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px">Aucune donnée pour le <strong>' + new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + '</strong></div>';
       if (lastKnownDate) {
         const lastDateLabel = new Date(lastKnownDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-        hintMsg += '<button class="btn btn-sm btn-primary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + lastKnownDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + lastKnownDate + '\')" style="font-size:0.65rem;padding:3px 12px">' +
+        hintMsg += '<button class="btn btn-sm btn-primary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + lastKnownDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + lastKnownDate + '\',\'' + (yangoDriverId || '') + '\')" style="font-size:0.65rem;padding:3px 12px">' +
           '<iconify-icon icon="solar:arrow-left-bold"></iconify-icon> Dernières données : ' + lastDateLabel + '</button>';
       } else {
         hintMsg += '<div style="font-size:0.65rem;color:var(--text-muted)">Aucune donnée enregistrée pour ce chauffeur</div>';
@@ -1927,7 +1927,7 @@ const ChauffeursPage = {
     const barsHTML = last7.map(d => {
       const pctEL = maxVal > 0 ? Math.round((d.enLigne / maxVal) * 100) : 0;
       const pctOC = maxVal > 0 ? Math.round((d.occupe / maxVal) * 100) : 0;
-      return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;cursor:pointer" onclick="document.getElementById(\'temps-date-filter\').value=\'' + d.date + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + d.date + '\')">' +
+      return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;cursor:pointer" onclick="document.getElementById(\'temps-date-filter\').value=\'' + d.date + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + d.date + '\',\'' + (yangoDriverId || '') + '\')">' +
         '<div style="display:flex;gap:2px;align-items:flex-end;height:50px;width:100%">' +
           '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctEL + '%;background:' + (d.enLigne >= objMin ? '#22c55e' : '#3b82f6') + ';border-radius:2px;min-height:' + (d.enLigne > 0 ? '3px' : '0') + '"></div></div>' +
           '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctOC + '%;background:#6366f1;border-radius:2px;min-height:' + (d.occupe > 0 ? '3px' : '0') + '"></div></div>' +
@@ -1992,5 +1992,103 @@ const ChauffeursPage = {
           '<div style="font-size:0.85rem;font-weight:700;color:' + (weekEnLigne > 0 && weekOccupe / weekEnLigne >= 0.7 ? '#22c55e' : '#f59e0b') + '">' + (weekEnLigne > 0 ? Math.round(weekOccupe / weekEnLigne * 100) : 0) + '%</div>' +
         '</div>' +
       '</div>';
+
+    // Si chauffeur lié à Yango et pas de données en cache → appel API live
+    if (yangoDriverId && enLigneSource === 'none') {
+      this._fetchYangoTempsEnLigne(chauffeurId, yangoDriverId, selectedDate);
+    }
+  },
+
+  /**
+   * Fetch live Yango activity data via API and update the card
+   */
+  async _fetchYangoTempsEnLigne(chauffeurId, yangoDriverId, selectedDate) {
+    const container = document.getElementById('temps-en-ligne-content');
+    const badgeEl = document.getElementById('temps-statut-badge');
+    if (!container) return;
+
+    // Show loading in the no-data hint area
+    const hintEl = container.querySelector('[data-no-data-hint]');
+    if (hintEl) {
+      hintEl.innerHTML = '<div style="text-align:center;padding:12px">' +
+        '<iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:1.2rem;color:#FC4C02"></iconify-icon>' +
+        '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">Chargement des données Yango...</div>' +
+      '</div>';
+    }
+
+    const todayDate = new Date().toISOString().split('T')[0];
+    const isToday = selectedDate === todayDate;
+    const stats = await Store.getYangoDriverStats(yangoDriverId, isToday ? null : selectedDate);
+
+    // Check we're still on the same date/chauffeur
+    const currentDateInput = document.getElementById('temps-date-filter');
+    if (!currentDateInput || currentDateInput.value !== selectedDate) return;
+    if (!document.getElementById('temps-en-ligne-content')) return;
+
+    if (stats && !stats.error && stats.tempsActiviteMinutes > 0) {
+      // Re-render with Yango data injected
+      const stg = Store.get('settings') || {};
+      const objMin = stg.objectifs?.tempsEnLigneMin || 630;
+      const objH = Math.floor(objMin / 60);
+      const objLabel = objMin % 60 > 0 ? objH + 'h' + String(objMin % 60).padStart(2, '0') : objH + 'h';
+      const actMin = stats.tempsActiviteMinutes;
+      const h = Math.floor(actMin / 60);
+      const m = actMin % 60;
+      const label = h + 'h' + String(m).padStart(2, '0');
+      const pct = Math.min(100, Math.round((actMin / objMin) * 100));
+      const color = actMin >= objMin ? '#22c55e' : (pct >= 50 ? '#f59e0b' : '#ef4444');
+
+      // Update badge
+      if (badgeEl) {
+        let badgeHTML = '';
+        if (!isToday) {
+          badgeHTML += '<button class="btn btn-sm btn-secondary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + todayDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + todayDate + '\',\'' + yangoDriverId + '\')" style="font-size:0.6rem;padding:2px 8px;margin-right:4px">Aujourd\'hui</button>';
+        }
+        badgeHTML += '<span class="badge" style="background:#FC4C0220;color:#FC4C02">Yango</span>';
+        badgeEl.innerHTML = badgeHTML;
+      }
+
+      // Update the card content
+      const infoBar = '<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:#FC4C0210;border:1px solid #FC4C0230;border-radius:var(--radius-sm);margin-bottom:12px;font-size:0.65rem;color:#FC4C02">' +
+        '<iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Données en direct depuis Yango (' + (stats.nbCourses || 0) + ' course' + ((stats.nbCourses || 0) > 1 ? 's' : '') + ')' +
+      '</div>';
+
+      // Replace no-data hint + KPI boxes
+      const kpiBoxes = container.querySelectorAll('[style*="grid-template-columns"]');
+      const noDataHintEl = container.querySelector('[data-no-data-hint]');
+      if (noDataHintEl) noDataHintEl.outerHTML = infoBar;
+
+      if (kpiBoxes.length > 0) {
+        kpiBoxes[0].innerHTML =
+          '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+              '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
+              '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps en ligne <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span></span>' +
+            '</div>' +
+            '<div style="font-size:1.5rem;font-weight:900;color:' + color + '">' + label + '</div>' +
+            '<div style="height:5px;background:var(--border-color);border-radius:3px;margin-top:6px;overflow:hidden">' +
+              '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:3px"></div>' +
+            '</div>' +
+            '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">' + pct + '% de l\'objectif (' + objLabel + ')</div>' +
+          '</div>' +
+          '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+              '<iconify-icon icon="solar:routing-2-bold-duotone" style="font-size:1rem;color:#6366f1"></iconify-icon>' +
+              '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps occupé (Yango)</span>' +
+            '</div>' +
+            '<div style="font-size:1.5rem;font-weight:900;color:#6366f1">' + label + '</div>' +
+            '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Taux d\'occupation : <strong style="color:#22c55e">100%</strong></div>' +
+          '</div>';
+      }
+    } else if (stats && !stats.error && stats.nbCourses === 0) {
+      // API responded but no courses
+      const hintArea = container.querySelector('[data-no-data-hint]');
+      if (hintArea) {
+        hintArea.innerHTML =
+          '<iconify-icon icon="solar:calendar-search-bold-duotone" style="font-size:1.5rem;color:var(--text-muted);margin-bottom:4px"></iconify-icon>' +
+          '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Aucune course Yango pour cette date</div>' +
+          '<div style="font-size:0.6rem;color:var(--text-muted)">Le chauffeur n\'a pas eu d\'activité sur Yango</div>';
+      }
+    }
   }
 };

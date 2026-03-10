@@ -967,6 +967,7 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
   // Result defaults — always return something
   let totalCA = 0, totalCash = 0, totalCard = 0;
   let nbCourses = 0, commissionYango = 0, commissionPartenaire = 0;
+  let tempsActiviteMinutes = 0;
   let sent = false;
 
   // Global safety timeout: respond with whatever we have after 20s
@@ -976,7 +977,7 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       console.warn('driver-stats: global 20s timeout, returning partial data');
       res.json({
         yangoDriverId, totalCA, totalCash, totalCard, nbCourses,
-        commissionYango, commissionPartenaire,
+        commissionYango, commissionPartenaire, tempsActiviteMinutes,
         derniereMaj: now.toISOString(),
         periode: { from, to, isCustom },
         partial: true
@@ -1009,30 +1010,42 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       console.warn('driver-stats: transactions failed, falling back to orders:', e.message);
     }
 
-    // Fallback: orders (only if transactions returned nothing)
-    if (!sent && totalCA === 0 && nbCourses === 0) {
+    // Always fetch orders for activity time + fallback CA
+    if (!sent) {
       try {
         const ordersData = await getCachedOrders(from, to);
         if (ordersData) {
           const driverOrders = (ordersData.orders || []).filter(o => o.driver && o.driver.id === yangoDriverId);
           const completedOrders = driverOrders.filter(o => o.status === 'complete');
-          nbCourses = completedOrders.length;
 
+          // Calculate activity time from completed orders
           for (const order of completedOrders) {
-            const price = parseFloat(order.price || 0);
-            totalCA += price;
-            if (order.payment_method === 'cash' || order.payment_method === 'corp') {
-              totalCash += price;
-            } else {
-              totalCard += price;
+            if (order.started_at && order.ended_at) {
+              const diff = (new Date(order.ended_at) - new Date(order.started_at)) / 60000;
+              if (diff > 0 && diff < 480) tempsActiviteMinutes += diff;
             }
           }
-          totalCA = Math.round(totalCA);
-          totalCash = Math.round(totalCash);
-          totalCard = Math.round(totalCard);
+          tempsActiviteMinutes = Math.round(tempsActiviteMinutes);
+
+          // Fallback CA from orders if transactions returned nothing
+          if (totalCA === 0 && nbCourses === 0) {
+            nbCourses = completedOrders.length;
+            for (const order of completedOrders) {
+              const price = parseFloat(order.price || 0);
+              totalCA += price;
+              if (order.payment_method === 'cash' || order.payment_method === 'corp') {
+                totalCash += price;
+              } else {
+                totalCard += price;
+              }
+            }
+            totalCA = Math.round(totalCA);
+            totalCash = Math.round(totalCash);
+            totalCard = Math.round(totalCard);
+          }
         }
       } catch (e) {
-        console.warn('driver-stats: orders fallback also failed:', e.message);
+        console.warn('driver-stats: orders failed:', e.message);
       }
     }
 
@@ -1041,7 +1054,7 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       clearTimeout(safetyTimer);
       res.json({
         yangoDriverId, totalCA, totalCash, totalCard, nbCourses,
-        commissionYango, commissionPartenaire,
+        commissionYango, commissionPartenaire, tempsActiviteMinutes,
         derniereMaj: now.toISOString(),
         periode: { from, to, isCustom }
       });
