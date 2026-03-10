@@ -2033,17 +2033,21 @@ const ChauffeursPage = {
     if (!currentDateInput || currentDateInput.value !== selectedDate) return;
     if (!document.getElementById('temps-en-ligne-content')) return;
 
-    if (stats && !stats.error && stats.tempsActiviteMinutes > 0) {
+    const hasYangoData = stats && !stats.error && ((stats.tempsActiviteMinutes || 0) > 0 || (stats.nbCourses || 0) > 0);
+
+    if (hasYangoData) {
       // Re-render with Yango data injected
       const stg = Store.get('settings') || {};
       const objMin = stg.objectifs?.tempsEnLigneMin || 630;
       const objH = Math.floor(objMin / 60);
       const objLabel = objMin % 60 > 0 ? objH + 'h' + String(objMin % 60).padStart(2, '0') : objH + 'h';
-      const actMin = stats.tempsActiviteMinutes;
+      const actMin = stats.tempsActiviteMinutes || 0;
+      const nbCourses = stats.nbCourses || 0;
+      const totalCA = stats.totalCA || 0;
       const h = Math.floor(actMin / 60);
       const m = actMin % 60;
-      const label = h + 'h' + String(m).padStart(2, '0');
-      const pct = Math.min(100, Math.round((actMin / objMin) * 100));
+      const label = actMin > 0 ? h + 'h' + String(m).padStart(2, '0') : '--';
+      const pct = actMin > 0 ? Math.min(100, Math.round((actMin / objMin) * 100)) : 0;
       const color = actMin >= objMin ? '#22c55e' : (pct >= 50 ? '#f59e0b' : '#ef4444');
 
       // Update badge
@@ -2052,13 +2056,13 @@ const ChauffeursPage = {
         if (!isToday) {
           badgeHTML += '<button class="btn btn-sm btn-secondary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + todayDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + todayDate + '\',\'' + yangoDriverId + '\')" style="font-size:0.6rem;padding:2px 8px;margin-right:4px">Aujourd\'hui</button>';
         }
-        badgeHTML += '<span class="badge" style="background:#FC4C0220;color:#FC4C02">Yango</span>';
+        badgeHTML += '<span class="badge" style="background:#FC4C0220;color:#FC4C02">Yango · ' + nbCourses + ' course' + (nbCourses > 1 ? 's' : '') + '</span>';
         badgeEl.innerHTML = badgeHTML;
       }
 
-      // Update the card content
+      // Info bar
       const infoBar = '<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:#FC4C0210;border:1px solid #FC4C0230;border-radius:var(--radius-sm);margin-bottom:12px;font-size:0.65rem;color:#FC4C02">' +
-        '<iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Données en direct depuis Yango (' + (stats.nbCourses || 0) + ' course' + ((stats.nbCourses || 0) > 1 ? 's' : '') + ')' +
+        '<iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Données en direct depuis Yango — ' + nbCourses + ' course' + (nbCourses > 1 ? 's' : '') + ' · ' + Utils.formatCurrency(totalCA) +
       '</div>';
 
       // Replace no-data hint + KPI boxes
@@ -2066,43 +2070,65 @@ const ChauffeursPage = {
       const noDataHintEl = container.querySelector('[data-no-data-hint]');
       if (noDataHintEl) noDataHintEl.outerHTML = infoBar;
 
+      // Left KPI: Temps en ligne (or courses+CA if no time data)
+      // Right KPI: Temps occupé (or CA détail)
       if (kpiBoxes.length > 0) {
-        kpiBoxes[0].innerHTML =
-          '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
-            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-              '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
-              '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps en ligne <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span></span>' +
+        if (actMin > 0) {
+          // Données temps disponibles
+          kpiBoxes[0].innerHTML =
+            '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
+              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+                '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
+                '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps en ligne <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span></span>' +
+              '</div>' +
+              '<div style="font-size:1.5rem;font-weight:900;color:' + color + '">' + label + '</div>' +
+              '<div style="height:5px;background:var(--border-color);border-radius:3px;margin-top:6px;overflow:hidden">' +
+                '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:3px"></div>' +
+              '</div>' +
+              '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">' + pct + '% de l\'objectif (' + objLabel + ')</div>' +
             '</div>' +
-            '<div style="font-size:1.5rem;font-weight:900;color:' + color + '">' + label + '</div>' +
-            '<div style="height:5px;background:var(--border-color);border-radius:3px;margin-top:6px;overflow:hidden">' +
-              '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:3px"></div>' +
+            '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
+              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+                '<iconify-icon icon="solar:routing-2-bold-duotone" style="font-size:1rem;color:#6366f1"></iconify-icon>' +
+                '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps occupé (Yango)</span>' +
+              '</div>' +
+              '<div style="font-size:1.5rem;font-weight:900;color:#6366f1">' + label + '</div>' +
+              '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Taux d\'occupation : <strong style="color:#22c55e">100%</strong></div>' +
+            '</div>';
+        } else {
+          // Pas de données temps mais courses dispo → afficher courses + CA
+          kpiBoxes[0].innerHTML =
+            '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
+              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+                '<iconify-icon icon="solar:map-arrow-right-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
+                '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Courses <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span></span>' +
+              '</div>' +
+              '<div style="font-size:1.5rem;font-weight:900;color:#3b82f6">' + nbCourses + '</div>' +
+              '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:8px">Courses effectuées</div>' +
             '</div>' +
-            '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">' + pct + '% de l\'objectif (' + objLabel + ')</div>' +
-          '</div>' +
-          '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
-            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-              '<iconify-icon icon="solar:routing-2-bold-duotone" style="font-size:1rem;color:#6366f1"></iconify-icon>' +
-              '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps occupé (Yango)</span>' +
-            '</div>' +
-            '<div style="font-size:1.5rem;font-weight:900;color:#6366f1">' + label + '</div>' +
-            '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Taux d\'occupation : <strong style="color:#22c55e">100%</strong></div>' +
-          '</div>';
+            '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
+              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+                '<iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:1rem;color:#22c55e"></iconify-icon>' +
+                '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">CA du jour <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span></span>' +
+              '</div>' +
+              '<div style="font-size:1.5rem;font-weight:900;color:#22c55e">' + Utils.formatCurrency(totalCA) + '</div>' +
+              '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:8px">' + (stats.totalCash ? 'Espèces : ' + Utils.formatCurrency(stats.totalCash) : '') + '</div>' +
+            '</div>';
+        }
       }
     } else {
-      // API error, no courses, or unexpected response → remove spinner
+      // API error or genuinely no courses → remove spinner
       const hintArea = container.querySelector('[data-no-data-hint]');
       if (hintArea) {
         const isError = !stats || stats.error;
-        const debugInfo = stats ? `courses: ${stats.nbCourses || 0}, CA: ${stats.totalCA || 0}, activité: ${stats.tempsActiviteMinutes || 0}min` : (stats && stats.error ? stats.error + (stats.details ? ' — ' + stats.details : '') : 'null');
         hintArea.innerHTML =
           '<iconify-icon icon="solar:calendar-search-bold-duotone" style="font-size:1.5rem;color:var(--text-muted);margin-bottom:4px"></iconify-icon>' +
           '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">' +
             (isError ? 'Impossible de récupérer les données Yango' : 'Aucune activité Yango pour cette date') +
           '</div>' +
           '<div style="font-size:0.6rem;color:var(--text-muted)">' +
-            (isError ? 'Vérifiez la connexion ou réessayez plus tard' : 'Le chauffeur n\'a pas eu d\'activité sur Yango') +
-          '</div>' +
-          '<div style="font-size:0.55rem;color:#94a3b8;margin-top:6px;font-family:monospace">ID: ' + yangoDriverId + ' | ' + debugInfo + '</div>';
+            (isError ? (stats && stats.details ? stats.details : 'Vérifiez la connexion ou réessayez plus tard') : 'Le chauffeur n\'a pas eu d\'activité sur Yango') +
+          '</div>';
       }
     }
   }
