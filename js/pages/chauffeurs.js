@@ -1783,8 +1783,12 @@ const ChauffeursPage = {
     const objH = Math.floor(objMin / 60);
     const objLabel = objMin % 60 > 0 ? objH + 'h' + String(objMin % 60).padStart(2, '0') : objH + 'h';
 
+    // Tous les pointages de ce chauffeur (pour trouver le dernier connu)
+    const driverPointages = pointagesAll.filter(p => p.chauffeurId === chauffeurId).sort((a, b) => b.date.localeCompare(a.date));
+    const driverGps = gpsAll.filter(g => g.chauffeurId === chauffeurId);
+
     // Pointage du jour sélectionné
-    const ptg = pointagesAll.find(p => p.chauffeurId === chauffeurId && p.date === selectedDate);
+    const ptg = driverPointages.find(p => p.date === selectedDate);
     let enLigneMin = 0;
     let enLigneStatut = 'non_commence';
     if (ptg) {
@@ -1810,7 +1814,7 @@ const ChauffeursPage = {
     const elColor = enLigneMin >= objMin ? '#22c55e' : (elPct >= 50 ? '#f59e0b' : '#ef4444');
 
     // Temps occupé Yango
-    const gpsDay = gpsAll.find(g => g.chauffeurId === chauffeurId && g.date === selectedDate);
+    const gpsDay = driverGps.find(g => g.date === selectedDate);
     const occupeMin = gpsDay?.evenements?.tempsActiviteYango || 0;
     const ocH = Math.floor(occupeMin / 60);
     const ocM = occupeMin % 60;
@@ -1825,18 +1829,41 @@ const ChauffeursPage = {
       tauxHTML = '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">' + (isToday ? 'Pas encore en service' : 'Pas de service') + '</div>';
     }
 
-    // Statut badge
+    // Statut badge + bouton Aujourd'hui
     const statutLabels = { en_service: 'En service', pause: 'En pause', termine: 'Terminé', non_commence: 'Non commencé' };
     const statutColors = { en_service: '#22c55e', pause: '#f59e0b', termine: '#94a3b8', non_commence: '#94a3b8' };
     if (badgeEl) {
-      if (isToday) {
-        badgeEl.innerHTML = '<span class="badge" style="background:' + statutColors[enLigneStatut] + '20;color:' + statutColors[enLigneStatut] + '">' + statutLabels[enLigneStatut] + '</span>';
-      } else {
-        // Pour les jours passés, afficher terminé ou non commencé
-        const pastStatut = ptg ? 'termine' : 'non_commence';
-        const pastLabel = ptg ? 'Terminé' : 'Pas de service';
-        badgeEl.innerHTML = '<span class="badge" style="background:' + statutColors[pastStatut] + '20;color:' + statutColors[pastStatut] + '">' + pastLabel + '</span>';
+      let badgeHTML = '';
+      if (!isToday) {
+        badgeHTML += '<button class="btn btn-sm btn-secondary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + todayDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + todayDate + '\')" style="font-size:0.6rem;padding:2px 8px;margin-right:4px">Aujourd\'hui</button>';
       }
+      if (isToday) {
+        badgeHTML += '<span class="badge" style="background:' + statutColors[enLigneStatut] + '20;color:' + statutColors[enLigneStatut] + '">' + statutLabels[enLigneStatut] + '</span>';
+      } else {
+        const pastLabel = ptg ? 'Terminé' : 'Pas de service';
+        const pastColor = ptg ? '#94a3b8' : '#94a3b8';
+        badgeHTML += '<span class="badge" style="background:' + pastColor + '20;color:' + pastColor + '">' + pastLabel + '</span>';
+      }
+      badgeEl.innerHTML = badgeHTML;
+    }
+
+    // Dernier pointage connu (pour navigation quand pas de données)
+    const lastKnownPtg = driverPointages[0];
+    let noDataHint = '';
+    if (!ptg && !gpsDay) {
+      let hintMsg = '<div style="text-align:center;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-md);margin-bottom:16px">' +
+        '<iconify-icon icon="solar:calendar-search-bold-duotone" style="font-size:1.5rem;color:var(--text-muted);margin-bottom:4px"></iconify-icon>' +
+        '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px">Aucun pointage enregistré pour le <strong>' + new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + '</strong></div>';
+      if (lastKnownPtg) {
+        const lastDate = lastKnownPtg.date;
+        const lastDateLabel = new Date(lastDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+        hintMsg += '<button class="btn btn-sm btn-primary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + lastDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + lastDate + '\')" style="font-size:0.65rem;padding:3px 12px">' +
+          '<iconify-icon icon="solar:arrow-left-bold"></iconify-icon> Dernier pointage : ' + lastDateLabel + '</button>';
+      } else {
+        hintMsg += '<div style="font-size:0.65rem;color:var(--text-muted)">Ce chauffeur n\'a aucun pointage enregistré dans le système</div>';
+      }
+      hintMsg += '</div>';
+      noDataHint = hintMsg;
     }
 
     // Historique 7 jours (centrés sur la date sélectionnée)
@@ -1846,8 +1873,8 @@ const ChauffeursPage = {
       const d = new Date(refDate); d.setDate(d.getDate() - i);
       const ds = d.toISOString().split('T')[0];
       const dayLabel = d.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
-      const ptgDay = pointagesAll.find(p => p.chauffeurId === chauffeurId && p.date === ds);
-      const gDay = gpsAll.find(g => g.chauffeurId === chauffeurId && g.date === ds);
+      const ptgDay = driverPointages.find(p => p.date === ds);
+      const gDay = driverGps.find(g => g.date === ds);
       last7.push({
         jour: dayLabel,
         date: ds,
@@ -1861,7 +1888,7 @@ const ChauffeursPage = {
     const barsHTML = last7.map(d => {
       const pctEL = maxVal > 0 ? Math.round((d.enLigne / maxVal) * 100) : 0;
       const pctOC = maxVal > 0 ? Math.round((d.occupe / maxVal) * 100) : 0;
-      return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px">' +
+      return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;cursor:pointer" onclick="document.getElementById(\'temps-date-filter\').value=\'' + d.date + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + d.date + '\')">' +
         '<div style="display:flex;gap:2px;align-items:flex-end;height:50px;width:100%">' +
           '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctEL + '%;background:' + (d.enLigne >= objMin ? '#22c55e' : '#3b82f6') + ';border-radius:2px;min-height:' + (d.enLigne > 0 ? '3px' : '0') + '"></div></div>' +
           '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctOC + '%;background:#6366f1;border-radius:2px;min-height:' + (d.occupe > 0 ? '3px' : '0') + '"></div></div>' +
@@ -1880,7 +1907,7 @@ const ChauffeursPage = {
     const avgOCH = Math.floor(avgOccupe / 60);
     const avgOCM = avgOccupe % 60;
 
-    container.innerHTML =
+    container.innerHTML = noDataHint +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
         '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
