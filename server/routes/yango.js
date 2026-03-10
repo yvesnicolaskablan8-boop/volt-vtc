@@ -1072,6 +1072,58 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
   }
 });
 
+// =================== ORDER STRUCTURE DEBUG ===================
+
+/**
+ * GET /api/yango/debug-order/:yangoDriverId
+ * Returns the full structure of one order for a driver (for discovering time fields)
+ */
+router.get('/debug-order/:yangoDriverId', async (req, res) => {
+  const { yangoDriverId } = req.params;
+  try {
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const to = now.toISOString();
+    const ordersData = await yangoFetch('/v1/parks/orders/list', {
+      limit: 500,
+      query: {
+        park: {
+          id: process.env.YANGO_PARK_ID,
+          order: { booked_at: { from, to } }
+        }
+      }
+    });
+    const allOrders = ordersData.orders || [];
+    const driverOrders = allOrders.filter(o => o.driver && o.driver.id === yangoDriverId);
+    const completedOrders = driverOrders.filter(o => o.status === 'complete');
+
+    // Return full first order structure + summary
+    res.json({
+      totalOrders: allOrders.length,
+      driverOrders: driverOrders.length,
+      completedOrders: completedOrders.length,
+      sampleOrderKeys: completedOrders.length > 0 ? Object.keys(completedOrders[0]) : [],
+      sampleOrder: completedOrders.length > 0 ? completedOrders[0] : null,
+      allDriverOrders: driverOrders.map(o => ({
+        id: o.id,
+        short_id: o.short_id,
+        status: o.status,
+        booked_at: o.booked_at,
+        ended_at: o.ended_at,
+        started_at: o.started_at,
+        created_at: o.created_at,
+        price: o.price,
+        // Include ALL string fields that look like dates
+        allTimeFields: Object.fromEntries(
+          Object.entries(o).filter(([k, v]) => typeof v === 'string' && /^\d{4}-\d{2}/.test(v))
+        )
+      }))
+    });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
 // =================== VEHICLES FOR LINKING ===================
 
 /**
