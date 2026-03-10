@@ -195,7 +195,8 @@ const VersementsPage = {
       partiel: { bg: 'rgba(59,130,246,0.08)', color: '#3b82f6' }
     };
     const sc = statusColors[v.statut] || statusColors.en_attente;
-    const date = v.date ? new Date(v.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '--';
+    const dateService = v.dateService || v.date;
+    const date = dateService ? new Date(dateService).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '--';
     const iconName = v.moyenPaiement === 'wave'
       ? 'solar:wallet-money-bold'
       : v.statut === 'valide' ? 'solar:check-circle-bold'
@@ -240,6 +241,7 @@ const VersementsPage = {
 
   _payerWave() {
     const now = new Date();
+    const hier = new Date(now); hier.setDate(hier.getDate() - 1);
     const oneJan = new Date(now.getFullYear(), 0, 1);
     const weekNum = Math.ceil(((now - oneJan) / 86400000 + oneJan.getDay() + 1) / 7);
 
@@ -257,8 +259,9 @@ const VersementsPage = {
           <input type="text" name="periode" placeholder="ex: Semaine ${weekNum}" value="Semaine ${weekNum}">
         </div>
         <div class="form-group">
-          <label>Date</label>
-          <input type="date" name="date" required value="${now.toISOString().split('T')[0]}">
+          <label>Journee concernee</label>
+          <div style="font-size:0.68rem;color:#94a3b8;margin-bottom:4px">La date de la journee de travail pour laquelle tu verses la recette</div>
+          <input type="date" name="date" required value="${hier.toISOString().split('T')[0]}" max="${now.toISOString().split('T')[0]}">
         </div>
         <div class="form-group">
           <label>Montant a verser (FCFA)</label>
@@ -433,6 +436,7 @@ const VersementsPage = {
 
   _nouveauVersement() {
     const now = new Date();
+    const hier = new Date(now); hier.setDate(hier.getDate() - 1);
     const oneJan = new Date(now.getFullYear(), 0, 1);
     const weekNum = Math.ceil(((now - oneJan) / 86400000 + oneJan.getDay() + 1) / 7);
 
@@ -443,8 +447,9 @@ const VersementsPage = {
           <input type="text" name="periode" placeholder="ex: Semaine ${weekNum}" value="Semaine ${weekNum}">
         </div>
         <div class="form-group">
-          <label>Date</label>
-          <input type="date" name="date" required value="${now.toISOString().split('T')[0]}">
+          <label>Journee concernee</label>
+          <div style="font-size:0.68rem;color:#94a3b8;margin-bottom:4px">La date de la journee de travail pour laquelle tu verses la recette</div>
+          <input type="date" name="date" required value="${hier.toISOString().split('T')[0]}" max="${now.toISOString().split('T')[0]}">
         </div>
         <div class="form-group">
           <label>Montant (FCFA)</label>

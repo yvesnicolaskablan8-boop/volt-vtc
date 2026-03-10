@@ -487,11 +487,13 @@ router.post('/versements', async (req, res, next) => {
     // Generer un ID unique
     const id = 'VRS-' + Math.random().toString(36).substr(2, 6).toUpperCase();
 
+    const serviceDate = date || new Date().toISOString().split('T')[0];
     const versement = new Versement({
       id,
       chauffeurId,
       vehiculeId,
-      date: date || new Date().toISOString().split('T')[0],
+      date: serviceDate,
+      dateService: serviceDate,
       periode: periode || '',
       montantBrut,
       commission,
@@ -1565,11 +1567,13 @@ router.post('/wave/checkout', async (req, res, next) => {
     const waveSession = await waveResponse.json();
 
     // Creer le versement en statut 'en_attente' avec le checkoutId Wave
+    const waveServiceDate = date || new Date().toISOString().split('T')[0];
     const versement = new Versement({
       id: versementId,
       chauffeurId,
       vehiculeId,
-      date: date || new Date().toISOString().split('T')[0],
+      date: waveServiceDate,
+      dateService: waveServiceDate,
       periode: periode || '',
       montantBrut,
       commission,

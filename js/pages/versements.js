@@ -321,7 +321,14 @@ const VersementsPage = {
             }
           },
           { label: 'Période', key: 'periode' },
-          { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) },
+          { label: 'Journée', key: 'date', render: (v) => {
+              let html = Utils.formatDate(v.dateService || v.date);
+              if (v.dateCreation && v.dateCreation.split('T')[0] !== (v.dateService || v.date)) {
+                html += `<div style="font-size:0.65rem;color:var(--text-muted);">Payé le ${Utils.formatDate(v.dateCreation.split('T')[0])}</div>`;
+              }
+              return html;
+            }
+          },
           { label: 'Versé', key: 'montantVerse', render: (v) => v.statut === 'supprime' ? `<span style="text-decoration:line-through;color:var(--text-muted);">${Utils.formatCurrency(v.montantVerse)}</span>` : `<strong>${Utils.formatCurrency(v.montantVerse)}</strong>`, primary: true },
           { label: 'Courses', key: 'nombreCourses', render: (v) => `<span data-yango-courses="${v.id}">${v.nombreCourses > 0 ? `<span style="font-weight:600;">${v.nombreCourses}</span>` : '<iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:12px;color:var(--text-muted);"></iconify-icon>'}</span>` },
           { label: 'Statut', key: 'statut', render: (v) => {
@@ -377,11 +384,12 @@ const VersementsPage = {
     // Regrouper par chauffeur+date pour éviter les appels dupliqués
     const calls = {};
     versements.forEach(v => {
-      if (!v.date || !v.chauffeurId) return;
+      const serviceDate = v.dateService || v.date;
+      if (!serviceDate || !v.chauffeurId) return;
       const c = chauffeurs.find(x => x.id === v.chauffeurId);
       if (!c || !c.yangoDriverId) return;
-      const key = `${c.yangoDriverId}_${v.date}`;
-      if (!calls[key]) calls[key] = { yangoId: c.yangoDriverId, date: v.date, versementIds: [] };
+      const key = `${c.yangoDriverId}_${serviceDate}`;
+      if (!calls[key]) calls[key] = { yangoId: c.yangoDriverId, date: serviceDate, versementIds: [] };
       calls[key].versementIds.push(v.id);
     });
 
@@ -426,7 +434,7 @@ const VersementsPage = {
     const fields = [
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, placeholder: 'Sélectionner...', options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-start' },
-      { name: 'date', label: 'Date', type: 'date', required: true },
+      { name: 'date', label: 'Journée de service', type: 'date', required: true },
       { name: 'periode', label: 'Période (ex: 2025-S08)', type: 'text', required: true },
       { type: 'row-end' },
       { type: 'row-start' },
@@ -460,6 +468,7 @@ const VersementsPage = {
       const versement = {
         id: Utils.generateId('VRS'),
         ...values,
+        dateService: values.date,
         vehiculeId: chauffeur ? chauffeur.vehiculeAssigne : null,
         montantBrut,
         nombreCourses,
@@ -489,18 +498,23 @@ const VersementsPage = {
       { value: 'partiel', label: 'Partiel' },
       { value: 'supprime', label: 'Supprimer', disabled: !isAdmin }
     ];
+    const editVersement = { ...versement, date: versement.dateService || versement.date };
     const fields = [
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-start' },
-      { name: 'montantVerse', label: 'Montant versé (FCFA)', type: 'number', min: 0, step: 0.01 },
+      { name: 'date', label: 'Journée de service', type: 'date', required: true },
       { name: 'statut', label: 'Statut', type: 'select', options: editStatusOptions },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'montantVerse', label: 'Montant versé (FCFA)', type: 'number', min: 0, step: 0.01 },
       { type: 'row-end' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier versement', FormBuilder.build(fields, versement), () => {
+    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier versement', FormBuilder.build(fields, editVersement), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
+      values.dateService = values.date;
       values.montantBrut = values.montantVerse;
       values.montantNet = values.montantVerse;
       values.commission = 0;

@@ -5,6 +5,7 @@ const versementSchema = new mongoose.Schema({
   chauffeurId: { type: String, required: true },
   vehiculeId: String,
   date: String,
+  dateService: String,
   periode: String,
   montantBrut: Number,
   commission: Number,
