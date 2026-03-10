@@ -261,11 +261,11 @@ const ChauffeursPage = {
           <p>${c.email} &bull; ${c.telephone}</p>
           <div class="detail-stats">
             <div class="detail-stat">
-              <div class="detail-stat-value">${Utils.formatCurrency(totalCA)}</div>
+              <div class="detail-stat-value" data-header-ca data-local-ca="${totalCA}">${Utils.formatCurrency(totalCA)}</div>
               <div class="detail-stat-label">CA total</div>
             </div>
             <div class="detail-stat">
-              <div class="detail-stat-value">${courses.length}</div>
+              <div class="detail-stat-value" data-header-courses data-local-courses="${courses.length}">${courses.length}</div>
               <div class="detail-stat-label">Courses</div>
             </div>
             <div class="detail-stat">
@@ -2076,6 +2076,18 @@ const ChauffeursPage = {
               '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:8px">Courses effectuées · CA : ' + Utils.formatCurrency(totalCA) + '</div>' +
             '</div>';
         }
+      }
+
+      // Update header KPIs (CA total + Courses) with Yango data
+      const headerCA = document.querySelector('[data-header-ca]');
+      const headerCourses = document.querySelector('[data-header-courses]');
+      if (headerCA) {
+        const localCA = parseFloat(headerCA.getAttribute('data-local-ca')) || 0;
+        headerCA.textContent = Utils.formatCurrency(localCA + totalCA);
+      }
+      if (headerCourses) {
+        const localCourses = parseInt(headerCourses.getAttribute('data-local-courses')) || 0;
+        headerCourses.textContent = localCourses + nbCourses;
       }
     } else {
       // No Yango data — update hint if present, otherwise don't touch existing display
