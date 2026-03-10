@@ -2021,15 +2021,13 @@ const ChauffeursPage = {
     let stats;
     try {
       stats = await Store.getYangoDriverStats(yangoDriverId, isToday ? null : selectedDate);
-      // Debug: fetch full order structure to find time fields
+      // Debug: essayer plusieurs endpoints Yango pour trouver les heures de travail
       try {
         const dbRes = await fetch(Store._apiBase + '/yango/debug-order/' + yangoDriverId, { headers: Store._headers() });
         const dbData = await dbRes.json();
-        console.log('[DEBUG-ORDER] sampleOrderKeys:', dbData.sampleOrderKeys);
-        console.log('[DEBUG-ORDER] allTimeFields:', dbData.allDriverOrders?.[0]?.allTimeFields);
-        console.log('[DEBUG-ORDER] sampleOrder:', dbData.sampleOrder);
+        console.log('[YANGO-DEBUG] Résultat complet:', JSON.stringify(dbData, null, 2));
       } catch (dbErr) {
-        console.error('[DEBUG-ORDER] Error:', dbErr);
+        console.error('[YANGO-DEBUG] Error:', dbErr);
       }
     } catch (e) {
       stats = null;

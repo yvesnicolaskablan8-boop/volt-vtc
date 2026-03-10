@@ -1076,52 +1076,84 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
 
 /**
  * GET /api/yango/debug-order/:yangoDriverId
- * Returns the full structure of one order for a driver (for discovering time fields)
+ * Tries multiple Yango API endpoints to find working hours data
  */
 router.get('/debug-order/:yangoDriverId', async (req, res) => {
   const { yangoDriverId } = req.params;
+  const results = {};
+
+  // 1. Try driver-profiles/list with ALL fields for this driver
+  try {
+    const profileData = await yangoFetch('/v1/parks/driver-profiles/list', {
+      fields: {
+        account: ['balance', 'last_transaction_date'],
+        current_status: ['status', 'status_updated_at'],
+        driver_profile: ['id', 'first_name', 'last_name', 'work_status', 'hire_date', 'work_rule_id']
+      },
+      limit: 1,
+      offset: 0,
+      query: {
+        park: {
+          id: process.env.YANGO_PARK_ID,
+          driver_profile: { id: [yangoDriverId] }
+        }
+      }
+    });
+    const dp = (profileData.driver_profiles || [])[0];
+    results.driverProfile = dp || null;
+  } catch (e) {
+    results.driverProfileError = e.message;
+  }
+
+  // 2. Try v2 contractor profile (might have activity)
+  try {
+    const contractorData = await yangoFetch('/v2/parks/contractors/driver-profile', {
+      contractor_profile_id: yangoDriverId,
+      park_id: process.env.YANGO_PARK_ID
+    });
+    results.contractorProfile = contractorData;
+  } catch (e) {
+    results.contractorProfileError = e.message;
+  }
+
+  // 3. Try driver-fix status (for fixed salary drivers, includes work hours)
+  try {
+    const fixStatus = await yangoFetch('/fleet/driver-fix/v1/status', {
+      driver_profile_id: yangoDriverId,
+      park_id: process.env.YANGO_PARK_ID
+    });
+    results.driverFixStatus = fixStatus;
+  } catch (e) {
+    results.driverFixError = e.message;
+  }
+
+  // 4. Orders list — show ALL statuses + all order keys
   try {
     const now = new Date();
     const from = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const to = now.toISOString();
     const ordersData = await yangoFetch('/v1/parks/orders/list', {
       limit: 500,
       query: {
         park: {
           id: process.env.YANGO_PARK_ID,
-          order: { booked_at: { from, to } }
+          order: { booked_at: { from, to: now.toISOString() } }
         }
       }
     });
     const allOrders = ordersData.orders || [];
     const driverOrders = allOrders.filter(o => o.driver && o.driver.id === yangoDriverId);
-    const completedOrders = driverOrders.filter(o => o.status === 'complete');
-
-    // Return full first order structure + summary
-    res.json({
-      totalOrders: allOrders.length,
-      driverOrders: driverOrders.length,
-      completedOrders: completedOrders.length,
-      sampleOrderKeys: completedOrders.length > 0 ? Object.keys(completedOrders[0]) : [],
-      sampleOrder: completedOrders.length > 0 ? completedOrders[0] : null,
-      allDriverOrders: driverOrders.map(o => ({
-        id: o.id,
-        short_id: o.short_id,
-        status: o.status,
-        booked_at: o.booked_at,
-        ended_at: o.ended_at,
-        started_at: o.started_at,
-        created_at: o.created_at,
-        price: o.price,
-        // Include ALL string fields that look like dates
-        allTimeFields: Object.fromEntries(
-          Object.entries(o).filter(([k, v]) => typeof v === 'string' && /^\d{4}-\d{2}/.test(v))
-        )
-      }))
-    });
-  } catch (err) {
-    res.status(502).json({ error: err.message });
+    results.orders = {
+      total: allOrders.length,
+      driverTotal: driverOrders.length,
+      statusCounts: driverOrders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc; }, {}),
+      sampleKeys: driverOrders.length > 0 ? Object.keys(driverOrders[0]) : [],
+      firstOrder: driverOrders.length > 0 ? driverOrders[0] : null
+    };
+  } catch (e) {
+    results.ordersError = e.message;
   }
+
+  res.json(results);
 });
 
 // =================== VEHICLES FOR LINKING ===================
