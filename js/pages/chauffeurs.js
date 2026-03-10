@@ -105,26 +105,34 @@ const ChauffeursPage = {
           label: 'Temps en ligne', key: 'tempsEnLigne',
           render: (c) => {
             const ptg = pointages.find(p => p.chauffeurId === c.id && p.date === today);
-            if (!ptg) return '<span class="text-muted">--</span>';
-            let minutes = ptg.dureeTotaleMinutes || 0;
-            // Si en cours, calculer le temps ecoule en temps reel
-            if (ptg.statut === 'en_service' && ptg.heureDebut) {
-              const debut = new Date(ptg.heureDebut);
-              const now = new Date();
-              let pauseMs = 0, pauseStart = null;
-              for (const evt of (ptg.evenements || [])) {
-                if (evt.type === 'pause') pauseStart = new Date(evt.heure);
-                else if (evt.type === 'reprise' && pauseStart) { pauseMs += new Date(evt.heure) - pauseStart; pauseStart = null; }
+            const gps = gpsData.find(g => g.chauffeurId === c.id && (g.date === today || g.date.startsWith(today)));
+            const yangoMin = gps?.evenements?.tempsActiviteYango || 0;
+            let minutes = 0;
+            let source = '';
+            if (ptg) {
+              minutes = ptg.dureeTotaleMinutes || 0;
+              if (ptg.statut === 'en_service' && ptg.heureDebut) {
+                const debut = new Date(ptg.heureDebut);
+                const now = new Date();
+                let pauseMs = 0, pauseStart = null;
+                for (const evt of (ptg.evenements || [])) {
+                  if (evt.type === 'pause') pauseStart = new Date(evt.heure);
+                  else if (evt.type === 'reprise' && pauseStart) { pauseMs += new Date(evt.heure) - pauseStart; pauseStart = null; }
+                }
+                minutes = Math.round((now - debut - pauseMs) / 60000);
               }
-              minutes = Math.round((now - debut - pauseMs) / 60000);
+              source = 'pointage';
+            } else if (yangoMin > 0) {
+              minutes = yangoMin;
+              source = 'yango';
             }
+            if (!minutes) return '<span class="text-muted">--</span>';
             const h = Math.floor(minutes / 60);
             const m = minutes % 60;
             const pct = Math.min(100, Math.round((minutes / objectifMin) * 100));
-            const isOk = minutes >= objectifMin;
-            const color = isOk ? '#22c55e' : (pct >= 50 ? '#f59e0b' : '#ef4444');
+            const color = minutes >= objectifMin ? '#22c55e' : (pct >= 50 ? '#f59e0b' : '#ef4444');
             return `<div style="min-width:90px">
-              <div style="font-size:0.82rem;font-weight:700;color:${color}">${h}h${String(m).padStart(2, '0')}</div>
+              <div style="font-size:0.82rem;font-weight:700;color:${color}">${h}h${String(m).padStart(2, '0')}${source === 'yango' ? ' <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">Y</span>' : ''}</div>
               <div style="height:4px;background:var(--bg-tertiary);border-radius:2px;margin-top:3px;overflow:hidden">
                 <div style="height:100%;width:${pct}%;background:${color};border-radius:2px"></div>
               </div>
@@ -133,13 +141,15 @@ const ChauffeursPage = {
           },
           value: (c) => {
             const ptg = pointages.find(p => p.chauffeurId === c.id && p.date === today);
-            return ptg ? (ptg.dureeTotaleMinutes || 0) : -1;
+            if (ptg) return ptg.dureeTotaleMinutes || 0;
+            const gps = gpsData.find(g => g.chauffeurId === c.id && (g.date === today || g.date.startsWith(today)));
+            return gps?.evenements?.tempsActiviteYango || -1;
           }
         },
         {
           label: 'Temps occup\u00e9', key: 'tempsOccupe',
           render: (c) => {
-            const gps = gpsData.find(g => g.chauffeurId === c.id && g.date === today);
+            const gps = gpsData.find(g => g.chauffeurId === c.id && (g.date === today || g.date.startsWith(today)));
             const activite = gps?.evenements?.tempsActiviteYango || 0;
             if (!activite) return '<span class="text-muted">--</span>';
             const h = Math.floor(activite / 60);
@@ -147,7 +157,7 @@ const ChauffeursPage = {
             return `<div style="font-size:0.82rem;font-weight:700;color:#6366f1">${h}h${String(m).padStart(2, '0')}</div>`;
           },
           value: (c) => {
-            const gps = gpsData.find(g => g.chauffeurId === c.id && g.date === today);
+            const gps = gpsData.find(g => g.chauffeurId === c.id && (g.date === today || g.date.startsWith(today)));
             return gps?.evenements?.tempsActiviteYango || -1;
           }
         },
@@ -1783,16 +1793,27 @@ const ChauffeursPage = {
     const objH = Math.floor(objMin / 60);
     const objLabel = objMin % 60 > 0 ? objH + 'h' + String(objMin % 60).padStart(2, '0') : objH + 'h';
 
-    // Tous les pointages de ce chauffeur (pour trouver le dernier connu)
+    // Helper: comparer date GPS (ISO complet ou YYYY-MM-DD) avec date YYYY-MM-DD
+    const matchDate = (gDate, target) => gDate === target || gDate.startsWith(target);
+
+    // Tous les pointages et GPS de ce chauffeur
     const driverPointages = pointagesAll.filter(p => p.chauffeurId === chauffeurId).sort((a, b) => b.date.localeCompare(a.date));
     const driverGps = gpsAll.filter(g => g.chauffeurId === chauffeurId);
 
     // Pointage du jour sélectionné
     const ptg = driverPointages.find(p => p.date === selectedDate);
+
+    // GPS du jour sélectionné (dates GPS en ISO complet)
+    const gpsDay = driverGps.find(g => matchDate(g.date, selectedDate));
+    const occupeMin = gpsDay?.evenements?.tempsActiviteYango || 0;
+
+    // Temps en ligne : pointage si dispo, sinon activité Yango
     let enLigneMin = 0;
     let enLigneStatut = 'non_commence';
+    let enLigneSource = 'none';
     if (ptg) {
       enLigneStatut = ptg.statut;
+      enLigneSource = 'pointage';
       if (ptg.statut === 'termine') {
         enLigneMin = ptg.dureeTotaleMinutes || 0;
       } else if (ptg.heureDebut) {
@@ -1806,27 +1827,32 @@ const ChauffeursPage = {
         if (ptg.statut === 'pause' && pStart) pMs += now - pStart;
         enLigneMin = Math.round((now - debut - pMs) / 60000);
       }
+    } else if (occupeMin > 0) {
+      // Pas de pointage mais activité Yango → utiliser comme temps en ligne minimum
+      enLigneMin = occupeMin;
+      enLigneStatut = 'termine';
+      enLigneSource = 'yango';
     }
+
     const elH = Math.floor(enLigneMin / 60);
     const elM = enLigneMin % 60;
     const elLabel = elH + 'h' + String(elM).padStart(2, '0');
     const elPct = Math.min(100, Math.round((enLigneMin / objMin) * 100));
     const elColor = enLigneMin >= objMin ? '#22c55e' : (elPct >= 50 ? '#f59e0b' : '#ef4444');
 
-    // Temps occupé Yango
-    const gpsDay = driverGps.find(g => g.date === selectedDate);
-    const occupeMin = gpsDay?.evenements?.tempsActiviteYango || 0;
     const ocH = Math.floor(occupeMin / 60);
     const ocM = occupeMin % 60;
     const ocLabel = ocH + 'h' + String(ocM).padStart(2, '0');
 
     // Taux d'occupation
     let tauxHTML;
-    if (enLigneMin > 0) {
+    if (enLigneMin > 0 && occupeMin > 0) {
       const taux = Math.round(occupeMin / enLigneMin * 100);
       tauxHTML = '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Taux d\'occupation : <strong style="color:' + (taux >= 70 ? '#22c55e' : '#f59e0b') + '">' + taux + '%</strong></div>';
+    } else if (occupeMin > 0) {
+      tauxHTML = '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Données Yango disponibles</div>';
     } else {
-      tauxHTML = '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">' + (isToday ? 'Pas encore en service' : 'Pas de service') + '</div>';
+      tauxHTML = '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">' + (isToday ? 'Pas encore en service' : 'Pas de données') + '</div>';
     }
 
     // Statut badge + bouton Aujourd'hui
@@ -1837,33 +1863,43 @@ const ChauffeursPage = {
       if (!isToday) {
         badgeHTML += '<button class="btn btn-sm btn-secondary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + todayDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + todayDate + '\')" style="font-size:0.6rem;padding:2px 8px;margin-right:4px">Aujourd\'hui</button>';
       }
-      if (isToday) {
+      if (isToday && ptg) {
         badgeHTML += '<span class="badge" style="background:' + statutColors[enLigneStatut] + '20;color:' + statutColors[enLigneStatut] + '">' + statutLabels[enLigneStatut] + '</span>';
+      } else if (enLigneSource === 'yango') {
+        badgeHTML += '<span class="badge" style="background:#FC4C0220;color:#FC4C02">Yango</span>';
+      } else if (ptg) {
+        badgeHTML += '<span class="badge" style="background:#94a3b820;color:#94a3b8">Terminé</span>';
       } else {
-        const pastLabel = ptg ? 'Terminé' : 'Pas de service';
-        const pastColor = ptg ? '#94a3b8' : '#94a3b8';
-        badgeHTML += '<span class="badge" style="background:' + pastColor + '20;color:' + pastColor + '">' + pastLabel + '</span>';
+        badgeHTML += '<span class="badge" style="background:#94a3b820;color:#94a3b8">' + (isToday ? 'Non commencé' : 'Pas de données') + '</span>';
       }
       badgeEl.innerHTML = badgeHTML;
     }
 
-    // Dernier pointage connu (pour navigation quand pas de données)
+    // Message d'aide quand pas de données du tout
+    const hasAnyData = ptg || gpsDay;
+    // Dernier enregistrement connu (pointage ou GPS)
     const lastKnownPtg = driverPointages[0];
+    const lastKnownGps = driverGps.sort((a, b) => b.date.localeCompare(a.date))[0];
+    const lastKnownDate = [lastKnownPtg?.date, lastKnownGps?.date?.split('T')[0]].filter(Boolean).sort().pop();
+
     let noDataHint = '';
-    if (!ptg && !gpsDay) {
+    if (!hasAnyData) {
       let hintMsg = '<div style="text-align:center;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-md);margin-bottom:16px">' +
         '<iconify-icon icon="solar:calendar-search-bold-duotone" style="font-size:1.5rem;color:var(--text-muted);margin-bottom:4px"></iconify-icon>' +
-        '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px">Aucun pointage enregistré pour le <strong>' + new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + '</strong></div>';
-      if (lastKnownPtg) {
-        const lastDate = lastKnownPtg.date;
-        const lastDateLabel = new Date(lastDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-        hintMsg += '<button class="btn btn-sm btn-primary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + lastDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + lastDate + '\')" style="font-size:0.65rem;padding:3px 12px">' +
-          '<iconify-icon icon="solar:arrow-left-bold"></iconify-icon> Dernier pointage : ' + lastDateLabel + '</button>';
+        '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px">Aucune donnée pour le <strong>' + new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + '</strong></div>';
+      if (lastKnownDate) {
+        const lastDateLabel = new Date(lastKnownDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+        hintMsg += '<button class="btn btn-sm btn-primary" onclick="document.getElementById(\'temps-date-filter\').value=\'' + lastKnownDate + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + lastKnownDate + '\')" style="font-size:0.65rem;padding:3px 12px">' +
+          '<iconify-icon icon="solar:arrow-left-bold"></iconify-icon> Dernières données : ' + lastDateLabel + '</button>';
       } else {
-        hintMsg += '<div style="font-size:0.65rem;color:var(--text-muted)">Ce chauffeur n\'a aucun pointage enregistré dans le système</div>';
+        hintMsg += '<div style="font-size:0.65rem;color:var(--text-muted)">Aucune donnée enregistrée pour ce chauffeur</div>';
       }
       hintMsg += '</div>';
       noDataHint = hintMsg;
+    } else if (enLigneSource === 'yango') {
+      noDataHint = '<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:#FC4C0210;border:1px solid #FC4C0230;border-radius:var(--radius-sm);margin-bottom:12px;font-size:0.65rem;color:#FC4C02">' +
+        '<iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Données basées sur l\'activité Yango (pas de pointage ce jour)' +
+      '</div>';
     }
 
     // Historique 7 jours (centrés sur la date sélectionnée)
@@ -1874,12 +1910,15 @@ const ChauffeursPage = {
       const ds = d.toISOString().split('T')[0];
       const dayLabel = d.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
       const ptgDay = driverPointages.find(p => p.date === ds);
-      const gDay = driverGps.find(g => g.date === ds);
+      const gDay = driverGps.find(g => matchDate(g.date, ds));
+      const dayYango = gDay?.evenements?.tempsActiviteYango || 0;
+      // Temps en ligne : pointage si dispo, sinon Yango
+      const dayEnLigne = ptgDay ? (ptgDay.dureeTotaleMinutes || 0) : dayYango;
       last7.push({
         jour: dayLabel,
         date: ds,
-        enLigne: ptgDay?.dureeTotaleMinutes || 0,
-        occupe: gDay?.evenements?.tempsActiviteYango || 0,
+        enLigne: dayEnLigne,
+        occupe: dayYango,
         isSelected: ds === selectedDate
       });
     }
@@ -1912,7 +1951,7 @@ const ChauffeursPage = {
         '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
             '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
-            '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps en ligne</span>' +
+            '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps en ligne' + (enLigneSource === 'yango' ? ' <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span>' : '') + '</span>' +
           '</div>' +
           '<div style="font-size:1.5rem;font-weight:900;color:' + elColor + '">' + elLabel + '</div>' +
           '<div style="height:5px;background:var(--border-color);border-radius:3px;margin-top:6px;overflow:hidden">' +
