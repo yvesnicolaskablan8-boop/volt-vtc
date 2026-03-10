@@ -2018,7 +2018,13 @@ const ChauffeursPage = {
 
     const todayDate = new Date().toISOString().split('T')[0];
     const isToday = selectedDate === todayDate;
-    const stats = await Store.getYangoDriverStats(yangoDriverId, isToday ? null : selectedDate);
+    let stats;
+    try {
+      stats = await Store.getYangoDriverStats(yangoDriverId, isToday ? null : selectedDate);
+    } catch (e) {
+      console.warn('Temps en ligne: erreur API Yango', e);
+      stats = null;
+    }
 
     // Check we're still on the same date/chauffeur
     const currentDateInput = document.getElementById('temps-date-filter');
@@ -2080,14 +2086,19 @@ const ChauffeursPage = {
             '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Taux d\'occupation : <strong style="color:#22c55e">100%</strong></div>' +
           '</div>';
       }
-    } else if (stats && !stats.error && stats.nbCourses === 0) {
-      // API responded but no courses
+    } else {
+      // API error, no courses, or unexpected response → remove spinner
       const hintArea = container.querySelector('[data-no-data-hint]');
       if (hintArea) {
+        const isError = !stats || stats.error;
         hintArea.innerHTML =
           '<iconify-icon icon="solar:calendar-search-bold-duotone" style="font-size:1.5rem;color:var(--text-muted);margin-bottom:4px"></iconify-icon>' +
-          '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">Aucune course Yango pour cette date</div>' +
-          '<div style="font-size:0.6rem;color:var(--text-muted)">Le chauffeur n\'a pas eu d\'activité sur Yango</div>';
+          '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">' +
+            (isError ? 'Impossible de récupérer les données Yango' : 'Aucune activité Yango pour cette date') +
+          '</div>' +
+          '<div style="font-size:0.6rem;color:var(--text-muted)">' +
+            (isError ? 'Vérifiez la connexion ou réessayez plus tard' : 'Le chauffeur n\'a pas eu d\'activité sur Yango') +
+          '</div>';
       }
     }
   }
