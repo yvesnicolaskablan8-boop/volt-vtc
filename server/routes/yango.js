@@ -1023,6 +1023,10 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
 
       if (transactionsData && transactionsData.length > 0) {
         const finance = aggregateTransactions(transactionsData);
+        console.log('[driver-stats]', yangoDriverId, 'txn:', transactionsData.length,
+          'courses:', finance.nbCoursesCash + finance.nbCoursesCard,
+          'CA:', finance.totalCA, 'temps:', finance.tempsActiviteMinutes + 'min',
+          'first:', finance.firstEventAt, 'last:', finance.lastEventAt);
         totalCA = finance.totalCA;
         totalCash = finance.totalCash;
         totalCard = finance.totalCard;
@@ -1033,6 +1037,8 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
         if (finance.tempsActiviteMinutes > 0) {
           tempsActiviteMinutes = finance.tempsActiviteMinutes;
         }
+      } else {
+        console.log('[driver-stats]', yangoDriverId, 'no transactions for period', from, '->', to);
       }
     } catch (e) {
       console.warn('driver-stats: transactions failed, falling back to orders:', e.message);
