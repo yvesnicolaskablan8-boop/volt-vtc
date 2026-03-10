@@ -2021,6 +2021,11 @@ const ChauffeursPage = {
     let stats;
     try {
       stats = await Store.getYangoDriverStats(yangoDriverId, isToday ? null : selectedDate);
+      // Debug: fetch full order structure to find time fields
+      fetch(Store._apiBase + '/yango/debug-order/' + yangoDriverId, { headers: Store._headers() })
+        .then(r => r.json())
+        .then(d => { console.log('[DEBUG] Full order structure:', JSON.stringify(d, null, 2)); })
+        .catch(() => {});
     } catch (e) {
       stats = null;
     }
