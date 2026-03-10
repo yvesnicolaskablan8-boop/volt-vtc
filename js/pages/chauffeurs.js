@@ -1945,7 +1945,7 @@ const ChauffeursPage = {
     const avgOCM = avgOccupe % 60;
 
     container.innerHTML = noDataHint +
-      '<div style="margin-bottom:16px">' +
+      '<div data-kpi-box style="margin-bottom:16px">' +
         '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
             '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
