@@ -287,7 +287,7 @@ const ChauffeursPage = {
       <!-- Temps en ligne & Temps occupé -->
       <div class="card" style="margin-bottom:var(--space-lg)">
         <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> Temps en ligne & Temps occupé</span>
+          <span class="card-title"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> Temps en ligne</span>
           <div style="display:flex;align-items:center;gap:8px">
             <span id="temps-statut-badge"></span>
             <input type="date" id="temps-date-filter" value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:0.7rem;padding:4px 8px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;">
@@ -1922,15 +1922,13 @@ const ChauffeursPage = {
         isSelected: ds === selectedDate
       });
     }
-    const maxVal = Math.max(objMin, ...last7.map(d => Math.max(d.enLigne, d.occupe)));
+    const maxVal = Math.max(objMin, ...last7.map(d => d.enLigne));
 
     const barsHTML = last7.map(d => {
       const pctEL = maxVal > 0 ? Math.round((d.enLigne / maxVal) * 100) : 0;
-      const pctOC = maxVal > 0 ? Math.round((d.occupe / maxVal) * 100) : 0;
       return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;cursor:pointer" onclick="document.getElementById(\'temps-date-filter\').value=\'' + d.date + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + d.date + '\',\'' + (yangoDriverId || '') + '\')">' +
-        '<div style="display:flex;gap:2px;align-items:flex-end;height:50px;width:100%">' +
+        '<div style="display:flex;align-items:flex-end;height:50px;width:100%">' +
           '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctEL + '%;background:' + (d.enLigne >= objMin ? '#22c55e' : '#3b82f6') + ';border-radius:2px;min-height:' + (d.enLigne > 0 ? '3px' : '0') + '"></div></div>' +
-          '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctOC + '%;background:#6366f1;border-radius:2px;min-height:' + (d.occupe > 0 ? '3px' : '0') + '"></div></div>' +
         '</div>' +
         '<div style="font-size:0.58rem;color:' + (d.isSelected ? 'var(--primary)' : 'var(--text-muted)') + ';font-weight:' + (d.isSelected ? '700' : '400') + '">' + d.jour + '</div>' +
       '</div>';
@@ -1947,7 +1945,7 @@ const ChauffeursPage = {
     const avgOCM = avgOccupe % 60;
 
     container.innerHTML = noDataHint +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
+      '<div style="margin-bottom:16px">' +
         '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
             '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
@@ -1959,22 +1957,10 @@ const ChauffeursPage = {
           '</div>' +
           '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">' + elPct + '% de l\'objectif (' + objLabel + ')</div>' +
         '</div>' +
-        '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
-          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-            '<iconify-icon icon="solar:routing-2-bold-duotone" style="font-size:1rem;color:#6366f1"></iconify-icon>' +
-            '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps occupé (Yango)</span>' +
-          '</div>' +
-          '<div style="font-size:1.5rem;font-weight:900;color:#6366f1">' + ocLabel + '</div>' +
-          tauxHTML +
-        '</div>' +
       '</div>' +
       '<div style="margin-bottom:8px">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
           '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">7 derniers jours</span>' +
-          '<div style="display:flex;align-items:center;gap:12px;font-size:0.6rem;color:var(--text-muted)">' +
-            '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#3b82f6;margin-right:3px"></span>En ligne</span>' +
-            '<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#6366f1;margin-right:3px"></span>Occupé</span>' +
-          '</div>' +
         '</div>' +
         '<div style="display:flex;gap:4px;align-items:flex-end">' + barsHTML + '</div>' +
       '</div>' +
@@ -1982,14 +1968,6 @@ const ChauffeursPage = {
         '<div style="flex:1;text-align:center">' +
           '<div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:2px">Moy. en ligne / jour</div>' +
           '<div style="font-size:0.85rem;font-weight:700;color:#3b82f6">' + avgELH + 'h' + String(avgELM).padStart(2, '0') + '</div>' +
-        '</div>' +
-        '<div style="flex:1;text-align:center">' +
-          '<div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:2px">Moy. occupé / jour</div>' +
-          '<div style="font-size:0.85rem;font-weight:700;color:#6366f1">' + avgOCH + 'h' + String(avgOCM).padStart(2, '0') + '</div>' +
-        '</div>' +
-        '<div style="flex:1;text-align:center">' +
-          '<div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:2px">Taux occup. moy.</div>' +
-          '<div style="font-size:0.85rem;font-weight:700;color:' + (weekEnLigne > 0 && weekOccupe / weekEnLigne >= 0.7 ? '#22c55e' : '#f59e0b') + '">' + (weekEnLigne > 0 ? Math.round(weekOccupe / weekEnLigne * 100) : 0) + '%</div>' +
         '</div>' +
       '</div>';
 
@@ -2067,12 +2045,12 @@ const ChauffeursPage = {
       const noDataHintEl = container.querySelector('[data-no-data-hint]');
       if (noDataHintEl) noDataHintEl.outerHTML = infoBar;
 
-      // Left KPI: Temps en ligne (or courses+CA if no time data)
-      // Right KPI: Temps occupé (or CA détail)
-      if (kpiBoxes.length > 0) {
+      // KPI: Temps en ligne (or courses+CA if no time data)
+      const kpiContainer = container.querySelector('[data-kpi-box]') || (kpiBoxes.length > 0 ? kpiBoxes[0].parentElement : null);
+      if (kpiContainer) {
         if (actMin > 0) {
           // Données temps disponibles
-          kpiBoxes[0].innerHTML =
+          kpiContainer.innerHTML =
             '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
               '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
                 '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
@@ -2083,33 +2061,17 @@ const ChauffeursPage = {
                 '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:3px"></div>' +
               '</div>' +
               '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">' + pct + '% de l\'objectif (' + objLabel + ')</div>' +
-            '</div>' +
-            '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
-              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-                '<iconify-icon icon="solar:routing-2-bold-duotone" style="font-size:1rem;color:#6366f1"></iconify-icon>' +
-                '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps occupé (Yango)</span>' +
-              '</div>' +
-              '<div style="font-size:1.5rem;font-weight:900;color:#6366f1">' + label + '</div>' +
-              '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Taux d\'occupation : <strong style="color:#22c55e">100%</strong></div>' +
             '</div>';
         } else {
           // Pas de données temps mais courses dispo → afficher courses + CA
-          kpiBoxes[0].innerHTML =
+          kpiContainer.innerHTML =
             '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
               '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
                 '<iconify-icon icon="solar:map-arrow-right-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
                 '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Courses <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span></span>' +
               '</div>' +
               '<div style="font-size:1.5rem;font-weight:900;color:#3b82f6">' + nbCourses + '</div>' +
-              '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:8px">Courses effectuées</div>' +
-            '</div>' +
-            '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
-              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-                '<iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:1rem;color:#22c55e"></iconify-icon>' +
-                '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">CA du jour <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span></span>' +
-              '</div>' +
-              '<div style="font-size:1.5rem;font-weight:900;color:#22c55e">' + Utils.formatCurrency(totalCA) + '</div>' +
-              '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:8px">' + (stats.totalCash ? 'Espèces : ' + Utils.formatCurrency(stats.totalCash) : '') + '</div>' +
+              '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:8px">Courses effectuées · CA : ' + Utils.formatCurrency(totalCA) + '</div>' +
             '</div>';
         }
       }
