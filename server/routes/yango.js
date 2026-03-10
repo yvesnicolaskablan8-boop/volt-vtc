@@ -1015,8 +1015,16 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       try {
         const ordersData = await getCachedOrders(from, to);
         if (ordersData) {
-          const driverOrders = (ordersData.orders || []).filter(o => o.driver && o.driver.id === yangoDriverId);
+          const allOrders = ordersData.orders || [];
+          const driverOrders = allOrders.filter(o => o.driver && o.driver.id === yangoDriverId);
           const completedOrders = driverOrders.filter(o => o.status === 'complete');
+          // Debug logging: show all unique driver IDs from orders
+          if (driverOrders.length === 0 && allOrders.length > 0) {
+            const uniqueDriverIds = [...new Set(allOrders.filter(o => o.driver).map(o => o.driver.id))];
+            console.log(`driver-stats: No orders match yangoDriverId=${yangoDriverId}. Total orders: ${allOrders.length}. Available driver IDs:`, uniqueDriverIds.slice(0, 10));
+          } else {
+            console.log(`driver-stats: Found ${driverOrders.length} orders (${completedOrders.length} completed) for yangoDriverId=${yangoDriverId}`);
+          }
 
           // Calculate activity time from completed orders
           for (const order of completedOrders) {

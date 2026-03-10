@@ -2020,7 +2020,9 @@ const ChauffeursPage = {
     const isToday = selectedDate === todayDate;
     let stats;
     try {
+      console.log('[TempsEnLigne] Appel API Yango pour yangoDriverId:', yangoDriverId, 'date:', selectedDate, 'isToday:', isToday);
       stats = await Store.getYangoDriverStats(yangoDriverId, isToday ? null : selectedDate);
+      console.log('[TempsEnLigne] Réponse API:', JSON.stringify(stats));
     } catch (e) {
       console.warn('Temps en ligne: erreur API Yango', e);
       stats = null;
@@ -2091,6 +2093,7 @@ const ChauffeursPage = {
       const hintArea = container.querySelector('[data-no-data-hint]');
       if (hintArea) {
         const isError = !stats || stats.error;
+        const debugInfo = stats ? `courses: ${stats.nbCourses || 0}, CA: ${stats.totalCA || 0}, activité: ${stats.tempsActiviteMinutes || 0}min` : (stats && stats.error ? stats.error + (stats.details ? ' — ' + stats.details : '') : 'null');
         hintArea.innerHTML =
           '<iconify-icon icon="solar:calendar-search-bold-duotone" style="font-size:1.5rem;color:var(--text-muted);margin-bottom:4px"></iconify-icon>' +
           '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">' +
@@ -2098,7 +2101,8 @@ const ChauffeursPage = {
           '</div>' +
           '<div style="font-size:0.6rem;color:var(--text-muted)">' +
             (isError ? 'Vérifiez la connexion ou réessayez plus tard' : 'Le chauffeur n\'a pas eu d\'activité sur Yango') +
-          '</div>';
+          '</div>' +
+          '<div style="font-size:0.55rem;color:#94a3b8;margin-top:6px;font-family:monospace">ID: ' + yangoDriverId + ' | ' + debugInfo + '</div>';
       }
     }
   }
