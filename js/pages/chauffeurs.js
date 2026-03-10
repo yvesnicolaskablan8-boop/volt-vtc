@@ -2035,6 +2035,14 @@ const ChauffeursPage = {
 
     const hasYangoData = stats && !stats.error && ((stats.tempsActiviteMinutes || 0) > 0 || (stats.nbCourses || 0) > 0);
 
+    // Debug banner visible — à retirer après diagnostic
+    const debugBanner = document.createElement('div');
+    debugBanner.style.cssText = 'font-size:0.55rem;color:#64748b;background:#f1f5f9;padding:6px 10px;border-radius:6px;margin-bottom:8px;font-family:monospace;word-break:break-all';
+    debugBanner.textContent = 'API: hasData=' + hasYangoData + ' | stats=' + JSON.stringify(stats ? {error:stats.error,nbCourses:stats.nbCourses,totalCA:stats.totalCA,tempsMin:stats.tempsActiviteMinutes,partial:stats.partial} : null);
+    const dbTarget = container.querySelector('[data-no-data-hint]');
+    if (dbTarget) dbTarget.parentNode.insertBefore(debugBanner, dbTarget);
+    else container.prepend(debugBanner);
+
     if (hasYangoData) {
       // Re-render with Yango data injected
       const stg = Store.get('settings') || {};
