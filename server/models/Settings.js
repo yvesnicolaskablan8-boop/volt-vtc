@@ -29,6 +29,10 @@ const settingsSchema = new mongoose.Schema({
     penaliteValeur: { type: Number, default: 5 },
     alerteRetard: { type: Boolean, default: true }
   },
+  objectifs: {
+    tempsEnLigneMin: { type: Number, default: 630 },
+    alerteTempsEnLigne: { type: Boolean, default: true }
+  },
   bonus: {
     bonusActif: { type: Boolean, default: false },
     scoreMinimum: { type: Number, default: 90 },

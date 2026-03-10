@@ -108,6 +108,7 @@ router.get('/dashboard', async (req, res, next) => {
                  dureeTotaleMinutes: p.dureeTotaleMinutes, dureePauseMinutes: p.dureePauseMinutes,
                  evenements: p.evenements };
       })() : null,
+      objectifTempsEnLigne: settings?.objectifs?.tempsEnLigneMin || 630,
       deadline: await (async () => {
         const vs = settings && settings.versements;
         if (!vs || !vs.deadlineType) return null;
@@ -239,9 +240,14 @@ router.get('/service/today', async (req, res, next) => {
     const chauffeurId = req.user.chauffeurId;
     const today = new Date().toISOString().split('T')[0];
     const pointage = await Pointage.findOne({ chauffeurId, date: today }).lean();
-    if (!pointage) return res.json({ pointage: null });
+
+    // Recuperer l'objectif temps en ligne
+    const settings = await Settings.findOne().lean();
+    const objectifTempsEnLigne = settings?.objectifs?.tempsEnLigneMin || 630;
+
+    if (!pointage) return res.json({ pointage: null, objectifTempsEnLigne });
     const { _id, __v, ...clean } = pointage;
-    res.json({ pointage: clean });
+    res.json({ pointage: clean, objectifTempsEnLigne });
   } catch (err) {
     next(err);
   }
@@ -357,8 +363,15 @@ router.post('/service/end', async (req, res, next) => {
       console.warn('[Behavior] Erreur finalisation:', e.message);
     }
 
+    // Verifier l'objectif temps en ligne
+    const settings = await Settings.findOne().lean();
+    const objectifTempsEnLigne = settings?.objectifs?.tempsEnLigneMin || 630;
+    const objectifAtteint = pointage.dureeTotaleMinutes >= objectifTempsEnLigne;
+
     const result = pointage.toJSON();
     if (behaviorScores) result.behaviorScores = behaviorScores;
+    result.objectifTempsEnLigne = objectifTempsEnLigne;
+    result.objectifAtteint = objectifAtteint;
     res.json(result);
   } catch (err) {
     next(err);

@@ -1460,6 +1460,15 @@ const ParametresPage = {
               </div>
               <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:4px;">Montant minimum attendu par jour. Une alerte s'affiche si le chauffeur verse moins.</div>
             </div>
+
+            <div class="form-group" style="border-top:1px solid var(--border-color);padding-top:var(--space-md);margin-top:var(--space-sm);">
+              <label class="form-label">Objectif temps en ligne (heures)</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input type="number" class="form-control" id="vs-objectif-temps" min="0" max="24" step="0.5" value="${((settings.objectifs?.tempsEnLigneMin || 630) / 60).toFixed(1)}" style="max-width:150px;" placeholder="10.5">
+                <span style="font-size:var(--font-size-sm);color:var(--text-muted);font-weight:500;">heures/jour</span>
+              </div>
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:4px;">Dur\u00e9e minimum en statut "en ligne" par jour. Alerte si le chauffeur termine en dessous.</div>
+            </div>
           </div>
         </div>
 
@@ -1706,6 +1715,10 @@ const ParametresPage = {
       const bonusPeriode = document.getElementById('bonus-periode').value || 'mensuel';
 
       const settings = Store.get('settings') || {};
+      // Objectif temps en ligne (en minutes)
+      const tempsEnLigneHeures = parseFloat(document.getElementById('vs-objectif-temps').value) || 10.5;
+      const tempsEnLigneMin = Math.round(tempsEnLigneHeures * 60);
+
       settings.versements = {
         deadlineType,
         deadlineJour,
@@ -1715,6 +1728,10 @@ const ParametresPage = {
         penaliteType,
         penaliteValeur,
         alerteRetard
+      };
+      settings.objectifs = {
+        tempsEnLigneMin,
+        alerteTempsEnLigne: true
       };
       settings.bonus = {
         bonusActif,

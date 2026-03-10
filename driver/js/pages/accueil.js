@@ -94,7 +94,8 @@ const AccueilPage = {
 
     // === Service card ===
     const serviceJour = data.serviceJour || null;
-    const serviceCardHTML = this._buildServiceCard(creneau, serviceJour);
+    this._objectifTempsEnLigne = data.objectifTempsEnLigne || 630;
+    const serviceCardHTML = this._buildServiceCard(creneau, serviceJour, this._objectifTempsEnLigne);
 
     // === Today's shift card ===
     let todayShiftHTML = '';
@@ -685,8 +686,12 @@ const AccueilPage = {
 
   _serviceTimerInterval: null,
 
-  _buildServiceCard(creneau, serviceJour) {
+  _buildServiceCard(creneau, serviceJour, objectifMinutes) {
     const statut = serviceJour ? serviceJour.statut : null;
+    const objMin = objectifMinutes || 630;
+    const objH = Math.floor(objMin / 60);
+    const objM = objMin % 60;
+    const objLabel = objM > 0 ? `${objH}h${String(objM).padStart(2, '0')}` : `${objH}h`;
 
     if (!statut) {
       // Pas de créneau = pas de bouton commencer
@@ -708,6 +713,10 @@ const AccueilPage = {
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
             <iconify-icon icon="solar:play-circle-bold-duotone" style="font-size:1.3rem;color:#22c55e"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b">Mon service</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(59,130,246,0.06);border-radius:0.75rem;margin-bottom:12px;border:1px solid rgba(59,130,246,0.12)">
+            <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>
+            <span style="font-size:0.78rem;font-weight:600;color:#3b82f6">Objectif temps en ligne : ${objLabel}</span>
           </div>
           <button onclick="AccueilPage._startService()" style="width:100%;padding:14px;border-radius:1rem;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(34,197,94,0.3)">
             <iconify-icon icon="solar:play-bold" style="margin-right:6px"></iconify-icon> Commencer mon service
@@ -765,6 +774,20 @@ const AccueilPage = {
             </div>
           </div>
 
+          <!-- Progression temps en ligne / objectif -->
+          <div style="background:rgba(0,0,0,0.15);border-radius:0.75rem;padding:10px 12px;margin-bottom:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:0.9rem"></iconify-icon>
+                <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;opacity:0.85">Temps en ligne</span>
+              </div>
+              <span id="objectif-progress-text" style="font-size:0.78rem;font-weight:700">--:-- / ${objLabel}</span>
+            </div>
+            <div style="height:6px;background:rgba(255,255,255,0.15);border-radius:3px;overflow:hidden">
+              <div id="objectif-progress-bar" style="height:100%;width:0%;background:white;border-radius:3px;transition:width 1s ease"></div>
+            </div>
+          </div>
+
           <div style="display:flex;gap:10px">
             <button onclick="AccueilPage._pauseService()" style="flex:1;padding:12px;border-radius:0.75rem;border:none;background:rgba(255,255,255,0.2);color:white;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit">
               <iconify-icon icon="solar:pause-bold" style="margin-right:4px"></iconify-icon> Faire une pause
@@ -804,6 +827,9 @@ const AccueilPage = {
       const pauseM = serviceJour.dureePauseMinutes % 60;
       const debut = new Date(serviceJour.heureDebut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       const fin = new Date(serviceJour.heureFin).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const dureeLabel = `${dureeH}h${String(dureeM).padStart(2, '0')}`;
+      const objectifAtteint = serviceJour.dureeTotaleMinutes >= objMin;
+      const progressPct = Math.min(100, Math.round((serviceJour.dureeTotaleMinutes / objMin) * 100));
 
       // Score conduite (si disponible via behaviorScores)
       const bs = serviceJour.behaviorScores;
@@ -816,10 +842,10 @@ const AccueilPage = {
             <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:1.2rem;color:#22c55e"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b">Journee terminee</span>
           </div>
-          <div style="display:flex;gap:12px;text-align:center;margin-bottom:${scoreGlobal !== null ? '12px' : '0'}">
+          <div style="display:flex;gap:12px;text-align:center;margin-bottom:12px">
             <div style="flex:1;background:#f8fafc;border-radius:0.75rem;padding:10px 8px">
               <div style="font-size:0.68rem;color:#94a3b8">Duree travail</div>
-              <div style="font-size:1.1rem;font-weight:800;color:#0f172a">${dureeH}h${String(dureeM).padStart(2, '0')}</div>
+              <div style="font-size:1.1rem;font-weight:800;color:#0f172a">${dureeLabel}</div>
             </div>
             <div style="flex:1;background:#f8fafc;border-radius:0.75rem;padding:10px 8px">
               <div style="font-size:0.68rem;color:#94a3b8">Pause</div>
@@ -830,6 +856,30 @@ const AccueilPage = {
               <div style="font-size:0.85rem;font-weight:700;color:#0f172a">${debut} - ${fin}</div>
             </div>
           </div>
+
+          <!-- Barre de progression temps en ligne -->
+          <div style="background:#f8fafc;border-radius:0.75rem;padding:12px;margin-bottom:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:0.85rem;color:${objectifAtteint ? '#22c55e' : '#ef4444'}"></iconify-icon>
+                <span style="font-size:0.72rem;font-weight:700;color:#64748b">Temps en ligne</span>
+              </div>
+              <span style="font-size:0.72rem;font-weight:800;color:${objectifAtteint ? '#22c55e' : '#ef4444'}">${dureeLabel} / ${objLabel}</span>
+            </div>
+            <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${progressPct}%;background:${objectifAtteint ? '#22c55e' : '#ef4444'};border-radius:3px"></div>
+            </div>
+            ${!objectifAtteint ? `
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;background:rgba(239,68,68,0.06);border-radius:8px;border:1px solid rgba(239,68,68,0.15)">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size:1rem;color:#ef4444;flex-shrink:0"></iconify-icon>
+              <span style="font-size:0.72rem;font-weight:600;color:#ef4444">Objectif non atteint \u2014 il manque ${Math.floor((objMin - serviceJour.dureeTotaleMinutes) / 60)}h${String((objMin - serviceJour.dureeTotaleMinutes) % 60).padStart(2, '0')}</span>
+            </div>` : `
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;background:rgba(34,197,94,0.06);border-radius:8px;border:1px solid rgba(34,197,94,0.15)">
+              <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:1rem;color:#22c55e;flex-shrink:0"></iconify-icon>
+              <span style="font-size:0.72rem;font-weight:600;color:#22c55e">Objectif atteint !</span>
+            </div>`}
+          </div>
+
           ${scoreGlobal !== null ? `
           <div style="background:#f8fafc;border-radius:0.75rem;padding:12px;display:flex;align-items:center;gap:12px">
             <div style="width:48px;height:48px;border-radius:50%;background:${scoreColor};display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:1.1rem;flex-shrink:0">${scoreGlobal}</div>
@@ -945,6 +995,33 @@ const AccueilPage = {
       } else {
         DriverToast.show('Journee terminee !', 'success');
       }
+
+      // Alerte si objectif temps en ligne non atteint
+      if (result.objectifAtteint === false) {
+        const dH = Math.floor(result.dureeTotaleMinutes / 60);
+        const dM = result.dureeTotaleMinutes % 60;
+        const oH = Math.floor(result.objectifTempsEnLigne / 60);
+        const oM = result.objectifTempsEnLigne % 60;
+        const oLabel = oM > 0 ? `${oH}h${String(oM).padStart(2, '0')}` : `${oH}h`;
+        setTimeout(() => {
+          DriverModal.show('Objectif non atteint', `
+            <div style="text-align:center;padding:0.5rem 0">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size:3rem;color:#ef4444;display:block;margin-bottom:12px"></iconify-icon>
+              <p style="font-size:0.95rem;font-weight:700;color:#ef4444">Temps en ligne insuffisant</p>
+              <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:8px">
+                Vous avez \u00e9t\u00e9 en ligne <strong>${dH}h${String(dM).padStart(2, '0')}</strong> aujourd'hui.<br>
+                L'objectif minimum est de <strong>${oLabel}</strong>.
+              </p>
+              <p style="font-size:0.78rem;color:var(--text-muted);margin-top:10px">
+                Il manque <strong>${Math.floor((result.objectifTempsEnLigne - result.dureeTotaleMinutes) / 60)}h${String((result.objectifTempsEnLigne - result.dureeTotaleMinutes) % 60).padStart(2, '0')}</strong> pour atteindre l'objectif.
+              </p>
+            </div>
+          `, [
+            { label: 'Compris', class: 'btn btn-primary', onclick: 'DriverModal.close()' }
+          ]);
+        }, 500);
+      }
+
       this.render(document.getElementById('app-content'));
     } else {
       DriverToast.show(result?.error || 'Erreur', 'error');
@@ -1005,6 +1082,11 @@ const AccueilPage = {
 
   _startServiceTimer(heureDebut, evenements) {
     this._stopServiceTimer();
+    const objMin = this._objectifTempsEnLigne || 630;
+    const objH = Math.floor(objMin / 60);
+    const objM = objMin % 60;
+    const objLabel = objM > 0 ? `${objH}h${String(objM).padStart(2, '0')}` : `${objH}h`;
+
     const updateTimer = () => {
       const timerEl = document.getElementById('service-timer');
       if (!timerEl) { this._stopServiceTimer(); return; }
@@ -1021,6 +1103,22 @@ const AccueilPage = {
       const m = Math.floor((elapsedMs % 3600000) / 60000);
       const s = Math.floor((elapsedMs % 60000) / 1000);
       timerEl.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+      // Mettre a jour la barre de progression temps en ligne
+      const elapsedMin = Math.floor(elapsedMs / 60000);
+      const progressPct = Math.min(100, Math.round((elapsedMin / objMin) * 100));
+      const progressBar = document.getElementById('objectif-progress-bar');
+      const progressText = document.getElementById('objectif-progress-text');
+      if (progressBar) {
+        progressBar.style.width = progressPct + '%';
+        // Couleur verte si objectif atteint
+        if (elapsedMin >= objMin) {
+          progressBar.style.background = '#86efac';
+        }
+      }
+      if (progressText) {
+        progressText.textContent = `${h}h${String(m).padStart(2, '0')} / ${objLabel}`;
+      }
     };
     updateTimer();
     this._serviceTimerInterval = setInterval(updateTimer, 1000);
