@@ -196,8 +196,6 @@ const ChauffeursPage = {
   _detailTemplate(c) {
     const vehicule = c.vehiculeAssigne ? Store.findById('vehicules', c.vehiculeAssigne) : null;
     const versements = Store.query('versements', v => v.chauffeurId === c.id);
-    const courses = Store.query('courses', cr => cr.chauffeurId === c.id && cr.statut === 'terminee');
-    const totalCA = courses.reduce((s, cr) => s + cr.montantTTC, 0);
     const totalVerse = versements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
     const color = Utils.getAvatarColor(c.id);
 
@@ -261,11 +259,11 @@ const ChauffeursPage = {
           <p>${c.email} &bull; ${c.telephone}</p>
           <div class="detail-stats">
             <div class="detail-stat">
-              <div class="detail-stat-value" data-header-ca data-local-ca="${totalCA}">${Utils.formatCurrency(totalCA)}</div>
+              <div class="detail-stat-value" data-header-ca>--</div>
               <div class="detail-stat-label">CA total</div>
             </div>
             <div class="detail-stat">
-              <div class="detail-stat-value" data-header-courses data-local-courses="${courses.length}">${courses.length}</div>
+              <div class="detail-stat-value" data-header-courses>--</div>
               <div class="detail-stat-label">Courses</div>
             </div>
             <div class="detail-stat">
@@ -2078,17 +2076,11 @@ const ChauffeursPage = {
         }
       }
 
-      // Update header KPIs (CA total + Courses) with Yango data
+      // Update header KPIs with Yango data
       const headerCA = document.querySelector('[data-header-ca]');
       const headerCourses = document.querySelector('[data-header-courses]');
-      if (headerCA) {
-        const localCA = parseFloat(headerCA.getAttribute('data-local-ca')) || 0;
-        headerCA.textContent = Utils.formatCurrency(localCA + totalCA);
-      }
-      if (headerCourses) {
-        const localCourses = parseInt(headerCourses.getAttribute('data-local-courses')) || 0;
-        headerCourses.textContent = localCourses + nbCourses;
-      }
+      if (headerCA) headerCA.textContent = Utils.formatCurrency(totalCA);
+      if (headerCourses) headerCourses.textContent = nbCourses;
     } else {
       // No Yango data — update hint if present, otherwise don't touch existing display
       const hintArea = container.querySelector('[data-no-data-hint]');
@@ -2103,6 +2095,11 @@ const ChauffeursPage = {
             (isError ? (stats && stats.details ? stats.details : 'Vérifiez la connexion ou réessayez plus tard') : 'Le chauffeur n\'a pas eu d\'activité sur Yango') +
           '</div>';
       }
+      // Set header KPIs to 0 when no Yango data
+      const headerCA = document.querySelector('[data-header-ca]');
+      const headerCourses = document.querySelector('[data-header-courses]');
+      if (headerCA) headerCA.textContent = Utils.formatCurrency(0);
+      if (headerCourses) headerCourses.textContent = '0';
     }
   }
 };
