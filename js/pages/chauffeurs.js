@@ -2022,10 +2022,15 @@ const ChauffeursPage = {
     try {
       stats = await Store.getYangoDriverStats(yangoDriverId, isToday ? null : selectedDate);
       // Debug: fetch full order structure to find time fields
-      fetch(Store._apiBase + '/yango/debug-order/' + yangoDriverId, { headers: Store._headers() })
-        .then(r => r.json())
-        .then(d => { console.log('[DEBUG] Full order structure:', JSON.stringify(d, null, 2)); })
-        .catch(() => {});
+      try {
+        const dbRes = await fetch(Store._apiBase + '/yango/debug-order/' + yangoDriverId, { headers: Store._headers() });
+        const dbData = await dbRes.json();
+        console.log('[DEBUG-ORDER] sampleOrderKeys:', dbData.sampleOrderKeys);
+        console.log('[DEBUG-ORDER] allTimeFields:', dbData.allDriverOrders?.[0]?.allTimeFields);
+        console.log('[DEBUG-ORDER] sampleOrder:', dbData.sampleOrder);
+      } catch (dbErr) {
+        console.error('[DEBUG-ORDER] Error:', dbErr);
+      }
     } catch (e) {
       stats = null;
     }
