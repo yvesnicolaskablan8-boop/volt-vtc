@@ -2021,14 +2021,6 @@ const ChauffeursPage = {
     let stats;
     try {
       stats = await Store.getYangoDriverStats(yangoDriverId, isToday ? null : selectedDate);
-      // Debug: essayer plusieurs endpoints Yango pour trouver les heures de travail
-      try {
-        const dbRes = await fetch(Store._apiBase + '/yango/debug-order/' + yangoDriverId, { headers: Store._headers() });
-        const dbData = await dbRes.json();
-        console.log('[YANGO-DEBUG] Résultat complet:', JSON.stringify(dbData, null, 2));
-      } catch (dbErr) {
-        console.error('[YANGO-DEBUG] Error:', dbErr);
-      }
     } catch (e) {
       stats = null;
     }

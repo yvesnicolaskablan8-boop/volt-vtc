@@ -225,10 +225,23 @@ function aggregateTransactions(transactions) {
   // Per-driver revenue for top drivers
   const driverRevenue = {};
 
+  // Track time span from event_at timestamps (for working hours estimation)
+  let firstEventAt = null;
+  let lastEventAt = null;
+
   for (const t of transactions) {
     const amount = parseFloat(t.amount || 0);
     const catId = t.category_id || '';
     const driverId = t.driver_profile_id || '';
+
+    // Track event_at timestamps for working hours (only for ride-related transactions)
+    if (t.event_at && t.order_id) {
+      const eventTime = new Date(t.event_at);
+      if (!isNaN(eventTime.getTime())) {
+        if (!firstEventAt || eventTime < firstEventAt) firstEventAt = eventTime;
+        if (!lastEventAt || eventTime > lastEventAt) lastEventAt = eventTime;
+      }
+    }
 
     if (revenueCats.has(catId)) {
       totalCash += amount;
@@ -256,6 +269,14 @@ function aggregateTransactions(transactions) {
   nbCoursesCash = cashOrders.size;
   nbCoursesCard = cardOrders.size;
 
+  // Calculate working hours from first to last transaction timestamp
+  let tempsActiviteMinutes = 0;
+  if (firstEventAt && lastEventAt && firstEventAt < lastEventAt) {
+    tempsActiviteMinutes = Math.round((lastEventAt - firstEventAt) / 60000);
+    // Sanity check: cap at 24h (1440 min)
+    if (tempsActiviteMinutes > 1440) tempsActiviteMinutes = 0;
+  }
+
   return {
     totalCA: Math.round(totalCA),
     totalCash: Math.round(totalCash),
@@ -264,7 +285,10 @@ function aggregateTransactions(transactions) {
     commissionPartenaire: Math.round(commissionPartenaire),
     nbCoursesCash,
     nbCoursesCard,
-    driverRevenue
+    driverRevenue,
+    tempsActiviteMinutes,
+    firstEventAt: firstEventAt ? firstEventAt.toISOString() : null,
+    lastEventAt: lastEventAt ? lastEventAt.toISOString() : null
   };
 }
 
@@ -1005,6 +1029,10 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
         nbCourses = finance.nbCoursesCash + finance.nbCoursesCard;
         commissionYango = finance.commissionYango;
         commissionPartenaire = finance.commissionPartenaire;
+        // Use transaction-based working hours (first→last event_at span)
+        if (finance.tempsActiviteMinutes > 0) {
+          tempsActiviteMinutes = finance.tempsActiviteMinutes;
+        }
       }
     } catch (e) {
       console.warn('driver-stats: transactions failed, falling back to orders:', e.message);
@@ -1070,90 +1098,6 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       res.status(502).json({ error: 'Erreur API Yango', details: err.message });
     }
   }
-});
-
-// =================== ORDER STRUCTURE DEBUG ===================
-
-/**
- * GET /api/yango/debug-order/:yangoDriverId
- * Tries multiple Yango API endpoints to find working hours data
- */
-router.get('/debug-order/:yangoDriverId', async (req, res) => {
-  const { yangoDriverId } = req.params;
-  const results = {};
-
-  // 1. Try driver-profiles/list with ALL fields for this driver
-  try {
-    const profileData = await yangoFetch('/v1/parks/driver-profiles/list', {
-      fields: {
-        account: ['balance', 'last_transaction_date'],
-        current_status: ['status', 'status_updated_at'],
-        driver_profile: ['id', 'first_name', 'last_name', 'work_status', 'hire_date', 'work_rule_id']
-      },
-      limit: 1,
-      offset: 0,
-      query: {
-        park: {
-          id: process.env.YANGO_PARK_ID,
-          driver_profile: { id: [yangoDriverId] }
-        }
-      }
-    });
-    const dp = (profileData.driver_profiles || [])[0];
-    results.driverProfile = dp || null;
-  } catch (e) {
-    results.driverProfileError = e.message;
-  }
-
-  // 2. Try v2 contractor profile (might have activity)
-  try {
-    const contractorData = await yangoFetch('/v2/parks/contractors/driver-profile', {
-      contractor_profile_id: yangoDriverId,
-      park_id: process.env.YANGO_PARK_ID
-    });
-    results.contractorProfile = contractorData;
-  } catch (e) {
-    results.contractorProfileError = e.message;
-  }
-
-  // 3. Try driver-fix status (for fixed salary drivers, includes work hours)
-  try {
-    const fixStatus = await yangoFetch('/fleet/driver-fix/v1/status', {
-      driver_profile_id: yangoDriverId,
-      park_id: process.env.YANGO_PARK_ID
-    });
-    results.driverFixStatus = fixStatus;
-  } catch (e) {
-    results.driverFixError = e.message;
-  }
-
-  // 4. Orders list — show ALL statuses + all order keys
-  try {
-    const now = new Date();
-    const from = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const ordersData = await yangoFetch('/v1/parks/orders/list', {
-      limit: 500,
-      query: {
-        park: {
-          id: process.env.YANGO_PARK_ID,
-          order: { booked_at: { from, to: now.toISOString() } }
-        }
-      }
-    });
-    const allOrders = ordersData.orders || [];
-    const driverOrders = allOrders.filter(o => o.driver && o.driver.id === yangoDriverId);
-    results.orders = {
-      total: allOrders.length,
-      driverTotal: driverOrders.length,
-      statusCounts: driverOrders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc; }, {}),
-      sampleKeys: driverOrders.length > 0 ? Object.keys(driverOrders[0]) : [],
-      firstOrder: driverOrders.length > 0 ? driverOrders[0] : null
-    };
-  } catch (e) {
-    results.ordersError = e.message;
-  }
-
-  res.json(results);
 });
 
 // =================== VEHICLES FOR LINKING ===================
