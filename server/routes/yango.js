@@ -1018,31 +1018,8 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
           const allOrders = ordersData.orders || [];
           const driverOrders = allOrders.filter(o => o.driver && o.driver.id === yangoDriverId);
           const completedOrders = driverOrders.filter(o => o.status === 'complete');
-          // Debug logging: show all unique driver IDs from orders
-          if (driverOrders.length === 0 && allOrders.length > 0) {
-            const uniqueDriverIds = [...new Set(allOrders.filter(o => o.driver).map(o => o.driver.id))];
-            console.log(`driver-stats: No orders match yangoDriverId=${yangoDriverId}. Total orders: ${allOrders.length}. Available driver IDs:`, uniqueDriverIds.slice(0, 10));
-          } else {
-            console.log(`driver-stats: Found ${driverOrders.length} orders (${completedOrders.length} completed) for yangoDriverId=${yangoDriverId}`);
-          }
 
-          // Debug: log first order's keys and time fields to find correct field names
-          if (completedOrders.length > 0) {
-            const sample = completedOrders[0];
-            const timeFields = {};
-            for (const key of Object.keys(sample)) {
-              const val = sample[key];
-              if (typeof val === 'string' && (val.includes('T') || val.includes('202'))) {
-                timeFields[key] = val;
-              }
-            }
-            console.log('driver-stats: sample order keys:', Object.keys(sample).join(', '));
-            console.log('driver-stats: sample order time fields:', JSON.stringify(timeFields));
-            console.log('driver-stats: sample order status:', sample.status, 'booked_at:', sample.booked_at, 'ended_at:', sample.ended_at, 'started_at:', sample.started_at);
-          }
-
-          // Calculate activity time from completed orders
-          // Try multiple possible field names from Yango API
+          // Calculate activity time from completed orders (try multiple Yango field names)
           for (const order of completedOrders) {
             const start = order.started_at || order.transporting_at || order.driving_at || order.booked_at;
             const end = order.ended_at || order.completed_at || order.finished_at;
