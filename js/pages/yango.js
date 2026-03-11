@@ -739,6 +739,12 @@ const YangoPage = {
     const chauffeurs = Store.get('chauffeurs') || [];
     const todayShifts = planning.filter(p => p.date === selectedDate);
 
+    // Données GPS / trajectoires pour km parcourus
+    const gpsData = Store.get('gps') || [];
+    const conduiteBrute = Store.get('conduiteBrute') || [];
+    const gpsForDate = gpsData.filter(g => g.date === selectedDate);
+    const cbForDate = conduiteBrute.filter(cb => cb.date === selectedDate);
+
     // Grouper par chauffeurId
     const scheduledMap = new Map();
     todayShifts.forEach(shift => {
@@ -805,6 +811,19 @@ const YangoPage = {
     const totalCourses = rows.reduce((s, r) => s + (r.stats?.nbCourses || 0), 0);
     const errCount = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.stats?.error)).length;
 
+    // Calcul km total pour tous les chauffeurs programmés
+    const getDriverKm = (chauffeurId) => {
+      const kmGps = gpsForDate.filter(g => g.chauffeurId === chauffeurId).reduce((s, g) => s + (g.evenements?.distanceParcourue || 0), 0);
+      if (kmGps > 0) return kmGps;
+      return cbForDate.filter(cb => cb.chauffeurId === chauffeurId).reduce((s, cb) => s + (cb.stats?.distanceParcourue || 0), 0);
+    };
+    const getDriverVitMoy = (chauffeurId) => {
+      const recs = gpsForDate.filter(g => g.chauffeurId === chauffeurId && g.evenements?.vitesseMoyenne > 0);
+      if (recs.length === 0) return 0;
+      return recs.reduce((s, g) => s + g.evenements.vitesseMoyenne, 0) / recs.length;
+    };
+    const totalKmAll = rows.reduce((s, r) => s + getDriverKm(r.chauffeur.id), 0);
+
     // Shift helpers
     const shiftColors = { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6', custom: '#6366f1' };
     const shiftLabels = { matin: 'M', apres_midi: 'AM', journee: 'J', nuit: 'N', custom: 'P' };
@@ -832,6 +851,9 @@ const YangoPage = {
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
           Courses : <strong style="color:var(--text-primary);font-size:var(--font-size-sm);">${totalCourses}</strong>
         </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
+          Km total : <strong style="color:#8b5cf6;font-size:var(--font-size-sm);">${totalKmAll.toFixed(1)} km</strong>
+        </div>
         ${errCount > 0 ? `<div style="font-size:var(--font-size-xs);color:var(--warning);">${errCount} non chargé(s)</div>` : ''}
       </div>
       <div style="overflow-x:auto;">
@@ -844,6 +866,7 @@ const YangoPage = {
               <th style="text-align:right;">CA</th>
               <th style="text-align:center;">Objectif CA</th>
               <th style="text-align:right;">Courses</th>
+              <th style="text-align:right;">Km</th>
               <th style="text-align:right;">Espèces</th>
               <th style="text-align:right;">Carte</th>
             </tr>
@@ -868,6 +891,9 @@ const YangoPage = {
               const shiftH = Math.floor(totalShiftMin / 60);
               const shiftM = totalShiftMin % 60;
               const shiftLabel = `${shiftH}h${shiftM > 0 ? String(shiftM).padStart(2, '0') : ''}`;
+              // Km parcourus
+              const driverKm = getDriverKm(c.id);
+              const driverVitMoy = getDriverVitMoy(c.id);
               return `
                 <tr style="cursor:pointer;" onclick="Router.navigate('/chauffeurs/${c.id}')">
                   <td style="display:flex;align-items:center;gap:8px;">
@@ -898,6 +924,9 @@ const YangoPage = {
                       <span style="font-size:10px;font-weight:600;color:${caPctColor};">${caPct}%</span>
                     </div>` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}</td>
                   <td style="text-align:right;font-weight:600;">${s ? (s.nbCourses || 0) : '—'}</td>
+                  <td style="text-align:right;">
+                    ${driverKm > 0 ? `<div><span style="font-weight:600;color:#8b5cf6;">${driverKm.toFixed(1)}</span> <span style="font-size:10px;color:var(--text-muted);">km</span></div>${driverVitMoy > 0 ? `<div style="font-size:9px;color:var(--text-muted);">~${driverVitMoy.toFixed(0)} km/h</div>` : ''}` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}
+                  </td>
                   <td style="text-align:right;color:#22c55e;">${s ? Utils.formatCurrency(s.totalCash || 0) : '—'}</td>
                   <td style="text-align:right;color:#3b82f6;">${s ? Utils.formatCurrency(s.totalCard || 0) : '—'}</td>
                 </tr>
