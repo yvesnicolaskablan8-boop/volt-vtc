@@ -1133,8 +1133,10 @@ const DashboardPage = {
     const ch = chauffeurs.find(c => c.id === chauffeurId);
     const name = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
 
+    const redevance = montantDu || 0;
     const fields = [
       { type: 'heading', label: `Paiement pour ${name} \u2014 ${date}` },
+      { type: 'html', html: redevance > 0 ? `<div style="padding:8px 12px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:10px;font-size:var(--font-size-sm);border-left:3px solid var(--primary);">Redevance attendue : <strong style="color:var(--primary)">${Utils.formatCurrency(redevance)}</strong></div>` : '' },
       { type: 'row-start' },
       { name: 'montantVerse', label: 'Montant vers\u00e9 (FCFA)', type: 'number', required: true, min: 0, step: 100, default: montantDu || 0, placeholder: 'Montant de la redevance...' },
       { name: 'moyenPaiement', label: 'Moyen de paiement', type: 'select', required: true, options: [
@@ -1147,6 +1149,8 @@ const DashboardPage = {
         { value: 'autre', label: 'Autre' }
       ]},
       { type: 'row-end' },
+      { type: 'html', html: '<div id="pay-comparaison" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:10px;font-size:var(--font-size-sm);"></div>' },
+      { type: 'html', html: '<div id="pay-traitement-manquant" style="display:none;padding:12px 14px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);margin-bottom:10px;font-size:var(--font-size-sm);"><label style="font-weight:600;margin-bottom:8px;display:block">Traitement du manquant</label><div style="display:flex;gap:10px;flex-wrap:wrap"><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="dette" checked> Reporter en dette</label><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="perte"> Passer en perte</label></div></div>' },
       { name: 'referencePaiement', label: 'R\u00e9f\u00e9rence / N\u00b0 transaction', type: 'text', placeholder: 'Num\u00e9ro de transaction, re\u00e7u...' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2, placeholder: 'Notes sur le paiement...' }
     ];
@@ -1172,10 +1176,19 @@ const DashboardPage = {
           return;
         }
 
+        // Compute shortfall and treatment
+        const manquant = (redevance > 0 && montant < redevance) ? redevance - montant : 0;
+        const traitementRadio = document.querySelector('input[name="traitementManquant"]:checked');
+        const traitementManquant = manquant > 0 ? (traitementRadio ? traitementRadio.value : 'dette') : null;
+        const statut = (redevance > 0 && montant < redevance) ? 'partiel' : 'valide';
+
         if (existing) {
           Store.update('versements', existing.id, {
             montantVerse: montant,
-            statut: 'valide',
+            montantBrut: redevance || existing.montantBrut,
+            statut,
+            manquant,
+            traitementManquant,
             moyenPaiement: values.moyenPaiement,
             referencePaiement: values.referencePaiement,
             commentaire: values.commentaire,
@@ -1187,8 +1200,11 @@ const DashboardPage = {
             chauffeurId,
             date,
             periode: '',
+            montantBrut: redevance || 0,
             montantVerse: montant,
-            statut: 'valide',
+            statut,
+            manquant,
+            traitementManquant,
             moyenPaiement: values.moyenPaiement,
             referencePaiement: values.referencePaiement,
             commentaire: values.commentaire,
@@ -1198,7 +1214,14 @@ const DashboardPage = {
         }
 
         Modal.close();
-        Toast.success('Paiement enregistr\u00e9 \u2014 ' + Utils.formatCurrency(montant));
+
+        // Contextual toast
+        if (manquant > 0) {
+          const label = traitementManquant === 'dette' ? 'report\u00e9 en dette' : 'pass\u00e9 en perte';
+          Toast.warning(`Paiement partiel \u2014 ${Utils.formatCurrency(montant)} sur ${Utils.formatCurrency(redevance)}. Manquant de ${Utils.formatCurrency(manquant)} ${label}.`);
+        } else {
+          Toast.success('Paiement enregistr\u00e9 \u2014 ' + Utils.formatCurrency(montant));
+        }
 
         // Proposer le PDF
         setTimeout(() => {
@@ -1214,6 +1237,54 @@ const DashboardPage = {
         this.render();
       }
     );
+
+    // Dynamic listeners for real-time comparison
+    setTimeout(() => {
+      const montantInput = document.querySelector('input[name="montantVerse"]');
+      const compDiv = document.getElementById('pay-comparaison');
+      const traitDiv = document.getElementById('pay-traitement-manquant');
+
+      if (!montantInput || !compDiv) return;
+
+      const updateComparaison = () => {
+        const m = parseFloat(montantInput.value) || 0;
+        if (redevance <= 0 || m <= 0) {
+          compDiv.style.display = 'none';
+          if (traitDiv) traitDiv.style.display = 'none';
+          return;
+        }
+        compDiv.style.display = 'block';
+        if (m >= redevance) {
+          compDiv.style.background = 'rgba(34,197,94,0.08)';
+          compDiv.style.border = '1px solid rgba(34,197,94,0.3)';
+          compDiv.innerHTML = `<span style="color:#22c55e;font-weight:600">\u2713 Complet</span> \u2014 ${Utils.formatCurrency(m)} / ${Utils.formatCurrency(redevance)} (${Math.round(m / redevance * 100)}%)`;
+          if (traitDiv) traitDiv.style.display = 'none';
+        } else {
+          const manq = redevance - m;
+          const pct = Math.round(m / redevance * 100);
+          compDiv.style.background = 'rgba(245,158,11,0.08)';
+          compDiv.style.border = '1px solid rgba(245,158,11,0.3)';
+
+          // Check existing debt for this driver
+          const allVers = Store.get('versements') || [];
+          const detteExistante = allVers
+            .filter(v => v.chauffeurId === chauffeurId && v.traitementManquant === 'dette' && v.manquant > 0)
+            .reduce((sum, v) => sum + v.manquant, 0);
+
+          let detteInfo = '';
+          if (detteExistante > 0) {
+            detteInfo = `<div style="margin-top:6px;color:var(--danger);font-size:12px">\u26a0 Dette existante : ${Utils.formatCurrency(detteExistante)}</div>`;
+          }
+
+          compDiv.innerHTML = `<span style="color:#f59e0b;font-weight:600">\u26a0 Partiel</span> \u2014 ${Utils.formatCurrency(m)} / ${Utils.formatCurrency(redevance)} (${pct}%)<br><span style="color:var(--danger)">Manquant : ${Utils.formatCurrency(manq)}</span>${detteInfo}`;
+          if (traitDiv) traitDiv.style.display = 'block';
+        }
+      };
+
+      montantInput.addEventListener('input', updateComparaison);
+      // Trigger initial comparison if default value is set
+      updateComparaison();
+    }, 100);
   },
 
   _deleteReceipt(chauffeurId, date, planningId, versementId) {
