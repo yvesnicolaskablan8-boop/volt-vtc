@@ -495,12 +495,12 @@ const DashboardPage = {
             <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> ${Utils.formatCurrency(d.totalVerse)} / ${Utils.formatCurrency(d.totalAttendu)}
           </div>
         </div>
-        <a href="#/versements" class="kpi-card ${d.totalPertes > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
+        <a href="#/versements" class="kpi-card red" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:fire-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '<span style="color:var(--success)">0 FCFA</span>'}</div>
+          <div class="kpi-value" style="color:var(--danger)">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
           <div class="kpi-label">Pertes enregistrées</div>
-          <div class="kpi-trend ${d.totalPertes > 0 ? 'down' : 'up'}">
-            ${d.totalPertes > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone" style="color:var(--danger)"></iconify-icon> ${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers > 1 ? 's' : ''}` : '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Aucune perte ✔'}
+          <div class="kpi-trend down">
+            ${d.totalPertes > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone" style="color:var(--danger)"></iconify-icon> ${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers > 1 ? 's' : ''}` : '<iconify-icon icon="solar:danger-circle-bold-duotone" style="color:var(--danger)"></iconify-icon> Pertes irrécupérables'}
           </div>
         </a>
         <a href="#/vehicules" class="kpi-card" style="text-decoration:none;color:inherit;cursor:pointer;">

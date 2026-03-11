@@ -213,8 +213,8 @@ const VersementsPage = {
         </div>
         <div class="kpi-card" style="border-left:3px solid #ef4444;">
           <div class="kpi-icon" style="background:rgba(239,68,68,0.12);"><iconify-icon icon="solar:close-circle-bold-duotone" style="color:#ef4444;"></iconify-icon></div>
-          <div class="kpi-value" style="color:${d.totalPertes > 0 ? '#ef4444' : 'var(--success)'};">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
-          <div class="kpi-label">${d.totalPertes > 0 ? 'Pertes enregistr\u00e9es' : 'Aucune perte \u2714'}</div>
+          <div class="kpi-value" style="color:#ef4444;">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
+          <div class="kpi-label" style="color:#ef4444;">Pertes enregistr\u00e9es</div>
         </div>
       </div>
 
