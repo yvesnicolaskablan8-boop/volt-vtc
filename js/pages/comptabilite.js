@@ -50,6 +50,7 @@ const ComptabilitePage = {
         <div class="tab" data-tab="resultat"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Résultat</div>
         <div class="tab" data-tab="tresorerie"><iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon> Trésorerie</div>
         <div class="tab" data-tab="factures"><iconify-icon icon="solar:file-text-bold-duotone"></iconify-icon> Factures</div>
+        <div class="tab" data-tab="depenses"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon> Dépenses</div>
         <div class="tab" data-tab="budget"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon> Budget</div>
         <div class="tab" data-tab="categories"><iconify-icon icon="solar:tag-bold-duotone"></iconify-icon> Catégories</div>
       </div>
@@ -84,6 +85,7 @@ const ComptabilitePage = {
       case 'resultat': ct.innerHTML = this._renderResultat(); this._loadResultatCharts(); break;
       case 'tresorerie': ct.innerHTML = this._renderTresorerie(); this._loadTresorerieCharts(); break;
       case 'factures': ct.innerHTML = this._renderFactures(); this._bindFacturesEvents(); break;
+      case 'depenses': ct.innerHTML = this._renderDepenses(); this._bindDepensesEvents(); break;
       case 'budget': ct.innerHTML = this._renderBudget(); this._loadBudgetCharts(); break;
       case 'categories': ct.innerHTML = this._renderCategories(); break;
     }
@@ -1361,5 +1363,227 @@ const ComptabilitePage = {
     a.click();
     URL.revokeObjectURL(url);
     Toast.success('CSV exporté');
+  },
+
+  // =================== ONGLET DÉPENSES VÉHICULES ===================
+
+  _depTypeLabels: {
+    carburant: 'Carburant', peage: 'Péage', lavage: 'Lavage',
+    assurance: 'Assurance', reparation: 'Réparation', stationnement: 'Stationnement', autre: 'Autre'
+  },
+  _depTypeOptions: [
+    { value: 'carburant', label: 'Carburant' }, { value: 'peage', label: 'Péage' },
+    { value: 'lavage', label: 'Lavage' }, { value: 'assurance', label: 'Assurance' },
+    { value: 'reparation', label: 'Réparation' }, { value: 'stationnement', label: 'Stationnement' },
+    { value: 'autre', label: 'Autre' }
+  ],
+
+  _renderDepenses() {
+    const depenses = Store.get('depenses') || [];
+    const vehicules = Store.get('vehicules') || [];
+    const now = new Date();
+    const monthDep = depenses.filter(d => {
+      const dt = new Date(d.date);
+      return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+    });
+    const totalMois = monthDep.reduce((s, d) => s + (d.montant || 0), 0);
+    const typeTotals = {};
+    monthDep.forEach(d => { typeTotals[d.typeDepense] = (typeTotals[d.typeDepense] || 0) + (d.montant || 0); });
+    let topType = '-';
+    Object.entries(typeTotals).forEach(([type, amount]) => {
+      if (amount > (typeTotals[topType] || 0)) topType = type;
+    });
+    const vehiculesActifs = new Set(monthDep.map(d => d.vehiculeId));
+    const moyVehicule = vehiculesActifs.size > 0 ? Math.round(totalMois / vehiculesActifs.size) : 0;
+
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 style="margin:0">Dépenses véhicules</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline" id="btn-export-dep"><iconify-icon icon="solar:file-download-bold"></iconify-icon> Exporter</button>
+          <button class="btn btn-primary" id="btn-add-dep"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter</button>
+        </div>
+      </div>
+      <div class="kpi-grid grid-4">
+        <div class="kpi-card kpi-warning">
+          <div class="kpi-icon"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${Utils.formatCurrency(totalMois)}</div>
+          <div class="kpi-label">Total ce mois</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${monthDep.length}</div>
+          <div class="kpi-label">Dépenses ce mois</div>
+        </div>
+        <div class="kpi-card kpi-danger">
+          <div class="kpi-icon"><iconify-icon icon="solar:tag-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${this._depTypeLabels[topType] || '-'}</div>
+          <div class="kpi-label">Top catégorie</div>
+        </div>
+        <div class="kpi-card kpi-info">
+          <div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${Utils.formatCurrency(moyVehicule)}</div>
+          <div class="kpi-label">Moy. / véhicule</div>
+        </div>
+      </div>
+      <div class="filters-bar" style="margin-bottom:1rem">
+        <select id="dep-filter-vehicule" class="filter-select">
+          <option value="">Tous les véhicules</option>
+          ${vehicules.map(v => `<option value="${v.id}">${v.marque} ${v.modele} - ${v.immatriculation || ''}</option>`).join('')}
+        </select>
+        <select id="dep-filter-type" class="filter-select">
+          <option value="">Tous les types</option>
+          ${this._depTypeOptions.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+        </select>
+        <input type="date" id="dep-filter-from" class="filter-select">
+        <input type="date" id="dep-filter-to" class="filter-select">
+      </div>
+      <div id="dep-table"></div>
+    `;
+  },
+
+  _bindDepensesEvents() {
+    const depenses = Store.get('depenses') || [];
+    const vehicules = Store.get('vehicules') || [];
+    const vehiculeMap = {};
+    vehicules.forEach(v => vehiculeMap[v.id] = `${v.marque} ${v.modele}`);
+
+    const renderTable = (items) => {
+      Table.create({
+        container: '#dep-table',
+        data: items,
+        columns: [
+          { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) },
+          { label: 'Véhicule', key: 'vehiculeId', render: (v) => vehiculeMap[v.vehiculeId] || v.vehiculeId },
+          { label: 'Type', key: 'typeDepense', render: (v) => this._depTypeLabels[v.typeDepense] || v.typeDepense },
+          { label: 'Montant', key: 'montant', render: (v) => Utils.formatCurrency(v.montant || 0) },
+          { label: 'Km', key: 'kilometrage', render: (v) => v.kilometrage ? Utils.formatNumber(v.kilometrage) + ' km' : '-' },
+          { label: 'Commentaire', key: 'commentaire', render: (v) => v.commentaire || '-' },
+          { label: 'Actions', key: 'actions', render: (v) => `
+            <button class="btn-icon" title="Modifier" onclick="ComptabilitePage._editDep('${v.id}')"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>
+            <button class="btn-icon btn-danger" title="Supprimer" onclick="ComptabilitePage._deleteDep('${v.id}')"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>
+          `}
+        ],
+        sortKey: 'date',
+        sortDir: 'desc',
+        pageSize: 15,
+        emptyMessage: 'Aucune dépense enregistrée'
+      });
+    };
+
+    renderTable(depenses);
+
+    const applyFilters = () => {
+      const vehicule = document.getElementById('dep-filter-vehicule').value;
+      const type = document.getElementById('dep-filter-type').value;
+      const from = document.getElementById('dep-filter-from').value;
+      const to = document.getElementById('dep-filter-to').value;
+      let filtered = depenses;
+      if (vehicule) filtered = filtered.filter(d => d.vehiculeId === vehicule);
+      if (type) filtered = filtered.filter(d => d.typeDepense === type);
+      if (from) filtered = filtered.filter(d => d.date >= from);
+      if (to) filtered = filtered.filter(d => d.date <= to);
+      renderTable(filtered);
+    };
+
+    document.getElementById('dep-filter-vehicule').addEventListener('change', applyFilters);
+    document.getElementById('dep-filter-type').addEventListener('change', applyFilters);
+    document.getElementById('dep-filter-from').addEventListener('change', applyFilters);
+    document.getElementById('dep-filter-to').addEventListener('change', applyFilters);
+    document.getElementById('btn-add-dep').addEventListener('click', () => this._addDep());
+    document.getElementById('btn-export-dep').addEventListener('click', () => this._exportDep());
+  },
+
+  _addDep() {
+    const vehicules = Store.get('vehicules') || [];
+    Modal.form(
+      '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> Nouvelle dépense',
+      `<form id="form-dep" class="modal-form">
+        <div class="form-group"><label>Véhicule *</label>
+          <select name="vehiculeId" required><option value="">Sélectionner...</option>
+            ${vehicules.map(v => `<option value="${v.id}">${v.marque} ${v.modele} - ${v.immatriculation || ''}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label>Type de dépense *</label>
+          <select name="typeDepense" required>${this._depTypeOptions.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Montant (FCFA) *</label><input type="number" name="montant" required min="1" placeholder="0"></div>
+        <div class="form-group"><label>Date *</label><input type="date" name="date" required value="${new Date().toISOString().split('T')[0]}"></div>
+        <div class="form-group"><label>Kilométrage</label><input type="number" name="kilometrage" min="0" placeholder="km au compteur"></div>
+        <div class="form-group"><label>Commentaire</label><textarea name="commentaire" rows="2" placeholder="Détails..."></textarea></div>
+      </form>`,
+      () => {
+        const fd = new FormData(document.getElementById('form-dep'));
+        if (!fd.get('vehiculeId') || !parseInt(fd.get('montant'))) { Toast.show('Véhicule et montant requis', 'error'); return; }
+        Store.add('depenses', {
+          id: 'DEP-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+          vehiculeId: fd.get('vehiculeId'), typeDepense: fd.get('typeDepense'),
+          montant: parseInt(fd.get('montant')), date: fd.get('date'),
+          kilometrage: fd.get('kilometrage') ? parseInt(fd.get('kilometrage')) : null,
+          commentaire: fd.get('commentaire') || '', dateCreation: new Date().toISOString()
+        });
+        Modal.close(); Toast.show('Dépense ajoutée', 'success');
+        this._renderTab('depenses');
+      }
+    );
+  },
+
+  _editDep(id) {
+    const d = (Store.get('depenses') || []).find(x => x.id === id);
+    if (!d) return;
+    const vehicules = Store.get('vehicules') || [];
+    Modal.form(
+      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;"></iconify-icon> Modifier dépense',
+      `<form id="form-dep-edit" class="modal-form">
+        <div class="form-group"><label>Véhicule</label>
+          <select name="vehiculeId">${vehicules.map(v => `<option value="${v.id}" ${v.id === d.vehiculeId ? 'selected' : ''}>${v.marque} ${v.modele} - ${v.immatriculation || ''}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Type</label>
+          <select name="typeDepense">${this._depTypeOptions.map(t => `<option value="${t.value}" ${t.value === d.typeDepense ? 'selected' : ''}>${t.label}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Montant (FCFA)</label><input type="number" name="montant" value="${d.montant || 0}" min="1"></div>
+        <div class="form-group"><label>Date</label><input type="date" name="date" value="${d.date || ''}"></div>
+        <div class="form-group"><label>Kilométrage</label><input type="number" name="kilometrage" value="${d.kilometrage || ''}" min="0"></div>
+        <div class="form-group"><label>Commentaire</label><textarea name="commentaire" rows="2">${d.commentaire || ''}</textarea></div>
+      </form>`,
+      () => {
+        const fd = new FormData(document.getElementById('form-dep-edit'));
+        Store.update('depenses', id, {
+          vehiculeId: fd.get('vehiculeId'), typeDepense: fd.get('typeDepense'),
+          montant: parseInt(fd.get('montant')) || 0, date: fd.get('date'),
+          kilometrage: fd.get('kilometrage') ? parseInt(fd.get('kilometrage')) : null,
+          commentaire: fd.get('commentaire') || ''
+        });
+        Modal.close(); Toast.show('Dépense mise à jour', 'success');
+        this._renderTab('depenses');
+      }
+    );
+  },
+
+  _deleteDep(id) {
+    if (!confirm('Supprimer cette dépense ?')) return;
+    Store.delete('depenses', id);
+    Toast.show('Dépense supprimée', 'success');
+    this._renderTab('depenses');
+  },
+
+  _exportDep() {
+    const depenses = Store.get('depenses') || [];
+    if (!depenses.length) { Toast.show('Aucune dépense à exporter', 'error'); return; }
+    const vehicules = Store.get('vehicules') || [];
+    const vehiculeMap = {};
+    vehicules.forEach(v => vehiculeMap[v.id] = `${v.marque} ${v.modele}`);
+    const headers = ['Date', 'Véhicule', 'Type', 'Montant (FCFA)', 'Kilométrage', 'Commentaire'];
+    const rows = depenses.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(d => [
+      d.date || '', vehiculeMap[d.vehiculeId] || d.vehiculeId,
+      this._depTypeLabels[d.typeDepense] || d.typeDepense, d.montant || 0,
+      d.kilometrage || '', (d.commentaire || '').replace(/"/g, '""')
+    ]);
+    let csv = '\uFEFF' + headers.join(';') + '\n';
+    rows.forEach(r => { csv += r.map(v => `"${v}"`).join(';') + '\n'; });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `depenses_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    Toast.show('Export CSV téléchargé', 'success');
   }
 };

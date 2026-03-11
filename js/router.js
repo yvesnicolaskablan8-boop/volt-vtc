@@ -17,7 +17,7 @@ const Router = {
       '/vehicules/:id': { page: VehiculesPage, title: 'Détail véhicule', action: 'detail' },
       '/versements': { page: VersementsPage, title: 'Versements' },
       '/contraventions': { page: ContraventionsPage, title: 'Contraventions' },
-      '/depenses': { page: DepensesPage, title: 'Dépenses' },
+      '/depenses': { redirect: '/comptabilite' },
       '/rentabilite': { page: RentabilitePage, title: 'Rentabilité' },
       '/gps-conduite': { page: GpsConduitePage, title: 'GPS & Conduite' },
       '/rapports': { page: RapportsPage, title: 'Rapports' },
@@ -60,6 +60,12 @@ const Router = {
 
     const { route, params } = match;
     const config = this._routes[route];
+
+    // Handle redirects
+    if (config.redirect) {
+      window.location.hash = '#' + config.redirect;
+      return;
+    }
 
     // Auth guard: check if user is logged in
     if (typeof Auth !== 'undefined' && !Auth.isLoggedIn()) {
