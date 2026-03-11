@@ -254,6 +254,9 @@ const PlanningPage = {
         return fullName.includes(q);
       });
     }
+    // Map vehiculeId → immatriculation for display
+    const vehMap = {};
+    (Store.get('vehicules') || []).forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
     const days = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(this._currentWeekStart);
@@ -332,7 +335,7 @@ const PlanningPage = {
                     ${Utils.getAvatarHtml(ch, '', 'width:32px;height:32px;font-size:11px;flex-shrink:0;')}
                     <div>
                       <div style="font-size:var(--font-size-sm);font-weight:500;color:var(--text-primary);">${ch.prenom} ${ch.nom}</div>
-                      <div style="font-size:10px;color:var(--text-muted);">${ch.vehiculeAssigne || 'Pas de véhicule'}</div>
+                      <div style="font-size:10px;color:var(--text-muted);">${ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || ch.vehiculeAssigne) : 'Pas de véhicule'}</div>
                     </div>
                   </a>
                 </td>
