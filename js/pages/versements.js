@@ -156,7 +156,12 @@ const VersementsPage = {
     const totalUnpaid = unpaidItems.reduce((s, i) => s + i.montantDu, 0);
     const totalPenalites = unpaidItems.reduce((s, i) => s + i.penalite, 0);
 
-    return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay, detailProgrammes, detailRetard, detailVerse, nbChauffeursProgrammes, unpaidItems, totalUnpaid, totalPenalites };
+    // Dettes & pertes globales (tous versements, pas limité au jour)
+    const totalDettes = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0).reduce((s, v) => s + v.manquant, 0);
+    const totalPertes = versements.filter(v => v.traitementManquant === 'perte' && v.manquant > 0).reduce((s, v) => s + v.manquant, 0);
+    const nbDetteDrivers = new Set(versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0).map(v => v.chauffeurId)).size;
+
+    return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay, detailProgrammes, detailRetard, detailVerse, nbChauffeursProgrammes, unpaidItems, totalUnpaid, totalPenalites, totalDettes, totalPertes, nbDetteDrivers };
   },
 
   _template(d) {
@@ -201,6 +206,16 @@ const VersementsPage = {
           <div class="kpi-value">${d.byStatus.retard}</div>
           <div class="kpi-label">Versements en retard</div>
         </div>
+        ${d.totalDettes > 0 ? `<div class="kpi-card" style="cursor:pointer;border-left:3px solid #f59e0b;" onclick="document.querySelector('.card[style*=\\'border-left: 4px solid rgb(245, 158, 11)\\'],.card[style*=\\'border-left:4px solid #f59e0b\\']')?.scrollIntoView({behavior:'smooth'})">
+          <div class="kpi-icon" style="background:rgba(245,158,11,0.12);"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#f59e0b;"></iconify-icon></div>
+          <div class="kpi-value" style="color:#f59e0b;">${Utils.formatCurrency(d.totalDettes)}</div>
+          <div class="kpi-label">Dettes actives (${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers > 1 ? 's' : ''})</div>
+        </div>` : ''}
+        ${d.totalPertes > 0 ? `<div class="kpi-card" style="border-left:3px solid #ef4444;">
+          <div class="kpi-icon" style="background:rgba(239,68,68,0.12);"><iconify-icon icon="solar:close-circle-bold-duotone" style="color:#ef4444;"></iconify-icon></div>
+          <div class="kpi-value" style="color:#ef4444;">${Utils.formatCurrency(d.totalPertes)}</div>
+          <div class="kpi-label">Pertes enregistr\u00e9es</div>
+        </div>` : ''}
       </div>
 
       <div class="charts-grid">
