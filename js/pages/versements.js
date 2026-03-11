@@ -438,10 +438,12 @@ const VersementsPage = {
       { name: 'date', label: 'Journée de service', type: 'date', required: true },
       { name: 'periode', label: 'Période (ex: 2025-S08)', type: 'text', required: true },
       { type: 'row-end' },
+      { type: 'html', html: '<div id="versement-redevance-info" style="display:none;padding:10px 14px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:12px;font-size:var(--font-size-sm);border-left:3px solid var(--primary);"></div>' },
       { type: 'row-start' },
       { name: 'montantVerse', label: 'Montant versé (FCFA)', type: 'number', min: 0, step: 0.01, required: true },
       { name: 'statut', label: 'Statut', type: 'select', options: statusOptions },
       { type: 'row-end' },
+      { type: 'html', html: '<div id="versement-comparaison" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:var(--font-size-sm);"></div>' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
@@ -450,6 +452,17 @@ const VersementsPage = {
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
       const chauffeur = Store.findById('chauffeurs', values.chauffeurId);
+
+      // Auto-set statut based on redevance comparison
+      const redevance = chauffeur ? (chauffeur.redevanceQuotidienne || 0) : 0;
+      const montant = parseFloat(values.montantVerse) || 0;
+      if (redevance > 0 && montant > 0 && values.statut !== 'supprime') {
+        if (montant >= redevance) {
+          values.statut = 'valide';
+        } else {
+          values.statut = 'partiel';
+        }
+      }
 
       // Récupérer les stats Yango (courses, CA) pour ce chauffeur à cette date
       let nombreCourses = 0;
@@ -481,9 +494,72 @@ const VersementsPage = {
 
       Store.add('versements', versement);
       Modal.close();
-      Toast.success('Versement enregistré');
+
+      // Message contextuel
+      if (redevance > 0 && montant < redevance) {
+        const manque = redevance - montant;
+        Toast.show(`Versement partiel enregistré — manque ${Utils.formatCurrency(manque)}`, 'warning');
+      } else {
+        Toast.success('Versement enregistré');
+      }
       this.render();
     });
+
+    // Bind dynamic redevance display on chauffeur selection
+    setTimeout(() => {
+      const chSelect = document.querySelector('[name="chauffeurId"]');
+      const montantInput = document.querySelector('[name="montantVerse"]');
+      const statutSelect = document.querySelector('[name="statut"]');
+      const infoDiv = document.getElementById('versement-redevance-info');
+      const compDiv = document.getElementById('versement-comparaison');
+
+      const updateRedevanceInfo = () => {
+        if (!infoDiv) return;
+        const chId = chSelect ? chSelect.value : '';
+        const ch = chId ? chauffeurs.find(c => c.id === chId) : null;
+        if (ch && ch.redevanceQuotidienne > 0) {
+          infoDiv.style.display = '';
+          infoDiv.innerHTML = `<strong>${ch.prenom} ${ch.nom}</strong> — Redevance quotidienne : <strong style="color:var(--primary)">${Utils.formatCurrency(ch.redevanceQuotidienne)}</strong>`;
+        } else if (ch) {
+          infoDiv.style.display = '';
+          infoDiv.innerHTML = `<strong>${ch.prenom} ${ch.nom}</strong> — <span style="color:#ef4444">⚠ Aucune redevance configurée</span>`;
+        } else {
+          infoDiv.style.display = 'none';
+        }
+        updateComparaison();
+      };
+
+      const updateComparaison = () => {
+        if (!compDiv) return;
+        const chId = chSelect ? chSelect.value : '';
+        const ch = chId ? chauffeurs.find(c => c.id === chId) : null;
+        const redevance = ch ? (ch.redevanceQuotidienne || 0) : 0;
+        const montant = parseFloat(montantInput ? montantInput.value : 0) || 0;
+
+        if (redevance > 0 && montant > 0) {
+          const diff = montant - redevance;
+          const pct = Math.round((montant / redevance) * 100);
+          if (diff >= 0) {
+            compDiv.style.display = '';
+            compDiv.style.background = 'rgba(34,197,94,0.08)';
+            compDiv.style.borderLeft = '3px solid #22c55e';
+            compDiv.innerHTML = `<iconify-icon icon="solar:check-circle-bold" style="color:#22c55e"></iconify-icon> <strong style="color:#22c55e">Complet (${pct}%)</strong>${diff > 0 ? ` — Excédent : +${Utils.formatCurrency(diff)}` : ''}`;
+            if (statutSelect && statutSelect.value !== 'supprime') statutSelect.value = 'valide';
+          } else {
+            compDiv.style.display = '';
+            compDiv.style.background = 'rgba(245,158,11,0.08)';
+            compDiv.style.borderLeft = '3px solid #f59e0b';
+            compDiv.innerHTML = `<iconify-icon icon="solar:danger-triangle-bold" style="color:#f59e0b"></iconify-icon> <strong style="color:#f59e0b">Partiel (${pct}%)</strong> — Manque : <strong style="color:#ef4444">${Utils.formatCurrency(Math.abs(diff))}</strong>`;
+            if (statutSelect && statutSelect.value !== 'supprime') statutSelect.value = 'partiel';
+          }
+        } else {
+          compDiv.style.display = 'none';
+        }
+      };
+
+      if (chSelect) chSelect.addEventListener('change', updateRedevanceInfo);
+      if (montantInput) montantInput.addEventListener('input', updateComparaison);
+    }, 100);
   },
 
   _edit(id) {

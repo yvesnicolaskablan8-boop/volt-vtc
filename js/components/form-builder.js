@@ -25,6 +25,10 @@ const FormBuilder = {
         html += `<h3 style="margin: var(--space-md) 0 var(--space-sm); font-size: var(--font-size-sm); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">${field.label}</h3>`;
         return;
       }
+      if (field.type === 'html') {
+        html += field.html || '';
+        return;
+      }
 
       let input = '';
 
