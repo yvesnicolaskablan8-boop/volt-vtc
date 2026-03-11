@@ -1367,16 +1367,39 @@ const ComptabilitePage = {
 
   // =================== ONGLET DÉPENSES VÉHICULES ===================
 
-  _depTypeLabels: {
-    carburant: 'Carburant', peage: 'Péage', lavage: 'Lavage',
-    assurance: 'Assurance', reparation: 'Réparation', stationnement: 'Stationnement', autre: 'Autre'
-  },
-  _depTypeOptions: [
+  _depTypeDefaults: [
     { value: 'carburant', label: 'Carburant' }, { value: 'peage', label: 'Péage' },
     { value: 'lavage', label: 'Lavage' }, { value: 'assurance', label: 'Assurance' },
     { value: 'reparation', label: 'Réparation' }, { value: 'stationnement', label: 'Stationnement' },
     { value: 'autre', label: 'Autre' }
   ],
+
+  _getDepTypeOptions() {
+    const custom = Store.get('depenseCategories') || [];
+    return [...this._depTypeDefaults, ...custom];
+  },
+
+  _getDepTypeLabel(value) {
+    const opt = this._getDepTypeOptions().find(t => t.value === value);
+    return opt ? opt.label : value;
+  },
+
+  _addDepCategory() {
+    const name = prompt('Nom de la nouvelle catégorie :');
+    if (!name || !name.trim()) return null;
+    const label = name.trim();
+    const value = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_');
+    // Check duplicate
+    if (this._getDepTypeOptions().some(t => t.value === value)) {
+      Toast.show('Cette catégorie existe déjà', 'error');
+      return null;
+    }
+    const customs = Store.get('depenseCategories') || [];
+    customs.push({ value, label });
+    Store.set('depenseCategories', customs);
+    Toast.show(`Catégorie "${label}" ajoutée`, 'success');
+    return value;
+  },
 
   _renderDepenses() {
     const depenses = Store.get('depenses') || [];
@@ -1417,7 +1440,7 @@ const ComptabilitePage = {
         </div>
         <div class="kpi-card kpi-danger">
           <div class="kpi-icon"><iconify-icon icon="solar:tag-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${this._depTypeLabels[topType] || '-'}</div>
+          <div class="kpi-value">${this._getDepTypeLabel(topType)}</div>
           <div class="kpi-label">Top catégorie</div>
         </div>
         <div class="kpi-card kpi-info">
@@ -1433,7 +1456,7 @@ const ComptabilitePage = {
         </select>
         <select id="dep-filter-type" class="filter-select">
           <option value="">Tous les types</option>
-          ${this._depTypeOptions.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+          ${this._getDepTypeOptions().map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
         </select>
         <input type="date" id="dep-filter-from" class="filter-select">
         <input type="date" id="dep-filter-to" class="filter-select">
@@ -1455,7 +1478,7 @@ const ComptabilitePage = {
         columns: [
           { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) },
           { label: 'Véhicule', key: 'vehiculeId', render: (v) => vehiculeMap[v.vehiculeId] || v.vehiculeId },
-          { label: 'Type', key: 'typeDepense', render: (v) => this._depTypeLabels[v.typeDepense] || v.typeDepense },
+          { label: 'Type', key: 'typeDepense', render: (v) => this._getDepTypeLabel(v.typeDepense) },
           { label: 'Montant', key: 'montant', render: (v) => Utils.formatCurrency(v.montant || 0) },
           { label: 'Km', key: 'kilometrage', render: (v) => v.kilometrage ? Utils.formatNumber(v.kilometrage) + ' km' : '-' },
           { label: 'Commentaire', key: 'commentaire', render: (v) => v.commentaire || '-' },
@@ -1504,7 +1527,10 @@ const ComptabilitePage = {
             ${vehicules.map(v => `<option value="${v.id}">${v.marque} ${v.modele} - ${v.immatriculation || ''}</option>`).join('')}
           </select></div>
         <div class="form-group"><label>Type de dépense *</label>
-          <select name="typeDepense" required>${this._depTypeOptions.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}</select></div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select name="typeDepense" required style="flex:1">${this._getDepTypeOptions().map(t => `<option value="${t.value}">${t.label}</option>`).join('')}</select>
+            <button type="button" id="btn-add-dep-cat" class="btn btn-outline" style="padding:6px 10px;min-width:auto;white-space:nowrap" title="Ajouter une catégorie">+</button>
+          </div></div>
         <div class="form-group"><label>Montant (FCFA) *</label><input type="number" name="montant" required min="1" placeholder="0"></div>
         <div class="form-group"><label>Date *</label><input type="date" name="date" required value="${new Date().toISOString().split('T')[0]}"></div>
         <div class="form-group"><label>Kilométrage</label><input type="number" name="kilometrage" min="0" placeholder="km au compteur"></div>
@@ -1524,6 +1550,19 @@ const ComptabilitePage = {
         this._renderTab('depenses');
       }
     );
+    // Bind "+" button to add custom category
+    const addCatBtn = document.getElementById('btn-add-dep-cat');
+    if (addCatBtn) addCatBtn.addEventListener('click', () => {
+      const newVal = this._addDepCategory();
+      if (newVal) {
+        const sel = document.querySelector('#form-dep [name="typeDepense"]');
+        if (sel) {
+          // Refresh options
+          sel.innerHTML = this._getDepTypeOptions().map(t => `<option value="${t.value}">${t.label}</option>`).join('');
+          sel.value = newVal;
+        }
+      }
+    });
   },
 
   _editDep(id) {
@@ -1536,7 +1575,10 @@ const ComptabilitePage = {
         <div class="form-group"><label>Véhicule</label>
           <select name="vehiculeId">${vehicules.map(v => `<option value="${v.id}" ${v.id === d.vehiculeId ? 'selected' : ''}>${v.marque} ${v.modele} - ${v.immatriculation || ''}</option>`).join('')}</select></div>
         <div class="form-group"><label>Type</label>
-          <select name="typeDepense">${this._depTypeOptions.map(t => `<option value="${t.value}" ${t.value === d.typeDepense ? 'selected' : ''}>${t.label}</option>`).join('')}</select></div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select name="typeDepense" style="flex:1">${this._getDepTypeOptions().map(t => `<option value="${t.value}" ${t.value === d.typeDepense ? 'selected' : ''}>${t.label}</option>`).join('')}</select>
+            <button type="button" id="btn-edit-dep-cat" class="btn btn-outline" style="padding:6px 10px;min-width:auto;white-space:nowrap" title="Ajouter une catégorie">+</button>
+          </div></div>
         <div class="form-group"><label>Montant (FCFA)</label><input type="number" name="montant" value="${d.montant || 0}" min="1"></div>
         <div class="form-group"><label>Date</label><input type="date" name="date" value="${d.date || ''}"></div>
         <div class="form-group"><label>Kilométrage</label><input type="number" name="kilometrage" value="${d.kilometrage || ''}" min="0"></div>
@@ -1554,6 +1596,18 @@ const ComptabilitePage = {
         this._renderTab('depenses');
       }
     );
+    // Bind "+" button to add custom category
+    const addCatBtn = document.getElementById('btn-edit-dep-cat');
+    if (addCatBtn) addCatBtn.addEventListener('click', () => {
+      const newVal = this._addDepCategory();
+      if (newVal) {
+        const sel = document.querySelector('#form-dep-edit [name="typeDepense"]');
+        if (sel) {
+          sel.innerHTML = this._getDepTypeOptions().map(t => `<option value="${t.value}">${t.label}</option>`).join('');
+          sel.value = newVal;
+        }
+      }
+    });
   },
 
   _deleteDep(id) {
@@ -1572,7 +1626,7 @@ const ComptabilitePage = {
     const headers = ['Date', 'Véhicule', 'Type', 'Montant (FCFA)', 'Kilométrage', 'Commentaire'];
     const rows = depenses.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(d => [
       d.date || '', vehiculeMap[d.vehiculeId] || d.vehiculeId,
-      this._depTypeLabels[d.typeDepense] || d.typeDepense, d.montant || 0,
+      this._getDepTypeLabel(d.typeDepense), d.montant || 0,
       d.kilometrage || '', (d.commentaire || '').replace(/"/g, '""')
     ]);
     let csv = '\uFEFF' + headers.join(';') + '\n';
