@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema({
     planning: { type: Boolean, default: false },
     versements: { type: Boolean, default: false },
     contraventions: { type: Boolean, default: false },
+    depenses: { type: Boolean, default: false },
     rentabilite: { type: Boolean, default: false },
     comptabilite: { type: Boolean, default: false },
     gps_conduite: { type: Boolean, default: false },
