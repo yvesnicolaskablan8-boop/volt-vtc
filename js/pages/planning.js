@@ -1249,7 +1249,10 @@ const PlanningPage = {
             ${chauffeurs.filter(c => c.statut === 'actif').map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
           </select></div>
         <div class="form-group"><label>Type de dépense *</label>
-          <select name="typeDepense" required>${typeOptions.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}</select></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select name="typeDepense" required id="rec-type-select" style="flex:1">${typeOptions.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}</select>
+            <button type="button" class="btn btn-sm" onclick="PlanningPage._addRecDepCategory()" style="padding:4px 10px;font-size:1.1rem;line-height:1" title="Ajouter une catégorie">+</button>
+          </div></div>
         <div class="form-group"><label>Montant (FCFA) *</label><input type="number" name="montant" required min="1" placeholder="0"></div>
         <div class="form-group"><label>Récurrence *</label>
           <select name="recurrence" required id="rec-recurrence-select">
@@ -1285,6 +1288,26 @@ const PlanningPage = {
       document.getElementById('rec-jour-semaine').style.display = recSelect.value === 'hebdo' ? '' : 'none';
       document.getElementById('rec-jour-mois').style.display = recSelect.value === 'mensuel' ? '' : 'none';
     });
+  },
+
+  _addRecDepCategory() {
+    const name = prompt('Nom de la nouvelle catégorie :');
+    if (!name || !name.trim()) return;
+    const label = name.trim();
+    const value = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_');
+    if (this._getDepTypeOptions().some(t => t.value === value)) {
+      Toast.show('Cette catégorie existe déjà', 'error'); return;
+    }
+    const customs = Store.get('depenseCategories') || [];
+    customs.push({ value, label });
+    Store.set('depenseCategories', customs);
+    Toast.show(`Catégorie "${label}" ajoutée`, 'success');
+    const sel = document.getElementById('rec-type-select');
+    if (sel) {
+      const opt = document.createElement('option');
+      opt.value = value; opt.textContent = label; opt.selected = true;
+      sel.appendChild(opt);
+    }
   },
 
   _toggleRecModele(id, actif) {
