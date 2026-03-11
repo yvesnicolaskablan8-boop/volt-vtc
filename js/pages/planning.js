@@ -43,6 +43,7 @@ const PlanningPage = {
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="PlanningPage._showTemplates()"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon> Modèles</button>
           <button class="btn btn-secondary" onclick="PlanningPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
+          <button class="btn btn-warning" onclick="PlanningPage._showDepRecurrentes()"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon> Dépenses</button>
           <button class="btn btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Déclarer une absence</button>
           <button class="btn btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Ajouter un créneau</button>
         </div>
@@ -1173,5 +1174,307 @@ const PlanningPage = {
 
     doc.save('planning-volt.pdf');
     Toast.success('PDF exporté');
+  },
+
+  // =================== DÉPENSES RÉCURRENTES ===================
+
+  _getDepTypeOptions() {
+    const defaults = [
+      { value: 'carburant', label: 'Carburant' }, { value: 'peage', label: 'Péage' },
+      { value: 'lavage', label: 'Lavage' }, { value: 'assurance', label: 'Assurance' },
+      { value: 'reparation', label: 'Réparation' }, { value: 'stationnement', label: 'Stationnement' },
+      { value: 'autre', label: 'Autre' }
+    ];
+    const custom = Store.get('depenseCategories') || [];
+    return [...defaults, ...custom];
+  },
+
+  _getDepTypeLabel(val) {
+    const opt = this._getDepTypeOptions().find(t => t.value === val);
+    return opt ? opt.label : val;
+  },
+
+  _showDepRecurrentes() {
+    const modeles = Store.get('depenseRecurrentes') || [];
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const chMap = {};
+    chauffeurs.forEach(c => chMap[c.id] = `${c.prenom} ${c.nom}`);
+
+    const rows = modeles.map(m => `
+      <tr>
+        <td style="font-weight:500">${m.nom}</td>
+        <td>${m.chauffeurId ? (chMap[m.chauffeurId] || m.chauffeurId) : 'Tous'}</td>
+        <td>${this._getDepTypeLabel(m.typeDepense)}</td>
+        <td style="font-weight:600">${Utils.formatCurrency(m.montant)}</td>
+        <td><span class="badge badge-${m.recurrence === 'par_shift' ? 'success' : m.recurrence === 'quotidien' ? 'info' : m.recurrence === 'hebdo' ? 'warning' : 'primary'}">${{ par_shift: 'Par shift', quotidien: 'Quotidien', hebdo: 'Hebdomadaire', mensuel: 'Mensuel' }[m.recurrence]}</span></td>
+        <td>
+          <label style="cursor:pointer"><input type="checkbox" ${m.actif ? 'checked' : ''} onchange="PlanningPage._toggleRecModele('${m.id}', this.checked)"> Actif</label>
+        </td>
+        <td>
+          <button class="btn-icon btn-danger" title="Supprimer" onclick="PlanningPage._deleteRecModele('${m.id}')"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>
+        </td>
+      </tr>
+    `).join('');
+
+    Modal.open({
+      title: '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> Dépenses récurrentes',
+      body: `
+        <div style="display:flex;gap:8px;margin-bottom:1rem">
+          <button class="btn btn-primary btn-sm" onclick="PlanningPage._addRecModele()"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Nouveau modèle</button>
+          <button class="btn btn-success btn-sm" onclick="PlanningPage._generateExpenseGrid()"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Générer la grille</button>
+        </div>
+        ${modeles.length ? `
+          <div style="max-height:350px;overflow-y:auto">
+            <table class="table" style="width:100%;font-size:var(--font-size-sm)">
+              <thead><tr><th>Nom</th><th>Chauffeur</th><th>Type</th><th>Montant</th><th>Récurrence</th><th>Statut</th><th></th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        ` : '<p style="text-align:center;color:var(--text-muted);padding:2rem 0;">Aucun modèle. Créez-en un pour commencer.</p>'}
+      `,
+      footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>',
+      size: 'large'
+    });
+  },
+
+  _addRecModele() {
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const typeOptions = this._getDepTypeOptions();
+    Modal.form(
+      '<iconify-icon icon="solar:add-circle-bold" style="color:#22c55e;"></iconify-icon> Nouveau modèle de dépense',
+      `<form id="form-rec-modele" class="modal-form">
+        <div class="form-group"><label>Nom du modèle *</label><input type="text" name="nom" required placeholder="Ex: Carburant journalier"></div>
+        <div class="form-group"><label>Chauffeur</label>
+          <select name="chauffeurId"><option value="">Tous les chauffeurs planifiés</option>
+            ${chauffeurs.filter(c => c.statut === 'actif').map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label>Type de dépense *</label>
+          <select name="typeDepense" required>${typeOptions.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Montant (FCFA) *</label><input type="number" name="montant" required min="1" placeholder="0"></div>
+        <div class="form-group"><label>Récurrence *</label>
+          <select name="recurrence" required id="rec-recurrence-select">
+            <option value="par_shift">Par shift (1 dépense par créneau planifié)</option>
+            <option value="quotidien">Quotidien (chaque jour de la semaine)</option>
+            <option value="hebdo">Hebdomadaire</option>
+            <option value="mensuel">Mensuel</option>
+          </select></div>
+        <div class="form-group" id="rec-jour-semaine" style="display:none"><label>Jour de la semaine</label>
+          <select name="jourSemaine"><option value="0">Lundi</option><option value="1">Mardi</option><option value="2">Mercredi</option><option value="3">Jeudi</option><option value="4">Vendredi</option><option value="5">Samedi</option><option value="6">Dimanche</option></select></div>
+        <div class="form-group" id="rec-jour-mois" style="display:none"><label>Jour du mois</label><input type="number" name="jourMois" min="1" max="31" value="1"></div>
+      </form>`,
+      () => {
+        const fd = new FormData(document.getElementById('form-rec-modele'));
+        if (!fd.get('nom') || !fd.get('montant')) { Toast.show('Nom et montant requis', 'error'); return; }
+        Store.add('depenseRecurrentes', {
+          id: 'REC-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+          nom: fd.get('nom'), chauffeurId: fd.get('chauffeurId') || null,
+          typeDepense: fd.get('typeDepense'), montant: parseInt(fd.get('montant')),
+          recurrence: fd.get('recurrence'),
+          jourSemaine: fd.get('recurrence') === 'hebdo' ? parseInt(fd.get('jourSemaine')) : null,
+          jourMois: fd.get('recurrence') === 'mensuel' ? parseInt(fd.get('jourMois')) : null,
+          actif: true, dateCreation: new Date().toISOString()
+        });
+        Modal.close();
+        Toast.show('Modèle créé', 'success');
+        setTimeout(() => this._showDepRecurrentes(), 200);
+      }
+    );
+    // Show/hide jour fields based on recurrence
+    const recSelect = document.getElementById('rec-recurrence-select');
+    if (recSelect) recSelect.addEventListener('change', () => {
+      document.getElementById('rec-jour-semaine').style.display = recSelect.value === 'hebdo' ? '' : 'none';
+      document.getElementById('rec-jour-mois').style.display = recSelect.value === 'mensuel' ? '' : 'none';
+    });
+  },
+
+  _toggleRecModele(id, actif) {
+    Store.update('depenseRecurrentes', id, { actif });
+    Toast.show(actif ? 'Modèle activé' : 'Modèle désactivé', 'success');
+  },
+
+  _deleteRecModele(id) {
+    if (!confirm('Supprimer ce modèle ?')) return;
+    Store.delete('depenseRecurrentes', id);
+    Toast.show('Modèle supprimé', 'success');
+    setTimeout(() => this._showDepRecurrentes(), 200);
+  },
+
+  _generateExpenseGrid() {
+    const modeles = (Store.get('depenseRecurrentes') || []).filter(m => m.actif);
+    if (!modeles.length) { Toast.show('Aucun modèle actif', 'error'); return; }
+
+    const planning = Store.get('planning') || [];
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const vehicules = Store.get('vehicules') || [];
+    const depenses = Store.get('depenses') || [];
+    const chMap = {};
+    chauffeurs.forEach(c => { chMap[c.id] = c; });
+    const vehMap = {};
+    vehicules.forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
+
+    // Get current week days
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(this._currentWeekStart);
+      d.setDate(d.getDate() + i);
+      days.push(this._dateStr(d));
+    }
+
+    // Shifts this week
+    const weekShifts = planning.filter(s => days.includes(s.date));
+
+    // Generate grid
+    const grid = [];
+    modeles.forEach(m => {
+      if (m.recurrence === 'par_shift') {
+        // One expense per shift
+        const shifts = m.chauffeurId ? weekShifts.filter(s => s.chauffeurId === m.chauffeurId) : weekShifts;
+        shifts.forEach(s => {
+          const ch = chMap[s.chauffeurId];
+          grid.push({
+            date: s.date, chauffeurId: s.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : s.chauffeurId,
+            vehiculeId: ch ? ch.vehiculeAssigne : null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom
+          });
+        });
+      } else if (m.recurrence === 'quotidien') {
+        days.forEach(date => {
+          if (m.chauffeurId) {
+            const ch = chMap[m.chauffeurId];
+            grid.push({ date, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
+              vehiculeId: ch ? ch.vehiculeAssigne : null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom });
+          } else {
+            // For each chauffeur with a shift that day
+            const dayShifts = weekShifts.filter(s => s.date === date);
+            const seen = new Set();
+            dayShifts.forEach(s => {
+              if (seen.has(s.chauffeurId)) return;
+              seen.add(s.chauffeurId);
+              const ch = chMap[s.chauffeurId];
+              grid.push({ date, chauffeurId: s.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : s.chauffeurId,
+                vehiculeId: ch ? ch.vehiculeAssigne : null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom });
+            });
+          }
+        });
+      } else if (m.recurrence === 'hebdo') {
+        const targetDay = days[m.jourSemaine] || null;
+        if (targetDay) {
+          if (m.chauffeurId) {
+            const ch = chMap[m.chauffeurId];
+            grid.push({ date: targetDay, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
+              vehiculeId: ch ? ch.vehiculeAssigne : null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom });
+          } else {
+            chauffeurs.filter(c => c.statut === 'actif').forEach(c => {
+              grid.push({ date: targetDay, chauffeurId: c.id, chauffeurNom: `${c.prenom} ${c.nom}`,
+                vehiculeId: c.vehiculeAssigne || null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom });
+            });
+          }
+        }
+      } else if (m.recurrence === 'mensuel') {
+        const targetDate = days.find(d => parseInt(d.split('-')[2]) === m.jourMois);
+        if (targetDate) {
+          if (m.chauffeurId) {
+            const ch = chMap[m.chauffeurId];
+            grid.push({ date: targetDate, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
+              vehiculeId: ch ? ch.vehiculeAssigne : null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom });
+          } else {
+            chauffeurs.filter(c => c.statut === 'actif').forEach(c => {
+              grid.push({ date: targetDate, chauffeurId: c.id, chauffeurNom: `${c.prenom} ${c.nom}`,
+                vehiculeId: c.vehiculeAssigne || null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom });
+            });
+          }
+        }
+      }
+    });
+
+    if (!grid.length) { Toast.show('Aucune dépense à générer pour cette semaine', 'error'); return; }
+
+    // Mark duplicates
+    grid.forEach(g => {
+      g.exists = depenses.some(d => d.date === g.date && d.chauffeurId === g.chauffeurId && d.typeDepense === g.typeDepense && d.montant === g.montant);
+      g.vehiculeLabel = g.vehiculeId ? (vehMap[g.vehiculeId] || g.vehiculeId) : '-';
+    });
+
+    // Show validation modal
+    this._showGridValidation(grid, vehMap);
+  },
+
+  _showGridValidation(grid, vehMap) {
+    const rows = grid.map((g, i) => `
+      <tr id="grid-row-${i}" style="${g.exists ? 'opacity:0.5;' : ''}">
+        <td>${Utils.formatDate(g.date)}</td>
+        <td>${g.chauffeurNom}</td>
+        <td>${g.vehiculeLabel}</td>
+        <td>${this._getDepTypeLabel(g.typeDepense)}</td>
+        <td style="font-weight:600">${Utils.formatCurrency(g.montant)}</td>
+        <td style="font-size:var(--font-size-xs);color:var(--text-muted)">${g.modeleNom}</td>
+        <td>
+          ${g.exists
+            ? '<span class="badge badge-secondary">Déjà enregistré</span>'
+            : `<button class="btn-icon btn-danger" title="Retirer" onclick="document.getElementById('grid-row-${i}').remove()"><iconify-icon icon="solar:close-circle-bold"></iconify-icon></button>`
+          }
+        </td>
+      </tr>
+    `).join('');
+
+    const newCount = grid.filter(g => !g.exists).length;
+    const totalAmount = grid.filter(g => !g.exists).reduce((s, g) => s + g.montant, 0);
+
+    Modal.open({
+      title: '<iconify-icon icon="solar:calculator-bold-duotone" style="color:#22c55e;"></iconify-icon> Grille de dépenses à valider',
+      body: `
+        <div style="margin-bottom:1rem;display:flex;gap:1rem;flex-wrap:wrap">
+          <span class="badge badge-success">${newCount} nouvelles</span>
+          <span class="badge badge-secondary">${grid.filter(g => g.exists).length} déjà enregistrées</span>
+          <span style="font-weight:600">Total : ${Utils.formatCurrency(totalAmount)}</span>
+        </div>
+        <div style="max-height:400px;overflow-y:auto" id="grid-validation-table">
+          <table class="table" style="width:100%;font-size:var(--font-size-sm)">
+            <thead><tr><th>Date</th><th>Chauffeur</th><th>Véhicule</th><th>Type</th><th>Montant</th><th>Modèle</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `,
+      footer: `
+        <button class="btn btn-secondary" data-action="cancel">Annuler</button>
+        <button class="btn btn-success" id="btn-validate-grid"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Tout valider (${newCount})</button>
+      `,
+      size: 'large'
+    });
+
+    // Store grid data for validation
+    this._pendingGrid = grid;
+
+    const validateBtn = document.getElementById('btn-validate-grid');
+    if (validateBtn) validateBtn.addEventListener('click', () => this._validateGrid());
+  },
+
+  _validateGrid() {
+    if (!this._pendingGrid) return;
+    const tableDiv = document.getElementById('grid-validation-table');
+    const visibleRowIds = new Set();
+    if (tableDiv) {
+      tableDiv.querySelectorAll('tbody tr').forEach(tr => {
+        const idx = parseInt(tr.id.replace('grid-row-', ''));
+        if (!isNaN(idx)) visibleRowIds.add(idx);
+      });
+    }
+
+    let count = 0;
+    this._pendingGrid.forEach((g, i) => {
+      if (g.exists) return;
+      if (!visibleRowIds.has(i)) return; // Row was removed by user
+      Store.add('depenses', {
+        id: 'DEP-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+        vehiculeId: g.vehiculeId || null, chauffeurId: g.chauffeurId || null,
+        typeDepense: g.typeDepense, montant: g.montant, date: g.date,
+        kilometrage: null, commentaire: `Auto: ${g.modeleNom}`,
+        dateCreation: new Date().toISOString()
+      });
+      count++;
+    });
+
+    Modal.close();
+    this._pendingGrid = null;
+    Toast.show(`${count} dépense${count > 1 ? 's' : ''} enregistrée${count > 1 ? 's' : ''}`, 'success');
   }
 };
