@@ -1428,28 +1428,32 @@ const ComptabilitePage = {
         </div>
       </div>
       <div class="kpi-grid grid-4">
-        <div class="kpi-card kpi-warning">
+        <div class="kpi-card kpi-warning" id="kpi-dep-total" style="cursor:pointer" title="Voir le détail par catégorie">
           <div class="kpi-icon"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(totalMois)}</div>
           <div class="kpi-label">Total ce mois</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" id="kpi-dep-count" style="cursor:pointer" title="Voir la liste des dépenses">
           <div class="kpi-icon"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${monthDep.length}</div>
           <div class="kpi-label">Dépenses ce mois</div>
         </div>
-        <div class="kpi-card kpi-danger">
+        <div class="kpi-card kpi-danger" id="kpi-dep-top" style="cursor:pointer" title="Filtrer par cette catégorie" data-top-type="${topType}">
           <div class="kpi-icon"><iconify-icon icon="solar:tag-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${this._getDepTypeLabel(topType)}</div>
           <div class="kpi-label">Top catégorie</div>
         </div>
-        <div class="kpi-card kpi-info">
+        <div class="kpi-card kpi-info" id="kpi-dep-avg" style="cursor:pointer" title="Voir le détail par véhicule">
           <div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(moyVehicule)}</div>
           <div class="kpi-label">Moy. / véhicule</div>
         </div>
       </div>
       <div class="filters-bar" style="margin-bottom:1rem">
+        <select id="dep-filter-chauffeur" class="filter-select">
+          <option value="">Tous les chauffeurs</option>
+          ${(Store.get('chauffeurs') || []).map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
+        </select>
         <select id="dep-filter-vehicule" class="filter-select">
           <option value="">Tous les véhicules</option>
           ${vehicules.map(v => `<option value="${v.id}">${v.marque} ${v.modele} - ${v.immatriculation || ''}</option>`).join('')}
@@ -1468,8 +1472,11 @@ const ComptabilitePage = {
   _bindDepensesEvents() {
     const depenses = Store.get('depenses') || [];
     const vehicules = Store.get('vehicules') || [];
+    const chauffeurs = Store.get('chauffeurs') || [];
     const vehiculeMap = {};
     vehicules.forEach(v => vehiculeMap[v.id] = `${v.marque} ${v.modele}`);
+    const chauffeurMap = {};
+    chauffeurs.forEach(c => chauffeurMap[c.id] = `${c.prenom} ${c.nom}`);
 
     const renderTable = (items) => {
       Table.create({
@@ -1477,10 +1484,10 @@ const ComptabilitePage = {
         data: items,
         columns: [
           { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) },
+          { label: 'Chauffeur', key: 'chauffeurId', render: (v) => chauffeurMap[v.chauffeurId] || '-' },
           { label: 'Véhicule', key: 'vehiculeId', render: (v) => vehiculeMap[v.vehiculeId] || v.vehiculeId },
           { label: 'Type', key: 'typeDepense', render: (v) => this._getDepTypeLabel(v.typeDepense) },
           { label: 'Montant', key: 'montant', render: (v) => Utils.formatCurrency(v.montant || 0) },
-          { label: 'Km', key: 'kilometrage', render: (v) => v.kilometrage ? Utils.formatNumber(v.kilometrage) + ' km' : '-' },
           { label: 'Commentaire', key: 'commentaire', render: (v) => v.commentaire || '-' },
           { label: 'Actions', key: 'actions', render: (v) => `
             <button class="btn-icon" title="Modifier" onclick="ComptabilitePage._editDep('${v.id}')"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>
@@ -1497,11 +1504,13 @@ const ComptabilitePage = {
     renderTable(depenses);
 
     const applyFilters = () => {
+      const chauffeur = document.getElementById('dep-filter-chauffeur').value;
       const vehicule = document.getElementById('dep-filter-vehicule').value;
       const type = document.getElementById('dep-filter-type').value;
       const from = document.getElementById('dep-filter-from').value;
       const to = document.getElementById('dep-filter-to').value;
       let filtered = depenses;
+      if (chauffeur) filtered = filtered.filter(d => d.chauffeurId === chauffeur);
       if (vehicule) filtered = filtered.filter(d => d.vehiculeId === vehicule);
       if (type) filtered = filtered.filter(d => d.typeDepense === type);
       if (from) filtered = filtered.filter(d => d.date >= from);
@@ -1509,22 +1518,84 @@ const ComptabilitePage = {
       renderTable(filtered);
     };
 
+    document.getElementById('dep-filter-chauffeur').addEventListener('change', applyFilters);
     document.getElementById('dep-filter-vehicule').addEventListener('change', applyFilters);
     document.getElementById('dep-filter-type').addEventListener('change', applyFilters);
     document.getElementById('dep-filter-from').addEventListener('change', applyFilters);
     document.getElementById('dep-filter-to').addEventListener('change', applyFilters);
     document.getElementById('btn-add-dep').addEventListener('click', () => this._addDep());
     document.getElementById('btn-export-dep').addEventListener('click', () => this._exportDep());
+
+    // KPI click handlers
+    const now = new Date();
+    const monthDep = depenses.filter(d => {
+      const dt = new Date(d.date);
+      return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+    });
+
+    // Total ce mois → détail par catégorie
+    document.getElementById('kpi-dep-total').addEventListener('click', () => {
+      const typeTotals = {};
+      monthDep.forEach(d => { typeTotals[d.typeDepense] = (typeTotals[d.typeDepense] || 0) + (d.montant || 0); });
+      const rows = Object.entries(typeTotals).sort((a, b) => b[1] - a[1])
+        .map(([type, amount]) => `<tr><td>${this._getDepTypeLabel(type)}</td><td style="text-align:right;font-weight:600">${Utils.formatCurrency(amount)}</td></tr>`).join('');
+      const total = monthDep.reduce((s, d) => s + (d.montant || 0), 0);
+      Modal.open({
+        title: '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> Détail des dépenses du mois',
+        body: `<table class="table" style="width:100%"><thead><tr><th>Catégorie</th><th style="text-align:right">Montant</th></tr></thead><tbody>${rows}</tbody><tfoot><tr style="font-weight:700;border-top:2px solid var(--border-color)"><td>Total</td><td style="text-align:right">${Utils.formatCurrency(total)}</td></tr></tfoot></table>`,
+        footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>'
+      });
+    });
+
+    // Dépenses ce mois → liste détaillée
+    document.getElementById('kpi-dep-count').addEventListener('click', () => {
+      const rows = monthDep.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+        .map(d => `<tr><td>${Utils.formatDate(d.date)}</td><td>${chauffeurMap[d.chauffeurId] || '-'}</td><td>${vehiculeMap[d.vehiculeId] || '-'}</td><td>${this._getDepTypeLabel(d.typeDepense)}</td><td style="text-align:right;font-weight:600">${Utils.formatCurrency(d.montant || 0)}</td></tr>`).join('');
+      Modal.open({
+        title: '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#3b82f6;"></iconify-icon> Dépenses du mois',
+        body: `<div style="max-height:400px;overflow-y:auto"><table class="table" style="width:100%"><thead><tr><th>Date</th><th>Chauffeur</th><th>Véhicule</th><th>Type</th><th style="text-align:right">Montant</th></tr></thead><tbody>${rows || '<tr><td colspan="5" style="text-align:center">Aucune dépense</td></tr>'}</tbody></table></div>`,
+        footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>',
+        size: 'large'
+      });
+    });
+
+    // Top catégorie → filtrer le tableau
+    document.getElementById('kpi-dep-top').addEventListener('click', () => {
+      const topType = document.getElementById('kpi-dep-top').dataset.topType;
+      if (topType && topType !== '-') {
+        const filterType = document.getElementById('dep-filter-type');
+        filterType.value = topType;
+        filterType.dispatchEvent(new Event('change'));
+      }
+    });
+
+    // Moy. / véhicule → détail par véhicule
+    document.getElementById('kpi-dep-avg').addEventListener('click', () => {
+      const vehTotals = {};
+      monthDep.forEach(d => { vehTotals[d.vehiculeId] = (vehTotals[d.vehiculeId] || 0) + (d.montant || 0); });
+      const rows = Object.entries(vehTotals).sort((a, b) => b[1] - a[1])
+        .map(([vid, amount]) => `<tr><td>${vehiculeMap[vid] || vid}</td><td style="text-align:right;font-weight:600">${Utils.formatCurrency(amount)}</td></tr>`).join('');
+      Modal.open({
+        title: '<iconify-icon icon="solar:wheel-bold-duotone" style="color:#3b82f6;"></iconify-icon> Dépenses par véhicule',
+        body: `<table class="table" style="width:100%"><thead><tr><th>Véhicule</th><th style="text-align:right">Total du mois</th></tr></thead><tbody>${rows || '<tr><td colspan="2" style="text-align:center">Aucune donnée</td></tr>'}</tbody></table>`,
+        footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>'
+      });
+    });
   },
 
   _addDep() {
     const vehicules = Store.get('vehicules') || [];
+    const chauffeurs = Store.get('chauffeurs') || [];
     Modal.form(
       '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> Nouvelle dépense',
       `<form id="form-dep" class="modal-form">
         <div class="form-group"><label>Véhicule *</label>
           <select name="vehiculeId" required><option value="">Sélectionner...</option>
             ${vehicules.map(v => `<option value="${v.id}">${v.marque} ${v.modele} - ${v.immatriculation || ''}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label>Chauffeur</label>
+          <select name="chauffeurId"><option value="">Aucun</option>
+            ${chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
           </select></div>
         <div class="form-group"><label>Type de dépense *</label>
           <div style="display:flex;gap:6px;align-items:center">
@@ -1541,7 +1612,8 @@ const ComptabilitePage = {
         if (!fd.get('vehiculeId') || !parseInt(fd.get('montant'))) { Toast.show('Véhicule et montant requis', 'error'); return; }
         Store.add('depenses', {
           id: 'DEP-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
-          vehiculeId: fd.get('vehiculeId'), typeDepense: fd.get('typeDepense'),
+          vehiculeId: fd.get('vehiculeId'), chauffeurId: fd.get('chauffeurId') || null,
+          typeDepense: fd.get('typeDepense'),
           montant: parseInt(fd.get('montant')), date: fd.get('date'),
           kilometrage: fd.get('kilometrage') ? parseInt(fd.get('kilometrage')) : null,
           commentaire: fd.get('commentaire') || '', dateCreation: new Date().toISOString()
@@ -1569,11 +1641,16 @@ const ComptabilitePage = {
     const d = (Store.get('depenses') || []).find(x => x.id === id);
     if (!d) return;
     const vehicules = Store.get('vehicules') || [];
+    const chauffeurs = Store.get('chauffeurs') || [];
     Modal.form(
       '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;"></iconify-icon> Modifier dépense',
       `<form id="form-dep-edit" class="modal-form">
         <div class="form-group"><label>Véhicule</label>
           <select name="vehiculeId">${vehicules.map(v => `<option value="${v.id}" ${v.id === d.vehiculeId ? 'selected' : ''}>${v.marque} ${v.modele} - ${v.immatriculation || ''}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Chauffeur</label>
+          <select name="chauffeurId"><option value="">Aucun</option>
+            ${chauffeurs.map(c => `<option value="${c.id}" ${c.id === d.chauffeurId ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`).join('')}
+          </select></div>
         <div class="form-group"><label>Type</label>
           <div style="display:flex;gap:6px;align-items:center">
             <select name="typeDepense" style="flex:1">${this._getDepTypeOptions().map(t => `<option value="${t.value}" ${t.value === d.typeDepense ? 'selected' : ''}>${t.label}</option>`).join('')}</select>
@@ -1587,7 +1664,8 @@ const ComptabilitePage = {
       () => {
         const fd = new FormData(document.getElementById('form-dep-edit'));
         Store.update('depenses', id, {
-          vehiculeId: fd.get('vehiculeId'), typeDepense: fd.get('typeDepense'),
+          vehiculeId: fd.get('vehiculeId'), chauffeurId: fd.get('chauffeurId') || null,
+          typeDepense: fd.get('typeDepense'),
           montant: parseInt(fd.get('montant')) || 0, date: fd.get('date'),
           kilometrage: fd.get('kilometrage') ? parseInt(fd.get('kilometrage')) : null,
           commentaire: fd.get('commentaire') || ''
@@ -1621,11 +1699,15 @@ const ComptabilitePage = {
     const depenses = Store.get('depenses') || [];
     if (!depenses.length) { Toast.show('Aucune dépense à exporter', 'error'); return; }
     const vehicules = Store.get('vehicules') || [];
+    const chauffeurs = Store.get('chauffeurs') || [];
     const vehiculeMap = {};
     vehicules.forEach(v => vehiculeMap[v.id] = `${v.marque} ${v.modele}`);
-    const headers = ['Date', 'Véhicule', 'Type', 'Montant (FCFA)', 'Kilométrage', 'Commentaire'];
+    const chauffeurMap = {};
+    chauffeurs.forEach(c => chauffeurMap[c.id] = `${c.prenom} ${c.nom}`);
+    const headers = ['Date', 'Chauffeur', 'Véhicule', 'Type', 'Montant (FCFA)', 'Kilométrage', 'Commentaire'];
     const rows = depenses.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(d => [
-      d.date || '', vehiculeMap[d.vehiculeId] || d.vehiculeId,
+      d.date || '', chauffeurMap[d.chauffeurId] || '',
+      vehiculeMap[d.vehiculeId] || d.vehiculeId,
       this._getDepTypeLabel(d.typeDepense), d.montant || 0,
       d.kilometrage || '', (d.commentaire || '').replace(/"/g, '""')
     ]);
