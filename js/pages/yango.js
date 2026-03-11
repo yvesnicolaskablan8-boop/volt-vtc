@@ -12,6 +12,10 @@ const YangoPage = {
   _dateFrom: null,
   _dateTo: null,
   _planningDate: null, // null = today
+  _map: null,
+  _mapMarkers: {},
+  _mapInterval: null,
+  _mapFitted: false,
 
   render() {
     const container = document.getElementById('page-content');
@@ -28,6 +32,10 @@ const YangoPage = {
     }
     this._charts.forEach(c => c.destroy());
     this._charts = [];
+    if (this._mapInterval) { clearInterval(this._mapInterval); this._mapInterval = null; }
+    if (this._map) { this._map.remove(); this._map = null; }
+    this._mapMarkers = {};
+    this._mapFitted = false;
   },
 
   _template() {
@@ -151,6 +159,19 @@ const YangoPage = {
         </div>
       </div>
 
+      <!-- Carte temps réel -->
+      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #22c55e;">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span class="card-title" style="display:flex;align-items:center;gap:8px;">
+            <iconify-icon icon="solar:map-bold-duotone" style="color:#FC4C02;"></iconify-icon>
+            Positions en temps réel
+            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite;"></span>
+          </span>
+          <span class="badge badge-info" id="yp-map-count">--</span>
+        </div>
+        <div id="yp-realtime-map" style="height:400px;border-radius:var(--radius-md);z-index:0;"></div>
+      </div>
+
       <!-- Chauffeurs programmés — Planning -->
       <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -235,6 +256,7 @@ const YangoPage = {
       this._data = stats;
       this._updatePeriodLabels();
       this._renderKPIs(stats);
+      if (!this._map) this._initMap();
       this._loadVoltActivity();
 
       // Update sync status badge
@@ -540,6 +562,107 @@ const YangoPage = {
     setVal('yp-activity-time', tempsActivite > 0 ? `${tempsActivite} min` : '--');
   },
 
+  // =================== CARTE TEMPS RÉEL ===================
+
+  _initMap() {
+    if (typeof L === 'undefined') return;
+    const container = document.getElementById('yp-realtime-map');
+    if (!container) return;
+
+    // Nettoyer si déjà initialisée
+    if (this._map) { this._map.remove(); this._map = null; }
+    if (this._mapInterval) { clearInterval(this._mapInterval); this._mapInterval = null; }
+    this._mapMarkers = {};
+
+    this._map = L.map(container, { zoomControl: true, attributionControl: false }).setView([5.345, -4.025], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '© OpenStreetMap'
+    }).addTo(this._map);
+
+    // Premier chargement + polling 15s
+    this._refreshMap();
+    this._mapInterval = setInterval(() => this._refreshMap(), 15000);
+  },
+
+  async _refreshMap() {
+    if (!this._map) return;
+    try {
+      const token = typeof Auth !== 'undefined' ? Auth.getToken() : localStorage.getItem('volt_token');
+      const res = await fetch('/api/gps/positions', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (!res.ok) return;
+      const positions = await res.json();
+
+      // Filtrer par chauffeurs programmés du jour
+      const selectedDate = this._planningDate || new Date().toISOString().split('T')[0];
+      const planning = Store.get('planning') || [];
+      const scheduledIds = new Set(planning.filter(p => p.date === selectedDate).map(p => p.chauffeurId));
+
+      const filtered = positions.filter(p => scheduledIds.has(p.chauffeurId));
+      const countEl = document.getElementById('yp-map-count');
+      if (countEl) countEl.textContent = filtered.length;
+
+      const now = Date.now();
+      const activeIds = new Set();
+
+      filtered.forEach(p => {
+        activeIds.add(p.chauffeurId);
+        const age = now - new Date(p.updatedAt).getTime();
+        const isFresh = age < 5 * 60 * 1000; // < 5 min
+        const color = isFresh ? '#3b82f6' : '#94a3b8';
+        const heading = p.heading || 0;
+        const speedTxt = p.speed ? `${Math.round(p.speed)} km/h` : 'Arrêté';
+        const ageTxt = age < 60000 ? 'À l\'instant' : age < 300000 ? `Il y a ${Math.round(age / 60000)} min` : `Il y a ${Math.round(age / 3600000)}h`;
+
+        const icon = L.divIcon({
+          className: '',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+          html: `<div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid #fff;">
+            <iconify-icon icon="${p.heading ? 'solar:map-arrow-up-bold' : 'solar:wheel-bold'}" style="color:#fff;font-size:16px;${p.heading ? 'transform:rotate(' + heading + 'deg);' : ''}"></iconify-icon>
+          </div>`
+        });
+
+        const popupContent = `<div style="font-size:12px;min-width:140px;">
+          <div style="font-weight:700;margin-bottom:4px;">${p.prenom} ${p.nom}</div>
+          ${p.vehicule ? `<div style="font-size:10px;color:#666;margin-bottom:2px;">🚗 ${p.vehicule}</div>` : ''}
+          <div style="font-size:10px;"><span style="color:${isFresh ? '#22c55e' : '#f59e0b'};">● </span>${speedTxt}</div>
+          <div style="font-size:10px;color:#999;">${ageTxt}</div>
+        </div>`;
+
+        if (this._mapMarkers[p.chauffeurId]) {
+          // Update existing
+          const marker = this._mapMarkers[p.chauffeurId];
+          marker.setLatLng([p.lat, p.lng]);
+          marker.setIcon(icon);
+          marker.getPopup().setContent(popupContent);
+        } else {
+          // Create new
+          const marker = L.marker([p.lat, p.lng], { icon }).addTo(this._map);
+          marker.bindPopup(popupContent);
+          this._mapMarkers[p.chauffeurId] = marker;
+        }
+      });
+
+      // Supprimer markers déconnectés
+      Object.keys(this._mapMarkers).forEach(id => {
+        if (!activeIds.has(id)) {
+          this._map.removeLayer(this._mapMarkers[id]);
+          delete this._mapMarkers[id];
+        }
+      });
+
+      // Ajuster la vue au premier chargement avec des positions
+      if (filtered.length > 0 && !this._mapFitted) {
+        const bounds = L.latLngBounds(filtered.map(p => [p.lat, p.lng]));
+        this._map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+        this._mapFitted = true;
+      }
+    } catch (e) {
+      console.warn('[YangoMap] Refresh error:', e.message);
+    }
+  },
+
   // =================== PLANNING DATE PICKER ===================
 
   _onPlanningDateChange() {
@@ -552,6 +675,8 @@ const YangoPage = {
     const live = document.getElementById('yp-planning-live');
     if (title) title.textContent = this._planningDate ? `Chauffeurs programmés — ${Utils.formatDate(this._planningDate)}` : 'Chauffeurs programmés — Aujourd\'hui';
     if (live) live.style.display = this._planningDate ? 'none' : '';
+    this._mapFitted = false;
+    this._refreshMap();
     this._loadVoltActivity();
   },
 
@@ -564,6 +689,8 @@ const YangoPage = {
     const live = document.getElementById('yp-planning-live');
     if (title) title.textContent = 'Chauffeurs programmés — Aujourd\'hui';
     if (live) live.style.display = '';
+    this._mapFitted = false;
+    this._refreshMap();
     this._loadVoltActivity();
   },
 
