@@ -1013,10 +1013,18 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       const txnTimeout = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Transactions timeout 10s')), 10000)
       );
-      const transactionsData = await Promise.race([
-        fetchAllTransactions(from, to, driverIds),
+
+      // Fetch ALL transactions first (unfiltered) to debug
+      const allTxns = await Promise.race([
+        fetchAllTransactions(from, to, null),
         txnTimeout
       ]);
+      // Now filter client-side
+      const transactionsData = (allTxns || []).filter(t => t.driver_profile_id && driverIds.has(t.driver_profile_id));
+
+      // Debug: log driver IDs seen in transactions
+      const uniqueDriverIds = [...new Set((allTxns || []).map(t => t.driver_profile_id).filter(Boolean))];
+      console.log(`driver-stats [${yangoDriverId}]: ${(allTxns || []).length} total txns, ${transactionsData.length} for driver, from=${from}, to=${to}, uniqueDrivers=${JSON.stringify(uniqueDriverIds)}`);
 
       if (transactionsData && transactionsData.length > 0) {
         const finance = aggregateTransactions(transactionsData);
