@@ -150,31 +150,6 @@ const YangoPage = {
         </div>
       </div>
 
-      <!-- Content: Drivers + Courses side by side -->
-      <div class="yango-content-grid" style="margin-top:var(--space-lg);">
-        <!-- Drivers list -->
-        <div class="card yango-drivers-card">
-          <div class="card-header">
-            <span class="card-title"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon> Chauffeurs en service</span>
-            <span class="badge badge-info" id="yp-drivers-count">--</span>
-          </div>
-          <div id="yp-drivers-table">
-            <div class="yango-loading"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>
-          </div>
-        </div>
-
-        <!-- Recent courses -->
-        <div class="card yango-courses-card">
-          <div class="card-header">
-            <span class="card-title"><iconify-icon icon="solar:route-bold-duotone"></iconify-icon> Courses recentes</span>
-            <span class="badge badge-info" id="yp-courses-count">--</span>
-          </div>
-          <div id="yp-courses-list">
-            <div class="yango-loading"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Chauffeurs programmés — Planning du jour -->
       <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
         <div class="card-header">
@@ -252,8 +227,6 @@ const YangoPage = {
       this._data = stats;
       this._updatePeriodLabels();
       this._renderKPIs(stats);
-      this._renderDriversTable(stats.chauffeurs?.liste || []);
-      this._renderRecentCourses(stats.courses?.recentes || []);
       this._loadVoltActivity();
 
       // Update sync status badge
@@ -557,116 +530,6 @@ const YangoPage = {
     setVal('yp-commission-month', Utils.formatCurrency(commYangoMonth));
     setVal('yp-courses-month', coursesMonth);
     setVal('yp-activity-time', tempsActivite > 0 ? `${tempsActivite} min` : '--');
-  },
-
-  // =================== RENDER DRIVERS TABLE ===================
-
-  _renderDriversTable(drivers) {
-    const container = document.getElementById('yp-drivers-table');
-    const countBadge = document.getElementById('yp-drivers-count');
-    if (!container) return;
-
-    if (countBadge) countBadge.textContent = drivers.length;
-
-    if (!drivers || drivers.length === 0) {
-      container.innerHTML = '<div class="yango-empty"><iconify-icon icon="solar:user-cross-bold-duotone"></iconify-icon><span>Aucun chauffeur en service</span></div>';
-      return;
-    }
-
-    const statusOrder = { en_ligne: 0, occupe: 1, hors_ligne: 2 };
-    const sorted = [...drivers].sort((a, b) => (statusOrder[a.statut] || 2) - (statusOrder[b.statut] || 2));
-
-    container.innerHTML = `
-      <div class="yango-drivers-list">
-        ${sorted.slice(0, 20).map(d => {
-          const statusConfig = {
-            en_ligne: { label: 'En ligne', class: 'yango-status-online' },
-            occupe: { label: 'Occupe', class: 'yango-status-busy' },
-            hors_ligne: { label: 'Hors ligne', class: 'yango-status-offline' }
-          };
-          const status = statusConfig[d.statut] || statusConfig.hors_ligne;
-          const lastUpdate = d.derniereMaj
-            ? new Date(d.derniereMaj).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
-            : '--';
-          const balanceVal = parseFloat(d.balance || 0);
-          const balanceClass = balanceVal >= 0 ? 'yango-balance-positive' : 'yango-balance-negative';
-
-          return `
-            <div class="yango-driver-row">
-              <div class="yango-driver-info">
-                <div class="avatar-sm">${(d.nom?.[0] || '?').toUpperCase()}</div>
-                <div>
-                  <div class="yango-driver-name">${d.nom || 'Inconnu'}</div>
-                  <div class="yango-driver-meta">${lastUpdate}</div>
-                </div>
-              </div>
-              <div class="yango-driver-right">
-                <span class="yango-status ${status.class}">
-                  <iconify-icon icon="solar:record-circle-bold-duotone"></iconify-icon> ${status.label}
-                </span>
-                <span class="yango-driver-balance ${balanceClass}">${balanceVal.toLocaleString('fr-FR')} F</span>
-              </div>
-            </div>
-          `;
-        }).join('')}
-        ${sorted.length > 20 ? `<div class="yango-more-link">+ ${sorted.length - 20} autres chauffeurs</div>` : ''}
-      </div>
-    `;
-  },
-
-  // =================== RENDER RECENT COURSES ===================
-
-  _renderRecentCourses(courses) {
-    const container = document.getElementById('yp-courses-list');
-    const countBadge = document.getElementById('yp-courses-count');
-    if (!container) return;
-
-    if (countBadge) countBadge.textContent = courses.length;
-
-    if (!courses || courses.length === 0) {
-      const emptyMsg = this._datePreset === 'today' ? "Aucune course aujourd'hui" : `Aucune course pour cette periode`;
-      container.innerHTML = `<div class="yango-empty"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon><span>${emptyMsg}</span></div>`;
-      return;
-    }
-
-    const statusIcons = {
-      en_route: { icon: 'solar:wheel-bold-duotone', color: '#3b82f6' },
-      en_attente: { icon: 'solar:hourglass-bold-duotone', color: '#f59e0b' },
-      en_course: { icon: 'solar:bus-bold-duotone', color: '#22c55e' },
-      terminee: { icon: 'solar:check-circle-bold-duotone', color: '#22c55e' },
-      annulee: { icon: 'solar:close-circle-bold', color: '#ef4444' },
-      recherche: { icon: 'solar:magnifer-bold-duotone', color: '#8b5cf6' },
-      assignee: { icon: 'solar:user-check-bold-duotone', color: '#06b6d4' }
-    };
-
-    container.innerHTML = `
-      <div class="yango-courses-list-inner">
-        ${courses.map(c => {
-          const st = statusIcons[c.statut] || { icon: 'solar:record-circle-bold-duotone', color: '#6b7280' };
-          const heure = c.heure ? new Date(c.heure).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--';
-          const montant = c.montant > 0 ? Utils.formatCurrency(c.montant) : '--';
-
-          return `
-            <div class="yango-course-item">
-              <div class="yango-course-icon" style="color:${st.color}">
-                <iconify-icon icon="${st.icon}"></iconify-icon>
-              </div>
-              <div class="yango-course-info">
-                <div class="yango-course-driver">${c.chauffeur || '--'}</div>
-                <div class="yango-course-route">
-                  ${c.depart ? `<span><iconify-icon icon="solar:map-point-bold-duotone" style="color:#22c55e;font-size:9px"></iconify-icon> ${c.depart.substring(0, 40)}${c.depart.length > 40 ? '...' : ''}</span>` : ''}
-                  ${c.arrivee ? `<span><iconify-icon icon="solar:flag-bold-duotone" style="color:#ef4444;font-size:9px"></iconify-icon> ${c.arrivee.substring(0, 40)}${c.arrivee.length > 40 ? '...' : ''}</span>` : ''}
-                </div>
-              </div>
-              <div class="yango-course-right">
-                <div class="yango-course-amount">${montant}</div>
-                <div class="yango-course-time">${heure}</div>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
   },
 
   // =================== YANGO SYNC ===================
