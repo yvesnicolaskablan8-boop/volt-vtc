@@ -239,6 +239,22 @@ const AlertesPage = {
         });
       }
 
+      // Chauffeur actif sans redevance quotidienne
+      if (ch.statut === 'actif' && (!ch.redevanceQuotidienne || ch.redevanceQuotidienne <= 0)) {
+        alerts.push({
+          id: `NOREDEV-${ch.id}`,
+          categorie: 'versements',
+          niveau: 'attention',
+          titre: 'Redevance non définie',
+          description: `${nom} est actif mais n'a pas de redevance quotidienne configurée. Il ne sera pas comptabilisé dans les versements attendus.`,
+          chauffeurId: ch.id,
+          action: 'Configurer la redevance',
+          actionRoute: `#/chauffeurs/${ch.id}`,
+          icon: 'solar:wallet-money-bold-duotone',
+          date: todayStr
+        });
+      }
+
       // Documents chauffeur (champs date directe)
       const docFieldsChauffeur = [
         { field: 'dateExpirationPermis', label: 'Permis de conduire', labelCourt: 'Permis' },
