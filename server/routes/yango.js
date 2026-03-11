@@ -17,7 +17,7 @@ router.use(authMiddleware);
 const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
 
 // Helper: make Yango POST API call with detailed error logging
-async function yangoFetch(endpoint, body = {}) {
+async function yangoFetch(endpoint, body = {}, maxRetries = 3) {
   const parkId = process.env.YANGO_PARK_ID;
   const apiKey = process.env.YANGO_API_KEY;
   const clientId = process.env.YANGO_CLIENT_ID;
@@ -26,36 +26,55 @@ async function yangoFetch(endpoint, body = {}) {
     throw new Error('Yango API credentials not configured');
   }
 
-  console.log(`Yango API call: POST ${endpoint}`);
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
+      const res = await fetch(`${YANGO_BASE}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-ID': clientId,
+          'X-API-Key': apiKey,
+          'Accept-Language': 'fr'
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
 
-  const res = await fetch(`${YANGO_BASE}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Client-ID': clientId,
-      'X-API-Key': apiKey,
-      'Accept-Language': 'fr'
-    },
-    body: JSON.stringify(body),
-    signal: controller.signal
-  });
-  clearTimeout(timeout);
+      const text = await res.text();
 
-  const text = await res.text();
-  console.log(`Yango API response ${res.status}:`, text.substring(0, 500));
+      if (!res.ok) {
+        // Retry on 500/502/503/504
+        if (res.status >= 500 && attempt < maxRetries) {
+          console.warn(`Yango API ${res.status} on ${endpoint} (attempt ${attempt}/${maxRetries}), retrying...`);
+          await new Promise(r => setTimeout(r, 500 * attempt));
+          continue;
+        }
+        throw new Error(`Yango API error ${res.status}: ${text.substring(0, 200)}`);
+      }
 
-  if (!res.ok) {
-    throw new Error(`Yango API error ${res.status}: ${text}`);
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Yango API invalid JSON: ${text.substring(0, 200)}`);
+      }
+    } catch (e) {
+      lastError = e;
+      if (e.name === 'AbortError' && attempt < maxRetries) {
+        console.warn(`Yango API timeout on ${endpoint} (attempt ${attempt}/${maxRetries}), retrying...`);
+        continue;
+      }
+      if (attempt < maxRetries && e.message.includes('API error 5')) {
+        continue;
+      }
+      throw e;
+    }
   }
-
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw new Error(`Yango API invalid JSON: ${text.substring(0, 200)}`);
-  }
+  throw lastError;
 }
 
 // Helper: make Yango GET API call (for work-rules etc.)
@@ -991,11 +1010,11 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
   let tempsActiviteMinutes = 0;
   let sent = false;
 
-  // Global safety timeout: respond with whatever we have after 20s
+  // Global safety timeout: respond with whatever we have after 30s
   const safetyTimer = setTimeout(() => {
     if (!sent) {
       sent = true;
-      console.warn('driver-stats: global 20s timeout, returning partial data');
+      console.warn('driver-stats: global 30s timeout, returning partial data');
       res.json({
         yangoDriverId, totalCA, totalCash, totalCard, nbCourses,
         commissionYango, commissionPartenaire, tempsActiviteMinutes,
@@ -1004,27 +1023,20 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
         partial: true
       });
     }
-  }, 20000);
+  }, 30000);
 
   try {
     // Primary: transactions (filtered by driver, paginated, reliable)
     const driverIds = new Set([yangoDriverId]);
     try {
       const txnTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Transactions timeout 10s')), 10000)
+        setTimeout(() => reject(new Error('Transactions timeout 25s')), 25000)
       );
 
-      // Fetch ALL transactions first (unfiltered) to debug
-      const allTxns = await Promise.race([
-        fetchAllTransactions(from, to, null),
+      const transactionsData = await Promise.race([
+        fetchAllTransactions(from, to, driverIds),
         txnTimeout
       ]);
-      // Now filter client-side
-      const transactionsData = (allTxns || []).filter(t => t.driver_profile_id && driverIds.has(t.driver_profile_id));
-
-      // Debug: log driver IDs seen in transactions
-      const uniqueDriverIds = [...new Set((allTxns || []).map(t => t.driver_profile_id).filter(Boolean))];
-      console.log(`driver-stats [${yangoDriverId}]: ${(allTxns || []).length} total txns, ${transactionsData.length} for driver, from=${from}, to=${to}, uniqueDrivers=${JSON.stringify(uniqueDriverIds)}`);
 
       if (transactionsData && transactionsData.length > 0) {
         const finance = aggregateTransactions(transactionsData);
