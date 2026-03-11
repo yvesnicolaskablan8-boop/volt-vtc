@@ -599,13 +599,14 @@ const YangoPage = {
       const scheduledIds = new Set(planning.filter(p => p.date === selectedDate).map(p => p.chauffeurId));
 
       const now = Date.now();
-      const MAX_AGE = 60 * 60 * 1000; // 1h — au-delà on considère le signal perdu
+      const MAX_AGE = 8 * 60 * 60 * 1000; // 8h — durée max d'un shift
 
       const filtered = positions.filter(p => {
         if (!scheduledIds.has(p.chauffeurId)) return false;
         const age = now - new Date(p.updatedAt).getTime();
-        return age < MAX_AGE; // Exclure positions de plus d'1h
+        return age < MAX_AGE;
       });
+      const freshCount = filtered.filter(p => (now - new Date(p.updatedAt).getTime()) < 5 * 60 * 1000).length;
       const countEl = document.getElementById('yp-map-count');
       if (countEl) countEl.textContent = filtered.length;
 
@@ -617,15 +618,18 @@ const YangoPage = {
         const isFresh = age < 5 * 60 * 1000; // < 5 min
         const color = isFresh ? '#3b82f6' : '#94a3b8';
         const heading = p.heading || 0;
-        const speedTxt = p.speed > 2 ? `${Math.round(p.speed)} km/h` : 'Arrêté';
-        const ageTxt = age < 60000 ? 'À l\'instant' : age < 300000 ? `Il y a ${Math.round(age / 60000)} min` : `Il y a ${Math.round(age / 60000)} min`;
+        const speedTxt = isFresh && p.speed > 2 ? `${Math.round(p.speed)} km/h` : isFresh ? 'Arrêté' : 'Hors ligne';
+        const ageTxt = age < 60000 ? 'À l\'instant'
+          : age < 3600000 ? `Il y a ${Math.round(age / 60000)} min`
+          : `Il y a ${Math.round(age / 3600000)}h${String(Math.round((age % 3600000) / 60000)).padStart(2, '0')}`;
 
+        const opacity = isFresh ? '1' : '0.6';
         const icon = L.divIcon({
           className: '',
           iconSize: [32, 32],
           iconAnchor: [16, 16],
-          html: `<div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid #fff;">
-            <iconify-icon icon="${p.heading ? 'solar:map-arrow-up-bold' : 'solar:wheel-bold'}" style="color:#fff;font-size:16px;${p.heading ? 'transform:rotate(' + heading + 'deg);' : ''}"></iconify-icon>
+          html: `<div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid #fff;opacity:${opacity};">
+            <iconify-icon icon="${isFresh && p.heading ? 'solar:map-arrow-up-bold' : 'solar:wheel-bold'}" style="color:#fff;font-size:16px;${isFresh && p.heading ? 'transform:rotate(' + heading + 'deg);' : ''}"></iconify-icon>
           </div>`
         });
 
