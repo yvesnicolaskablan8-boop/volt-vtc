@@ -369,6 +369,20 @@ const DashboardPage = {
       depensesByType[d.typeDepense] = (depensesByType[d.typeDepense] || 0) + d.montant;
     });
 
+    // =================== DETTES & PERTES ===================
+    const totalDettes = versements
+      .filter(v => v.traitementManquant === 'dette' && v.manquant > 0)
+      .reduce((s, v) => s + v.manquant, 0);
+    const totalPertes = versements
+      .filter(v => v.traitementManquant === 'perte' && v.manquant > 0)
+      .reduce((s, v) => s + v.manquant, 0);
+    const nbDetteDrivers = new Set(
+      versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0).map(v => v.chauffeurId)
+    ).size;
+    const nbPerteDrivers = new Set(
+      versements.filter(v => v.traitementManquant === 'perte' && v.manquant > 0).map(v => v.chauffeurId)
+    ).size;
+
     // Alertes count (reuse AlertesPage generator if available)
     let alertesTotal = 0, alertesCritiques = 0, alertesUrgentes = 0;
     try {
@@ -391,7 +405,7 @@ const DashboardPage = {
     const periodLabel = isMonthView ? monthLabel : Utils.formatDate(selectedDay);
 
     return {
-      caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount,
+      caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount, totalDettes, totalPertes, nbDetteDrivers, nbPerteDrivers,
       nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
       vehiclesActifs, vehiclesEV, vehiclesThermique,
@@ -437,12 +451,12 @@ const DashboardPage = {
 
       <!-- KPI Cards -->
       <div class="grid-4">
-        <a href="#/versements" class="kpi-card" style="text-decoration:none;color:inherit;cursor:pointer;">
+        <a href="#/versements" class="kpi-card ${d.totalDettes > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(d.caThisMonth)}</div>
-          <div class="kpi-label">CA — ${d.periodLabel}</div>
-          <div class="kpi-trend ${d.caTrend >= 0 ? 'up' : 'down'}">
-            <iconify-icon icon="solar:arrow-${d.caTrend >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(d.caTrend).toFixed(1)}% · ${d.isMonthView ? 'mois préc.' : 'veille'} : ${Utils.formatCurrency(d.caPrevPeriod)}
+          <div class="kpi-value">${d.totalDettes > 0 ? Utils.formatCurrency(d.totalDettes) : '<span style="color:var(--success)">0 FCFA</span>'}</div>
+          <div class="kpi-label">Dettes chauffeurs</div>
+          <div class="kpi-trend ${d.totalDettes > 0 ? 'down' : 'up'}">
+            ${d.totalDettes > 0 ? `<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers > 1 ? 's' : ''} endetté${d.nbDetteDrivers > 1 ? 's' : ''}` : '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Aucune dette ✔'}
           </div>
         </a>
         <a href="#/versements" class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
@@ -481,14 +495,14 @@ const DashboardPage = {
             <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> ${Utils.formatCurrency(d.totalVerse)} / ${Utils.formatCurrency(d.totalAttendu)}
           </div>
         </div>
-        <div class="kpi-card ${d.serviceEnCours > 0 ? 'green' : ''}">
-          <div class="kpi-icon"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.serviceEnCours + d.serviceEnPause + d.serviceTermine}/${d.programmesCount}</div>
-          <div class="kpi-label">Pointage du jour</div>
-          <div class="kpi-trend ${d.servicePasCommence > 0 ? 'down' : 'up'}">
-            <span style="color:var(--success)">${d.serviceEnCours} actif${d.serviceEnCours > 1 ? 's' : ''}</span> · <span style="color:var(--warning)">${d.serviceEnPause} pause</span> · ${d.serviceTermine} fini${d.serviceTermine > 1 ? 's' : ''}
+        <a href="#/versements" class="kpi-card ${d.totalPertes > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
+          <div class="kpi-icon"><iconify-icon icon="solar:fire-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '<span style="color:var(--success)">0 FCFA</span>'}</div>
+          <div class="kpi-label">Pertes enregistrées</div>
+          <div class="kpi-trend ${d.totalPertes > 0 ? 'down' : 'up'}">
+            ${d.totalPertes > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone" style="color:var(--danger)"></iconify-icon> ${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers > 1 ? 's' : ''}` : '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Aucune perte ✔'}
           </div>
-        </div>
+        </a>
         <a href="#/vehicules" class="kpi-card" style="text-decoration:none;color:inherit;cursor:pointer;">
           <div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${d.vehiclesActifs}</div>
