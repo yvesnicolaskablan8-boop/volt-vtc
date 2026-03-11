@@ -1480,7 +1480,7 @@ const ComptabilitePage = {
 
     const renderTable = (items) => {
       Table.create({
-        container: '#dep-table',
+        containerId: 'dep-table',
         data: items,
         columns: [
           { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) },
@@ -1488,16 +1488,12 @@ const ComptabilitePage = {
           { label: 'Véhicule', key: 'vehiculeId', render: (v) => vehiculeMap[v.vehiculeId] || v.vehiculeId },
           { label: 'Type', key: 'typeDepense', render: (v) => this._getDepTypeLabel(v.typeDepense) },
           { label: 'Montant', key: 'montant', render: (v) => Utils.formatCurrency(v.montant || 0) },
-          { label: 'Commentaire', key: 'commentaire', render: (v) => v.commentaire || '-' },
           { label: 'Actions', key: 'actions', render: (v) => `
             <button class="btn-icon" title="Modifier" onclick="ComptabilitePage._editDep('${v.id}')"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>
             <button class="btn-icon btn-danger" title="Supprimer" onclick="ComptabilitePage._deleteDep('${v.id}')"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>
           `}
         ],
-        sortKey: 'date',
-        sortDir: 'desc',
         pageSize: 15,
-        emptyMessage: 'Aucune dépense enregistrée',
         onRowClick: (id) => ComptabilitePage._editDep(id)
       });
     };
