@@ -11,6 +11,7 @@ const YangoPage = {
   _datePreset: 'today', // 'today', 'yesterday', 'week', 'month', 'custom'
   _dateFrom: null,
   _dateTo: null,
+  _planningDate: null, // null = today
 
   render() {
     const container = document.getElementById('page-content');
@@ -150,13 +151,20 @@ const YangoPage = {
         </div>
       </div>
 
-      <!-- Chauffeurs programmés — Planning du jour -->
+      <!-- Chauffeurs programmés — Planning -->
       <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
-        <div class="card-header">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
           <span class="card-title" style="display:flex;align-items:center;gap:8px;">
-            <iconify-icon icon="solar:calendar-bold-duotone" style="color:#FC4C02;"></iconify-icon> Chauffeurs programmés — Aujourd'hui
-            <span style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>
+            <iconify-icon icon="solar:calendar-bold-duotone" style="color:#FC4C02;"></iconify-icon>
+            <span id="yp-planning-title">Chauffeurs programmés — Aujourd'hui</span>
+            <span id="yp-planning-live" style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>
           </span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="date" id="yp-planning-date" class="form-control" value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="width:145px;font-size:var(--font-size-xs);padding:4px 8px;" onchange="YangoPage._onPlanningDateChange()">
+            <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;padding:4px 8px;" onclick="YangoPage._resetPlanningDate()" title="Aujourd'hui">
+              <iconify-icon icon="solar:calendar-minimalistic-bold"></iconify-icon>
+            </button>
+          </div>
         </div>
         <div id="yp-volt-activity">
           <div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:var(--font-size-sm);">
@@ -532,6 +540,33 @@ const YangoPage = {
     setVal('yp-activity-time', tempsActivite > 0 ? `${tempsActivite} min` : '--');
   },
 
+  // =================== PLANNING DATE PICKER ===================
+
+  _onPlanningDateChange() {
+    const input = document.getElementById('yp-planning-date');
+    if (!input) return;
+    const today = new Date().toISOString().split('T')[0];
+    this._planningDate = input.value === today ? null : input.value;
+    // Update title
+    const title = document.getElementById('yp-planning-title');
+    const live = document.getElementById('yp-planning-live');
+    if (title) title.textContent = this._planningDate ? `Chauffeurs programmés — ${Utils.formatDate(this._planningDate)}` : 'Chauffeurs programmés — Aujourd\'hui';
+    if (live) live.style.display = this._planningDate ? 'none' : '';
+    this._loadVoltActivity();
+  },
+
+  _resetPlanningDate() {
+    const input = document.getElementById('yp-planning-date');
+    const today = new Date().toISOString().split('T')[0];
+    if (input) input.value = today;
+    this._planningDate = null;
+    const title = document.getElementById('yp-planning-title');
+    const live = document.getElementById('yp-planning-live');
+    if (title) title.textContent = 'Chauffeurs programmés — Aujourd\'hui';
+    if (live) live.style.display = '';
+    this._loadVoltActivity();
+  },
+
   // =================== YANGO SYNC ===================
 
   async _triggerSync(datePreset = null) {
@@ -698,10 +733,11 @@ const YangoPage = {
     const container = document.getElementById('yp-volt-activity');
     if (!container) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const selectedDate = this._planningDate || new Date().toISOString().split('T')[0];
+    const isToday = !this._planningDate;
     const planning = Store.get('planning') || [];
     const chauffeurs = Store.get('chauffeurs') || [];
-    const todayShifts = planning.filter(p => p.date === today);
+    const todayShifts = planning.filter(p => p.date === selectedDate);
 
     // Grouper par chauffeurId
     const scheduledMap = new Map();
@@ -717,7 +753,7 @@ const YangoPage = {
     if (scheduled.length === 0) {
       container.innerHTML = `<div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:var(--font-size-sm);">
         <iconify-icon icon="solar:calendar-minimalistic-bold-duotone" style="font-size:32px;color:var(--text-muted);opacity:0.4;"></iconify-icon>
-        <div style="margin-top:8px;">Aucun chauffeur programmé aujourd'hui</div>
+        <div style="margin-top:8px;">Aucun chauffeur programmé ${isToday ? "aujourd'hui" : 'le ' + Utils.formatDate(selectedDate)}</div>
         <a href="#/planning" style="color:#FC4C02;font-size:var(--font-size-xs);margin-top:4px;display:inline-block;">Aller au Planning →</a>
       </div>`;
       return;
@@ -741,7 +777,7 @@ const YangoPage = {
     // Fetch stats pour les liés
     const results = await Promise.allSettled(
       linked.map(async (entry) => {
-        const stats = await Store.getYangoDriverStats(entry.chauffeur.yangoDriverId, null);
+        const stats = await Store.getYangoDriverStats(entry.chauffeur.yangoDriverId, isToday ? null : selectedDate);
         return { ...entry, stats, isLinked: true };
       })
     );
