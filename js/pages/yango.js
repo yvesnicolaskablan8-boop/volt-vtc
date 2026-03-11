@@ -175,27 +175,6 @@ const YangoPage = {
         </div>
       </div>
 
-      <!-- Top drivers -->
-      <div class="card" style="margin-top:var(--space-lg);">
-        <div class="card-header">
-          <span class="card-title" id="yp-top-title"><iconify-icon icon="solar:cup-bold-duotone"></iconify-icon> Top chauffeurs du jour</span>
-        </div>
-        <div id="yp-top-drivers">
-          <div class="yango-loading"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>
-        </div>
-      </div>
-
-      <!-- Courses terminées -->
-      <div class="card" style="margin-top:var(--space-lg);">
-        <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e"></iconify-icon> Courses terminées</span>
-          <span class="badge badge-success" id="yp-completed-count">--</span>
-        </div>
-        <div id="yp-completed-courses">
-          <div class="yango-loading"><iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Chargement...</div>
-        </div>
-      </div>
-
       <!-- Chauffeurs programmés — Planning du jour -->
       <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
         <div class="card-header">
@@ -275,8 +254,6 @@ const YangoPage = {
       this._renderKPIs(stats);
       this._renderDriversTable(stats.chauffeurs?.liste || []);
       this._renderRecentCourses(stats.courses?.recentes || []);
-      this._renderTopDrivers(stats.topChauffeurs || []);
-      this._renderCompletedCourses(stats.courses?.recentes || []);
       this._loadVoltActivity();
 
       // Update sync status badge
@@ -472,13 +449,6 @@ const YangoPage = {
       setLabel('yp-courses-month-label', `Total courses`);
     }
 
-    // Top chauffeurs title
-    const topTitle = document.getElementById('yp-top-title');
-    if (topTitle) {
-      topTitle.innerHTML = isToday
-        ? '<iconify-icon icon="solar:cup-bold-duotone"></iconify-icon> Top chauffeurs du jour'
-        : `<iconify-icon icon="solar:cup-bold-duotone"></iconify-icon> Top chauffeurs (${label})`;
-    }
   },
 
   // =================== WORK RULES ===================
@@ -690,116 +660,6 @@ const YangoPage = {
               </div>
               <div class="yango-course-right">
                 <div class="yango-course-amount">${montant}</div>
-                <div class="yango-course-time">${heure}</div>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-  },
-
-  // =================== RENDER TOP DRIVERS ===================
-
-  _renderTopDrivers(topDrivers) {
-    const container = document.getElementById('yp-top-drivers');
-    if (!container) return;
-
-    if (!topDrivers || topDrivers.length === 0) {
-      container.innerHTML = '<div class="yango-empty"><iconify-icon icon="solar:cup-bold-duotone"></iconify-icon><span>Aucune donnee disponible</span></div>';
-      return;
-    }
-
-    container.innerHTML = `
-      <div class="yango-top-list">
-        ${topDrivers.map((d, i) => {
-          const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
-          const medal = i < 3 ? medals[i] : `${i + 1}.`;
-          const cashVal = d.cash || 0;
-          const cardVal = d.card || 0;
-          const detailParts = [];
-          if (cashVal > 0) detailParts.push(`<iconify-icon icon="solar:money-bag-bold-duotone" style="color:#22c55e;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cashVal)}`);
-          if (cardVal > 0) detailParts.push(`<iconify-icon icon="solar:card-bold-duotone" style="color:#3b82f6;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cardVal)}`);
-          if (d.courses > 0) detailParts.push(`${d.courses} course${d.courses > 1 ? 's' : ''}`);
-          return `
-            <div class="yango-top-item">
-              <span class="yango-top-rank">${medal}</span>
-              <div class="avatar-sm">${(d.nom?.[0] || '?').toUpperCase()}</div>
-              <div class="yango-top-info">
-                <div class="yango-top-name">${d.nom || 'Inconnu'}</div>
-                <div class="yango-top-meta">${detailParts.join(' &bull; ') || '--'}</div>
-              </div>
-              <div class="yango-top-amount">${Utils.formatCurrency(d.ca)}</div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-  },
-
-  // =================== RENDER COMPLETED COURSES ===================
-
-  _renderCompletedCourses(courses) {
-    const container = document.getElementById('yp-completed-courses');
-    const countBadge = document.getElementById('yp-completed-count');
-    if (!container) return;
-
-    // Filtrer uniquement les courses terminées
-    const completed = (courses || []).filter(c => c.statut === 'terminee');
-
-    if (countBadge) countBadge.textContent = completed.length;
-
-    if (completed.length === 0) {
-      const emptyMsg = this._datePreset === 'today' ? "Aucune course terminee aujourd'hui" : 'Aucune course terminee pour cette periode';
-      container.innerHTML = `<div class="yango-empty"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon><span>${emptyMsg}</span></div>`;
-      return;
-    }
-
-    // Calculer stats
-    const totalCA = completed.reduce((sum, c) => sum + (c.montant || 0), 0);
-    const totalCash = completed.filter(c => c.paiement === 'cash').reduce((sum, c) => sum + (c.montant || 0), 0);
-    const totalCard = totalCA - totalCash;
-
-    container.innerHTML = `
-      <!-- Stats résumé -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-sm);margin-bottom:var(--space-md);padding:var(--space-sm) 0;">
-        <div style="text-align:center;padding:var(--space-sm);background:var(--bg-tertiary);border-radius:var(--radius-md);">
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Total</div>
-          <div style="font-size:var(--font-size-md);font-weight:700;color:var(--text-primary);">${Utils.formatCurrency(totalCA)}</div>
-        </div>
-        <div style="text-align:center;padding:var(--space-sm);background:var(--bg-tertiary);border-radius:var(--radius-md);">
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:money-bag-bold-duotone" style="color:#22c55e;font-size:10px"></iconify-icon> Cash</div>
-          <div style="font-size:var(--font-size-md);font-weight:700;color:#22c55e;">${Utils.formatCurrency(totalCash)}</div>
-        </div>
-        <div style="text-align:center;padding:var(--space-sm);background:var(--bg-tertiary);border-radius:var(--radius-md);">
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:card-bold-duotone" style="color:#3b82f6;font-size:10px"></iconify-icon> Carte</div>
-          <div style="font-size:var(--font-size-md);font-weight:700;color:#3b82f6;">${Utils.formatCurrency(totalCard)}</div>
-        </div>
-      </div>
-
-      <!-- Liste des courses terminées -->
-      <div class="yango-courses-list-inner" style="max-height:400px;overflow-y:auto;">
-        ${completed.map(c => {
-          const heure = c.heure ? new Date(c.heure).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--';
-          const montant = c.montant > 0 ? Utils.formatCurrency(c.montant) : '--';
-          const paiementIcon = c.paiement === 'cash'
-            ? '<iconify-icon icon="solar:money-bag-bold-duotone" style="color:#22c55e;font-size:11px" title="Cash"></iconify-icon>'
-            : '<iconify-icon icon="solar:card-bold-duotone" style="color:#3b82f6;font-size:11px" title="Carte"></iconify-icon>';
-
-          return `
-            <div class="yango-course-item">
-              <div class="yango-course-icon" style="color:#22c55e">
-                <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
-              </div>
-              <div class="yango-course-info">
-                <div class="yango-course-driver">${c.chauffeur || '--'}</div>
-                <div class="yango-course-route">
-                  ${c.depart ? `<span><iconify-icon icon="solar:map-point-bold-duotone" style="color:#22c55e;font-size:9px"></iconify-icon> ${c.depart.substring(0, 40)}${c.depart.length > 40 ? '...' : ''}</span>` : ''}
-                  ${c.arrivee ? `<span><iconify-icon icon="solar:flag-bold-duotone" style="color:#ef4444;font-size:9px"></iconify-icon> ${c.arrivee.substring(0, 40)}${c.arrivee.length > 40 ? '...' : ''}</span>` : ''}
-                </div>
-              </div>
-              <div class="yango-course-right">
-                <div class="yango-course-amount">${paiementIcon} ${montant}</div>
                 <div class="yango-course-time">${heure}</div>
               </div>
             </div>
