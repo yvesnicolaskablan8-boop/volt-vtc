@@ -196,11 +196,11 @@ const YangoPage = {
         </div>
       </div>
 
-      <!-- Activité Volt — Chauffeurs liés -->
-      <div class="card" style="margin-top:var(--space-lg);">
+      <!-- Chauffeurs programmés — Planning du jour -->
+      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
         <div class="card-header">
           <span class="card-title" style="display:flex;align-items:center;gap:8px;">
-            <iconify-icon icon="solar:chart-2-bold-duotone" style="color:#FC4C02;"></iconify-icon> Activité Volt — Aujourd'hui
+            <iconify-icon icon="solar:calendar-bold-duotone" style="color:#FC4C02;"></iconify-icon> Chauffeurs programmés — Aujourd'hui
             <span style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>
           </span>
         </div>
@@ -951,77 +951,139 @@ const YangoPage = {
     `;
   },
 
-  // =================== VOLT ACTIVITY (per-chauffeur stats) ===================
+  // =================== CHAUFFEURS PROGRAMMÉS (planning-based activity) ===================
+
+  _getShiftDurationMinutes(shift) {
+    let startStr = shift.heureDebut;
+    let endStr = shift.heureFin;
+    // Fallback presets
+    if (!startStr || !endStr) {
+      const presets = { matin: ['06:00', '14:00'], apres_midi: ['14:00', '22:00'], journee: ['08:00', '20:00'], nuit: ['22:00', '06:00'] };
+      const preset = presets[shift.typeCreneaux];
+      if (preset) { startStr = startStr || preset[0]; endStr = endStr || preset[1]; }
+    }
+    if (!startStr || !endStr) return 480; // 8h default
+    const [sh, sm] = startStr.split(':').map(Number);
+    const [eh, em] = endStr.split(':').map(Number);
+    let startMin = sh * 60 + (sm || 0);
+    let endMin = eh * 60 + (em || 0);
+    if (endMin <= startMin) endMin += 24 * 60; // overnight
+    return endMin - startMin;
+  },
 
   async _loadVoltActivity() {
     const container = document.getElementById('yp-volt-activity');
     if (!container) return;
 
-    const chauffeurs = Store.get('chauffeurs');
-    const activeChauffeurs = chauffeurs.filter(c => c.statut === 'actif');
-    const linked = activeChauffeurs.filter(c => c.yangoDriverId);
-    const unlinked = activeChauffeurs.filter(c => !c.yangoDriverId);
+    const today = new Date().toISOString().split('T')[0];
+    const planning = Store.get('planning') || [];
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const todayShifts = planning.filter(p => p.date === today);
 
-    // Render unlinked banner above the table
+    // Grouper par chauffeurId
+    const scheduledMap = new Map();
+    todayShifts.forEach(shift => {
+      const ch = chauffeurs.find(c => c.id === shift.chauffeurId);
+      if (ch && ch.statut === 'actif') {
+        if (!scheduledMap.has(ch.id)) scheduledMap.set(ch.id, { chauffeur: ch, shifts: [] });
+        scheduledMap.get(ch.id).shifts.push(shift);
+      }
+    });
+    const scheduled = Array.from(scheduledMap.values());
+
+    if (scheduled.length === 0) {
+      container.innerHTML = `<div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:var(--font-size-sm);">
+        <iconify-icon icon="solar:calendar-minimalistic-bold-duotone" style="font-size:32px;color:var(--text-muted);opacity:0.4;"></iconify-icon>
+        <div style="margin-top:8px;">Aucun chauffeur programmé aujourd'hui</div>
+        <a href="#/planning" style="color:#FC4C02;font-size:var(--font-size-xs);margin-top:4px;display:inline-block;">Aller au Planning →</a>
+      </div>`;
+      return;
+    }
+
+    const linked = scheduled.filter(s => s.chauffeur.yangoDriverId);
+    const unlinked = scheduled.filter(s => !s.chauffeur.yangoDriverId);
+
+    // Banner non liés
     let bannerHtml = '';
     if (unlinked.length > 0) {
       bannerHtml = `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;margin-bottom:var(--space-md);background:rgba(252,76,2,0.1);border:1px solid rgba(252,76,2,0.3);border-radius:var(--radius-md);font-size:var(--font-size-xs);">
         <div style="display:flex;align-items:center;gap:8px;">
           <iconify-icon icon="solar:link-broken-bold-duotone" style="color:#FC4C02;font-size:16px;"></iconify-icon>
-          <span><strong>${unlinked.length} chauffeur${unlinked.length > 1 ? 's' : ''}</strong> non lié${unlinked.length > 1 ? 's' : ''} à Yango : ${unlinked.map(c => c.prenom).join(', ')}</span>
+          <span><strong>${unlinked.length} chauffeur${unlinked.length > 1 ? 's' : ''} programmé${unlinked.length > 1 ? 's' : ''}</strong> non lié${unlinked.length > 1 ? 's' : ''} à Yango : ${unlinked.map(s => s.chauffeur.prenom).join(', ')}</span>
         </div>
-        <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;" onclick="YangoPage._syncVoltYango()"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier automatiquement</button>
+        <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;" onclick="YangoPage._syncVoltYango()"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier</button>
       </div>`;
     }
 
-    if (linked.length === 0) {
-      container.innerHTML = bannerHtml + '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-sm);">Aucun chauffeur Volt avec ID Yango configuré</div>';
-      return;
-    }
-
-    // Fetch stats en parallèle
+    // Fetch stats pour les liés
     const results = await Promise.allSettled(
-      linked.map(async (c) => {
-        const stats = await Store.getYangoDriverStats(c.yangoDriverId, null);
-        return { chauffeur: c, stats };
+      linked.map(async (entry) => {
+        const stats = await Store.getYangoDriverStats(entry.chauffeur.yangoDriverId, null);
+        return { ...entry, stats, isLinked: true };
       })
     );
 
-    const rows = results
-      .filter(r => r.status === 'fulfilled' && r.value.stats && !r.value.stats.error)
-      .map(r => r.value)
-      .sort((a, b) => (b.stats.totalCA || 0) - (a.stats.totalCA || 0));
+    // Construire les rows
+    const rows = [];
+    results.forEach(r => {
+      if (r.status === 'fulfilled' && r.value.stats && !r.value.stats.error) {
+        rows.push(r.value);
+      } else {
+        const entry = r.status === 'fulfilled' ? r.value : linked[rows.length];
+        if (entry) rows.push({ ...entry, stats: null, isLinked: true, statsError: true });
+      }
+    });
+    unlinked.forEach(entry => rows.push({ ...entry, stats: null, isLinked: false }));
 
-    const errCount = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.stats && r.value.stats.error)).length;
+    // Tri : liés avec CA desc, puis liés erreur, puis non liés
+    rows.sort((a, b) => {
+      if (a.isLinked && !b.isLinked) return -1;
+      if (!a.isLinked && b.isLinked) return 1;
+      return (b.stats?.totalCA || 0) - (a.stats?.totalCA || 0);
+    });
 
-    if (rows.length === 0) {
-      container.innerHTML = bannerHtml + `<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:var(--font-size-sm);">
-        <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:var(--warning);"></iconify-icon> Impossible de charger les données
-      </div>`;
-      return;
-    }
+    const totalCA = rows.reduce((s, r) => s + (r.stats?.totalCA || 0), 0);
+    const totalCourses = rows.reduce((s, r) => s + (r.stats?.nbCourses || 0), 0);
+    const errCount = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.stats?.error)).length;
 
-    const totalCA = rows.reduce((s, r) => s + (r.stats.totalCA || 0), 0);
-    const totalCourses = rows.reduce((s, r) => s + (r.stats.nbCourses || 0), 0);
+    // Shift helpers
+    const shiftColors = { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6', custom: '#6366f1' };
+    const shiftLabels = { matin: 'M', apres_midi: 'AM', journee: 'J', nuit: 'N', custom: 'P' };
+    const getShiftBadge = (shift) => {
+      const type = shift.typeCreneaux || 'custom';
+      const color = shiftColors[type] || '#64748b';
+      const hd = shift.heureDebut ? parseInt(shift.heureDebut) : null;
+      const hf = shift.heureFin ? parseInt(shift.heureFin) : null;
+      const label = (hd !== null && hf !== null) ? `${hd}h-${hf}h` : (shiftLabels[type] || '?');
+      return `<span style="display:inline-block;padding:1px 6px;border-radius:4px;background:${color}20;color:${color};font-size:10px;font-weight:600;white-space:nowrap;">${label}</span>`;
+    };
 
     container.innerHTML = `
       ${bannerHtml}
-      <div style="display:flex;gap:var(--space-lg);margin-bottom:var(--space-md);padding:0 var(--space-sm);">
+      <div style="display:flex;gap:var(--space-lg);margin-bottom:var(--space-md);padding:0 var(--space-sm);flex-wrap:wrap;">
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
-          Total flotte Volt : <strong style="color:#FC4C02;font-size:var(--font-size-sm);">${Utils.formatCurrency(totalCA)}</strong>
+          Programmés : <strong style="color:var(--text-primary);font-size:var(--font-size-sm);">${scheduled.length}</strong>
+        </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
+          Liés Yango : <strong style="color:#22c55e;font-size:var(--font-size-sm);">${linked.length}</strong>
+        </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
+          CA total : <strong style="color:#FC4C02;font-size:var(--font-size-sm);">${Utils.formatCurrency(totalCA)}</strong>
         </div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
           Courses : <strong style="color:var(--text-primary);font-size:var(--font-size-sm);">${totalCourses}</strong>
         </div>
-        ${errCount > 0 ? `<div style="font-size:var(--font-size-xs);color:var(--warning);">${errCount} chauffeur(s) non chargé(s)</div>` : ''}
+        ${errCount > 0 ? `<div style="font-size:var(--font-size-xs);color:var(--warning);">${errCount} non chargé(s)</div>` : ''}
       </div>
       <div style="overflow-x:auto;">
         <table class="data-table" style="margin:0;">
           <thead>
             <tr>
               <th>Chauffeur</th>
+              <th style="text-align:center;">Créneau</th>
+              <th style="text-align:center;">Activité</th>
               <th style="text-align:right;">CA</th>
-              <th style="text-align:center;">Objectif</th>
+              <th style="text-align:center;">Objectif CA</th>
               <th style="text-align:right;">Courses</th>
               <th style="text-align:right;">Espèces</th>
               <th style="text-align:right;">Carte</th>
@@ -1031,27 +1093,54 @@ const YangoPage = {
             ${rows.map(r => {
               const c = r.chauffeur;
               const s = r.stats;
+              const ca = s?.totalCA || 0;
+              // Objectif CA
               const objectif = c.objectifCA || 0;
-              const ca = s.totalCA || 0;
-              const pct = objectif > 0 ? Math.min(100, Math.round(ca / objectif * 100)) : null;
-              const pctColor = pct >= 100 ? '#22c55e' : pct >= 60 ? '#f59e0b' : '#ef4444';
+              const caPct = objectif > 0 ? Math.min(100, Math.round(ca / objectif * 100)) : null;
+              const caPctColor = caPct !== null ? (caPct >= 100 ? '#22c55e' : caPct >= 60 ? '#f59e0b' : '#ef4444') : null;
+              // Activité
+              const totalShiftMin = r.shifts.reduce((sum, sh) => sum + this._getShiftDurationMinutes(sh), 0);
+              const actMin = s?.tempsActiviteMinutes || 0;
+              const actPct = totalShiftMin > 0 ? Math.min(100, Math.round(actMin / totalShiftMin * 100)) : 0;
+              const actColor = actPct >= 80 ? '#22c55e' : actPct >= 40 ? '#f59e0b' : '#ef4444';
+              const actH = Math.floor(actMin / 60);
+              const actM = actMin % 60;
+              const actLabel = actMin > 0 ? `${actH}h${String(Math.round(actM)).padStart(2, '0')}` : '--';
+              const shiftH = Math.floor(totalShiftMin / 60);
+              const shiftM = totalShiftMin % 60;
+              const shiftLabel = `${shiftH}h${shiftM > 0 ? String(shiftM).padStart(2, '0') : ''}`;
               return `
                 <tr style="cursor:pointer;" onclick="Router.navigate('/chauffeurs/${c.id}')">
                   <td style="display:flex;align-items:center;gap:8px;">
                     ${typeof Utils !== 'undefined' && Utils.getAvatarHtml ? Utils.getAvatarHtml(c, '', 'width:28px;height:28px;font-size:10px;flex-shrink:0;') : `<div class="avatar-sm">${(c.prenom[0] + c.nom[0]).toUpperCase()}</div>`}
-                    <span style="font-weight:500;">${c.prenom} ${c.nom}</span>
+                    <div>
+                      <span style="font-weight:500;">${c.prenom} ${c.nom}</span>
+                      ${!r.isLinked ? '<span style="display:inline-block;padding:1px 5px;border-radius:3px;background:rgba(239,68,68,0.15);color:#ef4444;font-size:9px;font-weight:600;margin-left:4px;">Non lié</span>' : ''}
+                    </div>
                   </td>
-                  <td style="text-align:right;font-weight:700;color:#FC4C02;">${Utils.formatCurrency(ca)}</td>
-                  <td style="text-align:center;min-width:100px;">${pct !== null ? `
+                  <td style="text-align:center;">${r.shifts.map(sh => getShiftBadge(sh)).join(' ')}</td>
+                  <td style="text-align:center;min-width:130px;">
+                    ${r.isLinked && !r.statsError ? `
+                      <div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+                        <div style="flex:1;max-width:70px;height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden;">
+                          <div style="width:${actPct}%;height:100%;background:${actColor};border-radius:3px;transition:width 0.3s;"></div>
+                        </div>
+                        <span style="font-size:10px;font-weight:600;color:${actColor};">${actLabel}</span>
+                      </div>
+                      <div style="font-size:9px;color:var(--text-muted);">/ ${shiftLabel}</div>
+                    ` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}
+                  </td>
+                  <td style="text-align:right;font-weight:700;color:#FC4C02;">${r.isLinked && s ? Utils.formatCurrency(ca) : '—'}</td>
+                  <td style="text-align:center;min-width:100px;">${caPct !== null && r.isLinked && s ? `
                     <div style="display:flex;align-items:center;gap:4px;justify-content:center;">
                       <div style="flex:1;max-width:60px;height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden;">
-                        <div style="width:${pct}%;height:100%;background:${pctColor};border-radius:3px;transition:width 0.3s;"></div>
+                        <div style="width:${caPct}%;height:100%;background:${caPctColor};border-radius:3px;transition:width 0.3s;"></div>
                       </div>
-                      <span style="font-size:10px;font-weight:600;color:${pctColor};">${pct}%</span>
+                      <span style="font-size:10px;font-weight:600;color:${caPctColor};">${caPct}%</span>
                     </div>` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}</td>
-                  <td style="text-align:right;font-weight:600;">${s.nbCourses || 0}</td>
-                  <td style="text-align:right;color:#22c55e;">${Utils.formatCurrency(s.totalCash || 0)}</td>
-                  <td style="text-align:right;color:#3b82f6;">${Utils.formatCurrency(s.totalCard || 0)}</td>
+                  <td style="text-align:right;font-weight:600;">${s ? (s.nbCourses || 0) : '—'}</td>
+                  <td style="text-align:right;color:#22c55e;">${s ? Utils.formatCurrency(s.totalCash || 0) : '—'}</td>
+                  <td style="text-align:right;color:#3b82f6;">${s ? Utils.formatCurrency(s.totalCard || 0) : '—'}</td>
                 </tr>
               `;
             }).join('')}
