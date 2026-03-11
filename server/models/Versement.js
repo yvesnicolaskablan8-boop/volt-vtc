@@ -25,6 +25,8 @@ const versementSchema = new mongoose.Schema({
   referencePaiement: String,
   waveCheckoutId: String,
   waveTransactionId: String,
+  manquant: { type: Number, default: 0 },
+  traitementManquant: { type: String, enum: ['dette', 'perte', null], default: null },
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {
   toJSON: {

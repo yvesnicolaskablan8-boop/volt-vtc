@@ -444,6 +444,7 @@ const VersementsPage = {
       { name: 'statut', label: 'Statut', type: 'select', options: statusOptions },
       { type: 'row-end' },
       { type: 'html', html: '<div id="versement-comparaison" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:var(--font-size-sm);"></div>' },
+      { type: 'html', html: '<div id="versement-traitement-manquant" style="display:none;padding:12px 14px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);margin-bottom:12px;font-size:var(--font-size-sm);"><label style="font-weight:600;margin-bottom:8px;display:block">Traitement du manquant</label><div style="display:flex;gap:10px;flex-wrap:wrap"><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="dette" checked> <iconify-icon icon="solar:clock-circle-bold" style="color:#f59e0b"></iconify-icon> Reporter en dette</label><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="perte"> <iconify-icon icon="solar:close-circle-bold" style="color:#ef4444"></iconify-icon> Passer en perte</label></div><div id="versement-manquant-detail" style="margin-top:8px;font-size:var(--font-size-xs);color:var(--text-muted)"></div></div>' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
@@ -479,6 +480,11 @@ const VersementsPage = {
         }
       }
 
+      // Compute shortfall info
+      const manquant = (redevance > 0 && montant < redevance) ? redevance - montant : 0;
+      const traitementRadio = document.querySelector('input[name="traitementManquant"]:checked');
+      const traitementManquant = manquant > 0 ? (traitementRadio ? traitementRadio.value : 'dette') : null;
+
       const versement = {
         id: Utils.generateId('VRS'),
         ...values,
@@ -488,6 +494,8 @@ const VersementsPage = {
         nombreCourses,
         commission: 0,
         montantNet: values.montantVerse,
+        manquant: manquant || 0,
+        traitementManquant,
         dateValidation: values.statut === 'valide' ? new Date().toISOString() : null,
         dateCreation: new Date().toISOString()
       };
@@ -496,9 +504,12 @@ const VersementsPage = {
       Modal.close();
 
       // Message contextuel
-      if (redevance > 0 && montant < redevance) {
-        const manque = redevance - montant;
-        Toast.show(`Versement partiel enregistré — manque ${Utils.formatCurrency(manque)}`, 'warning');
+      if (manquant > 0) {
+        if (traitementManquant === 'dette') {
+          Toast.show(`Versement partiel — ${Utils.formatCurrency(manquant)} reporté en dette`, 'warning');
+        } else {
+          Toast.show(`Versement partiel — ${Utils.formatCurrency(manquant)} passé en perte`, 'warning');
+        }
       } else {
         Toast.success('Versement enregistré');
       }
@@ -529,6 +540,9 @@ const VersementsPage = {
         updateComparaison();
       };
 
+      const traitementDiv = document.getElementById('versement-traitement-manquant');
+      const manquantDetail = document.getElementById('versement-manquant-detail');
+
       const updateComparaison = () => {
         if (!compDiv) return;
         const chId = chSelect ? chSelect.value : '';
@@ -545,15 +559,29 @@ const VersementsPage = {
             compDiv.style.borderLeft = '3px solid #22c55e';
             compDiv.innerHTML = `<iconify-icon icon="solar:check-circle-bold" style="color:#22c55e"></iconify-icon> <strong style="color:#22c55e">Complet (${pct}%)</strong>${diff > 0 ? ` — Excédent : +${Utils.formatCurrency(diff)}` : ''}`;
             if (statutSelect && statutSelect.value !== 'supprime') statutSelect.value = 'valide';
+            if (traitementDiv) traitementDiv.style.display = 'none';
           } else {
             compDiv.style.display = '';
             compDiv.style.background = 'rgba(245,158,11,0.08)';
             compDiv.style.borderLeft = '3px solid #f59e0b';
             compDiv.innerHTML = `<iconify-icon icon="solar:danger-triangle-bold" style="color:#f59e0b"></iconify-icon> <strong style="color:#f59e0b">Partiel (${pct}%)</strong> — Manque : <strong style="color:#ef4444">${Utils.formatCurrency(Math.abs(diff))}</strong>`;
             if (statutSelect && statutSelect.value !== 'supprime') statutSelect.value = 'partiel';
+            // Show treatment choice
+            if (traitementDiv) {
+              traitementDiv.style.display = '';
+              // Compute existing debt for this chauffeur
+              const allVers = Store.get('versements') || [];
+              const detteExistante = allVers.filter(v => v.chauffeurId === chId && v.traitementManquant === 'dette' && v.manquant > 0).reduce((s, v) => s + (v.manquant || 0), 0);
+              if (manquantDetail) {
+                manquantDetail.innerHTML = detteExistante > 0
+                  ? `Dette existante de ${ch.prenom} ${ch.nom} : <strong style="color:#ef4444">${Utils.formatCurrency(detteExistante)}</strong> — Nouveau total si reporté : <strong>${Utils.formatCurrency(detteExistante + Math.abs(diff))}</strong>`
+                  : `Aucune dette existante pour ${ch.prenom} ${ch.nom}`;
+              }
+            }
           }
         } else {
           compDiv.style.display = 'none';
+          if (traitementDiv) traitementDiv.style.display = 'none';
         }
       };
 
