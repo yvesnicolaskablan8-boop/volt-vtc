@@ -28,6 +28,7 @@ router.get('/', async (req, res, next) => {
     const Depense = require('../models/Depense');
     const DepenseRecurrente = require('../models/DepenseRecurrente');
     const DepenseCategorie = require('../models/DepenseCategorie');
+    const VersementRecurrent = require('../models/VersementRecurrent');
     const Reparation = require('../models/Reparation');
     const ControleTechnique = require('../models/ControleTechnique');
 
@@ -37,7 +38,7 @@ router.get('/', async (req, res, next) => {
       gps, comptabilite, factures, budgets,
       planning, absences, users, settingsDoc, signalements,
       pointages, conduiteBrute, checklistVehicules, contraventions, depenses,
-      depenseRecurrentes, depenseCategories,
+      depenseRecurrentes, depenseCategories, versementRecurrents,
       reparations, controlesTechniques
     ] = await Promise.all([
       Chauffeur.find().lean(),
@@ -60,6 +61,7 @@ router.get('/', async (req, res, next) => {
       Depense.find().lean(),
       DepenseRecurrente.find().lean(),
       DepenseCategorie.find().lean(),
+      VersementRecurrent.find().lean(),
       Reparation.find().lean(),
       ControleTechnique.find().lean()
     ]);
@@ -95,6 +97,7 @@ router.get('/', async (req, res, next) => {
       depenses: clean(depenses),
       depenseRecurrentes: clean(depenseRecurrentes),
       depenseCategories: clean(depenseCategories),
+      versementRecurrents: clean(versementRecurrents),
       reparations: clean(reparations),
       controlesTechniques: clean(controlesTechniques),
       settings

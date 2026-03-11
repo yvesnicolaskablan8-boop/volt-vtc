@@ -40,6 +40,7 @@ app.use('/api/contraventions', require('./routes/crud')('Contravention'));
 app.use('/api/depenses', require('./routes/crud')('Depense'));
 app.use('/api/depenseRecurrentes', require('./routes/crud')('DepenseRecurrente'));
 app.use('/api/depenseCategories', require('./routes/crud')('DepenseCategorie'));
+app.use('/api/versementRecurrents', require('./routes/crud')('VersementRecurrent'));
 app.use('/api/reparations', require('./routes/crud')('Reparation'));
 app.use('/api/controlesTechniques', require('./routes/crud')('ControleTechnique'));
 app.use('/api/yango', require('./routes/yango'));
