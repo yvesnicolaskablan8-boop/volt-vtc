@@ -1,97 +1,138 @@
 /**
- * SupportPage — Signaler un problème
+ * SupportPage — Signaler un problème (Panne, Accident, Urgence)
  */
 const SupportPage = {
   render(container) {
     const chauffeur = DriverAuth.getChauffeur() || {};
 
     container.innerHTML = `
-      <!-- Emergency button section -->
-      <div style="display:flex;flex-direction:column;align-items:center;padding:2rem 0 2.5rem">
-        <div onclick="SupportPage._triggerEmergency()" style="width:128px;height:128px;border-radius:50%;background:rgba(239,68,68,0.05);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(239,68,68,0.1);cursor:pointer;transition:transform 0.15s;margin-bottom:1.5rem" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform=''">
-          <div style="width:96px;height:96px;border-radius:50%;background:#ef4444;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(239,68,68,0.4)">
-            <iconify-icon icon="solar:danger-bold" style="font-size:2.5rem;color:white"></iconify-icon>
-          </div>
-        </div>
-        <h2 style="font-size:1.5rem;font-weight:900;color:#ef4444;text-transform:uppercase;letter-spacing:0.02em">Appel d'urgence</h2>
-        <p style="margin-top:8px;text-align:center;font-size:0.875rem;font-weight:500;color:#64748b;max-width:280px;line-height:1.5">
-          Maintenez le bouton presse pendant 3 secondes en cas de danger immediat.
-        </p>
-      </div>
-
-      <!-- Quick contacts -->
-      <div style="margin-bottom:2rem">
-        <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:1rem">Contacts rapides</h3>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <button onclick="SupportPage._callSupport()" style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem;border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);cursor:pointer;font-family:inherit;transition:transform 0.15s;width:100%" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
-            <div style="display:flex;align-items:center;gap:16px">
-              <div style="width:48px;height:48px;border-radius:1rem;background:rgba(59,130,246,0.08);color:#3b82f6;display:flex;align-items:center;justify-content:center">
-                <iconify-icon icon="solar:headphones-round-bold-duotone" style="font-size:1.5rem"></iconify-icon>
-              </div>
-              <div style="text-align:left">
-                <div style="font-weight:700;font-size:0.95rem;color:#0f172a">Support Volt 24/7</div>
-                <div style="font-size:0.75rem;color:#94a3b8;margin-top:2px">Assistance technique et courses</div>
-              </div>
-            </div>
-            <iconify-icon icon="solar:phone-bold-duotone" style="font-size:1.5rem;color:#3b82f6"></iconify-icon>
-          </button>
-
-          <button onclick="SupportPage._callMechanic()" style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem;border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);cursor:pointer;font-family:inherit;transition:transform 0.15s;width:100%" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
-            <div style="display:flex;align-items:center;gap:16px">
-              <div style="width:48px;height:48px;border-radius:1rem;background:rgba(249,115,22,0.08);color:#f97316;display:flex;align-items:center;justify-content:center">
-                <iconify-icon icon="solar:settings-bold-duotone" style="font-size:1.5rem"></iconify-icon>
-              </div>
-              <div style="text-align:left">
-                <div style="font-weight:700;font-size:0.95rem;color:#0f172a">Depannage / Mecanique</div>
-                <div style="font-size:0.75rem;color:#94a3b8;margin-top:2px">En cas de panne ou crevaison</div>
-              </div>
-            </div>
-            <iconify-icon icon="solar:phone-bold-duotone" style="font-size:1.5rem;color:#f97316"></iconify-icon>
-          </button>
-        </div>
-      </div>
-
-      <!-- Signaler un probleme -->
-      <button onclick="DriverRouter.navigate('signalements')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:1rem;border-radius:1rem;border:2px solid #e2e8f0;background:white;color:#0f172a;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:1.5rem;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
-        <iconify-icon icon="solar:flag-bold-duotone" style="font-size:1.25rem;color:#f59e0b"></iconify-icon>
-        Signaler un probleme
-      </button>
-
-      <!-- FAQ Section -->
-      <div style="border-radius:1.5rem;background:#0f172a;padding:1.5rem;color:white">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <iconify-icon icon="solar:chat-square-dots-bold-duotone" style="font-size:1.5rem;color:#3b82f6"></iconify-icon>
-          <h3 style="font-weight:800;font-size:1rem">FAQ Chauffeur</h3>
-        </div>
-        <p style="font-size:0.75rem;color:#94a3b8;line-height:1.6;margin-bottom:1rem">
-          Retrouvez les reponses aux questions les plus frequentes sur les versements, les bonus et le reglement interieur.
+      <div style="padding:1rem 0">
+        <p style="text-align:center;font-size:0.875rem;color:#64748b;margin-bottom:2rem;line-height:1.5">
+          Sélectionnez le type de problème rencontré
         </p>
 
-        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
-          ${this._renderFaqItem('Comment faire un versement ?', 'Rendez-vous dans l\'onglet Finances et cliquez sur "Faire un versement".')}
-          ${this._renderFaqItem('Quand dois-je verser ma recette ?', 'Chaque jour avant 23h59. Un retard entraine des penalites automatiques.')}
-          ${this._renderFaqItem('Comment obtenir un bonus ?', 'Maintenez un score de conduite superieur a 70/100 et une activite Yango de 10h/jour.')}
-        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
 
-        <button onclick="DriverRouter.navigate('messagerie')" style="width:100%;padding:12px;border-radius:1rem;border:none;background:rgba(255,255,255,0.1);color:white;font-size:0.875rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s">
-          Contacter le support
-        </button>
+          <!-- PANNE -->
+          <button onclick="SupportPage._report('panne')" style="display:flex;align-items:center;gap:20px;padding:1.5rem;border-radius:1.5rem;border:none;background:white;box-shadow:0 2px 12px rgba(0,0,0,0.06);cursor:pointer;font-family:inherit;transition:transform 0.15s;width:100%;text-align:left" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+            <div style="width:64px;height:64px;border-radius:1.25rem;background:rgba(249,115,22,0.08);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:settings-bold-duotone" style="font-size:2rem"></iconify-icon>
+            </div>
+            <div>
+              <div style="font-weight:800;font-size:1.1rem;color:#0f172a;margin-bottom:4px">Panne</div>
+              <div style="font-size:0.8rem;color:#94a3b8;line-height:1.4">Panne mécanique, crevaison, batterie à plat, moteur qui ne démarre pas</div>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:1.25rem;color:#cbd5e1;flex-shrink:0;margin-left:auto"></iconify-icon>
+          </button>
+
+          <!-- ACCIDENT -->
+          <button onclick="SupportPage._report('accident')" style="display:flex;align-items:center;gap:20px;padding:1.5rem;border-radius:1.5rem;border:none;background:white;box-shadow:0 2px 12px rgba(0,0,0,0.06);cursor:pointer;font-family:inherit;transition:transform 0.15s;width:100%;text-align:left" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+            <div style="width:64px;height:64px;border-radius:1.25rem;background:rgba(239,68,68,0.08);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:shield-warning-bold-duotone" style="font-size:2rem"></iconify-icon>
+            </div>
+            <div>
+              <div style="font-weight:800;font-size:1.1rem;color:#0f172a;margin-bottom:4px">Accident</div>
+              <div style="font-size:0.8rem;color:#94a3b8;line-height:1.4">Collision, accrochage, dégâts matériels sur le véhicule</div>
+            </div>
+            <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:1.25rem;color:#cbd5e1;flex-shrink:0;margin-left:auto"></iconify-icon>
+          </button>
+
+          <!-- URGENCE -->
+          <button onclick="SupportPage._report('urgence')" style="display:flex;align-items:center;gap:20px;padding:1.5rem;border-radius:1.5rem;border:none;background:#ef4444;box-shadow:0 4px 16px rgba(239,68,68,0.3);cursor:pointer;font-family:inherit;transition:transform 0.15s;width:100%;text-align:left" ontouchstart="this.style.transform='scale(0.97)'" ontouchend="this.style.transform=''">
+            <div style="width:64px;height:64px;border-radius:1.25rem;background:rgba(255,255,255,0.2);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:danger-bold" style="font-size:2rem"></iconify-icon>
+            </div>
+            <div>
+              <div style="font-weight:800;font-size:1.1rem;color:white;margin-bottom:4px">Urgence</div>
+              <div style="font-size:0.8rem;color:rgba(255,255,255,0.8);line-height:1.4">Danger immédiat, agression, situation critique — appel direct au support</div>
+            </div>
+            <iconify-icon icon="solar:phone-bold" style="font-size:1.25rem;color:rgba(255,255,255,0.8);flex-shrink:0;margin-left:auto"></iconify-icon>
+          </button>
+
+        </div>
       </div>
     `;
   },
 
-  _renderFaqItem(question, answer) {
-    return `
-      <details style="border-radius:8px;overflow:hidden">
-        <summary style="padding:10px 12px;background:rgba(255,255,255,0.06);border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between">
-          ${question}
-          <iconify-icon icon="solar:alt-arrow-down-linear" style="font-size:0.9rem;opacity:0.5"></iconify-icon>
-        </summary>
-        <div style="padding:8px 12px;font-size:0.75rem;color:#94a3b8;line-height:1.5">
-          ${answer}
+  _report(type) {
+    if (type === 'urgence') {
+      this._triggerEmergency();
+      return;
+    }
+
+    const titles = { panne: 'Signaler une panne', accident: 'Signaler un accident' };
+    const icons = { panne: 'solar:settings-bold-duotone', accident: 'solar:shield-warning-bold-duotone' };
+    const colors = { panne: '#f97316', accident: '#ef4444' };
+
+    DriverModal.show(titles[type], `
+      <div style="padding:0.5rem 0">
+        <div style="text-align:center;margin-bottom:1.25rem">
+          <iconify-icon icon="${icons[type]}" style="font-size:2.5rem;color:${colors[type]}"></iconify-icon>
         </div>
-      </details>
-    `;
+        <textarea id="sp-desc" placeholder="Décrivez le problème..." style="width:100%;min-height:100px;padding:12px;border-radius:12px;border:1px solid #e2e8f0;font-family:inherit;font-size:0.875rem;resize:vertical;box-sizing:border-box;margin-bottom:12px"></textarea>
+        <p style="font-size:0.7rem;color:#94a3b8;text-align:center">Votre position GPS sera partagée automatiquement</p>
+      </div>
+    `, [
+      { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
+      { label: 'Envoyer', class: 'btn btn-primary', onclick: `SupportPage._submitReport('${type}')` }
+    ]);
+  },
+
+  async _submitReport(type) {
+    const desc = document.getElementById('sp-desc');
+    const description = desc ? desc.value.trim() : '';
+    if (!description) {
+      if (desc) { desc.style.borderColor = '#ef4444'; desc.focus(); }
+      return;
+    }
+
+    const chauffeur = DriverAuth.getChauffeur() || {};
+    let lat = null, lng = null;
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+      });
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
+    } catch (e) { /* GPS indisponible */ }
+
+    const signalement = {
+      id: 'sig_' + Date.now(),
+      chauffeurId: chauffeur.id || null,
+      chauffeurNom: chauffeur.prenom && chauffeur.nom ? chauffeur.prenom + ' ' + chauffeur.nom : 'Inconnu',
+      type: type,
+      description: description,
+      lat: lat,
+      lng: lng,
+      date: new Date().toISOString(),
+      statut: 'nouveau'
+    };
+
+    try {
+      const token = DriverAuth.getToken();
+      await fetch('/api/data/signalements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify(signalement)
+      });
+    } catch (e) {
+      console.warn('[Support] Envoi signalement échoué:', e.message);
+    }
+
+    DriverModal.close();
+    DriverToast.success(type === 'panne' ? 'Panne signalée — le support a été notifié' : 'Accident signalé — le support a été notifié');
+
+    // Appel automatique au support après signalement
+    setTimeout(() => {
+      DriverModal.show('Appeler le support ?', `
+        <div style="text-align:center;padding:0.5rem 0">
+          <p style="font-size:0.875rem;color:#64748b">Voulez-vous appeler le support Volt pour un suivi immédiat ?</p>
+        </div>
+      `, [
+        { label: 'Non merci', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
+        { label: 'Appeler', class: 'btn btn-primary', onclick: 'SupportPage._callSupport(); DriverModal.close()' }
+      ]);
+    }, 500);
   },
 
   _triggerEmergency() {
@@ -99,26 +140,21 @@ const SupportPage = {
       <div style="text-align:center;padding:1rem 0">
         <iconify-icon icon="solar:danger-bold" style="font-size:3rem;color:#ef4444;margin-bottom:12px;display:block"></iconify-icon>
         <p style="font-weight:700;font-size:1rem;margin-bottom:8px">Confirmer l'appel d'urgence ?</p>
-        <p style="font-size:0.8rem;color:#64748b">Un appel sera passe au support Volt et votre position sera partagee.</p>
+        <p style="font-size:0.8rem;color:#64748b">Un appel sera passé au support Volt et votre position sera partagée.</p>
       </div>
     `, [
       { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
-      { label: 'Confirmer', class: 'btn btn-danger', onclick: 'SupportPage._confirmEmergency()' }
+      { label: 'Appeler maintenant', class: 'btn btn-danger', onclick: 'SupportPage._confirmEmergency()' }
     ]);
   },
 
   _confirmEmergency() {
     DriverModal.close();
-    // Appeler le support
     window.location.href = 'tel:+2250700000000';
   },
 
   _callSupport() {
     window.location.href = 'tel:+2250700000000';
-  },
-
-  _callMechanic() {
-    window.location.href = 'tel:+2250700000001';
   },
 
   destroy() {}
