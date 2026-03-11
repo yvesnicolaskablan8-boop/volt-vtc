@@ -37,7 +37,7 @@ const DriverRouter = {
       notifications: 'Notifications',
       'etat-lieux': 'Etat des Lieux',
       documents: 'Documents & Alertes',
-      support: 'Assistance',
+      support: 'Signaler un problème',
       contraventions: 'Mes Contraventions',
       contrat: 'Mon Contrat'
     };

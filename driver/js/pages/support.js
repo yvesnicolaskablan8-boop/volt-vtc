@@ -1,5 +1,5 @@
 /**
- * SupportPage — Support & Assistance chauffeur
+ * SupportPage — Signaler un problème
  */
 const SupportPage = {
   render(container) {
