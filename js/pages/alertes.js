@@ -170,6 +170,9 @@ const AlertesPage = {
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
+    // Versements (chargés ici pour les alertes dette dans la boucle chauffeurs)
+    const allVersements = Store.get('versements') || [];
+
     // 1. Documents chauffeurs
     const chauffeurs = Store.get('chauffeurs') || [];
     chauffeurs.forEach(ch => {
@@ -253,6 +256,34 @@ const AlertesPage = {
           icon: 'solar:wallet-money-bold-duotone',
           date: todayStr
         });
+      }
+
+      // Dette élevée
+      if (ch.statut === 'actif' && ch.redevanceQuotidienne > 0) {
+        const detteTotale = allVersements
+          .filter(v => v.chauffeurId === ch.id && v.traitementManquant === 'dette' && v.manquant > 0)
+          .reduce((s, v) => s + v.manquant, 0);
+        if (detteTotale > 0) {
+          const ratio = detteTotale / ch.redevanceQuotidienne;
+          let niveau = null;
+          if (ratio >= 5) niveau = 'critique';
+          else if (ratio >= 3) niveau = 'urgent';
+          else if (ratio >= 1) niveau = 'attention';
+          if (niveau) {
+            alerts.push({
+              id: `DETTE-${ch.id}`,
+              categorie: 'versements',
+              niveau,
+              titre: 'Dette \u00e9lev\u00e9e',
+              description: `${nom} a une dette cumul\u00e9e de ${detteTotale.toLocaleString('fr-FR')} FCFA (${Math.round(ratio)} jour${ratio >= 2 ? 's' : ''} de redevance).`,
+              chauffeurId: ch.id,
+              action: 'Encaisser la dette',
+              actionRoute: '#/versements',
+              icon: 'solar:wallet-money-bold-duotone',
+              date: todayStr
+            });
+          }
+        }
       }
 
       // Documents chauffeur (champs date directe)
