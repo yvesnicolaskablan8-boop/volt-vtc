@@ -14,7 +14,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 104;
+    var APP_VERSION = 105;
     var stored = parseInt(localStorage.getItem('volt_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('volt_app_version', APP_VERSION);

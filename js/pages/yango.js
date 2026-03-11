@@ -598,11 +598,17 @@ const YangoPage = {
       const planning = Store.get('planning') || [];
       const scheduledIds = new Set(planning.filter(p => p.date === selectedDate).map(p => p.chauffeurId));
 
-      const filtered = positions.filter(p => scheduledIds.has(p.chauffeurId));
+      const now = Date.now();
+      const MAX_AGE = 60 * 60 * 1000; // 1h — au-delà on considère le signal perdu
+
+      const filtered = positions.filter(p => {
+        if (!scheduledIds.has(p.chauffeurId)) return false;
+        const age = now - new Date(p.updatedAt).getTime();
+        return age < MAX_AGE; // Exclure positions de plus d'1h
+      });
       const countEl = document.getElementById('yp-map-count');
       if (countEl) countEl.textContent = filtered.length;
 
-      const now = Date.now();
       const activeIds = new Set();
 
       filtered.forEach(p => {
@@ -611,8 +617,8 @@ const YangoPage = {
         const isFresh = age < 5 * 60 * 1000; // < 5 min
         const color = isFresh ? '#3b82f6' : '#94a3b8';
         const heading = p.heading || 0;
-        const speedTxt = p.speed ? `${Math.round(p.speed)} km/h` : 'Arrêté';
-        const ageTxt = age < 60000 ? 'À l\'instant' : age < 300000 ? `Il y a ${Math.round(age / 60000)} min` : `Il y a ${Math.round(age / 3600000)}h`;
+        const speedTxt = p.speed > 2 ? `${Math.round(p.speed)} km/h` : 'Arrêté';
+        const ageTxt = age < 60000 ? 'À l\'instant' : age < 300000 ? `Il y a ${Math.round(age / 60000)} min` : `Il y a ${Math.round(age / 60000)} min`;
 
         const icon = L.divIcon({
           className: '',
