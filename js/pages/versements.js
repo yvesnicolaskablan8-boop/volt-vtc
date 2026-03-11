@@ -1257,7 +1257,7 @@ const VersementsPage = {
       const hasJustif = !!item.justification;
       return `<div data-name="${name.toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
         <div style="min-width:0;flex:1;">
-          <div style="font-size:var(--font-size-sm);font-weight:500;"><a href="#/chauffeurs/${item.chauffeurId}" style="color:var(--text-primary);text-decoration:none;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-primary)'">${name}</a></div>
+          <div style="font-size:var(--font-size-sm);font-weight:500;"><a href="javascript:void(0)" onclick="event.stopPropagation();VersementsPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.totalDu})" style="color:var(--text-primary);text-decoration:none;cursor:pointer;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-primary)'">${name}</a></div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${item.heureDebut && item.heureFin ? ' \u2014 ' + item.heureDebut + ' \u00e0 ' + item.heureFin : ''} &bull; ${item.joursRetard}j de retard</div>
           ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--volt-blue);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
         </div>
@@ -1363,7 +1363,7 @@ const VersementsPage = {
 
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:600;"><a href="#/chauffeurs/${item.chauffeurId}" style="color:var(--text-primary);text-decoration:none;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-primary)'">${name}</a></div>
+          <div style="font-size:var(--font-size-sm);font-weight:600;"><a href="javascript:void(0)" onclick="event.stopPropagation();VersementsPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.totalDu})" style="color:var(--text-primary);text-decoration:none;cursor:pointer;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-primary)'">${name}</a></div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${creneauLabel ? ' \u2014 ' + creneauLabel : ''} &bull; <span style="color:${item.joursRetard > 4 ? '#ef4444' : '#f59e0b'};font-weight:600;">${item.joursRetard}j de retard</span></div>
           ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--volt-blue);margin-top:2px;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
         </div>
