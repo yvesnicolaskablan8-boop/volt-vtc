@@ -1497,7 +1497,8 @@ const ComptabilitePage = {
         sortKey: 'date',
         sortDir: 'desc',
         pageSize: 15,
-        emptyMessage: 'Aucune dépense enregistrée'
+        emptyMessage: 'Aucune dépense enregistrée',
+        onRowClick: (id) => ComptabilitePage._editDep(id)
       });
     };
 
