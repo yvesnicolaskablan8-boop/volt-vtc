@@ -216,16 +216,151 @@
         : new Date(selectedDay + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
       const monthLabel = monthNames[thisMonth] + ' ' + thisYear;
 
+      // ——— Detail lists for clickable KPIs ———
+      const chMap = {};
+      chauffeurs.forEach(c => { chMap[c.id] = c; });
+
+      // Recette du jour — detail per driver
+      const recetteJourDetail = [];
+      const recByDriver = {};
+      dayVersements.filter(v => v.montantVerse > 0).forEach(v => {
+        if (!recByDriver[v.chauffeurId]) recByDriver[v.chauffeurId] = { total: 0, count: 0 };
+        recByDriver[v.chauffeurId].total += v.montantVerse;
+        recByDriver[v.chauffeurId].count++;
+      });
+      Object.keys(recByDriver).forEach(cid => {
+        const ch = chMap[cid];
+        recetteJourDetail.push({
+          nom: ch ? (ch.prenom + ' ' + ch.nom) : cid,
+          montant: recByDriver[cid].total,
+          count: recByDriver[cid].count
+        });
+      });
+      recetteJourDetail.sort((a, b) => b.montant - a.montant);
+
+      // Recette attendue — detail per scheduled driver
+      const attendueDetail = [];
+      const seenAtt = new Set();
+      dayPlanning.forEach(p => {
+        if (seenAtt.has(p.chauffeurId)) return;
+        seenAtt.add(p.chauffeurId);
+        const hasAbs = absences.some(a => a.chauffeurId === p.chauffeurId && selectedDay >= a.dateDebut && selectedDay <= a.dateFin);
+        const ch = chMap[p.chauffeurId];
+        if (!ch || ch.statut === 'inactif') return;
+        const red = ch.redevanceQuotidienne || 0;
+        const paid = dayVersements.some(v => v.chauffeurId === p.chauffeurId && v.montantVerse > 0);
+        attendueDetail.push({
+          nom: ch.prenom + ' ' + ch.nom,
+          redevance: red,
+          absent: hasAbs,
+          paid: paid
+        });
+      });
+      attendueDetail.sort((a, b) => b.redevance - a.redevance);
+
+      // Unpaid items enriched with driver name
+      const unpaidDetail = [];
+      scheduledDays.forEach(p => {
+        const hasAbs = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
+        if (hasAbs) return;
+        const ch = chMap[p.chauffeurId];
+        if (!ch || ch.statut === 'inactif') return;
+        const redevance = ch.redevanceQuotidienne || 0;
+        if (redevance <= 0) return;
+        const hasValid = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime'));
+        if (!hasValid) {
+          const jr = Math.floor((now - new Date(p.date)) / 86400000);
+          unpaidDetail.push({
+            nom: ch.prenom + ' ' + ch.nom,
+            date: p.date,
+            montant: redevance,
+            joursRetard: jr
+          });
+        }
+      });
+      unpaidDetail.sort((a, b) => b.joursRetard - a.joursRetard);
+
+      // Dettes detail per driver
+      const detteDetail = [];
+      const detteByDriver = {};
+      versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0).forEach(v => {
+        if (!detteByDriver[v.chauffeurId]) detteByDriver[v.chauffeurId] = { total: 0, count: 0 };
+        detteByDriver[v.chauffeurId].total += v.manquant;
+        detteByDriver[v.chauffeurId].count++;
+      });
+      Object.keys(detteByDriver).forEach(cid => {
+        const ch = chMap[cid];
+        detteDetail.push({
+          nom: ch ? (ch.prenom + ' ' + ch.nom) : cid,
+          montant: detteByDriver[cid].total,
+          count: detteByDriver[cid].count
+        });
+      });
+      detteDetail.sort((a, b) => b.montant - a.montant);
+
+      // Pertes detail per driver
+      const perteDetail = [];
+      const perteByDriver = {};
+      versements.filter(v => v.traitementManquant === 'perte' && v.manquant > 0).forEach(v => {
+        if (!perteByDriver[v.chauffeurId]) perteByDriver[v.chauffeurId] = { total: 0, count: 0 };
+        perteByDriver[v.chauffeurId].total += v.manquant;
+        perteByDriver[v.chauffeurId].count++;
+      });
+      Object.keys(perteByDriver).forEach(cid => {
+        const ch = chMap[cid];
+        perteDetail.push({
+          nom: ch ? (ch.prenom + ' ' + ch.nom) : cid,
+          montant: perteByDriver[cid].total,
+          count: perteByDriver[cid].count
+        });
+      });
+      perteDetail.sort((a, b) => b.montant - a.montant);
+
+      // Chauffeurs programmés detail
+      const programmesDetail = [];
+      programmesSet.forEach(cid => {
+        const ch = chMap[cid];
+        if (ch) programmesDetail.push({ nom: ch.prenom + ' ' + ch.nom, redevance: ch.redevanceQuotidienne || 0 });
+      });
+      programmesDetail.sort((a, b) => a.nom.localeCompare(b.nom));
+
+      // Chauffeurs actifs/inactifs
+      const chauffeursDetail = chauffeurs.map(c => ({
+        nom: c.prenom + ' ' + c.nom,
+        statut: c.statut,
+        redevance: c.redevanceQuotidienne || 0
+      })).sort((a, b) => a.nom.localeCompare(b.nom));
+
+      // Véhicules detail
+      const vehiculesDetail = vehicules.map(v => ({
+        nom: v.immatriculation || ((v.marque || '') + ' ' + (v.modele || '')).trim(),
+        statut: v.statut
+      })).sort((a, b) => a.nom.localeCompare(b.nom));
+
+      // CA mois — top drivers
+      const caMoisDetail = [];
+      const caByDriver = {};
+      monthVersements.filter(v => (v.montantVerse || 0) > 0).forEach(v => {
+        if (!caByDriver[v.chauffeurId]) caByDriver[v.chauffeurId] = 0;
+        caByDriver[v.chauffeurId] += v.montantVerse;
+      });
+      Object.keys(caByDriver).forEach(cid => {
+        const ch = chMap[cid];
+        caMoisDetail.push({ nom: ch ? (ch.prenom + ' ' + ch.nom) : cid, montant: caByDriver[cid] });
+      });
+      caMoisDetail.sort((a, b) => b.montant - a.montant);
+
       return {
-        recetteJour, nbVersementsJour,
-        recetteAttendue, programmesCount,
+        recetteJour, nbVersementsJour, recetteJourDetail,
+        recetteAttendue, programmesCount, attendueDetail,
         tauxRecouvrement,
-        totalDettes, nbDetteDrivers,
-        totalPertes, nbPerteDrivers,
-        activeCount, totalChauffeurs,
-        vehiculesService, totalVehicules,
-        retardCount, totalUnpaid, totalPenalites,
-        caMois, dateLabel, monthLabel
+        totalDettes, nbDetteDrivers, detteDetail,
+        totalPertes, nbPerteDrivers, perteDetail,
+        activeCount, totalChauffeurs, chauffeursDetail,
+        vehiculesService, totalVehicules, vehiculesDetail,
+        retardCount, totalUnpaid, totalPenalites, unpaidDetail,
+        caMois, caMoisDetail, dateLabel, monthLabel,
+        programmesDetail
       };
     }
   };
@@ -292,28 +427,28 @@
         <div class="section-title">Finances — ${k.dateLabel}</div>
         <div class="kpi-grid">
 
-          <div class="kpi-card green">
+          <div class="kpi-card green clickable" onclick="window.__kpiDetail('recetteJour')">
             <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${fmtCurrency(k.recetteJour)}</div>
             <div class="kpi-label">Recette du jour</div>
             <div class="kpi-sub">${k.nbVersementsJour} versement${k.nbVersementsJour > 1 ? 's' : ''}</div>
           </div>
 
-          <div class="kpi-card blue">
+          <div class="kpi-card blue clickable" onclick="window.__kpiDetail('attendue')">
             <div class="kpi-icon"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${fmtCurrency(k.recetteAttendue)}</div>
             <div class="kpi-label">Recette attendue</div>
             <div class="kpi-sub">${k.programmesCount} chauffeur${k.programmesCount > 1 ? 's' : ''} programm${k.programmesCount > 1 ? 'es' : 'e'}</div>
           </div>
 
-          <div class="kpi-card ${tauxColor}">
+          <div class="kpi-card ${tauxColor} clickable" onclick="window.__kpiDetail('recouvrement')">
             <div class="kpi-icon"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${k.tauxRecouvrement}%</div>
             <div class="kpi-label">Recouvrement mois</div>
             <div class="kpi-sub">Verse <span class="highlight green">${fmtCurrency(k.caMois)}</span></div>
           </div>
 
-          <div class="kpi-card ${detteColor}">
+          <div class="kpi-card ${detteColor} clickable" onclick="window.__kpiDetail('dette')">
             <div class="kpi-icon"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${fmtCurrency(k.totalDettes)}</div>
             <div class="kpi-label">Dette totale</div>
@@ -326,14 +461,14 @@
         <div class="section-title">Alertes</div>
         <div class="kpi-grid">
 
-          <div class="kpi-card ${perteColor}">
+          <div class="kpi-card ${perteColor} clickable" onclick="window.__kpiDetail('pertes')">
             <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${fmtCurrency(k.totalPertes)}</div>
             <div class="kpi-label">Pertes totales</div>
             <div class="kpi-sub">${k.nbPerteDrivers} chauffeur${k.nbPerteDrivers > 1 ? 's' : ''}</div>
           </div>
 
-          <div class="kpi-card ${retardColor}">
+          <div class="kpi-card ${retardColor} clickable" onclick="window.__kpiDetail('retard')">
             <div class="kpi-icon"><iconify-icon icon="solar:alarm-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${k.retardCount}</div>
             <div class="kpi-label">Versements en retard</div>
@@ -346,28 +481,28 @@
         <div class="section-title">Flotte</div>
         <div class="kpi-grid">
 
-          <div class="kpi-card cyan">
+          <div class="kpi-card cyan clickable" onclick="window.__kpiDetail('programmes')">
             <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${k.programmesCount}</div>
             <div class="kpi-label">Chauffeurs programmes</div>
             <div class="kpi-sub">${k.dateLabel}</div>
           </div>
 
-          <div class="kpi-card cyan">
+          <div class="kpi-card cyan clickable" onclick="window.__kpiDetail('chauffeurs')">
             <div class="kpi-icon"><iconify-icon icon="solar:user-check-rounded-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${k.activeCount}<span style="font-size:0.8rem;font-weight:500;opacity:0.65">/${k.totalChauffeurs}</span></div>
             <div class="kpi-label">Chauffeurs actifs</div>
             <div class="kpi-sub">${k.totalChauffeurs - k.activeCount} inactif${(k.totalChauffeurs - k.activeCount) > 1 ? 's' : ''}</div>
           </div>
 
-          <div class="kpi-card cyan">
+          <div class="kpi-card cyan clickable" onclick="window.__kpiDetail('vehicules')">
             <div class="kpi-icon"><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${k.vehiculesService}<span style="font-size:0.8rem;font-weight:500;opacity:0.65">/${k.totalVehicules}</span></div>
             <div class="kpi-label">Vehicules en service</div>
             <div class="kpi-sub">${k.totalVehicules - k.vehiculesService} hors service</div>
           </div>
 
-          <div class="kpi-card blue">
+          <div class="kpi-card blue clickable" onclick="window.__kpiDetail('caMois')">
             <div class="kpi-icon"><iconify-icon icon="solar:cash-out-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${fmtCurrency(k.caMois)}</div>
             <div class="kpi-label">CA du mois</div>
@@ -472,6 +607,160 @@
 
     stopRefresh() {
       if (this._timer) { clearInterval(this._timer); this._timer = null; }
+    }
+  };
+
+  // =================== KPI DETAIL MODAL ===================
+
+  function showMonitorModal(title, bodyHtml) {
+    // Remove existing modal
+    const old = document.getElementById('mon-modal-overlay');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'mon-modal-overlay';
+    overlay.className = 'mon-modal-overlay';
+    overlay.innerHTML = `
+      <div class="mon-modal">
+        <div class="mon-modal-header">
+          <div class="mon-modal-title">${title}</div>
+          <button class="mon-modal-close" onclick="document.getElementById('mon-modal-overlay').remove()">&times;</button>
+        </div>
+        <div class="mon-modal-body">${bodyHtml}</div>
+      </div>
+    `;
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+    requestAnimationFrame(function() { overlay.classList.add('visible'); });
+  }
+
+  function buildListRows(items, valueFn, subFn) {
+    if (!items.length) return '<div style="text-align:center;color:var(--text-muted);padding:20px 0;">Aucune donnee</div>';
+    return items.map(function(item) {
+      return '<div class="mon-detail-row">' +
+        '<div class="mon-detail-name">' + item.nom + (subFn ? '<div class="mon-detail-sub">' + subFn(item) + '</div>' : '') + '</div>' +
+        '<div class="mon-detail-value">' + valueFn(item) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  window.__kpiDetail = function(type) {
+    const k = Data._kpis;
+    if (!k) return;
+
+    switch (type) {
+      case 'recetteJour':
+        showMonitorModal(
+          '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:var(--green)"></iconify-icon> Recette du jour — ' + k.dateLabel,
+          '<div class="mon-detail-total">Total : <strong>' + fmtCurrency(k.recetteJour) + '</strong></div>' +
+          buildListRows(k.recetteJourDetail,
+            function(i) { return '<strong>' + fmtCurrency(i.montant) + '</strong>'; },
+            function(i) { return i.count + ' versement' + (i.count > 1 ? 's' : ''); }
+          )
+        );
+        break;
+
+      case 'attendue':
+        showMonitorModal(
+          '<iconify-icon icon="solar:target-bold-duotone" style="color:var(--blue)"></iconify-icon> Recette attendue — ' + k.dateLabel,
+          '<div class="mon-detail-total">Total attendu : <strong>' + fmtCurrency(k.recetteAttendue) + '</strong> &mdash; ' + k.programmesCount + ' chauffeurs</div>' +
+          buildListRows(k.attendueDetail,
+            function(i) { return '<strong>' + fmtCurrency(i.redevance) + '</strong>'; },
+            function(i) { return (i.absent ? '<span style="color:var(--orange)">Absent</span>' : i.paid ? '<span style="color:var(--green)">Verse</span>' : '<span style="color:var(--red)">En attente</span>'); }
+          )
+        );
+        break;
+
+      case 'recouvrement':
+        showMonitorModal(
+          '<iconify-icon icon="solar:chart-bold-duotone" style="color:var(--blue)"></iconify-icon> Recouvrement — ' + k.monthLabel,
+          '<div class="mon-detail-total">Taux : <strong>' + k.tauxRecouvrement + '%</strong> &mdash; CA : <strong>' + fmtCurrency(k.caMois) + '</strong></div>' +
+          '<div class="mon-detail-total" style="margin-top:4px">Impaye : <strong style="color:var(--red)">' + fmtCurrency(k.totalUnpaid) + '</strong> &mdash; ' + k.retardCount + ' retard' + (k.retardCount > 1 ? 's' : '') + '</div>' +
+          buildListRows(k.caMoisDetail,
+            function(i) { return '<strong>' + fmtCurrency(i.montant) + '</strong>'; },
+            null
+          )
+        );
+        break;
+
+      case 'dette':
+        showMonitorModal(
+          '<iconify-icon icon="solar:hand-money-bold-duotone" style="color:var(--red)"></iconify-icon> Dettes par chauffeur',
+          '<div class="mon-detail-total">Total : <strong style="color:var(--red)">' + fmtCurrency(k.totalDettes) + '</strong> &mdash; ' + k.nbDetteDrivers + ' chauffeur' + (k.nbDetteDrivers > 1 ? 's' : '') + '</div>' +
+          buildListRows(k.detteDetail,
+            function(i) { return '<strong style="color:var(--red)">' + fmtCurrency(i.montant) + '</strong>'; },
+            function(i) { return i.count + ' versement' + (i.count > 1 ? 's' : '') + ' en dette'; }
+          )
+        );
+        break;
+
+      case 'pertes':
+        showMonitorModal(
+          '<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:var(--orange)"></iconify-icon> Pertes par chauffeur',
+          '<div class="mon-detail-total">Total : <strong style="color:var(--orange)">' + fmtCurrency(k.totalPertes) + '</strong> &mdash; ' + k.nbPerteDrivers + ' chauffeur' + (k.nbPerteDrivers > 1 ? 's' : '') + '</div>' +
+          buildListRows(k.perteDetail,
+            function(i) { return '<strong style="color:var(--orange)">' + fmtCurrency(i.montant) + '</strong>'; },
+            function(i) { return i.count + ' versement' + (i.count > 1 ? 's' : '') + ' en perte'; }
+          )
+        );
+        break;
+
+      case 'retard':
+        showMonitorModal(
+          '<iconify-icon icon="solar:alarm-bold-duotone" style="color:var(--red)"></iconify-icon> Versements en retard',
+          '<div class="mon-detail-total">Total impaye : <strong style="color:var(--red)">' + fmtCurrency(k.totalUnpaid) + '</strong> + <strong style="color:var(--orange)">' + fmtCurrency(k.totalPenalites) + '</strong> penalites</div>' +
+          buildListRows(k.unpaidDetail,
+            function(i) { return '<strong style="color:var(--red)">' + fmtCurrency(i.montant) + '</strong>'; },
+            function(i) { return i.date + ' &bull; ' + i.joursRetard + 'j de retard'; }
+          )
+        );
+        break;
+
+      case 'programmes':
+        showMonitorModal(
+          '<iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:var(--cyan)"></iconify-icon> Chauffeurs programmes — ' + k.dateLabel,
+          '<div class="mon-detail-total">' + k.programmesCount + ' chauffeur' + (k.programmesCount > 1 ? 's' : '') + ' programme' + (k.programmesCount > 1 ? 's' : '') + '</div>' +
+          buildListRows(k.programmesDetail,
+            function(i) { return i.redevance > 0 ? fmtCurrency(i.redevance) + '/j' : '-'; },
+            null
+          )
+        );
+        break;
+
+      case 'chauffeurs':
+        var actifs = k.chauffeursDetail.filter(function(c) { return c.statut === 'actif'; });
+        var inactifs = k.chauffeursDetail.filter(function(c) { return c.statut !== 'actif'; });
+        showMonitorModal(
+          '<iconify-icon icon="solar:user-check-rounded-bold-duotone" style="color:var(--cyan)"></iconify-icon> Chauffeurs (' + k.totalChauffeurs + ')',
+          '<div class="mon-detail-total">' + k.activeCount + ' actifs &mdash; ' + (k.totalChauffeurs - k.activeCount) + ' inactifs</div>' +
+          (actifs.length ? '<div class="mon-detail-section">Actifs</div>' + buildListRows(actifs, function(i) { return i.redevance > 0 ? fmtCurrency(i.redevance) + '/j' : '-'; }, null) : '') +
+          (inactifs.length ? '<div class="mon-detail-section" style="color:var(--red)">Inactifs</div>' + buildListRows(inactifs, function(i) { return '<span style="color:var(--text-muted)">' + (i.redevance > 0 ? fmtCurrency(i.redevance) + '/j' : '-') + '</span>'; }, null) : '')
+        );
+        break;
+
+      case 'vehicules':
+        var enService = k.vehiculesDetail.filter(function(v) { return v.statut === 'en_service'; });
+        var horsService = k.vehiculesDetail.filter(function(v) { return v.statut !== 'en_service'; });
+        showMonitorModal(
+          '<iconify-icon icon="solar:bus-bold-duotone" style="color:var(--cyan)"></iconify-icon> Vehicules (' + k.totalVehicules + ')',
+          '<div class="mon-detail-total">' + k.vehiculesService + ' en service &mdash; ' + (k.totalVehicules - k.vehiculesService) + ' hors service</div>' +
+          (enService.length ? '<div class="mon-detail-section">En service</div>' + buildListRows(enService, function() { return '<span style="color:var(--green)">&#10003;</span>'; }, null) : '') +
+          (horsService.length ? '<div class="mon-detail-section" style="color:var(--red)">Hors service</div>' + buildListRows(horsService, function() { return '<span style="color:var(--red)">&times;</span>'; }, null) : '')
+        );
+        break;
+
+      case 'caMois':
+        showMonitorModal(
+          '<iconify-icon icon="solar:cash-out-bold-duotone" style="color:var(--blue)"></iconify-icon> CA du mois — ' + k.monthLabel,
+          '<div class="mon-detail-total">Total : <strong>' + fmtCurrency(k.caMois) + '</strong></div>' +
+          buildListRows(k.caMoisDetail,
+            function(i) { return '<strong>' + fmtCurrency(i.montant) + '</strong>'; },
+            null
+          )
+        );
+        break;
     }
   };
 
