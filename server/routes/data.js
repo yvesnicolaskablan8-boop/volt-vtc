@@ -107,4 +107,47 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// POST /api/data/fix-manquants — Recalculer le manquant pour tous les versements
+router.post('/fix-manquants', async (req, res, next) => {
+  try {
+    const Versement = require('../models/Versement');
+    const Chauffeur = require('../models/Chauffeur');
+
+    const versements = await Versement.find({}).lean();
+    const chauffeurs = await Chauffeur.find({}).lean();
+    const chauffeurMap = {};
+    chauffeurs.forEach(c => { chauffeurMap[c.id] = c; });
+
+    let fixed = 0;
+    for (const v of versements) {
+      const ch = chauffeurMap[v.chauffeurId];
+      if (!ch) continue;
+      const redevance = ch.redevanceQuotidienne || 0;
+      if (redevance <= 0) continue;
+
+      const montant = v.montantVerse || v.montantNet || 0;
+      if (montant <= 0) continue;
+
+      const manquant = montant < redevance ? redevance - montant : 0;
+      const traitementManquant = manquant > 0 ? 'dette' : null;
+      const newStatut = (v.statut === 'supprime') ? v.statut
+        : (montant >= redevance ? 'valide' : 'partiel');
+
+      // Ne mettre a jour que si les valeurs ont change
+      if (v.manquant !== manquant || v.traitementManquant !== traitementManquant || (v.statut !== newStatut && v.statut !== 'supprime')) {
+        await Versement.updateOne({ id: v.id }, {
+          manquant,
+          traitementManquant,
+          statut: newStatut
+        });
+        fixed++;
+      }
+    }
+
+    res.json({ message: `${fixed} versement(s) corrigé(s) sur ${versements.length} total`, fixed, total: versements.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
