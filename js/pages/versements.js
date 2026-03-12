@@ -412,8 +412,8 @@ const VersementsPage = {
     const session = Auth.getSession();
     const isAdmin = session && session.role === 'Administrateur';
     const statusOptions = [
-      { value: 'valide', label: 'Validé' },
       { value: 'en_attente', label: 'En attente' },
+      { value: 'valide', label: 'Validé' },
       { value: 'retard', label: 'En retard' },
       { value: 'partiel', label: 'Partiel' },
       { value: 'supprime', label: 'Supprimer', disabled: !isAdmin }
@@ -440,16 +440,8 @@ const VersementsPage = {
       const values = FormBuilder.getValues(body);
       const chauffeur = Store.findById('chauffeurs', values.chauffeurId);
 
-      // Auto-set statut based on redevance comparison
-      const redevance = chauffeur ? (chauffeur.redevanceQuotidienne || 0) : 0;
-      const montant = parseFloat(values.montantVerse) || 0;
-      if (redevance > 0 && montant > 0 && values.statut !== 'supprime') {
-        if (montant >= redevance) {
-          values.statut = 'valide';
-        } else {
-          values.statut = 'partiel';
-        }
-      }
+      // Le statut reste celui choisi par l'utilisateur (en_attente par défaut)
+      // La validation ne se fait que via le bouton "Encaisser"
 
       // Récupérer les stats Yango (courses, CA) pour ce chauffeur à cette date
       let nombreCourses = 0;
@@ -1063,11 +1055,7 @@ const VersementsPage = {
             ${chauffeurs.filter(c => c.statut === 'actif').map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
           </select></div>
         <div class="form-group"><label>Montant (FCFA) *</label><input type="number" name="montant" required min="1" placeholder="0"></div>
-        <div class="form-group"><label>Statut par défaut</label>
-          <select name="statut">
-            <option value="en_attente">En attente</option>
-            <option value="valide">Validé</option>
-          </select></div>
+        <input type="hidden" name="statut" value="en_attente">
         <div class="form-group"><label>Récurrence *</label>
           <select name="recurrence" required id="rec-v-recurrence-select">
             <option value="par_shift">Par shift (1 versement par créneau planifié)</option>
@@ -1285,9 +1273,10 @@ const VersementsPage = {
         id: Utils.generateId('VRS'),
         chauffeurId: g.chauffeurId, vehiculeId: g.vehiculeId || null,
         date: g.date, dateService: g.date, periode,
-        montantBrut: g.montant, commission: 0, montantNet: g.montant, montantVerse: g.montant,
-        statut: g.statut || 'en_attente', nombreCourses: 0,
-        dateValidation: g.statut === 'valide' ? new Date().toISOString() : null,
+        montantBrut: g.montant, commission: 0, montantNet: g.montant,
+        montantVerse: 0,
+        statut: 'en_attente', nombreCourses: 0,
+        dateValidation: null,
         commentaire: `Auto: ${g.modeleNom}`,
         dateCreation: new Date().toISOString()
       });
