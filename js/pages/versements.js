@@ -379,6 +379,18 @@ const VersementsPage = {
       });
     }
 
+    // Search in dettes list
+    const detteSearch = document.getElementById('dette-search');
+    if (detteSearch) {
+      detteSearch.addEventListener('input', () => {
+        const q = detteSearch.value.toLowerCase().trim();
+        const rows = document.querySelectorAll('#dette-rows-list .dette-row');
+        rows.forEach(row => {
+          row.style.display = row.dataset.nom.includes(q) ? '' : 'none';
+        });
+      });
+    }
+
     // Add button
     document.getElementById('btn-add-versement').addEventListener('click', () => this._add());
   },
@@ -1886,10 +1898,10 @@ const VersementsPage = {
     if (detteData.detteList.length === 0 && detteData.totalPertes === 0) return '';
 
     const rows = detteData.detteList.map(item => {
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
+      return `<div class="dette-row" data-nom="${(item.nom || '').toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${item.nom}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${item.count} impay\u00e9(s) &bull; Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${item.count} impay\u00e9(s) \u2022 Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:var(--font-size-sm);font-weight:700;color:#f59e0b;">${Utils.formatCurrency(item.total)}</div>
@@ -1905,6 +1917,14 @@ const VersementsPage = {
       </div>`;
     }).join('');
 
+    const searchBar = detteData.detteList.length > 0 ? `
+      <div style="padding:0 0 10px 0;">
+        <div style="position:relative;">
+          <iconify-icon icon="solar:magnifer-linear" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.9rem;"></iconify-icon>
+          <input type="text" id="dette-search" placeholder="Rechercher un chauffeur..." style="width:100%;padding:8px 10px 8px 32px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-secondary);font-size:var(--font-size-sm);font-family:var(--font-body);outline:none;">
+        </div>
+      </div>` : '';
+
     return `<div id="dette-section" class="card" style="margin-top:var(--space-lg);border-left:4px solid #f59e0b;">
       <div class="card-header">
         <span class="card-title"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#f59e0b;"></iconify-icon> Suivi des dettes (${detteData.detteList.length} chauffeur${detteData.detteList.length > 1 ? 's' : ''})</span>
@@ -1913,7 +1933,8 @@ const VersementsPage = {
           ${detteData.totalPertes > 0 ? `<div style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;">Pertes : ${Utils.formatCurrency(detteData.totalPertes)}</div>` : ''}
         </div>
       </div>
-      ${detteData.detteList.length > 0 ? `<div style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">${rows}</div>` : '<div style="text-align:center;color:var(--text-muted);padding:12px;font-size:var(--font-size-sm);">Aucune dette active \u2014 seules des pertes enregistr\u00e9es</div>'}
+      ${searchBar}
+      ${detteData.detteList.length > 0 ? `<div id="dette-rows-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">${rows}</div>` : '<div style="text-align:center;color:var(--text-muted);padding:12px;font-size:var(--font-size-sm);">Aucune dette active \u2014 seules des pertes enregistr\u00e9es</div>'}
     </div>`;
   },
 
@@ -1926,12 +1947,22 @@ const VersementsPage = {
     }
 
     const rows = driver.items.map(v => {
-      return `<div style="display:flex;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-sm);">
-        <div>
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-sm);gap:6px;">
+        <div style="flex:1;min-width:0;">
           <div style="font-weight:500;">${Utils.formatDate(v.date)}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Vers\u00e9 : ${Utils.formatCurrency(v.montantVerse || 0)} sur ${Utils.formatCurrency((v.montantVerse || 0) + v.manquant)}</div>
         </div>
-        <div style="font-weight:700;color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-weight:700;color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</div>
+          <div style="display:flex;gap:3px;margin-top:3px;">
+            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;" onclick="event.stopPropagation();Modal.close();VersementsPage._modifierDette('${v.id}')">
+              <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier
+            </button>
+            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;color:#ef4444;border-color:#ef4444;" onclick="event.stopPropagation();Modal.close();VersementsPage._annulerDette('${v.id}')">
+              <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Annuler
+            </button>
+          </div>
+        </div>
       </div>`;
     }).join('');
 
@@ -1947,6 +1978,86 @@ const VersementsPage = {
       footer: `<button class="btn btn-success" onclick="Modal.close();VersementsPage._encaisserDette('${chauffeurId}')"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser</button><button class="btn btn-secondary" data-action="cancel">Fermer</button>`,
       size: 'medium'
     });
+  },
+
+  _modifierDette(versementId) {
+    const versements = Store.get('versements') || [];
+    const v = versements.find(x => x.id === versementId);
+    if (!v) { Toast.error('Versement introuvable'); return; }
+
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const ch = chauffeurs.find(c => c.id === v.chauffeurId);
+    const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+
+    const fields = [
+      { type: 'heading', label: `Modifier dette \u2014 ${nom}` },
+      { type: 'html', html: `<div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:10px;font-size:var(--font-size-sm);">
+        Date : <strong>${Utils.formatDate(v.date)}</strong><br>
+        Vers\u00e9 : <strong>${Utils.formatCurrency(v.montantVerse || 0)}</strong> \u2014 Manquant actuel : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
+      </div>` },
+      { name: 'manquant', label: 'Nouveau montant manquant (FCFA)', type: 'number', required: true, min: 0, step: 100, default: v.manquant },
+      { name: 'commentaire', label: 'Commentaire (optionnel)', type: 'textarea', rows: 2, placeholder: 'Raison de la modification...', default: '' }
+    ];
+
+    Modal.form(
+      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b;"></iconify-icon> Modifier la dette',
+      FormBuilder.build(fields),
+      () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, fields)) return;
+        const values = FormBuilder.getValues(body);
+        const newManquant = parseFloat(values.manquant) || 0;
+
+        if (newManquant < 0) {
+          Toast.error('Le montant ne peut pas \u00eatre n\u00e9gatif');
+          return;
+        }
+
+        const updates = { manquant: newManquant };
+        if (newManquant === 0) {
+          updates.traitementManquant = null;
+        }
+        if (values.commentaire) {
+          updates.commentaire = (v.commentaire ? v.commentaire + ' | ' : '') + 'Modif dette: ' + values.commentaire;
+        }
+
+        Store.update('versements', versementId, updates);
+        Modal.close();
+        Toast.success(`Dette modifi\u00e9e : ${Utils.formatCurrency(v.manquant)} \u2192 ${Utils.formatCurrency(newManquant)}`);
+        this.render();
+      }
+    );
+  },
+
+  _annulerDette(versementId) {
+    const versements = Store.get('versements') || [];
+    const v = versements.find(x => x.id === versementId);
+    if (!v) { Toast.error('Versement introuvable'); return; }
+
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const ch = chauffeurs.find(c => c.id === v.chauffeurId);
+    const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+
+    Modal.open({
+      title: `<iconify-icon icon="solar:close-circle-bold-duotone" style="color:#ef4444;"></iconify-icon> Annuler cette dette ?`,
+      body: `
+        <div style="padding:12px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);font-size:var(--font-size-sm);">
+          <div style="font-weight:600;margin-bottom:6px;">${nom}</div>
+          <div>Date : ${Utils.formatDate(v.date)}</div>
+          <div>Montant dette : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong></div>
+          <div style="margin-top:8px;color:var(--text-muted);font-size:var(--font-size-xs);">La dette sera mise \u00e0 z\u00e9ro et le traitement sera supprim\u00e9. Cette action est irr\u00e9versible.</div>
+        </div>
+      `,
+      footer: `<button class="btn btn-danger" onclick="VersementsPage._confirmAnnulerDette('${versementId}')"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Confirmer l'annulation</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`,
+      size: 'small'
+    });
+  },
+
+  _confirmAnnulerDette(versementId) {
+    Store.update('versements', versementId, { manquant: 0, traitementManquant: null });
+    Modal.close();
+    Toast.success('Dette annul\u00e9e avec succ\u00e8s');
+    this.render();
   },
 
   _encaisserDette(chauffeurId) {
