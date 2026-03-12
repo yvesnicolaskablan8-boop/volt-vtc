@@ -33,7 +33,6 @@ const ASSETS = [
   './js/pages/parametres.js',
   './js/pages/yango.js',
   './js/pages/garage.js',
-  './js/pages/motivation.js',
   './js/pages/messagerie.js',
   './js/pages/menu.js',
   './js/pages/contraventions.js',

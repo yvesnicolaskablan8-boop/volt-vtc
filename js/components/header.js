@@ -349,7 +349,6 @@ const Header = {
         { label: 'Garage', route: '/garage', icon: 'solar:garage-bold-duotone' },
         { label: 'Rentabilité', route: '/rentabilite', icon: 'solar:graph-up-bold-duotone' },
         { label: 'Comptabilité', route: '/comptabilite', icon: 'solar:calculator-bold-duotone' },
-        { label: 'Engagement', route: '/engagement', icon: 'solar:star-bold-duotone' },
         { label: 'Paramètres', route: '/parametres', icon: 'solar:settings-minimalistic-bold-duotone' }
       ].filter(p => p.label.toLowerCase().includes(query));
 

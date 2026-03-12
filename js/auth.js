@@ -85,7 +85,6 @@ const Auth = {
       '/dashboard': 'dashboard',
       '/yango': 'dashboard',
       '/chauffeurs': 'chauffeurs',
-      '/motivation': 'chauffeurs',
       '/messagerie': 'chauffeurs',
       '/vehicules': 'vehicules',
       '/garage': 'vehicules',
