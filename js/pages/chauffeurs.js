@@ -434,6 +434,9 @@ const ChauffeursPage = {
         </div>
       </div>
 
+      <!-- Performance -->
+      ${this._renderPerformanceSection(c)}
+
       <!-- Charts -->
       <div class="charts-grid" style="margin-top:var(--space-lg);">
         <div class="chart-card">
@@ -471,6 +474,208 @@ const ChauffeursPage = {
           <span class="card-title">Dernières courses</span>
         </div>
         <div id="driver-courses-table"></div>
+      </div>
+    `;
+  },
+
+  // =================== PERFORMANCE CHAUFFEUR ===================
+
+  _computePerformance(chauffeurId) {
+    const versements = Store.get('versements') || [];
+    const planning = Store.get('planning') || [];
+    const absences = Store.get('absences') || [];
+    const chauffeur = Store.findById('chauffeurs', chauffeurId);
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const redevance = chauffeur ? (chauffeur.redevanceQuotidienne || 0) : 0;
+
+    // Versements de ce chauffeur (non supprimés)
+    const myVersements = versements.filter(v => v.chauffeurId === chauffeurId && v.statut !== 'supprime');
+
+    // Planning de ce chauffeur (passé et aujourd'hui)
+    const myPlanning = planning.filter(p => p.chauffeurId === chauffeurId && p.date <= todayStr);
+    const uniquePlanningDays = new Map();
+    myPlanning.forEach(p => { if (!uniquePlanningDays.has(p.date)) uniquePlanningDays.set(p.date, p); });
+
+    // Jours programmés (hors absences)
+    let joursProgrammes = 0;
+    let joursVerses = 0;
+    let montantAttendu = 0;
+    let montantVerse = 0;
+
+    uniquePlanningDays.forEach((p) => {
+      const hasAbsence = absences.some(a => a.chauffeurId === chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
+      if (hasAbsence) return;
+      if (chauffeur && chauffeur.statut === 'inactif') return;
+      joursProgrammes++;
+      montantAttendu += redevance;
+      const hasPayment = myVersements.some(v => v.date === p.date && v.montantVerse > 0);
+      if (hasPayment) joursVerses++;
+    });
+
+    // Total versé
+    montantVerse = myVersements.reduce((s, v) => s + (v.montantVerse || 0), 0);
+
+    // 1. Taux de ponctualité
+    const tauxPonctualite = joursProgrammes > 0 ? Math.round((joursVerses / joursProgrammes) * 100) : 100;
+
+    // 2. Taux de recouvrement
+    const tauxRecouvrement = montantAttendu > 0 ? Math.round((montantVerse / montantAttendu) * 100) : 100;
+
+    // 3. Dettes & Pertes
+    const dettes = versements.filter(v => v.chauffeurId === chauffeurId && v.traitementManquant === 'dette' && v.manquant > 0);
+    const pertes = versements.filter(v => v.chauffeurId === chauffeurId && v.traitementManquant === 'perte' && v.manquant > 0);
+    const totalDettes = dettes.reduce((s, v) => s + v.manquant, 0);
+    const totalPertes = pertes.reduce((s, v) => s + v.manquant, 0);
+
+    // 4. CA mensuel sur 6 derniers mois
+    const caMensuel = [];
+    const monthShorts = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    for (let i = 5; i >= 0; i--) {
+      const m = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthNum = m.getMonth();
+      const yearNum = m.getFullYear();
+      const ca = myVersements
+        .filter(v => {
+          if (!v.date) return false;
+          const d = new Date(v.date);
+          return d.getMonth() === monthNum && d.getFullYear() === yearNum;
+        })
+        .reduce((s, v) => s + (v.montantVerse || 0), 0);
+      caMensuel.push({ label: monthShorts[monthNum], value: Math.round(ca) });
+    }
+    const caMoyenMensuel = caMensuel.length > 0 ? Math.round(caMensuel.reduce((s, m) => s + m.value, 0) / caMensuel.length) : 0;
+
+    // 5. Évolution CA (dernier mois vs avant-dernier)
+    const lastCA = caMensuel.length >= 1 ? caMensuel[caMensuel.length - 1].value : 0;
+    const prevCA = caMensuel.length >= 2 ? caMensuel[caMensuel.length - 2].value : 0;
+    const evolutionCA = prevCA > 0 ? Math.round(((lastCA - prevCA) / prevCA) * 100) : (lastCA > 0 ? 100 : 0);
+
+    // 6. Score de fiabilité (0-100)
+    const anciennete = chauffeur && chauffeur.dateDebutContrat
+      ? Math.max(0, Math.floor((now - new Date(chauffeur.dateDebutContrat)) / 86400000 / 30))
+      : 0;
+    const scoreAnciennete = Math.min(100, anciennete * 5); // 20 mois = 100
+    const scoreFiabilite = Math.round(
+      tauxPonctualite * 0.4 +
+      Math.min(tauxRecouvrement, 100) * 0.4 +
+      scoreAnciennete * 0.2
+    );
+
+    // 7. Streak — jours consécutifs sans impayé (en partant d'aujourd'hui vers le passé)
+    let streak = 0;
+    const sortedDays = [...uniquePlanningDays.keys()].sort((a, b) => b.localeCompare(a));
+    for (const day of sortedDays) {
+      const p = uniquePlanningDays.get(day);
+      const hasAbsence = absences.some(a => a.chauffeurId === chauffeurId && day >= a.dateDebut && day <= a.dateFin);
+      if (hasAbsence) continue;
+      const hasPaid = myVersements.some(v => v.date === day && v.montantVerse > 0);
+      if (hasPaid) streak++;
+      else break;
+    }
+
+    return {
+      tauxPonctualite, tauxRecouvrement,
+      totalDettes, nbDettes: dettes.length,
+      totalPertes, nbPertes: pertes.length,
+      caMensuel, caMoyenMensuel, evolutionCA,
+      scoreFiabilite, streak,
+      joursProgrammes, joursVerses, montantAttendu, montantVerse, anciennete
+    };
+  },
+
+  _renderPerformanceSection(chauffeur) {
+    const perf = this._computePerformance(chauffeur.id);
+
+    const fiabColor = perf.scoreFiabilite >= 80 ? '#22c55e' : perf.scoreFiabilite >= 50 ? '#f59e0b' : '#ef4444';
+    const fiabLabel = perf.scoreFiabilite >= 80 ? 'Excellent' : perf.scoreFiabilite >= 50 ? 'Bon' : 'À surveiller';
+    const ponctColor = perf.tauxPonctualite >= 80 ? '#22c55e' : perf.tauxPonctualite >= 50 ? '#f59e0b' : '#ef4444';
+    const recColor = perf.tauxRecouvrement >= 80 ? '#22c55e' : perf.tauxRecouvrement >= 50 ? '#f59e0b' : '#ef4444';
+    const evoIcon = perf.evolutionCA >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold';
+    const evoColor = perf.evolutionCA >= 0 ? '#22c55e' : '#ef4444';
+    const evoSign = perf.evolutionCA >= 0 ? '+' : '';
+
+    // Store perf data for chart rendering
+    this._lastPerf = perf;
+
+    return `
+      <div class="card" style="margin-top:var(--space-lg);border-left:4px solid ${fiabColor};">
+        <div class="card-header">
+          <span class="card-title"><iconify-icon icon="solar:star-bold-duotone" style="color:${fiabColor};"></iconify-icon> Performance</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:${fiabColor}20;font-size:var(--font-size-xs);font-weight:700;color:${fiabColor};">
+              <span style="width:28px;height:28px;border-radius:50%;background:${fiabColor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:var(--font-size-sm);font-weight:800;">${perf.scoreFiabilite}</span>
+              ${fiabLabel}
+            </div>
+          </div>
+        </div>
+
+        <!-- KPIs grid -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;">
+          <!-- Ponctualité -->
+          <div style="padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);text-align:center;">
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">Ponctualité</div>
+            <div style="font-size:var(--font-size-lg);font-weight:800;color:${ponctColor};">${perf.tauxPonctualite}%</div>
+            <div style="font-size:10px;color:var(--text-muted);">${perf.joursVerses}/${perf.joursProgrammes} jours</div>
+          </div>
+
+          <!-- Recouvrement -->
+          <div style="padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);text-align:center;">
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">Recouvrement</div>
+            <div style="font-size:var(--font-size-lg);font-weight:800;color:${recColor};">${perf.tauxRecouvrement > 999 ? '999+' : perf.tauxRecouvrement}%</div>
+            <div style="font-size:10px;color:var(--text-muted);">${Utils.formatCurrency(perf.montantVerse)} / ${Utils.formatCurrency(perf.montantAttendu)}</div>
+          </div>
+
+          <!-- CA moyen mensuel -->
+          <div style="padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);text-align:center;">
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">CA moyen/mois</div>
+            <div style="font-size:var(--font-size-lg);font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(perf.caMoyenMensuel)}</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:2px;font-size:10px;margin-top:2px;">
+              <iconify-icon icon="${evoIcon}" style="color:${evoColor};font-size:10px;"></iconify-icon>
+              <span style="color:${evoColor};font-weight:600;">${evoSign}${perf.evolutionCA}%</span>
+            </div>
+          </div>
+
+          <!-- Streak -->
+          <div style="padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);text-align:center;">
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">Streak</div>
+            <div style="font-size:var(--font-size-lg);font-weight:800;color:${perf.streak >= 7 ? '#22c55e' : perf.streak >= 3 ? '#f59e0b' : '#ef4444'};">${perf.streak}j</div>
+            <div style="font-size:10px;color:var(--text-muted);">sans impayé</div>
+          </div>
+
+          <!-- Ancienneté -->
+          <div style="padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);text-align:center;">
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">Ancienneté</div>
+            <div style="font-size:var(--font-size-lg);font-weight:800;color:var(--text-primary);">${perf.anciennete}</div>
+            <div style="font-size:10px;color:var(--text-muted);">mois</div>
+          </div>
+        </div>
+
+        <!-- Dettes & Pertes résumé -->
+        ${perf.totalDettes > 0 || perf.totalPertes > 0 ? `
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+          ${perf.totalDettes > 0 ? `
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.1);font-size:var(--font-size-xs);">
+            <iconify-icon icon="solar:danger-circle-bold-duotone" style="color:#ef4444;"></iconify-icon>
+            <span style="font-weight:600;color:#ef4444;">${perf.nbDettes} dette${perf.nbDettes > 1 ? 's' : ''}</span>
+            <span style="color:var(--text-muted);">(${Utils.formatCurrency(perf.totalDettes)})</span>
+          </div>` : ''}
+          ${perf.totalPertes > 0 ? `
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-sm);background:rgba(249,115,22,0.1);font-size:var(--font-size-xs);">
+            <iconify-icon icon="solar:fire-bold-duotone" style="color:#f97316;"></iconify-icon>
+            <span style="font-weight:600;color:#f97316;">${perf.nbPertes} perte${perf.nbPertes > 1 ? 's' : ''}</span>
+            <span style="color:var(--text-muted);">(${Utils.formatCurrency(perf.totalPertes)})</span>
+          </div>` : ''}
+        </div>` : `
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.1);font-size:var(--font-size-xs);margin-bottom:16px;">
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon>
+          <span style="font-weight:600;color:#22c55e;">Aucune dette ni perte</span>
+        </div>`}
+
+        <!-- Mini chart CA mensuel -->
+        <div style="height:160px;">
+          <canvas id="chart-perf-ca-mensuel"></canvas>
+        </div>
       </div>
     `;
   },
@@ -587,6 +792,52 @@ const ChauffeursPage = {
         }
       });
       this._charts.push(payChart);
+    }
+
+    // Performance CA mensuel chart
+    const perfCACtx = document.getElementById('chart-perf-ca-mensuel');
+    if (perfCACtx && this._lastPerf && this._lastPerf.caMensuel.length > 0) {
+      const perf = this._lastPerf;
+      this._charts.push(new Chart(perfCACtx, {
+        type: 'bar',
+        data: {
+          labels: perf.caMensuel.map(m => m.label),
+          datasets: [{
+            label: 'CA mensuel',
+            data: perf.caMensuel.map(m => m.value),
+            backgroundColor: perf.caMensuel.map(m => m.value >= perf.caMoyenMensuel ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.5)'),
+            hoverBackgroundColor: perf.caMensuel.map(m => m.value >= perf.caMoyenMensuel ? '#22c55e' : '#ef4444'),
+            borderRadius: 4,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `CA : ${Utils.formatCurrency(ctx.raw)}`,
+                afterLabel: (ctx) => {
+                  const avg = perf.caMoyenMensuel;
+                  const diff = ctx.raw - avg;
+                  const sign = diff >= 0 ? '+' : '';
+                  return `Moyenne : ${Utils.formatCurrency(avg)} (${sign}${Utils.formatCurrency(diff)})`;
+                }
+              }
+            },
+            // Average line annotation
+            annotation: undefined
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: (v) => Utils.formatCurrency(v) }
+            }
+          }
+        }
+      }));
     }
 
     // Recent courses table

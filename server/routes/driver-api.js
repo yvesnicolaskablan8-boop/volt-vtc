@@ -78,12 +78,90 @@ router.get('/dashboard', async (req, res, next) => {
     const scoreConduite = chauffeur ? chauffeur.scoreConduite : null;
     const dernierGps = gpsRecent.length > 0 ? gpsRecent[0] : null;
 
+    // === Stats enrichies ===
+    // Stats hebdo (7 derniers jours)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekAgoStr = weekAgo.toISOString().split('T')[0];
+    const versementsHebdo = await Versement.find({
+      chauffeurId,
+      date: { $gte: weekAgoStr },
+      statut: { $ne: 'supprime' }
+    }).lean();
+    const totalVerseHebdo = versementsHebdo.reduce((s, v) => s + (v.montantVerse || 0), 0);
+    const joursVerseHebdo = new Set(versementsHebdo.filter(v => v.montantVerse > 0).map(v => v.date)).size;
+    const redevance = chauffeur ? (chauffeur.redevanceQuotidienne || 0) : 0;
+    const objectifHebdo = redevance * 7;
+
+    // Ranking parmi chauffeurs actifs (CA du mois)
+    const allChauffeurs = await Chauffeur.find({ statut: 'actif' }).lean();
+    const allChauffeurIds = allChauffeurs.map(c => c.id);
+    const allVersementsMois = await Versement.find({
+      chauffeurId: { $in: allChauffeurIds },
+      date: { $regex: `^${monthStart}` },
+      statut: { $ne: 'supprime' }
+    }).lean();
+    // Calculer CA par chauffeur
+    const caByDriver = {};
+    allChauffeurIds.forEach(id => { caByDriver[id] = 0; });
+    allVersementsMois.forEach(v => {
+      if (caByDriver[v.chauffeurId] !== undefined) {
+        caByDriver[v.chauffeurId] += (v.montantVerse || 0);
+      }
+    });
+    const sorted = Object.entries(caByDriver).sort((a, b) => b[1] - a[1]);
+    const rankIdx = sorted.findIndex(([id]) => id === chauffeurId);
+    const ranking = { position: rankIdx >= 0 ? rankIdx + 1 : allChauffeurs.length, total: allChauffeurs.length };
+
+    // Streak — jours consécutifs avec versement valide (en partant d'hier vers le passé)
+    let streakJours = 0;
+    const allVersements = await Versement.find({ chauffeurId, statut: { $ne: 'supprime' } }).sort({ date: -1 }).lean();
+    const versementDates = new Set(allVersements.filter(v => v.montantVerse > 0).map(v => v.date));
+    const allPlanning = await Planning.find({ chauffeurId, date: { $lte: today } }).sort({ date: -1 }).lean();
+    const planDatesChecked = new Set();
+    for (const p of allPlanning) {
+      if (planDatesChecked.has(p.date)) continue;
+      planDatesChecked.add(p.date);
+      if (versementDates.has(p.date)) streakJours++;
+      else break;
+    }
+
+    // Evolution CA (mois courant vs mois précédent)
+    const caMoisCourant = versementsMois.reduce((s, v) => s + (v.montantVerse || 0), 0);
+    const prevMonth = new Date();
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    const prevMonthStart = prevMonth.toISOString().split('T')[0].slice(0, 7);
+    const versementsMoisPrec = await Versement.find({
+      chauffeurId,
+      date: { $regex: `^${prevMonthStart}` },
+      statut: { $ne: 'supprime' }
+    }).lean();
+    const caMoisPrecedent = versementsMoisPrec.reduce((s, v) => s + (v.montantVerse || 0), 0);
+    const tendancePct = caMoisPrecedent > 0 ? Math.round(((caMoisCourant - caMoisPrecedent) / caMoisPrecedent) * 100) : (caMoisCourant > 0 ? 100 : 0);
+
+    // CA des 4 dernières semaines (pour mini chart)
+    const weeklyCA = [];
+    for (let w = 3; w >= 0; w--) {
+      const wStart = new Date();
+      wStart.setDate(wStart.getDate() - (w * 7 + wStart.getDay()));
+      const wEnd = new Date(wStart);
+      wEnd.setDate(wEnd.getDate() + 6);
+      const wStartStr = wStart.toISOString().split('T')[0];
+      const wEndStr = wEnd.toISOString().split('T')[0];
+      const wVersements = allVersements.filter(v => v.date >= wStartStr && v.date <= wEndStr);
+      weeklyCA.push({
+        label: `S${Math.ceil((wStart.getDate() + wStart.getDay()) / 7)}`,
+        total: wVersements.reduce((s, v) => s + (v.montantVerse || 0), 0)
+      });
+    }
+
     res.json({
       chauffeur: chauffeur ? {
         prenom: chauffeur.prenom,
         nom: chauffeur.nom,
         statut: chauffeur.statut,
-        scoreConduite: chauffeur.scoreConduite
+        scoreConduite: chauffeur.scoreConduite,
+        redevanceQuotidienne: redevance
       } : null,
       creneauJour,
       vehicule: vehicule ? {
@@ -158,7 +236,21 @@ router.get('/dashboard', async (req, res, next) => {
           scoreOk,
           activiteOk
         };
-      })()
+      })(),
+      // === Stats enrichies ===
+      statsHebdo: {
+        totalVerse: totalVerseHebdo,
+        nbJoursTravailles: joursVerseHebdo,
+        objectifHebdo
+      },
+      ranking,
+      streakJours,
+      evolutionCA: {
+        caMoisPrecedent,
+        caMoisCourant,
+        tendancePct
+      },
+      weeklyCA
     });
   } catch (err) {
     next(err);

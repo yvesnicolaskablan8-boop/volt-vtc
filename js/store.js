@@ -254,6 +254,7 @@ const Store = {
       depenses: [],
       reparations: [],
       controlesTechniques: [],
+      incidents: [],
       settings: { entreprise: {}, preferences: {} }
     };
   },

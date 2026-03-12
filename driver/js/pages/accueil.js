@@ -160,6 +160,9 @@ const AccueilPage = {
       <!-- Service / Pointage -->
       ${serviceCardHTML}
 
+      <!-- Stats rapides -->
+      ${this._renderQuickStats(data)}
+
       <!-- Activite Yango -->
       <div class="card" id="yango-activity-card" style="display:none;">
         <div class="card-header">
@@ -229,10 +232,159 @@ const AccueilPage = {
 
     // Charger le resume hebdomadaire (dimanche ou toujours pour info)
     this._loadWeeklySummary();
+
+    // Charger le mini chart CA hebdo
+    this._loadWeeklyChart(data);
   },
 
   _formatCurrency(amount) {
     return amount.toLocaleString('fr-FR') + ' FCFA';
+  },
+
+  _renderQuickStats(data) {
+    const stats = data.statsHebdo;
+    const ranking = data.ranking;
+    const streak = data.streakJours || 0;
+    const evo = data.evolutionCA;
+    const redevance = data.chauffeur ? (data.chauffeur.redevanceQuotidienne || 0) : 0;
+
+    if (!stats && !ranking) return ''; // API ancienne, pas de stats enrichies
+
+    const evoColor = evo && evo.tendancePct >= 0 ? '#22c55e' : '#ef4444';
+    const evoIcon = evo && evo.tendancePct >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold';
+    const evoSign = evo && evo.tendancePct >= 0 ? '+' : '';
+    const streakColor = streak >= 7 ? '#22c55e' : streak >= 3 ? '#f59e0b' : '#ef4444';
+
+    // Objectif du jour : barre de progression redevance
+    const todayVerse = data.statsMois && data.statsMois.nbVersements > 0 ? Math.round(data.statsMois.totalBrut / Math.max(data.statsMois.nbVersements, 1)) : 0;
+    const objectifPct = redevance > 0 ? Math.min(Math.round((todayVerse / redevance) * 100), 100) : 0;
+    const objColor = objectifPct >= 100 ? '#22c55e' : objectifPct >= 50 ? '#f59e0b' : '#ef4444';
+
+    return `
+      <!-- Stats rapides -->
+      <div style="margin-bottom:1.25rem">
+        <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:0.75rem">Mes stats</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <!-- CA semaine -->
+          <div style="padding:14px;border-radius:1rem;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#3b82f6;font-size:1.1rem;"></iconify-icon>
+              <span style="font-size:0.68rem;color:#94a3b8;font-weight:600;">CA semaine</span>
+            </div>
+            <div style="font-size:1.1rem;font-weight:800;color:#0f172a;">${stats ? this._formatCurrency(stats.totalVerse) : '--'}</div>
+            <div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;">${stats ? stats.nbJoursTravailles : 0} jour${stats && stats.nbJoursTravailles > 1 ? 's' : ''} versé${stats && stats.nbJoursTravailles > 1 ? 's' : ''}</div>
+          </div>
+
+          <!-- Classement -->
+          <div style="padding:14px;border-radius:1rem;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <iconify-icon icon="solar:cup-star-bold-duotone" style="color:#f59e0b;font-size:1.1rem;"></iconify-icon>
+              <span style="font-size:0.68rem;color:#94a3b8;font-weight:600;">Classement</span>
+            </div>
+            <div style="font-size:1.1rem;font-weight:800;color:#0f172a;">${ranking ? ranking.position : '--'}<span style="font-size:0.7rem;color:#94a3b8;font-weight:500;">/${ranking ? ranking.total : '--'}</span></div>
+            <div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;">CA du mois</div>
+          </div>
+
+          <!-- Streak -->
+          <div style="padding:14px;border-radius:1rem;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <iconify-icon icon="solar:fire-bold-duotone" style="color:${streakColor};font-size:1.1rem;"></iconify-icon>
+              <span style="font-size:0.68rem;color:#94a3b8;font-weight:600;">Streak</span>
+            </div>
+            <div style="font-size:1.1rem;font-weight:800;color:${streakColor};">${streak} jour${streak > 1 ? 's' : ''}</div>
+            <div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;">sans impayé</div>
+          </div>
+
+          <!-- Evolution -->
+          <div style="padding:14px;border-radius:1rem;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <iconify-icon icon="${evoIcon}" style="color:${evoColor};font-size:1.1rem;"></iconify-icon>
+              <span style="font-size:0.68rem;color:#94a3b8;font-weight:600;">Évolution</span>
+            </div>
+            <div style="font-size:1.1rem;font-weight:800;color:${evoColor};">${evo ? evoSign + evo.tendancePct + '%' : '--'}</div>
+            <div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;">vs mois dernier</div>
+          </div>
+        </div>
+
+        <!-- Objectif quotidien -->
+        ${redevance > 0 ? `
+        <div style="margin-top:12px;padding:14px;border-radius:1rem;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <iconify-icon icon="solar:target-bold-duotone" style="color:${objColor};font-size:1rem;"></iconify-icon>
+              <span style="font-size:0.75rem;font-weight:600;color:#0f172a;">Objectif quotidien</span>
+            </div>
+            <span style="font-size:0.75rem;font-weight:700;color:${objColor};">${this._formatCurrency(redevance)}</span>
+          </div>
+          <div style="height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+            <div style="height:100%;width:${objectifPct}%;background:${objColor};border-radius:4px;transition:width 0.5s;"></div>
+          </div>
+        </div>` : ''}
+
+        <!-- Mini chart CA hebdo -->
+        <div style="margin-top:12px;padding:14px;border-radius:1rem;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+            <iconify-icon icon="solar:chart-2-bold-duotone" style="color:#3b82f6;font-size:1rem;"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:600;color:#0f172a;">CA des 4 dernières semaines</span>
+          </div>
+          <div style="height:120px;">
+            <canvas id="chart-weekly-ca"></canvas>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  _loadWeeklyChart(data) {
+    const ctx = document.getElementById('chart-weekly-ca');
+    if (!ctx || !data.weeklyCA || data.weeklyCA.length === 0) return;
+
+    if (this._weeklyChart) {
+      this._weeklyChart.destroy();
+      this._weeklyChart = null;
+    }
+
+    this._weeklyChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.weeklyCA.map(w => w.label),
+        datasets: [{
+          label: 'CA',
+          data: data.weeklyCA.map(w => w.total),
+          backgroundColor: data.weeklyCA.map((w, i) => i === data.weeklyCA.length - 1 ? '#3b82f6' : 'rgba(59,130,246,0.4)'),
+          borderRadius: 6,
+          borderSkipped: false,
+          barPercentage: 0.6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => this._formatCurrency(ctx.raw)
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (v) => v >= 1000 ? Math.round(v / 1000) + 'k' : v,
+              font: { size: 10 },
+              maxTicksLimit: 4
+            },
+            grid: { color: 'rgba(0,0,0,0.04)' }
+          },
+          x: {
+            ticks: { font: { size: 10 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
   },
 
   async _showScoreDetail() {
@@ -1152,5 +1304,9 @@ const AccueilPage = {
   destroy() {
     DriverCountdown.stopTimer();
     this._stopServiceTimer();
+    if (this._weeklyChart) {
+      this._weeklyChart.destroy();
+      this._weeklyChart = null;
+    }
   }
 };

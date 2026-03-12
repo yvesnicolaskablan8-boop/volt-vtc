@@ -418,7 +418,106 @@ const DashboardPage = {
       alertesTotal, alertesCritiques, alertesUrgentes,
       tauxRecouvrement, totalAttendu,
       serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence,
-      periodLabel, monthLabel, isMonthView
+      periodLabel, monthLabel, isMonthView,
+      // === PRÉVISIONS CA ===
+      ...this._computeForecasts(monthlyRevenue, versements, chauffeurs, planning, absences, thisMonth, thisYear, sel, isMonthView, totalVerse)
+    };
+  },
+
+  /**
+   * Compute revenue forecasts: projection fin de mois, mois suivant, objectif mensuel
+   */
+  _computeForecasts(monthlyRevenue, versements, chauffeurs, planning, absences, thisMonth, thisYear, selDate, isMonthView, caActuel) {
+    const now = new Date();
+    const todayDay = now.getDate();
+
+    // --- 1. Projection fin de mois (extrapolation linéaire du CA actuel) ---
+    const daysInMonth = new Date(thisYear, thisMonth + 1, 0).getDate();
+    const daysPassed = Math.min(todayDay, daysInMonth);
+    const caMoyenJour = daysPassed > 0 ? caActuel / daysPassed : 0;
+    const projectionFinMois = Math.round(caMoyenJour * daysInMonth);
+
+    // --- 2. Régression linéaire sur les 6 derniers mois pour tendance ---
+    const last6 = monthlyRevenue.slice(-6);
+    let trendSlope = 0;
+    let trendIntercept = 0;
+    if (last6.length >= 3) {
+      const n = last6.length;
+      const xVals = last6.map((_, i) => i);
+      const yVals = last6.map(m => m.revenue);
+      const sumX = xVals.reduce((s, x) => s + x, 0);
+      const sumY = yVals.reduce((s, y) => s + y, 0);
+      const sumXY = xVals.reduce((s, x, i) => s + x * yVals[i], 0);
+      const sumX2 = xVals.reduce((s, x) => s + x * x, 0);
+      const denom = n * sumX2 - sumX * sumX;
+      if (denom !== 0) {
+        trendSlope = (n * sumXY - sumX * sumY) / denom;
+        trendIntercept = (sumY - trendSlope * sumX) / n;
+      }
+    }
+
+    // Prévision mois prochain = régression extrapolée au point suivant
+    const nextIdx = last6.length;
+    let previsionMoisSuivant = Math.round(trendIntercept + trendSlope * nextIdx);
+    // Fallback: si régression donne négatif ou 0, utiliser la moyenne des 3 derniers mois
+    if (previsionMoisSuivant <= 0 && last6.length >= 3) {
+      previsionMoisSuivant = Math.round(last6.slice(-3).reduce((s, m) => s + m.revenue, 0) / 3);
+    }
+    // Ajustement saisonnalité: si même mois l'an dernier existe, pondérer 70% regression / 30% historique
+    const lastYearSameMonth = monthlyRevenue.find((m, i) => {
+      const mDate = new Date(thisYear, thisMonth - (11 - i), 1);
+      return mDate.getMonth() === (thisMonth + 1) % 12 && mDate.getFullYear() === (thisMonth === 11 ? thisYear : thisYear - 1);
+    });
+    if (lastYearSameMonth && lastYearSameMonth.revenue > 0) {
+      previsionMoisSuivant = Math.round(previsionMoisSuivant * 0.7 + lastYearSameMonth.revenue * 0.3);
+    }
+
+    // --- 3. Objectif mensuel = somme redevances × jours programmés du mois ---
+    const monthPlanning = planning.filter(p => {
+      if (!p.date) return false;
+      const d = new Date(p.date);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+    // Dédupliquer par (chauffeur, date) — compter chaque jour programmé une seule fois
+    const uniqueDays = new Map();
+    monthPlanning.forEach(p => {
+      const key = `${p.chauffeurId}|${p.date}`;
+      if (!uniqueDays.has(key)) uniqueDays.set(key, p);
+    });
+    let objectifMensuel = 0;
+    uniqueDays.forEach((p) => {
+      // Exclure absences
+      const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
+      if (hasAbsence) return;
+      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
+      if (!ch || ch.statut === 'inactif') return;
+      const redevance = ch.redevanceQuotidienne || 0;
+      if (redevance > 0) objectifMensuel += redevance;
+    });
+
+    // Progression vers l'objectif (%)
+    const progressionObjectif = objectifMensuel > 0 ? Math.min(Math.round((caActuel / objectifMensuel) * 100), 999) : 0;
+
+    // Tendance mensuelle (% variation mois courant vs projeté vs précédent)
+    const prevMonthRev = last6.length >= 2 ? last6[last6.length - 2].revenue : 0;
+    const tendancePctMois = prevMonthRev > 0 ? Math.round(((projectionFinMois - prevMonthRev) / prevMonthRev) * 100) : 0;
+
+    // Données pour sparkline chart (6 derniers mois + projection)
+    const forecastChartData = last6.map(m => ({ label: m.month, value: m.revenue, type: 'actual' }));
+    const nextMonthIdx = (thisMonth + 1) % 12;
+    const monthShorts = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+    forecastChartData.push({ label: monthShorts[nextMonthIdx], value: previsionMoisSuivant, type: 'forecast' });
+
+    return {
+      projectionFinMois,
+      previsionMoisSuivant,
+      objectifMensuel,
+      progressionObjectif,
+      tendancePctMois,
+      trendSlope,
+      forecastChartData,
+      caMoyenJour: Math.round(caMoyenJour),
+      joursRestants: daysInMonth - daysPassed
     };
   },
 
@@ -634,6 +733,83 @@ const DashboardPage = {
           </div>
         </div>
       </div>
+
+      <!-- Prévisions CA -->
+      ${this._renderForecastSection(d)}
+    `;
+  },
+
+  // =================== PRÉVISIONS CA ===================
+
+  _renderForecastSection(d) {
+    if (!d.forecastChartData || d.forecastChartData.length === 0) return '';
+
+    const progressColor = d.progressionObjectif >= 80 ? '#22c55e' : d.progressionObjectif >= 50 ? '#f59e0b' : '#ef4444';
+    const progressIcon = d.progressionObjectif >= 80 ? 'solar:check-circle-bold-duotone' : d.progressionObjectif >= 50 ? 'solar:clock-circle-bold-duotone' : 'solar:danger-triangle-bold-duotone';
+    const tendanceIcon = d.tendancePctMois >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold';
+    const tendanceColor = d.tendancePctMois >= 0 ? '#22c55e' : '#ef4444';
+    const tendanceSign = d.tendancePctMois >= 0 ? '+' : '';
+
+    return `
+      <div class="card" style="margin-top:var(--space-lg);border-left:4px solid var(--volt-blue);">
+        <div class="card-header">
+          <span class="card-title"><iconify-icon icon="solar:graph-new-up-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Prévisions de chiffre d'affaires</span>
+          <span style="font-size:var(--font-size-xs);color:var(--text-muted);">Basé sur les ${d.forecastChartData.length - 1} derniers mois</span>
+        </div>
+
+        <!-- 3 mini cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;">
+          <!-- Projection fin de mois -->
+          <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);position:relative;overflow:hidden;">
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">
+              <iconify-icon icon="solar:calendar-mark-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Projection fin de mois
+            </div>
+            <div style="font-size:var(--font-size-xl);font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.projectionFinMois)}</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;font-size:var(--font-size-xs);">
+              <iconify-icon icon="${tendanceIcon}" style="color:${tendanceColor};"></iconify-icon>
+              <span style="color:${tendanceColor};font-weight:600;">${tendanceSign}${d.tendancePctMois}%</span>
+              <span style="color:var(--text-muted);">vs mois précédent</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${Utils.formatCurrency(d.caMoyenJour)}/jour × ${d.joursRestants}j restants</div>
+          </div>
+
+          <!-- Prévision mois prochain -->
+          <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);">
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">
+              <iconify-icon icon="solar:graph-new-up-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Prévision mois prochain
+            </div>
+            <div style="font-size:var(--font-size-xl);font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.previsionMoisSuivant)}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:4px;">
+              Régression linéaire ${d.trendSlope > 0 ? '<span style="color:#22c55e;">↗ tendance haussière</span>' : d.trendSlope < 0 ? '<span style="color:#ef4444;">↘ tendance baissière</span>' : '<span style="color:var(--text-muted);">→ stable</span>'}
+            </div>
+          </div>
+
+          <!-- Objectif mensuel -->
+          <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);">
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">
+              <iconify-icon icon="solar:target-bold-duotone" style="color:${progressColor};"></iconify-icon> Objectif mensuel
+            </div>
+            <div style="font-size:var(--font-size-xl);font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.objectifMensuel)}</div>
+            <div style="margin-top:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-size:10px;color:var(--text-muted);">Progression</span>
+                <span style="font-size:var(--font-size-xs);font-weight:700;color:${progressColor};">
+                  <iconify-icon icon="${progressIcon}"></iconify-icon> ${d.progressionObjectif}%
+                </span>
+              </div>
+              <div style="height:6px;background:var(--bg-primary);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:${Math.min(d.progressionObjectif, 100)}%;background:${progressColor};border-radius:3px;transition:width 0.5s;"></div>
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${Utils.formatCurrency(d.caThisMonth)} / ${Utils.formatCurrency(d.objectifMensuel)}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sparkline chart -->
+        <div style="height:180px;">
+          <canvas id="chart-forecast"></canvas>
+        </div>
+      </div>
     `;
   },
 
@@ -831,6 +1007,90 @@ const DashboardPage = {
           },
           scales: {
             x: {
+              ticks: { callback: (val) => Utils.formatCurrency(val) }
+            }
+          }
+        }
+      }));
+    }
+
+    // ======= 5. Forecast chart (line + projected bar) =======
+    const forecastCtx = document.getElementById('chart-forecast');
+    if (forecastCtx && d.forecastChartData && d.forecastChartData.length > 0) {
+      const labels = d.forecastChartData.map(f => f.label);
+      const actualData = d.forecastChartData.map(f => f.type === 'actual' ? f.value : null);
+      const forecastData = d.forecastChartData.map((f, i) => {
+        // Connect forecast point to last actual point
+        if (f.type === 'forecast') return f.value;
+        if (i === d.forecastChartData.length - 2) return f.value; // bridge point
+        return null;
+      });
+
+      this._charts.push(new Chart(forecastCtx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              type: 'line',
+              label: 'CA réel',
+              data: actualData,
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              fill: true,
+              borderWidth: 2.5,
+              pointBackgroundColor: '#3b82f6',
+              pointBorderColor: Utils.chartBorderColor(),
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 7,
+              spanGaps: false,
+              order: 1
+            },
+            {
+              type: 'line',
+              label: 'Prévision',
+              data: forecastData,
+              borderColor: '#8b5cf6',
+              backgroundColor: 'rgba(139, 92, 246, 0.08)',
+              fill: true,
+              borderWidth: 2.5,
+              borderDash: [6, 4],
+              pointBackgroundColor: '#8b5cf6',
+              pointBorderColor: Utils.chartBorderColor(),
+              pointBorderWidth: 2,
+              pointRadius: (ctx) => {
+                return ctx.dataIndex === d.forecastChartData.length - 1 ? 6 : 0;
+              },
+              pointHoverRadius: 8,
+              spanGaps: true,
+              order: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              align: 'end',
+              labels: { boxWidth: 12, padding: 10, font: { size: 11 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const val = Utils.formatCurrency(ctx.raw);
+                  const isPrev = ctx.dataset.label === 'Prévision';
+                  return `${ctx.dataset.label} : ${val}${isPrev ? ' (estimé)' : ''}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
               ticks: { callback: (val) => Utils.formatCurrency(val) }
             }
           }

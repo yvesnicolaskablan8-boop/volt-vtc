@@ -14,7 +14,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 123;
+    var APP_VERSION = 124;
     var stored = parseInt(localStorage.getItem('volt_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('volt_app_version', APP_VERSION);
@@ -396,6 +396,7 @@
   <script src="js/pages/yango.js"></script>
   <script src="js/pages/messagerie.js"></script>
   <script src="js/pages/garage.js"></script>
+  <script src="js/pages/incidents.js"></script>
   <script src="js/pages/contraventions.js"></script>
   <script src="js/pages/depenses.js"></script>
   <script src="js/pages/menu.js"></script>
