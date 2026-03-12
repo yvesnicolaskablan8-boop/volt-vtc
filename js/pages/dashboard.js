@@ -674,24 +674,6 @@ const DashboardPage = {
             <canvas id="chart-revenue"></canvas>
           </div>
         </div>
-
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Versements hebdomadaires</div>
-          </div>
-          <div class="chart-container" style="height: 280px;">
-            <canvas id="chart-payments"></canvas>
-          </div>
-        </div>
-
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Repartition des courses</div>
-          </div>
-          <div class="chart-container" style="height: 280px;">
-            <canvas id="chart-rides"></canvas>
-          </div>
-        </div>
       </div>
 
       <!-- Dépenses véhicules -->
@@ -874,106 +856,7 @@ const DashboardPage = {
       }));
     }
 
-    // ======= 2. Weekly payments chart (bar) =======
-    const paymentsCtx = document.getElementById('chart-payments');
-    if (paymentsCtx) {
-      this._charts.push(new Chart(paymentsCtx, {
-        type: 'bar',
-        data: {
-          labels: d.weeklyPayments.map(w => w.label),
-          datasets: [
-            {
-              label: 'Verse',
-              data: d.weeklyPayments.map(w => Math.round(w.verse)),
-              backgroundColor: '#3b82f6',
-              hoverBackgroundColor: '#2563eb',
-              borderRadius: 4
-            },
-            {
-              label: 'Attendu',
-              data: d.weeklyPayments.map(w => Math.round(w.attendu)),
-              backgroundColor: 'rgba(250, 204, 21, 0.6)',
-              hoverBackgroundColor: 'rgba(250, 204, 21, 0.9)',
-              borderRadius: 4
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            tooltip: {
-              callbacks: {
-                title: (items) => items.length ? `Semaine ${items[0].label}` : '',
-                label: (ctx) => `${ctx.dataset.label} : ${Utils.formatCurrency(ctx.raw)}`,
-                afterBody: (items) => {
-                  if (!items.length) return '';
-                  const idx = items[0].dataIndex;
-                  const verse = d.weeklyPayments[idx].verse;
-                  const attendu = d.weeklyPayments[idx].attendu;
-                  const taux = attendu > 0 ? (verse / attendu * 100).toFixed(1) : 0;
-                  return `\nTaux de recouvrement : ${taux}%`;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { callback: (val) => Utils.formatCurrency(val) }
-            }
-          }
-        }
-      }));
-    }
-
-    // ======= 3. Rides by type chart (doughnut) =======
-    const ridesCtx = document.getElementById('chart-rides');
-    if (ridesCtx) {
-      const types = Object.keys(d.coursesByType);
-      const colors = ['#3b82f6', '#facc15', '#22d3ee', '#22c55e', '#f59e0b'];
-      const totalRides = types.reduce((s, t) => s + d.coursesByType[t], 0);
-
-      this._charts.push(new Chart(ridesCtx, {
-        type: 'doughnut',
-        data: {
-          labels: types.map(t => d.typeLabels[t] || t),
-          datasets: [{
-            data: types.map(t => d.coursesByType[t]),
-            backgroundColor: colors.slice(0, types.length),
-            borderColor: Utils.chartBorderColor(),
-            borderWidth: 2,
-            hoverOffset: 12
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: { padding: 12, font: { size: 11 } }
-            },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => {
-                  const val = ctx.raw;
-                  const pct = totalRides > 0 ? (val / totalRides * 100).toFixed(1) : 0;
-                  return `${ctx.label} : ${val} courses (${pct}%)`;
-                }
-              }
-            }
-          },
-          cutout: '65%'
-        },
-        plugins: [Utils.doughnutCenterPlugin(
-          () => totalRides.toString(),
-          'courses'
-        )]
-      }));
-    }
-
-    // ======= 4. Vehicle profitability (horizontal bar) =======
+    // ======= 2. Vehicle profitability (horizontal bar) =======
     const profitCtx = document.getElementById('chart-profit');
     if (profitCtx) {
       this._charts.push(new Chart(profitCtx, {
