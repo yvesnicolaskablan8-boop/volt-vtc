@@ -1991,10 +1991,15 @@ const VersementsPage = {
       return;
     }
 
+    const today = new Date().toISOString().split('T')[0];
     const fields = [
       { type: 'heading', label: `Recouvrement dette \u2014 ${driver.nom}` },
       { type: 'html', html: `<div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:10px;font-size:var(--font-size-sm);">Dette totale : <strong style="color:#f59e0b;">${Utils.formatCurrency(driver.total)}</strong> (${driver.count} versement${driver.count > 1 ? 's' : ''})</div>` },
       { name: 'montant', label: 'Montant \u00e0 encaisser (FCFA)', type: 'number', required: true, min: 1, step: 100, default: driver.total },
+      { type: 'row-start' },
+      { name: 'dateRecette', label: 'Recette du (date concern\u00e9e)', type: 'date', required: true, default: today },
+      { name: 'dateEncaissement', label: 'Encaiss\u00e9 le', type: 'date', required: true, default: today },
+      { type: 'row-end' },
       { name: 'moyenPaiement', label: 'Moyen de paiement', type: 'select', required: true, options: [
         { value: 'especes', label: 'Esp\u00e8ces' },
         { value: 'mobile_money', label: 'Mobile Money' },
@@ -2025,14 +2030,15 @@ const VersementsPage = {
         Store.add('versements', {
           id: Utils.generateId('VRS'),
           chauffeurId,
-          date: new Date().toISOString().split('T')[0],
+          date: values.dateRecette || new Date().toISOString().split('T')[0],
+          dateService: values.dateRecette || new Date().toISOString().split('T')[0],
           periode: 'recouvrement',
           montantVerse: montant,
           statut: 'valide',
           moyenPaiement: values.moyenPaiement,
           referencePaiement: values.referencePaiement,
           commentaire: values.commentaire || 'Recouvrement de dette',
-          dateValidation: new Date().toISOString(),
+          dateValidation: new Date(values.dateEncaissement + 'T' + new Date().toTimeString().split(' ')[0]).toISOString(),
           dateCreation: new Date().toISOString()
         });
 
