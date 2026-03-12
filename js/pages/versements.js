@@ -360,7 +360,7 @@ const VersementsPage = {
 
       // Payment method badge
       let methodHtml = '';
-      if (v.moyenPaiement === 'wave') methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(13,110,253,0.1);color:#0D6EFD;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
+      if (v.moyenPaiement === 'wave') methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(34,197,94,0.1);color:#22c55e;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
       else if (v.soumisParChauffeur) methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(59,130,246,0.1);color:#3b82f6;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:smartphone-bold-duotone"></iconify-icon> Chauffeur</span>';
 
       // Courses
