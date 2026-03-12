@@ -53,7 +53,6 @@ const VersementsPage = {
     // Compter les statuts pour la période sélectionnée
     const byStatus = {
       valide: monthVers.filter(v => v.statut === 'valide').length,
-      en_attente: monthVers.filter(v => v.statut === 'en_attente').length,
       retard: 0, // sera recalculé ci-dessous via le planning
       partiel: monthVers.filter(v => v.statut === 'partiel').length
     };
@@ -412,10 +411,9 @@ const VersementsPage = {
     const session = Auth.getSession();
     const isAdmin = session && session.role === 'Administrateur';
     const statusOptions = [
-      { value: 'en_attente', label: 'En attente' },
       { value: 'valide', label: 'Validé' },
-      { value: 'retard', label: 'En retard' },
       { value: 'partiel', label: 'Partiel' },
+      { value: 'retard', label: 'En retard' },
       { value: 'supprime', label: 'Supprimer', disabled: !isAdmin }
     ];
     const fields = [
@@ -440,8 +438,16 @@ const VersementsPage = {
       const values = FormBuilder.getValues(body);
       const chauffeur = Store.findById('chauffeurs', values.chauffeurId);
 
-      // Le statut reste celui choisi par l'utilisateur (en_attente par défaut)
-      // La validation ne se fait que via le bouton "Encaisser"
+      // Auto-déterminer le statut basé sur le montant vs redevance
+      const redevance = chauffeur ? (chauffeur.redevanceQuotidienne || 0) : 0;
+      const montant = parseFloat(values.montantVerse) || 0;
+      if (redevance > 0 && montant > 0 && values.statut !== 'supprime') {
+        if (montant >= redevance) {
+          values.statut = 'valide';
+        } else {
+          values.statut = 'partiel';
+        }
+      }
 
       // Récupérer les stats Yango (courses, CA) pour ce chauffeur à cette date
       let nombreCourses = 0;
@@ -1013,7 +1019,7 @@ const VersementsPage = {
         <td>${m.chauffeurId ? (chMap[m.chauffeurId] || m.chauffeurId) : 'Tous'}</td>
         <td style="font-weight:600">${Utils.formatCurrency(m.montant)}</td>
         <td><span class="badge badge-${recurrenceBadge[m.recurrence] || 'secondary'}">${recurrenceLabels[m.recurrence] || m.recurrence}</span></td>
-        <td>${m.statut === 'valide' ? '<span class="badge badge-success">Validé</span>' : '<span class="badge badge-warning">En attente</span>'}</td>
+        <td><span class="badge badge-info">Référence</span></td>
         <td>
           <label style="cursor:pointer"><input type="checkbox" ${m.actif ? 'checked' : ''} onchange="VersementsPage._toggleRecVersement('${m.id}', this.checked)"> Actif</label>
         </td>
@@ -1028,12 +1034,15 @@ const VersementsPage = {
       body: `
         <div style="display:flex;gap:8px;margin-bottom:1rem">
           <button class="btn btn-primary btn-sm" onclick="VersementsPage._addRecVersement()"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Nouveau modèle</button>
-          <button class="btn btn-success btn-sm" onclick="VersementsPage._generateVersementGrid()"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Générer la grille</button>
+        </div>
+        <div style="padding:8px 12px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:1rem;font-size:var(--font-size-xs);color:var(--text-muted);">
+          <iconify-icon icon="solar:info-circle-bold" style="color:var(--primary);"></iconify-icon>
+          Les modèles servent de référence. Les versements ne sont créés que lorsque vous encaissez un paiement réel.
         </div>
         ${modeles.length ? `
           <div style="max-height:350px;overflow-y:auto">
             <table class="table" style="width:100%;font-size:var(--font-size-sm)">
-              <thead><tr><th>Nom</th><th>Chauffeur</th><th>Montant</th><th>Récurrence</th><th>Statut</th><th>Actif</th><th></th></tr></thead>
+              <thead><tr><th>Nom</th><th>Chauffeur</th><th>Montant</th><th>Récurrence</th><th>Type</th><th>Actif</th><th></th></tr></thead>
               <tbody>${rows}</tbody>
             </table>
           </div>
