@@ -1055,21 +1055,29 @@ const VersementsPage = {
     const recurrenceLabels = { par_shift: 'Par shift', quotidien: 'Quotidien', hebdo: 'Hebdomadaire', mensuel: 'Mensuel' };
     const recurrenceBadge = { par_shift: 'success', quotidien: 'info', hebdo: 'warning', mensuel: 'primary' };
 
-    const rows = modeles.map(m => `
+    const rows = modeles.map(m => {
+      const montantDisplay = m.useRedevance
+        ? (m.chauffeurId && chMap[m.chauffeurId]
+          ? `<span style="color:#22c55e;font-size:11px;font-weight:600">${Utils.formatCurrency(chMap[m.chauffeurId].redevanceQuotidienne || 0)}</span> <span style="font-size:10px;color:var(--text-muted)">(redevance)</span>`
+          : '<span style="color:#22c55e;font-size:11px;font-weight:600">Selon redevance</span>')
+        : Utils.formatCurrency(m.montant);
+      return `
       <tr>
         <td style="font-weight:500">${m.nom}</td>
-        <td>${m.chauffeurId ? (chMap[m.chauffeurId] || m.chauffeurId) : 'Tous'}</td>
-        <td style="font-weight:600">${Utils.formatCurrency(m.montant)}</td>
+        <td>${m.chauffeurId ? (chMap[m.chauffeurId] || m.chauffeurId) : 'Tous (planifiés)'}</td>
+        <td style="font-weight:600">${montantDisplay}</td>
         <td><span class="badge badge-${recurrenceBadge[m.recurrence] || 'secondary'}">${recurrenceLabels[m.recurrence] || m.recurrence}</span></td>
         <td><span class="badge badge-info">Référence</span></td>
         <td>
           <label style="cursor:pointer"><input type="checkbox" ${m.actif ? 'checked' : ''} onchange="VersementsPage._toggleRecVersement('${m.id}', this.checked)"> Actif</label>
         </td>
-        <td>
+        <td style="white-space:nowrap">
+          <button class="btn-icon" title="Modifier" onclick="VersementsPage._editRecVersement('${m.id}')" style="color:var(--primary)"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>
           <button class="btn-icon btn-danger" title="Supprimer" onclick="VersementsPage._deleteRecVersement('${m.id}')"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     Modal.open({
       title: '<iconify-icon icon="solar:repeat-bold-duotone" style="color:#22c55e;"></iconify-icon> Versements récurrents',
@@ -1102,10 +1110,16 @@ const VersementsPage = {
       `<form id="form-rec-versement" class="modal-form">
         <div class="form-group"><label>Nom du modèle *</label><input type="text" name="nom" required placeholder="Ex: Recette journalière"></div>
         <div class="form-group"><label>Chauffeur</label>
-          <select name="chauffeurId"><option value="">Tous les chauffeurs planifiés</option>
-            ${chauffeurs.filter(c => c.statut === 'actif').map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
+          <select name="chauffeurId" id="rec-v-chauffeur-select"><option value="">Tous les chauffeurs planifiés</option>
+            ${chauffeurs.filter(c => c.statut === 'actif').map(c => `<option value="${c.id}">${c.prenom} ${c.nom}${c.redevanceQuotidienne ? ' (' + Utils.formatCurrency(c.redevanceQuotidienne) + '/j)' : ''}</option>`).join('')}
           </select></div>
-        <div class="form-group"><label>Montant (FCFA) *</label><input type="number" name="montant" required min="1" placeholder="0"></div>
+        <div class="form-group" style="padding:8px 12px;border-radius:8px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2)">
+          <label style="cursor:pointer;display:flex;align-items:center;gap:8px;margin:0">
+            <input type="checkbox" name="useRedevance" id="rec-v-use-redevance">
+            <span><strong>Utiliser la redevance du chauffeur</strong><br><span style="font-size:11px;color:var(--text-muted)">Le montant sera automatiquement celui de la redevance quotidienne définie sur la fiche chauffeur</span></span>
+          </label>
+        </div>
+        <div class="form-group" id="rec-v-montant-group"><label>Montant (FCFA) *</label><input type="number" name="montant" required min="1" placeholder="0" id="rec-v-montant"></div>
         <input type="hidden" name="statut" value="en_attente">
         <div class="form-group"><label>Récurrence *</label>
           <select name="recurrence" required id="rec-v-recurrence-select">
@@ -1120,11 +1134,15 @@ const VersementsPage = {
       </form>`,
       () => {
         const fd = new FormData(document.getElementById('form-rec-versement'));
-        if (!fd.get('nom') || !fd.get('montant')) { Toast.show('Nom et montant requis', 'error'); return; }
+        const useRedevance = !!document.getElementById('rec-v-use-redevance').checked;
+        if (!fd.get('nom')) { Toast.show('Nom requis', 'error'); return; }
+        if (!useRedevance && !fd.get('montant')) { Toast.show('Montant requis (ou cochez "Utiliser la redevance")', 'error'); return; }
         Store.add('versementRecurrents', {
           id: 'VREC-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
           nom: fd.get('nom'), chauffeurId: fd.get('chauffeurId') || null,
-          montant: parseInt(fd.get('montant')), statut: fd.get('statut') || 'en_attente',
+          montant: useRedevance ? 0 : parseInt(fd.get('montant')),
+          useRedevance: useRedevance,
+          statut: fd.get('statut') || 'en_attente',
           recurrence: fd.get('recurrence'),
           jourSemaine: fd.get('recurrence') === 'hebdo' ? parseInt(fd.get('jourSemaine')) : null,
           jourMois: fd.get('recurrence') === 'mensuel' ? parseInt(fd.get('jourMois')) : null,
@@ -1135,10 +1153,94 @@ const VersementsPage = {
         setTimeout(() => this._showRecettesRecurrentes(), 200);
       }
     );
+    // Toggle useRedevance → hide/show montant field
+    const useRedCb = document.getElementById('rec-v-use-redevance');
+    const montantGroup = document.getElementById('rec-v-montant-group');
+    const montantInput = document.getElementById('rec-v-montant');
+    if (useRedCb) useRedCb.addEventListener('change', () => {
+      if (useRedCb.checked) {
+        montantGroup.style.display = 'none';
+        montantInput.removeAttribute('required');
+      } else {
+        montantGroup.style.display = '';
+        montantInput.setAttribute('required', 'true');
+      }
+    });
     const recSelect = document.getElementById('rec-v-recurrence-select');
     if (recSelect) recSelect.addEventListener('change', () => {
       document.getElementById('rec-v-jour-semaine').style.display = recSelect.value === 'hebdo' ? '' : 'none';
       document.getElementById('rec-v-jour-mois').style.display = recSelect.value === 'mensuel' ? '' : 'none';
+    });
+  },
+
+  _editRecVersement(id) {
+    const modeles = Store.get('versementRecurrents') || [];
+    const m = modeles.find(x => x.id === id);
+    if (!m) { Toast.show('Modèle introuvable', 'error'); return; }
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const joursSemaine = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+    Modal.form(
+      '<iconify-icon icon="solar:pen-bold" style="color:var(--primary);"></iconify-icon> Modifier le modèle',
+      `<form id="form-rec-versement-edit" class="modal-form">
+        <div class="form-group"><label>Nom du modèle *</label><input type="text" name="nom" required value="${m.nom || ''}"></div>
+        <div class="form-group"><label>Chauffeur</label>
+          <select name="chauffeurId" id="rec-ve-chauffeur-select"><option value="">Tous les chauffeurs planifiés</option>
+            ${chauffeurs.filter(c => c.statut === 'actif').map(c => `<option value="${c.id}" ${c.id === m.chauffeurId ? 'selected' : ''}>${c.prenom} ${c.nom}${c.redevanceQuotidienne ? ' (' + Utils.formatCurrency(c.redevanceQuotidienne) + '/j)' : ''}</option>`).join('')}
+          </select></div>
+        <div class="form-group" style="padding:8px 12px;border-radius:8px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2)">
+          <label style="cursor:pointer;display:flex;align-items:center;gap:8px;margin:0">
+            <input type="checkbox" name="useRedevance" id="rec-ve-use-redevance" ${m.useRedevance ? 'checked' : ''}>
+            <span><strong>Utiliser la redevance du chauffeur</strong><br><span style="font-size:11px;color:var(--text-muted)">Le montant sera automatiquement celui de la redevance quotidienne définie sur la fiche chauffeur</span></span>
+          </label>
+        </div>
+        <div class="form-group" id="rec-ve-montant-group" ${m.useRedevance ? 'style="display:none"' : ''}><label>Montant (FCFA) *</label><input type="number" name="montant" ${m.useRedevance ? '' : 'required'} min="1" value="${m.montant || ''}" id="rec-ve-montant"></div>
+        <div class="form-group"><label>Récurrence *</label>
+          <select name="recurrence" required id="rec-ve-recurrence-select">
+            <option value="par_shift" ${m.recurrence === 'par_shift' ? 'selected' : ''}>Par shift (1 versement par créneau planifié)</option>
+            <option value="quotidien" ${m.recurrence === 'quotidien' ? 'selected' : ''}>Quotidien (chaque jour de la semaine)</option>
+            <option value="hebdo" ${m.recurrence === 'hebdo' ? 'selected' : ''}>Hebdomadaire</option>
+            <option value="mensuel" ${m.recurrence === 'mensuel' ? 'selected' : ''}>Mensuel</option>
+          </select></div>
+        <div class="form-group" id="rec-ve-jour-semaine" style="${m.recurrence === 'hebdo' ? '' : 'display:none'}"><label>Jour de la semaine</label>
+          <select name="jourSemaine">${joursSemaine.map((j, i) => `<option value="${i}" ${i === m.jourSemaine ? 'selected' : ''}>${j}</option>`).join('')}</select></div>
+        <div class="form-group" id="rec-ve-jour-mois" style="${m.recurrence === 'mensuel' ? '' : 'display:none'}"><label>Jour du mois</label><input type="number" name="jourMois" min="1" max="31" value="${m.jourMois || 1}"></div>
+      </form>`,
+      () => {
+        const fd = new FormData(document.getElementById('form-rec-versement-edit'));
+        const useRedevance = !!document.getElementById('rec-ve-use-redevance').checked;
+        if (!fd.get('nom')) { Toast.show('Nom requis', 'error'); return; }
+        if (!useRedevance && !fd.get('montant')) { Toast.show('Montant requis (ou cochez "Utiliser la redevance")', 'error'); return; }
+        Store.update('versementRecurrents', id, {
+          nom: fd.get('nom'), chauffeurId: fd.get('chauffeurId') || null,
+          montant: useRedevance ? 0 : parseInt(fd.get('montant')),
+          useRedevance: useRedevance,
+          recurrence: fd.get('recurrence'),
+          jourSemaine: fd.get('recurrence') === 'hebdo' ? parseInt(fd.get('jourSemaine')) : null,
+          jourMois: fd.get('recurrence') === 'mensuel' ? parseInt(fd.get('jourMois')) : null
+        });
+        Modal.close();
+        Toast.show('Modèle modifié', 'success');
+        setTimeout(() => this._showRecettesRecurrentes(), 200);
+      }
+    );
+    // Toggle useRedevance → hide/show montant field
+    const useRedCb = document.getElementById('rec-ve-use-redevance');
+    const montantGroup = document.getElementById('rec-ve-montant-group');
+    const montantInput = document.getElementById('rec-ve-montant');
+    if (useRedCb) useRedCb.addEventListener('change', () => {
+      if (useRedCb.checked) {
+        montantGroup.style.display = 'none';
+        montantInput.removeAttribute('required');
+      } else {
+        montantGroup.style.display = '';
+        montantInput.setAttribute('required', 'true');
+      }
+    });
+    const recSelect = document.getElementById('rec-ve-recurrence-select');
+    if (recSelect) recSelect.addEventListener('change', () => {
+      document.getElementById('rec-ve-jour-semaine').style.display = recSelect.value === 'hebdo' ? '' : 'none';
+      document.getElementById('rec-ve-jour-mois').style.display = recSelect.value === 'mensuel' ? '' : 'none';
     });
   },
 
@@ -1184,20 +1286,29 @@ const VersementsPage = {
     const weekShifts = planning.filter(s => days.includes(s.date));
     const grid = [];
 
+    // Helper: resolve montant — use driver's redevanceQuotidienne if useRedevance
+    const getMontant = (m, ch) => {
+      if (m.useRedevance && ch) return ch.redevanceQuotidienne || 0;
+      return m.montant || 0;
+    };
+
     modeles.forEach(m => {
       if (m.recurrence === 'par_shift') {
         const shifts = m.chauffeurId ? weekShifts.filter(s => s.chauffeurId === m.chauffeurId) : weekShifts;
         shifts.forEach(s => {
           const ch = chMap[s.chauffeurId];
+          const montant = getMontant(m, ch);
+          if (m.useRedevance && montant <= 0) return; // skip drivers with no redevance
           grid.push({ date: s.date, chauffeurId: s.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : s.chauffeurId,
-            vehiculeId: ch ? ch.vehiculeAssigne : null, montant: m.montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
+            vehiculeId: ch ? ch.vehiculeAssigne : null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
         });
       } else if (m.recurrence === 'quotidien') {
         days.forEach(date => {
           if (m.chauffeurId) {
             const ch = chMap[m.chauffeurId];
+            const montant = getMontant(m, ch);
             grid.push({ date, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
-              vehiculeId: ch ? ch.vehiculeAssigne : null, montant: m.montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
+              vehiculeId: ch ? ch.vehiculeAssigne : null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
           } else {
             const dayShifts = weekShifts.filter(s => s.date === date);
             const seen = new Set();
@@ -1205,8 +1316,10 @@ const VersementsPage = {
               if (seen.has(s.chauffeurId)) return;
               seen.add(s.chauffeurId);
               const ch = chMap[s.chauffeurId];
+              const montant = getMontant(m, ch);
+              if (m.useRedevance && montant <= 0) return;
               grid.push({ date, chauffeurId: s.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : s.chauffeurId,
-                vehiculeId: ch ? ch.vehiculeAssigne : null, montant: m.montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
+                vehiculeId: ch ? ch.vehiculeAssigne : null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
             });
           }
         });
@@ -1215,12 +1328,15 @@ const VersementsPage = {
         if (targetDay) {
           if (m.chauffeurId) {
             const ch = chMap[m.chauffeurId];
+            const montant = getMontant(m, ch);
             grid.push({ date: targetDay, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
-              vehiculeId: ch ? ch.vehiculeAssigne : null, montant: m.montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
+              vehiculeId: ch ? ch.vehiculeAssigne : null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
           } else {
             chauffeurs.filter(c => c.statut === 'actif').forEach(c => {
+              const montant = getMontant(m, c);
+              if (m.useRedevance && montant <= 0) return;
               grid.push({ date: targetDay, chauffeurId: c.id, chauffeurNom: `${c.prenom} ${c.nom}`,
-                vehiculeId: c.vehiculeAssigne || null, montant: m.montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
+                vehiculeId: c.vehiculeAssigne || null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
             });
           }
         }
@@ -1229,12 +1345,15 @@ const VersementsPage = {
         if (targetDate) {
           if (m.chauffeurId) {
             const ch = chMap[m.chauffeurId];
+            const montant = getMontant(m, ch);
             grid.push({ date: targetDate, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
-              vehiculeId: ch ? ch.vehiculeAssigne : null, montant: m.montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
+              vehiculeId: ch ? ch.vehiculeAssigne : null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
           } else {
             chauffeurs.filter(c => c.statut === 'actif').forEach(c => {
+              const montant = getMontant(m, c);
+              if (m.useRedevance && montant <= 0) return;
               grid.push({ date: targetDate, chauffeurId: c.id, chauffeurNom: `${c.prenom} ${c.nom}`,
-                vehiculeId: c.vehiculeAssigne || null, montant: m.montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
+                vehiculeId: c.vehiculeAssigne || null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
             });
           }
         }
