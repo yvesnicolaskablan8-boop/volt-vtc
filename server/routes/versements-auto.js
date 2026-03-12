@@ -128,10 +128,10 @@ router.post('/cleanup-ghosts', async (req, res, next) => {
       ]
     });
 
-    // 3. Versements auto-générés par la grille récurrente SANS moyen de paiement
-    //    (commentaire commence par "Auto:" et pas de moyenPaiement)
+    // 3. Versements auto-générés SANS moyen de paiement
+    //    (commentaire commence par "Auto:" OU "Auto-" et pas de moyenPaiement)
     const result3 = await Versement.deleteMany({
-      commentaire: { $regex: /^Auto:/ },
+      commentaire: { $regex: /^Auto[:\-]/ },
       $or: [
         { moyenPaiement: { $exists: false } },
         { moyenPaiement: null },
