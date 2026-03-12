@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volt-monitor-v7';
+const CACHE_NAME = 'volt-monitor-v8';
 
 const STATIC_ASSETS = [
   '/monitor/',
@@ -6,7 +6,9 @@ const STATIC_ASSETS = [
   '/monitor/manifest.json',
   '/monitor/favicon.svg',
   '/monitor/css/monitor.css',
-  '/monitor/js/monitor.js'
+  '/monitor/js/monitor.js',
+  '/monitor/assets/icon-192.png',
+  '/monitor/assets/icon-512.png'
 ];
 
 // Install — pre-cache static assets
