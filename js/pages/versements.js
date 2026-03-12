@@ -377,7 +377,9 @@ const VersementsPage = {
       }
       actionsHtml += '</div>';
 
-      return `<div data-name="${name.toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;${isDeleted ? 'opacity:0.5;' : ''}">
+      const rowBg = isDeleted ? 'var(--bg-tertiary)' : v.moyenPaiement === 'wave' ? 'rgba(34,197,94,0.06)' : 'var(--bg-tertiary)';
+      const rowBorder = v.moyenPaiement === 'wave' && !isDeleted ? 'border-left:3px solid #22c55e;' : '';
+      return `<div data-name="${name.toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:${rowBg};${rowBorder}gap:8px;${isDeleted ? 'opacity:0.5;' : ''}">
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${name}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${dateLabel}${paidLabel ? ' • ' + paidLabel : ''}${v.periode ? ' • ' + v.periode : ''}</div>
