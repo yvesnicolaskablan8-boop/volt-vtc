@@ -2034,9 +2034,9 @@ const VersementsPage = {
     const fields = [
       { type: 'heading', label: `Modifier dette \u2014 ${nom}` },
       { type: 'html', html: `<div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:10px;font-size:var(--font-size-sm);">
-        Date : <strong>${Utils.formatDate(v.date)}</strong><br>
         Vers\u00e9 : <strong>${Utils.formatCurrency(v.montantVerse || 0)}</strong> \u2014 Manquant actuel : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
       </div>` },
+      { name: 'date', label: 'Date de la dette', type: 'date', required: true, default: v.date },
       { name: 'manquant', label: 'Nouveau montant manquant (FCFA)', type: 'number', required: true, min: 0, step: 100, default: v.manquant },
       { name: 'commentaire', label: 'Commentaire (optionnel)', type: 'textarea', rows: 2, placeholder: 'Raison de la modification...', default: '' }
     ];
@@ -2056,6 +2056,10 @@ const VersementsPage = {
         }
 
         const updates = { manquant: newManquant };
+        if (values.date && values.date !== v.date) {
+          updates.date = values.date;
+          updates.dateService = values.date;
+        }
         if (newManquant === 0) {
           updates.traitementManquant = null;
         }
