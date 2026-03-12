@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Volt Monitor</title>
-  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="/monitor/favicon.svg">
   <link rel="manifest" href="/monitor/manifest.json">
   <meta name="theme-color" content="#0a0e17">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@
   <!-- Version bump -->
   <script>
   (function(){
-    var APP_VERSION = 1;
+    var APP_VERSION = 2;
     var stored = parseInt(localStorage.getItem('volt_monitor_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('volt_monitor_version', APP_VERSION);
@@ -58,7 +58,7 @@
   <div id="monitor-login" class="monitor-login">
     <div class="login-card">
       <div class="login-logo">
-        <iconify-icon icon="solar:bolt-bold" class="logo-icon"></iconify-icon>
+        <iconify-icon icon="solar:monitor-smartphone-bold" class="logo-icon"></iconify-icon>
         <div class="logo-title">VOLT</div>
         <div class="logo-subtitle">Monitor</div>
       </div>
@@ -76,7 +76,7 @@
     <!-- Header -->
     <header class="monitor-header">
       <div class="header-brand">
-        <iconify-icon icon="solar:bolt-bold"></iconify-icon>
+        <iconify-icon icon="solar:monitor-smartphone-bold"></iconify-icon>
         <span>Volt Monitor</span>
       </div>
       <div class="header-actions">

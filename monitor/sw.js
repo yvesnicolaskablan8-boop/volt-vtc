@@ -1,9 +1,10 @@
-const CACHE_NAME = 'volt-monitor-v1';
+const CACHE_NAME = 'volt-monitor-v2';
 
 const STATIC_ASSETS = [
   '/monitor/',
   '/monitor/index.html',
   '/monitor/manifest.json',
+  '/monitor/favicon.svg',
   '/monitor/css/monitor.css',
   '/monitor/js/monitor.js'
 ];
