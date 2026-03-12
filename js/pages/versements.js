@@ -1997,10 +1997,10 @@ const VersementsPage = {
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-weight:700;color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</div>
           <div style="display:flex;gap:3px;margin-top:3px;">
-            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;" onclick="event.stopPropagation();Modal.close();VersementsPage._modifierDette('${v.id}')">
+            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;" onclick="event.stopPropagation();VersementsPage._modifierDette('${v.id}')">
               <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier
             </button>
-            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;color:#ef4444;border-color:#ef4444;" onclick="event.stopPropagation();Modal.close();VersementsPage._annulerDette('${v.id}')">
+            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;color:#ef4444;border-color:#ef4444;" onclick="event.stopPropagation();VersementsPage._annulerDette('${v.id}')">
               <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Annuler
             </button>
           </div>
@@ -2067,7 +2067,10 @@ const VersementsPage = {
         Modal.close();
         Toast.success(`Dette modifi\u00e9e : ${Utils.formatCurrency(v.manquant)} \u2192 ${Utils.formatCurrency(newManquant)}`);
         this.render();
-      }
+        setTimeout(() => this._showDetteDetail(v.chauffeurId), 300);
+      },
+      '',
+      () => { setTimeout(() => this._showDetteDetail(v.chauffeurId), 200); }
     );
   },
 
@@ -2090,16 +2093,17 @@ const VersementsPage = {
           <div style="margin-top:8px;color:var(--text-muted);font-size:var(--font-size-xs);">La dette sera mise \u00e0 z\u00e9ro et le traitement sera supprim\u00e9. Cette action est irr\u00e9versible.</div>
         </div>
       `,
-      footer: `<button class="btn btn-danger" onclick="VersementsPage._confirmAnnulerDette('${versementId}')"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Confirmer l'annulation</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`,
+      footer: `<button class="btn btn-danger" onclick="VersementsPage._confirmAnnulerDette('${versementId}','${v.chauffeurId}')"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Confirmer l'annulation</button><button class="btn btn-secondary" onclick="Modal.close();VersementsPage._showDetteDetail('${v.chauffeurId}')">Retour</button>`,
       size: 'small'
     });
   },
 
-  _confirmAnnulerDette(versementId) {
+  _confirmAnnulerDette(versementId, chauffeurId) {
     Store.update('versements', versementId, { manquant: 0, traitementManquant: null });
     Modal.close();
     Toast.success('Dette annul\u00e9e avec succ\u00e8s');
     this.render();
+    if (chauffeurId) setTimeout(() => this._showDetteDetail(chauffeurId), 300);
   },
 
   _encaisserDette(chauffeurId) {
