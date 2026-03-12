@@ -350,6 +350,36 @@
       });
       caMoisDetail.sort((a, b) => b.montant - a.montant);
 
+      // ——— 10. Incidents / Sinistres ———
+      const incidents = data.incidents || [];
+      const incidentsOuverts = incidents.filter(i => i.statut === 'ouvert' || i.statut === 'en_cours');
+      const incidentsCritiques = incidentsOuverts.filter(i => i.gravite === 'critique' || i.gravite === 'grave');
+      const coutIncidents = incidentsOuverts.reduce((s, i) => s + (i.coutEstime || 0), 0);
+
+      const typeLabels = { accident: 'Accident', panne: 'Panne', vol: 'Vol', agression: 'Agression', contravention: 'Contravention', autre: 'Autre' };
+      const gravLabels = { mineur: 'Mineur', moyen: 'Moyen', grave: 'Grave', critique: 'Critique' };
+      const gravColors = { critique: 'var(--red)', grave: 'var(--orange)', moyen: '#eab308', mineur: 'var(--cyan)' };
+
+      const incidentsDetail = incidentsOuverts.map(i => {
+        const ch = chMap[i.chauffeurId];
+        const veh = i.vehiculeId ? vehicules.find(v => v.id === i.vehiculeId) : null;
+        return {
+          nom: ch ? (ch.prenom + ' ' + ch.nom) : (i.chauffeurId || 'Inconnu'),
+          type: typeLabels[i.type] || i.type,
+          gravite: i.gravite,
+          graviteLabel: gravLabels[i.gravite] || i.gravite,
+          graviteColor: gravColors[i.gravite] || 'var(--text-muted)',
+          vehicule: veh ? (veh.immatriculation || ((veh.marque || '') + ' ' + (veh.modele || '')).trim()) : '',
+          date: i.date,
+          description: (i.description || '').substring(0, 80),
+          cout: i.coutEstime || 0,
+          statut: i.statut === 'en_cours' ? 'En cours' : 'Ouvert'
+        };
+      }).sort((a, b) => {
+        const go = { critique: 0, grave: 1, moyen: 2, mineur: 3 };
+        return (go[a.gravite] || 9) - (go[b.gravite] || 9);
+      });
+
       return {
         recetteJour, nbVersementsJour, recetteJourDetail,
         recetteAttendue, programmesCount, attendueDetail,
@@ -360,7 +390,12 @@
         vehiculesService, totalVehicules, vehiculesDetail,
         retardCount, totalUnpaid, totalPenalites, unpaidDetail,
         caMois, caMoisDetail, dateLabel, monthLabel,
-        programmesDetail
+        programmesDetail,
+        nbIncidentsOuverts: incidentsOuverts.length,
+        nbIncidentsCritiques: incidentsCritiques.length,
+        coutIncidents,
+        totalIncidents: incidents.length,
+        incidentsDetail
       };
     }
   };
@@ -404,6 +439,7 @@
       const detteColor = k.totalDettes > 0 ? 'red' : 'green';
       const perteColor = k.totalPertes > 0 ? 'orange' : 'green';
       const retardColor = k.retardCount > 0 ? 'red' : 'green';
+      const incidentColor = k.nbIncidentsCritiques > 0 ? 'red' : k.nbIncidentsOuverts > 0 ? 'orange' : 'green';
 
       c.innerHTML = `
         <!-- DATE PICKER -->
@@ -473,6 +509,13 @@
             <div class="kpi-value">${k.retardCount}</div>
             <div class="kpi-label">Versements en retard</div>
             <div class="kpi-sub">${k.retardCount > 0 ? fmtCurrency(k.totalUnpaid) + ' + ' + fmtCurrency(k.totalPenalites) + ' penalites' : 'Aucun retard'}</div>
+          </div>
+
+          <div class="kpi-card ${incidentColor} clickable" onclick="window.__kpiDetail('incidents')">
+            <div class="kpi-icon"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div>
+            <div class="kpi-value">${k.nbIncidentsOuverts}</div>
+            <div class="kpi-label">Incidents ouverts</div>
+            <div class="kpi-sub">${k.nbIncidentsCritiques > 0 ? k.nbIncidentsCritiques + ' grave' + (k.nbIncidentsCritiques > 1 ? 's' : '') + ' \u2022 ' : ''}${k.coutIncidents > 0 ? fmtCurrency(k.coutIncidents) + ' cout estime' : 'Aucun incident'}</div>
           </div>
 
         </div>
@@ -758,6 +801,31 @@
           buildListRows(k.caMoisDetail,
             function(i) { return '<strong>' + fmtCurrency(i.montant) + '</strong>'; },
             null
+          )
+        );
+        break;
+
+      case 'incidents':
+        showMonitorModal(
+          '<iconify-icon icon="solar:shield-warning-bold-duotone" style="color:var(--orange)"></iconify-icon> Incidents ouverts (' + k.nbIncidentsOuverts + '/' + k.totalIncidents + ')',
+          '<div class="mon-detail-total">' + k.nbIncidentsOuverts + ' ouvert' + (k.nbIncidentsOuverts > 1 ? 's' : '') +
+          (k.nbIncidentsCritiques > 0 ? ' &mdash; <strong style="color:var(--red)">' + k.nbIncidentsCritiques + ' grave' + (k.nbIncidentsCritiques > 1 ? 's' : '') + '</strong>' : '') +
+          (k.coutIncidents > 0 ? ' &mdash; Cout : <strong style="color:var(--orange)">' + fmtCurrency(k.coutIncidents) + '</strong>' : '') +
+          '</div>' +
+          (k.incidentsDetail.length === 0
+            ? '<div style="text-align:center;color:var(--text-muted);padding:20px 0;">Aucun incident ouvert</div>'
+            : k.incidentsDetail.map(function(i) {
+                return '<div class="mon-detail-row">' +
+                  '<div class="mon-detail-name">' + i.nom +
+                    '<div class="mon-detail-sub">' + i.type + ' &bull; ' + i.date + (i.vehicule ? ' &bull; ' + i.vehicule : '') + '</div>' +
+                    (i.description ? '<div class="mon-detail-sub" style="opacity:0.6;font-size:0.7rem">' + i.description + '</div>' : '') +
+                  '</div>' +
+                  '<div class="mon-detail-value">' +
+                    '<span style="color:' + i.graviteColor + ';font-weight:600;font-size:0.75rem">' + i.graviteLabel + '</span>' +
+                    (i.cout > 0 ? '<div style="font-size:0.7rem;margin-top:2px">' + fmtCurrency(i.cout) + '</div>' : '') +
+                  '</div>' +
+                '</div>';
+              }).join('')
           )
         );
         break;
