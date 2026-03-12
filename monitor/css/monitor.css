@@ -250,6 +250,83 @@ body {
   margin-top: 20px;
 }
 
+/* =================== DATE PICKER =================== */
+
+.date-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.date-picker-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.date-picker-btn:active { background: var(--bg-card-hover); }
+
+.date-picker-btn iconify-icon { color: var(--red); }
+
+.date-live {
+  font-size: 0.55rem;
+  font-weight: 800;
+  color: var(--red);
+  background: rgba(239,68,68,0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.date-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.date-nav-btn:active { background: var(--bg-card-hover); color: var(--text-primary); }
+.date-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.date-today-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--red);
+  color: white;
+  font-family: var(--font);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: opacity 0.15s;
+}
+
+.date-today-btn:active { opacity: 0.8; }
+
 /* =================== KPI GRID =================== */
 
 .kpi-grid {

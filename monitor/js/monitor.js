@@ -9,6 +9,18 @@
   const SESSION_KEY = 'volt_monitor_session';
   const REFRESH_MS = 30000; // 30 secondes
 
+  // =================== STATE ===================
+
+  let _selectedDate = null; // null = aujourd'hui
+
+  function getSelectedDate() {
+    return _selectedDate || new Date().toISOString().split('T')[0];
+  }
+
+  function isToday() {
+    return !_selectedDate || _selectedDate === new Date().toISOString().split('T')[0];
+  }
+
   // =================== AUTH ===================
 
   const Auth = {
@@ -66,7 +78,7 @@
         }
         if (!res.ok) return null;
         this._raw = await res.json();
-        this._kpis = this.computeKPIs(this._raw);
+        this._kpis = this.computeKPIs(this._raw, getSelectedDate());
         return this._kpis;
       } catch (e) {
         console.warn('[Monitor] Fetch error:', e.message);
@@ -74,38 +86,44 @@
       }
     },
 
-    computeKPIs(data) {
+    recompute() {
+      if (!this._raw) return null;
+      this._kpis = this.computeKPIs(this._raw, getSelectedDate());
+      return this._kpis;
+    },
+
+    computeKPIs(data, selectedDay) {
       const chauffeurs = data.chauffeurs || [];
       const vehicules  = data.vehicules  || [];
       const versements = data.versements || [];
       const planning   = data.planning   || [];
       const absences   = data.absences   || [];
 
-      const now   = new Date();
-      const today = now.toISOString().split('T')[0];
-      const thisMonth = now.getMonth();
-      const thisYear  = now.getFullYear();
+      const now = new Date();
+      const sel = new Date(selectedDay);
+      const thisMonth = sel.getMonth();
+      const thisYear  = sel.getFullYear();
 
-      // ——— 1. Recette versée du jour ———
-      const todayVersements = versements.filter(v =>
-        v.date && v.date.startsWith(today) && v.statut !== 'supprime'
+      // ——— 1. Recette versée du jour sélectionné ———
+      const dayVersements = versements.filter(v =>
+        v.date && v.date.startsWith(selectedDay) && v.statut !== 'supprime'
       );
-      const recetteJour = todayVersements.reduce((s, v) => s + (v.montantVerse || 0), 0);
-      const nbVersementsJour = todayVersements.filter(v => v.montantVerse > 0).length;
+      const recetteJour = dayVersements.reduce((s, v) => s + (v.montantVerse || 0), 0);
+      const nbVersementsJour = dayVersements.filter(v => v.montantVerse > 0).length;
 
-      // ——— 2. Chauffeurs programmés aujourd'hui ———
-      const todayPlanning = planning.filter(p => p.date === today);
-      const programmesSet = new Set(todayPlanning.map(p => p.chauffeurId));
+      // ——— 2. Chauffeurs programmés le jour sélectionné ———
+      const dayPlanning = planning.filter(p => p.date === selectedDay);
+      const programmesSet = new Set(dayPlanning.map(p => p.chauffeurId));
       const programmesCount = programmesSet.size;
 
-      // ——— 3. Recette attendue du jour ———
+      // ——— 3. Recette attendue du jour sélectionné ———
       let recetteAttendue = 0;
       const seenCh = new Set();
-      todayPlanning.forEach(p => {
+      dayPlanning.forEach(p => {
         if (seenCh.has(p.chauffeurId)) return;
         seenCh.add(p.chauffeurId);
         const hasAbsence = absences.some(a =>
-          a.chauffeurId === p.chauffeurId && today >= a.dateDebut && today <= a.dateFin
+          a.chauffeurId === p.chauffeurId && selectedDay >= a.dateDebut && selectedDay <= a.dateFin
         );
         if (hasAbsence) return;
         const ch = chauffeurs.find(c => c.id === p.chauffeurId);
@@ -113,11 +131,12 @@
         recetteAttendue += (ch.redevanceQuotidienne || 0);
       });
 
-      // ——— 4. Taux de recouvrement (du mois) ———
-      // Impayés du mois
+      // ——— 4. Taux de recouvrement (du mois de la date sélectionnée) ———
+      const todayStr = now.toISOString().split('T')[0];
+      const maxDate = selectedDay <= todayStr ? selectedDay : todayStr;
       const minDate = new Date(thisYear, thisMonth, 1).toISOString().split('T')[0];
       const scheduledDays = new Map();
-      planning.filter(p => p.date <= today && p.date >= minDate).forEach(p => {
+      planning.filter(p => p.date <= maxDate && p.date >= minDate).forEach(p => {
         const key = p.chauffeurId + '|' + p.date;
         if (!scheduledDays.has(key)) scheduledDays.set(key, p);
       });
@@ -190,6 +209,13 @@
       // ——— 9. CA du mois ———
       const caMois = totalVerseMois;
 
+      // ——— Label date ———
+      const monthNames = ['janvier','fevrier','mars','avril','mai','juin','juillet','aout','septembre','octobre','novembre','decembre'];
+      const dateLabel = selectedDay === todayStr
+        ? "Aujourd'hui"
+        : new Date(selectedDay + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+      const monthLabel = monthNames[thisMonth] + ' ' + thisYear;
+
       return {
         recetteJour, nbVersementsJour,
         recetteAttendue, programmesCount,
@@ -199,7 +225,7 @@
         activeCount, totalChauffeurs,
         vehiculesService, totalVehicules,
         retardCount, totalUnpaid, totalPenalites,
-        caMois
+        caMois, dateLabel, monthLabel
       };
     }
   };
@@ -236,6 +262,7 @@
       if (!c) return;
 
       const k = kpis;
+      const today = new Date().toISOString().split('T')[0];
 
       // Couleurs conditionnelles
       const tauxColor = k.tauxRecouvrement >= 80 ? 'green' : k.tauxRecouvrement >= 50 ? 'orange' : 'red';
@@ -244,8 +271,25 @@
       const retardColor = k.retardCount > 0 ? 'red' : 'green';
 
       c.innerHTML = `
+        <!-- DATE PICKER -->
+        <div class="date-picker-row">
+          <button class="date-nav-btn" id="date-prev">
+            <iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon>
+          </button>
+          <button class="date-picker-btn" id="date-picker-btn">
+            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:1rem"></iconify-icon>
+            <span id="date-label">${k.dateLabel}</span>
+            ${isToday() ? '<span class="date-live">LIVE</span>' : ''}
+          </button>
+          <button class="date-nav-btn" id="date-next" ${getSelectedDate() >= today ? 'disabled' : ''}>
+            <iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon>
+          </button>
+          <input type="date" id="date-input" value="${getSelectedDate()}" max="${today}" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0">
+          ${!isToday() ? '<button class="date-today-btn" id="date-today">Aujourd\'hui</button>' : ''}
+        </div>
+
         <!-- FINANCES -->
-        <div class="section-title">Finances du jour</div>
+        <div class="section-title">Finances — ${k.dateLabel}</div>
         <div class="kpi-grid">
 
           <div class="kpi-card green">
@@ -306,7 +350,7 @@
             <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${k.programmesCount}</div>
             <div class="kpi-label">Chauffeurs programmes</div>
-            <div class="kpi-sub">Aujourd'hui</div>
+            <div class="kpi-sub">${k.dateLabel}</div>
           </div>
 
           <div class="kpi-card cyan">
@@ -327,7 +371,7 @@
             <div class="kpi-icon"><iconify-icon icon="solar:cash-out-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${fmtCurrency(k.caMois)}</div>
             <div class="kpi-label">CA du mois</div>
-            <div class="kpi-sub">${new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</div>
+            <div class="kpi-sub">${k.monthLabel}</div>
           </div>
 
         </div>
@@ -336,6 +380,62 @@
       // Mettre à jour l'heure
       document.getElementById('last-update').textContent =
         new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      // Live dot visibility
+      const dot = document.getElementById('live-dot');
+      if (dot) dot.style.display = isToday() ? '' : 'none';
+
+      // Bind date controls
+      this._bindDateControls();
+    },
+
+    _bindDateControls() {
+      const input = document.getElementById('date-input');
+      const pickerBtn = document.getElementById('date-picker-btn');
+      const prevBtn = document.getElementById('date-prev');
+      const nextBtn = document.getElementById('date-next');
+      const todayBtn = document.getElementById('date-today');
+
+      if (pickerBtn && input) {
+        pickerBtn.onclick = function() { input.showPicker ? input.showPicker() : input.click(); };
+        input.onchange = function() {
+          const today = new Date().toISOString().split('T')[0];
+          _selectedDate = input.value === today ? null : input.value;
+          var kpis = Data.recompute();
+          if (kpis) UI.renderDashboard(kpis);
+        };
+      }
+
+      if (prevBtn) {
+        prevBtn.onclick = function() {
+          var d = new Date(getSelectedDate() + 'T12:00:00');
+          d.setDate(d.getDate() - 1);
+          var today = new Date().toISOString().split('T')[0];
+          _selectedDate = d.toISOString().split('T')[0] === today ? null : d.toISOString().split('T')[0];
+          var kpis = Data.recompute();
+          if (kpis) UI.renderDashboard(kpis);
+        };
+      }
+
+      if (nextBtn) {
+        nextBtn.onclick = function() {
+          var d = new Date(getSelectedDate() + 'T12:00:00');
+          d.setDate(d.getDate() + 1);
+          var today = new Date().toISOString().split('T')[0];
+          if (d.toISOString().split('T')[0] > today) return;
+          _selectedDate = d.toISOString().split('T')[0] === today ? null : d.toISOString().split('T')[0];
+          var kpis = Data.recompute();
+          if (kpis) UI.renderDashboard(kpis);
+        };
+      }
+
+      if (todayBtn) {
+        todayBtn.onclick = function() {
+          _selectedDate = null;
+          var kpis = Data.recompute();
+          if (kpis) UI.renderDashboard(kpis);
+        };
+      }
     },
 
     renderError(msg) {
@@ -391,7 +491,7 @@
     }
   }
 
-  // Retry global (appelé depuis le bouton "Reessayer")
+  // Retry global
   window.__monitorRetry = async function() {
     UI.renderLoading();
     await loadAndRender();
@@ -444,7 +544,7 @@
     document.getElementById('btn-logout').addEventListener('click', function() {
       Auth.logout();
       UI.showLogin();
-      // Reset login form
+      _selectedDate = null;
       document.getElementById('login-email').value = '';
       document.getElementById('login-password').value = '';
       document.getElementById('login-error').classList.remove('visible');
