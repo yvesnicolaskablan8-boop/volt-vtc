@@ -361,10 +361,13 @@ const ChauffeursPage = {
               : '<span class="badge badge-warning"><iconify-icon icon="solar:link-broken-bold-duotone"></iconify-icon> Non lié</span>'}
           </div>
           ${c.yangoDriverId ? `
-            <div style="font-size:var(--font-size-sm);margin-bottom:8px;">
+            <div style="font-size:var(--font-size-sm);margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <span class="text-muted">Yango ID :</span> <code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:11px;">${c.yangoDriverId}</code>
-              <button class="btn btn-sm btn-danger" style="margin-left:8px;" onclick="ChauffeursPage._unlinkYango('${c.id}')">
-                <iconify-icon icon="solar:link-broken-bold-duotone"></iconify-icon> Délier
+              <button class="btn btn-sm btn-success" onclick="ChauffeursPage._yangoRecharge('${c.id}')">
+                <iconify-icon icon="solar:card-transfer-bold-duotone"></iconify-icon> Recharger
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="ChauffeursPage._unlinkYango('${c.id}')">
+                <iconify-icon icon="solar:link-broken-bold-duotone"></iconify-icon> D\u00e9lier
               </button>
             </div>
           ` : `
@@ -1519,6 +1522,54 @@ const ChauffeursPage = {
     Store.update('chauffeurs', chauffeurId, { yangoDriverId: yangoId });
     Toast.success(`Chauffeur lié a ${yangoNom} sur Yango`);
     this.renderDetail(chauffeurId);
+  },
+
+  _yangoRecharge(chauffeurId) {
+    const ch = Store.findById('chauffeurs', chauffeurId);
+    if (!ch || !ch.yangoDriverId) {
+      Toast.error('Ce chauffeur n\'est pas li\u00e9 \u00e0 Yango');
+      return;
+    }
+    const nom = `${ch.prenom} ${ch.nom}`;
+
+    const fields = [
+      { type: 'heading', label: `Recharger le compte Yango` },
+      { type: 'html', html: `<div style="padding:10px 12px;border-radius:8px;background:rgba(252,76,2,0.08);border:1px solid rgba(252,76,2,0.25);margin-bottom:10px;font-size:var(--font-size-sm);">
+        <div style="font-weight:600;color:#FC4C02;margin-bottom:2px;">${nom}</div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Yango ID : ${ch.yangoDriverId}</div>
+      </div>` },
+      { name: 'amount', label: 'Montant (FCFA)', type: 'number', required: true, min: 1, step: 100, placeholder: 'Ex: 5000' },
+      { name: 'description', label: 'Description (optionnel)', type: 'text', placeholder: 'Raison de la recharge...' }
+    ];
+
+    Modal.form(
+      '<iconify-icon icon="solar:card-transfer-bold-duotone" style="color:#FC4C02;"></iconify-icon> Recharger compte Yango',
+      FormBuilder.build(fields),
+      async () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, fields)) return;
+        const values = FormBuilder.getValues(body);
+        const amount = parseFloat(values.amount);
+
+        if (!amount || amount <= 0) {
+          Toast.error('Le montant doit \u00eatre sup\u00e9rieur \u00e0 0');
+          return;
+        }
+
+        // Désactiver le bouton pendant l'opération
+        const confirmBtn = document.querySelector('#modal-footer .btn-primary, #modal-footer .btn-success');
+        if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Envoi en cours...'; }
+
+        try {
+          const result = await Store.yangoRecharge(chauffeurId, amount, values.description || `Recharge Volt \u2014 ${nom}`);
+          Modal.close();
+          Toast.success(result.message || `Recharge de ${Utils.formatCurrency(amount)} effectu\u00e9e pour ${nom}`);
+        } catch (e) {
+          if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirmer'; }
+          Toast.error(`Erreur : ${e.message}`);
+        }
+      }
+    );
   },
 
   async _unlinkYango(chauffeurId) {

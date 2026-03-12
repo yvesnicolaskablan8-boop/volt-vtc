@@ -1167,4 +1167,101 @@ router.get('/vehicles/all', async (req, res) => {
   }
 });
 
+// =================== RECHARGE DRIVER BALANCE ===================
+
+router.post('/recharge', async (req, res) => {
+  try {
+    const { chauffeurId, amount, description } = req.body;
+
+    if (!chauffeurId || !amount) {
+      return res.status(400).json({ error: 'chauffeurId et amount requis' });
+    }
+
+    const montant = parseFloat(amount);
+    if (isNaN(montant) || montant === 0) {
+      return res.status(400).json({ error: 'Le montant doit être un nombre non nul' });
+    }
+
+    // Trouver le chauffeur et son yangoDriverId
+    const chauffeur = await Chauffeur.findOne({ id: chauffeurId });
+    if (!chauffeur) {
+      return res.status(404).json({ error: 'Chauffeur introuvable' });
+    }
+    if (!chauffeur.yangoDriverId) {
+      return res.status(400).json({ error: 'Ce chauffeur n\'est pas lié à un profil Yango' });
+    }
+
+    const parkId = process.env.YANGO_PARK_ID;
+    const apiKey = process.env.YANGO_API_KEY;
+    const clientId = process.env.YANGO_CLIENT_ID;
+
+    if (!parkId || !apiKey || !clientId) {
+      return res.status(500).json({ error: 'Yango API credentials not configured' });
+    }
+
+    // Générer un token d'idempotence unique
+    const idempotencyToken = `volt-recharge-${chauffeurId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    const body = {
+      amount: montant.toFixed(4),
+      category_id: 'partner_service_manual',
+      description: description || `Recharge Volt — ${chauffeur.prenom} ${chauffeur.nom}`,
+      driver_profile_id: chauffeur.yangoDriverId,
+      park_id: parkId
+    };
+
+    console.log(`[Yango Recharge] ${chauffeur.prenom} ${chauffeur.nom} — ${montant} XOF — driver=${chauffeur.yangoDriverId}`);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch(`${YANGO_BASE}/v2/parks/driver-profiles/transactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Client-ID': clientId,
+        'X-API-Key': apiKey,
+        'X-Idempotency-Token': idempotencyToken,
+        'Accept-Language': 'fr'
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    const text = await response.text();
+
+    if (!response.ok) {
+      console.error(`[Yango Recharge] Erreur ${response.status}: ${text.substring(0, 300)}`);
+      return res.status(response.status >= 500 ? 502 : response.status).json({
+        error: `Erreur Yango: ${response.status}`,
+        details: text.substring(0, 300)
+      });
+    }
+
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      result = { raw: text.substring(0, 200) };
+    }
+
+    console.log(`[Yango Recharge] Succès — ${montant} XOF pour ${chauffeur.prenom} ${chauffeur.nom}`);
+
+    res.json({
+      success: true,
+      message: `${montant > 0 ? 'Recharge' : 'Débit'} de ${Math.abs(montant)} XOF effectué pour ${chauffeur.prenom} ${chauffeur.nom}`,
+      transaction: result,
+      idempotencyToken
+    });
+
+  } catch (err) {
+    console.error('[Yango Recharge] Error:', err.message);
+    if (err.name === 'AbortError') {
+      return res.status(504).json({ error: 'Timeout — Yango API ne répond pas' });
+    }
+    res.status(502).json({ error: 'Erreur lors de la recharge', details: err.message });
+  }
+});
+
 module.exports = router;
