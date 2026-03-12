@@ -1534,6 +1534,10 @@ const PlanningPage = {
       { type: 'html', html: `<div style="padding:10px 12px;border-radius:8px;background:rgba(252,76,2,0.08);border:1px solid rgba(252,76,2,0.25);margin-bottom:10px;font-size:var(--font-size-sm);">
         <div style="font-weight:600;color:#FC4C02;margin-bottom:2px;">${nom}</div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Yango ID : ${ch.yangoDriverId}</div>
+        <div id="yango-balance-display" style="margin-top:6px;padding:6px 0 0 0;border-top:1px solid rgba(252,76,2,0.15);">
+          <span style="color:var(--text-muted);font-size:var(--font-size-xs);">Solde actuel :</span>
+          <span id="yango-balance-value" style="font-weight:700;font-size:var(--font-size-base);margin-left:6px;color:var(--text-muted);">Chargement...</span>
+        </div>
       </div>` },
       { name: 'amount', label: 'Montant (FCFA)', type: 'number', required: true, min: 1, step: 100, placeholder: 'Ex: 5000' },
       { name: 'description', label: 'Description (optionnel)', type: 'text', placeholder: 'Raison de la recharge...' }
@@ -1549,7 +1553,7 @@ const PlanningPage = {
         const amount = parseFloat(values.amount);
 
         if (!amount || amount <= 0) {
-          Toast.error('Le montant doit \u00eatre sup\u00e9rieur \u00e0 0');
+          Toast.error('Le montant doit être supérieur à 0');
           return;
         }
 
@@ -1557,10 +1561,10 @@ const PlanningPage = {
         if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Envoi en cours...'; }
 
         try {
-          const desc = values.description || `Recharge Yango \u2014 ${nom}`;
+          const desc = values.description || `Recharge Yango — ${nom}`;
           const result = await Store.yangoRecharge(chauffeurId, amount, desc);
 
-          // Enregistrer automatiquement comme d\u00e9pense
+          // Enregistrer automatiquement comme dépense
           Store.add('depenses', {
             id: 'DEP-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
             vehiculeId: ch.vehiculeId || '',
@@ -1573,12 +1577,26 @@ const PlanningPage = {
           });
 
           Modal.close();
-          Toast.success(result.message || `Recharge de ${Utils.formatCurrency(amount)} effectu\u00e9e pour ${nom}`);
+          Toast.success(result.message || `Recharge de ${Utils.formatCurrency(amount)} effectuée pour ${nom}`);
         } catch (e) {
           if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirmer'; }
           Toast.error(`Erreur : ${e.message}`);
         }
       }
     );
+
+    // Charger le solde Yango de manière asynchrone
+    Store.yangoBalance(chauffeurId).then(data => {
+      const el = document.getElementById('yango-balance-value');
+      if (el) {
+        const bal = data.balance;
+        const color = bal < 0 ? '#ef4444' : bal > 0 ? '#22c55e' : 'var(--text-primary)';
+        el.style.color = color;
+        el.textContent = Utils.formatCurrency(bal);
+      }
+    }).catch(() => {
+      const el = document.getElementById('yango-balance-value');
+      if (el) { el.textContent = 'Indisponible'; el.style.color = 'var(--text-muted)'; }
+    });
   }
 };

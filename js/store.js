@@ -442,6 +442,20 @@ const Store = {
     }
   },
 
+  async yangoBalance(chauffeurId) {
+    try {
+      const res = await fetch(this._apiBase + '/yango/balance/' + chauffeurId, {
+        headers: this._headers()
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    } catch (e) {
+      console.error('Store: Yango balance failed:', e.message);
+      throw e;
+    }
+  },
+
   async yangoRecharge(chauffeurId, amount, description) {
     try {
       const res = await fetch(this._apiBase + '/yango/recharge', {

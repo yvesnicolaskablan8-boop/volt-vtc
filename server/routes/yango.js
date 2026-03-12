@@ -1264,4 +1264,61 @@ router.post('/recharge', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/yango/balance/:chauffeurId
+ * Fetches the Yango account balance for a specific driver
+ */
+router.get('/balance/:chauffeurId', async (req, res) => {
+  try {
+    const chauffeur = await Chauffeur.findOne({ id: req.params.chauffeurId });
+    if (!chauffeur) {
+      return res.status(404).json({ error: 'Chauffeur introuvable' });
+    }
+    if (!chauffeur.yangoDriverId) {
+      return res.status(400).json({ error: 'Ce chauffeur n\'est pas lié à un profil Yango' });
+    }
+
+    const parkId = process.env.YANGO_PARK_ID;
+
+    const data = await yangoFetch('/v1/parks/driver-profiles/list', {
+      fields: {
+        account: ['balance'],
+        driver_profile: ['id']
+      },
+      limit: 1,
+      offset: 0,
+      query: {
+        park: {
+          id: parkId,
+          driver_profile: {
+            id: [chauffeur.yangoDriverId]
+          }
+        }
+      }
+    });
+
+    const profile = (data.driver_profiles || [])[0];
+    if (!profile) {
+      return res.status(404).json({ error: 'Profil Yango introuvable' });
+    }
+
+    const account = (profile.accounts || [])[0] || {};
+    const balance = parseFloat(account.balance || 0);
+    const currency = account.currency || 'XOF';
+
+    console.log(`[Yango Balance] ${chauffeur.prenom} ${chauffeur.nom} — ${balance} ${currency}`);
+
+    res.json({
+      balance,
+      currency,
+      chauffeurId: req.params.chauffeurId,
+      yangoDriverId: chauffeur.yangoDriverId
+    });
+
+  } catch (err) {
+    console.error('[Yango Balance] Error:', err.message);
+    res.status(502).json({ error: 'Erreur lors de la récupération du solde', details: err.message });
+  }
+});
+
 module.exports = router;
