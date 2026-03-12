@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Volt Monitor</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="manifest" href="/monitor/manifest.json">
+  <meta name="theme-color" content="#0a0e17">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Volt Monitor">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+
+  <!-- Version bump -->
+  <script>
+  (function(){
+    var APP_VERSION = 1;
+    var stored = parseInt(localStorage.getItem('volt_monitor_version') || '0');
+    if (stored < APP_VERSION && 'serviceWorker' in navigator) {
+      localStorage.setItem('volt_monitor_version', APP_VERSION);
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { if (r.scope.includes('/monitor')) r.unregister(); });
+      });
+      if (typeof caches !== 'undefined') {
+        caches.keys().then(function(keys) {
+          keys.forEach(function(k) { if (k.startsWith('volt-monitor-')) caches.delete(k); });
+        });
+      }
+      if (stored > 0) location.reload(true);
+    }
+  })();
+  </script>
+
+  <!-- Fonts + Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2/dist/iconify-icon.min.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/monitor/css/monitor.css">
+
+  <!-- Flash prevention -->
+  <script>
+    if (localStorage.getItem('volt_monitor_token')) {
+      document.documentElement.classList.add('has-token');
+    }
+  </script>
+  <style>
+    .has-token #monitor-login { display: none !important; }
+    .has-token .monitor-app { display: flex !important; }
+  </style>
+</head>
+<body>
+
+  <!-- =================== LOGIN =================== -->
+  <div id="monitor-login" class="monitor-login">
+    <div class="login-card">
+      <div class="login-logo">
+        <iconify-icon icon="solar:bolt-bold" class="logo-icon"></iconify-icon>
+        <div class="logo-title">VOLT</div>
+        <div class="logo-subtitle">Monitor</div>
+      </div>
+      <form id="login-form" class="login-form">
+        <input type="email" id="login-email" class="login-input" placeholder="Email" required autocomplete="email">
+        <input type="password" id="login-password" class="login-input" placeholder="Mot de passe" required autocomplete="current-password">
+        <button type="submit" id="login-btn" class="login-btn">Se connecter</button>
+      </form>
+      <div id="login-error" class="login-error"></div>
+    </div>
+  </div>
+
+  <!-- =================== APP =================== -->
+  <div id="monitor-app" class="monitor-app">
+    <!-- Header -->
+    <header class="monitor-header">
+      <div class="header-brand">
+        <iconify-icon icon="solar:bolt-bold"></iconify-icon>
+        <span>Volt Monitor</span>
+      </div>
+      <div class="header-actions">
+        <div class="header-status">
+          <span class="live-dot" id="live-dot"></span>
+          <span id="last-update">--:--</span>
+        </div>
+        <button class="header-btn" id="btn-refresh" title="Actualiser">
+          <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
+        </button>
+        <button class="header-btn" id="btn-logout" title="Deconnexion">
+          <iconify-icon icon="solar:logout-2-bold-duotone"></iconify-icon>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main id="monitor-content" class="monitor-content">
+      <div class="monitor-loading">
+        <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
+        <span>Chargement...</span>
+      </div>
+    </main>
+  </div>
+
+  <!-- JS -->
+  <script src="/monitor/js/monitor.js"></script>
+</body>
+</html>

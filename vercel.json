@@ -5,6 +5,7 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://volt-vtc-production.up.railway.app/api/$1" },
     { "source": "/driver/(.*)", "destination": "/driver/index.html" },
+    { "source": "/monitor/(.*)", "destination": "/monitor/index.html" },
     { "source": "/.well-known/(.*)", "destination": "/.well-known/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
@@ -14,6 +15,13 @@
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
         { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/monitor/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/monitor/" }
       ]
     },
     {

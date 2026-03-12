@@ -57,6 +57,9 @@ app.use('/api/driver', require('./middleware/driverAuth'), require('./routes/dri
 // Serve driver PWA static files
 app.use('/driver', express.static(path.join(__dirname, '..', 'driver')));
 
+// Serve monitor PWA static files
+app.use('/monitor', express.static(path.join(__dirname, '..', 'monitor')));
+
 // Serve frontend static files in production
 app.use(express.static(path.join(__dirname, '..')));
 
@@ -65,6 +68,9 @@ app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) return;
   if (req.path.startsWith('/driver')) {
     return res.sendFile(path.join(__dirname, '..', 'driver', 'index.html'));
+  }
+  if (req.path.startsWith('/monitor')) {
+    return res.sendFile(path.join(__dirname, '..', 'monitor', 'index.html'));
   }
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
