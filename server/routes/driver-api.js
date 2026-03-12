@@ -484,6 +484,21 @@ router.post('/versements', async (req, res, next) => {
 
     const montantNet = montantBrut - commission - penaliteMontant;
 
+    // Calculer le manquant par rapport a la redevance quotidienne
+    const redevance = chauffeur ? (chauffeur.redevanceQuotidienne || 0) : 0;
+    const manquant = (redevance > 0 && montantNet < redevance) ? redevance - montantNet : 0;
+    const traitementManquant = manquant > 0 ? 'dette' : null;
+
+    // Determiner le statut en fonction du montant vs redevance
+    let statut = enRetard ? 'retard' : 'en_attente';
+    if (redevance > 0 && montantNet > 0) {
+      if (montantNet >= redevance) {
+        statut = 'valide';
+      } else {
+        statut = 'partiel';
+      }
+    }
+
     // Generer un ID unique
     const id = 'VRS-' + Math.random().toString(36).substr(2, 6).toUpperCase();
 
@@ -499,13 +514,15 @@ router.post('/versements', async (req, res, next) => {
       commission,
       montantNet,
       montantVerse: montantNet,
-      statut: enRetard ? 'retard' : 'en_attente',
+      statut,
       nombreCourses: nombreCourses || 0,
       commentaire: commentaire || '',
       soumisParChauffeur: true,
       enRetard,
       penaliteMontant,
       deadlineDate: deadlineDateStr,
+      manquant: manquant || 0,
+      traitementManquant,
       dateCreation: new Date().toISOString()
     });
 
@@ -1636,14 +1653,23 @@ router.get('/wave/status/:id', async (req, res, next) => {
 
     // Si le paiement est confirme par Wave mais pas encore mis a jour localement
     if (waveSession.payment_status === 'succeeded' && versement.statut !== 'valide') {
+      // Calculer le manquant par rapport a la redevance
+      const chDoc = await Chauffeur.findOne({ id: versement.chauffeurId }).lean();
+      const redev = chDoc ? (chDoc.redevanceQuotidienne || 0) : 0;
+      const montantEffectif = versement.montantNet || 0;
+      const waveManquant = (redev > 0 && montantEffectif < redev) ? redev - montantEffectif : 0;
+      const waveStatut = (redev > 0 && montantEffectif > 0 && montantEffectif < redev) ? 'partiel' : 'valide';
+
       await Versement.updateOne({ id: versement.id }, {
-        statut: 'valide',
+        statut: waveStatut,
         montantVerse: versement.montantNet,
         waveTransactionId: waveSession.transaction_id || '',
         referencePaiement: waveSession.transaction_id || '',
-        dateValidation: new Date().toISOString()
+        dateValidation: new Date().toISOString(),
+        manquant: waveManquant,
+        traitementManquant: waveManquant > 0 ? 'dette' : null
       });
-      return res.json({ statut: 'valide', waveStatus: 'succeeded' });
+      return res.json({ statut: waveStatut, waveStatus: 'succeeded', manquant: waveManquant });
     }
 
     if (waveSession.checkout_status === 'expired') {
