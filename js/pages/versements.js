@@ -613,7 +613,22 @@ const VersementsPage = {
       { value: 'supprime', label: 'Supprimer', disabled: !isAdmin }
     ];
     const editVersement = { ...versement, date: versement.dateService || versement.date };
+    // Bloc audit — détails de paiement (lecture seule)
+    const auditLines = [];
+    if (versement.moyenPaiement) auditLines.push(`<b>Moyen de paiement</b> : ${versement.moyenPaiement === 'wave' ? '<span style="color:#1da1f2;">Wave</span>' : versement.moyenPaiement === 'especes' ? 'Espèces' : versement.moyenPaiement}`);
+    if (versement.waveCheckoutId) auditLines.push(`<b>Réf. Wave</b> : <code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:0.85em;">${versement.waveCheckoutId}</code>`);
+    if (versement.wavePaymentRef) auditLines.push(`<b>Réf. paiement</b> : <code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:0.85em;">${versement.wavePaymentRef}</code>`);
+    if (versement.dateValidation) auditLines.push(`<b>Validé le</b> : ${new Date(versement.dateValidation).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}`);
+    if (versement.dateCreation) auditLines.push(`<b>Créé le</b> : ${new Date(versement.dateCreation).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}`);
+    if (versement.soumisParChauffeur) auditLines.push(`<b>Origine</b> : <span style="color:#8b5cf6;"><iconify-icon icon="solar:smartphone-bold-duotone" style="font-size:0.9em;"></iconify-icon> Soumis par le chauffeur (app)</span>`);
+    else auditLines.push(`<b>Origine</b> : <span style="color:#f59e0b;"><iconify-icon icon="solar:monitor-bold-duotone" style="font-size:0.9em;"></iconify-icon> Saisi par l'admin</span>`);
+    const auditHtml = auditLines.length > 0 ? `<div style="padding:12px 14px;border-radius:8px;background:var(--bg-tertiary);border-left:3px solid #3b82f6;margin-bottom:16px;font-size:var(--font-size-sm);line-height:1.8;">
+      <div style="font-weight:700;margin-bottom:6px;color:#3b82f6;"><iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Détails du paiement</div>
+      ${auditLines.join('<br>')}
+    </div>` : '';
+
     const fields = [
+      { type: 'html', html: auditHtml },
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-start' },
       { name: 'date', label: 'Journée de service', type: 'date', required: true },
