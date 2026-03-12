@@ -1483,7 +1483,7 @@ const VersementsPage = {
 
     return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #ef4444;">
       <div class="card-header" style="cursor:pointer;" onclick="VersementsPage._showUnpaidDetails()">
-        <span class="card-title"><iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes impay\u00e9es (${d.unpaidItems.length})</span>
+        <span class="card-title"><iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes \u00e0 verser aujourd\u0027hui (${d.unpaidItems.length})</span>
         <div style="text-align:right;">
           <div style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${Utils.formatCurrency(d.totalUnpaid)}</div>
           ${d.totalPenalites > 0 ? `<div style="font-size:var(--font-size-xs);color:#f59e0b;font-weight:600;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> + ${Utils.formatCurrency(d.totalPenalites)} p\u00e9nalit\u00e9s</div>` : ''}
