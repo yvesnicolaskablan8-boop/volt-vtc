@@ -699,11 +699,15 @@ const VersementsPage = {
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-start' },
       { name: 'date', label: 'Journée de service', type: 'date', required: true },
-      { name: 'statut', label: 'Statut', type: 'select', options: editStatusOptions },
+      { name: 'periode', label: 'Période (ex: 2025-S08)', type: 'text' },
       { type: 'row-end' },
+      { type: 'html', html: '<div id="versement-redevance-info" style="display:none;padding:10px 14px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:12px;font-size:var(--font-size-sm);border-left:3px solid var(--primary);"></div>' },
       { type: 'row-start' },
       { name: 'montantVerse', label: 'Montant versé (FCFA)', type: 'number', min: 0, step: 0.01 },
+      { name: 'statut', label: 'Statut', type: 'select', options: editStatusOptions },
       { type: 'row-end' },
+      { type: 'html', html: '<div id="versement-comparaison" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:var(--font-size-sm);"></div>' },
+      { type: 'html', html: '<div id="versement-traitement-manquant" style="display:none;padding:12px 14px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);margin-bottom:12px;font-size:var(--font-size-sm);"><label style="font-weight:600;margin-bottom:8px;display:block">Traitement du manquant</label><div style="display:flex;gap:10px;flex-wrap:wrap"><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="dette" ' + (versement.traitementManquant !== 'perte' ? 'checked' : '') + '> <iconify-icon icon="solar:clock-circle-bold" style="color:#f59e0b"></iconify-icon> Reporter en dette</label><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="perte" ' + (versement.traitementManquant === 'perte' ? 'checked' : '') + '> <iconify-icon icon="solar:close-circle-bold" style="color:#ef4444"></iconify-icon> Passer en perte</label></div><div id="versement-manquant-detail" style="margin-top:8px;font-size:var(--font-size-xs);color:var(--text-muted)"></div></div>' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
@@ -714,14 +718,113 @@ const VersementsPage = {
       values.montantBrut = values.montantVerse;
       values.montantNet = values.montantVerse;
       values.commission = 0;
+
+      // Calculer le manquant
+      const chauffeur = Store.findById('chauffeurs', values.chauffeurId);
+      const redevance = chauffeur ? (chauffeur.redevanceQuotidienne || 0) : 0;
+      const montant = parseFloat(values.montantVerse) || 0;
+      const manquant = (redevance > 0 && montant < redevance) ? redevance - montant : 0;
+      const traitementRadio = document.querySelector('input[name="traitementManquant"]:checked');
+      values.manquant = manquant || 0;
+      values.traitementManquant = manquant > 0 ? (traitementRadio ? traitementRadio.value : 'dette') : null;
+
+      // Auto-set statut
+      if (redevance > 0 && montant > 0 && values.statut !== 'supprime') {
+        if (montant >= redevance) {
+          values.statut = 'valide';
+        } else {
+          values.statut = 'partiel';
+        }
+      }
+
       if (values.statut === 'valide' && !versement.dateValidation) {
         values.dateValidation = new Date().toISOString();
       }
       Store.update('versements', id, values);
       Modal.close();
-      Toast.success('Versement modifié');
+      if (manquant > 0) {
+        if (values.traitementManquant === 'dette') {
+          Toast.show(`Versement modifié — ${Utils.formatCurrency(manquant)} reporté en dette`, 'warning');
+        } else {
+          Toast.show(`Versement modifié — ${Utils.formatCurrency(manquant)} passé en perte`, 'warning');
+        }
+      } else {
+        Toast.success('Versement modifié');
+      }
       this.render();
     });
+
+    // Bind dynamic redevance + comparaison display
+    setTimeout(() => {
+      const chSelect = document.querySelector('[name="chauffeurId"]');
+      const montantInput = document.querySelector('[name="montantVerse"]');
+      const statutSelect = document.querySelector('[name="statut"]');
+      const infoDiv = document.getElementById('versement-redevance-info');
+      const compDiv = document.getElementById('versement-comparaison');
+      const traitementDiv = document.getElementById('versement-traitement-manquant');
+      const manquantDetail = document.getElementById('versement-manquant-detail');
+
+      const updateRedevanceInfo = () => {
+        if (!infoDiv) return;
+        const chId = chSelect ? chSelect.value : '';
+        const ch = chId ? chauffeurs.find(c => c.id === chId) : null;
+        if (ch && ch.redevanceQuotidienne > 0) {
+          infoDiv.style.display = '';
+          infoDiv.innerHTML = `<strong>${ch.prenom} ${ch.nom}</strong> — Redevance quotidienne : <strong style="color:var(--primary)">${Utils.formatCurrency(ch.redevanceQuotidienne)}</strong>`;
+        } else if (ch) {
+          infoDiv.style.display = '';
+          infoDiv.innerHTML = `<strong>${ch.prenom} ${ch.nom}</strong> — <span style="color:#ef4444">⚠ Aucune redevance configurée</span>`;
+        } else {
+          infoDiv.style.display = 'none';
+        }
+        updateComparaison();
+      };
+
+      const updateComparaison = () => {
+        if (!compDiv) return;
+        const chId = chSelect ? chSelect.value : '';
+        const ch = chId ? chauffeurs.find(c => c.id === chId) : null;
+        const redevance = ch ? (ch.redevanceQuotidienne || 0) : 0;
+        const montant = parseFloat(montantInput ? montantInput.value : 0) || 0;
+
+        if (redevance > 0 && montant > 0) {
+          const diff = montant - redevance;
+          const pct = Math.round((montant / redevance) * 100);
+          if (diff >= 0) {
+            compDiv.style.display = '';
+            compDiv.style.background = 'rgba(34,197,94,0.08)';
+            compDiv.style.borderLeft = '3px solid #22c55e';
+            compDiv.innerHTML = `<iconify-icon icon="solar:check-circle-bold" style="color:#22c55e"></iconify-icon> <strong style="color:#22c55e">Complet (${pct}%)</strong>${diff > 0 ? ` — Excédent : +${Utils.formatCurrency(diff)}` : ''}`;
+            if (statutSelect && statutSelect.value !== 'supprime') statutSelect.value = 'valide';
+            if (traitementDiv) traitementDiv.style.display = 'none';
+          } else {
+            compDiv.style.display = '';
+            compDiv.style.background = 'rgba(245,158,11,0.08)';
+            compDiv.style.borderLeft = '3px solid #f59e0b';
+            compDiv.innerHTML = `<iconify-icon icon="solar:danger-triangle-bold" style="color:#f59e0b"></iconify-icon> <strong style="color:#f59e0b">Partiel (${pct}%)</strong> — Manque : <strong style="color:#ef4444">${Utils.formatCurrency(Math.abs(diff))}</strong>`;
+            if (statutSelect && statutSelect.value !== 'supprime') statutSelect.value = 'partiel';
+            if (traitementDiv) {
+              traitementDiv.style.display = '';
+              const allVers = Store.get('versements') || [];
+              const detteExistante = allVers.filter(v => v.chauffeurId === chId && v.id !== id && v.traitementManquant === 'dette' && v.manquant > 0).reduce((s, v) => s + (v.manquant || 0), 0);
+              if (manquantDetail) {
+                manquantDetail.innerHTML = detteExistante > 0
+                  ? `Dette existante de ${ch.prenom} ${ch.nom} : <strong style="color:#ef4444">${Utils.formatCurrency(detteExistante)}</strong> — Nouveau total si reporté : <strong>${Utils.formatCurrency(detteExistante + Math.abs(diff))}</strong>`
+                  : `Aucune dette existante pour ${ch.prenom} ${ch.nom}`;
+              }
+            }
+          }
+        } else {
+          compDiv.style.display = 'none';
+          if (traitementDiv) traitementDiv.style.display = 'none';
+        }
+      };
+
+      if (chSelect) chSelect.addEventListener('change', updateRedevanceInfo);
+      if (montantInput) montantInput.addEventListener('input', updateComparaison);
+      // Trigger initial display
+      updateRedevanceInfo();
+    }, 100);
   },
 
   _validate(id) {
