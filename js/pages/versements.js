@@ -28,6 +28,18 @@ const VersementsPage = {
     this.render();
   },
 
+  async _cleanupGhosts() {
+    if (!confirm('Supprimer tous les versements fantômes (0 FCFA sans paiement réel) de la base de données ?')) return;
+    try {
+      const result = await Store.cleanupGhostVersements();
+      Toast.success(result.message || `${result.deleted} fantôme(s) supprimé(s)`);
+      this.destroy();
+      this.render();
+    } catch (e) {
+      Toast.error('Erreur : ' + e.message);
+    }
+  },
+
   _bindPeriodSelector() {
     const input = document.getElementById('versements-period');
     if (input) {
@@ -47,14 +59,16 @@ const VersementsPage = {
     // Toujours filtrer par jour (selectedDay = aujourd'hui ou date choisie)
     const monthVers = versements.filter(v => v.date === selectedDay);
 
-    const activeVers = monthVers.filter(v => v.statut !== 'supprime');
+    // Exclure les versements fantômes (0 FCFA, pas de paiement réel)
+    const realVers = monthVers.filter(v => v.statut !== 'supprime' && v.statut !== 'en_attente' && (v.montantVerse || 0) > 0);
+    const activeVers = realVers;
     const totalVerse = activeVers.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
 
-    // Compter les statuts pour la période sélectionnée
+    // Compter les statuts — uniquement les paiements réels
     const byStatus = {
-      valide: monthVers.filter(v => v.statut === 'valide').length,
+      valide: realVers.filter(v => v.statut === 'valide').length,
       retard: 0, // sera recalculé ci-dessous via le planning
-      partiel: monthVers.filter(v => v.statut === 'partiel').length
+      partiel: realVers.filter(v => v.statut === 'partiel').length
     };
 
     // Calculer le montant attendu et les retards via le planning
@@ -170,6 +184,7 @@ const VersementsPage = {
           </button>` : ''}
           <button class="btn btn-secondary" onclick="VersementsPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
           <button class="btn btn-secondary" onclick="VersementsPage._exportCSV()"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> CSV</button>
+          <button class="btn btn-secondary" onclick="VersementsPage._cleanupGhosts()" title="Supprimer les versements fantômes (0 FCFA)"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Nettoyer</button>
           <button class="btn btn-success" onclick="VersementsPage._showRecettesRecurrentes()"><iconify-icon icon="solar:repeat-bold-duotone"></iconify-icon> Récurrents</button>
           <button class="btn btn-primary" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouveau versement</button>
         </div>
@@ -225,7 +240,7 @@ const VersementsPage = {
   },
 
   _bindEvents(d) {
-    const versements = d.versements.filter(v => v.statut !== 'en_attente').sort((a, b) => b.date.localeCompare(a.date));
+    const versements = d.versements.filter(v => v.statut !== 'en_attente' && (v.montantVerse || 0) > 0).sort((a, b) => b.date.localeCompare(a.date));
     this._loadYangoCourses(versements, d.chauffeurs);
 
     // Filters for versements card list
@@ -280,7 +295,7 @@ const VersementsPage = {
   // =================== VERSEMENTS DU JOUR (CARD LIST) ===================
 
   _renderVersementsSection(d) {
-    const versements = d.versements.filter(v => v.statut !== 'en_attente').sort((a, b) => b.date.localeCompare(a.date));
+    const versements = d.versements.filter(v => v.statut !== 'en_attente' && (v.montantVerse || 0) > 0).sort((a, b) => b.date.localeCompare(a.date));
     if (versements.length === 0) return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #22c55e;text-align:center;padding:var(--space-xl);color:var(--text-muted);">
       <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:2rem;color:#22c55e;display:block;margin-bottom:8px;"></iconify-icon>
       Aucun versement pour cette date

@@ -442,6 +442,21 @@ const Store = {
     }
   },
 
+  async cleanupGhostVersements() {
+    try {
+      const res = await fetch(this._apiBase + '/versements/cleanup-ghosts', {
+        method: 'POST',
+        headers: this._headers()
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    } catch (e) {
+      console.error('Store: cleanup ghost versements failed:', e.message);
+      throw e;
+    }
+  },
+
   async yangoBalance(chauffeurId) {
     try {
       const res = await fetch(this._apiBase + '/yango/balance/' + chauffeurId, {

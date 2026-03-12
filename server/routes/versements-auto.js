@@ -100,4 +100,47 @@ router.post('/auto-generate', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /api/versements/cleanup-ghosts
+ * Supprime les versements fantômes :
+ * - montantVerse === 0 ET statut !== 'en_attente' (pas de wave en cours)
+ * - OU statut === 'en_attente' sans waveCheckoutId (pas de paiement Wave en cours)
+ */
+router.post('/cleanup-ghosts', async (req, res, next) => {
+  try {
+    const Versement = require('../models/Versement');
+
+    // Supprimer les versements "validés" à 0 FCFA (fantômes de la grille récurrente)
+    const result1 = await Versement.deleteMany({
+      montantVerse: 0,
+      statut: { $in: ['valide', 'partiel', 'retard'] }
+    });
+
+    // Supprimer les versements en_attente sans waveCheckoutId (pas de paiement en cours)
+    const result2 = await Versement.deleteMany({
+      statut: 'en_attente',
+      montantVerse: 0,
+      $or: [
+        { waveCheckoutId: { $exists: false } },
+        { waveCheckoutId: null },
+        { waveCheckoutId: '' }
+      ]
+    });
+
+    const total = (result1.deletedCount || 0) + (result2.deletedCount || 0);
+    console.log(`[Cleanup] ${total} versements fantômes supprimés (${result1.deletedCount} validés à 0, ${result2.deletedCount} en_attente sans Wave)`);
+
+    res.json({
+      deleted: total,
+      details: {
+        validesA0: result1.deletedCount || 0,
+        enAttenteOrphelins: result2.deletedCount || 0
+      },
+      message: `${total} versement(s) fantôme(s) supprimé(s)`
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
