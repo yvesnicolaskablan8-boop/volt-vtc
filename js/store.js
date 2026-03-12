@@ -485,57 +485,5 @@ const Store = {
       console.error('Store: Yango recharge failed:', e.message);
       throw e;
     }
-  },
-
-  // =================== ELEVENLABS RECOUVREMENT ===================
-
-  async elStatus() {
-    const res = await fetch(this._apiBase + '/elevenlabs/status', { headers: this._headers() });
-    return res.json();
-  },
-
-  async elDebtors() {
-    const res = await fetch(this._apiBase + '/elevenlabs/debtors', { headers: this._headers() });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
-  },
-
-  async elCall(chauffeurId) {
-    const res = await fetch(this._apiBase + '/elevenlabs/call/' + chauffeurId, {
-      method: 'POST',
-      headers: { ...this._headers(), 'Content-Type': 'application/json' }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
-  },
-
-  async elCallAllDebtors() {
-    const res = await fetch(this._apiBase + '/elevenlabs/call-all-debtors', {
-      method: 'POST',
-      headers: { ...this._headers(), 'Content-Type': 'application/json' }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
-  },
-
-  async elCalls() {
-    const res = await fetch(this._apiBase + '/elevenlabs/calls', { headers: this._headers() });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
-  },
-
-  async elSetupAgent(voiceId) {
-    const res = await fetch(this._apiBase + '/elevenlabs/setup-agent', {
-      method: 'POST',
-      headers: { ...this._headers(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ voice_id: voiceId })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    return data;
   }
 };

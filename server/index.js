@@ -47,12 +47,8 @@ app.use('/api/yango', require('./routes/yango'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));
 
-// API Routes — ElevenLabs (agent vocal recouvrement)
-app.use('/api/elevenlabs', require('./routes/elevenlabs'));
-
 // API Routes — Webhooks externes (pas d'auth)
 app.use('/api/wave', require('./routes/wave-webhook'));
-app.use('/api/elevenlabs', require('./routes/elevenlabs-webhook'));
 
 // API Routes — Driver (PWA chauffeur)
 app.use('/api/driver/auth', require('./routes/driver-auth'));
@@ -106,11 +102,6 @@ const startServer = async () => {
     const behaviorCron = require('./utils/behavior-cron');
     behaviorCron.start();
 
-    // Demarrer le CRON Recouvrement (appels auto a 10h lun-sam)
-    if (process.env.ELEVENLABS_API_KEY && process.env.ELEVENLABS_AGENT_ID) {
-      const debtCallCron = require('./utils/debt-call-cron');
-      debtCallCron.start();
-    }
   });
 };
 

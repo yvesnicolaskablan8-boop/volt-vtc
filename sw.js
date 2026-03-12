@@ -24,7 +24,6 @@ const ASSETS = [
   './js/pages/chauffeurs.js',
   './js/pages/vehicules.js',
   './js/pages/versements.js',
-  './js/pages/recouvrement.js',
   './js/pages/rentabilite.js',
   './js/pages/gps-conduite.js',
   './js/pages/rapports.js',

@@ -12,7 +12,6 @@ const MenuPage = {
       { route: '/motivation', icon: 'solar:fire-bold-duotone', label: 'Engagement', color: '#f97316' },
       { route: '/garage', icon: 'solar:garage-bold-duotone', label: 'Garage', color: '#06b6d4' },
       { route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements', color: '#22c55e' },
-      { route: '/recouvrement', icon: 'solar:phone-calling-bold-duotone', label: 'Recouvrement', color: '#f43f5e' },
       { route: '/contraventions', icon: 'solar:document-text-bold-duotone', label: 'Contraventions', color: '#ef4444' },
       { route: '/rentabilite', icon: 'solar:pie-chart-2-bold-duotone', label: 'Rentabilité', color: '#8b5cf6' },
       { route: '/comptabilite', icon: 'solar:calculator-bold-duotone', label: 'Comptabilité', color: '#3b82f6' },
