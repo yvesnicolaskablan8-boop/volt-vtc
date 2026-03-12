@@ -244,22 +244,8 @@ const VersementsPage = {
       <!-- Suivi des dettes -->
       ${this._renderDetteSection(d)}
 
-      <!-- Filters -->
-      <div style="margin-top:var(--space-lg);">
-        <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);flex-wrap:wrap;">
-          <select class="form-control" id="filter-chauffeur" style="width:200px;">
-            <option value="">Tous les chauffeurs</option>
-            ${d.chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
-          </select>
-          <select class="form-control" id="filter-statut" style="width:160px;">
-            <option value="">Tous statuts</option>
-            <option value="valide">Validé</option>
-            <option value="retard">En retard</option>
-            <option value="partiel">Partiel</option>
-          </select>
-        </div>
-        <div id="versements-table"></div>
-      </div>
+      <!-- Versements du jour -->
+      ${this._renderVersementsSection(d)}
     `;
   },
 
@@ -358,80 +344,132 @@ const VersementsPage = {
 
   _bindEvents(d) {
     const versements = d.versements.filter(v => v.statut !== 'en_attente').sort((a, b) => b.date.localeCompare(a.date));
-
-    const renderTable = (data) => {
-      Table.create({
-        containerId: 'versements-table',
-        columns: [
-          {
-            label: 'Chauffeur', key: 'chauffeurId', primary: true,
-            render: (v) => {
-              const c = d.chauffeurs.find(x => x.id === v.chauffeurId);
-              return c ? `${c.prenom} ${c.nom}` : v.chauffeurId;
-            },
-            value: (v) => {
-              const c = d.chauffeurs.find(x => x.id === v.chauffeurId);
-              return c ? `${c.nom} ${c.prenom}` : '';
-            }
-          },
-          { label: 'Période', key: 'periode' },
-          { label: 'Journée', key: 'date', render: (v) => {
-              let html = Utils.formatDate(v.dateService || v.date);
-              if (v.dateCreation && v.dateCreation.split('T')[0] !== (v.dateService || v.date)) {
-                html += `<div style="font-size:0.65rem;color:var(--text-muted);">Payé le ${Utils.formatDate(v.dateCreation.split('T')[0])}</div>`;
-              }
-              return html;
-            }
-          },
-          { label: 'Versé', key: 'montantVerse', render: (v) => v.statut === 'supprime' ? `<span style="text-decoration:line-through;color:var(--text-muted);">${Utils.formatCurrency(v.montantVerse)}</span>` : `<strong>${Utils.formatCurrency(v.montantVerse)}</strong>`, primary: true },
-          { label: 'Courses', key: 'nombreCourses', render: (v) => `<span data-yango-courses="${v.id}">${v.nombreCourses > 0 ? `<span style="font-weight:600;">${v.nombreCourses}</span>` : '<iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:12px;color:var(--text-muted);"></iconify-icon>'}</span>` },
-          { label: 'Statut', key: 'statut', render: (v) => {
-              let html = Utils.statusBadge(v.statut);
-              if (v.moyenPaiement === 'wave') {
-                html += ' <span class="badge" style="font-size:0.65rem;background:rgba(13,110,253,0.1);color:#0D6EFD;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
-              } else if (v.soumisParChauffeur) {
-                html += ' <span class="badge badge-info" style="font-size:0.65rem;"><iconify-icon icon="solar:smartphone-bold-duotone"></iconify-icon> Chauffeur</span>';
-              }
-              return html;
-            }
-          }
-        ],
-        data,
-        pageSize: 15,
-        actions: (v) => {
-          let btns = '';
-          if (v.statut === 'en_attente' || v.statut === 'retard') {
-            btns += `<button class="btn btn-sm btn-success" onclick="VersementsPage._validate('${v.id}')" title="Valider"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button> `;
-          }
-          btns += `<button class="btn btn-sm btn-secondary" onclick="VersementsPage._edit('${v.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>`;
-          if (v.statut === 'valide') {
-            btns += ` <button class="btn btn-sm btn-outline" onclick="VersementsPage._exportReceipt('${v.id}')" title="Re\u00e7u PDF"><iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon></button>`;
-          }
-          return btns;
-        }
-      });
-    };
-
-    renderTable(versements);
     this._loadYangoCourses(versements, d.chauffeurs);
 
-    // Filters
+    // Filters for versements card list
     const filterChauffeur = document.getElementById('filter-chauffeur');
     const filterStatut = document.getElementById('filter-statut');
 
-    const applyFilters = () => {
-      let filtered = [...versements];
-      if (filterChauffeur.value) filtered = filtered.filter(v => v.chauffeurId === filterChauffeur.value);
-      if (filterStatut.value) filtered = filtered.filter(v => v.statut === filterStatut.value);
-      renderTable(filtered);
-      this._loadYangoCourses(filtered, d.chauffeurs);
-    };
+    if (filterChauffeur && filterStatut) {
+      const applyFilters = () => {
+        let filtered = [...versements];
+        if (filterChauffeur.value) filtered = filtered.filter(v => v.chauffeurId === filterChauffeur.value);
+        if (filterStatut.value) filtered = filtered.filter(v => v.statut === filterStatut.value);
+        const container = document.getElementById('versements-list');
+        if (container) container.innerHTML = this._renderVersementRows(filtered, d.chauffeurs);
+        const countEl = document.getElementById('versements-count');
+        if (countEl) countEl.textContent = filtered.length;
+        const totalEl = document.getElementById('versements-total');
+        if (totalEl) totalEl.textContent = Utils.formatCurrency(filtered.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0));
+        this._loadYangoCourses(filtered, d.chauffeurs);
+      };
+      filterChauffeur.addEventListener('change', applyFilters);
+      filterStatut.addEventListener('change', applyFilters);
+    }
 
-    filterChauffeur.addEventListener('change', applyFilters);
-    filterStatut.addEventListener('change', applyFilters);
+    // Search in versements list
+    const searchInput = document.getElementById('versements-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        const q = searchInput.value.toLowerCase().trim();
+        const items = document.querySelectorAll('#versements-list [data-name]');
+        items.forEach(item => {
+          item.style.display = item.dataset.name.includes(q) ? '' : 'none';
+        });
+      });
+    }
 
     // Add button
     document.getElementById('btn-add-versement').addEventListener('click', () => this._add());
+  },
+
+  // =================== VERSEMENTS DU JOUR (CARD LIST) ===================
+
+  _renderVersementsSection(d) {
+    const versements = d.versements.filter(v => v.statut !== 'en_attente').sort((a, b) => b.date.localeCompare(a.date));
+    if (versements.length === 0) return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #22c55e;text-align:center;padding:var(--space-xl);color:var(--text-muted);">
+      <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:2rem;color:#22c55e;display:block;margin-bottom:8px;"></iconify-icon>
+      Aucun versement pour cette date
+    </div>`;
+
+    const totalVerse = versements.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
+    const rows = this._renderVersementRows(versements, d.chauffeurs);
+
+    return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #22c55e;">
+      <div class="card-header">
+        <span class="card-title"><iconify-icon icon="solar:hand-money-bold-duotone" style="color:#22c55e;"></iconify-icon> Versements (<span id="versements-count">${versements.length}</span>)</span>
+        <div style="text-align:right;">
+          <div style="font-size:var(--font-size-base);font-weight:700;color:#22c55e;" id="versements-total">${Utils.formatCurrency(totalVerse)}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:var(--space-sm);margin-bottom:8px;flex-wrap:wrap;">
+        <div style="position:relative;flex:1;min-width:150px;">
+          <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:#22c55e;pointer-events:none;"></iconify-icon>
+          <input type="text" id="versements-search" class="form-control" placeholder="Rechercher un chauffeur..." style="padding-left:32px;font-size:var(--font-size-xs);border:2px solid #22c55e;border-radius:var(--radius-md);background:var(--bg-primary);" onclick="event.stopPropagation()">
+        </div>
+        <select class="form-control" id="filter-chauffeur" style="width:180px;font-size:var(--font-size-xs);">
+          <option value="">Tous les chauffeurs</option>
+          ${d.chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
+        </select>
+        <select class="form-control" id="filter-statut" style="width:140px;font-size:var(--font-size-xs);">
+          <option value="">Tous statuts</option>
+          <option value="valide">Validé</option>
+          <option value="retard">En retard</option>
+          <option value="partiel">Partiel</option>
+        </select>
+      </div>
+      <div id="versements-list" style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto;">
+        ${rows}
+      </div>
+    </div>`;
+  },
+
+  _renderVersementRows(versements, chauffeurs) {
+    return versements.map(v => {
+      const c = chauffeurs.find(x => x.id === v.chauffeurId);
+      const name = c ? `${c.prenom} ${c.nom}` : v.chauffeurId;
+      const isDeleted = v.statut === 'supprime';
+      const dateLabel = Utils.formatDate(v.dateService || v.date);
+      const paidLabel = v.dateCreation && v.dateCreation.split('T')[0] !== (v.dateService || v.date) ? `Payé le ${Utils.formatDate(v.dateCreation.split('T')[0])}` : '';
+
+      // Statut badge
+      let statutHtml = '';
+      if (v.statut === 'valide') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#22c55e;"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Validé</span>';
+      else if (v.statut === 'partiel') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#3b82f6;"><iconify-icon icon="solar:pie-chart-2-bold"></iconify-icon> Partiel</span>';
+      else if (v.statut === 'retard') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;"><iconify-icon icon="solar:alarm-bold"></iconify-icon> Retard</span>';
+      else if (v.statut === 'supprime') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:var(--text-muted);"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon> Supprimé</span>';
+
+      // Payment method badge
+      let methodHtml = '';
+      if (v.moyenPaiement === 'wave') methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(13,110,253,0.1);color:#0D6EFD;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
+      else if (v.soumisParChauffeur) methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(59,130,246,0.1);color:#3b82f6;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:smartphone-bold-duotone"></iconify-icon> Chauffeur</span>';
+
+      // Courses
+      const coursesHtml = `<span data-yango-courses="${v.id}" style="font-size:var(--font-size-xs);color:var(--text-muted);">${v.nombreCourses > 0 ? `${v.nombreCourses} courses` : '<iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:11px;"></iconify-icon>'}</span>`;
+
+      // Action buttons
+      let actionsHtml = '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">';
+      if (v.statut === 'en_attente' || v.statut === 'retard') {
+        actionsHtml += `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();VersementsPage._validate('${v.id}')" title="Valider"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button>`;
+      }
+      actionsHtml += `<button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();VersementsPage._edit('${v.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>`;
+      if (v.statut === 'valide') {
+        actionsHtml += `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();VersementsPage._exportReceipt('${v.id}')" title="Reçu PDF"><iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon></button>`;
+      }
+      actionsHtml += '</div>';
+
+      return `<div data-name="${name.toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;${isDeleted ? 'opacity:0.5;' : ''}">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:var(--font-size-sm);font-weight:600;">${name}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${dateLabel}${paidLabel ? ' • ' + paidLabel : ''}${v.periode ? ' • ' + v.periode : ''}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">${statutHtml} ${methodHtml} ${coursesHtml}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:var(--font-size-sm);font-weight:700;color:${isDeleted ? 'var(--text-muted)' : '#22c55e'};${isDeleted ? 'text-decoration:line-through;' : ''}">${Utils.formatCurrency(v.montantVerse)}</div>
+          ${actionsHtml}
+        </div>
+      </div>`;
+    }).join('');
   },
 
   async _loadYangoCourses(versements, chauffeurs) {
