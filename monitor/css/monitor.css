@@ -1,15 +1,15 @@
 /* =================== VOLT MONITOR — DARK THEME =================== */
 
 :root {
-  --bg-primary: #0a0e17;
-  --bg-secondary: #0f1520;
-  --bg-card: #111827;
-  --bg-card-hover: #1a2235;
-  --bg-input: #1e293b;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: rgba(255,255,255,0.06);
+  --bg-primary: #110a0c;
+  --bg-secondary: #1a0f12;
+  --bg-card: #1c1215;
+  --bg-card-hover: #2a1a1e;
+  --bg-input: #251920;
+  --text-primary: #f5f1f2;
+  --text-secondary: #a89498;
+  --text-muted: #6b5a5e;
+  --border-color: rgba(255,255,255,0.07);
   --green: #22c55e;
   --red: #ef4444;
   --orange: #f59e0b;
@@ -43,7 +43,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background: radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.08) 0%, transparent 60%),
+  background: radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.1) 0%, transparent 60%),
               var(--bg-primary);
 }
 

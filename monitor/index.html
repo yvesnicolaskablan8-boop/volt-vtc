@@ -6,7 +6,7 @@
   <title>Volt Monitor</title>
   <link rel="icon" type="image/svg+xml" href="/monitor/favicon.svg">
   <link rel="manifest" href="/monitor/manifest.json">
-  <meta name="theme-color" content="#0a0e17">
+  <meta name="theme-color" content="#110a0c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Volt Monitor">
@@ -15,7 +15,7 @@
   <!-- Version bump -->
   <script>
   (function(){
-    var APP_VERSION = 3;
+    var APP_VERSION = 4;
     var stored = parseInt(localStorage.getItem('volt_monitor_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('volt_monitor_version', APP_VERSION);
