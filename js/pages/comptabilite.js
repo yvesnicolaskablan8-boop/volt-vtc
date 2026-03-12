@@ -1083,7 +1083,7 @@ const ComptabilitePage = {
       location_vehicule: 'Location véhicule', frais_service: 'Frais de service',
       autres_recettes: 'Autres recettes', versement_chauffeur: 'Versement chauffeur',
       course_directe: 'Course directe', subvention: 'Subvention', autre_recette: 'Autre recette',
-      carburant: 'Carburant', recharge_electrique: 'Recharge électrique', maintenance: 'Maintenance', assurance: 'Assurance',
+      carburant: 'Carburant', recharge_electrique: 'Recharge électrique', recharge_yango: 'Recharge Yango', maintenance: 'Maintenance', assurance: 'Assurance',
       leasing: 'Leasing', salaires: 'Salaires', salaire: 'Salaires',
       loyer_bureau: 'Loyer / Bureau', loyer: 'Loyer / Bureau',
       telecoms: 'Télécom', telephone: 'Télécom',
@@ -1125,7 +1125,7 @@ const ComptabilitePage = {
   _getCategoriesOptions() {
     const cats = [
       { group: 'Encaissements', items: [{ v: 'commissions_courses', l: 'Commissions courses' }, { v: 'commission_yango', l: 'Commission Yango (3%)' }, { v: 'courses_directes', l: 'Courses directes' }, { v: 'frais_service', l: 'Frais de service' }, { v: 'location_vehicule', l: 'Location véhicule' }, { v: 'autres_recettes', l: 'Autres recettes' }] },
-      { group: 'Décaissements', items: [{ v: 'carburant', l: 'Carburant' }, { v: 'recharge_electrique', l: 'Recharge électrique' }, { v: 'maintenance', l: 'Maintenance' }, { v: 'assurance', l: 'Assurance' }, { v: 'leasing', l: 'Leasing' }, { v: 'salaires', l: 'Salaires' }, { v: 'loyer_bureau', l: 'Loyer / Bureau' }, { v: 'taxes_impots', l: 'Impôts / Taxes' }, { v: 'telecoms', l: 'Télécom' }, { v: 'marketing', l: 'Marketing' }, { v: 'fournitures', l: 'Fournitures' }, { v: 'autres_depenses', l: 'Autres dépenses' }] }
+      { group: 'Décaissements', items: [{ v: 'carburant', l: 'Carburant' }, { v: 'recharge_electrique', l: 'Recharge électrique' }, { v: 'recharge_yango', l: 'Recharge Yango' }, { v: 'maintenance', l: 'Maintenance' }, { v: 'assurance', l: 'Assurance' }, { v: 'leasing', l: 'Leasing' }, { v: 'salaires', l: 'Salaires' }, { v: 'loyer_bureau', l: 'Loyer / Bureau' }, { v: 'taxes_impots', l: 'Impôts / Taxes' }, { v: 'telecoms', l: 'Télécom' }, { v: 'marketing', l: 'Marketing' }, { v: 'fournitures', l: 'Fournitures' }, { v: 'autres_depenses', l: 'Autres dépenses' }] }
     ];
     return cats.map(g => `<optgroup label="${g.group}">${g.items.map(i => `<option value="${i.v}">${i.l}</option>`).join('')}</optgroup>`).join('');
   },

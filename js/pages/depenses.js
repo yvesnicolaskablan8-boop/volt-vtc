@@ -23,6 +23,7 @@ const DepensesPage = {
     assurance: 'Assurance',
     reparation: 'Réparation',
     stationnement: 'Stationnement',
+    recharge_yango: 'Recharge Yango',
     autre: 'Autre'
   },
 
@@ -33,6 +34,7 @@ const DepensesPage = {
     { value: 'assurance', label: 'Assurance' },
     { value: 'reparation', label: 'Réparation' },
     { value: 'stationnement', label: 'Stationnement' },
+    { value: 'recharge_yango', label: 'Recharge Yango' },
     { value: 'autre', label: 'Autre' }
   ],
 

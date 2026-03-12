@@ -902,7 +902,7 @@ const PlanningPage = {
       // Delete button in footer
     });
 
-    // Add delete button
+    // Add delete + recharge buttons
     setTimeout(() => {
       const footer = document.getElementById('modal-footer');
       if (footer) {
@@ -917,6 +917,24 @@ const PlanningPage = {
           this._renderView();
         };
         footer.insertBefore(delBtn, footer.firstChild);
+
+        // Bouton Recharger Yango si le chauffeur est lié
+        const ch = Store.findById('chauffeurs', shift.chauffeurId);
+        if (ch && ch.yangoDriverId) {
+          const rechargeBtn = document.createElement('button');
+          rechargeBtn.className = 'btn btn-sm';
+          rechargeBtn.style.cssText = 'background:#FC4C02;color:#fff;border:none;';
+          rechargeBtn.innerHTML = '<iconify-icon icon="solar:card-transfer-bold-duotone"></iconify-icon> Recharger Yango';
+          rechargeBtn.onclick = () => {
+            Modal.close();
+            if (typeof ChauffeursPage !== 'undefined' && ChauffeursPage._yangoRecharge) {
+              ChauffeursPage._yangoRecharge(shift.chauffeurId);
+            } else {
+              PlanningPage._yangoRechargeFromPlanning(shift.chauffeurId);
+            }
+          };
+          footer.insertBefore(rechargeBtn, delBtn.nextSibling);
+        }
       }
     }, 50);
 
@@ -1499,5 +1517,68 @@ const PlanningPage = {
     Modal.close();
     this._pendingGrid = null;
     Toast.show(`${count} dépense${count > 1 ? 's' : ''} enregistrée${count > 1 ? 's' : ''}`, 'success');
+  },
+
+  // =================== RECHARGE YANGO DEPUIS PLANNING ===================
+
+  _yangoRechargeFromPlanning(chauffeurId) {
+    const ch = Store.findById('chauffeurs', chauffeurId);
+    if (!ch || !ch.yangoDriverId) {
+      Toast.error('Ce chauffeur n\'est pas li\u00e9 \u00e0 Yango');
+      return;
+    }
+    const nom = `${ch.prenom} ${ch.nom}`;
+
+    const fields = [
+      { type: 'heading', label: 'Recharger le compte Yango' },
+      { type: 'html', html: `<div style="padding:10px 12px;border-radius:8px;background:rgba(252,76,2,0.08);border:1px solid rgba(252,76,2,0.25);margin-bottom:10px;font-size:var(--font-size-sm);">
+        <div style="font-weight:600;color:#FC4C02;margin-bottom:2px;">${nom}</div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Yango ID : ${ch.yangoDriverId}</div>
+      </div>` },
+      { name: 'amount', label: 'Montant (FCFA)', type: 'number', required: true, min: 1, step: 100, placeholder: 'Ex: 5000' },
+      { name: 'description', label: 'Description (optionnel)', type: 'text', placeholder: 'Raison de la recharge...' }
+    ];
+
+    Modal.form(
+      '<iconify-icon icon="solar:card-transfer-bold-duotone" style="color:#FC4C02;"></iconify-icon> Recharger compte Yango',
+      FormBuilder.build(fields),
+      async () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, fields)) return;
+        const values = FormBuilder.getValues(body);
+        const amount = parseFloat(values.amount);
+
+        if (!amount || amount <= 0) {
+          Toast.error('Le montant doit \u00eatre sup\u00e9rieur \u00e0 0');
+          return;
+        }
+
+        const confirmBtn = document.querySelector('#modal-footer .btn-primary, #modal-footer .btn-success');
+        if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Envoi en cours...'; }
+
+        try {
+          const desc = values.description || `Recharge Yango \u2014 ${nom}`;
+          const result = await Store.yangoRecharge(chauffeurId, amount, desc);
+
+          // Enregistrer automatiquement comme d\u00e9pense
+          Store.add('depenses', {
+            id: 'DEP-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+            vehiculeId: ch.vehiculeId || '',
+            chauffeurId: chauffeurId,
+            typeDepense: 'recharge_yango',
+            montant: amount,
+            date: new Date().toISOString().split('T')[0],
+            commentaire: desc,
+            dateCreation: new Date().toISOString()
+          });
+
+          Modal.close();
+          Toast.success(result.message || `Recharge de ${Utils.formatCurrency(amount)} effectu\u00e9e pour ${nom}`);
+        } catch (e) {
+          if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirmer'; }
+          Toast.error(`Erreur : ${e.message}`);
+        }
+      }
+    );
   }
 };

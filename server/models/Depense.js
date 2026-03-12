@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 const depenseSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
-  vehiculeId: { type: String, required: true },
+  vehiculeId: { type: String, default: '' },
+  chauffeurId: String,
   typeDepense: { type: String, required: true },
   montant: { type: Number, required: true },
   date: { type: String, required: true },

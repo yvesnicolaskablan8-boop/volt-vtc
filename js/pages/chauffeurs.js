@@ -1561,7 +1561,21 @@ const ChauffeursPage = {
         if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Envoi en cours...'; }
 
         try {
-          const result = await Store.yangoRecharge(chauffeurId, amount, values.description || `Recharge Volt \u2014 ${nom}`);
+          const desc = values.description || `Recharge Yango \u2014 ${nom}`;
+          const result = await Store.yangoRecharge(chauffeurId, amount, desc);
+
+          // Enregistrer automatiquement comme dépense
+          Store.add('depenses', {
+            id: 'DEP-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+            vehiculeId: ch.vehiculeId || '',
+            chauffeurId: chauffeurId,
+            typeDepense: 'recharge_yango',
+            montant: amount,
+            date: new Date().toISOString().split('T')[0],
+            commentaire: desc,
+            dateCreation: new Date().toISOString()
+          });
+
           Modal.close();
           Toast.success(result.message || `Recharge de ${Utils.formatCurrency(amount)} effectu\u00e9e pour ${nom}`);
         } catch (e) {
