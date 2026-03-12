@@ -2,7 +2,6 @@
  * VersementsPage - Payment tracking and validation
  */
 const VersementsPage = {
-  _charts: [],
   _selectedPeriod: null, // null = aujourd'hui, 'YYYY-MM-DD' = date spécifique
 
   render() {
@@ -10,14 +9,11 @@ const VersementsPage = {
     const data = this._getData();
     this._kpiData = data;
     container.innerHTML = this._template(data);
-    this._loadCharts(data);
     this._bindEvents(data);
     this._bindPeriodSelector();
   },
 
   destroy() {
-    this._charts.forEach(c => c.destroy());
-    this._charts = [];
   },
 
   _onPeriodChange(value) {
@@ -218,26 +214,6 @@ const VersementsPage = {
         </div>
       </div>
 
-      <div class="charts-grid">
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Statut des versements</div>
-          </div>
-          <div class="chart-container" style="height:250px;">
-            <canvas id="chart-versements-status"></canvas>
-          </div>
-        </div>
-
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Évolution hebdomadaire</div>
-          </div>
-          <div class="chart-container" style="height:250px;">
-            <canvas id="chart-versements-weekly"></canvas>
-          </div>
-        </div>
-      </div>
-
       <!-- Recettes impayées -->
       ${this._renderUnpaidSection(d)}
 
@@ -247,99 +223,6 @@ const VersementsPage = {
       <!-- Versements du jour -->
       ${this._renderVersementsSection(d)}
     `;
-  },
-
-  _loadCharts(d) {
-    this._charts = [];
-    const statusLabels = ['Validé', 'En attente', 'En retard', 'Partiel'];
-    const statusKeys = ['valide', 'en_attente', 'retard', 'partiel'];
-    const totalVersements = statusKeys.reduce((s, k) => s + d.byStatus[k], 0);
-
-    // Status donut — Click filters table + Center text + Enriched tooltips
-    const statusCtx = document.getElementById('chart-versements-status');
-    if (statusCtx) {
-      this._charts.push(new Chart(statusCtx, {
-        type: 'doughnut',
-        data: {
-          labels: statusLabels,
-          datasets: [{
-            data: statusKeys.map(k => d.byStatus[k]),
-            backgroundColor: ['#22c55e', '#f59e0b', '#ef4444', '#3b82f6'],
-            borderColor: Utils.chartBorderColor(),
-            borderWidth: 2,
-            hoverOffset: 12
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '65%',
-          plugins: {
-            legend: { position: 'bottom', labels: { padding: 12, font: { size: 11 } } },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => {
-                  const val = ctx.raw;
-                  const pct = totalVersements > 0 ? (val / totalVersements * 100).toFixed(1) : 0;
-                  return `${ctx.label} : ${val} versements (${pct}%)`;
-                }
-              }
-            }
-          },
-        },
-        plugins: [Utils.doughnutCenterPlugin(
-          () => totalVersements.toString(),
-          'versements'
-        )]
-      }));
-    }
-
-    // Weekly evolution — Zoom/Pan + Enriched tooltips
-    const weeklyCtx = document.getElementById('chart-versements-weekly');
-    if (weeklyCtx) {
-      this._charts.push(new Chart(weeklyCtx, {
-        type: 'line',
-        data: {
-          labels: d.weeklyEvo.map(w => w.label),
-          datasets: [{
-            label: 'Montant verse',
-            data: d.weeklyEvo.map(w => Math.round(w.total)),
-            borderColor: '#22c55e',
-            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-            fill: true,
-            borderWidth: 2,
-            pointHoverRadius: 8,
-            pointHoverBorderWidth: 3,
-            pointHoverBackgroundColor: '#22c55e',
-            pointHoverBorderColor: '#fff'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                title: (items) => items.length ? `Semaine ${items[0].label}` : '',
-                label: (ctx) => {
-                  const val = Utils.formatCurrency(ctx.raw);
-                  const idx = ctx.dataIndex;
-                  const data = ctx.dataset.data;
-                  if (idx > 0 && data[idx - 1] > 0) {
-                    const variation = ((ctx.raw - data[idx - 1]) / data[idx - 1] * 100).toFixed(1);
-                    return [`Verse : ${val}`, `${variation >= 0 ? '+' : ''}${variation}% vs semaine precedente`];
-                  }
-                  return `Verse : ${val}`;
-                }
-              }
-            },
-          },
-          scales: { y: { beginAtZero: true, ticks: { callback: (v) => Utils.formatCurrency(v) } } }
-        }
-      }));
-    }
   },
 
   _bindEvents(d) {
