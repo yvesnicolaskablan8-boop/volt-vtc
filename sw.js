@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volt-vtc-v119';
+const CACHE_NAME = 'volt-vtc-v120';
 const ASSETS = [
   './',
   './index.html',
@@ -24,6 +24,7 @@ const ASSETS = [
   './js/pages/chauffeurs.js',
   './js/pages/vehicules.js',
   './js/pages/versements.js',
+  './js/pages/recouvrement.js',
   './js/pages/rentabilite.js',
   './js/pages/gps-conduite.js',
   './js/pages/rapports.js',

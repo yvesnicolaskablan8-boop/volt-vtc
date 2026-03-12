@@ -14,7 +14,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 119;
+    var APP_VERSION = 120;
     var stored = parseInt(localStorage.getItem('volt_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('volt_app_version', APP_VERSION);
@@ -212,6 +212,10 @@
           <iconify-icon icon="solar:document-text-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Contraventions</span>
         </a>
+        <a class="nav-item" href="#/recouvrement" data-route="/recouvrement">
+          <iconify-icon icon="solar:phone-calling-bold-duotone" class="nav-icon"></iconify-icon>
+          <span>Recouvrement</span>
+        </a>
         <a class="nav-item" href="#/rentabilite" data-route="/rentabilite">
           <iconify-icon icon="solar:pie-chart-2-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Rentabilit&eacute;</span>
@@ -390,6 +394,7 @@
   <script src="js/pages/chauffeurs.js"></script>
   <script src="js/pages/vehicules.js"></script>
   <script src="js/pages/versements.js"></script>
+  <script src="js/pages/recouvrement.js"></script>
   <script src="js/pages/rentabilite.js"></script>
   <script src="js/pages/gps-conduite.js"></script>
   <script src="js/pages/rapports.js"></script>
