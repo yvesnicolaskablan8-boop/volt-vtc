@@ -1,6 +1,16 @@
 /**
  * VersementsPage - Payment tracking and validation
  */
+
+// Helper : détecte si un versement est un paiement réel (pas un fantôme auto-généré)
+function _isRealVersement(v) {
+  if (v.statut === 'en_attente' || v.statut === 'supprime') return false;
+  if ((v.montantVerse || 0) <= 0) return false;
+  // Auto-généré sans moyen de paiement = fantôme de la grille récurrente
+  if (/^Auto[:\-]/.test(v.commentaire || '') && !v.moyenPaiement) return false;
+  return true;
+}
+
 const VersementsPage = {
   _selectedPeriod: null, // null = aujourd'hui, 'YYYY-MM-DD' = date spécifique
 
@@ -29,7 +39,7 @@ const VersementsPage = {
   },
 
   async _cleanupGhosts() {
-    if (!confirm('Supprimer tous les versements fantômes (0 FCFA sans paiement réel) de la base de données ?')) return;
+    if (!confirm('Supprimer tous les versements fantômes (auto-générés sans paiement réel) de la base de données ?')) return;
     try {
       const result = await Store.cleanupGhostVersements();
       Toast.success(result.message || `${result.deleted} fantôme(s) supprimé(s)`);
@@ -59,8 +69,8 @@ const VersementsPage = {
     // Toujours filtrer par jour (selectedDay = aujourd'hui ou date choisie)
     const monthVers = versements.filter(v => v.date === selectedDay);
 
-    // Exclure les versements fantômes (0 FCFA, pas de paiement réel)
-    const realVers = monthVers.filter(v => v.statut !== 'supprime' && v.statut !== 'en_attente' && (v.montantVerse || 0) > 0);
+    // Exclure les versements fantômes (0 FCFA ou auto-générés sans paiement réel)
+    const realVers = monthVers.filter(_isRealVersement);
     const activeVers = realVers;
     const totalVerse = activeVers.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
 
@@ -129,7 +139,7 @@ const VersementsPage = {
 
       weeklyEvo.push({
         label: `S${Utils.getWeekNumber(weekStart)}`,
-        total: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + (v.montantVerse || 0), 0)
+        total: weekVers.filter(_isRealVersement).reduce((s, v) => s + (v.montantVerse || 0), 0)
       });
     }
 
@@ -240,7 +250,7 @@ const VersementsPage = {
   },
 
   _bindEvents(d) {
-    const versements = d.versements.filter(v => v.statut !== 'en_attente' && (v.montantVerse || 0) > 0).sort((a, b) => b.date.localeCompare(a.date));
+    const versements = d.versements.filter(_isRealVersement).sort((a, b) => b.date.localeCompare(a.date));
     this._loadYangoCourses(versements, d.chauffeurs);
 
     // Filters for versements card list
@@ -295,7 +305,7 @@ const VersementsPage = {
   // =================== VERSEMENTS DU JOUR (CARD LIST) ===================
 
   _renderVersementsSection(d) {
-    const versements = d.versements.filter(v => v.statut !== 'en_attente' && (v.montantVerse || 0) > 0).sort((a, b) => b.date.localeCompare(a.date));
+    const versements = d.versements.filter(_isRealVersement).sort((a, b) => b.date.localeCompare(a.date));
     if (versements.length === 0) return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #22c55e;text-align:center;padding:var(--space-xl);color:var(--text-muted);">
       <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:2rem;color:#22c55e;display:block;margin-bottom:8px;"></iconify-icon>
       Aucun versement pour cette date
@@ -966,7 +976,7 @@ const VersementsPage = {
   _exportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    const versements = Store.get('versements').filter(v => v.statut !== 'supprime');
+    const versements = Store.get('versements').filter(_isRealVersement);
     const chauffeurs = Store.get('chauffeurs');
 
     doc.setFontSize(18);
@@ -997,7 +1007,7 @@ const VersementsPage = {
   },
 
   _exportCSV() {
-    const versements = Store.get('versements').filter(v => v.statut !== 'supprime');
+    const versements = Store.get('versements').filter(_isRealVersement);
     const chauffeurs = Store.get('chauffeurs');
 
     let csv = 'Chauffeur,Date,Montant,Statut,Commentaire\n';

@@ -102,21 +102,22 @@ router.post('/auto-generate', async (req, res, next) => {
 
 /**
  * POST /api/versements/cleanup-ghosts
- * Supprime les versements fantômes :
- * - montantVerse === 0 ET statut !== 'en_attente' (pas de wave en cours)
- * - OU statut === 'en_attente' sans waveCheckoutId (pas de paiement Wave en cours)
+ * Supprime les versements fantômes (auto-générés sans paiement réel) :
+ * 1. montantVerse === 0 avec statut validé/partiel/retard
+ * 2. en_attente sans waveCheckoutId
+ * 3. Auto-générés (commentaire "Auto:") sans moyen de paiement
  */
 router.post('/cleanup-ghosts', async (req, res, next) => {
   try {
     const Versement = require('../models/Versement');
 
-    // Supprimer les versements "validés" à 0 FCFA (fantômes de la grille récurrente)
+    // 1. Versements "validés" à 0 FCFA
     const result1 = await Versement.deleteMany({
       montantVerse: 0,
       statut: { $in: ['valide', 'partiel', 'retard'] }
     });
 
-    // Supprimer les versements en_attente sans waveCheckoutId (pas de paiement en cours)
+    // 2. Versements en_attente sans Wave (pas de paiement en cours)
     const result2 = await Versement.deleteMany({
       statut: 'en_attente',
       montantVerse: 0,
@@ -127,14 +128,26 @@ router.post('/cleanup-ghosts', async (req, res, next) => {
       ]
     });
 
-    const total = (result1.deletedCount || 0) + (result2.deletedCount || 0);
-    console.log(`[Cleanup] ${total} versements fantômes supprimés (${result1.deletedCount} validés à 0, ${result2.deletedCount} en_attente sans Wave)`);
+    // 3. Versements auto-générés par la grille récurrente SANS moyen de paiement
+    //    (commentaire commence par "Auto:" et pas de moyenPaiement)
+    const result3 = await Versement.deleteMany({
+      commentaire: { $regex: /^Auto:/ },
+      $or: [
+        { moyenPaiement: { $exists: false } },
+        { moyenPaiement: null },
+        { moyenPaiement: '' }
+      ]
+    });
+
+    const total = (result1.deletedCount || 0) + (result2.deletedCount || 0) + (result3.deletedCount || 0);
+    console.log(`[Cleanup] ${total} versements fantômes supprimés (${result1.deletedCount} à 0 FCFA, ${result2.deletedCount} en_attente orphelins, ${result3.deletedCount} auto-générés sans paiement)`);
 
     res.json({
       deleted: total,
       details: {
         validesA0: result1.deletedCount || 0,
-        enAttenteOrphelins: result2.deletedCount || 0
+        enAttenteOrphelins: result2.deletedCount || 0,
+        autoGeneresSansPaiement: result3.deletedCount || 0
       },
       message: `${total} versement(s) fantôme(s) supprimé(s)`
     });
