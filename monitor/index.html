@@ -15,7 +15,7 @@
   <!-- Version bump -->
   <script>
   (function(){
-    var APP_VERSION = 5;
+    var APP_VERSION = 6;
     var stored = parseInt(localStorage.getItem('volt_monitor_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('volt_monitor_version', APP_VERSION);

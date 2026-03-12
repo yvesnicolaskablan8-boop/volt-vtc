@@ -347,39 +347,32 @@ body {
 /* =================== KPI CARD =================== */
 
 .kpi-card {
-  background: var(--bg-card);
   border-radius: var(--radius);
   padding: 1.15rem 1rem;
-  border-left: 4px solid var(--border-color);
   transition: transform 0.12s;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  color: #fff;
+  background: var(--bg-card);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
 }
 
 .kpi-card:active { transform: scale(0.97); }
 
-/* Color variants */
-.kpi-card.green  { border-left-color: var(--green); }
-.kpi-card.red    { border-left-color: var(--red); }
-.kpi-card.orange { border-left-color: var(--orange); }
-.kpi-card.cyan   { border-left-color: var(--cyan); }
-.kpi-card.blue   { border-left-color: var(--blue); }
-.kpi-card.purple { border-left-color: var(--purple); }
+/* Vivid full-background color variants */
+.kpi-card.green  { background: var(--green); }
+.kpi-card.red    { background: var(--red); }
+.kpi-card.orange { background: var(--orange); }
+.kpi-card.cyan   { background: var(--cyan); }
+.kpi-card.blue   { background: var(--blue); }
+.kpi-card.purple { background: var(--purple); }
 
-/* Card elements */
+/* Card elements — all white on vivid backgrounds */
 .kpi-icon {
   font-size: 1.3rem;
-  color: var(--text-muted);
+  color: rgba(255,255,255,0.75);
   margin-bottom: 10px;
 }
-
-.kpi-card.green .kpi-icon  { color: var(--green); }
-.kpi-card.red .kpi-icon    { color: var(--red); }
-.kpi-card.orange .kpi-icon { color: var(--orange); }
-.kpi-card.cyan .kpi-icon   { color: var(--cyan); }
-.kpi-card.blue .kpi-icon   { color: var(--blue); }
-.kpi-card.purple .kpi-icon { color: var(--purple); }
 
 .kpi-value {
   font-size: 1.55rem;
@@ -387,11 +380,12 @@ body {
   letter-spacing: -0.03em;
   line-height: 1.1;
   margin-bottom: 4px;
+  color: #fff;
 }
 
 .kpi-label {
   font-size: 0.68rem;
-  color: var(--text-secondary);
+  color: rgba(255,255,255,0.85);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -400,18 +394,15 @@ body {
 
 .kpi-sub {
   font-size: 0.65rem;
-  color: var(--text-muted);
+  color: rgba(255,255,255,0.65);
   margin-top: 8px;
   font-weight: 500;
 }
 
 .kpi-sub .highlight {
   font-weight: 700;
+  color: #fff;
 }
-
-.kpi-sub .highlight.green  { color: var(--green); }
-.kpi-sub .highlight.red    { color: var(--red); }
-.kpi-sub .highlight.orange { color: var(--orange); }
 
 /* =================== LOADING / ERROR =================== */
 

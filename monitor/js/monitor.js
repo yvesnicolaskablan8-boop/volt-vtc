@@ -315,7 +315,7 @@
 
           <div class="kpi-card ${detteColor}">
             <div class="kpi-icon"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value" style="color:${k.totalDettes > 0 ? 'var(--red)' : ''}">${fmtCurrency(k.totalDettes)}</div>
+            <div class="kpi-value">${fmtCurrency(k.totalDettes)}</div>
             <div class="kpi-label">Dette totale</div>
             <div class="kpi-sub">${k.nbDetteDrivers} chauffeur${k.nbDetteDrivers > 1 ? 's' : ''}</div>
           </div>
@@ -328,14 +328,14 @@
 
           <div class="kpi-card ${perteColor}">
             <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value" style="color:${k.totalPertes > 0 ? 'var(--orange)' : ''}">${fmtCurrency(k.totalPertes)}</div>
+            <div class="kpi-value">${fmtCurrency(k.totalPertes)}</div>
             <div class="kpi-label">Pertes totales</div>
             <div class="kpi-sub">${k.nbPerteDrivers} chauffeur${k.nbPerteDrivers > 1 ? 's' : ''}</div>
           </div>
 
           <div class="kpi-card ${retardColor}">
             <div class="kpi-icon"><iconify-icon icon="solar:alarm-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value" style="color:${k.retardCount > 0 ? 'var(--red)' : ''}">${k.retardCount}</div>
+            <div class="kpi-value">${k.retardCount}</div>
             <div class="kpi-label">Versements en retard</div>
             <div class="kpi-sub">${k.retardCount > 0 ? fmtCurrency(k.totalUnpaid) + ' + ' + fmtCurrency(k.totalPenalites) + ' penalites' : 'Aucun retard'}</div>
           </div>
@@ -355,14 +355,14 @@
 
           <div class="kpi-card cyan">
             <div class="kpi-icon"><iconify-icon icon="solar:user-check-rounded-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value">${k.activeCount}<span style="font-size:0.8rem;font-weight:500;color:var(--text-muted)">/${k.totalChauffeurs}</span></div>
+            <div class="kpi-value">${k.activeCount}<span style="font-size:0.8rem;font-weight:500;opacity:0.65">/${k.totalChauffeurs}</span></div>
             <div class="kpi-label">Chauffeurs actifs</div>
             <div class="kpi-sub">${k.totalChauffeurs - k.activeCount} inactif${(k.totalChauffeurs - k.activeCount) > 1 ? 's' : ''}</div>
           </div>
 
           <div class="kpi-card cyan">
             <div class="kpi-icon"><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value">${k.vehiculesService}<span style="font-size:0.8rem;font-weight:500;color:var(--text-muted)">/${k.totalVehicules}</span></div>
+            <div class="kpi-value">${k.vehiculesService}<span style="font-size:0.8rem;font-weight:500;opacity:0.65">/${k.totalVehicules}</span></div>
             <div class="kpi-label">Vehicules en service</div>
             <div class="kpi-sub">${k.totalVehicules - k.vehiculesService} hors service</div>
           </div>

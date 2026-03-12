@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volt-monitor-v5';
+const CACHE_NAME = 'volt-monitor-v6';
 
 const STATIC_ASSETS = [
   '/monitor/',
