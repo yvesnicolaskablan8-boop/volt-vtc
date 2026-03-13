@@ -98,10 +98,6 @@ const DriverApp = {
       });
     }
 
-    // Apply saved dark mode theme
-    const savedTheme = localStorage.getItem('pilote_theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-
     // Register pages
     DriverRouter.register('accueil', AccueilPage);
     DriverRouter.register('planning', PlanningPage);

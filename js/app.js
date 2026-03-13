@@ -321,6 +321,20 @@ const App = {
     if (typeof Router !== 'undefined' && Router._refreshIcons) {
       Router._refreshIcons();
     }
+
+    // Update sidebar with company name from settings
+    try {
+      const settings = Store.get('settings') || {};
+      const ent = settings.entreprise || {};
+      if (ent.nom) {
+        const sidebarName = document.getElementById('sidebar-company-name');
+        const sidebarSub = document.getElementById('sidebar-company-sub');
+        if (sidebarName) sidebarName.textContent = ent.nom.toUpperCase();
+        if (sidebarSub) sidebarSub.textContent = ent.activite || 'Gestion de flotte';
+        // Cache for login page on next visit
+        localStorage.setItem('pilote_company_name', ent.nom);
+      }
+    } catch (e) { /* silent */ }
   },
 
   _showLogin() {
