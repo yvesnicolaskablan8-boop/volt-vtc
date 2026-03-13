@@ -98,6 +98,7 @@
       const versements = data.versements || [];
       const planning   = data.planning   || [];
       const absences   = data.absences   || [];
+      const depenses   = data.depenses   || [];
 
       const now = new Date();
       const sel = new Date(selectedDay);
@@ -380,6 +381,34 @@
         return (go[a.gravite] || 9) - (go[b.gravite] || 9);
       });
 
+      // ——— 11. Dépenses du mois ———
+      const depenseTypeLabels = {
+        carburant: 'Carburant', peage: 'Peage', lavage: 'Lavage',
+        assurance: 'Assurance', reparation: 'Reparation', stationnement: 'Stationnement',
+        recharge_yango: 'Recharge Yango', recharge: 'Recharge', autre: 'Autre'
+      };
+      const monthDepenses = depenses.filter(d => {
+        if (!d.date) return false;
+        const dd = new Date(d.date);
+        return dd.getMonth() === thisMonth && dd.getFullYear() === thisYear;
+      });
+      const totalDepensesMois = monthDepenses.reduce((s, d) => s + (d.montant || 0), 0);
+      const nbDepensesMois = monthDepenses.length;
+
+      // Détail par type
+      const depByType = {};
+      monthDepenses.forEach(d => {
+        const t = d.typeDepense || 'autre';
+        if (!depByType[t]) depByType[t] = { total: 0, count: 0 };
+        depByType[t].total += (d.montant || 0);
+        depByType[t].count++;
+      });
+      const depensesDetail = Object.keys(depByType).map(t => ({
+        nom: depenseTypeLabels[t] || t,
+        montant: depByType[t].total,
+        count: depByType[t].count
+      })).sort((a, b) => b.montant - a.montant);
+
       return {
         recetteJour, nbVersementsJour, recetteJourDetail,
         recetteAttendue, programmesCount, attendueDetail,
@@ -395,7 +424,8 @@
         nbIncidentsCritiques: incidentsCritiques.length,
         coutIncidents,
         totalIncidents: incidents.length,
-        incidentsDetail
+        incidentsDetail,
+        totalDepensesMois, nbDepensesMois, depensesDetail
       };
     }
   };
@@ -489,6 +519,13 @@
             <div class="kpi-value">${fmtCurrency(k.totalDettes)}</div>
             <div class="kpi-label">Dette totale</div>
             <div class="kpi-sub">${k.nbDetteDrivers} chauffeur${k.nbDetteDrivers > 1 ? 's' : ''}</div>
+          </div>
+
+          <div class="kpi-card orange clickable" onclick="window.__kpiDetail('depenses')">
+            <div class="kpi-icon"><iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon></div>
+            <div class="kpi-value">${fmtCurrency(k.totalDepensesMois)}</div>
+            <div class="kpi-label">Depenses du mois</div>
+            <div class="kpi-sub">${k.nbDepensesMois} depense${k.nbDepensesMois > 1 ? 's' : ''} &bull; ${k.monthLabel}</div>
           </div>
 
         </div>
@@ -819,6 +856,17 @@
                   '</div>' +
                 '</div>';
               }).join('')
+          )
+        );
+        break;
+
+      case 'depenses':
+        showMonitorModal(
+          '<iconify-icon icon="solar:bill-list-bold-duotone" style="color:var(--orange)"></iconify-icon> Depenses — ' + k.monthLabel,
+          '<div class="mon-detail-total">Total : <strong style="color:var(--orange)">' + fmtCurrency(k.totalDepensesMois) + '</strong> &mdash; ' + k.nbDepensesMois + ' depense' + (k.nbDepensesMois > 1 ? 's' : '') + '</div>' +
+          buildListRows(k.depensesDetail,
+            function(i) { return '<strong style="color:var(--orange)">' + fmtCurrency(i.montant) + '</strong>'; },
+            function(i) { return i.count + ' depense' + (i.count > 1 ? 's' : ''); }
           )
         );
         break;
