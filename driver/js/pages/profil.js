@@ -5,15 +5,32 @@ const ProfilPage = {
   async render(container) {
     container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
 
-    const [profil, vehicule, gpsData] = await Promise.all([
-      DriverStore.getProfil(),
-      DriverStore.getVehicule(),
-      DriverStore.getGps()
-    ]);
+    // Tenter de charger le profil (avec retry automatique)
+    let profil = null, vehicule = null, gpsData = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      [profil, vehicule, gpsData] = await Promise.all([
+        DriverStore.getProfil(),
+        DriverStore.getVehicule(),
+        DriverStore.getGps()
+      ]);
+      if (profil) break;
+      if (attempt === 0) await new Promise(r => setTimeout(r, 1500));
+    }
 
     if (!profil) {
-      container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Impossible de charger le profil</p></div>';
-      return;
+      // Fallback: utiliser les donnees locales du chauffeur
+      const localChauffeur = DriverAuth.getChauffeur();
+      if (localChauffeur) {
+        profil = localChauffeur;
+      } else {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-exclamation-circle"></i>
+            <p>Impossible de charger le profil</p>
+            <button onclick="ProfilPage.render(document.getElementById('app-content'))" style="margin-top:12px;padding:10px 24px;border-radius:0.75rem;background:#3b82f6;color:white;border:none;font-weight:600;cursor:pointer">Reessayer</button>
+          </div>`;
+        return;
+      }
     }
 
     // Initiales
