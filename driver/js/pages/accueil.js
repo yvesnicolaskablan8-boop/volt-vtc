@@ -233,8 +233,6 @@ const AccueilPage = {
     // Charger le resume hebdomadaire (dimanche ou toujours pour info)
     this._loadWeeklySummary();
 
-    // Charger le mini chart CA hebdo
-    this._loadWeeklyChart(data);
   },
 
   _formatCurrency(amount) {
@@ -321,71 +319,10 @@ const AccueilPage = {
           </div>
         </div>` : ''}
 
-        <!-- Mini chart CA hebdo -->
-        <div style="margin-top:12px;padding:14px;border-radius:1rem;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-            <iconify-icon icon="solar:chart-2-bold-duotone" style="color:#3b82f6;font-size:1rem;"></iconify-icon>
-            <span style="font-size:0.75rem;font-weight:600;color:#0f172a;">CA des 4 dernières semaines</span>
-          </div>
-          <div style="height:120px;">
-            <canvas id="chart-weekly-ca"></canvas>
-          </div>
-        </div>
       </div>
     `;
   },
 
-  _loadWeeklyChart(data) {
-    const ctx = document.getElementById('chart-weekly-ca');
-    if (!ctx || !data.weeklyCA || data.weeklyCA.length === 0) return;
-
-    if (this._weeklyChart) {
-      this._weeklyChart.destroy();
-      this._weeklyChart = null;
-    }
-
-    this._weeklyChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: data.weeklyCA.map(w => w.label),
-        datasets: [{
-          label: 'CA',
-          data: data.weeklyCA.map(w => w.total),
-          backgroundColor: data.weeklyCA.map((w, i) => i === data.weeklyCA.length - 1 ? '#3b82f6' : 'rgba(59,130,246,0.4)'),
-          borderRadius: 6,
-          borderSkipped: false,
-          barPercentage: 0.6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => this._formatCurrency(ctx.raw)
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (v) => v >= 1000 ? Math.round(v / 1000) + 'k' : v,
-              font: { size: 10 },
-              maxTicksLimit: 4
-            },
-            grid: { color: 'rgba(0,0,0,0.04)' }
-          },
-          x: {
-            ticks: { font: { size: 10 } },
-            grid: { display: false }
-          }
-        }
-      }
-    });
-  },
 
   async _showScoreDetail() {
     // Afficher un loading dans le modal pendant le fetch
@@ -1304,9 +1241,5 @@ const AccueilPage = {
   destroy() {
     DriverCountdown.stopTimer();
     this._stopServiceTimer();
-    if (this._weeklyChart) {
-      this._weeklyChart.destroy();
-      this._weeklyChart = null;
-    }
   }
 };
