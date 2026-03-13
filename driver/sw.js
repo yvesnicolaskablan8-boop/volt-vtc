@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-chauffeur-v21';
+const CACHE_NAME = 'pilote-chauffeur-v22';
 
 const STATIC_ASSETS = [
   '/driver/',
@@ -27,7 +27,8 @@ const STATIC_ASSETS = [
   '/driver/js/pages/trajets.js',
   '/driver/js/pages/checklist.js',
   '/driver/js/pages/classement.js',
-  '/driver/js/pages/contrat.js'
+  '/driver/js/pages/contrat.js',
+  '/driver/icons/logo-pilote.svg'
 ];
 
 // Install — cache static assets

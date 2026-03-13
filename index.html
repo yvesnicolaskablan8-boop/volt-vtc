@@ -22,7 +22,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 126;
+    var APP_VERSION = 127;
     var stored = parseInt(localStorage.getItem('pilote_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_app_version', APP_VERSION);
@@ -91,7 +91,7 @@
       <div class="login-card">
         <!-- Logo -->
         <div class="login-logo">
-          <img src="assets/icon-192.png" alt="Pilote" class="login-brand-img">
+          <img src="assets/logo-pilote.svg" alt="Pilote" class="login-brand-img">
           <div class="login-logo-subtitle">Gestion de flotte</div>
         </div>
 
@@ -170,7 +170,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <img src="assets/icon-192.png" alt="Pilote" class="logo-icon">
+        <img src="assets/logo.svg" alt="Pilote" class="logo-icon">
         <div>
           <div class="logo-text">PILOTE</div>
           <div class="logo-subtitle">Gestion de flotte</div>
