@@ -49,6 +49,8 @@ router.post('/login', async (req, res, next) => {
       {
         userId: user.id,
         email: user.email,
+        prenom: user.prenom,
+        nom: user.nom,
         role: user.role,
         permissions: user.permissions
       },
@@ -103,6 +105,8 @@ router.post('/set-password', async (req, res, next) => {
       {
         userId: user.id,
         email: user.email,
+        prenom: user.prenom,
+        nom: user.nom,
         role: user.role,
         permissions: user.permissions
       },
