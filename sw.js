@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-v128';
+const CACHE_NAME = 'pilote-v129';
 const ASSETS = [
   './',
   './index.html',
@@ -44,7 +44,7 @@ const ASSETS = [
   './js/router.js',
   './js/app.js',
   './assets/logo.svg',
-  './assets/logo-pilote.svg',
+  './assets/logo-pilote.png',
   './assets/favicon.svg'
 ];
 

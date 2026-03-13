@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-monitor-v14';
+const CACHE_NAME = 'pilote-monitor-v15';
 
 const STATIC_ASSETS = [
   '/monitor/',

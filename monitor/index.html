@@ -23,7 +23,7 @@
   <!-- Version bump -->
   <script>
   (function(){
-    var APP_VERSION = 10;
+    var APP_VERSION = 11;
     var stored = parseInt(localStorage.getItem('pilote_monitor_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_monitor_version', APP_VERSION);
@@ -66,7 +66,7 @@
   <div id="monitor-login" class="monitor-login">
     <div class="login-card">
       <div class="login-logo">
-        <img src="/monitor/assets/logo-pilote.svg" alt="Pilote Monitor" class="login-brand-img">
+        <img src="/monitor/assets/logo-pilote.png" alt="Pilote Monitor" class="login-brand-img">
         <div class="logo-subtitle">Monitor</div>
       </div>
       <form id="login-form" class="login-form">
