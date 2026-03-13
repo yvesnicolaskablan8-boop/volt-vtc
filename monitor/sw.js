@@ -1,16 +1,14 @@
-const CACHE_NAME = 'pilote-monitor-v15';
+const CACHE_NAME = 'pilote-monitor-v16';
 
 const STATIC_ASSETS = [
   '/monitor/',
   '/monitor/index.html',
   '/monitor/manifest.json',
-  '/monitor/favicon.svg',
   '/monitor/css/monitor.css',
   '/monitor/js/monitor.js',
   '/monitor/assets/icon-192.png',
   '/monitor/assets/icon-512.png',
-  '/monitor/assets/logo-pilote.svg',
-  '/monitor/assets/icon-monitor.svg'
+  '/monitor/assets/logo-pilote.png'
 ];
 
 // Install — pre-cache static assets

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-v129';
+const CACHE_NAME = 'pilote-v130';
 const ASSETS = [
   './',
   './index.html',
@@ -43,9 +43,7 @@ const ASSETS = [
   './js/components/bottom-nav.js',
   './js/router.js',
   './js/app.js',
-  './assets/logo.svg',
-  './assets/logo-pilote.png',
-  './assets/favicon.svg'
+  './assets/logo-pilote.png'
 ];
 
 // Install — cache all assets

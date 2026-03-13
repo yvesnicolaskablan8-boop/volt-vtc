@@ -12,7 +12,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Pilote</title>
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#3b82f6">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22,7 +22,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 128;
+    var APP_VERSION = 129;
     var stored = parseInt(localStorage.getItem('pilote_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_app_version', APP_VERSION);
@@ -183,7 +183,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <img src="assets/logo.svg" alt="Pilote" class="logo-icon">
+        <img src="assets/logo-pilote.png" alt="Pilote" class="logo-icon">
         <div>
           <div class="logo-text" id="sidebar-company-name">PILOTE</div>
           <div class="logo-subtitle" id="sidebar-company-sub">Gestion de flotte</div>
