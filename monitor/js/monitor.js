@@ -531,13 +531,6 @@
             <div class="kpi-sub">${k.dateLabel}</div>
           </div>
 
-          <div class="kpi-card cyan clickable" onclick="window.__kpiDetail('chauffeurs')">
-            <div class="kpi-icon"><iconify-icon icon="solar:user-check-rounded-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value">${k.activeCount}<span style="font-size:0.8rem;font-weight:500;opacity:0.65">/${k.totalChauffeurs}</span></div>
-            <div class="kpi-label">Chauffeurs actifs</div>
-            <div class="kpi-sub">${k.totalChauffeurs - k.activeCount} inactif${(k.totalChauffeurs - k.activeCount) > 1 ? 's' : ''}</div>
-          </div>
-
           <div class="kpi-card cyan clickable" onclick="window.__kpiDetail('vehicules')">
             <div class="kpi-icon"><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${k.vehiculesService}<span style="font-size:0.8rem;font-weight:500;opacity:0.65">/${k.totalVehicules}</span></div>
