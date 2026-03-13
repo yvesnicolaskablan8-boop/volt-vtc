@@ -437,7 +437,7 @@
       // Couleurs conditionnelles
       const tauxColor = k.tauxRecouvrement >= 80 ? 'green' : k.tauxRecouvrement >= 50 ? 'orange' : 'red';
       const detteColor = k.totalDettes > 0 ? 'red' : 'green';
-      const perteColor = k.totalPertes > 0 ? 'orange' : 'green';
+      const perteColor = k.totalPertes > 0 ? 'red' : 'green';
       const retardColor = k.retardCount > 0 ? 'red' : 'green';
       const incidentColor = k.nbIncidentsCritiques > 0 ? 'red' : 'orange';
 
