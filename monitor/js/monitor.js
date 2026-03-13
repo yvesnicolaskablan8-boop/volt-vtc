@@ -466,7 +466,7 @@
           <div class="kpi-card green clickable" onclick="window.__kpiDetail('recetteJour')">
             <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${fmtCurrency(k.recetteJour)}</div>
-            <div class="kpi-label">Recette du jour</div>
+            <div class="kpi-label">Recette versee</div>
             <div class="kpi-sub">${k.nbVersementsJour} versement${k.nbVersementsJour > 1 ? 's' : ''}</div>
           </div>
 
@@ -689,7 +689,7 @@
     switch (type) {
       case 'recetteJour':
         showMonitorModal(
-          '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:var(--green)"></iconify-icon> Recette du jour — ' + k.dateLabel,
+          '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:var(--green)"></iconify-icon> Recette versee — ' + k.dateLabel,
           '<div class="mon-detail-total">Total : <strong>' + fmtCurrency(k.recetteJour) + '</strong></div>' +
           buildListRows(k.recetteJourDetail,
             function(i) { return '<strong>' + fmtCurrency(i.montant) + '</strong>'; },
