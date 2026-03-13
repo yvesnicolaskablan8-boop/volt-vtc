@@ -1453,15 +1453,6 @@ const ParametresPage = {
             </div>
 
             <div class="form-group" style="border-top:1px solid var(--border-color);padding-top:var(--space-md);margin-top:var(--space-sm);">
-              <label class="form-label">Objectif de recette journali\u00e8re (FCFA)</label>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <input type="number" class="form-control" id="vs-objectif-recette" min="0" value="${vs.objectifRecette || 0}" style="max-width:200px;" placeholder="ex: 10000">
-                <span style="font-size:var(--font-size-sm);color:var(--text-muted);font-weight:500;">FCFA</span>
-              </div>
-              <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:4px;">Montant minimum attendu par jour. Une alerte s'affiche si le chauffeur verse moins.</div>
-            </div>
-
-            <div class="form-group" style="border-top:1px solid var(--border-color);padding-top:var(--space-md);margin-top:var(--space-sm);">
               <label class="form-label">Objectif temps en ligne (heures)</label>
               <div style="display:flex;align-items:center;gap:8px;">
                 <input type="number" class="form-control" id="vs-objectif-temps" min="0" max="24" step="0.5" value="${((settings.objectifs?.tempsEnLigneMin || 630) / 60).toFixed(1)}" style="max-width:150px;" placeholder="10.5">
@@ -1700,7 +1691,6 @@ const ParametresPage = {
         deadlineJour = parseInt(document.getElementById('vs-deadline-jour-mois').value) || 1;
       }
       const deadlineHeure = document.getElementById('vs-deadline-heure').value || '23:59';
-      const objectifRecette = parseInt(document.getElementById('vs-objectif-recette').value) || 0;
       const penaliteActive = document.getElementById('vs-penalite-active').checked;
       const penaliteType = document.querySelector('input[name="vs-penalite-type"]:checked')?.value || 'pourcentage';
       const penaliteValeur = parseInt(document.getElementById('vs-penalite-valeur').value) || 0;
@@ -1723,7 +1713,6 @@ const ParametresPage = {
         deadlineType,
         deadlineJour,
         deadlineHeure,
-        objectifRecette,
         penaliteActive,
         penaliteType,
         penaliteValeur,

@@ -486,24 +486,19 @@ router.get('/deadline', async (req, res, next) => {
 
     // Verifier si le chauffeur est programme AUJOURD'HUI (pas dans une plage)
     const todayStr = new Date().toISOString().split('T')[0];
-    const wasScheduled = await Planning.findOne({
-      chauffeurId,
-      date: todayStr
-    }).lean();
+    const [wasScheduled, versementPeriode, chauffeurDoc] = await Promise.all([
+      Planning.findOne({ chauffeurId, date: todayStr }).lean(),
+      Versement.findOne({ chauffeurId, dateCreation: { $gte: info.previousDeadline.toISOString() } }).lean(),
+      Chauffeur.findOne({ id: chauffeurId }).lean()
+    ]);
     if (!wasScheduled) return res.json({ configured: false });
-
-    // Verifier si un versement a deja ete fait pour la periode en cours
-    const versementPeriode = await Versement.findOne({
-      chauffeurId,
-      dateCreation: { $gte: info.previousDeadline.toISOString() }
-    }).lean();
 
     res.json({
       configured: true,
       deadlineDate: info.deadlineDate.toISOString(),
       remainingMs: info.remainingMs,
       deadlineType: vs.deadlineType,
-      objectifRecette: vs.objectifRecette || 0,
+      objectifRecette: chauffeurDoc ? (chauffeurDoc.redevanceQuotidienne || 0) : 0,
       penaliteActive: vs.penaliteActive || false,
       penaliteType: vs.penaliteType || 'pourcentage',
       penaliteValeur: vs.penaliteValeur || 0,
