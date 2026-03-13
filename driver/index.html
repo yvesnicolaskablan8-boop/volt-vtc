@@ -16,7 +16,7 @@
 
   <script>
   (function(){
-    [['volt_driver_version','pilote_driver_version'],['pilote_driver_token','pilote_driver_token'],['volt_driver_user','pilote_driver_user'],['volt_driver_chauffeur','pilote_driver_chauffeur']].forEach(function(m){
+    [['volt_driver_version','pilote_driver_version'],['volt_driver_token','pilote_driver_token'],['volt_driver_user','pilote_driver_user'],['volt_driver_chauffeur','pilote_driver_chauffeur']].forEach(function(m){
       var o=localStorage.getItem(m[0]);if(o&&!localStorage.getItem(m[1])){localStorage.setItem(m[1],o);}localStorage.removeItem(m[0]);
     });
   })();
