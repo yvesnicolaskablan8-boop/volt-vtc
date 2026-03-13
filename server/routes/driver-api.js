@@ -237,6 +237,52 @@ router.get('/dashboard', async (req, res, next) => {
           activiteOk
         };
       })(),
+      // === Statut sante du jour ===
+      statutSante: await (async () => {
+        const flags = [];
+        let level = 'green';
+        // 1. Versements en retard
+        const allPlan = await Planning.find({ chauffeurId, date: { $lt: today } }).lean();
+        const allVers = await Versement.find({ chauffeurId, statut: { $ne: 'supprime' } }).lean();
+        const versDates = new Set(allVers.filter(vv => vv.montantVerse > 0).map(vv => vv.date));
+        const unpaidDays = allPlan.filter(p => !versDates.has(p.date) && p.date !== today);
+        // Ne compter que les 30 derniers jours
+        const thirtyAgo = new Date(); thirtyAgo.setDate(thirtyAgo.getDate() - 30);
+        const recentUnpaid = unpaidDays.filter(p => new Date(p.date) >= thirtyAgo);
+        if (recentUnpaid.length > 0) {
+          level = 'red';
+          flags.push({ type: 'versement_retard', message: recentUnpaid.length + ' versement(s) en retard', level: 'red' });
+        }
+        // 2. Documents expiration
+        const docs = chauffeur ? (chauffeur.documents || []) : [];
+        const nowMs = Date.now();
+        const expired = docs.filter(d => d.dateExpiration && new Date(d.dateExpiration) < new Date());
+        const expiringSoon = docs.filter(d => {
+          if (!d.dateExpiration) return false;
+          const days = Math.ceil((new Date(d.dateExpiration) - nowMs) / 86400000);
+          return days > 0 && days <= 30;
+        });
+        if (expired.length > 0) {
+          level = 'red';
+          flags.push({ type: 'doc_expire', message: expired.length + ' document(s) expire(s)', level: 'red' });
+        } else if (expiringSoon.length > 0 && level !== 'red') {
+          if (level !== 'red') level = 'orange';
+          flags.push({ type: 'doc_bientot', message: expiringSoon.length + ' doc(s) expire(nt) bientot', level: 'orange' });
+        }
+        // 3. Maintenance urgente
+        if (vehicule) {
+          const mEnRetard = (vehicule.maintenancesPlanifiees || []).filter(m => m.statut === 'en_retard');
+          const mUrgent = (vehicule.maintenancesPlanifiees || []).filter(m => m.statut === 'urgent');
+          if (mEnRetard.length > 0) {
+            level = 'red';
+            flags.push({ type: 'maint_retard', message: mEnRetard.length + ' maintenance(s) en retard', level: 'red' });
+          } else if (mUrgent.length > 0) {
+            if (level !== 'red') level = 'orange';
+            flags.push({ type: 'maint_urgent', message: mUrgent.length + ' maintenance(s) urgente(s)', level: 'orange' });
+          }
+        }
+        return { level, flags };
+      })(),
       // === Stats enrichies ===
       statsHebdo: {
         totalVerse: totalVerseHebdo,
@@ -838,27 +884,59 @@ router.get('/maintenances', async (req, res, next) => {
       return res.json({ vehicule: null, maintenances: [] });
     }
 
+    const chauffeurId = req.user.chauffeurId;
     const vehicule = await Vehicule.findOne({ id: chauffeur.vehiculeAssigne }).lean();
     if (!vehicule) {
       return res.json({ vehicule: null, maintenances: [] });
     }
 
-    const maintenances = (vehicule.maintenancesPlanifiees || []).map(m => ({
-      id: m.id,
-      type: m.type,
-      label: m.label,
-      declencheur: m.declencheur,
-      intervalleKm: m.intervalleKm,
-      intervalleMois: m.intervalleMois,
-      dernierKm: m.dernierKm,
-      derniereDate: m.derniereDate,
-      prochainKm: m.prochainKm,
-      prochaineDate: m.prochaineDate,
-      coutEstime: m.coutEstime,
-      prestataire: m.prestataire,
-      statut: m.statut,
-      notes: m.notes
-    }));
+    // Get GPS records for the last 30 days to compute km/day rate
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const gpsRecent = await Gps.find({
+      chauffeurId,
+      date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] }
+    }).lean();
+
+    let totalKmGps = 0, activeDaysGps = 0;
+    for (const g of gpsRecent) {
+      const dist = g.evenements ? (g.evenements.distanceParcourue || 0) : 0;
+      if (dist > 0) { totalKmGps += dist; activeDaysGps++; }
+    }
+    const kmParJour = activeDaysGps > 0 ? Math.round(totalKmGps / activeDaysGps) : 0;
+
+    const maintenances = (vehicule.maintenancesPlanifiees || []).map(m => {
+      const prediction = {};
+      if (m.prochainKm && vehicule.kilometrage && kmParJour > 0) {
+        const kmRestant = m.prochainKm - vehicule.kilometrage;
+        prediction.joursEstimesKm = kmRestant > 0 ? Math.round(kmRestant / kmParJour) : 0;
+        prediction.kmRestant = Math.max(0, kmRestant);
+      }
+      if (m.prochaineDate) {
+        prediction.joursEstimesDate = Math.ceil((new Date(m.prochaineDate) - new Date()) / 86400000);
+      }
+      const estimates = [prediction.joursEstimesKm, prediction.joursEstimesDate].filter(x => x !== undefined && x !== null);
+      prediction.joursEstimes = estimates.length > 0 ? Math.min(...estimates) : null;
+
+      return {
+        id: m.id,
+        type: m.type,
+        label: m.label,
+        declencheur: m.declencheur,
+        intervalleKm: m.intervalleKm,
+        intervalleMois: m.intervalleMois,
+        dernierKm: m.dernierKm,
+        derniereDate: m.derniereDate,
+        prochainKm: m.prochainKm,
+        prochaineDate: m.prochaineDate,
+        coutEstime: m.coutEstime,
+        prestataire: m.prestataire,
+        statut: m.statut,
+        notes: m.notes,
+        prediction,
+        kmParJour
+      };
+    });
 
     res.json({
       vehicule: {
@@ -1441,6 +1519,23 @@ router.get('/resume-hebdo', async (req, res, next) => {
       }
     }
 
+    // CA hebdo (versements de la semaine)
+    const weekVersements = await Versement.find({
+      chauffeurId,
+      date: { $gte: fromStr, $lte: toStr },
+      statut: { $ne: 'supprime' }
+    }).lean();
+    const caHebdo = weekVersements.reduce((s, v) => s + (v.montantVerse || 0), 0);
+
+    // CA semaine precedente
+    const prevWeekVersements = await Versement.find({
+      chauffeurId,
+      date: { $gte: prevStart.toISOString().split('T')[0], $lte: prevEnd.toISOString().split('T')[0] },
+      statut: { $ne: 'supprime' }
+    }).lean();
+    const prevCaHebdo = prevWeekVersements.reduce((s, v) => s + (v.montantVerse || 0), 0);
+    const evolutionCA = prevCaHebdo > 0 ? Math.round(((caHebdo - prevCaHebdo) / prevCaHebdo) * 100) : (caHebdo > 0 ? 100 : 0);
+
     res.json({
       hasData: true,
       heuresTravail: Math.round(totalMinutes / 60 * 10) / 10,
@@ -1449,6 +1544,9 @@ router.get('/resume-hebdo', async (req, res, next) => {
       nbEvenements: totalEvents,
       tendance,
       joursActifs,
+      caHebdo,
+      prevCaHebdo,
+      evolutionCA,
       periode: { from: fromStr, to: toStr }
     });
   } catch (err) {
@@ -1892,6 +1990,119 @@ router.post('/contraventions/wave/checkout', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// =================== OBJECTIFS & GAMIFICATION ===================
+
+router.get('/objectifs', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const chauffeur = await Chauffeur.findOne({ id: chauffeurId }).lean();
+    if (!chauffeur) return res.status(404).json({ error: 'Chauffeur non trouve' });
+
+    const now = new Date();
+    const monthStart = now.toISOString().split('T')[0].slice(0, 7);
+
+    const versementsMois = await Versement.find({
+      chauffeurId, date: { $regex: '^' + monthStart }, statut: { $ne: 'supprime' }
+    }).lean();
+    const caMois = versementsMois.reduce((s, v) => s + (v.montantVerse || 0), 0);
+    const joursTravailles = new Set(versementsMois.filter(v => v.montantVerse > 0).map(v => v.date)).size;
+
+    const gpsRecords = await Gps.find({ chauffeurId, date: { $regex: '^' + monthStart } }).lean();
+    const avgScore = gpsRecords.length > 0 ? Math.round(gpsRecords.reduce((s, g) => s + (g.scoreGlobal || 0), 0) / gpsRecords.length) : 0;
+
+    const objectifs = chauffeur.objectifs || {};
+    const existingBadges = chauffeur.badges || [];
+    const redevance = chauffeur.redevanceQuotidienne || 0;
+
+    // Badge definitions
+    const badgeDefs = [
+      { id: 'premier_versement', nom: 'Premier versement', description: 'Premier versement effectue', icon: 'solar:star-bold-duotone' },
+      { id: 'score_80', nom: 'Conducteur exemplaire', description: 'Score de conduite superieur a 80', icon: 'solar:medal-ribbons-star-bold-duotone' },
+      { id: '10_jours', nom: 'Regularite', description: '10 jours travailles ce mois', icon: 'solar:fire-bold-duotone' },
+      { id: '20_jours', nom: 'Assidu', description: '20 jours travailles ce mois', icon: 'solar:cup-bold-duotone' },
+      { id: 'ponctuel', nom: 'Ponctuel', description: 'Aucun retard de versement', icon: 'solar:clock-circle-bold-duotone' },
+    ];
+
+    // Check which badges are newly earned
+    const checks = {
+      premier_versement: versementsMois.length > 0,
+      score_80: avgScore >= 80,
+      '10_jours': joursTravailles >= 10,
+      '20_jours': joursTravailles >= 20,
+      ponctuel: versementsMois.length > 0 && versementsMois.every(v => !v.enRetard),
+    };
+
+    const newBadges = [];
+    for (const def of badgeDefs) {
+      if (!existingBadges.find(b => b.id === def.id) && checks[def.id]) {
+        newBadges.push({ ...def, dateObtenu: new Date().toISOString() });
+      }
+    }
+
+    if (newBadges.length > 0) {
+      await Chauffeur.updateOne({ id: chauffeurId }, { $push: { badges: { $each: newBadges } } });
+    }
+
+    res.json({
+      objectifs: {
+        caMensuel: { cible: objectifs.caMensuel || redevance * 25, actuel: caMois },
+        joursTravailles: { cible: objectifs.joursMinimum || 20, actuel: joursTravailles },
+        scoreConduite: { cible: objectifs.scoreMinimum || 70, actuel: avgScore }
+      },
+      badges: [...existingBadges, ...newBadges],
+      newBadges
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =================== DOCUMENT UPLOAD ===================
+
+// POST /api/driver/documents/:docType/upload
+router.post('/documents/:docType/upload', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const { docType } = req.params;
+    const { fichierData, fichierType, fichierNom } = req.body;
+
+    if (!fichierData || !fichierType) {
+      return res.status(400).json({ error: 'Fichier requis' });
+    }
+    if (fichierData.length > 7 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Fichier trop volumineux (max 5 Mo)' });
+    }
+
+    const chauffeur = await Chauffeur.findOne({ id: chauffeurId });
+    if (!chauffeur) return res.status(404).json({ error: 'Chauffeur non trouve' });
+
+    const docIdx = chauffeur.documents.findIndex(d => d.type === docType);
+    if (docIdx === -1) {
+      return res.status(404).json({ error: 'Type de document non trouve' });
+    }
+
+    chauffeur.documents[docIdx].fichierData = fichierData;
+    chauffeur.documents[docIdx].fichierType = fichierType;
+    chauffeur.documents[docIdx].fichierNom = fichierNom || 'document';
+    chauffeur.documents[docIdx].dateUpload = new Date().toISOString();
+    await chauffeur.save();
+
+    res.json({ success: true, message: 'Document televerse' });
+  } catch (err) { next(err); }
+});
+
+// GET /api/driver/documents/:docType/file
+router.get('/documents/:docType/file', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const chauffeur = await Chauffeur.findOne({ id: chauffeurId }).lean();
+    if (!chauffeur) return res.status(404).json({ error: 'Chauffeur non trouve' });
+    const doc = (chauffeur.documents || []).find(d => d.type === req.params.docType);
+    if (!doc || !doc.fichierData) return res.status(404).json({ error: 'Aucun fichier' });
+    res.json({ fichierData: doc.fichierData, fichierType: doc.fichierType, fichierNom: doc.fichierNom });
+  } catch (err) { next(err); }
 });
 
 module.exports = router;

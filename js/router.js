@@ -27,6 +27,8 @@ const Router = {
       '/alertes': { page: AlertesPage, title: 'Alertes' },
       '/garage': { page: GaragePage, title: 'Garage' },
       '/incidents': { page: IncidentsPage, title: 'Incidents' },
+      '/activite': { page: ActivitePage, title: 'Journal d\'activite' },
+      '/notifications-admin': { page: NotificationsAdminPage, title: 'Notifications' },
       '/parametres': { page: ParametresPage, title: 'Paramètres' },
       '/menu': { page: MenuPage, title: 'Menu' }
     };

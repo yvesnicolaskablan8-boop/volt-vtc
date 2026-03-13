@@ -97,6 +97,8 @@ const Auth = {
       '/gps-conduite': 'gps_conduite',
       '/alertes': 'alertes',
       '/rapports': 'rapports',
+      '/activite': 'parametres',
+      '/notifications-admin': 'parametres',
       '/parametres': 'parametres'
     };
     const baseRoute = '/' + route.split('/').filter(Boolean)[0];

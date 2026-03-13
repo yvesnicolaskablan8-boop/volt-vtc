@@ -409,6 +409,27 @@
         count: depByType[t].count
       })).sort((a, b) => b.montant - a.montant);
 
+      // ——— 12. Comparaison mois précédent ———
+      const prevMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+      const prevYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+      const prevMonthVersements = versements.filter(v => {
+        if (!v.date || v.statut === 'supprime') return false;
+        const d = new Date(v.date);
+        return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+      });
+      const prevCaMois = prevMonthVersements.reduce((s, v) => s + (v.montantVerse || 0), 0);
+      const prevMonthDep = depenses.filter(d => {
+        if (!d.date) return false;
+        const dd = new Date(d.date);
+        return dd.getMonth() === prevMonth && dd.getFullYear() === prevYear;
+      });
+      const prevDepensesMois = prevMonthDep.reduce((s, d) => s + (d.montant || 0), 0);
+      function _evo(cur, prev) {
+        if (!prev || prev === 0) return cur > 0 ? { pct: 100, dir: 'up' } : { pct: 0, dir: 'stable' };
+        var p = Math.round(((cur - prev) / prev) * 100);
+        return { pct: Math.abs(p), dir: p > 0 ? 'up' : p < 0 ? 'down' : 'stable' };
+      }
+
       return {
         recetteJour, nbVersementsJour, recetteJourDetail,
         recetteAttendue, programmesCount, attendueDetail,
@@ -425,7 +446,11 @@
         coutIncidents,
         totalIncidents: incidents.length,
         incidentsDetail,
-        totalDepensesMois, nbDepensesMois, depensesDetail
+        totalDepensesMois, nbDepensesMois, depensesDetail,
+        evoCaMois: _evo(caMois, prevCaMois),
+        evoDepenses: _evo(totalDepensesMois, prevDepensesMois),
+        evoRecouv: _evo(tauxRecouvrement, 0),
+        evoDettes: _evo(totalDettes, 0)
       };
     }
   };
@@ -438,6 +463,14 @@
 
   function fmtCurrency(n) {
     return fmt(n) + ' F';
+  }
+
+  function evoHtml(e, inverse) {
+    if (!e || e.dir === 'stable' || e.pct === 0) return '';
+    var isGood = inverse ? e.dir === 'down' : e.dir === 'up';
+    var color = isGood ? '#22c55e' : '#ef4444';
+    var arrow = e.dir === 'up' ? '\u2191' : '\u2193';
+    return ' <span style="font-size:0.55rem;font-weight:700;color:' + color + '">' + arrow + ' ' + e.pct + '%</span>';
   }
 
   // =================== UI ===================
@@ -511,7 +544,7 @@
             <div class="kpi-icon"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${k.tauxRecouvrement}%</div>
             <div class="kpi-label">Recouvrement mois</div>
-            <div class="kpi-sub">Verse <span class="highlight green">${fmtCurrency(k.caMois)}</span></div>
+            <div class="kpi-sub">Verse <span class="highlight green">${fmtCurrency(k.caMois)}</span>${evoHtml(k.evoCaMois, false)}</div>
           </div>
 
           <div class="kpi-card ${detteColor} clickable" onclick="window.__kpiDetail('dette')">
@@ -523,7 +556,7 @@
 
           <div class="kpi-card orange clickable" onclick="window.__kpiDetail('depenses')">
             <div class="kpi-icon"><iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value">${fmtCurrency(k.totalDepensesMois)}</div>
+            <div class="kpi-value">${fmtCurrency(k.totalDepensesMois)}${evoHtml(k.evoDepenses, true)}</div>
             <div class="kpi-label">Depenses du mois</div>
             <div class="kpi-sub">${k.nbDepensesMois} depense${k.nbDepensesMois > 1 ? 's' : ''} &bull; ${k.monthLabel}</div>
           </div>
@@ -577,7 +610,7 @@
 
           <div class="kpi-card blue clickable" onclick="window.__kpiDetail('caMois')">
             <div class="kpi-icon"><iconify-icon icon="solar:cash-out-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value">${fmtCurrency(k.caMois)}</div>
+            <div class="kpi-value">${fmtCurrency(k.caMois)}${evoHtml(k.evoCaMois, false)}</div>
             <div class="kpi-label">CA du mois</div>
             <div class="kpi-sub">${k.monthLabel}</div>
           </div>
@@ -946,6 +979,22 @@
       document.getElementById('login-email').value = '';
       document.getElementById('login-password').value = '';
       document.getElementById('login-error').classList.remove('visible');
+    });
+
+    // Theme toggle
+    var savedTheme = localStorage.getItem('pilote_monitor_theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      var ti = document.getElementById('theme-icon');
+      if (ti && savedTheme === 'dark') ti.setAttribute('icon', 'solar:sun-bold-duotone');
+    }
+    document.getElementById('btn-theme').addEventListener('click', function() {
+      var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      var newTheme = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('pilote_monitor_theme', newTheme);
+      var icon = document.getElementById('theme-icon');
+      if (icon) icon.setAttribute('icon', newTheme === 'dark' ? 'solar:sun-bold-duotone' : 'solar:moon-bold-duotone');
     });
 
     // Check auth and load

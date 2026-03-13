@@ -5,6 +5,10 @@ const DriverApp = {
   _deferredPrompt: null,
 
   init() {
+    // Restore saved theme
+    const savedTheme = localStorage.getItem('pilote_theme');
+    if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
     // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/driver/sw.js', { updateViaCache: 'none' })

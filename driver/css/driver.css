@@ -3,7 +3,7 @@
 /* Import shared variables from admin app */
 @import url('/css/variables.css');
 
-/* Force light theme for driver app */
+/* Light theme (default) */
 :root {
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
@@ -15,6 +15,54 @@
   --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
   --shadow-modal: 0 8px 32px rgba(0,0,0,0.12);
 }
+
+/* Dark theme */
+[data-theme="dark"] {
+  --bg-primary: #0a1220;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1a2235;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: rgba(255,255,255,0.08);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+  --shadow-modal: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* Dark mode overrides for inline hardcoded colors */
+[data-theme="dark"] body { background: var(--bg-primary); color: var(--text-primary); }
+[data-theme="dark"] [style*="background:#fff"],
+[data-theme="dark"] [style*="background: #fff"],
+[data-theme="dark"] [style*="background:#ffffff"],
+[data-theme="dark"] [style*="background:white"] { background: #111827 !important; }
+[data-theme="dark"] [style*="background:#f8fafc"],
+[data-theme="dark"] [style*="background: #f8fafc"],
+[data-theme="dark"] [style*="background:#f1f5f9"],
+[data-theme="dark"] [style*="background: #f1f5f9"] { background: #1a2235 !important; }
+[data-theme="dark"] [style*="color:#0f172a"],
+[data-theme="dark"] [style*="color: #0f172a"] { color: #f1f5f9 !important; }
+[data-theme="dark"] [style*="color:#475569"],
+[data-theme="dark"] [style*="color: #475569"] { color: #94a3b8 !important; }
+[data-theme="dark"] [style*="color:#94a3b8"],
+[data-theme="dark"] [style*="color: #94a3b8"] { color: #64748b !important; }
+[data-theme="dark"] [style*="color:#64748b"],
+[data-theme="dark"] [style*="color: #64748b"] { color: #94a3b8 !important; }
+[data-theme="dark"] [style*="border:1px solid #e2e8f0"],
+[data-theme="dark"] [style*="border: 1px solid #e2e8f0"],
+[data-theme="dark"] [style*="border-color:#e2e8f0"] { border-color: rgba(255,255,255,0.08) !important; }
+[data-theme="dark"] [style*="box-shadow:0 1px 4px rgba(0,0,0,0.06)"],
+[data-theme="dark"] [style*="box-shadow: 0 1px 4px rgba(0,0,0,0.06)"] { box-shadow: 0 1px 4px rgba(0,0,0,0.2) !important; }
+[data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea {
+  background: #1a2235 !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255,255,255,0.1) !important;
+}
+[data-theme="dark"] .card, [data-theme="dark"] .modal-content {
+  background: #111827 !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+[data-theme="dark"] .bottom-nav { background: #111827 !important; border-color: rgba(255,255,255,0.06) !important; }
+[data-theme="dark"] .header { background: #0d1321 !important; border-color: rgba(255,255,255,0.06) !important; }
 
 /* ========== RESET & BASE ========== */
 *, *::before, *::after {

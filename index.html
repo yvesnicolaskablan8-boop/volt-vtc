@@ -22,7 +22,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 125;
+    var APP_VERSION = 126;
     var stored = parseInt(localStorage.getItem('pilote_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_app_version', APP_VERSION);
@@ -245,6 +245,14 @@
         </a>
 
         <div class="nav-section-title">Syst&egrave;me</div>
+        <a class="nav-item" href="#/notifications-admin" data-route="/notifications-admin">
+          <iconify-icon icon="solar:bell-bold-duotone" class="nav-icon"></iconify-icon>
+          <span>Notifications</span>
+        </a>
+        <a class="nav-item" href="#/activite" data-route="/activite">
+          <iconify-icon icon="solar:document-text-bold-duotone" class="nav-icon"></iconify-icon>
+          <span>Journal d'activit&eacute;</span>
+        </a>
         <a class="nav-item" href="#/parametres" data-route="/parametres">
           <iconify-icon icon="solar:settings-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Param&egrave;tres</span>
@@ -408,6 +416,8 @@
   <script src="js/pages/incidents.js"></script>
   <script src="js/pages/contraventions.js"></script>
   <script src="js/pages/depenses.js"></script>
+  <script src="js/pages/activite.js"></script>
+  <script src="js/pages/notifications-admin.js"></script>
   <script src="js/pages/menu.js"></script>
   <script src="js/components/bottom-nav.js"></script>
   <script src="js/router.js"></script>

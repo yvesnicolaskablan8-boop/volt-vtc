@@ -272,6 +272,22 @@ const DriverStore = {
     return this._get(`/wave/status/${versementId}`);
   },
 
+  // ===== OBJECTIFS & GAMIFICATION =====
+
+  getObjectifs() {
+    return this._get('/objectifs');
+  },
+
+  // ===== DOCUMENTS UPLOAD =====
+
+  uploadDocument(type, fichierData, fichierType, fichierNom) {
+    return this._post('/documents/' + type + '/upload', { fichierData, fichierType, fichierNom });
+  },
+
+  getDocumentFile(type) {
+    return this._get('/documents/' + type + '/file');
+  },
+
   // ===== MAINTENANCES =====
 
   getMaintenances() {

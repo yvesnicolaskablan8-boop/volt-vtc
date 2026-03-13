@@ -38,6 +38,7 @@ const ComptabilitePage = {
         <div class="page-actions">
           <button class="btn btn-secondary" onclick="ComptabilitePage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
           <button class="btn btn-secondary" onclick="ComptabilitePage._exportCSV()"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> CSV</button>
+          <button class="btn btn-secondary" onclick="ComptabilitePage._exportComptable()"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Export comptable</button>
           <button class="btn btn-success" id="btn-add-recette"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Encaissement</button>
           <button class="btn btn-danger" id="btn-add-depense"><iconify-icon icon="solar:minus-circle-bold-duotone"></iconify-icon> Décaissement</button>
         </div>
@@ -1363,6 +1364,102 @@ const ComptabilitePage = {
     a.click();
     URL.revokeObjectURL(url);
     Toast.success('CSV exporté');
+  },
+
+  _exportComptable() {
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    const monthLabel = (month + 1).toString().padStart(2, '0');
+
+    // Filtre mois courant
+    const isCurrentMonth = (dateStr) => {
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      return d.getMonth() === month && d.getFullYear() === year;
+    };
+
+    const versements = (Store.get('versements') || []).filter(v => isCurrentMonth(v.date));
+    const depenses = (Store.get('depenses') || []).filter(d => isCurrentMonth(d.date));
+    const vehicules = Store.get('vehicules') || [];
+
+    const rows = [];
+
+    // Comptes comptables par type de depense
+    const compteDepenses = {
+      carburant: '606100',
+      peage: '625100',
+      lavage: '615500',
+      assurance: '616000',
+      reparation: '615200',
+      stationnement: '625200',
+      recharge_yango: '628000',
+      autre: '628100'
+    };
+
+    // Versements -> Recettes (compte 706000, Credit)
+    versements.forEach(v => {
+      rows.push({
+        date: v.date,
+        libelle: 'Versement ' + (v.chauffeurId || ''),
+        compte: '706000',
+        debit: '',
+        credit: (v.montant || 0)
+      });
+    });
+
+    // Depenses par type -> Debit
+    depenses.forEach(d => {
+      const compte = compteDepenses[d.typeDepense] || '628100';
+      const label = this._getDepTypeLabel ? this._getDepTypeLabel(d.typeDepense) : (d.typeDepense || 'Autre');
+      rows.push({
+        date: d.date,
+        libelle: label + (d.vehiculeId ? ' - ' + d.vehiculeId : ''),
+        compte: compte,
+        debit: (d.montant || 0),
+        credit: ''
+      });
+    });
+
+    // Vehicules en leasing -> compte 612200, Debit
+    vehicules.forEach(v => {
+      if (v.typeAcquisition === 'leasing' && v.mensualiteLeasing > 0) {
+        rows.push({
+          date: year + '-' + monthLabel + '-01',
+          libelle: 'Leasing ' + (v.marque || '') + ' ' + (v.modele || '') + ' ' + (v.immatriculation || ''),
+          compte: '612200',
+          debit: v.mensualiteLeasing,
+          credit: ''
+        });
+      }
+    });
+
+    // Tri par date
+    rows.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+    // Totaux
+    const totalDebit = rows.reduce((s, r) => s + (r.debit || 0), 0);
+    const totalCredit = rows.reduce((s, r) => s + (r.credit || 0), 0);
+    const resultatNet = totalCredit - totalDebit;
+
+    // Construction CSV
+    const headers = ['Date', 'Libelle', 'Compte', 'Debit', 'Credit'];
+    const csvRows = rows.map(r => [
+      r.date ? Utils.formatDate(r.date) : '',
+      r.libelle,
+      r.compte,
+      r.debit !== '' ? r.debit : '',
+      r.credit !== '' ? r.credit : ''
+    ]);
+
+    // Ligne TOTAL
+    csvRows.push(['', 'TOTAL', '', totalDebit, totalCredit]);
+    // Ligne RESULTAT NET
+    csvRows.push(['', 'RESULTAT NET', '', '', resultatNet]);
+
+    const filename = 'export-comptable-' + monthLabel + '-' + year + '.csv';
+    Utils.exportCSV(headers, csvRows, filename);
+    Toast.success('Export comptable telecharge');
   },
 
   // =================== ONGLET DÉPENSES VÉHICULES ===================

@@ -137,6 +137,8 @@ const DocumentsPage = {
     const label = statusLabels[doc.statut] || doc.statut;
     const icon = doc.statut === 'valide' ? 'solar:check-circle-bold' : 'solar:danger-bold';
 
+    const hasFile = !!doc.dateUpload;
+
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem;border-radius:1rem;background:white;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
         <div style="display:flex;align-items:center;gap:12px">
@@ -146,11 +148,51 @@ const DocumentsPage = {
           <div>
             <div style="font-size:0.875rem;font-weight:700">${doc.nom}</div>
             <div style="font-size:0.625rem;color:#94a3b8">${doc.dateExpiration ? 'Expire le ' + new Date(doc.dateExpiration).toLocaleDateString('fr-FR') : ''}</div>
+            ${hasFile ? `<div style="font-size:0.6rem;color:#22c55e;font-weight:600;margin-top:2px;display:flex;align-items:center;gap:3px"><iconify-icon icon="solar:check-circle-bold" style="font-size:0.7rem"></iconify-icon> Fichier televerse</div>` : ''}
           </div>
         </div>
-        <iconify-icon icon="${icon}" style="color:${color};font-size:1.1rem"></iconify-icon>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="DocumentsPage._uploadDoc('${doc.type}')" style="width:36px;height:36px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:center;justify-content:center;cursor:pointer" title="Televerser un fichier">
+            <iconify-icon icon="solar:camera-bold-duotone" style="font-size:1.1rem;color:#3b82f6"></iconify-icon>
+          </button>
+          <iconify-icon icon="${icon}" style="color:${color};font-size:1.1rem"></iconify-icon>
+        </div>
       </div>
     `;
+  },
+
+  _uploadDoc(type) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,application/pdf';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        if (typeof DriverToast !== 'undefined') DriverToast.show('Fichier trop volumineux (max 5 Mo)', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result.split(',')[1];
+        try {
+          const res = await DriverStore.uploadDocument(type, base64, file.type, file.name);
+          if (res && res.success) {
+            if (typeof DriverToast !== 'undefined') DriverToast.show('Document televerse !', 'success');
+            // Re-render the page
+            const container = document.getElementById('app-content');
+            if (container) DocumentsPage.render(container);
+          } else {
+            if (typeof DriverToast !== 'undefined') DriverToast.show(res?.error || 'Erreur lors du telechargement', 'error');
+          }
+        } catch (err) {
+          console.error('Upload error:', err);
+          if (typeof DriverToast !== 'undefined') DriverToast.show('Erreur reseau', 'error');
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
   },
 
   _setFilter(filter) {

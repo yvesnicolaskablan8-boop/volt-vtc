@@ -23,7 +23,7 @@
   <!-- Version bump -->
   <script>
   (function(){
-    var APP_VERSION = 8;
+    var APP_VERSION = 9;
     var stored = parseInt(localStorage.getItem('pilote_monitor_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_monitor_version', APP_VERSION);
@@ -93,6 +93,9 @@
         </div>
         <button class="header-btn" id="btn-refresh" title="Actualiser">
           <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
+        </button>
+        <button class="header-btn" id="btn-theme" title="Mode sombre">
+          <iconify-icon icon="solar:moon-bold-duotone" id="theme-icon"></iconify-icon>
         </button>
         <button class="header-btn" id="btn-logout" title="Deconnexion">
           <iconify-icon icon="solar:logout-2-bold-duotone"></iconify-icon>

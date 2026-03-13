@@ -133,6 +133,15 @@ const MaintenancePage = {
                 ${echeanceHTML}
                 ${m.prestataire ? `<div style="font-size:0.75rem;color:var(--text-secondary);"><i class="fas fa-store"></i> ${m.prestataire}</div>` : ''}
                 ${m.coutEstime ? `<div style="font-size:0.75rem;color:var(--text-secondary);"><i class="fas fa-coins"></i> ${m.coutEstime.toLocaleString('fr-FR')} FCFA</div>` : ''}
+                ${m.prediction && m.prediction.joursEstimes !== null && m.prediction.joursEstimes !== undefined ? (() => {
+                  const j = m.prediction.joursEstimes;
+                  const predColor = j < 7 ? '#ef4444' : j < 30 ? '#f59e0b' : '#22c55e';
+                  const kmInfo = m.prediction.kmRestant ? ' (' + m.prediction.kmRestant.toLocaleString('fr-FR') + ' km restants)' : '';
+                  return `<div style="font-size:0.75rem;color:${predColor};font-weight:600;margin-top:4px;display:flex;align-items:center;gap:4px;">
+                    <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:0.85rem"></iconify-icon>
+                    Estimation : dans ~${j} jours${kmInfo}
+                  </div>`;
+                })() : ''}
                 ${m.notes ? `<div style="font-size:0.72rem;color:var(--text-muted);font-style:italic;margin-top:4px;">${m.notes}</div>` : ''}
               </div>
             </div>

@@ -1,5 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
+const { logActivity } = require('../middleware/activityLogger');
 
 // Model name to Mongoose model mapping
 const models = {};
@@ -33,6 +34,7 @@ function createCrudRoutes(modelName) {
       if (items.length > 0) {
         await Model.insertMany(items);
       }
+      logActivity('bulk_replace', modelName, null, { count: items.length }, req);
       res.json({ success: true, count: items.length });
     } catch (err) {
       next(err);
@@ -102,6 +104,7 @@ function createCrudRoutes(modelName) {
       const Model = getModel(modelName);
       const doc = new Model(req.body);
       await doc.save();
+      logActivity('create', modelName, doc.id || req.body.id, { fields: Object.keys(req.body) }, req);
       res.status(201).json(doc.toJSON());
     } catch (err) {
       next(err);
@@ -120,6 +123,7 @@ function createCrudRoutes(modelName) {
       if (!doc) {
         return res.status(404).json({ error: 'Not found' });
       }
+      logActivity('update', modelName, req.params.id, { fields: Object.keys(req.body) }, req);
       res.json(doc.toJSON());
     } catch (err) {
       next(err);
@@ -134,6 +138,7 @@ function createCrudRoutes(modelName) {
       if (!doc) {
         return res.status(404).json({ error: 'Not found' });
       }
+      logActivity('delete', modelName, req.params.id, {}, req);
       res.json({ success: true, id: req.params.id });
     } catch (err) {
       next(err);

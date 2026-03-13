@@ -147,12 +147,15 @@ const AccueilPage = {
     container.innerHTML = `
       <!-- Greeting -->
       <div style="margin-bottom:1.25rem">
-        <h2 style="font-size:1.65rem;font-weight:800;color:#0f172a">${greeting}, ${prenom} !</h2>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.875rem;font-weight:500;color:#64748b">
+        <h2 style="font-size:1.65rem;font-weight:800;color:var(--text-primary,#0f172a)">${greeting}, ${prenom} !</h2>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.875rem;font-weight:500;color:var(--text-muted,#64748b)">
           <iconify-icon icon="solar:calendar-date-bold-duotone" style="color:#3b82f6;font-size:1.1rem"></iconify-icon>
           ${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
         </div>
       </div>
+
+      <!-- Widget Meteo du jour -->
+      ${this._renderStatusWidget(data)}
 
       <!-- Countdown deadline versement -->
       ${countdownHTML}
@@ -173,6 +176,9 @@ const AccueilPage = {
           <div class="loading" style="padding:0.5rem"><i class="fas fa-spinner fa-spin"></i></div>
         </div>
       </div>
+
+      <!-- Objectifs & Gamification -->
+      <div id="objectifs-widget"></div>
 
       <!-- Alertes maintenance vehicule -->
       <div id="maintenance-alerts"></div>
@@ -233,10 +239,38 @@ const AccueilPage = {
     // Charger le resume hebdomadaire (dimanche ou toujours pour info)
     this._loadWeeklySummary();
 
+    // Charger les objectifs & gamification
+    this._loadObjectifs();
+
   },
 
   _formatCurrency(amount) {
     return amount.toLocaleString('fr-FR') + ' FCFA';
+  },
+
+  _renderStatusWidget(data) {
+    const sante = data.statutSante;
+    if (!sante) return '';
+    const configs = {
+      green: { bg: 'linear-gradient(135deg, #22c55e, #16a34a)', icon: 'solar:check-circle-bold-duotone', title: 'Tout est en ordre', sub: 'Continuez comme ca !' },
+      orange: { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', icon: 'solar:bell-bing-bold-duotone', title: 'Attention requise', sub: '' },
+      red: { bg: 'linear-gradient(135deg, #ef4444, #dc2626)', icon: 'solar:danger-triangle-bold-duotone', title: 'Action urgente', sub: '' }
+    };
+    const c = configs[sante.level] || configs.green;
+    const flagsHTML = (sante.flags || []).map(f =>
+      '<div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;opacity:0.95"><iconify-icon icon="solar:arrow-right-bold" style="font-size:0.65rem"></iconify-icon>' + f.message + '</div>'
+    ).join('');
+    return `
+      <div style="border-radius:1.25rem;background:${c.bg};padding:1rem 1.15rem;color:white;margin-bottom:1.25rem;box-shadow:0 4px 16px rgba(0,0,0,0.12)">
+        <div style="display:flex;align-items:center;gap:10px;${flagsHTML ? 'margin-bottom:8px' : ''}">
+          <iconify-icon icon="${c.icon}" style="font-size:1.5rem"></iconify-icon>
+          <div style="flex:1">
+            <div style="font-size:0.95rem;font-weight:800">${c.title}</div>
+            ${sante.flags.length === 0 ? '<div style="font-size:0.72rem;opacity:0.85;margin-top:2px">' + c.sub + '</div>' : ''}
+          </div>
+        </div>
+        ${flagsHTML ? '<div style="display:flex;flex-direction:column;gap:4px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.2)">' + flagsHTML + '</div>' : ''}
+      </div>`;
   },
 
   _renderQuickStats(data) {
@@ -613,6 +647,81 @@ const AccueilPage = {
     `;
   },
 
+  async _loadObjectifs() {
+    const container = document.getElementById('objectifs-widget');
+    if (!container) return;
+
+    try {
+      const data = await DriverStore.getObjectifs();
+      if (!data || !data.objectifs) {
+        container.style.display = 'none';
+        return;
+      }
+
+      const obj = data.objectifs;
+      const items = [
+        { label: 'CA mensuel', actuel: obj.caMensuel.actuel, cible: obj.caMensuel.cible, format: 'currency' },
+        { label: 'Jours travailles', actuel: obj.joursTravailles.actuel, cible: obj.joursTravailles.cible, format: 'number' },
+        { label: 'Score conduite', actuel: obj.scoreConduite.actuel, cible: obj.scoreConduite.cible, format: 'number' }
+      ];
+
+      const barsHTML = items.map(item => {
+        const pct = item.cible > 0 ? Math.min(100, Math.round((item.actuel / item.cible) * 100)) : 0;
+        const color = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+        const actuelStr = item.format === 'currency' ? item.actuel.toLocaleString('fr-FR') + ' FCFA' : item.actuel;
+        const cibleStr = item.format === 'currency' ? item.cible.toLocaleString('fr-FR') + ' FCFA' : item.cible;
+        return `
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-size:0.78rem;font-weight:600;color:#0f172a">${item.label}</span>
+              <span style="font-size:0.72rem;font-weight:700;color:${color}">${actuelStr} / ${cibleStr}</span>
+            </div>
+            <div style="height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${color};border-radius:4px;transition:width 0.5s"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Badges
+      const badges = data.badges || [];
+      const badgesHTML = badges.length > 0 ? `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9">
+          ${badges.map(b => `
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(59,130,246,0.08);font-size:0.7rem;font-weight:600;color:#3b82f6" title="${b.description}">
+              <iconify-icon icon="${b.icon}" style="font-size:0.85rem"></iconify-icon>
+              ${b.nom}
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
+
+      // New badges notification
+      const newBadges = data.newBadges || [];
+      if (newBadges.length > 0 && typeof DriverToast !== 'undefined') {
+        newBadges.forEach(b => {
+          DriverToast.show('Nouveau badge : ' + b.nom + ' !', 'success');
+        });
+      }
+
+      container.innerHTML = `
+        <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1.25rem">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+            <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(99,102,241,0.08);color:#6366f1;display:flex;align-items:center;justify-content:center">
+              <iconify-icon icon="solar:target-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            </div>
+            <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Mes objectifs</div>
+          </div>
+          ${barsHTML}
+          ${badgesHTML}
+        </div>
+      `;
+    } catch (e) {
+      console.warn('Erreur chargement objectifs:', e);
+      container.style.display = 'none';
+    }
+  },
+
   async _loadMaintenanceAlerts() {
     const container = document.getElementById('maintenance-alerts');
     if (!container) return;
@@ -676,7 +785,7 @@ const AccueilPage = {
 
     try {
       const summary = await DriverStore.getResumeHebdo();
-      if (!summary || summary.error) {
+      if (!summary || summary.error || !summary.hasData) {
         container.style.display = 'none';
         return;
       }
@@ -685,24 +794,32 @@ const AccueilPage = {
       const tendanceIcon = summary.tendance === 'up' ? '↑' : summary.tendance === 'down' ? '↓' : '→';
       const tendanceColor = summary.tendance === 'up' ? '#22c55e' : summary.tendance === 'down' ? '#ef4444' : '#94a3b8';
 
+      const evoCA = summary.evolutionCA;
+      const evoCaIcon = evoCA > 0 ? '↑' : evoCA < 0 ? '↓' : '→';
+      const evoCaColor = evoCA > 0 ? '#22c55e' : evoCA < 0 ? '#ef4444' : 'rgba(255,255,255,0.7)';
+
       container.innerHTML = `
         <div style="border-radius:1.5rem;background:linear-gradient(135deg,#6366f1,#4f46e5);padding:1.25rem;color:white;margin-bottom:1.25rem;box-shadow:0 4px 16px rgba(99,102,241,0.2)">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;opacity:0.9">
             <iconify-icon icon="solar:chart-bold-duotone" style="font-size:1.2rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">Resume de la semaine</span>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px">
             <div style="text-align:center">
-              <div style="font-size:1.4rem;font-weight:900">${summary.joursActifs || 0}</div>
-              <div style="font-size:0.65rem;opacity:0.8;font-weight:600">Jours actifs</div>
+              <div style="font-size:1.2rem;font-weight:900">${(summary.caHebdo || 0).toLocaleString('fr-FR')}</div>
+              <div style="font-size:0.6rem;opacity:0.8;font-weight:600">FCFA verses</div>
             </div>
             <div style="text-align:center">
-              <div style="font-size:1.4rem;font-weight:900">${Math.round(summary.distanceKm || 0)}</div>
-              <div style="font-size:0.65rem;opacity:0.8;font-weight:600">km parcourus</div>
+              <div style="font-size:1.2rem;font-weight:900">${summary.joursActifs || 0}</div>
+              <div style="font-size:0.6rem;opacity:0.8;font-weight:600">Jours actifs</div>
             </div>
             <div style="text-align:center">
-              <div style="font-size:1.4rem;font-weight:900">${(summary.heuresTravail || 0).toFixed(1)}h</div>
-              <div style="font-size:0.65rem;opacity:0.8;font-weight:600">de conduite</div>
+              <div style="font-size:1.2rem;font-weight:900">${Math.round(summary.distanceKm || 0)}</div>
+              <div style="font-size:0.6rem;opacity:0.8;font-weight:600">km parcourus</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:1.2rem;font-weight:900">${(summary.heuresTravail || 0).toFixed(1)}h</div>
+              <div style="font-size:0.6rem;opacity:0.8;font-weight:600">de conduite</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.15)">
@@ -712,9 +829,13 @@ const AccueilPage = {
             </div>
             <div style="display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:2rem;background:rgba(255,255,255,0.15)">
               <span style="font-size:0.9rem;color:${tendanceColor}">${tendanceIcon}</span>
-              <span style="font-size:0.7rem;font-weight:600;opacity:0.9">${summary.tendance === 'up' ? 'En hausse' : summary.tendance === 'down' ? 'En baisse' : 'Stable'}</span>
+              <span style="font-size:0.7rem;font-weight:600;opacity:0.9">${summary.tendance === 'amelioration' ? 'En hausse' : summary.tendance === 'degradation' ? 'En baisse' : 'Stable'}</span>
             </div>
           </div>
+          ${evoCA !== undefined && evoCA !== 0 ? `
+          <div style="text-align:center;margin-top:8px;font-size:0.7rem;opacity:0.85">
+            CA <span style="color:${evoCaColor};font-weight:700">${evoCaIcon} ${Math.abs(evoCA)}%</span> vs semaine prec.
+          </div>` : ''}
         </div>`;
     } catch (e) {
       container.style.display = 'none';

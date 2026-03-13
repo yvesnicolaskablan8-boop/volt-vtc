@@ -136,6 +136,9 @@ const ProfilPage = {
         ` : '<div style="font-size:0.82rem;color:#94a3b8;text-align:center">Pas de donnees GPS</div>'}
       </div>
 
+      <!-- Mes badges -->
+      <div id="profil-badges-section"></div>
+
       <!-- Informations personnelles -->
       <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
@@ -303,6 +306,60 @@ const ProfilPage = {
 
       <div style="height:20px"></div>
     `;
+
+    // Charger les badges
+    this._loadBadges();
+  },
+
+  async _loadBadges() {
+    const container = document.getElementById('profil-badges-section');
+    if (!container) return;
+
+    try {
+      const data = await DriverStore.getObjectifs();
+      if (!data) { container.style.display = 'none'; return; }
+
+      // All possible badges
+      const allBadgeDefs = [
+        { id: 'premier_versement', nom: 'Premier versement', description: 'Premier versement effectue', icon: 'solar:star-bold-duotone' },
+        { id: 'score_80', nom: 'Conducteur exemplaire', description: 'Score de conduite superieur a 80', icon: 'solar:medal-ribbons-star-bold-duotone' },
+        { id: '10_jours', nom: 'Regularite', description: '10 jours travailles ce mois', icon: 'solar:fire-bold-duotone' },
+        { id: '20_jours', nom: 'Assidu', description: '20 jours travailles ce mois', icon: 'solar:cup-bold-duotone' },
+        { id: 'ponctuel', nom: 'Ponctuel', description: 'Aucun retard de versement', icon: 'solar:clock-circle-bold-duotone' },
+      ];
+
+      const earnedIds = new Set((data.badges || []).map(b => b.id));
+
+      const badgesHTML = allBadgeDefs.map(def => {
+        const earned = earnedIds.has(def.id);
+        return `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:60px" title="${def.description}">
+            <div style="width:48px;height:48px;border-radius:50%;background:${earned ? 'rgba(59,130,246,0.1)' : '#f1f5f9'};display:flex;align-items:center;justify-content:center;${earned ? '' : 'opacity:0.4;filter:grayscale(100%);'}">
+              <iconify-icon icon="${def.icon}" style="font-size:1.5rem;color:${earned ? '#3b82f6' : '#94a3b8'}"></iconify-icon>
+            </div>
+            <span style="font-size:0.6rem;font-weight:600;color:${earned ? '#0f172a' : '#94a3b8'};text-align:center;line-height:1.2">${def.nom}</span>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+            <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(245,158,11,0.08);color:#f59e0b;display:flex;align-items:center;justify-content:center">
+              <iconify-icon icon="solar:medal-ribbons-star-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            </div>
+            <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Mes badges</div>
+            <span style="margin-left:auto;font-size:0.72rem;font-weight:600;color:#94a3b8">${earnedIds.size}/${allBadgeDefs.length}</span>
+          </div>
+          <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:12px">
+            ${badgesHTML}
+          </div>
+        </div>
+      `;
+    } catch (e) {
+      console.warn('Erreur chargement badges:', e);
+      container.style.display = 'none';
+    }
   },
 
   _toggleDarkMode(btn) {
