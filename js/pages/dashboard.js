@@ -669,15 +669,6 @@ const DashboardPage = {
 
       <!-- Bottom section -->
       <div class="charts-grid" style="margin-top: var(--space-lg);">
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Rentabilite par vehicule</div>
-          </div>
-          <div class="chart-container" style="height: 280px;">
-            <canvas id="chart-profit"></canvas>
-          </div>
-        </div>
-
         <div class="card">
           <div class="card-header">
             <span class="card-title">Derniers versements</span>
@@ -788,48 +779,7 @@ const DashboardPage = {
   _loadCharts(d) {
     this._charts = [];
 
-    // ======= Vehicle profitability (horizontal bar) =======
-    const profitCtx = document.getElementById('chart-profit');
-    if (profitCtx) {
-      this._charts.push(new Chart(profitCtx, {
-        type: 'bar',
-        data: {
-          labels: d.vehicleProfit.map(v => v.label),
-          datasets: [{
-            label: 'Profit mensuel',
-            data: d.vehicleProfit.map(v => v.profit),
-            backgroundColor: d.vehicleProfit.map(v => v.profit >= 0 ? '#22c55e' : '#ef4444'),
-            hoverBackgroundColor: d.vehicleProfit.map(v => v.profit >= 0 ? '#16a34a' : '#dc2626'),
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          indexAxis: 'y',
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                title: (items) => items.length ? `${items[0].label}` : '',
-                label: (ctx) => {
-                  const val = Utils.formatCurrency(ctx.raw);
-                  const status = ctx.raw >= 0 ? 'Profitable' : 'Deficitaire';
-                  return [`Profit : ${val}`, status];
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              ticks: { callback: (val) => Utils.formatCurrency(val) }
-            }
-          }
-        }
-      }));
-    }
-
-    // ======= 5. Forecast chart (line + projected bar) =======
+    // ======= Forecast chart (line + projected bar) =======
     const forecastCtx = document.getElementById('chart-forecast');
     if (forecastCtx && d.forecastChartData && d.forecastChartData.length > 0) {
       const labels = d.forecastChartData.map(f => f.label);
