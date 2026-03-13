@@ -664,18 +664,6 @@ const DashboardPage = {
       <!-- Maintenance Alerts -->
       ${this._renderMaintenanceAlerts(d)}
 
-      <!-- Charts Row 1 -->
-      <div class="charts-grid">
-        <div class="chart-card full-width">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Evolution du chiffre d'affaires</div>
-          </div>
-          <div class="chart-container" style="height: 300px;">
-            <canvas id="chart-revenue"></canvas>
-          </div>
-        </div>
-      </div>
-
       <!-- Dépenses véhicules -->
       ${this._renderDepensesSection(d)}
 
@@ -800,63 +788,7 @@ const DashboardPage = {
   _loadCharts(d) {
     this._charts = [];
 
-    // ======= 1. Revenue chart (line) =======
-    const revenueCtx = document.getElementById('chart-revenue');
-    if (revenueCtx) {
-      this._charts.push(new Chart(revenueCtx, {
-        type: 'line',
-        data: {
-          labels: d.monthlyRevenue.map(m => m.month),
-          datasets: [{
-            label: "Chiffre d'affaires",
-            data: d.monthlyRevenue.map(m => m.revenue),
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            fill: true,
-            borderWidth: 2,
-            pointBackgroundColor: '#3b82f6',
-            pointBorderColor: Utils.chartBorderColor(),
-            pointBorderWidth: 2,
-            pointHoverRadius: 8,
-            pointHoverBorderWidth: 3,
-            pointHoverBackgroundColor: '#3b82f6',
-            pointHoverBorderColor: '#fff'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                title: (items) => items.length ? `${items[0].label}` : '',
-                label: (ctx) => {
-                  const val = Utils.formatCurrency(ctx.raw);
-                  const idx = ctx.dataIndex;
-                  const data = ctx.dataset.data;
-                  if (idx > 0 && data[idx - 1] > 0) {
-                    const variation = ((ctx.raw - data[idx - 1]) / data[idx - 1] * 100).toFixed(1);
-                    const arrow = variation >= 0 ? '+' : '';
-                    return [`CA : ${val}`, `${arrow}${variation}% vs mois precedent`];
-                  }
-                  return `CA : ${val}`;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { callback: (val) => Utils.formatCurrency(val) }
-            }
-          }
-        }
-      }));
-    }
-
-    // ======= 2. Vehicle profitability (horizontal bar) =======
+    // ======= Vehicle profitability (horizontal bar) =======
     const profitCtx = document.getElementById('chart-profit');
     if (profitCtx) {
       this._charts.push(new Chart(profitCtx, {
