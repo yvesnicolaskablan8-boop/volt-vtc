@@ -439,7 +439,7 @@
       const detteColor = k.totalDettes > 0 ? 'red' : 'green';
       const perteColor = k.totalPertes > 0 ? 'orange' : 'green';
       const retardColor = k.retardCount > 0 ? 'red' : 'green';
-      const incidentColor = k.nbIncidentsCritiques > 0 ? 'red' : k.nbIncidentsOuverts > 0 ? 'orange' : 'green';
+      const incidentColor = k.nbIncidentsCritiques > 0 ? 'red' : 'orange';
 
       c.innerHTML = `
         <!-- DATE PICKER -->
@@ -513,9 +513,9 @@
 
           <div class="kpi-card ${incidentColor} clickable" onclick="window.__kpiDetail('incidents')">
             <div class="kpi-icon"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value">${k.nbIncidentsOuverts}</div>
-            <div class="kpi-label">Incidents ouverts</div>
-            <div class="kpi-sub">${k.nbIncidentsCritiques > 0 ? k.nbIncidentsCritiques + ' grave' + (k.nbIncidentsCritiques > 1 ? 's' : '') + ' \u2022 ' : ''}${k.coutIncidents > 0 ? fmtCurrency(k.coutIncidents) + ' cout estime' : 'Aucun incident'}</div>
+            <div class="kpi-value">${k.totalIncidents}</div>
+            <div class="kpi-label">Incidents</div>
+            <div class="kpi-sub">${k.nbIncidentsOuverts > 0 ? k.nbIncidentsOuverts + ' ouvert' + (k.nbIncidentsOuverts > 1 ? 's' : '') : 'Aucun ouvert'}${k.nbIncidentsCritiques > 0 ? ' \u2022 ' + k.nbIncidentsCritiques + ' grave' + (k.nbIncidentsCritiques > 1 ? 's' : '') : ''}</div>
           </div>
 
         </div>
