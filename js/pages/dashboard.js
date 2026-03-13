@@ -667,34 +667,6 @@ const DashboardPage = {
       <!-- Dépenses véhicules -->
       ${this._renderDepensesSection(d)}
 
-      <!-- Bottom section -->
-      <div class="charts-grid" style="margin-top: var(--space-lg);">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Derniers versements</span>
-            <a href="#/versements" class="btn btn-sm btn-secondary">Voir tout</a>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:8px;">
-            ${d.recentVersements.map(v => {
-              const chauffeur = d.chauffeurs.find(c => c.id === v.chauffeurId);
-              const name = chauffeur ? `${chauffeur.prenom} ${chauffeur.nom}` : v.chauffeurId;
-              return `
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:8px; border-radius:var(--radius-sm); background:var(--bg-tertiary);">
-                  <div>
-                    <div style="font-size:var(--font-size-sm); font-weight:500;">${name}</div>
-                    <div style="font-size:var(--font-size-xs); color:var(--text-muted);">${v.moyenPaiement || v.periode || ''} - ${Utils.formatDate(v.date)}</div>
-                  </div>
-                  <div style="text-align:right;">
-                    <div style="font-size:var(--font-size-sm); font-weight:600;" class="tabular-nums">${Utils.formatCurrency(v.montantVerse)}</div>
-                    ${Utils.statusBadge(v.statut)}
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        </div>
-      </div>
-
       <!-- Prévisions CA -->
       ${this._renderForecastSection(d)}
     `;
