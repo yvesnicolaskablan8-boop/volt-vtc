@@ -100,13 +100,13 @@
 
 /* ========== SHARED VARIABLES (both themes) ========== */
 :root {
-  /* Accent colors - "Volt" brand (same in both themes) */
-  --volt-blue: #3b82f6;
-  --volt-blue-dim: #2563eb;
-  --volt-blue-glow: rgba(59, 130, 246, 0.15);
-  --volt-yellow: #facc15;
-  --volt-yellow-dim: #eab308;
-  --volt-cyan: #22d3ee;
+  /* Accent colors - "Pilote" brand (same in both themes) */
+  --pilote-blue: #3b82f6;
+  --pilote-blue-dim: #2563eb;
+  --pilote-blue-glow: rgba(59, 130, 246, 0.15);
+  --pilote-yellow: #facc15;
+  --pilote-yellow-dim: #eab308;
+  --pilote-cyan: #22d3ee;
 
   /* Semantic colors (same in both themes) */
   --success: #22c55e;

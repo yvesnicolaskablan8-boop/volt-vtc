@@ -188,7 +188,7 @@ const Utils = {
     doc.rect(0, 0, doc.internal.pageSize.getWidth(), 25, 'F');
     doc.setTextColor(59, 130, 246);
     doc.setFontSize(18);
-    doc.text('VOLT', 14, 16);
+    doc.text('PILOTE', 14, 16);
     doc.setTextColor(isDark ? 241 : 15, isDark ? 245 : 23, isDark ? 249 : 42);
     doc.setFontSize(12);
     doc.text(title, 44, 16);
@@ -228,7 +228,7 @@ const Utils = {
       }
     });
 
-    doc.save(`volt-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`);
+    doc.save(`pilote-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.pdf`);
   },
 
   // Get week number

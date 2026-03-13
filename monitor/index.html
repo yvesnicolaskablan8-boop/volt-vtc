@@ -3,22 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Volt Monitor</title>
+  <title>Pilote Monitor</title>
   <link rel="icon" type="image/svg+xml" href="/monitor/favicon.svg">
   <link rel="manifest" href="/monitor/manifest.json">
   <meta name="theme-color" content="#dc2626">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Volt Monitor">
+  <meta name="apple-mobile-web-app-title" content="Pilote Monitor">
   <link rel="apple-touch-icon" href="/monitor/assets/icon-192.png">
+
+  <script>
+  (function(){
+    [['volt_monitor_version','pilote_monitor_version'],['volt_monitor_token','pilote_monitor_token'],['volt_monitor_session','pilote_monitor_session']].forEach(function(m){
+      var o=localStorage.getItem(m[0]);if(o&&!localStorage.getItem(m[1])){localStorage.setItem(m[1],o);}localStorage.removeItem(m[0]);
+    });
+  })();
+  </script>
 
   <!-- Version bump -->
   <script>
   (function(){
     var APP_VERSION = 6;
-    var stored = parseInt(localStorage.getItem('volt_monitor_version') || '0');
+    var stored = parseInt(localStorage.getItem('pilote_monitor_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
-      localStorage.setItem('volt_monitor_version', APP_VERSION);
+      localStorage.setItem('pilote_monitor_version', APP_VERSION);
       navigator.serviceWorker.getRegistrations().then(function(regs) {
         regs.forEach(function(r) { if (r.scope.includes('/monitor')) r.unregister(); });
       });
@@ -43,7 +51,7 @@
 
   <!-- Flash prevention -->
   <script>
-    if (localStorage.getItem('volt_monitor_token')) {
+    if (localStorage.getItem('pilote_monitor_token')) {
       document.documentElement.classList.add('has-token');
     }
   </script>
@@ -59,7 +67,7 @@
     <div class="login-card">
       <div class="login-logo">
         <iconify-icon icon="solar:monitor-smartphone-bold" class="logo-icon"></iconify-icon>
-        <div class="logo-title">VOLT</div>
+        <div class="logo-title">PILOTE</div>
         <div class="logo-subtitle">Monitor</div>
       </div>
       <form id="login-form" class="login-form">
@@ -77,7 +85,7 @@
     <header class="monitor-header">
       <div class="header-brand">
         <iconify-icon icon="solar:monitor-smartphone-bold"></iconify-icon>
-        <span>Volt Monitor</span>
+        <span>Pilote Monitor</span>
       </div>
       <div class="header-actions">
         <div class="header-status">

@@ -219,15 +219,15 @@ const ComptabilitePage = {
       </div>
 
       <!-- Guide rapide pour non-comptable -->
-      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-blue);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));">
+      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--pilote-blue);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));">
         <div style="display:flex;align-items:center;gap:var(--space-md);">
-          <div style="width:48px;height:48px;border-radius:50%;background:var(--volt-blue-glow);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--volt-blue);"><iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon></div>
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--pilote-blue-glow);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--pilote-blue);"><iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon></div>
           <div style="flex:1;">
             <h3 style="font-size:var(--font-size-base);margin-bottom:4px;">Comment ça marche ?</h3>
             <p style="font-size:var(--font-size-sm);line-height:1.6;">
               <strong style="color:var(--success);">Encaissement</strong> = argent qui rentre (versements chauffeurs, paiements clients, <strong>commission Yango</strong>)<br>
               <strong style="color:var(--danger);">Décaissement</strong> = argent qui sort (carburant, maintenance, salaires, loyers, assurance)<br>
-              <strong style="color:var(--volt-blue);">Bénéfice</strong> = Encaissements − Décaissements. Si positif, vous gagnez de l'argent !
+              <strong style="color:var(--pilote-blue);">Bénéfice</strong> = Encaissements − Décaissements. Si positif, vous gagnez de l'argent !
             </p>
           </div>
         </div>
@@ -462,7 +462,7 @@ const ComptabilitePage = {
       Utils.exportCSV(
         ['Date', 'Type', 'Catégorie', 'Description', 'Montant', 'Référence', 'Mode paiement'],
         data.map(o => [Utils.formatDate(o.date), o.type === 'recette' ? 'Encaissement' : 'Décaissement', this._catLabel(o.categorie), o.description, o.type === 'recette' ? o.montant : -o.montant, o.reference, o.modePaiement || '']),
-        `volt-journal-${new Date().toISOString().split('T')[0]}.csv`
+        `pilote-journal-${new Date().toISOString().split('T')[0]}.csv`
       );
       Toast.success('Journal exporté en CSV');
     });
@@ -812,9 +812,9 @@ const ComptabilitePage = {
     const catLabels = { carburant: 'Carburant', maintenance: 'Maintenance', assurance: 'Assurance', leasing: 'Leasing véhicules', salaires: 'Salaires', loyer_bureau: 'Loyer / Bureau', taxes_impots: 'Impôts / Taxes', telecoms: 'Télécom', marketing: 'Marketing', fournitures: 'Fournitures', autres_depenses: 'Autres dépenses' };
 
     return `
-      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-yellow);">
+      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--pilote-yellow);">
         <div style="display:flex;align-items:center;gap:var(--space-md);">
-          <iconify-icon icon="solar:lightbulb-bold-duotone" style="font-size:24px;color:var(--volt-yellow);"></iconify-icon>
+          <iconify-icon icon="solar:lightbulb-bold-duotone" style="font-size:24px;color:var(--pilote-yellow);"></iconify-icon>
           <div>
             <h3 style="font-size:var(--font-size-sm);">Budget prévisionnel vs Réel</h3>
             <p style="font-size:var(--font-size-xs);color:var(--text-muted);">Définissez un budget pour chaque catégorie de dépense et suivez votre consommation réelle. Les barres rouges dépassant le budget signalent un dépassement.</p>
@@ -957,9 +957,9 @@ const ComptabilitePage = {
     ];
 
     return `
-      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-blue);">
+      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--pilote-blue);">
         <div style="display:flex;align-items:center;gap:var(--space-md);">
-          <iconify-icon icon="solar:info-circle-bold-duotone" style="font-size:24px;color:var(--volt-blue);"></iconify-icon>
+          <iconify-icon icon="solar:info-circle-bold-duotone" style="font-size:24px;color:var(--pilote-blue);"></iconify-icon>
           <p style="font-size:var(--font-size-sm);">Les catégories vous aident à classer vos opérations pour mieux comprendre d'où vient votre argent et où il va. Utilisez-les lors de chaque saisie.</p>
         </div>
       </div>
@@ -1342,7 +1342,7 @@ const ComptabilitePage = {
       });
     }
 
-    doc.save('comptabilite-volt.pdf');
+    doc.save('comptabilite-pilote.pdf');
     Toast.success('PDF exporté');
   },
 
@@ -1359,7 +1359,7 @@ const ComptabilitePage = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'comptabilite-volt.csv';
+    a.download = 'comptabilite-pilote.csv';
     a.click();
     URL.revokeObjectURL(url);
     Toast.success('CSV exporté');

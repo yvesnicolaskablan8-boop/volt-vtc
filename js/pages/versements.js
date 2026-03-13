@@ -785,7 +785,7 @@ const VersementsPage = {
 
     switch(type) {
       case 'attendu': {
-        title = '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Détail — Montant attendu';
+        title = '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Détail — Montant attendu';
         const byDriver = {};
         d.detailProgrammes.forEach(p => {
           if (!byDriver[p.chauffeurId]) byDriver[p.chauffeurId] = { nom: p.nom, prenom: p.prenom, total: 0, jours: 0, redevance: p.redevance };
@@ -844,7 +844,7 @@ const VersementsPage = {
         break;
       }
       case 'taux': {
-        title = '<iconify-icon icon="solar:sale-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Détail — Taux de recouvrement';
+        title = '<iconify-icon icon="solar:sale-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Détail — Taux de recouvrement';
         const byDriver = {};
         d.detailProgrammes.forEach(p => {
           if (!byDriver[p.chauffeurId]) byDriver[p.chauffeurId] = { nom: p.nom, prenom: p.prenom, attendu: 0, verse: 0 };
@@ -892,7 +892,7 @@ const VersementsPage = {
         break;
       }
       case 'programmes': {
-        title = '<iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Chauffeurs programmés';
+        title = '<iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Chauffeurs programmés';
         const byDriver = {};
         d.detailProgrammes.forEach(p => {
           if (!byDriver[p.chauffeurId]) byDriver[p.chauffeurId] = { nom: p.nom, prenom: p.prenom, redevance: p.redevance, jours: 0 };
@@ -1019,7 +1019,7 @@ const VersementsPage = {
       headStyles: { fillColor: [59, 130, 246] }
     });
 
-    doc.save('versements-volt.pdf');
+    doc.save('versements-pilote.pdf');
     Toast.success('PDF exporté');
   },
 
@@ -1038,7 +1038,7 @@ const VersementsPage = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'versements-volt.csv';
+    a.download = 'versements-pilote.csv';
     a.click();
     URL.revokeObjectURL(url);
     Toast.success('CSV exporté');
@@ -1472,7 +1472,7 @@ const VersementsPage = {
         <div style="min-width:0;flex:1;">
           <div style="font-size:var(--font-size-sm);font-weight:500;"><a href="javascript:void(0)" onclick="event.stopPropagation();VersementsPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.totalDu})" style="color:var(--text-primary);text-decoration:none;cursor:pointer;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-primary)'">${name}</a></div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${item.heureDebut && item.heureFin ? ' \u2014 ' + item.heureDebut + ' \u00e0 ' + item.heureFin : ''} &bull; ${item.joursRetard}j de retard</div>
-          ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--volt-blue);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
+          ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--pilote-blue);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0;margin-left:8px;">
           <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">${Utils.formatCurrency(item.montantDu)}</div>
@@ -1490,8 +1490,8 @@ const VersementsPage = {
         </div>
       </div>
       <div style="position:relative;margin-bottom:8px;">
-        <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--volt-orange);pointer-events:none;"></iconify-icon>
-        <input type="text" id="unpaid-search" class="form-control" placeholder="Rechercher un chauffeur..." style="padding-left:32px;font-size:var(--font-size-xs);border:2px solid var(--volt-orange);border-radius:var(--radius-md);background:var(--bg-primary);" oninput="VersementsPage._filterUnpaidList(this.value)" onclick="event.stopPropagation()">
+        <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--pilote-orange);pointer-events:none;"></iconify-icon>
+        <input type="text" id="unpaid-search" class="form-control" placeholder="Rechercher un chauffeur..." style="padding-left:32px;font-size:var(--font-size-xs);border:2px solid var(--pilote-orange);border-radius:var(--radius-md);background:var(--bg-primary);" oninput="VersementsPage._filterUnpaidList(this.value)" onclick="event.stopPropagation()">
       </div>
       <div id="unpaid-list" style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;">
         ${rows}
@@ -1578,7 +1578,7 @@ const VersementsPage = {
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;"><a href="javascript:void(0)" onclick="event.stopPropagation();VersementsPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.totalDu})" style="color:var(--text-primary);text-decoration:none;cursor:pointer;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-primary)'">${name}</a></div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${creneauLabel ? ' \u2014 ' + creneauLabel : ''} &bull; <span style="color:${item.joursRetard > 4 ? '#ef4444' : '#f59e0b'};font-weight:600;">${item.joursRetard}j de retard</span></div>
-          ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--volt-blue);margin-top:2px;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
+          ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--pilote-blue);margin-top:2px;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">${Utils.formatCurrency(item.montantDu)}</div>
@@ -1656,7 +1656,7 @@ const VersementsPage = {
         i.penalite, i.totalDu, i.justification || ''
       ];
     });
-    Utils.exportCSV(headers, rows, `volt-impayes-${new Date().toISOString().split('T')[0]}.csv`);
+    Utils.exportCSV(headers, rows, `pilote-impayes-${new Date().toISOString().split('T')[0]}.csv`);
     Toast.success(`${items.length} impay\u00e9(s) export\u00e9(s) en Excel`);
   },
 
@@ -1671,7 +1671,7 @@ const VersementsPage = {
     const existingValues = existing ? { justification: existing.justification || '' } : {};
 
     Modal.form(
-      '<iconify-icon icon="solar:document-add-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Justifier l\'impay\u00e9',
+      '<iconify-icon icon="solar:document-add-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Justifier l\'impay\u00e9',
       FormBuilder.build(fields, existingValues),
       () => {
         const body = document.getElementById('modal-body');

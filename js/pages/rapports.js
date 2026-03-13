@@ -18,12 +18,12 @@ const RapportsPage = {
 
   _template() {
     const reports = [
-      { id: 'bilan-mensuel', icon: 'solar:calendar-bold-duotone', color: 'var(--volt-blue)', title: 'Bilan mensuel', desc: "Synthese mensuelle du CA, des courses et des versements" },
-      { id: 'fiche-chauffeur', icon: 'solar:user-id-bold-duotone', color: 'var(--volt-cyan)', title: 'Fiche chauffeur', desc: 'Rapport individuel : courses, versements, score conduite' },
+      { id: 'bilan-mensuel', icon: 'solar:calendar-bold-duotone', color: 'var(--pilote-blue)', title: 'Bilan mensuel', desc: "Synthese mensuelle du CA, des courses et des versements" },
+      { id: 'fiche-chauffeur', icon: 'solar:user-id-bold-duotone', color: 'var(--pilote-cyan)', title: 'Fiche chauffeur', desc: 'Rapport individuel : courses, versements, score conduite' },
       { id: 'fiche-vehicule', icon: 'solar:wheel-bold-duotone', color: 'var(--success)', title: 'Fiche vehicule', desc: 'Rapport couts et revenus par vehicule' },
       { id: 'etat-versements', icon: 'solar:transfer-horizontal-bold-duotone', color: 'var(--warning)', title: 'Etat des versements', desc: 'Versements en attente, en retard ou partiels' },
       { id: 'analyse-rentabilite', icon: 'solar:pie-chart-2-bold-duotone', color: 'var(--danger)', title: 'Analyse rentabilite', desc: 'Comparaison de rentabilite de la flotte' },
-      { id: 'bilan-conduite', icon: 'solar:map-arrow-right-bold-duotone', color: 'var(--volt-yellow)', title: 'Bilan conduite', desc: "Scores et incidents de conduite de l'ensemble des chauffeurs" }
+      { id: 'bilan-conduite', icon: 'solar:map-arrow-right-bold-duotone', color: 'var(--pilote-yellow)', title: 'Bilan conduite', desc: "Scores et incidents de conduite de l'ensemble des chauffeurs" }
     ];
 
     return `
@@ -35,7 +35,7 @@ const RapportsPage = {
       <div class="charts-grid" style="margin-bottom:var(--space-xl);">
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone" style="color:var(--volt-blue)"></iconify-icon> CA mensuel (6 derniers mois)</div>
+            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone" style="color:var(--pilote-blue)"></iconify-icon> CA mensuel (6 derniers mois)</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-rapport-ca-mensuel"></canvas>
@@ -62,7 +62,7 @@ const RapportsPage = {
         </div>
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:var(--volt-cyan)"></iconify-icon> Performance chauffeurs (CA)</div>
+            <div class="chart-title"><iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:var(--pilote-cyan)"></iconify-icon> Performance chauffeurs (CA)</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-rapport-drivers"></canvas>
@@ -81,7 +81,7 @@ const RapportsPage = {
         </div>
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:map-arrow-right-bold-duotone" style="color:var(--volt-yellow)"></iconify-icon> Scores de conduite</div>
+            <div class="chart-title"><iconify-icon icon="solar:map-arrow-right-bold-duotone" style="color:var(--pilote-yellow)"></iconify-icon> Scores de conduite</div>
           </div>
           <div class="chart-container" style="height:280px;">
             <canvas id="chart-rapport-conduite"></canvas>
@@ -592,7 +592,7 @@ const RapportsPage = {
     }
 
     if (format === 'csv') {
-      Utils.exportCSV(headers, rows, `volt-${reportId}-${new Date().toISOString().split('T')[0]}.csv`);
+      Utils.exportCSV(headers, rows, `pilote-${reportId}-${new Date().toISOString().split('T')[0]}.csv`);
       Toast.success(`Rapport "${title}" exporte en CSV`);
     } else {
       Utils.exportPDF(title, headers, rows, { subtitle });

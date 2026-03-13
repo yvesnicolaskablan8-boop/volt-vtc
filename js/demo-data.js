@@ -1,5 +1,5 @@
 /**
- * DemoData - Initializes empty data with default admin user for Volt VTC
+ * DemoData - Initializes empty data with default admin user for Pilote
  */
 const DemoData = {
   async generate() {
@@ -24,7 +24,7 @@ const DemoData = {
           id: 'USR-001',
           prenom: 'Yves',
           nom: 'Nicolas',
-          email: 'yves@volt.ci',
+          email: 'admin@pilote.app',
           telephone: '+225 07 00 00 01',
           role: 'Administrateur',
           statut: 'actif',
@@ -42,12 +42,12 @@ const DemoData = {
       ],
       settings: {
         entreprise: {
-          nom: 'Volt VTC',
+          nom: 'Mon Entreprise',
           slogan: 'Transport de qualité',
-          email: 'contact@volt.ci',
+          email: 'contact@pilote.app',
           telephone: '+225 27 00 00 00',
           adresse: 'Abidjan, Cocody Riviera',
-          siteWeb: 'www.volt.ci',
+          siteWeb: 'www.pilote.app',
           numeroRegistre: 'CI-ABJ-2024-0042',
           devise: 'FCFA'
         },
@@ -62,7 +62,7 @@ const DemoData = {
       }
     };
 
-    localStorage.setItem('volt_data', JSON.stringify(data));
+    localStorage.setItem('pilote_data', JSON.stringify(data));
     return data;
   }
 };

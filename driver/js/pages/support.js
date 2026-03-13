@@ -126,7 +126,7 @@ const SupportPage = {
     setTimeout(() => {
       DriverModal.show('Appeler le support ?', `
         <div style="text-align:center;padding:0.5rem 0">
-          <p style="font-size:0.875rem;color:#64748b">Voulez-vous appeler le support Volt pour un suivi immédiat ?</p>
+          <p style="font-size:0.875rem;color:#64748b">Voulez-vous appeler le support Pilote pour un suivi immédiat ?</p>
         </div>
       `, [
         { label: 'Non merci', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
@@ -140,7 +140,7 @@ const SupportPage = {
       <div style="text-align:center;padding:1rem 0">
         <iconify-icon icon="solar:danger-bold" style="font-size:3rem;color:#ef4444;margin-bottom:12px;display:block"></iconify-icon>
         <p style="font-weight:700;font-size:1rem;margin-bottom:8px">Confirmer l'appel d'urgence ?</p>
-        <p style="font-size:0.8rem;color:#64748b">Un appel sera passé au support Volt et votre position sera partagée.</p>
+        <p style="font-size:0.8rem;color:#64748b">Un appel sera passé au support Pilote et votre position sera partagée.</p>
       </div>
     `, [
       { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },

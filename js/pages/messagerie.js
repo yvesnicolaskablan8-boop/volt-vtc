@@ -250,7 +250,7 @@ const MessageriePage = {
   // =================== API HELPERS ===================
 
   async _api(method, path, body) {
-    const token = localStorage.getItem('volt_token');
+    const token = localStorage.getItem('pilote_token');
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
     const opts = {

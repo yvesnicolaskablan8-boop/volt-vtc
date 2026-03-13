@@ -181,16 +181,16 @@ const DriverCountdown = {
 
     // Cas 1 : Deadline depassee (impaye) ou < 1h → ALARME AGRESSIVE
     if (remainingMs <= 0 || (remainingMs > 0 && remainingMs <= 3600 * 1000)) {
-      if (sessionStorage.getItem('volt_alarm_dismissed')) return;
+      if (sessionStorage.getItem('pilote_alarm_dismissed')) return;
       this.startAlarm();
       return;
     }
 
     // Cas 2 : < 24h → son simple (1 seule fois par session)
     if (remainingMs <= 24 * 3600 * 1000) {
-      if (sessionStorage.getItem('volt_deadline_sound_played')) return;
+      if (sessionStorage.getItem('pilote_deadline_sound_played')) return;
       this.playAlertSound();
-      sessionStorage.setItem('volt_deadline_sound_played', '1');
+      sessionStorage.setItem('pilote_deadline_sound_played', '1');
     }
   },
 
@@ -237,10 +237,10 @@ const DriverCountdown = {
     this._alarmActive = true;
 
     // Si app native Android → utiliser les fonctions natives
-    if (window.VoltNative) {
+    if (window.PiloteNative) {
       try {
-        window.VoltNative.setMaxVolume();
-        window.VoltNative.keepScreenOn(true);
+        window.PiloteNative.setMaxVolume();
+        window.PiloteNative.keepScreenOn(true);
       } catch (e) {}
     }
 
@@ -275,9 +275,9 @@ const DriverCountdown = {
       clearInterval(this._alarmVibInterval);
       this._alarmVibInterval = null;
     }
-    if (window.VoltNative) {
-      try { window.VoltNative.cancelVibration(); } catch (e) {}
-      try { window.VoltNative.keepScreenOn(false); } catch (e) {}
+    if (window.PiloteNative) {
+      try { window.PiloteNative.cancelVibration(); } catch (e) {}
+      try { window.PiloteNative.keepScreenOn(false); } catch (e) {}
     } else if (navigator.vibrate) {
       navigator.vibrate(0);
     }
@@ -287,7 +287,7 @@ const DriverCountdown = {
     if (overlay) overlay.remove();
 
     // Marquer dans sessionStorage (ne relancera pas cette session)
-    sessionStorage.setItem('volt_alarm_dismissed', '1');
+    sessionStorage.setItem('pilote_alarm_dismissed', '1');
   },
 
   /**
@@ -333,9 +333,9 @@ const DriverCountdown = {
    */
   _startVibration() {
     // App native → vibration native Android (plus puissante)
-    if (window.VoltNative) {
+    if (window.PiloteNative) {
       try {
-        window.VoltNative.vibratePattern('[0,500,200,500,200,500,200,500]', 0);
+        window.PiloteNative.vibratePattern('[0,500,200,500,200,500,200,500]', 0);
         return; // La vibration native boucle toute seule
       } catch (e) {}
     }

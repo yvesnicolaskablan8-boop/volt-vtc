@@ -24,7 +24,7 @@ try {
 function initVAPID() {
   const publicKey = process.env.VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const email = process.env.VAPID_EMAIL || 'contact@volt.ci';
+  const email = process.env.VAPID_EMAIL || 'contact@pilote.app';
 
   if (!webPush || !publicKey || !privateKey) {
     console.warn('[NotifService] VAPID keys manquantes — push desactive');
@@ -145,7 +145,7 @@ async function sendSMS(telephone, message) {
     const body = new URLSearchParams({
       To: to,
       From: fromNumber,
-      Body: `[Volt VTC] ${message}`
+      Body: `[Pilote] ${message}`
     });
 
     const res = await fetch(url, {

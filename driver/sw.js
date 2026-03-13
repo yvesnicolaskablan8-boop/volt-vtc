@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volt-chauffeur-v18';
+const CACHE_NAME = 'pilote-chauffeur-v19';
 
 const STATIC_ASSETS = [
   '/driver/',
@@ -80,7 +80,7 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch (e) {
-    data = { titre: 'Volt VTC', message: event.data ? event.data.text() : 'Nouvelle notification' };
+    data = { titre: 'Pilote', message: event.data ? event.data.text() : 'Nouvelle notification' };
   }
 
   const options = {
@@ -92,7 +92,7 @@ self.addEventListener('push', (event) => {
       type: data.type || 'info'
     },
     vibrate: [200, 100, 200],
-    tag: data.type || 'volt-notification', // Evite les doublons du meme type
+    tag: data.type || 'pilote-notification', // Evite les doublons du meme type
     renotify: true,
     actions: [
       { action: 'open', title: 'Ouvrir' },
@@ -101,7 +101,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.titre || 'Volt VTC', options)
+    self.registration.showNotification(data.titre || 'Pilote', options)
   );
 });
 

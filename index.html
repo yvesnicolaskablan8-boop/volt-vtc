@@ -1,9 +1,17 @@
 <!DOCTYPE html>
 <html lang="fr" data-theme="dark">
 <head>
+  <script>
+  // Migration Volt → Pilote (one-time)
+  (function(){
+    [['volt_token','pilote_token'],['volt_session','pilote_session'],['volt_app_version','pilote_app_version']].forEach(function(m){
+      var o=localStorage.getItem(m[0]);if(o&&!localStorage.getItem(m[1])){localStorage.setItem(m[1],o);}localStorage.removeItem(m[0]);
+    });
+  })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Volt - Gestion VTC</title>
+  <title>Pilote</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#3b82f6">
@@ -15,9 +23,9 @@
   <script>
   (function(){
     var APP_VERSION = 124;
-    var stored = parseInt(localStorage.getItem('volt_app_version') || '0');
+    var stored = parseInt(localStorage.getItem('pilote_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
-      localStorage.setItem('volt_app_version', APP_VERSION);
+      localStorage.setItem('pilote_app_version', APP_VERSION);
       navigator.serviceWorker.getRegistrations().then(function(regs) {
         var p = regs.map(function(r) { return r.unregister(); });
         return Promise.all(p);
@@ -58,13 +66,13 @@
 
   <!-- Prevent flash of login screen on refresh when already authenticated -->
   <script>
-    if (localStorage.getItem('volt_token')) {
-      document.documentElement.classList.add('volt-has-token');
+    if (localStorage.getItem('pilote_token')) {
+      document.documentElement.classList.add('pilote-has-token');
     }
   </script>
   <style>
-    .volt-has-token .login-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
-    .volt-has-token .app-container { display: block !important; }
+    .pilote-has-token .login-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
+    .pilote-has-token .app-container { display: block !important; }
   </style>
 </head>
 <body>
@@ -84,10 +92,10 @@
         <!-- Logo -->
         <div class="login-logo">
           <div class="login-logo-ring">
-            <img src="assets/logo.svg" alt="Volt" class="login-logo-icon">
+            <img src="assets/logo.svg" alt="Pilote" class="login-logo-icon">
           </div>
-          <div class="login-logo-text">VOLT</div>
-          <div class="login-logo-subtitle">Gestion de flotte VTC</div>
+          <div class="login-logo-text">PILOTE</div>
+          <div class="login-logo-subtitle">Gestion de flotte</div>
         </div>
 
         <!-- Login Form -->
@@ -157,7 +165,7 @@
       </div>
 
       <!-- App version -->
-      <div class="login-version">Volt VTC v2.0</div>
+      <div class="login-version">Pilote v2.0</div>
     </div>
   </div>
 
@@ -165,9 +173,9 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <img src="assets/logo.svg" alt="Volt" class="logo-icon">
+        <img src="assets/logo.svg" alt="Pilote" class="logo-icon">
         <div>
-          <div class="logo-text">VOLT</div>
+          <div class="logo-text">PILOTE</div>
           <div class="logo-subtitle">Transport VTC</div>
         </div>
       </div>
@@ -247,7 +255,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <div class="version">Volt v1.0.0</div>
+        <div class="version">Pilote v1.0.0</div>
       </div>
     </aside>
 
@@ -263,7 +271,7 @@
             <iconify-icon icon="solar:hamburger-menu-bold" style="font-size:20px;"></iconify-icon>
           </button>
           <div class="header-breadcrumb" id="header-breadcrumb">
-            <span class="text-muted">Volt</span>
+            <span class="text-muted">Pilote</span>
             <iconify-icon icon="solar:alt-arrow-right-bold" class="text-muted" style="font-size: 12px;"></iconify-icon>
             <span class="current">Tableau de bord</span>
           </div>

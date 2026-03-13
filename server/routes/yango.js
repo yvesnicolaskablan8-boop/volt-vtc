@@ -765,32 +765,32 @@ router.get('/stats', async (req, res) => {
     const driverNameMap = {};
     drivers.forEach(d => { driverNameMap[d.id] = d.nom; });
 
-    // Load Volt-registered chauffeurs to filter top drivers
-    // Only chauffeurs with a yangoDriverId are considered "registered on Volt"
-    let voltChauffeurs = [];
+    // Load Pilote-registered chauffeurs to filter top drivers
+    // Only chauffeurs with a yangoDriverId are considered "registered on Pilote"
+    let piloteChauffeurs = [];
     try {
-      voltChauffeurs = await Chauffeur.find(
+      piloteChauffeurs = await Chauffeur.find(
         { yangoDriverId: { $exists: true, $ne: '' } },
         { yangoDriverId: 1, prenom: 1, nom: 1 }
       ).lean();
     } catch (e) {
-      console.error('Yango stats - failed to load Volt chauffeurs:', e.message);
+      console.error('Yango stats - failed to load Pilote chauffeurs:', e.message);
     }
 
-    // Map yangoDriverId → Volt chauffeur name
-    const voltYangoIds = new Set();
-    const voltNameMap = {};
-    voltChauffeurs.forEach(c => {
-      voltYangoIds.add(c.yangoDriverId);
-      voltNameMap[c.yangoDriverId] = `${c.prenom} ${c.nom}`.trim();
+    // Map yangoDriverId → Pilote chauffeur name
+    const piloteYangoIds = new Set();
+    const piloteNameMap = {};
+    piloteChauffeurs.forEach(c => {
+      piloteYangoIds.add(c.yangoDriverId);
+      piloteNameMap[c.yangoDriverId] = `${c.prenom} ${c.nom}`.trim();
     });
 
-    // Top drivers from transactions — ONLY Volt-registered chauffeurs
+    // Top drivers from transactions — ONLY Pilote-registered chauffeurs
     const topChauffeurs = Object.entries(todayFinance.driverRevenue)
-      .filter(([id]) => voltYangoIds.has(id))
+      .filter(([id]) => piloteYangoIds.has(id))
       .map(([id, rev]) => ({
         id,
-        nom: voltNameMap[id] || driverNameMap[id] || id,
+        nom: piloteNameMap[id] || driverNameMap[id] || id,
         ca: Math.round(rev.cash + rev.card),
         cash: Math.round(rev.cash),
         card: Math.round(rev.card),
@@ -853,18 +853,18 @@ router.get('/stats', async (req, res) => {
         arrivee: o.route?.[1]?.address?.fullname || o.address_to?.fullname || ''
       }));
 
-    // Filter drivers: only show Volt-registered chauffeurs, use Volt names
-    const voltDrivers = drivers
-      .filter(d => voltYangoIds.has(d.id))
-      .map(d => ({ ...d, nom: voltNameMap[d.id] || d.nom }));
+    // Filter drivers: only show Pilote-registered chauffeurs, use Volt names
+    const piloteDrivers = drivers
+      .filter(d => piloteYangoIds.has(d.id))
+      .map(d => ({ ...d, nom: piloteNameMap[d.id] || d.nom }));
 
     res.json({
       chauffeurs: {
-        total: voltDrivers.length,
-        enLigne: voltDrivers.filter(d => d.statut === 'en_ligne').length,
-        occupes: voltDrivers.filter(d => d.statut === 'occupe').length,
-        horsLigne: voltDrivers.filter(d => d.statut === 'hors_ligne').length,
-        liste: voltDrivers
+        total: piloteDrivers.length,
+        enLigne: piloteDrivers.filter(d => d.statut === 'en_ligne').length,
+        occupes: piloteDrivers.filter(d => d.statut === 'occupe').length,
+        horsLigne: piloteDrivers.filter(d => d.statut === 'hors_ligne').length,
+        liste: piloteDrivers
       },
       courses: {
         aujourd_hui: hasWorkRuleFilter ? todayOrders.length : (ordersToday.total || todayOrders.length),
@@ -1200,12 +1200,12 @@ router.post('/recharge', async (req, res) => {
     }
 
     // Générer un token d'idempotence unique
-    const idempotencyToken = `volt-recharge-${chauffeurId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const idempotencyToken = `pilote-recharge-${chauffeurId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     const body = {
       amount: montant.toFixed(4),
       category_id: 'partner_service_manual',
-      description: description || `Recharge Volt — ${chauffeur.prenom} ${chauffeur.nom}`,
+      description: description || `Recharge Pilote — ${chauffeur.prenom} ${chauffeur.nom}`,
       driver_profile_id: chauffeur.yangoDriverId,
       park_id: parkId
     };

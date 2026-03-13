@@ -1,5 +1,5 @@
 /**
- * DashboardPage - Main dashboard with KPIs and charts (internal Volt data)
+ * DashboardPage - Main dashboard with KPIs and charts (internal Pilote data)
  */
 const DashboardPage = {
   _charts: [],
@@ -22,9 +22,9 @@ const DashboardPage = {
   // Auto-générer les versements du jour (1x/jour max)
   async _autoGenerateVersements() {
     const today = new Date().toISOString().split('T')[0];
-    const lastGen = localStorage.getItem('volt_autogen_date');
+    const lastGen = localStorage.getItem('pilote_autogen_date');
     if (lastGen === today) return; // Déjà fait aujourd'hui
-    localStorage.setItem('volt_autogen_date', today);
+    localStorage.setItem('pilote_autogen_date', today);
     try {
       const res = await fetch(Store._apiBase + '/versements/auto-generate', {
         method: 'POST',
@@ -623,7 +623,7 @@ const DashboardPage = {
       <!-- Récap quotidien -->
       <div class="card" style="margin-top:var(--space-md);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));border:1px solid var(--border-color);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-          <iconify-icon icon="solar:clipboard-list-bold-duotone" style="font-size:24px;color:var(--volt-blue);"></iconify-icon>
+          <iconify-icon icon="solar:clipboard-list-bold-duotone" style="font-size:24px;color:var(--pilote-blue);"></iconify-icon>
           <div>
             <div style="font-weight:700;font-size:var(--font-size-md);">Récap du ${d.periodLabel}</div>
             <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Vue d'ensemble de la journée</div>
@@ -631,7 +631,7 @@ const DashboardPage = {
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
           <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
-            <iconify-icon icon="solar:users-group-rounded-bold-duotone" style="font-size:20px;color:var(--volt-cyan);"></iconify-icon>
+            <iconify-icon icon="solar:users-group-rounded-bold-duotone" style="font-size:20px;color:var(--pilote-cyan);"></iconify-icon>
             <div>
               <div style="font-weight:600;font-size:var(--font-size-sm);">${d.programmesCount} chauffeur${d.programmesCount > 1 ? 's' : ''} programmé${d.programmesCount > 1 ? 's' : ''}</div>
               <div style="font-size:var(--font-size-xs);color:var(--text-muted);">sur ${d.activeCount} actifs</div>
@@ -652,7 +652,7 @@ const DashboardPage = {
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
-            <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:20px;color:var(--volt-blue);"></iconify-icon>
+            <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:20px;color:var(--pilote-blue);"></iconify-icon>
             <div>
               <div style="font-weight:600;font-size:var(--font-size-sm);">${Utils.formatCurrency(d.caThisMonth)} CA</div>
               <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${d.nbVersementsPeriode} versement${d.nbVersementsPeriode > 1 ? 's' : ''} encaissé${d.nbVersementsPeriode > 1 ? 's' : ''}</div>
@@ -733,9 +733,9 @@ const DashboardPage = {
     const tendanceSign = d.tendancePctMois >= 0 ? '+' : '';
 
     return `
-      <div class="card" style="margin-top:var(--space-lg);border-left:4px solid var(--volt-blue);">
+      <div class="card" style="margin-top:var(--space-lg);border-left:4px solid var(--pilote-blue);">
         <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:graph-new-up-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Prévisions de chiffre d'affaires</span>
+          <span class="card-title"><iconify-icon icon="solar:graph-new-up-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Prévisions de chiffre d'affaires</span>
           <span style="font-size:var(--font-size-xs);color:var(--text-muted);">Basé sur les ${d.forecastChartData.length - 1} derniers mois</span>
         </div>
 
@@ -744,7 +744,7 @@ const DashboardPage = {
           <!-- Projection fin de mois -->
           <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);position:relative;overflow:hidden;">
             <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">
-              <iconify-icon icon="solar:calendar-mark-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Projection fin de mois
+              <iconify-icon icon="solar:calendar-mark-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Projection fin de mois
             </div>
             <div style="font-size:var(--font-size-xl);font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.projectionFinMois)}</div>
             <div style="display:flex;align-items:center;gap:4px;margin-top:4px;font-size:var(--font-size-xs);">
@@ -1082,7 +1082,7 @@ const DashboardPage = {
     const d = this._lastData || this._getData();
     const today = new Date().toLocaleDateString('fr-FR');
     const text = [
-      `📊 *VOLT VTC — Résumé du ${today}*`,
+      `📊 *PILOTE — Résumé du ${today}*`,
       '',
       `💰 CA du mois: ${Utils.formatCurrency(d.caThisMonth)}`,
       `✅ Versements reçus: ${Utils.formatCurrency(d.totalVerse)}`,
@@ -1091,7 +1091,7 @@ const DashboardPage = {
       d.retardCount > 0 ? `⚠️ Versements en retard: ${d.retardCount}` : '',
       d.unpaidItems.length > 0 ? `🔴 Recettes impayées: ${d.unpaidItems.length} (${Utils.formatCurrency(d.totalUnpaid)})` : '',
       '',
-      '📱 _Envoyé depuis Volt VTC_'
+      '📱 _Envoyé depuis Pilote_'
     ].filter(Boolean).join('\n');
 
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
@@ -1159,7 +1159,7 @@ const DashboardPage = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + localStorage.getItem('volt_token')
+          'Authorization': 'Bearer ' + localStorage.getItem('pilote_token')
         },
         body: JSON.stringify({
           titre: 'Rappel de paiement',
@@ -1219,7 +1219,7 @@ const DashboardPage = {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + localStorage.getItem('volt_token')
+              'Authorization': 'Bearer ' + localStorage.getItem('pilote_token')
             },
             body: JSON.stringify(values)
           });
@@ -1407,7 +1407,7 @@ const DashboardPage = {
       const v = vehicules.find(x => x.id === d.vehiculeId);
       return [d.date, v ? `${v.marque} ${v.modele}` : d.vehiculeId, typeLabels[d.typeDepense] || d.typeDepense, d.montant, d.kilometrage || '', d.commentaire || ''];
     });
-    Utils.exportCSV(headers, rows, `volt-depenses-${new Date().toISOString().split('T')[0]}.csv`);
+    Utils.exportCSV(headers, rows, `pilote-depenses-${new Date().toISOString().split('T')[0]}.csv`);
     Toast.success(`${depenses.length} d\u00e9pense(s) export\u00e9e(s)`);
   },
 
@@ -1428,7 +1428,7 @@ const DashboardPage = {
     doc.rect(0, 0, 148, 30, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
-    doc.text('VOLT VTC', 14, 14);
+    doc.text('PILOTE', 14, 14);
     doc.setFontSize(10);
     doc.text('Re\u00e7u de paiement', 14, 22);
     doc.setFontSize(8);
@@ -1483,7 +1483,7 @@ const DashboardPage = {
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184);
     doc.text('Ce document fait office de re\u00e7u de paiement.', 14, y);
-    doc.text('G\u00e9n\u00e9r\u00e9 automatiquement par Volt VTC.', 14, y + 5);
+    doc.text('G\u00e9n\u00e9r\u00e9 automatiquement par Pilote.', 14, y + 5);
 
     doc.save(`recu-${name.replace(/\s+/g, '-')}-${date}.pdf`);
     Toast.success('Re\u00e7u PDF g\u00e9n\u00e9r\u00e9');

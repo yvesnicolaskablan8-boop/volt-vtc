@@ -2,8 +2,8 @@
  * Auth - Authentication via API, JWT tokens & permissions
  */
 const Auth = {
-  _SESSION_KEY: 'volt_session',
-  _TOKEN_KEY: 'volt_token',
+  _SESSION_KEY: 'pilote_session',
+  _TOKEN_KEY: 'pilote_token',
 
   // =================== TOKEN MANAGEMENT ===================
 

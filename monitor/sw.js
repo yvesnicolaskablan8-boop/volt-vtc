@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volt-monitor-v9';
+const CACHE_NAME = 'pilote-monitor-v10';
 
 const STATIC_ASSETS = [
   '/monitor/',
@@ -25,7 +25,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(key => key.startsWith('volt-monitor-') && key !== CACHE_NAME)
+        keys.filter(key => (key.startsWith('pilote-monitor-') || key.startsWith('volt-monitor-')) && key !== CACHE_NAME)
           .map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())

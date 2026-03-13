@@ -51,9 +51,9 @@ const GaragePage = {
       <style>
         .garage-tab { background:none;border:none;padding:10px 20px;cursor:pointer;font-size:var(--font-size-sm);font-weight:600;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;display:flex;align-items:center;gap:6px;white-space:nowrap; }
         .garage-tab:hover { color:var(--text-primary);background:var(--bg-secondary);border-radius:var(--radius-md) var(--radius-md) 0 0; }
-        .garage-tab.active { color:var(--volt-orange);border-bottom-color:var(--volt-orange); }
+        .garage-tab.active { color:var(--pilote-orange);border-bottom-color:var(--pilote-orange); }
         .maint-filter { background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px 12px;cursor:pointer;font-size:var(--font-size-xs);transition:all 0.2s; }
-        .maint-filter.active { background:var(--volt-blue);color:white !important;border-color:var(--volt-blue); }
+        .maint-filter.active { background:var(--pilote-blue);color:white !important;border-color:var(--pilote-blue); }
         .maint-filter:hover:not(.active) { background:var(--bg-secondary); }
         .maint-statut-badge { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600; }
         .maint-statut-badge.en_retard, .maint-statut-badge.expire { background:rgba(239,68,68,0.12);color:#ef4444; }
@@ -156,7 +156,7 @@ const GaragePage = {
           { label:'Statut', key:'statut', render:(m) => `<span class="maint-statut-badge ${m.statut}">${statutLabels[m.statut] || m.statut}</span>` },
           { label:'Type', key:'type', render:(m) => `<span style="font-weight:600;">${typeLabels[m.type] || m.type}</span>${m.label ? `<br><span style="font-size:var(--font-size-xs);color:var(--text-muted);">${m.label}</span>` : ''}` },
           { label:'V\u00e9hicule', key:'vehiculeLabel', render:(m) => `<span style="font-weight:500;">${m.vehiculeLabel}</span><br><span style="font-size:var(--font-size-xs);color:var(--text-muted);">${m.immatriculation}</span>` },
-          { label:'Chauffeur', key:'chauffeurNom', render:(m) => m.chauffeurNom ? `<a href="#/chauffeurs/${m.chauffeurId}" style="color:var(--volt-blue);text-decoration:none;">${m.chauffeurNom}</a>` : '<span style="color:var(--text-muted);font-style:italic;">-</span>' },
+          { label:'Chauffeur', key:'chauffeurNom', render:(m) => m.chauffeurNom ? `<a href="#/chauffeurs/${m.chauffeurId}" style="color:var(--pilote-blue);text-decoration:none;">${m.chauffeurNom}</a>` : '<span style="color:var(--text-muted);font-style:italic;">-</span>' },
           { label:'\u00c9ch\u00e9ance', key:'prochaineDate', render:(m) => { let h=''; if(m.prochaineDate){ const j=Math.ceil((new Date(m.prochaineDate)-new Date())/86400000); const c=j<0?'#ef4444':j<=7?'#f59e0b':'var(--text-primary)'; h+=`<span style="color:${c};font-weight:500;">${Utils.formatDate(m.prochaineDate)}</span>`; if(j<0)h+=`<br><span style="font-size:var(--font-size-xs);color:#ef4444;font-weight:600;">${Math.abs(j)}j retard</span>`; else if(j<=7)h+=`<br><span style="font-size:var(--font-size-xs);color:#f59e0b;">dans ${j}j</span>`; } return h||'-'; } },
           { label:'Co\u00fbt', key:'coutEstime', render:(m) => m.coutEstime ? `${m.coutEstime.toLocaleString('fr-FR')} F` : '-', value:(m) => m.coutEstime||0 }
         ],
@@ -637,7 +637,7 @@ const GaragePage = {
         { label:'Assurance', key:'assurance', render:(t) => t.assurance ? `${t.assurance.toLocaleString('fr-FR')} F` : '-', value:(t)=>t.assurance },
         { label:'D\u00e9penses', key:'depenses', render:(t) => t.depenses ? `${t.depenses.toLocaleString('fr-FR')} F` : '-', value:(t)=>t.depenses },
         { label:'Contrav.', key:'contraventions', render:(t) => t.contraventions ? `${t.contraventions.toLocaleString('fr-FR')} F` : '-', value:(t)=>t.contraventions },
-        { label:'Total TCO', key:'totalTCO', render:(t) => `<span style="font-weight:700;color:var(--volt-orange);">${t.totalTCO.toLocaleString('fr-FR')} F</span>`, value:(t)=>t.totalTCO },
+        { label:'Total TCO', key:'totalTCO', render:(t) => `<span style="font-weight:700;color:var(--pilote-orange);">${t.totalTCO.toLocaleString('fr-FR')} F</span>`, value:(t)=>t.totalTCO },
         { label:'F/km', key:'coutKm', render:(t) => {
           const avg = moyKm;
           const color = t.coutKm > avg * 1.5 ? '#ef4444' : t.coutKm > avg * 1.2 ? '#f59e0b' : '#22c55e';

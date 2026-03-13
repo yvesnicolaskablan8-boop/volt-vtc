@@ -38,7 +38,7 @@ const Header = {
 
     breadcrumb.innerHTML = `
       ${backBtn}
-      <span class="text-muted">Volt</span>
+      <span class="text-muted">Pilote</span>
       <iconify-icon icon="solar:alt-arrow-right-bold" class="text-muted" style="font-size: 12px;"></iconify-icon>
       <span class="current">${title}</span>
     `;
@@ -305,8 +305,8 @@ const Header = {
     if (!input) return;
 
     // Use a flag to prevent duplicate init
-    if (input._voltSearchInit) return;
-    input._voltSearchInit = true;
+    if (input._piloteSearchInit) return;
+    input._piloteSearchInit = true;
 
     // Create dropdown container
     let dropdown = document.getElementById('global-search-dropdown');
@@ -365,7 +365,7 @@ const Header = {
         chauffeurs.forEach(c => {
           const initials = ((c.prenom?.[0] || '') + (c.nom?.[0] || '')).toUpperCase();
           html += `<a href="#/chauffeurs/${c.id}" class="search-result-item" style="display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;color:var(--text-primary);cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background=''">
-            <div style="width:32px;height:32px;border-radius:50%;background:var(--volt-blue);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${initials}</div>
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--pilote-blue);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${initials}</div>
             <div style="flex:1;min-width:0;">
               <div style="font-weight:600;font-size:var(--font-size-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.prenom} ${c.nom}</div>
               <div style="font-size:10px;color:var(--text-muted);">${c.telephone || ''} · ${c.statut}</div>

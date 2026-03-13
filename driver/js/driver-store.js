@@ -8,7 +8,7 @@ const DriverStore = {
     : 'https://volt-vtc-production.up.railway.app/api/driver',
 
   _headers() {
-    const token = localStorage.getItem('volt_driver_token');
+    const token = localStorage.getItem('pilote_driver_token');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
     return headers;

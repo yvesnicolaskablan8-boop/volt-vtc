@@ -187,7 +187,7 @@ const YangoPage = {
             </button>
           </div>
         </div>
-        <div id="yp-volt-activity">
+        <div id="yp-pilote-activity">
           <div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:var(--font-size-sm);">
             <iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:20px;"></iconify-icon>
             <div style="margin-top:8px;">Chargement...</div>
@@ -196,14 +196,14 @@ const YangoPage = {
       </div>
       <style>@keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }</style>
 
-      <!-- Synchronisation Yango → Volt -->
+      <!-- Synchronisation Yango → Pilote -->
       <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
         <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:refresh-bold-duotone" style="color:#FC4C02"></iconify-icon> Synchronisation Yango → Volt</span>
+          <span class="card-title"><iconify-icon icon="solar:refresh-bold-duotone" style="color:#FC4C02"></iconify-icon> Synchronisation Yango → Pilote</span>
           <span class="badge" id="yp-sync-status-badge">--</span>
         </div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:var(--space-md);">
-          Recupere automatiquement les courses et l'activite de chaque chauffeur depuis Yango, puis met a jour les scores de conduite et le temps d'activite dans Volt. La sync automatique s'execute chaque nuit a 2h.
+          Recupere automatiquement les courses et l'activite de chaque chauffeur depuis Yango, puis met a jour les scores de conduite et le temps d'activite dans Pilote. La sync automatique s'execute chaque nuit a 2h.
         </div>
         <div style="display:flex;gap:var(--space-sm);align-items:center;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="YangoPage._triggerSync()" id="yp-sync-btn">
@@ -257,7 +257,7 @@ const YangoPage = {
       this._updatePeriodLabels();
       this._renderKPIs(stats);
       if (!this._map) this._initMap();
-      this._loadVoltActivity();
+      this._loadPiloteActivity();
 
       // Update sync status badge
       try {
@@ -588,7 +588,7 @@ const YangoPage = {
   async _refreshMap() {
     if (!this._map) return;
     try {
-      const token = typeof Auth !== 'undefined' ? Auth.getToken() : localStorage.getItem('volt_token');
+      const token = typeof Auth !== 'undefined' ? Auth.getToken() : localStorage.getItem('pilote_token');
       const res = await fetch('/api/gps/positions', { headers: { 'Authorization': 'Bearer ' + token } });
       if (!res.ok) return;
       const positions = await res.json();
@@ -687,7 +687,7 @@ const YangoPage = {
     if (live) live.style.display = this._planningDate ? 'none' : '';
     this._mapFitted = false;
     this._refreshMap();
-    this._loadVoltActivity();
+    this._loadPiloteActivity();
   },
 
   _resetPlanningDate() {
@@ -701,7 +701,7 @@ const YangoPage = {
     if (live) live.style.display = '';
     this._mapFitted = false;
     this._refreshMap();
-    this._loadVoltActivity();
+    this._loadPiloteActivity();
   },
 
   // =================== YANGO SYNC ===================
@@ -816,11 +816,11 @@ const YangoPage = {
           </div>
         ` : ''}
 
-        ${(result.unmatchedVolt && result.unmatchedVolt.length > 0) ? `
+        ${(result.unmatchedPilote && result.unmatchedPilote.length > 0) ? `
           <div style="margin-top:10px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);font-size:var(--font-size-xs);color:#dc2626;">
-            <iconify-icon icon="solar:user-cross-bold-duotone"></iconify-icon> <strong>${result.unmatchedVolt.length} chauffeur(s) Volt non retrouvé(s) dans Yango :</strong>
+            <iconify-icon icon="solar:user-cross-bold-duotone"></iconify-icon> <strong>${result.unmatchedPilote.length} chauffeur(s) Pilote non retrouvé(s) dans Yango :</strong>
             <div style="margin-top:6px;">
-              ${result.unmatchedVolt.map(c => `
+              ${result.unmatchedPilote.map(c => `
                 <div style="padding:4px 0;border-bottom:1px solid rgba(239,68,68,0.1);">
                   <strong>${c.nom}</strong>
                   <span style="color:var(--text-muted);font-size:10px;"> tel: ${c.telephone || 'aucun'} | nom normalisé: "${c.normalizedName}" | tel normalisé: "${c.normalizedPhone}"</span>
@@ -866,8 +866,8 @@ const YangoPage = {
     return endMin - startMin;
   },
 
-  async _loadVoltActivity() {
-    const container = document.getElementById('yp-volt-activity');
+  async _loadPiloteActivity() {
+    const container = document.getElementById('yp-pilote-activity');
     if (!container) return;
 
     const selectedDate = this._planningDate || new Date().toISOString().split('T')[0];
@@ -913,7 +913,7 @@ const YangoPage = {
           <iconify-icon icon="solar:link-broken-bold-duotone" style="color:#FC4C02;font-size:16px;"></iconify-icon>
           <span><strong>${unlinked.length} chauffeur${unlinked.length > 1 ? 's' : ''} programmé${unlinked.length > 1 ? 's' : ''}</strong> non lié${unlinked.length > 1 ? 's' : ''} à Yango : ${unlinked.map(s => s.chauffeur.prenom).join(', ')}</span>
         </div>
-        <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;" onclick="YangoPage._syncVoltYango()"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier</button>
+        <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;" onclick="YangoPage._syncPiloteYango()"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Lier</button>
       </div>`;
     }
 
@@ -1075,7 +1075,7 @@ const YangoPage = {
     `;
   },
 
-  async _syncVoltYango() {
+  async _syncPiloteYango() {
     Toast.info('Synchronisation Yango en cours...');
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -1084,7 +1084,7 @@ const YangoPage = {
         const matched = result.matched || result.matchedCount || 0;
         Toast.success(`Sync terminée — ${matched} chauffeur(s) liés`);
         await Store.initialize();
-        this._loadVoltActivity();
+        this._loadPiloteActivity();
       } else {
         Toast.error(result?.details || result?.error || 'Erreur de synchronisation');
       }

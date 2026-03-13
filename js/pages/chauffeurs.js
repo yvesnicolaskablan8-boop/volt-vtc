@@ -1,6 +1,6 @@
 /**
  * ChauffeursPage - Driver management with CRUD and detail view
- * Shows only internal Volt drivers (no Yango data)
+ * Shows only internal drivers (no Yango data)
  */
 const ChauffeursPage = {
   _charts: [],
@@ -60,7 +60,7 @@ const ChauffeursPage = {
       </div>
 
       <div class="grid-4" style="margin-bottom: var(--space-lg);">
-        <div class="kpi-card"><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total Volt</div></div>
+        <div class="kpi-card"><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total</div></div>
         <div class="kpi-card green"><div class="kpi-value">${stats.actifs}</div><div class="kpi-label">Actifs</div></div>
         <div class="kpi-card yellow"><div class="kpi-value">${stats.suspendus}</div><div class="kpi-label">Suspendus</div></div>
         <div class="kpi-card red"><div class="kpi-value">${stats.inactifs}</div><div class="kpi-label">Inactifs</div></div>
@@ -305,7 +305,7 @@ const ChauffeursPage = {
             <div><span class="text-muted">Début contrat</span><br><strong>${Utils.formatDate(c.dateDebutContrat)}</strong></div>
             <div><span class="text-muted">Véhicule</span><br><strong>${vehicule ? `${vehicule.marque} ${vehicule.modele} (${vehicule.immatriculation})` : 'Non assigné'}</strong></div>
             <div><span class="text-muted">Fin contrat</span><br><strong>${c.dateFinContrat ? Utils.formatDate(c.dateFinContrat) : 'En cours'}</strong></div>
-            <div><span class="text-muted">Recette quotidienne</span><br><strong style="color:${c.redevanceQuotidienne > 0 ? 'var(--volt-blue)' : 'var(--text-muted)'}">${c.redevanceQuotidienne > 0 ? Utils.formatCurrency(c.redevanceQuotidienne) + ' / jour' : 'Non définie'}</strong></div>
+            <div><span class="text-muted">Recette quotidienne</span><br><strong style="color:${c.redevanceQuotidienne > 0 ? 'var(--pilote-blue)' : 'var(--text-muted)'}">${c.redevanceQuotidienne > 0 ? Utils.formatCurrency(c.redevanceQuotidienne) + ' / jour' : 'Non définie'}</strong></div>
           </div>
         </div>
 
@@ -2043,7 +2043,7 @@ const ChauffeursPage = {
         color: v.statut === 'valide' ? '#22c55e' : v.statut === 'retard' ? '#ef4444' : '#f59e0b',
         label: `Versement ${v.statut === 'valide' ? 'valid\u00e9' : v.statut === 'retard' ? 'en retard' : v.statut}`,
         detail: `${Utils.formatCurrency(v.montantVerse)}${v.moyenPaiement ? ' \u2014 ' + v.moyenPaiement : ''}`,
-        extra: v.justification ? `<div style="font-size:10px;color:var(--volt-blue);margin-top:2px;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${v.justification}</div>` : ''
+        extra: v.justification ? `<div style="font-size:10px;color:var(--pilote-blue);margin-top:2px;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${v.justification}</div>` : ''
       });
     });
 

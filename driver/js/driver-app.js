@@ -52,7 +52,7 @@ const DriverApp = {
     window.addEventListener('appinstalled', () => {
       this._deferredPrompt = null;
       this._hideInstallButton();
-      if (typeof DriverToast !== 'undefined') DriverToast.show('Volt Chauffeur installé !', 'success');
+      if (typeof DriverToast !== 'undefined') DriverToast.show('Pilote Chauffeur installé !', 'success');
     });
 
     // Setup install button
@@ -95,7 +95,7 @@ const DriverApp = {
     }
 
     // Apply saved dark mode theme
-    const savedTheme = localStorage.getItem('volt_theme') || 'light';
+    const savedTheme = localStorage.getItem('pilote_theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
 
     // Register pages
@@ -258,7 +258,7 @@ const DriverApp = {
 
       // Cas 1 : Deadline depassee ou < 1h → alarme agressive
       if (ms <= 0 || (ms > 0 && ms <= 3600 * 1000)) {
-        if (sessionStorage.getItem('volt_alarm_dismissed')) return;
+        if (sessionStorage.getItem('pilote_alarm_dismissed')) return;
         DriverCountdown.init(deadline);
         DriverCountdown.startAlarm();
         return;
@@ -266,9 +266,9 @@ const DriverApp = {
 
       // Cas 2 : < 24h → son simple (1 seule fois par session)
       if (ms <= 24 * 3600 * 1000) {
-        if (sessionStorage.getItem('volt_deadline_sound_played')) return;
+        if (sessionStorage.getItem('pilote_deadline_sound_played')) return;
         DriverCountdown.playAlertSound();
-        sessionStorage.setItem('volt_deadline_sound_played', '1');
+        sessionStorage.setItem('pilote_deadline_sound_played', '1');
       }
     } catch (e) {
       console.warn('Deadline sound check failed:', e);
@@ -478,7 +478,7 @@ const DriverApp = {
       </form>
 
       <div id="login-error" class="login-error" style="display:none"></div>
-      <p class="login-version">Volt v1.2.0 &bull; Propuls\u00e9 par Yango</p>
+      <p class="login-version">Pilote v1.2.0 &bull; Propuls\u00e9 par Yango</p>
     `;
 
     const form = document.getElementById('create-pin-form');

@@ -1,5 +1,5 @@
 /**
- * Backup & Restore utility for Volt VTC MongoDB data
+ * Backup & Restore utility for Pilote MongoDB data
  *
  * Usage:
  *   Export: node backup.js export
@@ -210,7 +210,7 @@ if (command === 'export') {
     process.exit(1);
   });
 } else {
-  console.log('Volt VTC Backup & Restore Tool');
+  console.log('Pilote Backup & Restore Tool');
   console.log('');
   console.log('Usage:');
   console.log('  node backup.js export              - Export all data to a JSON file');

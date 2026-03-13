@@ -89,8 +89,8 @@
   justify-content: center;
   font-size: 1.25rem;
   margin-bottom: var(--space-md);
-  background: var(--volt-blue-glow);
-  color: var(--volt-blue);
+  background: var(--pilote-blue-glow);
+  color: var(--pilote-blue);
   transition: transform var(--transition-fast);
 }
 
@@ -103,9 +103,9 @@
 }
 
 .kpi-card.green .kpi-icon { background: rgba(34, 197, 94, 0.1); color: var(--success); }
-.kpi-card.yellow .kpi-icon { background: rgba(250, 204, 21, 0.1); color: var(--volt-yellow); }
+.kpi-card.yellow .kpi-icon { background: rgba(250, 204, 21, 0.1); color: var(--pilote-yellow); }
 .kpi-card.red .kpi-icon { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
-.kpi-card.cyan .kpi-icon { background: rgba(34, 211, 238, 0.1); color: var(--volt-cyan); }
+.kpi-card.cyan .kpi-icon { background: rgba(34, 211, 238, 0.1); color: var(--pilote-cyan); }
 
 .kpi-value {
   font-size: 2rem;
@@ -192,13 +192,13 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--volt-blue), var(--volt-blue-dim));
+  background: linear-gradient(135deg, var(--pilote-blue), var(--pilote-blue-dim));
   color: white;
-  border-color: var(--volt-blue);
+  border-color: var(--pilote-blue);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--volt-blue-dim), var(--volt-blue));
+  background: linear-gradient(135deg, var(--pilote-blue-dim), var(--pilote-blue));
   box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
 }
 
@@ -280,7 +280,7 @@
 .badge-success { background: rgba(34, 197, 94, 0.15); color: var(--success); }
 .badge-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
 .badge-warning { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
-.badge-info { background: rgba(59, 130, 246, 0.15); color: var(--volt-blue); }
+.badge-info { background: rgba(59, 130, 246, 0.15); color: var(--pilote-blue); }
 .badge-neutral { background: var(--bg-tertiary); color: var(--text-muted); }
 
 /* ========== TABLES ========== */
@@ -337,7 +337,7 @@
 }
 
 .data-table thead th.sorted {
-  color: var(--volt-blue);
+  color: var(--pilote-blue);
 }
 
 .data-table thead th .sort-icon {
@@ -406,9 +406,9 @@
 }
 
 .table-pagination .page-btn.active {
-  background: var(--volt-blue);
+  background: var(--pilote-blue);
   color: white;
-  border-color: var(--volt-blue);
+  border-color: var(--pilote-blue);
 }
 
 .table-pagination .page-btn:disabled {
@@ -442,7 +442,7 @@
 }
 
 .form-control:focus {
-  border-color: var(--volt-blue);
+  border-color: var(--pilote-blue);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   background: var(--bg-secondary);
 }
@@ -611,7 +611,7 @@ textarea.form-control {
 .toast-success { border-left: 4px solid var(--success); }
 .toast-error { border-left: 4px solid var(--danger); }
 .toast-warning { border-left: 4px solid var(--warning); }
-.toast-info { border-left: 4px solid var(--volt-blue); }
+.toast-info { border-left: 4px solid var(--pilote-blue); }
 
 .toast-icon {
   font-size: var(--font-size-lg);
@@ -627,7 +627,7 @@ textarea.form-control {
 .toast-success .toast-icon { color: var(--success); }
 .toast-error .toast-icon { color: var(--danger); }
 .toast-warning .toast-icon { color: var(--warning); }
-.toast-info .toast-icon { color: var(--volt-blue); }
+.toast-info .toast-icon { color: var(--pilote-blue); }
 
 .toast-content {
   flex: 1;
@@ -679,8 +679,8 @@ textarea.form-control {
 }
 
 .tab.active {
-  color: var(--volt-blue);
-  border-bottom-color: var(--volt-blue);
+  color: var(--pilote-blue);
+  border-bottom-color: var(--pilote-blue);
 }
 
 /* ========== PROGRESS BAR ========== */
@@ -694,7 +694,7 @@ textarea.form-control {
 .progress-fill {
   height: 100%;
   border-radius: 3px;
-  background: var(--volt-blue);
+  background: var(--pilote-blue);
   transition: width var(--transition-slow);
 }
 
@@ -703,7 +703,7 @@ textarea.form-control {
 }
 
 .progress-fill.yellow {
-  background: var(--volt-yellow);
+  background: var(--pilote-yellow);
 }
 
 .progress-fill.red {
@@ -753,7 +753,7 @@ textarea.form-control {
   width: 24px;
   height: 24px;
   border: 3px solid var(--border-color);
-  border-top-color: var(--volt-blue);
+  border-top-color: var(--pilote-blue);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -781,7 +781,7 @@ textarea.form-control {
 }
 
 .score-excellent { background: rgba(34, 197, 94, 0.15); color: var(--success); border: 2px solid var(--success); }
-.score-bon { background: rgba(59, 130, 246, 0.15); color: var(--volt-blue); border: 2px solid var(--volt-blue); }
+.score-bon { background: rgba(59, 130, 246, 0.15); color: var(--pilote-blue); border: 2px solid var(--pilote-blue); }
 .score-moyen { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 2px solid var(--warning); }
 .score-faible { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 2px solid var(--danger); }
 
@@ -2287,7 +2287,7 @@ textarea.form-control {
 }
 
 /* ============================================================
-   VOLT VTC — Fleet Dashboard Clean Theme Override
+   PILOTE — Fleet Dashboard Clean Theme Override
    Inspired by fleet.yango.com design
    ============================================================ */
 

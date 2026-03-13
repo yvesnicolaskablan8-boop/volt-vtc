@@ -737,8 +737,8 @@
 
 /* ========== NATIVE APP / FORCED MOBILE (JS-driven) ========== */
 /* These classes are set by JS on body — work even if media queries don't trigger */
-body.volt-mobile .sidebar,
-body.volt-native-app .sidebar {
+body.pilote-mobile .sidebar,
+body.pilote-native-app .sidebar {
   width: 280px !important;
   transform: translateX(-100%) !important;
   z-index: 200;
@@ -750,21 +750,21 @@ body.volt-native-app .sidebar {
   visibility: hidden;
 }
 
-body.volt-mobile .sidebar.open,
-body.volt-native-app .sidebar.open {
+body.pilote-mobile .sidebar.open,
+body.pilote-native-app .sidebar.open {
   transform: translateX(0) !important;
   pointer-events: auto;
   visibility: visible;
 }
 
-body.volt-mobile .main-content,
-body.volt-native-app .main-content {
+body.pilote-mobile .main-content,
+body.pilote-native-app .main-content {
   margin-left: 0 !important;
   width: 100% !important;
 }
 
-body.volt-mobile .header-toggle,
-body.volt-native-app .header-toggle {
+body.pilote-mobile .header-toggle,
+body.pilote-native-app .header-toggle {
   display: flex !important;
   width: 44px;
   height: 44px;
@@ -779,36 +779,36 @@ body.volt-native-app .header-toggle {
   z-index: 101;
 }
 
-body.volt-mobile .header-search,
-body.volt-native-app .header-search {
+body.pilote-mobile .header-search,
+body.pilote-native-app .header-search {
   flex: 1;
   min-width: 0;
 }
 
-body.volt-mobile .header-search input,
-body.volt-native-app .header-search input {
+body.pilote-mobile .header-search input,
+body.pilote-native-app .header-search input {
   width: 100%;
   font-size: var(--font-size-xs);
 }
 
-body.volt-mobile .header-user-name,
-body.volt-native-app .header-user-name {
+body.pilote-mobile .header-user-name,
+body.pilote-native-app .header-user-name {
   display: none;
 }
 
-body.volt-mobile .header-user-chevron,
-body.volt-native-app .header-user-chevron {
+body.pilote-mobile .header-user-chevron,
+body.pilote-native-app .header-user-chevron {
   display: none;
 }
 
-body.volt-mobile .header,
-body.volt-native-app .header {
+body.pilote-mobile .header,
+body.pilote-native-app .header {
   overflow: visible;
   z-index: 100;
 }
 
-body.volt-mobile .sidebar-overlay,
-body.volt-native-app .sidebar-overlay {
+body.pilote-mobile .sidebar-overlay,
+body.pilote-native-app .sidebar-overlay {
   display: none;
   position: fixed;
   inset: 0;
@@ -816,8 +816,8 @@ body.volt-native-app .sidebar-overlay {
   z-index: 199;
 }
 
-body.volt-mobile .sidebar-overlay.active,
-body.volt-native-app .sidebar-overlay.active {
+body.pilote-mobile .sidebar-overlay.active,
+body.pilote-native-app .sidebar-overlay.active {
   display: block;
 }
 
@@ -886,7 +886,7 @@ body.volt-native-app .sidebar-overlay.active {
   }
 
   .bottom-nav-item.active {
-    color: var(--volt-blue);
+    color: var(--pilote-blue);
   }
 
   .bottom-nav-item.active i,
@@ -904,7 +904,7 @@ body.volt-native-app .sidebar-overlay.active {
     transform: translateX(-50%);
     width: 4px;
     height: 4px;
-    background: var(--volt-blue);
+    background: var(--pilote-blue);
     border-radius: 50%;
   }
 
@@ -921,27 +921,27 @@ body.volt-native-app .sidebar-overlay.active {
   }
 
   /* Adjust page content bottom padding for bottom nav */
-  body.volt-has-bottomnav #page-content {
+  body.pilote-has-bottomnav #page-content {
     padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
   }
 
   /* Adjust toast container above bottom nav */
-  body.volt-has-bottomnav .toast-container {
+  body.pilote-has-bottomnav .toast-container {
     bottom: calc(72px + env(safe-area-inset-bottom)) !important;
   }
 
   /* Hide sidebar toggle when bottom nav is active */
-  body.volt-has-bottomnav .header-toggle {
+  body.pilote-has-bottomnav .header-toggle {
     display: none !important;
   }
 
   /* Breadcrumb can use full width */
-  body.volt-has-bottomnav .header-breadcrumb {
+  body.pilote-has-bottomnav .header-breadcrumb {
     padding-left: var(--space-sm);
   }
 
   /* Back button in breadcrumb for menu sub-pages */
-  body.volt-has-bottomnav .breadcrumb-back {
+  body.pilote-has-bottomnav .breadcrumb-back {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -957,19 +957,19 @@ body.volt-native-app .sidebar-overlay.active {
     transition: background 0.15s ease, color 0.15s ease;
   }
 
-  body.volt-has-bottomnav .breadcrumb-back:active {
+  body.pilote-has-bottomnav .breadcrumb-back:active {
     background: var(--bg-tertiary);
-    color: var(--volt-blue);
+    color: var(--pilote-blue);
   }
 
-  body.volt-has-bottomnav .breadcrumb-back i,
-  body.volt-has-bottomnav .breadcrumb-back iconify-icon {
+  body.pilote-has-bottomnav .breadcrumb-back i,
+  body.pilote-has-bottomnav .breadcrumb-back iconify-icon {
     font-size: 16px;
   }
 }
 
 /* Native app always shows bottom nav */
-body.volt-native-app .bottom-nav.bottom-nav-visible {
+body.pilote-native-app .bottom-nav.bottom-nav-visible {
   display: flex;
   position: fixed;
   bottom: 0;
@@ -985,15 +985,15 @@ body.volt-native-app .bottom-nav.bottom-nav-visible {
   justify-content: space-around;
 }
 
-body.volt-native-app.volt-has-bottomnav #page-content {
+body.pilote-native-app.pilote-has-bottomnav #page-content {
   padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
 }
 
-body.volt-native-app.volt-has-bottomnav .toast-container {
+body.pilote-native-app.pilote-has-bottomnav .toast-container {
   bottom: calc(72px + env(safe-area-inset-bottom)) !important;
 }
 
-body.volt-native-app.volt-has-bottomnav .header-toggle {
+body.pilote-native-app.pilote-has-bottomnav .header-toggle {
   display: none !important;
 }
 
@@ -1018,7 +1018,7 @@ body.volt-native-app.volt-has-bottomnav .header-toggle {
 
 .menu-page-header h1 i,
 .menu-page-header h1 iconify-icon {
-  color: var(--volt-blue);
+  color: var(--pilote-blue);
 }
 
 .menu-grid {

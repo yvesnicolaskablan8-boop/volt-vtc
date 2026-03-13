@@ -292,7 +292,7 @@ const ProfilPage = {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const newTheme = isDark ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('volt_theme', newTheme);
+    localStorage.setItem('pilote_theme', newTheme);
     btn.classList.toggle('active', newTheme === 'dark');
     DriverToast.show(newTheme === 'dark' ? 'Mode sombre active' : 'Mode clair active', 'success');
   },

@@ -199,9 +199,9 @@ const RentabilitePage = {
       </div>
 
       <!-- EV vs Thermique comparison -->
-      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-yellow);background:rgba(250,204,21,0.03);">
+      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--pilote-yellow);background:rgba(250,204,21,0.03);">
         <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--volt-yellow)"></iconify-icon> Comparaison Électrique vs Thermique</span>
+          <span class="card-title"><iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--pilote-yellow)"></iconify-icon> Comparaison Électrique vs Thermique</span>
         </div>
         <div class="grid-2" style="gap:var(--space-lg);">
           <div>
@@ -209,7 +209,7 @@ const RentabilitePage = {
               <span class="badge badge-warning"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:8px"></iconify-icon> ${d.evCount} véhicules électriques</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:8px;font-size:var(--font-size-sm);">
-              <div style="display:flex;justify-content:space-between;"><span class="text-muted">ROI moyen</span><strong style="color:var(--volt-yellow)">${d.avgEVROI.toFixed(1)}%</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span class="text-muted">ROI moyen</span><strong style="color:var(--pilote-yellow)">${d.avgEVROI.toFixed(1)}%</strong></div>
               <div style="display:flex;justify-content:space-between;"><span class="text-muted">Coût énergie moyen</span><strong>${Utils.formatCurrency(d.avgEVEnergy)}</strong></div>
               <div style="display:flex;justify-content:space-between;"><span class="text-muted">Maintenance moyenne</span><strong>${Utils.formatCurrency(d.avgEVMaintenance)}</strong></div>
               <div style="display:flex;justify-content:space-between;"><span class="text-muted">Coût moyen/km</span><strong>${d.avgEVCoutKm} FCFA/km</strong></div>
@@ -238,7 +238,7 @@ const RentabilitePage = {
 
       <!-- Leasing vs Cash summary -->
       <div class="grid-2" style="margin-bottom:var(--space-lg);">
-        <div class="card" style="border-left:4px solid var(--volt-blue);">
+        <div class="card" style="border-left:4px solid var(--pilote-blue);">
           <div class="card-header"><span class="card-title"><iconify-icon icon="solar:document-bold-duotone" class="text-blue"></iconify-icon> Leasing (${d.leasingCount} véhicules)</span></div>
           <div class="kpi-value" style="font-size:var(--font-size-xl);">${d.avgLeasingROI.toFixed(1)}% ROI moyen</div>
           <p style="font-size:var(--font-size-sm);margin-top:var(--space-sm);">Avantages : trésorerie préservée, véhicules récents, charges déductibles</p>
@@ -513,7 +513,7 @@ const RentabilitePage = {
         {
           label: 'Véhicule', primary: true,
           render: (a) => {
-            const icon = a.isEV ? '<iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--volt-yellow);font-size:10px;margin-left:4px"></iconify-icon>' : '';
+            const icon = a.isEV ? '<iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--pilote-yellow);font-size:10px;margin-left:4px"></iconify-icon>' : '';
             return `${a.vehicule.marque} ${a.vehicule.modele} ${icon}`;
           },
           value: (a) => a.vehicule.marque

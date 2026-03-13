@@ -1,4 +1,4 @@
-/* ========== VOLT CHAUFFEUR — MOBILE-FIRST PWA ========== */
+/* ========== PILOTE CHAUFFEUR — MOBILE-FIRST PWA ========== */
 
 /* Import shared variables from admin app */
 @import url('/css/variables.css');
@@ -1435,7 +1435,7 @@ body {
 }
 
 .notif-unread {
-  border-left: 3px solid var(--volt-blue, #3b82f6);
+  border-left: 3px solid var(--pilote-blue, #3b82f6);
 }
 
 .notif-read {

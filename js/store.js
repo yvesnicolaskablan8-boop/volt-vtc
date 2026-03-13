@@ -7,7 +7,7 @@
  * - Falls back to localStorage when API is unreachable (offline mode)
  */
 const Store = {
-  _KEY: 'volt_data',
+  _KEY: 'pilote_data',
   _cache: null,
   _apiBase: window.location.hostname === 'localhost'
     ? 'http://localhost:3001/api'
@@ -153,7 +153,7 @@ const Store = {
   // =================== INTERNAL: API Communication ===================
 
   _headers() {
-    const token = localStorage.getItem('volt_token');
+    const token = localStorage.getItem('pilote_token');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
     return headers;
@@ -174,7 +174,7 @@ const Store = {
         // Token expired — force logout
         console.warn('Store: Token expired, redirecting to login');
         if (typeof Auth !== 'undefined') Auth.destroySession();
-        localStorage.removeItem('volt_token');
+        localStorage.removeItem('pilote_token');
         if (typeof App !== 'undefined') App._showLogin();
         return;
       }
@@ -231,7 +231,7 @@ const Store = {
   },
 
   _notify() {
-    document.dispatchEvent(new CustomEvent('volt:data-changed'));
+    document.dispatchEvent(new CustomEvent('pilote:data-changed'));
   },
 
   _emptyData() {

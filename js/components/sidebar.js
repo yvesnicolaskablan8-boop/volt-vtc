@@ -14,7 +14,7 @@ const Sidebar = {
     if (!toggle || !sidebar || !overlay) return;
 
     // On mobile with bottom nav, don't initialize sidebar interaction at all
-    const isNative = !!(window.VoltNative) || navigator.userAgent.includes('VoltAdminApp');
+    const isNative = !!(window.PiloteNative) || navigator.userAgent.includes('PiloteAdminApp');
     const isMobile = isNative || window.innerWidth <= 768;
     if (isMobile) {
       // Clean up any old handlers

@@ -456,7 +456,7 @@ const ContraventionsPage = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + (localStorage.getItem('volt_token') || '')
+          'Authorization': 'Bearer ' + (localStorage.getItem('pilote_token') || '')
         },
         body: JSON.stringify({ contraventionId: id })
       });

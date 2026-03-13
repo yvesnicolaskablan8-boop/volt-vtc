@@ -1,12 +1,12 @@
 /**
- * Volt Monitor — Dashboard KPI temps réel pour admins
+ * Pilote Monitor — Dashboard KPI temps réel pour admins
  * Single IIFE: Auth + Data + UI + Init
  */
 (function() {
   'use strict';
 
-  const TOKEN_KEY = 'volt_monitor_token';
-  const SESSION_KEY = 'volt_monitor_session';
+  const TOKEN_KEY = 'pilote_monitor_token';
+  const SESSION_KEY = 'pilote_monitor_session';
   const REFRESH_MS = 30000; // 30 secondes
 
   // =================== STATE ===================

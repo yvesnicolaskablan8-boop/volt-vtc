@@ -188,7 +188,7 @@ const ParametresPage = {
           </div>
 
           <!-- Infos session -->
-          <div class="card" style="border-left:4px solid var(--volt-blue);">
+          <div class="card" style="border-left:4px solid var(--pilote-blue);">
             <div class="card-header">
               <span class="card-title"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Informations de session</span>
             </div>
@@ -566,7 +566,7 @@ const ParametresPage = {
       { name: 'nom', label: 'Nom', type: 'text', required: true, placeholder: 'Ex: Koné' },
       { type: 'row-end' },
       { type: 'row-start' },
-      { name: 'email', label: 'Email (facultatif)', type: 'email', required: false, placeholder: 'ex: aminata@volt.ci' },
+      { name: 'email', label: 'Email (facultatif)', type: 'email', required: false, placeholder: 'ex: aminata@pilote.app' },
       { name: 'telephone', label: 'Téléphone', type: 'tel', placeholder: '+225 XX XX XX XX' },
       { type: 'row-end' },
       { type: 'row-start' },
@@ -595,8 +595,8 @@ const ParametresPage = {
     const chauffeurs = Store.get('chauffeurs') || [];
     const chauffeurOptions = chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom} (${c.telephone || ''})</option>`).join('');
     const chauffeurSection = `
-      <div id="chauffeur-section" style="display:none;margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--volt-blue);background:rgba(59,130,246,0.05);">
-        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Configuration compte chauffeur</h4>
+      <div id="chauffeur-section" style="display:none;margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--pilote-blue);background:rgba(59,130,246,0.05);">
+        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--pilote-blue);"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Configuration compte chauffeur</h4>
         <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-md);">
           <div class="form-group" style="flex:1;margin-bottom:0;">
             <label class="form-label">Chauffeur lié *</label>
@@ -632,13 +632,13 @@ const ParametresPage = {
           <label class="form-label">Code PIN (4-6 chiffres)</label>
           <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Ex: 1234">
         </div>
-        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Le chauffeur se connectera avec son numéro de téléphone et ce code PIN via l'app <strong>/driver/</strong></div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Le chauffeur se connectera avec son numéro de téléphone et ce code PIN via l'app <strong>/driver/</strong></div>
       </div>
     `;
 
     const formHtml = FormBuilder.build(fields) +
       chauffeurSection +
-      `<div style="margin-top:-8px;margin-bottom:var(--space-md);font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Si aucun mot de passe n'est défini, l'utilisateur devra en créer un lors de sa première connexion.</div>` +
+      `<div style="margin-top:-8px;margin-bottom:var(--space-md);font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Si aucun mot de passe n'est défini, l'utilisateur devra en créer un lors de sa première connexion.</div>` +
       this._getPermissionsHTML(allPerms);
 
     Modal.form('<iconify-icon icon="solar:user-plus-bold-duotone" style="color:var(--primary);"></iconify-icon> Nouvel utilisateur', formHtml, async () => {
@@ -845,7 +845,7 @@ const ParametresPage = {
       'Content-Type': 'application/json'
     };
     // Include admin auth token
-    const token = localStorage.getItem('volt_token');
+    const token = localStorage.getItem('pilote_token');
     if (token) headers['Authorization'] = 'Bearer ' + token;
 
     // Retry logic: Store.add() syncs to DB in background,
@@ -921,8 +921,8 @@ const ParametresPage = {
     const chauffeurs = Store.get('chauffeurs') || [];
     const chauffeurOptions = chauffeurs.map(c => `<option value="${c.id}" ${user.chauffeurId === c.id ? 'selected' : ''}>${c.prenom} ${c.nom} (${c.telephone || ''})</option>`).join('');
     const editChauffeurSection = `
-      <div id="chauffeur-section" style="display:${user.role === 'chauffeur' ? 'block' : 'none'};margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--volt-blue);background:rgba(59,130,246,0.05);">
-        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--volt-blue);"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Configuration compte chauffeur</h4>
+      <div id="chauffeur-section" style="display:${user.role === 'chauffeur' ? 'block' : 'none'};margin-bottom:var(--space-md);padding:var(--space-md);border-radius:var(--radius-sm);border:2px solid var(--pilote-blue);background:rgba(59,130,246,0.05);">
+        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);color:var(--pilote-blue);"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Configuration compte chauffeur</h4>
         <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-md);">
           <div class="form-group" style="flex:1;margin-bottom:0;">
             <label class="form-label">Chauffeur lié *</label>
@@ -958,7 +958,7 @@ const ParametresPage = {
           <label class="form-label">Nouveau code PIN (laisser vide pour ne pas changer)</label>
           <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="****">
         </div>
-        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Le chauffeur se connectera via l'app <strong>/driver/</strong></div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Le chauffeur se connectera via l'app <strong>/driver/</strong></div>
       </div>
     `;
 
@@ -1134,7 +1134,7 @@ const ParametresPage = {
             <div class="grid-2" style="gap:var(--space-md);">
               <div class="form-group">
                 <label class="form-label">Nom de l'entreprise *</label>
-                <input type="text" class="form-control" id="ent-nom" value="${ent.nom || ''}" placeholder="Ex: Volt VTC">
+                <input type="text" class="form-control" id="ent-nom" value="${ent.nom || ''}" placeholder="Ex: Mon Entreprise">
               </div>
               <div class="form-group">
                 <label class="form-label">Slogan</label>
@@ -1144,7 +1144,7 @@ const ParametresPage = {
             <div class="grid-2" style="gap:var(--space-md);">
               <div class="form-group">
                 <label class="form-label">Email</label>
-                <input type="email" class="form-control" id="ent-email" value="${ent.email || ''}" placeholder="contact@volt.ci">
+                <input type="email" class="form-control" id="ent-email" value="${ent.email || ''}" placeholder="contact@pilote.app">
               </div>
               <div class="form-group">
                 <label class="form-label">Téléphone</label>
@@ -1158,7 +1158,7 @@ const ParametresPage = {
             <div class="grid-2" style="gap:var(--space-md);">
               <div class="form-group">
                 <label class="form-label">Site web</label>
-                <input type="text" class="form-control" id="ent-siteweb" value="${ent.siteWeb || ''}" placeholder="www.volt.ci">
+                <input type="text" class="form-control" id="ent-siteweb" value="${ent.siteWeb || ''}" placeholder="www.pilote.app">
               </div>
               <div class="form-group">
                 <label class="form-label">N° Registre du commerce</label>
@@ -1196,9 +1196,9 @@ const ParametresPage = {
             </div>
           </div>
 
-          <div class="card" style="margin-top:var(--space-md);border-left:4px solid var(--volt-blue);">
+          <div class="card" style="margin-top:var(--space-md);border-left:4px solid var(--pilote-blue);">
             <div style="display:flex;align-items:center;gap:var(--space-sm);">
-              <iconify-icon icon="solar:lightbulb-bold-duotone" style="color:var(--volt-blue);"></iconify-icon>
+              <iconify-icon icon="solar:lightbulb-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon>
               <p style="font-size:var(--font-size-xs);color:var(--text-muted);margin:0;">Ces informations apparaissent sur les exports PDF et les factures générées par l'application.</p>
             </div>
           </div>
@@ -1354,10 +1354,10 @@ const ParametresPage = {
         const theme = radio.value;
         if (typeof ThemeManager !== 'undefined') {
           ThemeManager._applyTheme(theme, false);
-          localStorage.setItem('volt_theme', theme);
+          localStorage.setItem('pilote_theme', theme);
         } else {
           document.documentElement.setAttribute('data-theme', theme);
-          localStorage.setItem('volt_theme', theme);
+          localStorage.setItem('pilote_theme', theme);
         }
       });
     });
@@ -1517,9 +1517,9 @@ const ParametresPage = {
           </div>
 
           <!-- Alertes admin -->
-          <div class="card" style="border-left:4px solid var(--volt-blue);">
+          <div class="card" style="border-left:4px solid var(--pilote-blue);">
             <div class="card-header">
-              <span class="card-title"><iconify-icon icon="solar:bell-bing-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Notifications admin</span>
+              <span class="card-title"><iconify-icon icon="solar:bell-bing-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Notifications admin</span>
             </div>
             <div style="padding-top:var(--space-md);">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -1880,9 +1880,9 @@ const ParametresPage = {
           </div>
         </div>
 
-        <div class="card" style="border-left:4px solid var(--volt-blue);">
+        <div class="card" style="border-left:4px solid var(--pilote-blue);">
           <div class="card-header">
-            <span class="card-title"><iconify-icon icon="solar:shield-user-bold-duotone" style="color:var(--volt-blue);"></iconify-icon> Alertes admin</span>
+            <span class="card-title"><iconify-icon icon="solar:shield-user-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Alertes admin</span>
           </div>
           <div style="padding-top:var(--space-md);">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -1984,7 +1984,7 @@ const ParametresPage = {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + (Auth.getToken ? Auth.getToken() : localStorage.getItem('volt_token'))
+              'Authorization': 'Bearer ' + (Auth.getToken ? Auth.getToken() : localStorage.getItem('pilote_token'))
             },
             body: JSON.stringify({ titre, message, canal })
           });
@@ -2043,7 +2043,7 @@ const ParametresPage = {
     const parcs = Store.get('parcs') || [];
     const chauffeurs = Store.get('chauffeurs') || [];
     const vehicules = Store.get('vehicules') || [];
-    const parcActif = localStorage.getItem('volt_parc_actif') || '';
+    const parcActif = localStorage.getItem('pilote_parc_actif') || '';
 
     return `
       <div class="grid-2" style="gap:var(--space-lg);">
@@ -2065,7 +2065,7 @@ const ParametresPage = {
             ` : `
               <!-- Filtre parc actif -->
               <div style="margin-bottom:var(--space-md);padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);display:flex;align-items:center;gap:10px;">
-                <iconify-icon icon="solar:filter-bold-duotone" style="color:var(--volt-blue);"></iconify-icon>
+                <iconify-icon icon="solar:filter-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon>
                 <span style="font-size:var(--font-size-sm);font-weight:600;">Parc actif :</span>
                 <select class="form-control" id="select-parc-actif" style="flex:1;max-width:200px;">
                   <option value="">Tous les parcs</option>
@@ -2077,7 +2077,7 @@ const ParametresPage = {
                 const nbChauffeurs = chauffeurs.filter(c => c.parcId === p.id).length;
                 const nbVehicules = vehicules.filter(v => v.parcId === p.id).length;
                 return `
-                  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:var(--radius-sm);background:var(--bg-tertiary);margin-bottom:8px;border-left:4px solid ${p.couleur || 'var(--volt-blue)'};">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border-radius:var(--radius-sm);background:var(--bg-tertiary);margin-bottom:8px;border-left:4px solid ${p.couleur || 'var(--pilote-blue)'};">
                     <div>
                       <div style="font-weight:600;">${p.nom}</div>
                       <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
@@ -2100,9 +2100,9 @@ const ParametresPage = {
 
         <!-- Aide -->
         <div>
-          <div class="card" style="border-left:4px solid var(--volt-blue);">
+          <div class="card" style="border-left:4px solid var(--pilote-blue);">
             <div style="display:flex;align-items:flex-start;gap:var(--space-sm);">
-              <iconify-icon icon="solar:lightbulb-bold-duotone" style="color:var(--volt-blue);font-size:20px;flex-shrink:0;"></iconify-icon>
+              <iconify-icon icon="solar:lightbulb-bold-duotone" style="color:var(--pilote-blue);font-size:20px;flex-shrink:0;"></iconify-icon>
               <div>
                 <p style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:8px;">Comment utiliser les parcs ?</p>
                 <ul style="font-size:var(--font-size-xs);color:var(--text-muted);padding-left:16px;display:flex;flex-direction:column;gap:6px;">
@@ -2134,7 +2134,7 @@ const ParametresPage = {
                         <span style="color:var(--text-muted);">${total} éléments</span>
                       </div>
                       <div style="height:6px;border-radius:3px;background:var(--bg-tertiary);overflow:hidden;">
-                        <div style="height:100%;width:${pct}%;background:${p.couleur || 'var(--volt-blue)'};border-radius:3px;transition:width 0.3s;"></div>
+                        <div style="height:100%;width:${pct}%;background:${p.couleur || 'var(--pilote-blue)'};border-radius:3px;transition:width 0.3s;"></div>
                       </div>
                     </div>
                   `;
@@ -2162,9 +2162,9 @@ const ParametresPage = {
     document.getElementById('select-parc-actif')?.addEventListener('change', (e) => {
       const val = e.target.value;
       if (val) {
-        localStorage.setItem('volt_parc_actif', val);
+        localStorage.setItem('pilote_parc_actif', val);
       } else {
-        localStorage.removeItem('volt_parc_actif');
+        localStorage.removeItem('pilote_parc_actif');
       }
       Toast.success(val ? 'Parc actif mis à jour' : 'Filtre parc désactivé');
     });
@@ -2249,8 +2249,8 @@ const ParametresPage = {
       const filtered = parcs.filter(p => p.id !== id);
       Store.set('parcs', filtered);
 
-      if (localStorage.getItem('volt_parc_actif') === id) {
-        localStorage.removeItem('volt_parc_actif');
+      if (localStorage.getItem('pilote_parc_actif') === id) {
+        localStorage.removeItem('pilote_parc_actif');
       }
 
       Toast.success('Parc supprimé');

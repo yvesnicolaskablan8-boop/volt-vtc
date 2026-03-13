@@ -44,7 +44,7 @@
   font-size: var(--font-size-xl);
   font-weight: 700;
   letter-spacing: 2px;
-  background: linear-gradient(135deg, var(--volt-blue), var(--volt-cyan));
+  background: linear-gradient(135deg, var(--pilote-blue), var(--pilote-cyan));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -92,8 +92,8 @@
 }
 
 .nav-item.active {
-  background: var(--volt-blue-glow);
-  color: var(--volt-blue);
+  background: var(--pilote-blue-glow);
+  color: var(--pilote-blue);
   font-weight: 600;
 }
 
@@ -104,7 +104,7 @@
   top: 4px;
   bottom: 4px;
   width: 3px;
-  background: var(--volt-blue);
+  background: var(--pilote-blue);
   border-radius: 0 2px 2px 0;
 }
 
@@ -125,7 +125,7 @@
 .nav-item:hover i,
 .nav-item:hover iconify-icon,
 .nav-item:hover .nav-icon {
-  color: var(--volt-blue);
+  color: var(--pilote-blue);
 }
 
 .nav-item span {
@@ -230,7 +230,7 @@
 
 .theme-toggle:hover {
   background: var(--bg-tertiary);
-  color: var(--volt-yellow);
+  color: var(--pilote-yellow);
 }
 
 .theme-toggle i,
@@ -266,7 +266,7 @@
 }
 
 .header-search input:focus {
-  border-color: var(--volt-blue);
+  border-color: var(--pilote-blue);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   width: 300px;
   background: var(--bg-secondary);
@@ -338,7 +338,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--volt-blue), var(--volt-cyan));
+  background: linear-gradient(135deg, var(--pilote-blue), var(--pilote-cyan));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -399,7 +399,7 @@
   height: 40px;
   min-width: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--volt-blue), var(--volt-cyan));
+  background: linear-gradient(135deg, var(--pilote-blue), var(--pilote-cyan));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -468,7 +468,7 @@
 
 .user-dropdown-item:hover i,
 .user-dropdown-item:hover iconify-icon {
-  color: var(--volt-blue);
+  color: var(--pilote-blue);
 }
 
 .user-dropdown-logout {
@@ -511,7 +511,7 @@
 
 .page-header h1 i,
 .page-header h1 iconify-icon {
-  color: var(--volt-blue);
+  color: var(--pilote-blue);
 }
 
 .page-actions {

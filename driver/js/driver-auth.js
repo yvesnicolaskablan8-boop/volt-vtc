@@ -2,9 +2,9 @@
  * DriverAuth — Authentification telephone + PIN pour les chauffeurs
  */
 const DriverAuth = {
-  _TOKEN_KEY: 'volt_driver_token',
-  _USER_KEY: 'volt_driver_user',
-  _CHAUFFEUR_KEY: 'volt_driver_chauffeur',
+  _TOKEN_KEY: 'pilote_driver_token',
+  _USER_KEY: 'pilote_driver_user',
+  _CHAUFFEUR_KEY: 'pilote_driver_chauffeur',
 
   _apiBase: window.location.hostname === 'localhost'
     ? 'http://localhost:3001/api/driver/auth'

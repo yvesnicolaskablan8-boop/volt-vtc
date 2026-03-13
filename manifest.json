@@ -1,6 +1,6 @@
 {
-  "name": "Volt - Gestion VTC",
-  "short_name": "Volt VTC",
+  "name": "Pilote",
+  "short_name": "Pilote",
   "description": "Application de gestion de flotte VTC - Chauffeurs, vehicules, versements, rentabilite",
   "start_url": "./index.html",
   "scope": "./",

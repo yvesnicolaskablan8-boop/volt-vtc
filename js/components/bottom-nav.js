@@ -52,18 +52,18 @@ const BottomNav = {
   },
 
   _checkVisibility() {
-    const isNative = !!(window.VoltNative) || navigator.userAgent.includes('VoltAdminApp');
+    const isNative = !!(window.PiloteNative) || navigator.userAgent.includes('PiloteAdminApp');
     const isMobile = isNative || window.innerWidth <= 768;
     const nav = document.getElementById('bottom-nav');
     if (!nav) return;
 
     if (isMobile) {
       nav.classList.add('bottom-nav-visible');
-      document.body.classList.add('volt-has-bottomnav');
+      document.body.classList.add('pilote-has-bottomnav');
       this._visible = true;
     } else {
       nav.classList.remove('bottom-nav-visible');
-      document.body.classList.remove('volt-has-bottomnav');
+      document.body.classList.remove('pilote-has-bottomnav');
       this._visible = false;
     }
   },

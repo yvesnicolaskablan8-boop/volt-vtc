@@ -1,7 +1,7 @@
 {
-  "name": "volt-vtc-server",
+  "name": "pilote-server",
   "version": "1.0.0",
-  "description": "Backend API for Volt VTC Management",
+  "description": "Backend API for Pilote Management",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

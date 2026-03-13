@@ -401,7 +401,7 @@ const DriverBehavior = {
 
   _bufferOffline(batch) {
     try {
-      const key = 'volt_behavior_offline';
+      const key = 'pilote_behavior_offline';
       const existing = JSON.parse(localStorage.getItem(key) || '[]');
       existing.push(batch);
       // Garder max 50 batches (~50 minutes de donnees)
@@ -413,7 +413,7 @@ const DriverBehavior = {
   },
 
   async _sendOfflineBuffer() {
-    const key = 'volt_behavior_offline';
+    const key = 'pilote_behavior_offline';
     try {
       const batches = JSON.parse(localStorage.getItem(key) || '[]');
       if (batches.length === 0) return;

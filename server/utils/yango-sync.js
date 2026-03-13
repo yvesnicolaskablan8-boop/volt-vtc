@@ -5,7 +5,7 @@
  * calcule le temps d'activite et met a jour les scores dans la BDD.
  *
  * Fonctionnalites :
- * - Matching automatique Yango driver → Volt chauffeur (par nom/prenom ou yangoDriverId)
+ * - Matching automatique Yango driver → Pilote chauffeur (par nom/prenom ou yangoDriverId)
  * - Calcul du temps d'activite Yango (premiere → derniere course du jour)
  * - Calcul du scoreActivite (0-100) base sur objectif 10h/jour
  * - Mise a jour des enregistrements GPS avec les nouvelles donnees
@@ -169,7 +169,7 @@ function normalizePhone(phone) {
 }
 
 /**
- * Matche les chauffeurs Yango avec les chauffeurs Volt
+ * Matche les chauffeurs Yango avec les chauffeurs Pilote
  *
  * Strategie multi-niveaux :
  * 1. yangoDriverId (match direct)
@@ -178,19 +178,19 @@ function normalizePhone(phone) {
  * 4. nom_prenom inverse (Yango peut inverser first_name / last_name)
  * 5. Match partiel : un seul des deux mots (prenom OU nom) correspond dans les deux sens
  */
-function matchDrivers(yangoDrivers, voltChauffeurs) {
+function matchDrivers(yangoDrivers, piloteChauffeurs) {
   const matched = [];
-  const usedVoltIds = new Set();
+  const usedPiloteIds = new Set();
 
   // 1. Index par yangoDriverId
   const byYangoId = {};
-  voltChauffeurs.forEach(c => {
+  piloteChauffeurs.forEach(c => {
     if (c.yangoDriverId) byYangoId[c.yangoDriverId] = c;
   });
 
   // 2. Index par telephone (normalise)
   const byPhone = {};
-  voltChauffeurs.forEach(c => {
+  piloteChauffeurs.forEach(c => {
     const normalized = normalizePhone(c.telephone);
     if (normalized.length >= 8) byPhone[normalized] = c;
   });
@@ -200,7 +200,7 @@ function matchDrivers(yangoDrivers, voltChauffeurs) {
   const byNameReverse = {}; // nom_prenom
   const byFullName = {};    // "prenom nom" (string complet normalise)
 
-  voltChauffeurs.forEach(c => {
+  piloteChauffeurs.forEach(c => {
     const p = normalizeName(c.prenom);
     const n = normalizeName(c.nom);
     if (p && n) {
@@ -212,20 +212,20 @@ function matchDrivers(yangoDrivers, voltChauffeurs) {
   });
 
   for (const yd of yangoDrivers) {
-    let voltMatch = null;
+    let piloteMatch = null;
     let matchMethod = '';
 
     // 1. Match par yangoDriverId
-    if (!voltMatch && byYangoId[yd.id]) {
-      voltMatch = byYangoId[yd.id];
+    if (!piloteMatch && byYangoId[yd.id]) {
+      piloteMatch = byYangoId[yd.id];
       matchMethod = 'yangoId';
     }
 
     // 2. Match par telephone
-    if (!voltMatch && yd.telephone) {
+    if (!piloteMatch && yd.telephone) {
       const normalizedPhone = normalizePhone(yd.telephone);
       if (normalizedPhone.length >= 8 && byPhone[normalizedPhone]) {
-        voltMatch = byPhone[normalizedPhone];
+        piloteMatch = byPhone[normalizedPhone];
         matchMethod = 'telephone';
       }
     }
@@ -234,68 +234,68 @@ function matchDrivers(yangoDrivers, voltChauffeurs) {
     const yp = normalizeName(yd.prenom);
     const yn = normalizeName(yd.nom);
 
-    if (!voltMatch && yp && yn) {
+    if (!piloteMatch && yp && yn) {
       const keyDirect = `${yp}_${yn}`;
       if (byNameDirect[keyDirect]) {
-        voltMatch = byNameDirect[keyDirect];
+        piloteMatch = byNameDirect[keyDirect];
         matchMethod = 'nom_direct';
       }
     }
 
     // 4. Match par nom_prenom inverse (Yango peut inverser nom/prenom)
-    if (!voltMatch && yp && yn) {
+    if (!piloteMatch && yp && yn) {
       const keyReverse = `${yp}_${yn}`;
       if (byNameReverse[keyReverse]) {
-        voltMatch = byNameReverse[keyReverse];
+        piloteMatch = byNameReverse[keyReverse];
         matchMethod = 'nom_inverse';
       }
     }
 
     // 5. Match par nom complet (concatene prenom+nom dans les deux sens)
-    if (!voltMatch && yp && yn) {
+    if (!piloteMatch && yp && yn) {
       const fullA = `${yp} ${yn}`;
       const fullB = `${yn} ${yp}`;
       if (byFullName[fullA]) {
-        voltMatch = byFullName[fullA];
+        piloteMatch = byFullName[fullA];
         matchMethod = 'nom_complet';
       } else if (byFullName[fullB]) {
-        voltMatch = byFullName[fullB];
+        piloteMatch = byFullName[fullB];
         matchMethod = 'nom_complet_inverse';
       }
     }
 
-    // 6. Match partiel : prenom Yango = nom Volt ET nom Yango = prenom Volt
-    if (!voltMatch && yp && yn) {
-      const candidate = voltChauffeurs.find(c => {
-        if (usedVoltIds.has(c.id)) return false;
+    // 6. Match partiel : prenom Yango = nom Pilote ET nom Yango = prenom Pilote
+    if (!piloteMatch && yp && yn) {
+      const candidate = piloteChauffeurs.find(c => {
+        if (usedPiloteIds.has(c.id)) return false;
         const cp = normalizeName(c.prenom);
         const cn = normalizeName(c.nom);
         // Match croise : prenom↔nom
         return (yp === cn && yn === cp);
       });
       if (candidate) {
-        voltMatch = candidate;
+        piloteMatch = candidate;
         matchMethod = 'croise';
       }
     }
 
     // 7. Match par nom de famille seul (si unique)
-    if (!voltMatch && yn) {
-      const candidates = voltChauffeurs.filter(c => {
-        if (usedVoltIds.has(c.id)) return false;
+    if (!piloteMatch && yn) {
+      const candidates = piloteChauffeurs.filter(c => {
+        if (usedPiloteIds.has(c.id)) return false;
         const cn = normalizeName(c.nom);
         const cp = normalizeName(c.prenom);
         return cn === yn || cp === yn || cn === yp || cp === yp;
       });
       if (candidates.length === 1) {
-        voltMatch = candidates[0];
+        piloteMatch = candidates[0];
         matchMethod = 'nom_partiel';
       }
     }
 
-    if (voltMatch && !usedVoltIds.has(voltMatch.id)) {
-      usedVoltIds.add(voltMatch.id);
-      matched.push({ yango: yd, volt: voltMatch, method: matchMethod });
+    if (piloteMatch && !usedPiloteIds.has(piloteMatch.id)) {
+      usedPiloteIds.add(piloteMatch.id);
+      matched.push({ yango: yd, volt: piloteMatch, method: matchMethod });
     }
   }
 
@@ -415,24 +415,24 @@ async function syncYangoActivity(date = null) {
   const settings = await Settings.findOne().lean();
   const objectifMinutes = (settings?.bonus?.tempsActiviteMin) || 600;
 
-  // 1. Recuperer les chauffeurs Yango + Volt
-  const [yangoDrivers, voltChauffeurs] = await Promise.all([
+  // 1. Recuperer les chauffeurs Yango + Pilote
+  const [yangoDrivers, piloteChauffeurs] = await Promise.all([
     fetchYangoDrivers(),
     Chauffeur.find({ statut: 'actif' }).lean()
   ]);
 
-  console.log(`[YangoSync] ${yangoDrivers.length} chauffeurs Yango, ${voltChauffeurs.length} chauffeurs Volt`);
+  console.log(`[YangoSync] ${yangoDrivers.length} chauffeurs Yango, ${piloteChauffeurs.length} chauffeurs Pilote`);
 
-  // Debug : afficher les chauffeurs Volt pour diagnostiquer le matching
-  if (voltChauffeurs.length > 0 && voltChauffeurs.length <= 50) {
-    console.log(`[YangoSync] Chauffeurs Volt :`);
-    voltChauffeurs.forEach(c => {
+  // Debug : afficher les chauffeurs Pilote pour diagnostiquer le matching
+  if (piloteChauffeurs.length > 0 && piloteChauffeurs.length <= 50) {
+    console.log(`[YangoSync] Chauffeurs Pilote :`);
+    piloteChauffeurs.forEach(c => {
       console.log(`  → ${c.prenom} ${c.nom} | tel: ${c.telephone || '-'} | yangoId: ${c.yangoDriverId || '-'} | norm: "${normalizeName(c.prenom)}_${normalizeName(c.nom)}" | phone: "${normalizePhone(c.telephone)}"`);
     });
   }
 
   // 2. Matcher les chauffeurs
-  const matched = matchDrivers(yangoDrivers, voltChauffeurs);
+  const matched = matchDrivers(yangoDrivers, piloteChauffeurs);
   console.log(`[YangoSync] ${matched.length} chauffeurs matche(s)`);
 
   // 3. Recuperer les courses et transactions du jour
@@ -449,14 +449,14 @@ async function syncYangoActivity(date = null) {
   let created = 0;
   let errors = 0;
 
-  for (const { yango, volt } of matched) {
+  for (const { yango, pilote } of matched) {
     try {
       // Filtrer les courses de ce chauffeur
       const driverOrders = orders.filter(o => o.driver?.id === yango.id);
       const completedOrders = driverOrders.filter(o => o.status === 'complete');
 
       if (completedOrders.length === 0) {
-        results.push({ chauffeur: `${volt.prenom} ${volt.nom}`, status: 'skip', reason: 'Aucune course' });
+        results.push({ chauffeur: `${pilote.prenom} ${pilote.nom}`, status: 'skip', reason: 'Aucune course' });
         continue;
       }
 
@@ -488,7 +488,7 @@ async function syncYangoActivity(date = null) {
         : 0;
 
       // Chercher un enregistrement GPS existant pour ce jour
-      const gpsId = `yango_${volt.id}_${dateStr}`;
+      const gpsId = `yango_${pilote.id}_${dateStr}`;
       let gpsRecord = await Gps.findOne({ id: gpsId });
 
       if (gpsRecord) {
@@ -508,8 +508,8 @@ async function syncYangoActivity(date = null) {
         // Creer un nouvel enregistrement GPS
         const newGps = {
           id: gpsId,
-          chauffeurId: volt.id,
-          vehiculeId: volt.vehiculeAssigne || '',
+          chauffeurId: pilote.id,
+          vehiculeId: pilote.vehiculeAssigne || '',
           date: dayStart.toISOString(),
           scoreActivite,
           evenements: {
@@ -532,18 +532,18 @@ async function syncYangoActivity(date = null) {
       }
 
       // Sauvegarder le yangoDriverId si pas encore fait
-      if (!volt.yangoDriverId) {
-        await Chauffeur.updateOne({ id: volt.id }, { yangoDriverId: yango.id });
+      if (!pilote.yangoDriverId) {
+        await Chauffeur.updateOne({ id: pilote.id }, { yangoDriverId: yango.id });
       }
 
       // Mettre a jour le scoreConduite du chauffeur
-      const latestGps = await Gps.findOne({ chauffeurId: volt.id }).sort({ date: -1 }).lean();
+      const latestGps = await Gps.findOne({ chauffeurId: pilote.id }).sort({ date: -1 }).lean();
       if (latestGps && latestGps.scoreGlobal) {
-        await Chauffeur.updateOne({ id: volt.id }, { scoreConduite: latestGps.scoreGlobal });
+        await Chauffeur.updateOne({ id: pilote.id }, { scoreConduite: latestGps.scoreGlobal });
       }
 
       results.push({
-        chauffeur: `${volt.prenom} ${volt.nom}`,
+        chauffeur: `${pilote.prenom} ${pilote.nom}`,
         status: 'ok',
         courses: completedOrders.length,
         tempsActivite: activity.totalMinutes,
@@ -551,8 +551,8 @@ async function syncYangoActivity(date = null) {
         revenu: revenue.total
       });
     } catch (err) {
-      console.error(`[YangoSync] Erreur pour ${volt.prenom} ${volt.nom}:`, err.message);
-      results.push({ chauffeur: `${volt.prenom} ${volt.nom}`, status: 'error', error: err.message });
+      console.error(`[YangoSync] Erreur pour ${pilote.prenom} ${pilote.nom}:`, err.message);
+      results.push({ chauffeur: `${pilote.prenom} ${pilote.nom}`, status: 'error', error: err.message });
       errors++;
     }
   }
@@ -568,20 +568,20 @@ async function syncYangoActivity(date = null) {
     matchMethods[m.method] = (matchMethods[m.method] || 0) + 1;
   });
 
-  // Debug: chauffeurs Volt non matche(s)
-  const unmatchedVolt = voltChauffeurs.filter(
-    vc => !matched.find(m => m.volt.id === vc.id)
+  // Debug: chauffeurs Pilote non matche(s)
+  const unmatchedPilote = piloteChauffeurs.filter(
+    vc => !matched.find(m => m.pilote.id === vc.id)
   );
 
   const summary = {
     date: dateStr,
     totalYangoDrivers: yangoDrivers.length,
-    totalVoltChauffeurs: voltChauffeurs.length,
+    totalVoltChauffeurs: piloteChauffeurs.length,
     matched: matched.length,
     matchMethods,
     unmatched: unmatchedYango.length,
     unmatchedDrivers: unmatchedYango.slice(0, 30).map(d => `${d.prenom} ${d.nom} (${d.telephone || 'pas de tel'})`),
-    unmatchedVolt: unmatchedVolt.map(c => ({
+    unmatchedPilote: unmatchedPilote.map(c => ({
       nom: `${c.prenom} ${c.nom}`,
       telephone: c.telephone || '',
       normalizedName: `${normalizeName(c.prenom)}_${normalizeName(c.nom)}`,

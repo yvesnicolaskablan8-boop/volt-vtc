@@ -13,12 +13,12 @@ router.get('/', async (req, res, next) => {
       // Create default settings if none exist
       settings = await Settings.create({
         entreprise: {
-          nom: 'Volt VTC',
+          nom: 'Mon Entreprise',
           slogan: 'Transport de qualité',
-          email: 'contact@volt.ci',
+          email: 'contact@pilote.app',
           telephone: '+225 27 00 00 00',
           adresse: 'Abidjan, Cocody Riviera',
-          siteWeb: 'www.volt.ci',
+          siteWeb: 'www.pilote.app',
           numeroRegistre: 'CI-ABJ-2024-0042',
           devise: 'FCFA'
         },

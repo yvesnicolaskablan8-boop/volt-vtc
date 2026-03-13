@@ -49,7 +49,7 @@
 }
 
 .chart-card .chart-title i {
-  color: var(--volt-blue);
+  color: var(--pilote-blue);
 }
 
 .chart-period {
@@ -74,9 +74,9 @@
 }
 
 .chart-period button.active {
-  color: var(--volt-blue);
-  border-color: var(--volt-blue);
-  background: var(--volt-blue-glow);
+  color: var(--pilote-blue);
+  border-color: var(--pilote-blue);
+  background: var(--pilote-blue-glow);
 }
 
 /* Gauge */

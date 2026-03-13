@@ -1,7 +1,7 @@
 {
-  "name": "Volt Chauffeur",
-  "short_name": "Volt Chauffeur",
-  "description": "Application chauffeur Volt VTC - Planning, versements et signalements",
+  "name": "Pilote Chauffeur",
+  "short_name": "Pilote Chauffeur",
+  "description": "Application chauffeur Pilote - Planning, versements et signalements",
   "start_url": "/driver/",
   "display": "standalone",
   "orientation": "portrait",

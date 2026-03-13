@@ -6,21 +6,29 @@
   <meta name="theme-color" content="#3b82f6">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Volt Chauffeur">
+  <meta name="apple-mobile-web-app-title" content="Pilote Chauffeur">
 
-  <title>Volt Chauffeur</title>
+  <title>Pilote Chauffeur</title>
 
   <link rel="manifest" href="/driver/manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="/driver/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/driver/icons/icon-192.png">
 
+  <script>
+  (function(){
+    [['volt_driver_version','pilote_driver_version'],['pilote_driver_token','pilote_driver_token'],['volt_driver_user','pilote_driver_user'],['volt_driver_chauffeur','pilote_driver_chauffeur']].forEach(function(m){
+      var o=localStorage.getItem(m[0]);if(o&&!localStorage.getItem(m[1])){localStorage.setItem(m[1],o);}localStorage.removeItem(m[0]);
+    });
+  })();
+  </script>
+
   <!-- Force SW + cache update -->
   <script>
   (function(){
     var APP_VERSION = 15;
-    var stored = parseInt(localStorage.getItem('volt_driver_version') || '0');
+    var stored = parseInt(localStorage.getItem('pilote_driver_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
-      localStorage.setItem('volt_driver_version', APP_VERSION);
+      localStorage.setItem('pilote_driver_version', APP_VERSION);
       navigator.serviceWorker.getRegistrations().then(function(regs) {
         var p = regs.map(function(r) { return r.unregister(); });
         return Promise.all(p);
@@ -61,7 +69,7 @@
         <div class="login-logo-icon">
           <iconify-icon icon="solar:bolt-bold" style="font-size:2.8rem;color:white"></iconify-icon>
         </div>
-        <h1>Volt <span>Chauffeur</span></h1>
+        <h1>Pilote <span>Chauffeur</span></h1>
         <p class="login-subtitle">Connectez-vous avec votre numero et PIN</p>
       </div>
 
@@ -92,7 +100,7 @@
 
       <div id="login-error" class="login-error" style="display:none"></div>
 
-      <p class="login-version">Volt v1.2.0 &bull; Propulse par Yango</p>
+      <p class="login-version">Pilote v1.2.0 &bull; Propulse par Yango</p>
     </div>
   </div>
 

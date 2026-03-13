@@ -122,7 +122,7 @@ const AlertesPage = {
     if (!banner) return;
 
     try {
-      const token = Auth.getToken ? Auth.getToken() : localStorage.getItem('volt_token');
+      const token = Auth.getToken ? Auth.getToken() : localStorage.getItem('pilote_token');
       const res = await fetch((Store._apiBase || '/api') + '/notifications/stats', {
         headers: { 'Authorization': 'Bearer ' + token }
       });

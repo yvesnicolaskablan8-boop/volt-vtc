@@ -60,7 +60,7 @@ const PlanningPage = {
           </div>
           <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;">
             <div style="display:flex;align-items:center;gap:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px 10px;">
-              <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--volt-blue);font-size:16px;"></iconify-icon>
+              <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:16px;"></iconify-icon>
               <input type="text" id="filter-planning-search" class="form-control" placeholder="Rechercher un chauffeur..." value="${this._filterSearch}" style="width:200px;font-size:var(--font-size-sm);padding:6px 8px;border:none;background:transparent;font-weight:500;">
             </div>
             <div class="tabs" id="planning-view-tabs" style="margin:0;">
@@ -321,9 +321,9 @@ const PlanningPage = {
             <tr style="background:var(--bg-tertiary);">
               <th style="padding:12px 16px;text-align:left;font-size:var(--font-size-sm);font-weight:600;color:var(--text-secondary);width:180px;border-bottom:2px solid var(--border-color);position:sticky;left:0;background:var(--bg-tertiary);z-index:1;">Chauffeur</th>
               ${days.map(d => `
-                <th style="padding:12px 8px;text-align:center;font-size:var(--font-size-sm);border-bottom:2px solid var(--border-color);${this._isToday(d.date) ? 'background:var(--volt-blue-glow);color:var(--volt-blue);font-weight:700;' : 'color:var(--text-secondary);'}">
+                <th style="padding:12px 8px;text-align:center;font-size:var(--font-size-sm);border-bottom:2px solid var(--border-color);${this._isToday(d.date) ? 'background:var(--pilote-blue-glow);color:var(--pilote-blue);font-weight:700;' : 'color:var(--text-secondary);'}">
                   <div style="font-weight:600;">${this._getDayName(d.dayIdx)}</div>
-                  <div style="font-size:var(--font-size-xs);${this._isToday(d.date) ? 'color:var(--volt-blue);' : 'color:var(--text-muted);'}">${d.obj.getDate()}/${d.obj.getMonth() + 1}</div>
+                  <div style="font-size:var(--font-size-xs);${this._isToday(d.date) ? 'color:var(--pilote-blue);' : 'color:var(--text-muted);'}">${d.obj.getDate()}/${d.obj.getMonth() + 1}</div>
                 </th>
               `).join('')}
             </tr>
@@ -365,7 +365,7 @@ const PlanningPage = {
                   }
 
                   return `<td style="padding:4px;text-align:center;${isToday ? 'background:rgba(59,130,246,0.05);' : ''}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')" ondragenter="this.style.background='rgba(59,130,246,0.1)'" ondragleave="this.style.background='${isToday ? 'rgba(59,130,246,0.05)' : ''}'">
-                    <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="border:1px dashed var(--border-color);border-radius:6px;padding:8px 4px;cursor:pointer;opacity:0.4;transition:all 0.2s;" onmouseenter="this.style.opacity='1';this.style.borderColor='var(--volt-blue)'" onmouseleave="this.style.opacity='0.4';this.style.borderColor='var(--border-color)'">
+                    <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="border:1px dashed var(--border-color);border-radius:6px;padding:8px 4px;cursor:pointer;opacity:0.4;transition:all 0.2s;" onmouseenter="this.style.opacity='1';this.style.borderColor='var(--pilote-blue)'" onmouseleave="this.style.opacity='0.4';this.style.borderColor='var(--border-color)'">
                       <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:10px;color:var(--text-muted);"></iconify-icon>
                     </div>
                   </td>`;
@@ -436,7 +436,7 @@ const PlanningPage = {
               <th style="padding:8px 12px;text-align:left;font-size:var(--font-size-xs);font-weight:600;color:var(--text-secondary);width:160px;border-bottom:2px solid var(--border-color);position:sticky;left:0;background:var(--bg-tertiary);z-index:1;">Chauffeur</th>
               ${dayHeaders.map(d => `
                 <th style="padding:4px 2px;text-align:center;font-size:10px;border-bottom:2px solid var(--border-color);min-width:30px;
-                  ${d.isToday ? 'background:var(--volt-blue-glow);color:var(--volt-blue);font-weight:700;' : d.isWeekend ? 'background:rgba(100,116,139,0.1);color:var(--text-muted);' : 'color:var(--text-secondary);'}">
+                  ${d.isToday ? 'background:var(--pilote-blue-glow);color:var(--pilote-blue);font-weight:700;' : d.isWeekend ? 'background:rgba(100,116,139,0.1);color:var(--text-muted);' : 'color:var(--text-secondary);'}">
                   <div style="font-weight:600;">${d.num}</div>
                   <div style="font-size:9px;">${this._getDayName(d.dow === 0 ? 6 : d.dow - 1)}</div>
                 </th>
@@ -1190,7 +1190,7 @@ const PlanningPage = {
       headStyles: { fillColor: [59, 130, 246] }
     });
 
-    doc.save('planning-volt.pdf');
+    doc.save('planning-pilote.pdf');
     Toast.success('PDF exporté');
   },
 

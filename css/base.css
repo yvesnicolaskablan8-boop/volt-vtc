@@ -48,13 +48,13 @@ body > * {
 }
 
 a {
-  color: var(--volt-cyan);
+  color: var(--pilote-cyan);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--volt-blue);
+  color: var(--pilote-blue);
 }
 
 img {
@@ -127,7 +127,7 @@ p {
 
 /* Selection */
 ::selection {
-  background: var(--volt-blue);
+  background: var(--pilote-blue);
   color: white;
 }
 
@@ -144,8 +144,8 @@ p {
 .text-success { color: var(--success); }
 .text-danger { color: var(--danger); }
 .text-warning { color: var(--warning); }
-.text-blue { color: var(--volt-blue); }
-.text-yellow { color: var(--volt-yellow); }
+.text-blue { color: var(--pilote-blue); }
+.text-yellow { color: var(--pilote-yellow); }
 
 .mt-sm { margin-top: var(--space-sm); }
 .mt-md { margin-top: var(--space-md); }

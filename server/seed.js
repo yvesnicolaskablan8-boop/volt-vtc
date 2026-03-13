@@ -34,7 +34,7 @@ async function seed() {
         id: 'USR-001',
         prenom: 'Yves',
         nom: 'Nicolas',
-        email: 'yves@volt.ci',
+        email: 'admin@pilote.app',
         telephone: '+225 07 00 00 01',
         role: 'Administrateur',
         statut: 'actif',
@@ -57,7 +57,7 @@ async function seed() {
         dernierConnexion: new Date(),
         dateCreation: new Date('2024-01-10T08:00:00Z')
       });
-      console.log('Admin user created: yves@volt.ci / admin123');
+      console.log('Admin user created: admin@pilote.app / admin123');
     }
 
     // Check if settings already exist
@@ -67,12 +67,12 @@ async function seed() {
     } else {
       await Settings.create({
         entreprise: {
-          nom: 'Volt VTC',
+          nom: 'Mon Entreprise',
           slogan: 'Transport de qualité',
-          email: 'contact@volt.ci',
+          email: 'contact@pilote.app',
           telephone: '+225 27 00 00 00',
           adresse: 'Abidjan, Cocody Riviera',
-          siteWeb: 'www.volt.ci',
+          siteWeb: 'www.pilote.app',
           numeroRegistre: 'CI-ABJ-2024-0042',
           devise: 'FCFA'
         },
@@ -89,7 +89,7 @@ async function seed() {
     }
 
     console.log('\nSeed complete!');
-    console.log('Admin credentials: yves@volt.ci / admin123');
+    console.log('Admin credentials: admin@pilote.app / admin123');
 
   } catch (err) {
     console.error('Seed error:', err);

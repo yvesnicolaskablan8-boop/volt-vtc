@@ -1,6 +1,6 @@
 /**
  * VehiculesPage - Vehicle management with CRUD and detail
- * Shows only internal Volt vehicles (no Yango data)
+ * Shows only internal internal vehicles (no Yango data)
  */
 const VehiculesPage = {
   _charts: [],
@@ -61,7 +61,7 @@ const VehiculesPage = {
         <div class="kpi-card yellow"><div class="kpi-value">${stats.enMaintenance}</div><div class="kpi-label">En maintenance</div></div>
         <div class="kpi-card cyan">
           <div class="kpi-value">
-            <span style="color:var(--volt-yellow)">${stats.electriques} <iconify-icon icon="solar:bolt-bold-duotone" style="font-size:16px"></iconify-icon></span>
+            <span style="color:var(--pilote-yellow)">${stats.electriques} <iconify-icon icon="solar:bolt-bold-duotone" style="font-size:16px"></iconify-icon></span>
             <span style="color:var(--text-muted);font-size:14px;margin:0 4px;">/</span>
             <span>${stats.thermiques} <iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:14px"></iconify-icon></span>
           </div>
@@ -84,7 +84,7 @@ const VehiculesPage = {
           render: (v) => {
             const isEV = v.typeEnergie === 'electrique';
             const energyIcon = isEV
-              ? '<iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--volt-yellow);font-size:10px;margin-left:4px" title="Électrique"></iconify-icon>'
+              ? '<iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--pilote-yellow);font-size:10px;margin-left:4px" title="Électrique"></iconify-icon>'
               : '<iconify-icon icon="solar:gas-station-bold-duotone" style="color:var(--text-muted);font-size:9px;margin-left:4px" title="Thermique"></iconify-icon>';
             return `<div><div style="font-weight:500">${v.marque} ${v.modele} ${energyIcon}</div><div style="font-size:11px;color:var(--text-muted)">${v.immatriculation} &bull; ${v.annee}</div></div>`;
           },
@@ -105,7 +105,7 @@ const VehiculesPage = {
           render: (v) => {
             if (v.typeEnergie === 'electrique') {
               const autonomieRestante = Math.round((v.niveauBatterie || 0) / 100 * (v.autonomieKm || 0));
-              return `${Utils.formatNumber(v.kilometrage)} km<br><span style="font-size:10px;color:var(--volt-yellow)"><iconify-icon icon="solar:battery-full-bold-duotone"></iconify-icon> ${v.niveauBatterie}% &bull; ~${autonomieRestante} km</span>`;
+              return `${Utils.formatNumber(v.kilometrage)} km<br><span style="font-size:10px;color:var(--pilote-yellow)"><iconify-icon icon="solar:battery-full-bold-duotone"></iconify-icon> ${v.niveauBatterie}% &bull; ~${autonomieRestante} km</span>`;
             }
             return `${Utils.formatNumber(v.kilometrage)} km`;
           }
@@ -156,7 +156,7 @@ const VehiculesPage = {
       ? '<span class="badge badge-warning"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:8px"></iconify-icon> Électrique</span>'
       : '<span class="badge badge-neutral"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:8px"></iconify-icon> Thermique</span>';
 
-    const avatarBg = isEV ? 'var(--volt-yellow)' : 'var(--volt-blue)';
+    const avatarBg = isEV ? 'var(--pilote-yellow)' : 'var(--pilote-blue)';
     const avatarIcon = isEV ? 'solar:bolt-circle-bold-duotone' : 'solar:wheel-bold-duotone';
 
     return `
@@ -198,7 +198,7 @@ const VehiculesPage = {
             </div>
             ${isEV ? `
             <div class="detail-stat">
-              <div class="detail-stat-value" style="color:var(--volt-yellow)">${v.niveauBatterie}%</div>
+              <div class="detail-stat-value" style="color:var(--pilote-yellow)">${v.niveauBatterie}%</div>
               <div class="detail-stat-label">Batterie</div>
             </div>
             ` : ''}
@@ -208,13 +208,13 @@ const VehiculesPage = {
 
       ${isEV ? `
       <!-- Bloc spécifique Véhicule Électrique -->
-      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-yellow);background:rgba(250,204,21,0.04);">
-        <div class="card-header"><span class="card-title"><iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--volt-yellow)"></iconify-icon> Informations Véhicule Électrique</span></div>
+      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--pilote-yellow);background:rgba(250,204,21,0.04);">
+        <div class="card-header"><span class="card-title"><iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--pilote-yellow)"></iconify-icon> Informations Véhicule Électrique</span></div>
         <div class="grid-4" style="gap:var(--space-md);">
           <div style="text-align:center;padding:var(--space-sm);">
-            <div style="font-size:var(--font-size-2xl);font-weight:700;color:var(--volt-yellow);">${v.niveauBatterie}%</div>
+            <div style="font-size:var(--font-size-2xl);font-weight:700;color:var(--pilote-yellow);">${v.niveauBatterie}%</div>
             <div class="progress-bar" style="margin:8px 0;">
-              <div class="progress-fill ${v.niveauBatterie < 20 ? 'red' : v.niveauBatterie < 40 ? 'yellow' : ''}" style="width:${v.niveauBatterie}%;background:${v.niveauBatterie < 20 ? 'var(--danger)' : 'var(--volt-yellow)'}"></div>
+              <div class="progress-fill ${v.niveauBatterie < 20 ? 'red' : v.niveauBatterie < 40 ? 'yellow' : ''}" style="width:${v.niveauBatterie}%;background:${v.niveauBatterie < 20 ? 'var(--danger)' : 'var(--pilote-yellow)'}"></div>
             </div>
             <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Niveau batterie (${v.capaciteBatterie} kWh)</div>
           </div>
@@ -1188,7 +1188,7 @@ const VehiculesPage = {
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
           <div style="text-align:center;padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
-            <div style="font-size:var(--font-size-lg);font-weight:700;color:var(--volt-blue);">${Utils.formatCurrency(totalCarburant)}</div>
+            <div style="font-size:var(--font-size-lg);font-weight:700;color:var(--pilote-blue);">${Utils.formatCurrency(totalCarburant)}</div>
             <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Total dépensé</div>
           </div>
           <div style="text-align:center;padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">

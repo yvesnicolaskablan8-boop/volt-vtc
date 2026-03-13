@@ -100,7 +100,7 @@ const GpsConduitePage = {
       <!-- Driver search filter -->
       <div style="margin-bottom:var(--space-md);position:relative;">
         <iconify-icon icon="solar:magnifer-bold-duotone" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
-        <input type="text" id="gps-driver-search" placeholder="Rechercher un chauffeur par nom..." style="width:100%;padding:12px 14px 12px 42px;border-radius:var(--radius-md);border:1px solid var(--border-color);font-size:var(--font-size-sm);font-family:inherit;background:var(--bg-secondary);color:var(--text-primary);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--volt-blue)'" onblur="this.style.borderColor='var(--border-color)'">
+        <input type="text" id="gps-driver-search" placeholder="Rechercher un chauffeur par nom..." style="width:100%;padding:12px 14px 12px 42px;border-radius:var(--radius-md);border:1px solid var(--border-color);font-size:var(--font-size-sm);font-family:inherit;background:var(--bg-secondary);color:var(--text-primary);outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--pilote-blue)'" onblur="this.style.borderColor='var(--border-color)'">
       </div>
 
       <!-- Driver selector + Fleet scores -->
@@ -113,7 +113,7 @@ const GpsConduitePage = {
           return `
             <div class="card driver-score-card ${this._selectedDriver === c.id ? 'selected' : ''}"
                  data-driver="${c.id}"
-                 style="cursor:pointer;transition:all 0.2s;${this._selectedDriver === c.id ? 'border-color:var(--volt-blue);box-shadow:var(--shadow-glow);' : ''}">
+                 style="cursor:pointer;transition:all 0.2s;${this._selectedDriver === c.id ? 'border-color:var(--pilote-blue);box-shadow:var(--shadow-glow);' : ''}">
               <div style="display:flex;align-items:center;gap:12px;">
                 ${Utils.getAvatarHtml(c)}
                 <div style="flex:1;">
@@ -156,7 +156,7 @@ const GpsConduitePage = {
           c.style.boxShadow = '';
           c.classList.remove('selected');
         });
-        card.style.borderColor = 'var(--volt-blue)';
+        card.style.borderColor = 'var(--pilote-blue)';
         card.style.boxShadow = 'var(--shadow-glow)';
         card.classList.add('selected');
         this._renderDriverAnalysis(this._selectedDriver);
@@ -208,7 +208,7 @@ const GpsConduitePage = {
     if (!this._map) return;
 
     try {
-      const token = localStorage.getItem('volt_token');
+      const token = localStorage.getItem('pilote_token');
       const resp = await fetch('/api/gps/positions', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -327,7 +327,7 @@ const GpsConduitePage = {
       </h2>
 
       <!-- AI Analysis Card -->
-      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--volt-cyan);">
+      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--pilote-cyan);">
         <div class="card-header">
           <span class="card-title"><iconify-icon icon="solar:cpu-bolt-bold-duotone" class="text-blue"></iconify-icon> Analyse IA du comportement routier</span>
           <span class="badge ${latest.analyseIA.tendance === 'amelioration' ? 'badge-success' : latest.analyseIA.tendance === 'stable' ? 'badge-info' : 'badge-danger'}">

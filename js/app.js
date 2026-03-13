@@ -6,7 +6,7 @@ const ThemeManager = {
 
   init() {
     // Read saved theme or detect system preference
-    const saved = localStorage.getItem('volt_theme');
+    const saved = localStorage.getItem('pilote_theme');
     if (saved) {
       this._current = saved;
     } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
@@ -16,7 +16,7 @@ const ThemeManager = {
 
     // Listen for system theme changes
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if (!localStorage.getItem('volt_theme')) {
+      if (!localStorage.getItem('pilote_theme')) {
         this._applyTheme(e.matches ? 'dark' : 'light', false);
       }
     });
@@ -25,7 +25,7 @@ const ThemeManager = {
   toggle() {
     const next = this._current === 'dark' ? 'light' : 'dark';
     this._applyTheme(next, true);
-    localStorage.setItem('volt_theme', next);
+    localStorage.setItem('pilote_theme', next);
 
     // Animate the toggle button
     const btn = document.getElementById('theme-toggle');
@@ -95,7 +95,7 @@ const NotificationManager = {
         body,
         icon: '/favicon.ico',
         badge: '/favicon.ico',
-        tag: options.tag || 'volt-notification',
+        tag: options.tag || 'pilote-notification',
         ...options
       });
       if (options.onclick) {
@@ -133,16 +133,16 @@ const NotificationManager = {
 
     if (unpaidToday.length > 0 && now.getHours() >= 18) {
       // Only remind in the evening
-      const lastReminder = localStorage.getItem('volt_last_reminder');
+      const lastReminder = localStorage.getItem('pilote_last_reminder');
       if (lastReminder === today) return; // Already reminded today
 
       this.send(
         `${unpaidToday.length} recette${unpaidToday.length > 1 ? 's' : ''} en attente`,
         `${unpaidToday.map(c => c.prenom).join(', ')} — Versements du ${Utils.formatDate(today)} non reçus`,
-        { tag: 'volt-unpaid-reminder' }
+        { tag: 'pilote-unpaid-reminder' }
       );
 
-      localStorage.setItem('volt_last_reminder', today);
+      localStorage.setItem('pilote_last_reminder', today);
     }
 
     // Check document expiry
@@ -156,7 +156,7 @@ const NotificationManager = {
         if (ch[field]) {
           const diff = Math.ceil((new Date(ch[field]) - now) / 86400000);
           if (diff >= 0 && diff <= 7) {
-            const tag = `volt-doc-${ch.id}-${field}`;
+            const tag = `pilote-doc-${ch.id}-${field}`;
             const lastNotif = localStorage.getItem(tag);
             if (lastNotif === today) return;
             this.send(
@@ -225,7 +225,7 @@ const App = {
     window.addEventListener('appinstalled', () => {
       this._deferredPrompt = null;
       this._hideInstallButton();
-      if (typeof Toast !== 'undefined') Toast.success('Volt VTC installé !');
+      if (typeof Toast !== 'undefined') Toast.success('Pilote installé !');
     });
 
     // Check authentication — token in localStorage persists across tabs/refresh
@@ -281,10 +281,10 @@ const App = {
     // Initialize browser notifications
     NotificationManager.init();
 
-    console.log('Volt VTC Management v2.0.0 initialized (API mode)');
+    console.log('Pilote v2.0.0 initialized (API mode)');
     console.log(`Data size: ${Store.getStorageSize().kb} Ko`);
     console.log(`Theme: ${ThemeManager._current}`);
-    console.log(`Viewport: ${window.innerWidth}x${window.innerHeight}, Native: ${!!(window.VoltNative)}`);
+    console.log(`Viewport: ${window.innerWidth}x${window.innerHeight}, Native: ${!!(window.PiloteNative)}`);
   },
 
   _showApp() {
@@ -325,7 +325,7 @@ const App = {
 
   _showLogin() {
     // Remove fast-hide class so login overlay becomes visible
-    document.documentElement.classList.remove('volt-has-token');
+    document.documentElement.classList.remove('pilote-has-token');
 
     // Show login overlay
     const loginOverlay = document.getElementById('login-overlay');
@@ -611,18 +611,18 @@ const App = {
 
   _applyMobileMode() {
     // Detect native app WebView or narrow viewport
-    const isNative = !!(window.VoltNative) || navigator.userAgent.includes('VoltAdminApp');
+    const isNative = !!(window.PiloteNative) || navigator.userAgent.includes('PiloteAdminApp');
     const vw = window.innerWidth || document.documentElement.clientWidth;
 
     if (isNative || vw <= 1024) {
       // Add classes on body
-      if (isNative) document.body.classList.add('volt-native-app');
-      document.body.classList.add('volt-mobile');
+      if (isNative) document.body.classList.add('pilote-native-app');
+      document.body.classList.add('pilote-mobile');
 
       // Inject a <style> tag that forces mobile layout — more reliable than CSS files
-      if (!document.getElementById('volt-mobile-override')) {
+      if (!document.getElementById('pilote-mobile-override')) {
         const style = document.createElement('style');
-        style.id = 'volt-mobile-override';
+        style.id = 'pilote-mobile-override';
         style.textContent = `
           /* Hide sidebar completely on mobile — bottom nav replaces it */
           .sidebar {
@@ -718,7 +718,7 @@ const App = {
     const btn = document.createElement('button');
     btn.id = 'btn-install-pwa';
     btn.className = 'btn btn-primary';
-    btn.title = 'Installer Volt VTC';
+    btn.title = 'Installer Pilote';
     btn.style.cssText = 'font-size:12px;padding:6px 12px;gap:4px;animation:pulse-dot 2s infinite;';
     btn.innerHTML = '<iconify-icon icon="solar:download-minimalistic-bold-duotone"></iconify-icon> Installer';
     btn.addEventListener('click', () => this._installPWA());
