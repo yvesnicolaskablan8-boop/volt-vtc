@@ -62,19 +62,12 @@ body {
   margin-bottom: 2rem;
 }
 
-.login-logo .logo-img {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
+.login-logo .login-brand-img {
+  width: 160px;
+  height: auto;
   display: block;
   margin: 0 auto 0.75rem;
-  border-radius: 1rem;
-}
-
-.login-logo .logo-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.08));
 }
 
 .login-logo .logo-subtitle {

@@ -283,11 +283,11 @@ const AccueilPage = {
             <div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;">CA du mois</div>
           </div>
 
-          <!-- Streak -->
+          <!-- Serie -->
           <div style="padding:14px;border-radius:1rem;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
               <iconify-icon icon="solar:fire-bold-duotone" style="color:${streakColor};font-size:1.1rem;"></iconify-icon>
-              <span style="font-size:0.68rem;color:#94a3b8;font-weight:600;">Streak</span>
+              <span style="font-size:0.68rem;color:#94a3b8;font-weight:600;">Serie</span>
             </div>
             <div style="font-size:1.1rem;font-weight:800;color:${streakColor};">${streak} jour${streak > 1 ? 's' : ''}</div>
             <div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;">sans impayé</div>

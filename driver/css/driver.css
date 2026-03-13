@@ -64,21 +64,21 @@ body {
   margin-bottom: 3rem;
 }
 
-.login-logo-icon {
-  width: 96px;
-  height: 96px;
-  border-radius: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1.5rem;
-  overflow: hidden;
+.login-brand-img {
+  width: 160px;
+  height: auto;
+  margin: 0 auto 0.75rem;
+  display: block;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.08));
 }
 
-.login-logo-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+.login-app-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.5rem;
 }
 
 .login-logo h1 {
