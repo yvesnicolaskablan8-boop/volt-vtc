@@ -23,7 +23,7 @@
   <!-- Version bump -->
   <script>
   (function(){
-    var APP_VERSION = 6;
+    var APP_VERSION = 7;
     var stored = parseInt(localStorage.getItem('pilote_monitor_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_monitor_version', APP_VERSION);
@@ -66,7 +66,7 @@
   <div id="monitor-login" class="monitor-login">
     <div class="login-card">
       <div class="login-logo">
-        <iconify-icon icon="solar:monitor-smartphone-bold" class="logo-icon"></iconify-icon>
+        <img src="/monitor/assets/icon-192.png" alt="Pilote Monitor" class="logo-img">
         <div class="logo-title">PILOTE</div>
         <div class="logo-subtitle">Monitor</div>
       </div>
@@ -84,7 +84,7 @@
     <!-- Header -->
     <header class="monitor-header">
       <div class="header-brand">
-        <iconify-icon icon="solar:monitor-smartphone-bold"></iconify-icon>
+        <img src="/monitor/assets/icon-192.png" alt="Pilote Monitor" class="brand-logo">
         <span>Pilote Monitor</span>
       </div>
       <div class="header-actions">

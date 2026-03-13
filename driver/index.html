@@ -25,7 +25,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 15;
+    var APP_VERSION = 16;
     var stored = parseInt(localStorage.getItem('pilote_driver_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_driver_version', APP_VERSION);
@@ -67,7 +67,7 @@
     <div class="login-container">
       <div class="login-logo">
         <div class="login-logo-icon">
-          <iconify-icon icon="solar:bolt-bold" style="font-size:2.8rem;color:white"></iconify-icon>
+          <img src="/driver/icons/icon-192.png" alt="Pilote Chauffeur" class="login-logo-img">
         </div>
         <h1>Pilote <span>Chauffeur</span></h1>
         <p class="login-subtitle">Connectez-vous avec votre numero et PIN</p>
