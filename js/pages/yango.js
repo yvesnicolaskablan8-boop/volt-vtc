@@ -21,6 +21,8 @@ const YangoPage = {
     const container = document.getElementById('page-content');
     container.innerHTML = this._template();
     this._loadData();
+    // Auto-sync au chargement de la page
+    this._autoSync();
     // Auto-refresh every 2 minutes
     this._refreshInterval = setInterval(() => this._loadData(), 120000);
   },
@@ -705,6 +707,19 @@ const YangoPage = {
   },
 
   // =================== YANGO SYNC ===================
+
+  async _autoSync() {
+    // Lancer la sync automatiquement à l'ouverture de la page
+    // Éviter de re-syncer si déjà fait récemment (< 5 min)
+    const lastSync = parseInt(localStorage.getItem('pilote_last_yango_sync') || '0');
+    const now = Date.now();
+    if (now - lastSync < 5 * 60 * 1000) {
+      console.log('[YangoSync] Sync récente (<5min), skip auto-sync');
+      return;
+    }
+    localStorage.setItem('pilote_last_yango_sync', String(now));
+    await this._triggerSync();
+  },
 
   async _triggerSync(datePreset = null) {
     const syncBtn = document.getElementById('yp-sync-btn');
