@@ -947,6 +947,61 @@ router.get('/sync/status', (req, res) => {
 });
 
 /**
+ * GET /api/yango/fleet-status
+ * Retourne les compteurs de statuts des chauffeurs en temps réel (comme Yango Fleet)
+ */
+router.get('/fleet-status', async (req, res) => {
+  try {
+    const data = await yangoFetch('/v1/parks/driver-profiles/list', {
+      fields: {
+        current_status: ['status'],
+        driver_profile: ['id', 'first_name', 'last_name', 'work_status']
+      },
+      limit: 300,
+      offset: 0,
+      query: {
+        park: {
+          id: process.env.YANGO_PARK_ID
+        }
+      }
+    });
+
+    const profiles = data.driver_profiles || [];
+    const counts = { free: 0, busy: 0, in_order: 0, offline: 0, total: profiles.length };
+    const drivers = [];
+
+    profiles.forEach(dp => {
+      const status = dp.current_status?.status || 'offline';
+      if (counts[status] !== undefined) counts[status]++;
+      else counts.offline++;
+
+      // N'inclure que les chauffeurs en ligne
+      if (status !== 'offline') {
+        drivers.push({
+          id: dp.driver_profile?.id || '',
+          nom: `${dp.driver_profile?.first_name || ''} ${dp.driver_profile?.last_name || ''}`.trim(),
+          status
+        });
+      }
+    });
+
+    res.json({
+      counts,
+      disponible: counts.free,
+      commandeActive: counts.in_order,
+      occupe: counts.busy,
+      horsLigne: counts.offline,
+      total: counts.total,
+      enLigne: counts.free + counts.busy + counts.in_order,
+      drivers
+    });
+  } catch (err) {
+    console.error('Yango fleet-status error:', err.message);
+    res.status(500).json({ error: 'Erreur récupération statuts flotte' });
+  }
+});
+
+/**
  * Map Yango driver status to French labels
  */
 function mapDriverStatus(status) {

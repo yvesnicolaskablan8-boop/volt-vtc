@@ -162,7 +162,7 @@ const YangoPage = {
       </div>
 
       <!-- Carte temps réel -->
-      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #22c55e;">
+      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #22c55e;overflow:hidden;">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
           <span class="card-title" style="display:flex;align-items:center;gap:8px;">
             <iconify-icon icon="solar:map-bold-duotone" style="color:#FC4C02;"></iconify-icon>
@@ -170,6 +170,25 @@ const YangoPage = {
             <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite;"></span>
           </span>
           <span class="badge badge-info" id="yp-map-count">--</span>
+        </div>
+        <!-- Barre de statuts Yango Fleet -->
+        <div id="yp-fleet-bar" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+          <span style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:#22c55e;color:#fff;font-size:12px;font-weight:700;">
+            <span id="yp-fleet-free">-</span> Disponible
+          </span>
+          <span style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:#22c55e;color:#fff;font-size:12px;font-weight:700;">
+            <span id="yp-fleet-inorder">-</span> Commande active
+          </span>
+          <span style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:#ef4444;color:#fff;font-size:12px;font-weight:700;">
+            <span id="yp-fleet-busy">-</span> Occupés
+          </span>
+          <span style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:#6b7280;color:#fff;font-size:12px;font-weight:700;">
+            <span id="yp-fleet-offline">-</span> Hors ligne
+          </span>
+          <span style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--bg-tertiary);color:var(--text-primary);font-size:12px;font-weight:600;">
+            <iconify-icon icon="solar:users-group-rounded-bold" style="font-size:14px;"></iconify-icon>
+            <span id="yp-fleet-total">-</span>
+          </span>
         </div>
         <div id="yp-realtime-map" style="height:500px;border-radius:var(--radius-md);z-index:0;"></div>
       </div>
@@ -585,7 +604,25 @@ const YangoPage = {
 
     // Premier chargement + polling 15s
     this._refreshMap();
-    this._mapInterval = setInterval(() => this._refreshMap(), 15000);
+    this._refreshFleetStatus();
+    this._mapInterval = setInterval(() => { this._refreshMap(); this._refreshFleetStatus(); }, 15000);
+  },
+
+  async _refreshFleetStatus() {
+    try {
+      const token = typeof Auth !== 'undefined' ? Auth.getToken() : localStorage.getItem('pilote_token');
+      const res = await fetch('/api/yango/fleet-status', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (!res.ok) return;
+      const data = await res.json();
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      set('yp-fleet-free', data.disponible || 0);
+      set('yp-fleet-inorder', data.commandeActive || 0);
+      set('yp-fleet-busy', data.occupe || 0);
+      set('yp-fleet-offline', data.horsLigne || 0);
+      set('yp-fleet-total', data.total || 0);
+    } catch (e) {
+      console.warn('[FleetStatus] Error:', e.message);
+    }
   },
 
   async _refreshMap() {
