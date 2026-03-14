@@ -1165,13 +1165,20 @@ const ParametresPage = {
                 <input type="text" class="form-control" id="ent-registre" value="${ent.numeroRegistre || ''}" placeholder="CI-ABJ-2024-XXXX">
               </div>
             </div>
-            <div class="form-group" style="max-width:200px;">
-              <label class="form-label">Devise</label>
-              <select class="form-control" id="ent-devise">
-                <option value="FCFA" ${ent.devise === 'FCFA' ? 'selected' : ''}>FCFA (Franc CFA)</option>
-                <option value="EUR" ${ent.devise === 'EUR' ? 'selected' : ''}>EUR (Euro)</option>
-                <option value="USD" ${ent.devise === 'USD' ? 'selected' : ''}>USD (Dollar US)</option>
-              </select>
+            <div class="grid-2" style="gap:var(--space-md);">
+              <div class="form-group" style="max-width:200px;">
+                <label class="form-label">Devise</label>
+                <select class="form-control" id="ent-devise">
+                  <option value="FCFA" ${ent.devise === 'FCFA' ? 'selected' : ''}>FCFA (Franc CFA)</option>
+                  <option value="EUR" ${ent.devise === 'EUR' ? 'selected' : ''}>EUR (Euro)</option>
+                  <option value="USD" ${ent.devise === 'USD' ? 'selected' : ''}>USD (Dollar US)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Objectif CA mensuel</label>
+                <input type="number" class="form-control" id="ent-objectif-ca" value="${ent.objectifMensuelCA || ''}" placeholder="Ex: 3000000" min="0" step="50000">
+                <small style="color:var(--text-muted);font-size:11px;">Si vide, calculé automatiquement depuis le planning et les redevances</small>
+              </div>
             </div>
           </div>
         </div>
@@ -1210,6 +1217,7 @@ const ParametresPage = {
   _bindEntrepriseEvents() {
     document.getElementById('btn-save-entreprise').addEventListener('click', () => {
       const settings = Store.get('settings') || {};
+      const objectifCA = parseInt(document.getElementById('ent-objectif-ca').value) || 0;
       settings.entreprise = {
         nom: document.getElementById('ent-nom').value.trim(),
         slogan: document.getElementById('ent-slogan').value.trim(),
@@ -1218,7 +1226,8 @@ const ParametresPage = {
         adresse: document.getElementById('ent-adresse').value.trim(),
         siteWeb: document.getElementById('ent-siteweb').value.trim(),
         numeroRegistre: document.getElementById('ent-registre').value.trim(),
-        devise: document.getElementById('ent-devise').value
+        devise: document.getElementById('ent-devise').value,
+        objectifMensuelCA: objectifCA > 0 ? objectifCA : null
       };
 
       if (!settings.entreprise.nom) {

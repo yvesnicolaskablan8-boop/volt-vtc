@@ -472,28 +472,37 @@ const DashboardPage = {
       previsionMoisSuivant = Math.round(previsionMoisSuivant * 0.7 + lastYearSameMonth.revenue * 0.3);
     }
 
-    // --- 3. Objectif mensuel = somme redevances × jours programmés du mois ---
-    const monthPlanning = planning.filter(p => {
-      if (!p.date) return false;
-      const d = new Date(p.date);
-      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-    });
-    // Dédupliquer par (chauffeur, date) — compter chaque jour programmé une seule fois
-    const uniqueDays = new Map();
-    monthPlanning.forEach(p => {
-      const key = `${p.chauffeurId}|${p.date}`;
-      if (!uniqueDays.has(key)) uniqueDays.set(key, p);
-    });
+    // --- 3. Objectif mensuel ---
+    // Priorité : objectif manuel défini dans Paramètres > Entreprise, sinon calcul auto
+    const settingsObj = Store.get('settings') || {};
+    const objectifManuel = settingsObj.entreprise?.objectifMensuelCA || 0;
+
     let objectifMensuel = 0;
-    uniqueDays.forEach((p) => {
-      // Exclure absences
-      const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
-      if (hasAbsence) return;
-      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
-      if (!ch || ch.statut === 'inactif') return;
-      const redevance = ch.redevanceQuotidienne || 0;
-      if (redevance > 0) objectifMensuel += redevance;
-    });
+    if (objectifManuel > 0) {
+      objectifMensuel = objectifManuel;
+    } else {
+      // Calcul auto = somme redevances × jours programmés du mois
+      const monthPlanning = planning.filter(p => {
+        if (!p.date) return false;
+        const d = new Date(p.date);
+        return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+      });
+      // Dédupliquer par (chauffeur, date) — compter chaque jour programmé une seule fois
+      const uniqueDays = new Map();
+      monthPlanning.forEach(p => {
+        const key = `${p.chauffeurId}|${p.date}`;
+        if (!uniqueDays.has(key)) uniqueDays.set(key, p);
+      });
+      uniqueDays.forEach((p) => {
+        // Exclure absences
+        const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
+        if (hasAbsence) return;
+        const ch = chauffeurs.find(c => c.id === p.chauffeurId);
+        if (!ch || ch.statut === 'inactif') return;
+        const redevance = ch.redevanceQuotidienne || 0;
+        if (redevance > 0) objectifMensuel += redevance;
+      });
+    }
 
     // Progression vers l'objectif (%)
     const progressionObjectif = objectifMensuel > 0 ? Math.min(Math.round((caActuel / objectifMensuel) * 100), 999) : 0;
@@ -512,6 +521,7 @@ const DashboardPage = {
       projectionFinMois,
       previsionMoisSuivant,
       objectifMensuel,
+      isObjectifManuel: objectifManuel > 0,
       progressionObjectif,
       tendancePctMois,
       trendSlope,
@@ -721,6 +731,7 @@ const DashboardPage = {
           <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);">
             <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">
               <iconify-icon icon="solar:target-bold-duotone" style="color:${progressColor};"></iconify-icon> Objectif mensuel
+              <span style="font-size:10px;opacity:0.7;">${d.isObjectifManuel ? '(manuel)' : '(auto)'}</span>
             </div>
             <div style="font-size:var(--font-size-xl);font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.objectifMensuel)}</div>
             <div style="margin-top:8px;">
