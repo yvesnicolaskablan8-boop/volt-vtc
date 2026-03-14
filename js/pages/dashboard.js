@@ -869,78 +869,160 @@ const DashboardPage = {
 
     if (nbCars === 0) return '';
 
-    // Générer les voitures animées — une par chauffeur programmé
-    const carColors = ['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#6366f1','#14b8a6','#f97316'];
+    // SVG voiture vue de dessus (top-down comme Uber)
+    const carSvg = (color, rot) => `<svg width="28" height="28" viewBox="0 0 28 28" style="transform:rotate(${rot}deg);">
+      <rect x="9" y="2" width="10" height="24" rx="4" fill="${color}" />
+      <rect x="10" y="5" width="8" height="5" rx="1.5" fill="#e0f2fe" opacity="0.85"/>
+      <rect x="10" y="17" width="8" height="4" rx="1.2" fill="#e0f2fe" opacity="0.7"/>
+      <rect x="7" y="7" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
+      <rect x="18.5" y="7" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
+      <rect x="7" y="16" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
+      <rect x="18.5" y="16" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
+      <rect x="11" y="1" width="6" height="2" rx="0.8" fill="#fbbf24" opacity="0.9"/>
+      <rect x="11" y="25" width="6" height="2" rx="0.8" fill="#ef4444" opacity="0.8"/>
+    </svg>`;
+
+    const carColors = ['#1e1e1e','#2d2d2d','#f5f5f5','#374151','#d1d5db','#1e293b','#334155','#e5e7eb','#0f172a','#4b5563'];
+
+    // Pré-définir des routes sur la carte (positions en %)
+    // Certaines horizontales, certaines verticales, avec directions variées
+    const routes = [
+      { axis:'h', pos: 18, dir: 1 },
+      { axis:'h', pos: 42, dir: -1 },
+      { axis:'h', pos: 68, dir: 1 },
+      { axis:'h', pos: 88, dir: -1 },
+      { axis:'v', pos: 15, dir: 1 },
+      { axis:'v', pos: 38, dir: -1 },
+      { axis:'v', pos: 62, dir: 1 },
+      { axis:'v', pos: 85, dir: -1 },
+    ];
+
     let carsHtml = '';
-
-    // Adapter la hauteur de la route au nombre de voitures
-    const lanes = Math.min(Math.ceil(nbCars / 2), 4);
-    const roadHeight = 40 + lanes * 28;
-
     for (let i = 0; i < nbCars; i++) {
-      const color = carColors[i % carColors.length];
-      const delay = (i * 1.8 + Math.random() * 1.5).toFixed(1);
-      const duration = (10 + Math.random() * 8).toFixed(1);
-      const laneIdx = i % (lanes * 2);
-      const bottomPx = 8 + laneIdx * 24;
       const driver = drivers[i];
-      carsHtml += `
-        <div class="fleet-car" style="bottom:${bottomPx}px;animation-delay:${delay}s;animation-duration:${duration}s;">
-          <div class="fleet-car-label">${driver.nom}${driver.isEV ? ' ⚡' : ''}</div>
-          <svg width="48" height="22" viewBox="0 0 48 22" fill="none">
-            <rect x="4" y="6" width="40" height="12" rx="3" fill="${color}"/>
-            <rect x="8" y="2" width="22" height="10" rx="2" fill="${color}" opacity="0.85"/>
-            <rect x="10" y="3" width="8" height="7" rx="1.5" fill="#e0f2fe" opacity="0.9"/>
-            <rect x="20" y="3" width="8" height="7" rx="1.5" fill="#e0f2fe" opacity="0.9"/>
-            <circle cx="13" cy="19" r="3" fill="#334155"/>
-            <circle cx="13" cy="19" r="1.5" fill="#94a3b8"/>
-            <circle cx="37" cy="19" r="3" fill="#334155"/>
-            <circle cx="37" cy="19" r="1.5" fill="#94a3b8"/>
-            <rect x="41" y="9" width="4" height="3" rx="1" fill="#fbbf24" opacity="0.9"/>
-            <rect x="2" y="10" width="3" height="2" rx="1" fill="#ef4444" opacity="0.8"/>
-          </svg>
-        </div>`;
+      const route = routes[i % routes.length];
+      const color = carColors[i % carColors.length];
+      const delay = (i * 2.2 + (Math.random() * 2)).toFixed(1);
+      const duration = (12 + (i * 1.3 % 8)).toFixed(1);
+
+      if (route.axis === 'h') {
+        // Voiture horizontale
+        const rotation = route.dir > 0 ? -90 : 90;
+        const animClass = route.dir > 0 ? 'fleet-drive-right' : 'fleet-drive-left';
+        carsHtml += `
+          <div class="fleet-map-car ${animClass}" style="top:${route.pos}%;animation-delay:${delay}s;animation-duration:${duration}s;">
+            <div class="fleet-map-label">${driver.nom}</div>
+            ${carSvg(color, rotation)}
+          </div>`;
+      } else {
+        // Voiture verticale
+        const rotation = route.dir > 0 ? 180 : 0;
+        const animClass = route.dir > 0 ? 'fleet-drive-down' : 'fleet-drive-up';
+        carsHtml += `
+          <div class="fleet-map-car ${animClass}" style="left:${route.pos}%;animation-delay:${delay}s;animation-duration:${duration}s;">
+            <div class="fleet-map-label">${driver.nom}</div>
+            ${carSvg(color, rotation)}
+          </div>`;
+      }
     }
 
     return `
       <style>
-        .fleet-live-road {
+        .fleet-map {
           position: relative;
-          height: ${roadHeight}px;
-          background: linear-gradient(180deg, transparent 0%, rgba(100,116,139,0.06) 30%, rgba(100,116,139,0.12) 50%, rgba(100,116,139,0.06) 70%, transparent 100%);
+          height: 280px;
           border-radius: var(--radius-md);
           overflow: hidden;
           margin-top: 12px;
+          background: #eef3f0;
         }
-        .fleet-live-road::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: repeating-linear-gradient(90deg, var(--text-muted) 0, var(--text-muted) 16px, transparent 16px, transparent 28px);
-          opacity: 0.2;
+        [data-theme="dark"] .fleet-map {
+          background: #1a2332;
         }
-        .fleet-car {
+        /* Grille de rues */
+        .fleet-map-streets {
+          position: absolute; inset: 0;
+          background:
+            linear-gradient(90deg, transparent 14%, #fff 14%, #fff 17%, transparent 17%,
+              transparent 37%, #fff 37%, #fff 40%, transparent 40%,
+              transparent 61%, #fff 61%, #fff 64%, transparent 64%,
+              transparent 84%, #fff 84%, #fff 87%, transparent 87%),
+            linear-gradient(180deg, transparent 16%, #fff 16%, #fff 20%, transparent 20%,
+              transparent 40%, #fff 40%, #fff 44%, transparent 44%,
+              transparent 66%, #fff 66%, #fff 70%, transparent 70%,
+              transparent 86%, #fff 86%, #fff 90%, transparent 90%);
+        }
+        [data-theme="dark"] .fleet-map-streets {
+          background:
+            linear-gradient(90deg, transparent 14%, #2a3a4a 14%, #2a3a4a 17%, transparent 17%,
+              transparent 37%, #2a3a4a 37%, #2a3a4a 40%, transparent 40%,
+              transparent 61%, #2a3a4a 61%, #2a3a4a 64%, transparent 64%,
+              transparent 84%, #2a3a4a 84%, #2a3a4a 87%, transparent 87%),
+            linear-gradient(180deg, transparent 16%, #2a3a4a 16%, #2a3a4a 20%, transparent 20%,
+              transparent 40%, #2a3a4a 40%, #2a3a4a 44%, transparent 44%,
+              transparent 66%, #2a3a4a 66%, #2a3a4a 70%, transparent 70%,
+              transparent 86%, #2a3a4a 86%, #2a3a4a 90%, transparent 90%);
+        }
+        /* Blocs immeubles */
+        .fleet-map-blocks {
+          position: absolute; inset: 0;
+        }
+        .fleet-map-block {
           position: absolute;
-          left: -80px;
-          animation: fleetDrive linear infinite;
+          border-radius: 3px;
+          opacity: 0.35;
+        }
+        [data-theme="dark"] .fleet-map-block { opacity: 0.2; }
+
+        /* Voitures */
+        .fleet-map-car {
+          position: absolute;
+          z-index: 10;
           display: flex;
           flex-direction: column;
           align-items: center;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
         }
-        .fleet-car-label {
-          font-size: 9px;
-          font-weight: 600;
-          color: var(--text-muted);
+        .fleet-map-label {
+          font-size: 8px;
+          font-weight: 700;
+          color: #fff;
+          background: rgba(0,0,0,0.6);
+          padding: 1px 5px;
+          border-radius: 6px;
           white-space: nowrap;
-          margin-bottom: 1px;
-          opacity: 0.8;
+          margin-bottom: 2px;
+          backdrop-filter: blur(4px);
         }
-        @keyframes fleetDrive {
-          0% { left: -80px; }
-          100% { left: calc(100% + 80px); }
+        /* Animations horizontales */
+        .fleet-drive-right {
+          animation: driveRight linear infinite;
+        }
+        .fleet-drive-left {
+          animation: driveLeft linear infinite;
+        }
+        @keyframes driveRight {
+          0% { left: -40px; }
+          100% { left: calc(100% + 40px); }
+        }
+        @keyframes driveLeft {
+          0% { right: -40px; left: auto; }
+          100% { right: calc(100% + 40px); left: auto; }
+        }
+        /* Animations verticales */
+        .fleet-drive-down {
+          animation: driveDown linear infinite;
+        }
+        .fleet-drive-up {
+          animation: driveUp linear infinite;
+        }
+        @keyframes driveDown {
+          0% { top: -40px; }
+          100% { top: calc(100% + 40px); }
+        }
+        @keyframes driveUp {
+          0% { bottom: -40px; top: auto; }
+          100% { bottom: calc(100% + 40px); top: auto; }
         }
         .fleet-pulse {
           animation: fleetPulse 2s ease-in-out infinite;
@@ -950,18 +1032,50 @@ const DashboardPage = {
           50% { opacity: 0.5; }
         }
       </style>
-      <div class="card" style="margin-top:var(--space-md);border-left:4px solid var(--pilote-cyan);overflow:hidden;">
-        <div class="card-header" style="padding-bottom:0;">
-          <span class="card-title">
-            <iconify-icon icon="solar:streets-map-point-bold-duotone" style="color:var(--pilote-cyan);"></iconify-icon> Flotte du jour
+      <div class="card" style="margin-top:var(--space-md);overflow:hidden;padding:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;">
+          <span style="font-weight:700;font-size:var(--font-size-md);display:flex;align-items:center;gap:8px;">
+            <iconify-icon icon="solar:map-bold-duotone" style="color:var(--pilote-cyan);font-size:20px;"></iconify-icon> Flotte du jour
           </span>
-          <span style="font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+          <span style="font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:6px;">
             <span class="fleet-pulse" style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
-            ${nbCars} chauffeur${nbCars > 1 ? 's' : ''} programmé${nbCars > 1 ? 's' : ''} aujourd'hui
+            ${nbCars} véhicule${nbCars > 1 ? 's' : ''} en circulation
           </span>
         </div>
 
-        <div class="fleet-live-road">
+        <div class="fleet-map">
+          <div class="fleet-map-streets"></div>
+          <div class="fleet-map-blocks">
+            <div class="fleet-map-block" style="top:3%;left:2%;width:11%;height:12%;background:#a7c4a0;"></div>
+            <div class="fleet-map-block" style="top:3%;left:19%;width:17%;height:12%;background:#b8c9b3;"></div>
+            <div class="fleet-map-block" style="top:3%;left:42%;width:18%;height:12%;background:#c5d5c0;"></div>
+            <div class="fleet-map-block" style="top:3%;left:66%;width:16%;height:12%;background:#a7c4a0;"></div>
+            <div class="fleet-map-block" style="top:3%;left:89%;width:9%;height:12%;background:#b8c9b3;"></div>
+
+            <div class="fleet-map-block" style="top:22%;left:2%;width:11%;height:17%;background:#c9d4c5;"></div>
+            <div class="fleet-map-block" style="top:22%;left:19%;width:17%;height:17%;background:#d2ddd0;border-radius:4px;"></div>
+            <div class="fleet-map-block" style="top:22%;left:42%;width:18%;height:17%;background:#b5c8b0;"></div>
+            <div class="fleet-map-block" style="top:22%;left:66%;width:16%;height:17%;background:#c1d1bc;"></div>
+            <div class="fleet-map-block" style="top:22%;left:89%;width:9%;height:17%;background:#d2ddd0;"></div>
+
+            <div class="fleet-map-block" style="top:46%;left:2%;width:11%;height:18%;background:#b5c8b0;"></div>
+            <div class="fleet-map-block" style="top:46%;left:19%;width:17%;height:18%;background:#a7c4a0;"></div>
+            <div class="fleet-map-block" style="top:46%;left:42%;width:18%;height:18%;background:#c9d4c5;"></div>
+            <div class="fleet-map-block" style="top:46%;left:66%;width:16%;height:18%;background:#d5e0d2;"></div>
+            <div class="fleet-map-block" style="top:46%;left:89%;width:9%;height:18%;background:#b8c9b3;"></div>
+
+            <div class="fleet-map-block" style="top:72%;left:2%;width:11%;height:13%;background:#c1d1bc;"></div>
+            <div class="fleet-map-block" style="top:72%;left:19%;width:17%;height:13%;background:#b5c8b0;"></div>
+            <div class="fleet-map-block" style="top:72%;left:42%;width:18%;height:13%;background:#a7c4a0;"></div>
+            <div class="fleet-map-block" style="top:72%;left:66%;width:16%;height:13%;background:#c9d4c5;"></div>
+            <div class="fleet-map-block" style="top:72%;left:89%;width:9%;height:13%;background:#c1d1bc;"></div>
+
+            <div class="fleet-map-block" style="top:92%;left:2%;width:11%;height:7%;background:#d2ddd0;"></div>
+            <div class="fleet-map-block" style="top:92%;left:19%;width:17%;height:7%;background:#c5d5c0;"></div>
+            <div class="fleet-map-block" style="top:92%;left:42%;width:18%;height:7%;background:#b8c9b3;"></div>
+            <div class="fleet-map-block" style="top:92%;left:66%;width:16%;height:7%;background:#a7c4a0;"></div>
+            <div class="fleet-map-block" style="top:92%;left:89%;width:9%;height:7%;background:#d5e0d2;"></div>
+          </div>
           ${carsHtml}
         </div>
       </div>
