@@ -83,4 +83,19 @@ router.post('/webhook', async (req, res) => {
   }
 });
 
+// POST /api/wave/check-pending — Verification manuelle des paiements en attente (admin)
+router.post('/check-pending', async (req, res) => {
+  try {
+    const { checkPendingPayments } = require('../utils/wave-cron');
+    const waveApiKey = process.env.WAVE_API_KEY;
+    if (!waveApiKey) {
+      return res.status(500).json({ error: 'WAVE_API_KEY non configuree' });
+    }
+    await checkPendingPayments(waveApiKey);
+    res.json({ success: true, message: 'Verification terminee' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

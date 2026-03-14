@@ -104,6 +104,10 @@ const startServer = async () => {
     const behaviorCron = require('./utils/behavior-cron');
     behaviorCron.start();
 
+    // Demarrer le CRON Wave (verification paiements en attente toutes les 5min)
+    const waveCron = require('./utils/wave-cron');
+    waveCron.start();
+
   });
 };
 
