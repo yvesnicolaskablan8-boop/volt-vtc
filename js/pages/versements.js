@@ -4,7 +4,13 @@
 
 // Helper : détecte si un versement est un paiement réel (pas un fantôme auto-généré)
 function _isRealVersement(v) {
-  if (v.statut === 'en_attente' || v.statut === 'supprime') return false;
+  if (v.statut === 'supprime') return false;
+  // Versements Wave en attente de confirmation : toujours les montrer
+  if (v.moyenPaiement === 'wave' || v.waveCheckoutId) return true;
+  // Versements soumis par le chauffeur via l'app : toujours les montrer
+  if (v.soumisParChauffeur) return true;
+  // Fantômes auto-générés en attente sans paiement réel
+  if (v.statut === 'en_attente' && (v.montantVerse || 0) <= 0) return false;
   if ((v.montantVerse || 0) <= 0) return false;
   // Auto-généré sans moyen de paiement = fantôme de la grille récurrente
   if (/^Auto[:\-]/.test(v.commentaire || '') && !v.moyenPaiement) return false;
@@ -333,6 +339,7 @@ const VersementsPage = {
         <select class="form-control" id="filter-statut" style="width:140px;font-size:var(--font-size-xs);">
           <option value="">Tous statuts</option>
           <option value="valide">Validé</option>
+          <option value="en_attente">En attente</option>
           <option value="retard">En retard</option>
           <option value="partiel">Partiel</option>
         </select>
