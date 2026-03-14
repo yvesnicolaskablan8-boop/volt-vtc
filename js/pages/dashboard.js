@@ -400,18 +400,6 @@ const DashboardPage = {
     const serviceTermine = todayPointages.filter(p => p.statut === 'termine').length;
     const servicePasCommence = Math.max(0, programmesCount - todayPointages.length);
 
-    // Chauffeurs programmés aujourd'hui pour la carte flotte live (basé sur le planning)
-    const driversProgrammes = programmesIds.map(cId => {
-      const ch = chauffeurs.find(c => c.id === cId);
-      if (!ch || ch.statut === 'inactif') return null;
-      const veh = vehicules.find(v => v.chauffeurActuel === cId);
-      return {
-        nom: ch ? (ch.prenom || '') + ' ' + (ch.nom || '').charAt(0) + '.' : '?',
-        vehicule: veh ? `${veh.marque || ''} ${veh.modele || ''}`.trim() : '',
-        isEV: veh ? veh.typeEnergie === 'electrique' : false
-      };
-    }).filter(Boolean);
-
     const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
     const monthLabel = monthNames[thisMonth] + ' ' + thisYear;
     const periodLabel = isMonthView ? monthLabel : Utils.formatDate(selectedDay);
@@ -429,7 +417,7 @@ const DashboardPage = {
       depenses, monthDepenses, totalDepensesMois, depensesByType, vehicules,
       alertesTotal, alertesCritiques, alertesUrgentes,
       tauxRecouvrement, totalAttendu,
-      serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence, driversProgrammes,
+      serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence,
       periodLabel, monthLabel, isMonthView,
       // === PRÉVISIONS CA ===
       ...this._computeForecasts(monthlyRevenue, versements, chauffeurs, planning, absences, thisMonth, thisYear, sel, isMonthView, totalVerse)
@@ -642,8 +630,7 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Flotte en direct -->
-      ${this._renderFlotteLive(d)}
+
 
       <!-- Maintenance Alerts -->
       ${this._renderMaintenanceAlerts(d)}
@@ -818,227 +805,6 @@ const DashboardPage = {
         }
       }));
     }
-  },
-
-  // =================== FLOTTE EN DIRECT ===================
-
-  _renderFlotteLive(d) {
-    const drivers = d.driversProgrammes || [];
-    const nbCars = drivers.length;
-
-    if (nbCars === 0) return '';
-
-    // SVG voiture vue de dessus (top-down comme Uber)
-    const carSvg = (color, rot) => `<svg width="28" height="28" viewBox="0 0 28 28" style="transform:rotate(${rot}deg);">
-      <rect x="9" y="2" width="10" height="24" rx="4" fill="${color}" />
-      <rect x="10" y="5" width="8" height="5" rx="1.5" fill="#e0f2fe" opacity="0.85"/>
-      <rect x="10" y="17" width="8" height="4" rx="1.2" fill="#e0f2fe" opacity="0.7"/>
-      <rect x="7" y="7" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
-      <rect x="18.5" y="7" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
-      <rect x="7" y="16" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
-      <rect x="18.5" y="16" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
-      <rect x="11" y="1" width="6" height="2" rx="0.8" fill="#fbbf24" opacity="0.9"/>
-      <rect x="11" y="25" width="6" height="2" rx="0.8" fill="#ef4444" opacity="0.8"/>
-    </svg>`;
-
-    const carColors = ['#1e1e1e','#2d2d2d','#f5f5f5','#374151','#d1d5db','#1e293b','#334155','#e5e7eb','#0f172a','#4b5563'];
-
-    // Pré-définir des routes sur la carte (positions en %)
-    // Certaines horizontales, certaines verticales, avec directions variées
-    const routes = [
-      { axis:'h', pos: 18, dir: 1 },
-      { axis:'h', pos: 42, dir: -1 },
-      { axis:'h', pos: 68, dir: 1 },
-      { axis:'h', pos: 88, dir: -1 },
-      { axis:'v', pos: 15, dir: 1 },
-      { axis:'v', pos: 38, dir: -1 },
-      { axis:'v', pos: 62, dir: 1 },
-      { axis:'v', pos: 85, dir: -1 },
-    ];
-
-    let carsHtml = '';
-    for (let i = 0; i < nbCars; i++) {
-      const driver = drivers[i];
-      const route = routes[i % routes.length];
-      const color = carColors[i % carColors.length];
-      const delay = (i * 2.2 + (Math.random() * 2)).toFixed(1);
-      const duration = (12 + (i * 1.3 % 8)).toFixed(1);
-
-      if (route.axis === 'h') {
-        // Voiture horizontale
-        const rotation = route.dir > 0 ? -90 : 90;
-        const animClass = route.dir > 0 ? 'fleet-drive-right' : 'fleet-drive-left';
-        carsHtml += `
-          <div class="fleet-map-car ${animClass}" style="top:${route.pos}%;animation-delay:${delay}s;animation-duration:${duration}s;">
-            <div class="fleet-map-label">${driver.nom}</div>
-            ${carSvg(color, rotation)}
-          </div>`;
-      } else {
-        // Voiture verticale
-        const rotation = route.dir > 0 ? 180 : 0;
-        const animClass = route.dir > 0 ? 'fleet-drive-down' : 'fleet-drive-up';
-        carsHtml += `
-          <div class="fleet-map-car ${animClass}" style="left:${route.pos}%;animation-delay:${delay}s;animation-duration:${duration}s;">
-            <div class="fleet-map-label">${driver.nom}</div>
-            ${carSvg(color, rotation)}
-          </div>`;
-      }
-    }
-
-    return `
-      <style>
-        .fleet-map {
-          position: relative;
-          height: 280px;
-          border-radius: var(--radius-md);
-          overflow: hidden;
-          margin-top: 12px;
-          background: #eef3f0;
-        }
-        [data-theme="dark"] .fleet-map {
-          background: #1a2332;
-        }
-        /* Grille de rues */
-        .fleet-map-streets {
-          position: absolute; inset: 0;
-          background:
-            linear-gradient(90deg, transparent 14%, #fff 14%, #fff 17%, transparent 17%,
-              transparent 37%, #fff 37%, #fff 40%, transparent 40%,
-              transparent 61%, #fff 61%, #fff 64%, transparent 64%,
-              transparent 84%, #fff 84%, #fff 87%, transparent 87%),
-            linear-gradient(180deg, transparent 16%, #fff 16%, #fff 20%, transparent 20%,
-              transparent 40%, #fff 40%, #fff 44%, transparent 44%,
-              transparent 66%, #fff 66%, #fff 70%, transparent 70%,
-              transparent 86%, #fff 86%, #fff 90%, transparent 90%);
-        }
-        [data-theme="dark"] .fleet-map-streets {
-          background:
-            linear-gradient(90deg, transparent 14%, #2a3a4a 14%, #2a3a4a 17%, transparent 17%,
-              transparent 37%, #2a3a4a 37%, #2a3a4a 40%, transparent 40%,
-              transparent 61%, #2a3a4a 61%, #2a3a4a 64%, transparent 64%,
-              transparent 84%, #2a3a4a 84%, #2a3a4a 87%, transparent 87%),
-            linear-gradient(180deg, transparent 16%, #2a3a4a 16%, #2a3a4a 20%, transparent 20%,
-              transparent 40%, #2a3a4a 40%, #2a3a4a 44%, transparent 44%,
-              transparent 66%, #2a3a4a 66%, #2a3a4a 70%, transparent 70%,
-              transparent 86%, #2a3a4a 86%, #2a3a4a 90%, transparent 90%);
-        }
-        /* Blocs immeubles */
-        .fleet-map-blocks {
-          position: absolute; inset: 0;
-        }
-        .fleet-map-block {
-          position: absolute;
-          border-radius: 3px;
-          opacity: 0.35;
-        }
-        [data-theme="dark"] .fleet-map-block { opacity: 0.2; }
-
-        /* Voitures */
-        .fleet-map-car {
-          position: absolute;
-          z-index: 10;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
-        }
-        .fleet-map-label {
-          font-size: 8px;
-          font-weight: 700;
-          color: #fff;
-          background: rgba(0,0,0,0.6);
-          padding: 1px 5px;
-          border-radius: 6px;
-          white-space: nowrap;
-          margin-bottom: 2px;
-          backdrop-filter: blur(4px);
-        }
-        /* Animations horizontales */
-        .fleet-drive-right {
-          animation: driveRight linear infinite;
-        }
-        .fleet-drive-left {
-          animation: driveLeft linear infinite;
-        }
-        @keyframes driveRight {
-          0% { left: -40px; }
-          100% { left: calc(100% + 40px); }
-        }
-        @keyframes driveLeft {
-          0% { right: -40px; left: auto; }
-          100% { right: calc(100% + 40px); left: auto; }
-        }
-        /* Animations verticales */
-        .fleet-drive-down {
-          animation: driveDown linear infinite;
-        }
-        .fleet-drive-up {
-          animation: driveUp linear infinite;
-        }
-        @keyframes driveDown {
-          0% { top: -40px; }
-          100% { top: calc(100% + 40px); }
-        }
-        @keyframes driveUp {
-          0% { bottom: -40px; top: auto; }
-          100% { bottom: calc(100% + 40px); top: auto; }
-        }
-        .fleet-pulse {
-          animation: fleetPulse 2s ease-in-out infinite;
-        }
-        @keyframes fleetPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      </style>
-      <div class="card" style="margin-top:var(--space-md);overflow:hidden;padding:0;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;">
-          <span style="font-weight:700;font-size:var(--font-size-md);display:flex;align-items:center;gap:8px;">
-            <iconify-icon icon="solar:map-bold-duotone" style="color:var(--pilote-cyan);font-size:20px;"></iconify-icon> Flotte du jour
-          </span>
-          <span style="font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:6px;">
-            <span class="fleet-pulse" style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
-            ${nbCars} véhicule${nbCars > 1 ? 's' : ''} en circulation
-          </span>
-        </div>
-
-        <div class="fleet-map">
-          <div class="fleet-map-streets"></div>
-          <div class="fleet-map-blocks">
-            <div class="fleet-map-block" style="top:3%;left:2%;width:11%;height:12%;background:#a7c4a0;"></div>
-            <div class="fleet-map-block" style="top:3%;left:19%;width:17%;height:12%;background:#b8c9b3;"></div>
-            <div class="fleet-map-block" style="top:3%;left:42%;width:18%;height:12%;background:#c5d5c0;"></div>
-            <div class="fleet-map-block" style="top:3%;left:66%;width:16%;height:12%;background:#a7c4a0;"></div>
-            <div class="fleet-map-block" style="top:3%;left:89%;width:9%;height:12%;background:#b8c9b3;"></div>
-
-            <div class="fleet-map-block" style="top:22%;left:2%;width:11%;height:17%;background:#c9d4c5;"></div>
-            <div class="fleet-map-block" style="top:22%;left:19%;width:17%;height:17%;background:#d2ddd0;border-radius:4px;"></div>
-            <div class="fleet-map-block" style="top:22%;left:42%;width:18%;height:17%;background:#b5c8b0;"></div>
-            <div class="fleet-map-block" style="top:22%;left:66%;width:16%;height:17%;background:#c1d1bc;"></div>
-            <div class="fleet-map-block" style="top:22%;left:89%;width:9%;height:17%;background:#d2ddd0;"></div>
-
-            <div class="fleet-map-block" style="top:46%;left:2%;width:11%;height:18%;background:#b5c8b0;"></div>
-            <div class="fleet-map-block" style="top:46%;left:19%;width:17%;height:18%;background:#a7c4a0;"></div>
-            <div class="fleet-map-block" style="top:46%;left:42%;width:18%;height:18%;background:#c9d4c5;"></div>
-            <div class="fleet-map-block" style="top:46%;left:66%;width:16%;height:18%;background:#d5e0d2;"></div>
-            <div class="fleet-map-block" style="top:46%;left:89%;width:9%;height:18%;background:#b8c9b3;"></div>
-
-            <div class="fleet-map-block" style="top:72%;left:2%;width:11%;height:13%;background:#c1d1bc;"></div>
-            <div class="fleet-map-block" style="top:72%;left:19%;width:17%;height:13%;background:#b5c8b0;"></div>
-            <div class="fleet-map-block" style="top:72%;left:42%;width:18%;height:13%;background:#a7c4a0;"></div>
-            <div class="fleet-map-block" style="top:72%;left:66%;width:16%;height:13%;background:#c9d4c5;"></div>
-            <div class="fleet-map-block" style="top:72%;left:89%;width:9%;height:13%;background:#c1d1bc;"></div>
-
-            <div class="fleet-map-block" style="top:92%;left:2%;width:11%;height:7%;background:#d2ddd0;"></div>
-            <div class="fleet-map-block" style="top:92%;left:19%;width:17%;height:7%;background:#c5d5c0;"></div>
-            <div class="fleet-map-block" style="top:92%;left:42%;width:18%;height:7%;background:#b8c9b3;"></div>
-            <div class="fleet-map-block" style="top:92%;left:66%;width:16%;height:7%;background:#a7c4a0;"></div>
-            <div class="fleet-map-block" style="top:92%;left:89%;width:9%;height:7%;background:#d5e0d2;"></div>
-          </div>
-          ${carsHtml}
-        </div>
-      </div>
-    `;
   },
 
   _renderMaintenanceAlerts(d) {
