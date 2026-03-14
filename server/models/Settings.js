@@ -9,7 +9,8 @@ const settingsSchema = new mongoose.Schema({
     adresse: String,
     siteWeb: String,
     numeroRegistre: String,
-    devise: { type: String, default: 'FCFA' }
+    devise: { type: String, default: 'FCFA' },
+    objectifMensuelCA: { type: Number, default: 0 }
   },
   preferences: {
     themeDefaut: { type: String, default: 'dark' },
