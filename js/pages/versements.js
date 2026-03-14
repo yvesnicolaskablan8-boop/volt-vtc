@@ -362,6 +362,7 @@ const VersementsPage = {
       let statutHtml = '';
       if (v.statut === 'valide') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#22c55e;"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Validé</span>';
       else if (v.statut === 'partiel') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#3b82f6;"><iconify-icon icon="solar:pie-chart-2-bold"></iconify-icon> Partiel</span>';
+      else if (v.statut === 'en_attente') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#f59e0b;"><iconify-icon icon="solar:clock-circle-bold"></iconify-icon> En attente</span>';
       else if (v.statut === 'retard') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;"><iconify-icon icon="solar:alarm-bold"></iconify-icon> Retard</span>';
       else if (v.statut === 'supprime') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:var(--text-muted);"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon> Supprimé</span>';
 
@@ -393,7 +394,7 @@ const VersementsPage = {
           <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">${statutHtml} ${methodHtml} ${coursesHtml}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:700;color:${isDeleted ? 'var(--text-muted)' : '#22c55e'};${isDeleted ? 'text-decoration:line-through;' : ''}">${Utils.formatCurrency(v.montantVerse)}</div>
+          <div style="font-size:var(--font-size-sm);font-weight:700;color:${isDeleted ? 'var(--text-muted)' : v.statut === 'en_attente' ? '#f59e0b' : '#22c55e'};${isDeleted ? 'text-decoration:line-through;' : ''}">${Utils.formatCurrency((v.montantVerse || 0) > 0 ? v.montantVerse : (v.montantBrut || 0))}</div>
           ${actionsHtml}
         </div>
       </div>`;
