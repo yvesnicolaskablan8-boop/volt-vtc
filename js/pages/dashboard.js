@@ -400,18 +400,17 @@ const DashboardPage = {
     const serviceTermine = todayPointages.filter(p => p.statut === 'termine').length;
     const servicePasCommence = Math.max(0, programmesCount - todayPointages.length);
 
-    // Chauffeurs en service avec détails pour la carte flotte live
-    const driversEnService = todayPointages
-      .filter(p => p.statut === 'en_service')
-      .map(p => {
-        const ch = chauffeurs.find(c => c.id === p.chauffeurId);
-        const veh = vehicules.find(v => v.chauffeurActuel === p.chauffeurId || v.id === p.vehiculeId);
-        return {
-          nom: ch ? (ch.prenom || '') + ' ' + (ch.nom || '').charAt(0) + '.' : '?',
-          vehicule: veh ? `${veh.marque || ''} ${veh.modele || ''}`.trim() : '',
-          isEV: veh ? veh.typeEnergie === 'electrique' : false
-        };
-      });
+    // Chauffeurs programmés aujourd'hui pour la carte flotte live (basé sur le planning)
+    const driversProgrammes = programmesIds.map(cId => {
+      const ch = chauffeurs.find(c => c.id === cId);
+      if (!ch || ch.statut === 'inactif') return null;
+      const veh = vehicules.find(v => v.chauffeurActuel === cId);
+      return {
+        nom: ch ? (ch.prenom || '') + ' ' + (ch.nom || '').charAt(0) + '.' : '?',
+        vehicule: veh ? `${veh.marque || ''} ${veh.modele || ''}`.trim() : '',
+        isEV: veh ? veh.typeEnergie === 'electrique' : false
+      };
+    }).filter(Boolean);
 
     const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
     const monthLabel = monthNames[thisMonth] + ' ' + thisYear;
@@ -430,7 +429,7 @@ const DashboardPage = {
       depenses, monthDepenses, totalDepensesMois, depensesByType, vehicules,
       alertesTotal, alertesCritiques, alertesUrgentes,
       tauxRecouvrement, totalAttendu,
-      serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence, driversEnService,
+      serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence, driversProgrammes,
       periodLabel, monthLabel, isMonthView,
       // === PRÉVISIONS CA ===
       ...this._computeForecasts(monthlyRevenue, versements, chauffeurs, planning, absences, thisMonth, thisYear, sel, isMonthView, totalVerse)
@@ -865,25 +864,29 @@ const DashboardPage = {
   // =================== FLOTTE EN DIRECT ===================
 
   _renderFlotteLive(d) {
-    const total = d.serviceEnCours + d.serviceEnPause + d.serviceTermine + d.servicePasCommence;
-    const nbCars = Math.max(d.serviceEnCours, 0);
-    const nbPause = Math.max(d.serviceEnPause, 0);
+    const drivers = d.driversProgrammes || [];
+    const nbCars = drivers.length;
 
-    // Générer les voitures animées
-    const carColors = ['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#6366f1'];
+    if (nbCars === 0) return '';
+
+    // Générer les voitures animées — une par chauffeur programmé
+    const carColors = ['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#6366f1','#14b8a6','#f97316'];
     let carsHtml = '';
-    const drivers = d.driversEnService || [];
+
+    // Adapter la hauteur de la route au nombre de voitures
+    const lanes = Math.min(Math.ceil(nbCars / 2), 4);
+    const roadHeight = 40 + lanes * 28;
 
     for (let i = 0; i < nbCars; i++) {
       const color = carColors[i % carColors.length];
-      const delay = (i * 2.5).toFixed(1);
-      const duration = (8 + Math.random() * 6).toFixed(1);
-      const lane = i % 2 === 0 ? 'bottom:18px' : 'bottom:42px';
-      const driverLabel = drivers[i] ? drivers[i].nom : '';
-      const isEV = drivers[i] ? drivers[i].isEV : false;
+      const delay = (i * 1.8 + Math.random() * 1.5).toFixed(1);
+      const duration = (10 + Math.random() * 8).toFixed(1);
+      const laneIdx = i % (lanes * 2);
+      const bottomPx = 8 + laneIdx * 24;
+      const driver = drivers[i];
       carsHtml += `
-        <div class="fleet-car" style="${lane};animation-delay:${delay}s;animation-duration:${duration}s;">
-          <div class="fleet-car-label">${driverLabel}${isEV ? ' ⚡' : ''}</div>
+        <div class="fleet-car" style="bottom:${bottomPx}px;animation-delay:${delay}s;animation-duration:${duration}s;">
+          <div class="fleet-car-label">${driver.nom}${driver.isEV ? ' ⚡' : ''}</div>
           <svg width="48" height="22" viewBox="0 0 48 22" fill="none">
             <rect x="4" y="6" width="40" height="12" rx="3" fill="${color}"/>
             <rect x="8" y="2" width="22" height="10" rx="2" fill="${color}" opacity="0.85"/>
@@ -899,29 +902,12 @@ const DashboardPage = {
         </div>`;
     }
 
-    // Voitures en pause (grisées, statiques)
-    for (let i = 0; i < nbPause; i++) {
-      const yPos = 18 + (i % 2) * 24;
-      const xPos = 70 + i * 12;
-      carsHtml += `
-        <div class="fleet-car-parked" style="bottom:${yPos}px;left:${Math.min(xPos, 88)}%;">
-          <svg width="36" height="18" viewBox="0 0 48 22" fill="none" opacity="0.4">
-            <rect x="4" y="6" width="40" height="12" rx="3" fill="#94a3b8"/>
-            <rect x="8" y="2" width="22" height="10" rx="2" fill="#94a3b8" opacity="0.85"/>
-            <rect x="10" y="3" width="8" height="7" rx="1.5" fill="#cbd5e1" opacity="0.7"/>
-            <rect x="20" y="3" width="8" height="7" rx="1.5" fill="#cbd5e1" opacity="0.7"/>
-            <circle cx="13" cy="19" r="3" fill="#334155"/>
-            <circle cx="37" cy="19" r="3" fill="#334155"/>
-          </svg>
-        </div>`;
-    }
-
     return `
       <style>
         .fleet-live-road {
           position: relative;
-          height: 90px;
-          background: linear-gradient(180deg, transparent 0%, rgba(100,116,139,0.08) 40%, rgba(100,116,139,0.15) 50%, rgba(100,116,139,0.08) 60%, transparent 100%);
+          height: ${roadHeight}px;
+          background: linear-gradient(180deg, transparent 0%, rgba(100,116,139,0.06) 30%, rgba(100,116,139,0.12) 50%, rgba(100,116,139,0.06) 70%, transparent 100%);
           border-radius: var(--radius-md);
           overflow: hidden;
           margin-top: 12px;
@@ -934,11 +920,11 @@ const DashboardPage = {
           right: 0;
           height: 2px;
           background: repeating-linear-gradient(90deg, var(--text-muted) 0, var(--text-muted) 16px, transparent 16px, transparent 28px);
-          opacity: 0.25;
+          opacity: 0.2;
         }
         .fleet-car {
           position: absolute;
-          left: -60px;
+          left: -80px;
           animation: fleetDrive linear infinite;
           display: flex;
           flex-direction: column;
@@ -952,15 +938,9 @@ const DashboardPage = {
           margin-bottom: 1px;
           opacity: 0.8;
         }
-        .fleet-car-parked {
-          position: absolute;
-        }
         @keyframes fleetDrive {
-          0% { left: -60px; }
-          100% { left: calc(100% + 60px); }
-        }
-        .fleet-stat-dot {
-          width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+          0% { left: -80px; }
+          100% { left: calc(100% + 80px); }
         }
         .fleet-pulse {
           animation: fleetPulse 2s ease-in-out infinite;
@@ -973,26 +953,15 @@ const DashboardPage = {
       <div class="card" style="margin-top:var(--space-md);border-left:4px solid var(--pilote-cyan);overflow:hidden;">
         <div class="card-header" style="padding-bottom:0;">
           <span class="card-title">
-            <iconify-icon icon="solar:streets-map-point-bold-duotone" style="color:var(--pilote-cyan);"></iconify-icon> Flotte en direct
+            <iconify-icon icon="solar:streets-map-point-bold-duotone" style="color:var(--pilote-cyan);"></iconify-icon> Flotte du jour
           </span>
-          <div style="display:flex;gap:14px;font-size:var(--font-size-xs);">
-            <span style="display:flex;align-items:center;gap:4px;">
-              <span class="fleet-stat-dot fleet-pulse" style="background:#22c55e;"></span> ${d.serviceEnCours} en course
-            </span>
-            <span style="display:flex;align-items:center;gap:4px;">
-              <span class="fleet-stat-dot" style="background:#f59e0b;"></span> ${d.serviceEnPause} en pause
-            </span>
-            <span style="display:flex;align-items:center;gap:4px;">
-              <span class="fleet-stat-dot" style="background:#94a3b8;"></span> ${d.serviceTermine} terminé${d.serviceTermine > 1 ? 's' : ''}
-            </span>
-            <span style="display:flex;align-items:center;gap:4px;">
-              <span class="fleet-stat-dot" style="background:var(--border-color);"></span> ${d.servicePasCommence} en attente
-            </span>
-          </div>
+          <span style="font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+            <span class="fleet-pulse" style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
+            ${nbCars} chauffeur${nbCars > 1 ? 's' : ''} programmé${nbCars > 1 ? 's' : ''} aujourd'hui
+          </span>
         </div>
 
         <div class="fleet-live-road">
-          ${nbCars === 0 && nbPause === 0 ? '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:var(--font-size-sm);opacity:0.6;"><iconify-icon icon="solar:sleeping-circle-bold-duotone" style="margin-right:6px;"></iconify-icon> Aucun véhicule en service</div>' : ''}
           ${carsHtml}
         </div>
       </div>
