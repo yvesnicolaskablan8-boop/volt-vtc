@@ -674,8 +674,7 @@ const DashboardPage = {
       <!-- Maintenance Alerts -->
       ${this._renderMaintenanceAlerts(d)}
 
-      <!-- Dépenses véhicules -->
-      ${this._renderDepensesSection(d)}
+      <!-- Dépenses véhicules (masqué du dashboard) -->
 
       <!-- Prévisions CA -->
       ${this._renderForecastSection(d)}
