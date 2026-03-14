@@ -642,47 +642,6 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Récap quotidien -->
-      <div class="card" style="margin-top:var(--space-md);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));border:1px solid var(--border-color);">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-          <iconify-icon icon="solar:clipboard-list-bold-duotone" style="font-size:24px;color:var(--pilote-blue);"></iconify-icon>
-          <div>
-            <div style="font-weight:700;font-size:var(--font-size-md);">Récap du ${d.periodLabel}</div>
-            <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Vue d'ensemble de la journée</div>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
-            <iconify-icon icon="solar:users-group-rounded-bold-duotone" style="font-size:20px;color:var(--pilote-cyan);"></iconify-icon>
-            <div>
-              <div style="font-weight:600;font-size:var(--font-size-sm);">${d.programmesCount} chauffeur${d.programmesCount > 1 ? 's' : ''} programmé${d.programmesCount > 1 ? 's' : ''}</div>
-              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">sur ${d.activeCount} actifs</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);cursor:pointer;" onclick="Router.navigate('/versements')">
-            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:20px;color:${d.unpaidItems.length > 0 ? 'var(--danger)' : 'var(--success)'};"></iconify-icon>
-            <div>
-              <div style="font-weight:600;font-size:var(--font-size-sm);">${d.unpaidItems.length > 0 ? d.unpaidItems.length + ' recette' + (d.unpaidItems.length > 1 ? 's' : '') + ' impayée' + (d.unpaidItems.length > 1 ? 's' : '') : 'Aucune recette impayée'}</div>
-              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${d.unpaidItems.length > 0 ? Utils.formatCurrency(d.totalUnpaid) + ' à recouvrer' : 'Tout est à jour ✓'}</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
-            <iconify-icon icon="solar:shield-warning-bold-duotone" style="font-size:20px;color:${d.maintenanceAlerts.length > 0 ? 'var(--warning)' : 'var(--success)'};"></iconify-icon>
-            <div>
-              <div style="font-weight:600;font-size:var(--font-size-sm);">${d.maintenanceAlerts.length > 0 ? d.maintenanceAlerts.length + ' alerte' + (d.maintenanceAlerts.length > 1 ? 's' : '') + ' maintenance' : 'Aucune alerte maintenance'}</div>
-              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${d.maintenanceAlerts.length > 0 ? 'Action requise' : 'Flotte en bon état ✓'}</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-primary);">
-            <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:20px;color:var(--pilote-blue);"></iconify-icon>
-            <div>
-              <div style="font-weight:600;font-size:var(--font-size-sm);">${Utils.formatCurrency(d.caThisMonth)} CA</div>
-              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${d.nbVersementsPeriode} versement${d.nbVersementsPeriode > 1 ? 's' : ''} encaissé${d.nbVersementsPeriode > 1 ? 's' : ''}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Flotte en direct -->
       ${this._renderFlotteLive(d)}
 
