@@ -171,7 +171,7 @@ const YangoPage = {
           </span>
           <span class="badge badge-info" id="yp-map-count">--</span>
         </div>
-        <div id="yp-realtime-map" style="height:400px;border-radius:var(--radius-md);z-index:0;"></div>
+        <div id="yp-realtime-map" style="height:500px;border-radius:var(--radius-md);z-index:0;"></div>
       </div>
 
       <!-- Chauffeurs programmés — Planning -->
@@ -577,9 +577,10 @@ const YangoPage = {
     this._mapMarkers = {};
 
     this._map = L.map(container, { zoomControl: true, attributionControl: false }).setView([5.345, -4.025], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '© OpenStreetMap'
+    // Carte sombre style Yango Fleet
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '© CARTO'
     }).addTo(this._map);
 
     // Premier chargement + polling 15s
@@ -618,28 +619,40 @@ const YangoPage = {
         activeIds.add(p.chauffeurId);
         const age = now - new Date(p.updatedAt).getTime();
         const isFresh = age < 5 * 60 * 1000; // < 5 min
-        const color = isFresh ? '#3b82f6' : '#94a3b8';
+        const isMoving = isFresh && p.speed > 2;
         const heading = p.heading || 0;
-        const speedTxt = isFresh && p.speed > 2 ? `${Math.round(p.speed)} km/h` : isFresh ? 'Arrêté' : 'Hors ligne';
+
+        // Couleurs style Yango Fleet : vert=disponible, orange=occupé/en mouvement, rouge=GPS ancien
+        const color = !isFresh ? '#ef4444' : isMoving ? '#f97316' : '#22c55e';
+        const statusTxt = !isFresh ? 'Hors ligne' : isMoving ? `${Math.round(p.speed)} km/h` : 'Arrêté';
         const ageTxt = age < 60000 ? 'À l\'instant'
           : age < 3600000 ? `Il y a ${Math.round(age / 60000)} min`
           : `Il y a ${Math.round(age / 3600000)}h${String(Math.round((age % 3600000) / 60000)).padStart(2, '0')}`;
 
-        const opacity = isFresh ? '1' : '0.6';
+        // Icône voiture vue de dessus
+        const carRotation = isFresh && p.heading ? heading : 0;
         const icon = L.divIcon({
           className: '',
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
-          html: `<div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid #fff;opacity:${opacity};">
-            <iconify-icon icon="${isFresh && p.heading ? 'solar:map-arrow-up-bold' : 'solar:wheel-bold'}" style="color:#fff;font-size:16px;${isFresh && p.heading ? 'transform:rotate(' + heading + 'deg);' : ''}"></iconify-icon>
+          iconSize: [36, 36],
+          iconAnchor: [18, 18],
+          html: `<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5));transform:rotate(${carRotation}deg);">
+            <svg width="28" height="28" viewBox="0 0 28 28">
+              <rect x="9" y="2" width="10" height="24" rx="4" fill="${color}"/>
+              <rect x="10" y="5" width="8" height="5" rx="1.5" fill="#fff" opacity="0.3"/>
+              <rect x="10" y="17" width="8" height="4" rx="1.2" fill="#fff" opacity="0.2"/>
+              <rect x="7" y="7" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
+              <rect x="18.5" y="7" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
+              <rect x="7" y="16" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
+              <rect x="18.5" y="16" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
+            </svg>
           </div>`
         });
 
-        const popupContent = `<div style="font-size:12px;min-width:140px;">
-          <div style="font-weight:700;margin-bottom:4px;">${p.prenom} ${p.nom}</div>
-          ${p.vehicule ? `<div style="font-size:10px;color:#666;margin-bottom:2px;">🚗 ${p.vehicule}</div>` : ''}
-          <div style="font-size:10px;"><span style="color:${isFresh ? '#22c55e' : '#f59e0b'};">● </span>${speedTxt}</div>
-          <div style="font-size:10px;color:#999;">${ageTxt}</div>
+        const popupContent = `<div style="font-size:12px;min-width:160px;line-height:1.6;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px;">${p.prenom} ${p.nom}</div>
+          ${p.vehicule ? `<div style="font-size:10px;color:#999;margin-bottom:2px;">🚗 ${p.vehicule}</div>` : ''}
+          <div style="font-size:11px;"><span style="color:${color};">●</span> ${statusTxt}</div>
+          <div style="font-size:10px;color:#888;">${ageTxt}</div>
         </div>`;
 
         if (this._mapMarkers[p.chauffeurId]) {
