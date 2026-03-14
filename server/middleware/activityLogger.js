@@ -5,10 +5,15 @@ function generateId() {
 }
 
 function logActivity(action, collection, documentId, details, req) {
+  let userNom = 'Systeme';
+  if (req.user) {
+    const fullName = ((req.user.prenom || '') + ' ' + (req.user.nom || '')).trim();
+    userNom = fullName || req.user.email || req.user.userId || 'Inconnu';
+  }
   const log = new ActivityLog({
     id: generateId(),
     userId: req.user ? req.user.userId : 'system',
-    userNom: req.user ? ((req.user.prenom || '') + ' ' + (req.user.nom || '')).trim() : 'Systeme',
+    userNom,
     action,
     collection,
     documentId: documentId || null,
