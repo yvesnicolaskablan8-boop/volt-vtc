@@ -932,8 +932,16 @@ router.post('/sync', async (req, res) => {
       ...result
     });
   } catch (err) {
-    console.error('Yango sync error:', err.message);
-    res.status(500).json({ error: 'Erreur de synchronisation', details: err.message });
+    console.error('Yango sync error:', err.message, err.stack);
+    const details = err.message || 'Erreur inconnue';
+    // Distinguer les erreurs Yango API des erreurs internes
+    if (details.includes('Yango API error')) {
+      res.status(502).json({ error: 'Erreur API Yango', details });
+    } else if (details.includes('credentials')) {
+      res.status(503).json({ error: 'Configuration Yango manquante', details });
+    } else {
+      res.status(500).json({ error: 'Erreur de synchronisation', details });
+    }
   }
 });
 

@@ -396,11 +396,14 @@ const Store = {
         headers: this._headers(),
         body: JSON.stringify(body)
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { error: data.error || `HTTP ${res.status}`, details: data.details || '' };
+      }
+      return data;
     } catch (e) {
       console.warn('Store: Yango sync failed:', e.message);
-      return { error: e.message };
+      return { error: 'Erreur réseau', details: e.message };
     }
   },
 

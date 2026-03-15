@@ -835,8 +835,15 @@ const YangoPage = {
       console.log('[YangoSync] Sync récente (<5min), skip auto-sync');
       return;
     }
-    localStorage.setItem('pilote_last_yango_sync', String(now));
-    await this._triggerSync();
+    const result = await Store.triggerYangoSync(null);
+    if (result && !result.error) {
+      // Sync réussie — enregistrer le timestamp
+      localStorage.setItem('pilote_last_yango_sync', String(Date.now()));
+      this._renderSyncResult(result);
+    } else {
+      // Sync échouée — ne pas enregistrer le timestamp (réessayer au prochain chargement)
+      console.warn('[YangoSync] Auto-sync échouée:', result?.error);
+    }
   },
 
   async _triggerSync(datePreset = null) {
