@@ -191,13 +191,21 @@ const VersementsPage = {
 
   _template(d) {
     return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon> Versements</h1>
-        <div class="page-actions">
-          <input type="date" id="versements-period" class="form-control" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" style="width:155px;font-size:var(--font-size-xs);padding:4px 8px;">
-          ${this._selectedPeriod ? `<button class="btn btn-sm btn-secondary" onclick="VersementsPage._resetToToday()" style="font-size:var(--font-size-xs);padding:4px 10px;">
-            <iconify-icon icon="solar:restart-bold"></iconify-icon> Aujourd'hui
-          </button>` : ''}
+      <div class="d-wrap"><div class="d-bg">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
+        <div>
+          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Suivi financier</div>
+          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
+            <iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#6366f1;"></iconify-icon> Versements
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:0;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border-radius:14px;border:1px solid rgba(0,0,0,.06);padding:3px;">
+            <input type="date" id="versements-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:#374151;font-weight:500;outline:none;">
+            ${this._selectedPeriod ? '<button onclick="VersementsPage._resetToToday()" style="font-size:13px;padding:6px 8px;border-radius:11px;background:transparent;border:none;cursor:pointer;color:#6b7280;"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>' : ''}
+          </div>
           <button class="btn btn-secondary" onclick="VersementsPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
           <button class="btn btn-secondary" onclick="VersementsPage._exportCSV()"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> CSV</button>
           <button class="btn btn-secondary" onclick="VersementsPage._cleanupGhosts()" title="Supprimer les versements fantômes (0 FCFA)"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Nettoyer</button>
@@ -206,41 +214,59 @@ const VersementsPage = {
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:var(--space-md);margin-bottom:var(--space-lg);">
-        <div class="kpi-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('attendu')" title="Cliquez pour voir le détail">
-          <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(d.totalAttendu)}</div>
-          <div class="kpi-label">Montant attendu — ${d.periodLabel}</div>
+      <!-- KPIs -->
+      <div class="d-grid" style="grid-template-columns:repeat(auto-fill,minmax(185px,1fr));margin-bottom:24px;">
+        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('attendu')" title="Cliquez pour voir le détail">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Montant attendu</div>
+          </div>
+          <div class="d-val">${Utils.formatCurrency(d.totalAttendu)}</div>
+          <div class="d-sub">${d.periodLabel}</div>
         </div>
-        <div class="kpi-card green" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('verse')" title="Cliquez pour voir le détail">
-          <div class="kpi-icon"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="kpi-label">Montant versé — ${d.periodLabel}</div>
+        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('verse')" title="Cliquez pour voir le détail">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Montant versé</div>
+          </div>
+          <div class="d-val" style="color:#10b981;">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div class="d-sub">${d.periodLabel}</div>
         </div>
-        <div class="kpi-card ${d.tauxRecouvrement >= 80 ? 'cyan' : 'red'}" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('taux')" title="Cliquez pour voir le détail">
-          <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.tauxRecouvrement.toFixed(1)}%</div>
-          <div class="kpi-label">Taux de recouvrement</div>
+        <div class="d-card" style="cursor:pointer;${d.tauxRecouvrement < 80 ? 'border-color:rgba(239,68,68,.2);' : ''}" onclick="VersementsPage._showKpiDetail('taux')">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:${d.tauxRecouvrement >= 80 ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};color:${d.tauxRecouvrement >= 80 ? '#10b981' : '#ef4444'};"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Taux recouvrement</div>
+          </div>
+          <div class="d-val" style="color:${d.tauxRecouvrement >= 80 ? '#10b981' : '#ef4444'};">${d.tauxRecouvrement.toFixed(1)}%</div>
         </div>
-        <div class="kpi-card blue" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('programmes')" title="Cliquez pour voir le détail">
-          <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.nbChauffeursProgrammes}</div>
-          <div class="kpi-label">Chauffeurs programmés</div>
+        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('programmes')">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Chauffeurs programmés</div>
+          </div>
+          <div class="d-val">${d.nbChauffeursProgrammes}</div>
         </div>
-        <div class="kpi-card red" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('retard')" title="Cliquez pour voir le détail">
-          <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.byStatus.retard}</div>
-          <div class="kpi-label">Versements en retard</div>
+        <div class="d-card" style="cursor:pointer;${d.byStatus.retard > 0 ? 'border-color:rgba(239,68,68,.2);' : ''}" onclick="VersementsPage._showKpiDetail('retard')">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:#ef4444;">En retard</div>
+          </div>
+          <div class="d-val" style="color:#ef4444;">${d.byStatus.retard}</div>
         </div>
-        <div class="kpi-card" style="cursor:pointer;border-left:3px solid #f59e0b;" onclick="document.getElementById('dette-section')?.scrollIntoView({behavior:'smooth'})">
-          <div class="kpi-icon" style="background:rgba(245,158,11,0.12);"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#f59e0b;"></iconify-icon></div>
-          <div class="kpi-value" style="color:${d.totalDettes > 0 ? '#f59e0b' : 'var(--success)'};">${d.totalDettes > 0 ? Utils.formatCurrency(d.totalDettes) : '0 FCFA'}</div>
-          <div class="kpi-label">${d.totalDettes > 0 ? 'Dettes actives (' + d.nbDetteDrivers + ' chauffeur' + (d.nbDetteDrivers > 1 ? 's' : '') + ')' : 'Aucune dette \u2714'}</div>
+        <div class="d-card" style="cursor:pointer;${d.totalDettes > 0 ? 'border-color:rgba(245,158,11,.2);' : ''}" onclick="document.getElementById('dette-section')?.scrollIntoView({behavior:'smooth'})">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:#f59e0b;">Dettes</div>
+          </div>
+          <div class="d-val" style="color:${d.totalDettes > 0 ? '#f59e0b' : '#10b981'};">${d.totalDettes > 0 ? Utils.formatCurrency(d.totalDettes) : '0 FCFA'}</div>
+          <div class="d-sub">${d.totalDettes > 0 ? d.nbDetteDrivers + ' chauffeur' + (d.nbDetteDrivers > 1 ? 's' : '') : 'Aucune dette'}</div>
         </div>
-        <div class="kpi-card" style="border-left:3px solid #ef4444;">
-          <div class="kpi-icon" style="background:rgba(239,68,68,0.12);"><iconify-icon icon="solar:close-circle-bold-duotone" style="color:#ef4444;"></iconify-icon></div>
-          <div class="kpi-value" style="color:#ef4444;">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
-          <div class="kpi-label" style="color:#ef4444;">Pertes enregistr\u00e9es</div>
+        <div class="d-card" style="${d.totalPertes > 0 ? 'border-color:rgba(239,68,68,.2);' : ''}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:#ef4444;">Pertes</div>
+          </div>
+          <div class="d-val" style="color:#ef4444;">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
         </div>
       </div>
 
@@ -252,6 +278,8 @@ const VersementsPage = {
 
       <!-- Versements du jour -->
       ${this._renderVersementsSection(d)}
+
+      </div></div>
     `;
   },
 
@@ -366,6 +394,16 @@ const VersementsPage = {
       else if (v.statut === 'retard') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;"><iconify-icon icon="solar:alarm-bold"></iconify-icon> Retard</span>';
       else if (v.statut === 'supprime') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:var(--text-muted);"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon> Supprimé</span>';
 
+      // Debt/loss badge
+      let manquantHtml = '';
+      if (v.traitementManquant === 'dette') {
+        const manque = (v.montantBrut || 0) - (v.montantVerse || 0);
+        manquantHtml = `<span style="font-size:10px;font-weight:700;background:rgba(245,158,11,0.15);color:#d97706;padding:2px 7px;border-radius:4px;"><iconify-icon icon="solar:clock-circle-bold"></iconify-icon> Dette ${manque > 0 ? Utils.formatCurrency(manque) : ''}</span>`;
+      } else if (v.traitementManquant === 'perte') {
+        const manque = (v.montantBrut || 0) - (v.montantVerse || 0);
+        manquantHtml = `<span style="font-size:10px;font-weight:700;background:rgba(239,68,68,0.15);color:#dc2626;padding:2px 7px;border-radius:4px;"><iconify-icon icon="solar:danger-triangle-bold"></iconify-icon> Perte ${manque > 0 ? Utils.formatCurrency(manque) : ''}</span>`;
+      }
+
       // Payment method badge
       let methodHtml = '';
       if (v.moyenPaiement === 'wave') methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(34,197,94,0.1);color:#22c55e;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
@@ -385,16 +423,18 @@ const VersementsPage = {
       }
       actionsHtml += '</div>';
 
-      const rowBg = isDeleted ? 'var(--bg-tertiary)' : v.moyenPaiement === 'wave' ? 'rgba(34,197,94,0.06)' : 'var(--bg-tertiary)';
-      const rowBorder = v.moyenPaiement === 'wave' && !isDeleted ? 'border-left:3px solid #22c55e;' : '';
+      const isDette = v.traitementManquant === 'dette';
+      const isPerte = v.traitementManquant === 'perte';
+      const rowBg = isDeleted ? 'var(--bg-tertiary)' : isDette ? 'rgba(245,158,11,0.06)' : isPerte ? 'rgba(239,68,68,0.06)' : v.moyenPaiement === 'wave' ? 'rgba(34,197,94,0.06)' : 'var(--bg-tertiary)';
+      const rowBorder = isDeleted ? '' : isDette ? 'border-left:3px solid #f59e0b;' : isPerte ? 'border-left:3px solid #ef4444;' : v.moyenPaiement === 'wave' ? 'border-left:3px solid #22c55e;' : '';
       return `<div data-name="${name.toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:${rowBg};${rowBorder}gap:8px;${isDeleted ? 'opacity:0.5;' : ''}">
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${name}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${dateLabel}${paidLabel ? ' • ' + paidLabel : ''}${v.periode ? ' • ' + v.periode : ''}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">${statutHtml} ${methodHtml} ${coursesHtml}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">${statutHtml} ${manquantHtml} ${methodHtml} ${coursesHtml}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:700;color:${isDeleted ? 'var(--text-muted)' : v.statut === 'en_attente' ? '#f59e0b' : '#22c55e'};${isDeleted ? 'text-decoration:line-through;' : ''}">${Utils.formatCurrency((v.montantVerse || 0) > 0 ? v.montantVerse : (v.montantBrut || 0))}</div>
+          <div style="font-size:var(--font-size-sm);font-weight:700;color:${isDeleted ? 'var(--text-muted)' : isPerte ? '#ef4444' : isDette ? '#d97706' : v.statut === 'en_attente' ? '#f59e0b' : '#22c55e'};${isDeleted ? 'text-decoration:line-through;' : ''}">${Utils.formatCurrency((v.montantVerse || 0) > 0 ? v.montantVerse : (v.montantBrut || 0))}</div>
           ${actionsHtml}
         </div>
       </div>`;
