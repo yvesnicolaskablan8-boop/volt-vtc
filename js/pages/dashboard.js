@@ -828,7 +828,7 @@ const DashboardPage = {
         </div>
 
         <!-- Chart as background (Chart.js canvas — line + bars like SellCraft) -->
-        <div style="position:absolute;top:10px;right:24px;left:35%;bottom:90px;z-index:1;">
+        <div style="position:relative;z-index:1;height:100px;margin-top:16px;margin-bottom:-8px;">
           <canvas id="chart-hero-ca"></canvas>
         </div>
 
