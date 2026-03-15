@@ -1194,12 +1194,25 @@ const DashboardPage = {
   _loadCharts(d) {
     this._charts = [];
 
-    // ======= Hero CA chart (SellCraft style — bars + line) =======
+    // ======= Hero CA chart (SellCraft style — thick bars + thin line) =======
     const heroCtx = document.getElementById('chart-hero-ca');
     if (heroCtx && d.monthlyRevenue && d.monthlyRevenue.length > 0) {
-      const last6 = d.monthlyRevenue.slice(-6);
-      const heroLabels = last6.map(m => m.month);
-      const heroData = last6.map(m => m.revenue);
+      // Use more data points for denser bars (last 12 months)
+      const heroMonths = d.monthlyRevenue.slice(-12);
+      const heroLabels = heroMonths.map(m => m.month);
+      const heroData = heroMonths.map(m => m.revenue);
+      // Create striped pattern for bars
+      const ctx2d = heroCtx.getContext('2d');
+      const patternCanvas = document.createElement('canvas');
+      patternCanvas.width = 6; patternCanvas.height = 6;
+      const pCtx = patternCanvas.getContext('2d');
+      pCtx.strokeStyle = 'rgba(0,0,0,.08)';
+      pCtx.lineWidth = 1.5;
+      pCtx.beginPath(); pCtx.moveTo(0,6); pCtx.lineTo(6,0); pCtx.stroke();
+      pCtx.beginPath(); pCtx.moveTo(-2,2); pCtx.lineTo(2,-2); pCtx.stroke();
+      pCtx.beginPath(); pCtx.moveTo(4,8); pCtx.lineTo(8,4); pCtx.stroke();
+      const stripePattern = ctx2d.createPattern(patternCanvas, 'repeat');
+
       this._charts.push(new Chart(heroCtx, {
         type: 'bar',
         data: {
@@ -1209,20 +1222,21 @@ const DashboardPage = {
               type: 'bar',
               label: 'CA',
               data: heroData,
-              backgroundColor: 'rgba(0,0,0,.06)',
-              borderRadius: 4,
+              backgroundColor: stripePattern || 'rgba(0,0,0,.06)',
+              borderRadius: 2,
               borderSkipped: false,
-              barPercentage: 0.5,
+              barPercentage: 0.85,
+              categoryPercentage: 0.9,
               order: 2
             },
             {
               type: 'line',
               label: 'Tendance',
               data: heroData,
-              borderColor: '#111827',
-              borderWidth: 2,
+              borderColor: '#374151',
+              borderWidth: 1.5,
               pointBackgroundColor: '#fff',
-              pointBorderColor: '#111827',
+              pointBorderColor: '#374151',
               pointBorderWidth: 2,
               pointRadius: (ctx) => ctx.dataIndex === heroData.length - 1 ? 5 : 0,
               pointHoverRadius: 5,
@@ -1235,16 +1249,19 @@ const DashboardPage = {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          layout: { padding: { top: 20 } },
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { display: false },
             tooltip: {
+              enabled: true,
               backgroundColor: '#111827',
-              titleFont: { size: 11 },
-              bodyFont: { size: 12, weight: '700' },
-              padding: { top: 6, bottom: 6, left: 10, right: 10 },
-              cornerRadius: 8,
-              caretSize: 6,
+              titleFont: { size: 0 },
+              bodyFont: { size: 13, weight: '700' },
+              padding: { top: 8, bottom: 8, left: 14, right: 14 },
+              cornerRadius: 20,
+              caretSize: 8,
+              displayColors: false,
               callbacks: {
                 title: () => '',
                 label: (ctx) => {
@@ -1260,7 +1277,7 @@ const DashboardPage = {
           },
           scales: {
             x: { display: false },
-            y: { display: false }
+            y: { display: false, beginAtZero: true }
           }
         }
       }));
