@@ -394,13 +394,15 @@ const VersementsPage = {
       else if (v.statut === 'retard') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;"><iconify-icon icon="solar:alarm-bold"></iconify-icon> Retard</span>';
       else if (v.statut === 'supprime') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:var(--text-muted);"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon> Supprimé</span>';
 
-      // Debt/loss badge
+      // Debt/loss badge — use redevance as fallback for expected amount
       let manquantHtml = '';
+      const redev = c ? (c.redevanceQuotidienne || 0) : 0;
+      const attendu = (v.montantBrut || 0) > 0 ? v.montantBrut : redev;
       if (v.traitementManquant === 'dette') {
-        const manque = (v.montantBrut || 0) - (v.montantVerse || 0);
+        const manque = attendu - (v.montantVerse || 0);
         manquantHtml = `<span style="font-size:10px;font-weight:700;background:rgba(245,158,11,0.15);color:#d97706;padding:2px 7px;border-radius:4px;"><iconify-icon icon="solar:clock-circle-bold"></iconify-icon> Dette ${manque > 0 ? Utils.formatCurrency(manque) : ''}</span>`;
       } else if (v.traitementManquant === 'perte') {
-        const manque = (v.montantBrut || 0) - (v.montantVerse || 0);
+        const manque = attendu - (v.montantVerse || 0);
         manquantHtml = `<span style="font-size:10px;font-weight:700;background:rgba(239,68,68,0.15);color:#dc2626;padding:2px 7px;border-radius:4px;"><iconify-icon icon="solar:danger-triangle-bold"></iconify-icon> Perte ${manque > 0 ? Utils.formatCurrency(manque) : ''}</span>`;
       }
 
