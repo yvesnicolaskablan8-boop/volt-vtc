@@ -1198,24 +1198,87 @@ const DashboardPage = {
   _loadCharts(d) {
     this._charts = [];
 
-    // ======= Hero CA chart (SellCraft style — thick bars + thin line) =======
+    // ======= Hero CA chart (SellCraft style — thick gray bars + thin line + permanent % pill) =======
     const heroCtx = document.getElementById('chart-hero-ca');
     if (heroCtx && d.monthlyRevenue && d.monthlyRevenue.length > 0) {
-      // Use more data points for denser bars (last 12 months)
       const heroMonths = d.monthlyRevenue.slice(-12);
       const heroLabels = heroMonths.map(m => m.month);
       const heroData = heroMonths.map(m => m.revenue);
-      // Create striped pattern for bars
+
+      // Compute month-over-month % for last point
+      const lastVal = heroData[heroData.length - 1] || 0;
+      const prevVal = heroData.length >= 2 ? heroData[heroData.length - 2] : 0;
+      const lastPct = prevVal > 0 ? ((lastVal - prevVal) / prevVal * 100) : 0;
+      const pctLabel = `${lastPct >= 0 ? '+' : ''}${Math.round(lastPct * 10) / 10}%`;
+
+      // Create hatched/striped pattern (visible gray diagonal stripes)
       const ctx2d = heroCtx.getContext('2d');
       const patternCanvas = document.createElement('canvas');
-      patternCanvas.width = 6; patternCanvas.height = 6;
+      patternCanvas.width = 8; patternCanvas.height = 8;
       const pCtx = patternCanvas.getContext('2d');
-      pCtx.strokeStyle = 'rgba(0,0,0,.08)';
-      pCtx.lineWidth = 1.5;
-      pCtx.beginPath(); pCtx.moveTo(0,6); pCtx.lineTo(6,0); pCtx.stroke();
-      pCtx.beginPath(); pCtx.moveTo(-2,2); pCtx.lineTo(2,-2); pCtx.stroke();
-      pCtx.beginPath(); pCtx.moveTo(4,8); pCtx.lineTo(8,4); pCtx.stroke();
+      // Fill with light gray base
+      pCtx.fillStyle = 'rgba(0,0,0,.07)';
+      pCtx.fillRect(0, 0, 8, 8);
+      // Draw diagonal stripes
+      pCtx.strokeStyle = 'rgba(0,0,0,.06)';
+      pCtx.lineWidth = 2;
+      pCtx.beginPath(); pCtx.moveTo(0, 8); pCtx.lineTo(8, 0); pCtx.stroke();
+      pCtx.beginPath(); pCtx.moveTo(-2, 2); pCtx.lineTo(2, -2); pCtx.stroke();
+      pCtx.beginPath(); pCtx.moveTo(6, 10); pCtx.lineTo(10, 6); pCtx.stroke();
       const stripePattern = ctx2d.createPattern(patternCanvas, 'repeat');
+
+      // Custom plugin: draw permanent pill tooltip on last point
+      const permanentTooltipPlugin = {
+        id: 'permanentTooltip',
+        afterDraw(chart) {
+          const meta = chart.getDatasetMeta(1); // line dataset
+          if (!meta || !meta.data.length) return;
+          const lastPoint = meta.data[meta.data.length - 1];
+          if (!lastPoint) return;
+          const cx = chart.ctx;
+          const x = lastPoint.x;
+          const y = lastPoint.y;
+
+          // Draw pill background
+          const text = pctLabel;
+          cx.save();
+          cx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+          const tw = cx.measureText(text).width;
+          const pw = tw + 16;
+          const ph = 24;
+          const px = x - pw / 2;
+          const py = y - ph - 12;
+
+          // Rounded rect (pill)
+          const r = ph / 2;
+          cx.beginPath();
+          cx.moveTo(px + r, py);
+          cx.lineTo(px + pw - r, py);
+          cx.arcTo(px + pw, py, px + pw, py + r, r);
+          cx.arcTo(px + pw, py + ph, px + pw - r, py + ph, r);
+          cx.lineTo(px + r, py + ph);
+          cx.arcTo(px, py + ph, px, py + r, r);
+          cx.arcTo(px, py, px + r, py, r);
+          cx.closePath();
+          cx.fillStyle = '#111827';
+          cx.fill();
+
+          // Small triangle/caret pointing down
+          cx.beginPath();
+          cx.moveTo(x - 5, py + ph);
+          cx.lineTo(x + 5, py + ph);
+          cx.lineTo(x, py + ph + 6);
+          cx.closePath();
+          cx.fill();
+
+          // Text
+          cx.fillStyle = '#fff';
+          cx.textAlign = 'center';
+          cx.textBaseline = 'middle';
+          cx.fillText(text, px + pw / 2, py + ph / 2);
+          cx.restore();
+        }
+      };
 
       this._charts.push(new Chart(heroCtx, {
         type: 'bar',
@@ -1226,11 +1289,11 @@ const DashboardPage = {
               type: 'bar',
               label: 'CA',
               data: heroData,
-              backgroundColor: stripePattern || 'rgba(0,0,0,.06)',
-              borderRadius: 2,
+              backgroundColor: stripePattern || 'rgba(0,0,0,.1)',
+              borderRadius: 3,
               borderSkipped: false,
-              barPercentage: 0.85,
-              categoryPercentage: 0.9,
+              barPercentage: 0.82,
+              categoryPercentage: 0.88,
               order: 2
             },
             {
@@ -1250,10 +1313,11 @@ const DashboardPage = {
             }
           ]
         },
+        plugins: [permanentTooltipPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: { padding: { top: 20 } },
+          layout: { padding: { top: 40, right: 10 } },
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { display: false },
@@ -1261,22 +1325,29 @@ const DashboardPage = {
               enabled: true,
               backgroundColor: '#111827',
               titleFont: { size: 0 },
-              bodyFont: { size: 13, weight: '700' },
-              padding: { top: 8, bottom: 8, left: 14, right: 14 },
-              cornerRadius: 20,
-              caretSize: 8,
+              bodyFont: { size: 12, weight: '700' },
+              padding: { top: 6, bottom: 6, left: 12, right: 12 },
+              cornerRadius: 16,
+              caretSize: 6,
               displayColors: false,
               callbacks: {
                 title: () => '',
                 label: (ctx) => {
-                  if (ctx.datasetIndex === 1) {
-                    const pct = d.caTrend >= 0 ? '+' : '';
-                    return `${pct}${Math.abs(Math.round(d.caTrend))}%`;
+                  if (ctx.datasetIndex === 0) {
+                    return Utils.formatCurrency(ctx.raw);
+                  }
+                  // Show % change vs previous month
+                  if (ctx.datasetIndex === 1 && ctx.dataIndex > 0) {
+                    const prev = heroData[ctx.dataIndex - 1];
+                    const cur = heroData[ctx.dataIndex];
+                    if (prev > 0) {
+                      const pct = ((cur - prev) / prev * 100);
+                      return `${pct >= 0 ? '+' : ''}${Math.round(pct * 10) / 10}%`;
+                    }
                   }
                   return '';
                 }
-              },
-              filter: (item) => item.datasetIndex === 1 && item.dataIndex === heroData.length - 1
+              }
             }
           },
           scales: {
