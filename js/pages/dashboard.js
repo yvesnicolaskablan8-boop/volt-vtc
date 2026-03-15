@@ -767,10 +767,13 @@ const DashboardPage = {
         [data-theme="dark"] .hm-absent { background:rgba(249,115,22,.18); }
         [data-theme="dark"] .hm-repos { background:rgba(255,255,255,.04); color:#4b5563; }
 
+        .d-hero-row { display:flex; gap:16px; margin-bottom:16px; align-items:stretch; }
         @media(max-width:900px) {
           .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
           .d-g3 { grid-template-columns:1fr !important; }
           .d-g21 { grid-template-columns:1fr !important; }
+          .d-hero-row { flex-direction:column !important; }
+          .d-hero-row > * { max-width:100% !important; min-width:0 !important; }
         }
         @media(max-width:600px) {
           .d-g4 { grid-template-columns:1fr !important; }
@@ -806,8 +809,11 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Row 1: SellCraft "Total Sales" — single hero card with chart bg + 3 mini KPIs inside -->
-      <div style="background:#fff;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03);position:relative;overflow:hidden;margin-bottom:16px;padding:24px 28px 0;">
+      <!-- Row 1: Hero CA (left) + Planning Heatmap (right) — like SellCraft -->
+      <div class="d-hero-row">
+
+      <!-- LEFT: CA hero card -->
+      <div style="flex:1.4;background:#fff;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03);position:relative;overflow:hidden;padding:24px 28px 0;min-width:0;">
 
         <!-- Top: title + 3-dot menu -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -894,6 +900,13 @@ const DashboardPage = {
           </a>
         </div>
       </div>
+
+      <!-- RIGHT: Planning Heatmap (like Sales Heatmap in SellCraft) -->
+      <div style="flex:1;min-width:320px;max-width:480px;">
+        ${this._renderPlanningHeatmap(d)}
+      </div>
+
+      </div><!-- end Row 1 flex -->
 
       <!-- Row 2: Chauffeurs + Objectif + Recouvrement + Flotte -->
       <div class="d-grid d-g4" style="grid-template-columns:1.4fr 1fr 1fr 1fr;">
@@ -1059,11 +1072,6 @@ const DashboardPage = {
             </div>` : ''}
           </a>
         </div>
-      </div>
-
-      <!-- Row 3.5: Planning Heatmap -->
-      <div class="d-grid" style="grid-template-columns:1fr;">
-        ${this._renderPlanningHeatmap(d)}
       </div>
 
       <!-- Row 4: Maintenance -->
