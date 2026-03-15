@@ -6,7 +6,7 @@ const DashboardPage = {
   _refreshInterval: null,
   _lastData: null,
   _selectedPeriod: null, // null = today/current month
-  _monthView: false, // false = jour, true = mois entier
+  _monthView: true, // true = mois entier par défaut (plus pertinent)
 
   render() {
     const container = document.getElementById('page-content');
@@ -822,7 +822,7 @@ const DashboardPage = {
               <span style="font-size:12px;color:#6b7280;font-weight:500;">• ${Utils.formatCurrency(d.caMoyenJour)} / jour</span>
             </div>
           </div>
-          <div style="flex-shrink:0;">${sparkline(last6Rev, '#374151', 180, 64)}</div>
+          <div style="flex-shrink:0;overflow:hidden;border-radius:8px;max-width:180px;">${sparkline(last6Rev, '#374151', 180, 64)}</div>
         </div>
       </a>
 
