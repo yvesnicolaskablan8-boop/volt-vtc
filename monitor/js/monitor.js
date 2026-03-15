@@ -465,6 +465,15 @@
     return fmt(n) + ' F';
   }
 
+  function fmtDate(dateStr) {
+    if (!dateStr) return '-';
+    var d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    return dd + '/' + mm + '/' + d.getFullYear();
+  }
+
   function evoHtml(e, inverse) {
     if (!e || e.dir === 'stable' || e.pct === 0) return '';
     var isGood = inverse ? e.dir === 'down' : e.dir === 'up';
@@ -819,7 +828,7 @@
           '<div class="mon-detail-total">Total impaye : <strong style="color:var(--red)">' + fmtCurrency(k.totalUnpaid) + '</strong> + <strong style="color:var(--orange)">' + fmtCurrency(k.totalPenalites) + '</strong> penalites</div>' +
           buildListRows(k.unpaidDetail,
             function(i) { return '<strong style="color:var(--red)">' + fmtCurrency(i.montant) + '</strong>'; },
-            function(i) { return i.date + ' &bull; ' + i.joursRetard + 'j de retard'; }
+            function(i) { return fmtDate(i.date) + ' &bull; ' + i.joursRetard + 'j de retard'; }
           )
         );
         break;
@@ -880,7 +889,7 @@
             : k.incidentsDetail.map(function(i) {
                 return '<div class="mon-detail-row">' +
                   '<div class="mon-detail-name">' + i.nom +
-                    '<div class="mon-detail-sub">' + i.type + ' &bull; ' + i.date + (i.vehicule ? ' &bull; ' + i.vehicule : '') + '</div>' +
+                    '<div class="mon-detail-sub">' + i.type + ' &bull; ' + fmtDate(i.date) + (i.vehicule ? ' &bull; ' + i.vehicule : '') + '</div>' +
                     (i.description ? '<div class="mon-detail-sub" style="opacity:0.6;font-size:0.7rem">' + i.description + '</div>' : '') +
                   '</div>' +
                   '<div class="mon-detail-value">' +
