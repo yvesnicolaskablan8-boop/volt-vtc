@@ -404,6 +404,38 @@ const DashboardPage = {
     const monthLabel = monthNames[thisMonth] + ' ' + thisYear;
     const periodLabel = isMonthView ? monthLabel : Utils.formatDate(selectedDay);
 
+    // =================== PLANNING HEATMAP (semaine) ===================
+    const hmToday = now.toISOString().split('T')[0];
+    const hmSel = new Date(selectedDay);
+    const hmDow = hmSel.getDay() || 7; // 1=Lun ... 7=Dim
+    const hmMonday = new Date(hmSel);
+    hmMonday.setDate(hmSel.getDate() - hmDow + 1);
+    const dayLabels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    const heatmapWeekDays = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(hmMonday);
+      d.setDate(hmMonday.getDate() + i);
+      const ds = d.toISOString().split('T')[0];
+      heatmapWeekDays.push({ date: ds, label: dayLabels[i], dayNum: d.getDate(), isToday: ds === hmToday });
+    }
+    const activeDrivers = chauffeurs.filter(c => c.statut === 'actif').sort((a, b) => (a.prenom || '').localeCompare(b.prenom || ''));
+    const heatmapDrivers = activeDrivers.map(c => {
+      const cells = heatmapWeekDays.map(wd => {
+        // Check absence
+        const hasAbsence = absences.some(a => a.chauffeurId === c.id && wd.date >= a.dateDebut && wd.date <= a.dateFin);
+        if (hasAbsence) return 'absent';
+        // Check if planned
+        const isPlanned = planning.some(p => p.chauffeurId === c.id && p.date === wd.date);
+        if (!isPlanned) return 'repos';
+        // Planned — check if future
+        if (wd.date > hmToday) return 'programme';
+        // Past or today — check versement
+        const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime'));
+        return hasVersement ? 'verse' : 'en_retard';
+      });
+      return { id: c.id, prenom: c.prenom, nom: c.nom, initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), cells };
+    });
+
     return {
       caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount, totalDettes, totalPertes, nbDetteDrivers, nbPerteDrivers,
       nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
@@ -418,6 +450,7 @@ const DashboardPage = {
       alertesTotal, alertesCritiques, alertesUrgentes,
       tauxRecouvrement, totalAttendu,
       serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence,
+      heatmapWeekDays, heatmapDrivers,
       periodLabel, monthLabel, isMonthView,
       // === PRÉVISIONS CA ===
       ...this._computeForecasts(monthlyRevenue, versements, chauffeurs, planning, absences, thisMonth, thisYear, sel, isMonthView, totalVerse)
@@ -697,6 +730,43 @@ const DashboardPage = {
           margin-bottom:10px; margin-top:6px;
         }
 
+        /* Heatmap */
+        .d-hm-grid {
+          display:grid; grid-template-columns:110px repeat(7,1fr); gap:4px; align-items:center;
+        }
+        .d-hm-head {
+          text-align:center; font-size:11px; font-weight:700; color:#6b7280; padding:6px 0;
+          text-transform:uppercase; letter-spacing:.5px;
+        }
+        .d-hm-head.today { background:rgba(99,102,241,.08); border-radius:10px; color:#6366f1; }
+        [data-theme="dark"] .d-hm-head { color:#9ca3af; }
+        [data-theme="dark"] .d-hm-head.today { background:rgba(99,102,241,.15); }
+        .d-hm-daynum { font-size:9px; font-weight:500; color:#9ca3af; }
+        .d-hm-driver {
+          display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#374151;
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:4px 0;
+        }
+        [data-theme="dark"] .d-hm-driver { color:#d1d5db; }
+        .d-hm-avatar {
+          width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+          font-size:9px; font-weight:700; color:#fff; flex-shrink:0;
+        }
+        .d-hm-cell {
+          height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+          font-size:13px; cursor:pointer; transition:all .15s ease;
+        }
+        .d-hm-cell:hover { transform:scale(1.08); box-shadow:0 2px 8px rgba(0,0,0,.1); }
+        .hm-verse { background:rgba(16,185,129,.15); color:#10b981; }
+        .hm-programme { background:rgba(99,102,241,.12); color:#6366f1; }
+        .hm-en_retard { background:rgba(239,68,68,.15); color:#ef4444; }
+        .hm-absent { background:rgba(249,115,22,.12); color:#f97316; }
+        .hm-repos { background:rgba(0,0,0,.03); color:#d1d5db; }
+        [data-theme="dark"] .hm-verse { background:rgba(16,185,129,.2); }
+        [data-theme="dark"] .hm-programme { background:rgba(99,102,241,.2); }
+        [data-theme="dark"] .hm-en_retard { background:rgba(239,68,68,.2); }
+        [data-theme="dark"] .hm-absent { background:rgba(249,115,22,.18); }
+        [data-theme="dark"] .hm-repos { background:rgba(255,255,255,.04); color:#4b5563; }
+
         @media(max-width:900px) {
           .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
           .d-g3 { grid-template-columns:1fr !important; }
@@ -705,6 +775,9 @@ const DashboardPage = {
         @media(max-width:600px) {
           .d-g4 { grid-template-columns:1fr !important; }
           .d-bg { margin:-16px; padding:16px 16px 24px; }
+          .d-hm-grid { grid-template-columns:40px repeat(7,1fr); gap:2px; }
+          .d-hm-driver span:last-child { display:none; }
+          .d-hm-cell { height:26px; border-radius:6px; font-size:10px; }
         }
       </style>
 
@@ -969,6 +1042,11 @@ const DashboardPage = {
         </div>
       </div>
 
+      <!-- Row 3.5: Planning Heatmap -->
+      <div class="d-grid" style="grid-template-columns:1fr;">
+        ${this._renderPlanningHeatmap(d)}
+      </div>
+
       <!-- Row 4: Maintenance -->
       <div class="d-grid" style="grid-template-columns:1fr;">
         ${this._renderMaintenancePanel(d)}
@@ -1029,6 +1107,70 @@ const DashboardPage = {
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
       ${alerts.length > 4 ? `<div style="text-align:center;padding:4px;font-size:10px;color:#9ca3af;margin-top:4px;">+ ${alerts.length - 4} autre(s)</div>` : ''}
+    </div>`;
+  },
+
+  _renderPlanningHeatmap(d) {
+    const drivers = d.heatmapDrivers || [];
+    const days = d.heatmapWeekDays || [];
+    if (drivers.length === 0) {
+      return `<div class="d-card" style="display:flex;align-items:center;gap:14px;">
+        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#111827;">Planning semaine</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Aucun chauffeur actif</div>
+        </div>
+      </div>`;
+    }
+
+    const statusIcons = {
+      verse: '<iconify-icon icon="solar:check-circle-bold" style="font-size:14px;"></iconify-icon>',
+      programme: '<iconify-icon icon="solar:clock-circle-bold" style="font-size:14px;"></iconify-icon>',
+      en_retard: '<iconify-icon icon="solar:danger-triangle-bold" style="font-size:14px;"></iconify-icon>',
+      absent: '<iconify-icon icon="solar:minus-circle-bold" style="font-size:14px;"></iconify-icon>',
+      repos: ''
+    };
+    const statusLabels = { verse: 'Versé', programme: 'Programmé', en_retard: 'En retard', absent: 'Absent', repos: 'Repos' };
+    const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
+
+    // Header row
+    let html = '<div class="d-hm-grid">';
+    html += '<div></div>'; // empty top-left
+    days.forEach(wd => {
+      html += `<div class="d-hm-head ${wd.isToday ? 'today' : ''}">${wd.label}<br><span class="d-hm-daynum">${wd.dayNum}</span></div>`;
+    });
+
+    // Driver rows
+    drivers.forEach((dr, idx) => {
+      const color = avatarColors[idx % avatarColors.length];
+      html += `<div class="d-hm-driver"><div class="d-hm-avatar" style="background:${color};">${dr.initials}</div><span>${dr.prenom}</span></div>`;
+      dr.cells.forEach((status, ci) => {
+        const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}`;
+        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="Router.navigate('/chauffeurs/${dr.id}')">${statusIcons[status]}</div>`;
+      });
+    });
+    html += '</div>';
+
+    // Legend
+    html += `<div style="display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;">
+      <div class="d-legend"><span class="d-legend-dot" style="background:#10b981;"></span> Versé</div>
+      <div class="d-legend"><span class="d-legend-dot" style="background:#6366f1;"></span> Programmé</div>
+      <div class="d-legend"><span class="d-legend-dot" style="background:#ef4444;"></span> En retard</div>
+      <div class="d-legend"><span class="d-legend-dot" style="background:#f97316;"></span> Absent</div>
+      <div class="d-legend"><span class="d-legend-dot" style="background:#e5e7eb;"></span> Repos</div>
+    </div>`;
+
+    return `<div class="d-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;display:flex;align-items:center;justify-content:center;">
+            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
+          </div>
+          <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:#111827;">Planning semaine</div>
+        </div>
+        <a href="#/planning" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
+      </div>
+      ${html}
     </div>`;
   },
 
