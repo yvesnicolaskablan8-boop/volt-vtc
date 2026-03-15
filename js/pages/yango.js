@@ -16,6 +16,9 @@ const YangoPage = {
   _mapMarkers: {},
   _mapInterval: null,
   _mapFitted: false,
+  _fleetDrivers: [],
+  _fleetFilters: new Set(['free', 'in_order', 'busy', 'offline']),
+  _fleetMarkers: {},
 
   render() {
     const container = document.getElementById('page-content');
@@ -172,23 +175,29 @@ const YangoPage = {
           <span class="badge badge-info" id="yp-map-count">--</span>
         </div>
         <!-- Barre de statuts Yango Fleet -->
-        <div id="yp-fleet-bar" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
-          <span style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:#22c55e;color:#fff;font-size:12px;font-weight:700;">
+        <style>
+          .fleet-btn { display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all 0.2s;user-select:none; }
+          .fleet-btn:hover { filter:brightness(1.15);transform:scale(1.05); }
+          .fleet-btn.active { border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,0.3); }
+          .fleet-btn.dimmed { opacity:0.4; }
+        </style>
+        <div id="yp-fleet-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+          <div class="fleet-btn active" data-fleet-filter="free" style="background:#22c55e;" onclick="YangoPage._toggleFleetFilter('free', this)">
             <span id="yp-fleet-free">-</span> Disponible
-          </span>
-          <span style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:#22c55e;color:#fff;font-size:12px;font-weight:700;">
+          </div>
+          <div class="fleet-btn active" data-fleet-filter="in_order" style="background:#f97316;" onclick="YangoPage._toggleFleetFilter('in_order', this)">
             <span id="yp-fleet-inorder">-</span> Commande active
-          </span>
-          <span style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:#ef4444;color:#fff;font-size:12px;font-weight:700;">
+          </div>
+          <div class="fleet-btn active" data-fleet-filter="busy" style="background:#ef4444;" onclick="YangoPage._toggleFleetFilter('busy', this)">
             <span id="yp-fleet-busy">-</span> Occupés
-          </span>
-          <span style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:#6b7280;color:#fff;font-size:12px;font-weight:700;">
+          </div>
+          <div class="fleet-btn active" data-fleet-filter="offline" style="background:#6b7280;" onclick="YangoPage._toggleFleetFilter('offline', this)">
             <span id="yp-fleet-offline">-</span> Hors ligne
-          </span>
-          <span style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--bg-tertiary);color:var(--text-primary);font-size:12px;font-weight:600;">
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:var(--bg-tertiary);color:var(--text-primary);font-size:12px;font-weight:600;">
             <iconify-icon icon="solar:users-group-rounded-bold" style="font-size:14px;"></iconify-icon>
             <span id="yp-fleet-total">-</span>
-          </span>
+          </div>
         </div>
         <div id="yp-realtime-map" style="height:500px;border-radius:var(--radius-md);z-index:0;"></div>
       </div>
@@ -608,6 +617,19 @@ const YangoPage = {
     this._mapInterval = setInterval(() => { this._refreshMap(); this._refreshFleetStatus(); }, 15000);
   },
 
+  _toggleFleetFilter(status, btn) {
+    if (this._fleetFilters.has(status)) {
+      this._fleetFilters.delete(status);
+      btn.classList.remove('active');
+      btn.classList.add('dimmed');
+    } else {
+      this._fleetFilters.add(status);
+      btn.classList.add('active');
+      btn.classList.remove('dimmed');
+    }
+    this._renderFleetMarkers();
+  },
+
   async _refreshFleetStatus() {
     try {
       const token = typeof Auth !== 'undefined' ? Auth.getToken() : localStorage.getItem('pilote_token');
@@ -620,9 +642,33 @@ const YangoPage = {
       set('yp-fleet-busy', data.occupe || 0);
       set('yp-fleet-offline', data.horsLigne || 0);
       set('yp-fleet-total', data.total || 0);
+
+      // Stocker les chauffeurs pour les filtrer
+      this._fleetDrivers = data.drivers || [];
+      this._renderFleetMarkers();
     } catch (e) {
       console.warn('[FleetStatus] Error:', e.message);
     }
+  },
+
+  _renderFleetMarkers() {
+    if (!this._map) return;
+    // Construire map yangoDriverId → status
+    const yangoStatusMap = {};
+    this._fleetDrivers.forEach(d => { yangoStatusMap[d.id] = d.status; });
+
+    // Montrer/masquer les markers existants selon filtre
+    Object.keys(this._mapMarkers).forEach(chauffeurId => {
+      const markerData = this._mapMarkers[chauffeurId];
+      if (!markerData) return;
+      const marker = markerData.marker || markerData;
+      const status = markerData.yangoStatus || 'offline';
+      if (this._fleetFilters.has(status)) {
+        if (!this._map.hasLayer(marker)) marker.addTo(this._map);
+      } else {
+        if (this._map.hasLayer(marker)) this._map.removeLayer(marker);
+      }
+    });
   },
 
   async _refreshMap() {
@@ -633,40 +679,49 @@ const YangoPage = {
       if (!res.ok) return;
       const positions = await res.json();
 
+      // Construire map yangoDriverId → yangoStatus depuis fleet-status
+      const chauffeurs = Store.get('chauffeurs') || [];
+      const chauffeurToYango = {};
+      chauffeurs.forEach(c => { if (c.yangoDriverId) chauffeurToYango[c.id] = c.yangoDriverId; });
+      const yangoStatusMap = {};
+      this._fleetDrivers.forEach(d => { yangoStatusMap[d.id] = d.status; });
+
       // Filtrer par chauffeurs programmés du jour
       const selectedDate = this._planningDate || new Date().toISOString().split('T')[0];
       const planning = Store.get('planning') || [];
       const scheduledIds = new Set(planning.filter(p => p.date === selectedDate).map(p => p.chauffeurId));
 
       const now = Date.now();
-      const MAX_AGE = 8 * 60 * 60 * 1000; // 8h — durée max d'un shift
+      const MAX_AGE = 8 * 60 * 60 * 1000;
 
       const filtered = positions.filter(p => {
         if (!scheduledIds.has(p.chauffeurId)) return false;
         const age = now - new Date(p.updatedAt).getTime();
         return age < MAX_AGE;
       });
-      const freshCount = filtered.filter(p => (now - new Date(p.updatedAt).getTime()) < 5 * 60 * 1000).length;
       const countEl = document.getElementById('yp-map-count');
       if (countEl) countEl.textContent = filtered.length;
 
       const activeIds = new Set();
+      const statusColors = { free: '#22c55e', in_order: '#f97316', busy: '#ef4444', offline: '#6b7280' };
+      const statusLabels = { free: 'Disponible', in_order: 'Commande active', busy: 'Occupé', offline: 'Hors ligne' };
 
       filtered.forEach(p => {
         activeIds.add(p.chauffeurId);
         const age = now - new Date(p.updatedAt).getTime();
-        const isFresh = age < 5 * 60 * 1000; // < 5 min
-        const isMoving = isFresh && p.speed > 2;
+        const isFresh = age < 5 * 60 * 1000;
         const heading = p.heading || 0;
 
-        // Couleurs style Yango Fleet : vert=disponible, orange=occupé/en mouvement, rouge=GPS ancien
-        const color = !isFresh ? '#ef4444' : isMoving ? '#f97316' : '#22c55e';
-        const statusTxt = !isFresh ? 'Hors ligne' : isMoving ? `${Math.round(p.speed)} km/h` : 'Arrêté';
+        // Statut Yango réel si disponible
+        const yangoId = chauffeurToYango[p.chauffeurId];
+        const yangoStatus = yangoId ? (yangoStatusMap[yangoId] || 'offline') : (isFresh ? 'free' : 'offline');
+        const color = statusColors[yangoStatus] || '#6b7280';
+        const statusTxt = statusLabels[yangoStatus] || 'Hors ligne';
+
         const ageTxt = age < 60000 ? 'À l\'instant'
           : age < 3600000 ? `Il y a ${Math.round(age / 60000)} min`
           : `Il y a ${Math.round(age / 3600000)}h${String(Math.round((age % 3600000) / 60000)).padStart(2, '0')}`;
 
-        // Icône voiture vue de dessus
         const carRotation = isFresh && p.heading ? heading : 0;
         const icon = L.divIcon({
           className: '',
@@ -692,24 +747,37 @@ const YangoPage = {
           <div style="font-size:10px;color:#888;">${ageTxt}</div>
         </div>`;
 
-        if (this._mapMarkers[p.chauffeurId]) {
+        const existing = this._mapMarkers[p.chauffeurId];
+        if (existing && existing.marker) {
           // Update existing
-          const marker = this._mapMarkers[p.chauffeurId];
-          marker.setLatLng([p.lat, p.lng]);
-          marker.setIcon(icon);
-          marker.getPopup().setContent(popupContent);
+          existing.marker.setLatLng([p.lat, p.lng]);
+          existing.marker.setIcon(icon);
+          existing.marker.getPopup().setContent(popupContent);
+          existing.yangoStatus = yangoStatus;
+          // Appliquer filtre de visibilité
+          if (this._fleetFilters.has(yangoStatus)) {
+            if (!this._map.hasLayer(existing.marker)) existing.marker.addTo(this._map);
+          } else {
+            if (this._map.hasLayer(existing.marker)) this._map.removeLayer(existing.marker);
+          }
         } else {
           // Create new
-          const marker = L.marker([p.lat, p.lng], { icon }).addTo(this._map);
+          const marker = L.marker([p.lat, p.lng], { icon });
           marker.bindPopup(popupContent);
-          this._mapMarkers[p.chauffeurId] = marker;
+          // Ajouter seulement si le filtre est actif pour ce statut
+          if (this._fleetFilters.has(yangoStatus)) {
+            marker.addTo(this._map);
+          }
+          this._mapMarkers[p.chauffeurId] = { marker, yangoStatus };
         }
       });
 
       // Supprimer markers déconnectés
       Object.keys(this._mapMarkers).forEach(id => {
         if (!activeIds.has(id)) {
-          this._map.removeLayer(this._mapMarkers[id]);
+          const entry = this._mapMarkers[id];
+          const mkr = entry && entry.marker ? entry.marker : entry;
+          if (mkr && this._map.hasLayer(mkr)) this._map.removeLayer(mkr);
           delete this._mapMarkers[id];
         }
       });
