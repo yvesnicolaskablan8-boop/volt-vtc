@@ -806,88 +806,89 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Row 1: Hero CA with sparkline (SellCraft "Total Sales" style) -->
-      <a href="#/versements" style="display:block;text-decoration:none;color:inherit;padding:24px 28px;margin-bottom:16px;background:#fff;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03);position:relative;overflow:hidden;transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.08)'" onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03)'">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-              <iconify-icon icon="solar:graph-new-up-bold-duotone" style="font-size:20px;color:#374151;"></iconify-icon>
-              <span style="font-size:15px;font-weight:700;color:#111827;">Chiffre d'affaires</span>
-            </div>
-            <div style="font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.caThisMonth)}</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
-              <span class="d-tag ${d.caTrend >= 0 ? 'green' : 'red'}">
-                ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
-              </span>
-              <span style="font-size:12px;color:#6b7280;font-weight:500;">• ${Utils.formatCurrency(d.caMoyenJour)} / jour</span>
-            </div>
+      <!-- Row 1: SellCraft "Total Sales" — single hero card with chart bg + 3 mini KPIs inside -->
+      <div style="background:#fff;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03);position:relative;overflow:hidden;margin-bottom:16px;padding:24px 28px 0;">
+
+        <!-- Top: title + 3-dot menu -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <iconify-icon icon="solar:graph-new-up-bold-duotone" style="font-size:18px;color:#374151;"></iconify-icon>
+            <span style="font-size:15px;font-weight:700;color:#111827;">Chiffre d'affaires</span>
           </div>
-          <div style="flex-shrink:0;overflow:hidden;border-radius:8px;max-width:180px;">${sparkline(last6Rev, '#374151', 180, 64)}</div>
+          <button style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;padding:4px;">⋮</button>
         </div>
-      </a>
 
-      <!-- Row 1b: 3 mini KPI cards (SellCraft "Total Orders / Cancel Orders / Visitors" style) -->
-      <div class="d-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:16px;">
+        <!-- Big number + trend -->
+        <div style="font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;line-height:1;font-feature-settings:'tnum';position:relative;z-index:2;">${Utils.formatCurrency(d.caThisMonth)}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;position:relative;z-index:2;">
+          <span class="d-tag ${d.caTrend >= 0 ? 'green' : 'red'}">
+            ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
+          </span>
+          <span style="font-size:12px;color:#6b7280;font-weight:500;">• ${Utils.formatCurrency(d.caMoyenJour)} / jour</span>
+        </div>
 
-        <!-- Versements (green tint — like Total Orders) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;background:rgba(220,252,231,.55);border-color:rgba(187,247,208,.5);">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <div style="font-size:13px;font-weight:500;color:#6b7280;">Versements</div>
-            <button style="width:3px;background:none;border:none;font-size:16px;color:#9ca3af;cursor:pointer;">⋮</button>
-          </div>
-          <div style="font-size:30px;font-weight:900;color:#111827;margin:8px 0 6px;letter-spacing:-1px;font-feature-settings:'tnum';">${d.nbVersementsPeriode}</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span class="d-tag ${d.retardCount > 0 ? 'red' : 'green'}" style="padding:3px 8px;">
-                ${d.retardCount > 0 ? '-' : '+'}${d.retardCount}
-              </span>
-              <span style="font-size:11px;color:#6b7280;">${d.retardCount} en retard</span>
-            </div>
-            <div style="width:34px;height:34px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;">
-              <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:16px;color:#fff;"></iconify-icon>
-            </div>
-          </div>
-        </a>
+        <!-- Chart as background (full-width sparkline behind) -->
+        <div style="position:absolute;top:20px;right:0;left:30%;bottom:80px;z-index:1;opacity:.5;">
+          ${sparkline(last6Rev, '#374151', 500, 120)}
+        </div>
 
-        <!-- Dettes (rose/salmon tint — like Cancel Orders) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;background:rgba(254,226,226,.45);border-color:rgba(254,202,202,.5);">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <div style="font-size:13px;font-weight:500;color:#6b7280;">Dettes</div>
-            <button style="width:3px;background:none;border:none;font-size:16px;color:#9ca3af;cursor:pointer;">⋮</button>
-          </div>
-          <div style="font-size:30px;font-weight:900;color:#111827;margin:8px 0 6px;letter-spacing:-1px;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalDettes)}</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span class="d-tag red" style="padding:3px 8px;">
-                ${d.nbDetteDrivers > 0 ? '-' : ''}${d.nbDetteDrivers}
-              </span>
-              <span style="font-size:11px;color:#6b7280;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</span>
-            </div>
-            <div style="width:34px;height:34px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;">
-              <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:16px;color:#fff;"></iconify-icon>
-            </div>
-          </div>
-        </a>
+        <!-- 3 mini KPI cards at the bottom (inside the hero, like SellCraft) -->
+        <div style="display:flex;gap:12px;margin-top:24px;padding-bottom:24px;position:relative;z-index:3;">
 
-        <!-- Pertes (lavender/purple tint — like Total Visitors) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;background:rgba(237,233,254,.5);border-color:rgba(221,214,254,.5);">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <div style="font-size:13px;font-weight:500;color:#6b7280;">Pertes</div>
-            <button style="width:3px;background:none;border:none;font-size:16px;color:#9ca3af;cursor:pointer;">⋮</button>
-          </div>
-          <div style="font-size:30px;font-weight:900;color:#111827;margin:8px 0 6px;letter-spacing:-1px;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalPertes)}</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span class="d-tag orange" style="padding:3px 8px;">
-                ${d.nbPerteDrivers > 0 ? '-' : ''}${d.nbPerteDrivers}
-              </span>
-              <span style="font-size:11px;color:#6b7280;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</span>
+          <!-- Versements (cream/green tint — like Total Orders) -->
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(220,252,231,.5);border-radius:16px;padding:16px 18px;border:1px solid rgba(187,247,208,.3);transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div style="font-size:12px;font-weight:500;color:#6b7280;">Versements</div>
+              <span style="font-size:14px;color:#9ca3af;cursor:pointer;">⋮</span>
             </div>
-            <div style="width:34px;height:34px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;">
-              <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:16px;color:#fff;"></iconify-icon>
+            <div style="font-size:26px;font-weight:900;color:#111827;margin:6px 0;letter-spacing:-.8px;font-feature-settings:'tnum';">${d.nbVersementsPeriode}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <span class="d-tag ${d.retardCount > 0 ? 'red' : 'green'}" style="padding:2px 7px;font-size:10px;">${d.retardCount > 0 ? '-' : '+'}${d.retardCount}</span>
+                <span style="font-size:10px;color:#6b7280;">${d.retardCount} en retard</span>
+              </div>
+              <div style="width:30px;height:30px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;">
+                <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:14px;color:#fff;"></iconify-icon>
+              </div>
             </div>
-          </div>
-        </a>
+          </a>
+
+          <!-- Dettes (rose/salmon tint — like Cancel Orders) -->
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(254,226,226,.4);border-radius:16px;padding:16px 18px;border:1px solid rgba(254,202,202,.3);transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div style="font-size:12px;font-weight:500;color:#6b7280;">Dettes</div>
+              <span style="font-size:14px;color:#9ca3af;cursor:pointer;">⋮</span>
+            </div>
+            <div style="font-size:26px;font-weight:900;color:#111827;margin:6px 0;letter-spacing:-.8px;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalDettes)}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <span class="d-tag red" style="padding:2px 7px;font-size:10px;">${d.nbDetteDrivers > 0 ? '-' : ''}${d.nbDetteDrivers}</span>
+                <span style="font-size:10px;color:#6b7280;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</span>
+              </div>
+              <div style="width:30px;height:30px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;">
+                <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:14px;color:#fff;"></iconify-icon>
+              </div>
+            </div>
+          </a>
+
+          <!-- Pertes (lavender/purple tint — like Total Visitors) -->
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(237,233,254,.45);border-radius:16px;padding:16px 18px;border:1px solid rgba(221,214,254,.3);transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div style="font-size:12px;font-weight:500;color:#6b7280;">Pertes</div>
+              <span style="font-size:14px;color:#9ca3af;cursor:pointer;">⋮</span>
+            </div>
+            <div style="font-size:26px;font-weight:900;color:#111827;margin:6px 0;letter-spacing:-.8px;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalPertes)}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <span class="d-tag orange" style="padding:2px 7px;font-size:10px;">${d.nbPerteDrivers > 0 ? '-' : ''}${d.nbPerteDrivers}</span>
+                <span style="font-size:10px;color:#6b7280;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</span>
+              </div>
+              <div style="width:30px;height:30px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;">
+                <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:14px;color:#fff;"></iconify-icon>
+              </div>
+            </div>
+          </a>
+        </div>
       </div>
 
       <!-- Row 2: Chauffeurs + Objectif + Recouvrement + Flotte -->
