@@ -614,6 +614,44 @@ const DashboardPage = {
 
     const last6Rev = d.monthlyRevenue ? d.monthlyRevenue.slice(-6).map(m => m.revenue) : [];
 
+    // Recent versements for table
+    const recentRows = (d.recentVersements || []).slice(0, 5).map(v => {
+      const ch = d.chauffeurs.find(c => c.id === v.chauffeurId);
+      const name = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+      const initials = ch ? ((ch.prenom||'')[0] + (ch.nom||'')[0]).toUpperCase() : '??';
+      const statusColor = v.statut === 'valide' ? '#10b981' : v.statut === 'partiel' ? '#3b82f6' : '#f59e0b';
+      const statusLabel = v.statut === 'valide' ? 'Validé' : v.statut === 'partiel' ? 'Partiel' : 'En attente';
+      const hasDette = v.traitementManquant === 'dette';
+      const hasPerte = v.traitementManquant === 'perte';
+      return `<tr style="border-bottom:1px solid #f3f4f6;">
+        <td style="padding:12px 8px;"><div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:${statusColor}22;color:${statusColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">${initials}</div>
+          <div><div style="font-size:13px;font-weight:600;color:#111827;">${name}</div><div style="font-size:11px;color:#9ca3af;">${Utils.formatDate(v.date)}</div></div>
+        </div></td>
+        <td style="padding:12px 8px;text-align:right;"><div style="font-size:14px;font-weight:700;color:#111827;">${Utils.formatCurrency(v.montantVerse)}</div></td>
+        <td style="padding:12px 8px;text-align:right;"><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:${hasDette ? '#d97706' : hasPerte ? '#ef4444' : statusColor};"><span style="width:6px;height:6px;border-radius:50%;background:${hasDette ? '#d97706' : hasPerte ? '#ef4444' : statusColor};"></span>${hasDette ? 'Dette' : hasPerte ? 'Perte' : statusLabel}</span></td>
+      </tr>`;
+    }).join('');
+
+    // Chauffeur rows for "Top Chauffeurs" panel (like Top Countries)
+    const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
+    const chauffeurRows = d.chauffeurs
+      .filter(c => c.statut === 'actif')
+      .slice(0, 4)
+      .map((c, i) => {
+        const color = avatarColors[i % avatarColors.length];
+        const redev = c.redevanceQuotidienne || 0;
+        const pct = d.totalAttendu > 0 && redev > 0 ? Math.min(Math.round(redev / d.totalAttendu * d.chauffeurs.filter(x => x.statut === 'actif').length * 100), 100) : 0;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${i < 3 ? 'border-bottom:1px solid #f3f4f6;' : ''}">
+          <div style="width:30px;height:30px;border-radius:50%;background:${color}18;color:${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${((c.prenom||'')[0]+(c.nom||'')[0]).toUpperCase()}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.prenom} ${c.nom}</div>
+            <div class="d-bar-track" style="height:4px;margin-top:4px;"><div class="d-bar-fill" style="width:${pct}%;background:${color};"></div></div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:#374151;">${Utils.formatCurrency(redev)}</div>
+        </div>`;
+      }).join('');
+
     return `
       <style>
         @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
@@ -621,434 +659,324 @@ const DashboardPage = {
         #live-indicator.pulse { animation:flash-indicator 1.5s }
         @keyframes flash-indicator { 0%{background:rgba(99,102,241,.3)} 100%{background:rgba(99,102,241,.08)} }
 
-        .d-wrap { animation: dSlide .5s cubic-bezier(.16,1,.3,1); }
-        .d-bg {
-          background: linear-gradient(160deg, #f0f4ff 0%, #faf5ff 40%, #fdf2f8 100%);
+        .sc-wrap { animation: dSlide .5s cubic-bezier(.16,1,.3,1); }
+        .sc-bg {
+          background: #f5f5f7;
           margin: -24px -28px;
-          padding: 32px 32px 40px;
+          padding: 28px 32px 40px;
           min-height: 100vh;
         }
-        [data-theme="dark"] .d-bg { background: linear-gradient(160deg, #0c0f1a 0%, #13111c 40%, #170f14 100%); }
+        [data-theme="dark"] .sc-bg { background: #111113; }
 
-        .d-grid { display:grid; gap:16px; margin-bottom:16px; }
-        .d-card {
-          background: rgba(255,255,255,.72);
-          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-          border-radius: 20px;
+        .sc-grid { display:grid; gap:20px; margin-bottom:20px; }
+
+        .sc-card {
+          background: #fff;
+          border-radius: 16px;
           padding: 22px 24px;
-          border: 1px solid rgba(255,255,255,.6);
-          box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.04);
-          transition: all .25s cubic-bezier(.16,1,.3,1);
+          border: 1px solid #f0f0f0;
+          box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.02);
+          transition: box-shadow .2s ease;
           position: relative;
           overflow: hidden;
         }
-        [data-theme="dark"] .d-card {
-          background: rgba(30,27,40,.65);
-          border-color: rgba(255,255,255,.06);
-          box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 8px 32px rgba(0,0,0,.15);
+        [data-theme="dark"] .sc-card {
+          background: #1c1c1e;
+          border-color: #2c2c2e;
+          box-shadow: 0 1px 3px rgba(0,0,0,.3);
         }
-        .d-card:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(99,102,241,.1); border-color:rgba(99,102,241,.15); }
-        [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(99,102,241,.15); border-color:rgba(99,102,241,.2); }
+        .sc-card:hover { box-shadow:0 2px 12px rgba(0,0,0,.08); }
+        [data-theme="dark"] .sc-card:hover { box-shadow:0 2px 12px rgba(0,0,0,.4); }
 
-        .d-card.hero {
-          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-          border: none;
-          color: #fff;
-          box-shadow: 0 4px 24px rgba(99,102,241,.25);
+        .sc-card-title {
+          display:flex; align-items:center; gap:8px;
+          font-size:15px; font-weight:700; color:#111827;
+          margin-bottom:16px;
         }
-        .d-card.hero:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(99,102,241,.35); }
-        .d-card.hero::after {
-          content:''; position:absolute; top:-40%; right:-20%; width:200px; height:200px;
-          background:radial-gradient(circle, rgba(255,255,255,.12) 0%, transparent 70%);
-          pointer-events:none;
-        }
+        .sc-card-title iconify-icon { font-size:18px; color:#6b7280; }
+        [data-theme="dark"] .sc-card-title { color:#f9fafb; }
 
-        .d-icon {
-          width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center;
-          font-size:18px; flex-shrink:0;
+        /* Mini KPI cards inside hero */
+        .sc-mini-kpi {
+          background: #f9fafb;
+          border-radius: 14px;
+          padding: 16px 18px;
+          border: 1px solid #f0f0f0;
+          flex: 1;
+          position: relative;
         }
+        [data-theme="dark"] .sc-mini-kpi { background:#2c2c2e; border-color:#3c3c3e; }
+        .sc-mini-kpi-title { font-size:11px; font-weight:500; color:#9ca3af; margin-bottom:8px; }
+        .sc-mini-kpi-val { font-size:20px; font-weight:800; color:#111827; font-feature-settings:'tnum'; }
+        [data-theme="dark"] .sc-mini-kpi-val { color:#f9fafb; }
 
-        .d-lbl {
-          font-size: 13px; font-weight: 600; color: #6b7280;
-          letter-spacing: .2px;
-        }
-        [data-theme="dark"] .d-lbl { color: #9ca3af; }
-
-        .d-val {
-          font-size: 28px; font-weight: 800; color: #111827;
-          line-height: 1.1; letter-spacing: -.5px;
-          font-feature-settings: 'tnum';
-        }
-        [data-theme="dark"] .d-val { color: #f9fafb; }
-        .d-val.xl { font-size: 32px; }
-        .d-val.hero { color: #fff; font-size: 36px; }
-
-        .d-sub { font-size: 12px; color: #9ca3af; margin-top: 4px; font-weight:500; }
-        [data-theme="dark"] .d-sub { color: #6b7280; }
-
-        .d-tag {
-          display:inline-flex; align-items:center; gap:3px; padding:4px 10px; border-radius:20px;
-          font-size: 11px; font-weight: 700;
-        }
-        .d-tag.purple { background:rgba(99,102,241,.08); color:#6366f1; }
+        /* Tag styles */
+        .d-tag { display:inline-flex; align-items:center; gap:3px; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; }
         .d-tag.green { background:rgba(16,185,129,.08); color:#10b981; }
         .d-tag.red { background:rgba(239,68,68,.08); color:#ef4444; }
         .d-tag.orange { background:rgba(249,115,22,.08); color:#f97316; }
-        .d-tag.white { background:rgba(255,255,255,.2); color:#fff; }
-        [data-theme="dark"] .d-tag.purple { background:rgba(99,102,241,.15); }
-        [data-theme="dark"] .d-tag.green { background:rgba(16,185,129,.15); }
-        [data-theme="dark"] .d-tag.red { background:rgba(239,68,68,.15); }
-        [data-theme="dark"] .d-tag.orange { background:rgba(249,115,22,.15); }
+        .d-tag.purple { background:rgba(99,102,241,.08); color:#6366f1; }
 
-        .d-pill {
-          display:inline-flex; align-items:center; gap:4px; padding:5px 12px; border-radius:12px;
-          font-size:11px; font-weight:600; background:rgba(0,0,0,.04); color:#4b5563;
-        }
-        [data-theme="dark"] .d-pill { background:rgba(255,255,255,.06); color:#d1d5db; }
+        /* Bar fills */
+        .d-bar-track { height:6px; border-radius:6px; background:#f3f4f6; overflow:hidden; }
+        [data-theme="dark"] .d-bar-track { background:#2c2c2e; }
+        .d-bar-fill { height:100%; border-radius:6px; transition:width .6s cubic-bezier(.16,1,.3,1); }
 
-        .d-chip {
-          display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border-radius:12px;
-          font-size:12px; font-weight:600; background:rgba(0,0,0,.03); color:#4b5563;
-        }
-        [data-theme="dark"] .d-chip { background:rgba(255,255,255,.06); color:#d1d5db; }
-
-        .d-gauge-wrap { position:relative; display:flex; align-items:center; justify-content:center; }
-        .d-gauge-txt { position:absolute; font-weight:800; }
-
-        .d-legend {
-          display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#4b5563;
-        }
+        /* Legend */
+        .d-legend { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#4b5563; }
         .d-legend-dot { width:8px; height:8px; border-radius:50%; }
         [data-theme="dark"] .d-legend { color:#d1d5db; }
 
-        .d-bar-track { height:6px; border-radius:6px; background:rgba(0,0,0,.06); overflow:hidden; }
-        [data-theme="dark"] .d-bar-track { background:rgba(255,255,255,.06); }
-        .d-bar-fill { height:100%; border-radius:6px; transition:width .6s cubic-bezier(.16,1,.3,1); }
-
-        .d-section-title {
-          font-size:11px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:1px;
-          margin-bottom:10px; margin-top:6px;
-        }
-
         /* Heatmap */
-        .d-hm-grid {
-          display:grid; grid-template-columns:110px repeat(7,1fr); gap:4px; align-items:center;
-        }
-        .d-hm-head {
-          text-align:center; font-size:11px; font-weight:700; color:#6b7280; padding:6px 0;
-          text-transform:uppercase; letter-spacing:.5px;
-        }
-        .d-hm-head.today { background:rgba(99,102,241,.08); border-radius:10px; color:#6366f1; }
-        [data-theme="dark"] .d-hm-head { color:#9ca3af; }
-        [data-theme="dark"] .d-hm-head.today { background:rgba(99,102,241,.15); }
-        .d-hm-daynum { font-size:9px; font-weight:500; color:#9ca3af; }
-        .d-hm-driver {
-          display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#374151;
-          white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:4px 0;
-        }
+        .d-hm-grid { display:grid; grid-template-columns:100px repeat(7,1fr); gap:3px; align-items:center; }
+        .d-hm-head { text-align:center; font-size:10px; font-weight:700; color:#9ca3af; padding:4px 0; text-transform:uppercase; }
+        .d-hm-head.today { background:#6366f1; color:#fff; border-radius:8px; }
+        .d-hm-driver { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:#374151; padding:2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         [data-theme="dark"] .d-hm-driver { color:#d1d5db; }
-        .d-hm-avatar {
-          width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-          font-size:9px; font-weight:700; color:#fff; flex-shrink:0;
-        }
-        .d-hm-cell {
-          height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center;
-          font-size:13px; cursor:pointer; transition:all .15s ease;
-        }
-        .d-hm-cell:hover { transform:scale(1.08); box-shadow:0 2px 8px rgba(0,0,0,.1); }
-        .hm-verse { background:rgba(16,185,129,.15); color:#10b981; }
-        .hm-programme { background:rgba(99,102,241,.12); color:#6366f1; }
-        .hm-en_retard { background:rgba(239,68,68,.15); color:#ef4444; }
-        .hm-absent { background:rgba(249,115,22,.12); color:#f97316; }
-        .hm-repos { background:rgba(0,0,0,.03); color:#d1d5db; }
-        [data-theme="dark"] .hm-verse { background:rgba(16,185,129,.2); }
-        [data-theme="dark"] .hm-programme { background:rgba(99,102,241,.2); }
-        [data-theme="dark"] .hm-en_retard { background:rgba(239,68,68,.2); }
-        [data-theme="dark"] .hm-absent { background:rgba(249,115,22,.18); }
-        [data-theme="dark"] .hm-repos { background:rgba(255,255,255,.04); color:#4b5563; }
+        .d-hm-avatar { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff; flex-shrink:0; }
+        .d-hm-cell { height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; cursor:pointer; transition:all .12s ease; }
+        .d-hm-cell:hover { transform:scale(1.1); box-shadow:0 2px 8px rgba(0,0,0,.12); }
+        .hm-verse { background:rgba(16,185,129,.18); color:#10b981; }
+        .hm-programme { background:rgba(99,102,241,.15); color:#6366f1; }
+        .hm-en_retard { background:rgba(239,68,68,.18); color:#ef4444; }
+        .hm-absent { background:rgba(249,115,22,.15); color:#f97316; }
+        .hm-repos { background:#f9fafb; color:#d1d5db; }
+        [data-theme="dark"] .hm-repos { background:#2c2c2e; color:#4b5563; }
 
-        @media(max-width:900px) {
-          .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
-          .d-g3 { grid-template-columns:1fr !important; }
-          .d-g21 { grid-template-columns:1fr !important; }
+        /* Header tabs */
+        .sc-tabs { display:flex; align-items:center; gap:0; background:#fff; border-radius:12px; padding:3px; border:1px solid #f0f0f0; }
+        .sc-tab { font-size:12px; padding:7px 16px; border-radius:9px; border:none; background:transparent; color:#6b7280; font-weight:600; cursor:pointer; transition:all .15s; }
+        .sc-tab.active { background:#111827; color:#fff; }
+        [data-theme="dark"] .sc-tabs { background:#1c1c1e; border-color:#2c2c2e; }
+        [data-theme="dark"] .sc-tab.active { background:#f9fafb; color:#111827; }
+
+        /* Table */
+        .sc-table { width:100%; border-collapse:collapse; }
+        .sc-table th { font-size:11px; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:.5px; padding:8px; text-align:left; border-bottom:1px solid #f3f4f6; }
+        .sc-table th:last-child { text-align:right; }
+        [data-theme="dark"] .sc-table th { border-color:#2c2c2e; }
+        [data-theme="dark"] .sc-table tr { border-color:#2c2c2e !important; }
+
+        @media(max-width:1100px) {
+          .sc-row1 { grid-template-columns:1fr !important; }
+          .sc-row2 { grid-template-columns:1fr !important; }
         }
         @media(max-width:600px) {
-          .d-g4 { grid-template-columns:1fr !important; }
-          .d-bg { margin:-16px; padding:16px 16px 24px; }
-          .d-hm-grid { grid-template-columns:40px repeat(7,1fr); gap:2px; }
-          .d-hm-driver span:last-child { display:none; }
-          .d-hm-cell { height:26px; border-radius:6px; font-size:10px; }
+          .sc-bg { margin:-16px; padding:16px 14px 24px; }
+          .sc-mini-kpis { flex-direction:column !important; }
+          .d-hm-grid { grid-template-columns:36px repeat(7,1fr); gap:2px; }
+          .d-hm-driver span { display:none; }
+          .d-hm-cell { height:22px; font-size:9px; }
         }
       </style>
 
-      <div class="d-wrap">
-      <div class="d-bg">
+      <div class="sc-wrap">
+      <div class="sc-bg">
 
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
-        <div>
-          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Bienvenue,</div>
-          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;">${userName} !</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:0;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border-radius:14px;border:1px solid rgba(0,0,0,.06);padding:3px;">
-            <input type="date" id="dashboard-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:#374151;font-weight:500;outline:none;">
-            <button onclick="DashboardPage._toggleMonthView()" style="font-size:12px;padding:6px 14px;border-radius:11px;background:${this._monthView ? '#6366f1' : 'transparent'};color:${this._monthView ? '#fff' : '#6b7280'};border:none;font-weight:600;cursor:pointer;transition:all .2s;">
-              ${this._monthView ? 'Mois' : 'Jour'}
-            </button>
-            ${this._selectedPeriod || this._monthView ? '<button onclick="DashboardPage._resetToToday()" style="font-size:13px;padding:6px 8px;border-radius:11px;background:transparent;border:none;cursor:pointer;color:#6b7280;"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>' : ''}
+      <!-- Header bar (SellCraft style) -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:-.4px;">Pilote</div>
+          <div class="sc-tabs">
+            <button class="sc-tab active">Overview</button>
+            <button class="sc-tab" onclick="DashboardPage._toggleMonthView()">${this._monthView ? '📅 Mois' : '📅 Jour'}</button>
           </div>
-          ${this._isToday() ? '<span id="live-indicator" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#6366f1;background:rgba(99,102,241,.08);padding:5px 14px;border-radius:20px;font-weight:700;backdrop-filter:blur(8px);"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;animation:pulse-dot 2s infinite;"></span>LIVE</span>' : `<span style="font-size:12px;color:#9ca3af;font-weight:500;">${d.periodLabel}</span>`}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="date" id="dashboard-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:7px 12px;border-radius:10px;background:#fff;border:1px solid #f0f0f0;color:#374151;font-weight:500;outline:none;">
+          ${this._selectedPeriod || this._monthView ? '<button onclick="DashboardPage._resetToToday()" style="font-size:12px;padding:7px 12px;border-radius:10px;background:#fff;border:1px solid #f0f0f0;cursor:pointer;color:#6b7280;font-weight:600;">Aujourd\'hui</button>' : ''}
+          ${this._isToday() ? '<span id="live-indicator" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#10b981;background:rgba(16,185,129,.08);padding:5px 14px;border-radius:20px;font-weight:700;"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:pulse-dot 2s infinite;"></span>LIVE</span>' : `<span style="font-size:12px;color:#9ca3af;font-weight:500;">${d.periodLabel}</span>`}
           <div style="position:relative;">
-            <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:#9ca3af;pointer-events:none;"></iconify-icon>
-            <input type="text" id="dashboard-search" placeholder="Rechercher..." style="padding:8px 14px 8px 34px;font-size:12px;width:160px;border-radius:14px;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border:1px solid rgba(0,0,0,.06);color:#374151;outline:none;font-weight:500;" oninput="DashboardPage._filterByDriver(this.value)">
+            <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:#9ca3af;pointer-events:none;"></iconify-icon>
+            <input type="text" id="dashboard-search" placeholder="Rechercher..." style="padding:7px 12px 7px 30px;font-size:12px;width:150px;border-radius:10px;background:#fff;border:1px solid #f0f0f0;color:#374151;outline:none;font-weight:500;" oninput="DashboardPage._filterByDriver(this.value)">
           </div>
         </div>
       </div>
 
-      <!-- Row 1: Hero CA + 3 metric cards -->
-      <div class="d-grid d-g4" style="grid-template-columns:1.6fr 1fr 1fr 1fr;">
+      <!-- ROW 1: Hero CA (big) | Heatmap Planning | Top Chauffeurs — 3 columns like SellCraft -->
+      <div class="sc-grid sc-row1" style="grid-template-columns:1.8fr 1.5fr 1fr;">
 
-        <!-- CA Hero Card -->
-        <a href="#/versements" class="d-card hero" style="text-decoration:none;color:#fff;grid-row:span 1;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,.65);">Chiffre d'affaires</div>
-            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;">
-              <iconify-icon icon="solar:graph-new-up-bold" style="font-size:18px;color:#fff;"></iconify-icon>
+        <!-- LEFT: CA hero + 3 mini KPIs (like Total Sales card) -->
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <a href="#/versements" class="sc-card" style="text-decoration:none;color:inherit;flex:1;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div class="sc-card-title" style="margin-bottom:8px;">
+                <iconify-icon icon="solar:graph-new-up-bold-duotone"></iconify-icon> Chiffre d'affaires
+              </div>
+              <span class="d-tag ${d.caTrend >= 0 ? 'green' : 'red'}">
+                ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+              <div>
+                <div style="font-size:36px;font-weight:800;color:#111827;letter-spacing:-1px;font-feature-settings:'tnum';">${Utils.formatCurrency(d.caThisMonth)}</div>
+                <div style="font-size:12px;color:#10b981;font-weight:600;margin-top:4px;">${caTrendSign}${Math.abs(Math.round(d.caTrend))}% • ${Utils.formatCurrency(d.caMoyenJour)} / jour</div>
+              </div>
+              <div>${sparkline(last6Rev, '#111827', 130, 48)}</div>
+            </div>
+          </a>
+          <!-- 3 mini KPI cards row (like Total Orders / Cancel Orders / Total Visitors) -->
+          <div class="sc-mini-kpis" style="display:flex;gap:10px;">
+            <a href="#/versements" class="sc-mini-kpi" style="text-decoration:none;color:inherit;">
+              <div class="sc-mini-kpi-title">Versements</div>
+              <div class="sc-mini-kpi-val">${d.nbVersementsPeriode}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+                <span class="d-tag ${d.retardCount > 0 ? 'red' : 'green'}" style="font-size:10px;padding:2px 8px;">${d.retardCount > 0 ? '-' : '+'}${d.retardCount} retard</span>
+              </div>
+            </a>
+            <div class="sc-mini-kpi" style="${d.totalDettes > 0 ? 'border-color:rgba(239,68,68,.2);' : ''}">
+              <div class="sc-mini-kpi-title">Dettes</div>
+              <div class="sc-mini-kpi-val" style="color:${d.totalDettes > 0 ? '#ef4444' : '#111827'};">${Utils.formatCurrency(d.totalDettes)}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+                <span class="d-tag ${d.totalDettes > 0 ? 'red' : 'green'}" style="font-size:10px;padding:2px 8px;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+            <div class="sc-mini-kpi" style="${d.totalPertes > 0 ? 'border-color:rgba(249,115,22,.2);' : ''}">
+              <div class="sc-mini-kpi-title">Pertes</div>
+              <div class="sc-mini-kpi-val" style="color:${d.totalPertes > 0 ? '#f97316' : '#111827'};">${Utils.formatCurrency(d.totalPertes)}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+                <span class="d-tag ${d.totalPertes > 0 ? 'orange' : 'green'}" style="font-size:10px;padding:2px 8px;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</span>
+              </div>
             </div>
           </div>
-          <div style="margin-top:12px;">
-            <div class="d-val hero">${Utils.formatCurrency(d.caThisMonth)}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
-            <span class="d-tag white">
-              <iconify-icon icon="${d.caTrend >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}" style="font-size:10px;"></iconify-icon>
-              ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
-            </span>
-            <span style="font-size:11px;color:rgba(255,255,255,.5);">vs période préc.</span>
-          </div>
-          <div style="margin-top:14px;">${sparkline(last6Rev, 'rgba(255,255,255,.45)', 140, 36)}</div>
-        </a>
-
-        <!-- Versements -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;">
-              <iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;">Versements</div>
-          </div>
-          <div class="d-val xl" style="color:#10b981;">${d.nbVersementsPeriode}</div>
-          <div class="d-sub">${Utils.formatCurrency(d.caMoyenJour)} / jour</div>
-          <div style="margin-top:10px;">
-            <span class="d-tag ${d.retardCount > 0 ? 'red' : 'green'}">${d.retardCount} en retard</span>
-          </div>
-        </a>
-
-        <!-- Objectif -->
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;">
-              <iconify-icon icon="solar:target-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;">Objectif</div>
-          </div>
-          <div class="d-gauge-wrap" style="margin:4px 0;">
-            ${gauge(d.progressionObjectif, progressColor, 64, 5)}
-            <div class="d-gauge-txt" style="color:${progressColor};font-size:14px;">${d.progressionObjectif}%</div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
-          <div class="d-sub" style="text-align:center;">${d.joursRestants}j restants</div>
         </div>
 
-        <!-- Recouvrement -->
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;">
-              <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon>
+        <!-- CENTER: Planning Heatmap (like Sales Heatmap) -->
+        ${this._renderPlanningHeatmap(d)}
+
+        <!-- RIGHT: Top Chauffeurs (like Top Countries By Order) -->
+        <div class="sc-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <div class="sc-card-title" style="margin-bottom:0;">
+              <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon> Chauffeurs
             </div>
-            <div class="d-lbl" style="margin:0;">Recouvrement</div>
+            <span class="d-tag green">${d.activeCount} actif${d.activeCount !== 1 ? 's' : ''}</span>
           </div>
-          <div class="d-gauge-wrap" style="margin:4px 0;">
-            ${gauge(d.tauxRecouvrement, recouvrementColor, 64, 5)}
-            <div class="d-gauge-txt" style="color:${recouvrementColor};font-size:14px;">${d.tauxRecouvrement}%</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:14px;">${d.totalChauffeurs} au total</div>
+          ${chauffeurRows}
+          <div style="margin-top:14px;display:flex;gap:8px;">
+            <a href="#/chauffeurs" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
           </div>
-          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="d-sub" style="text-align:center;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
         </div>
       </div>
 
-      <!-- Row 2: Chauffeurs + Dettes + Pertes + Flotte -->
-      <div class="d-grid d-g4" style="grid-template-columns:1.4fr 1fr 1fr 1fr;">
+      <!-- ROW 2: Versements table | Analyses chart — 2 columns like SellCraft -->
+      <div class="sc-grid sc-row2" style="grid-template-columns:1.2fr 1fr;">
 
-        <!-- Chauffeurs with donut -->
-        <a href="#/chauffeurs" class="d-card" style="text-decoration:none;color:inherit;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            <div class="d-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;">
-              <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;">Chauffeurs</div>
+        <!-- LEFT: Recent versements table (like Top Selling Product) -->
+        <a href="#/versements" class="sc-card" style="text-decoration:none;color:inherit;">
+          <div class="sc-card-title">
+            <iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon> Derniers versements
           </div>
-          <div style="display:flex;align-items:center;gap:16px;">
-            <div style="position:relative;">
-              ${arc(d.totalChauffeurs > 0 ? (d.activeCount / d.totalChauffeurs * 100) : 0, '#10b981', '#f97316', 100, 12)}
-              <div style="position:absolute;top:45%;left:50%;transform:translate(-50%,-30%);text-align:center;">
-                <div style="font-size:22px;font-weight:800;color:#111827;">${d.totalChauffeurs}</div>
-                <div style="font-size:9px;color:#9ca3af;font-weight:600;">Total</div>
-              </div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <div class="d-legend"><span class="d-legend-dot" style="background:#10b981;"></span> Actifs</div>
-                <strong style="font-size:13px;color:#374151;">${d.activeCount}</strong>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <div class="d-legend"><span class="d-legend-dot" style="background:#f97316;"></span> Suspendus</div>
-                <strong style="font-size:13px;color:#374151;">${d.suspendusCount}</strong>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <div class="d-legend"><span class="d-legend-dot" style="background:#d1d5db;"></span> Inactifs</div>
-                <strong style="font-size:13px;color:#374151;">${d.inactifsCount}</strong>
-              </div>
-            </div>
-          </div>
+          <table class="sc-table">
+            <thead><tr><th>Chauffeur</th><th style="text-align:right;">Montant</th><th style="text-align:right;">Statut</th></tr></thead>
+            <tbody>${recentRows || '<tr><td colspan="3" style="text-align:center;padding:20px;color:#9ca3af;font-size:13px;">Aucun versement récent</td></tr>'}</tbody>
+          </table>
         </a>
 
-        <!-- Dettes -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalDettes > 0 ? 'border-color:rgba(239,68,68,.2);background:rgba(255,255,255,.72);' : ''}">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;">
-              <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;color:#ef4444;">Dettes</div>
-          </div>
-          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(d.totalDettes)}</div>
-          <div class="d-sub">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#ef4444,#f87171);"></div>
-          </div>
-        </a>
-
-        <!-- Pertes -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalPertes > 0 ? 'border-color:rgba(249,115,22,.2);' : ''}">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(249,115,22,.1);color:#f97316;">
-              <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;color:#f97316;">Pertes</div>
-          </div>
-          <div class="d-val" style="color:#f97316;">${Utils.formatCurrency(d.totalPertes)}</div>
-          <div class="d-sub">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#f97316,#fb923c);"></div>
-          </div>
-        </a>
-
-        <!-- Flotte -->
-        <a href="#/vehicules" class="d-card" style="text-decoration:none;color:inherit;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;">
-              <iconify-icon icon="solar:bus-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;">Flotte</div>
-          </div>
-          <div style="display:flex;align-items:baseline;gap:5px;">
-            <span class="d-val">${d.vehiclesActifs}</span>
-            <span style="font-size:15px;color:#9ca3af;font-weight:600;">/ ${d.vehiculesTotal}</span>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:12px;">
-            <span class="d-pill">⚡ ${d.vehiclesEV}</span>
-            <span class="d-pill">⛽ ${d.vehiclesThermique}</span>
-          </div>
-        </a>
-      </div>
-
-      <!-- Row 3: Chart (large) + Side panel -->
-      <div class="d-grid d-g21" style="grid-template-columns:1.8fr 1fr;">
-        <div class="d-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;">
-                <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
-              </div>
-              <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:#111827;">Évolution CA</div>
+        <!-- RIGHT: Analyses chart (like Analyses multi-line) -->
+        <div class="sc-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <div class="sc-card-title" style="margin-bottom:0;">
+              <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon> Analyses
             </div>
             <span class="d-tag ${d.tendancePctMois >= 0 ? 'green' : 'red'}">
               <iconify-icon icon="${d.tendancePctMois >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}" style="font-size:10px;"></iconify-icon>
               ${d.tendancePctMois >= 0 ? '+' : ''}${d.tendancePctMois}%
             </span>
           </div>
-          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-            <div class="d-chip">Proj. <strong style="color:#6366f1;margin-left:4px;">${Utils.formatCurrency(d.projectionFinMois)}</strong></div>
-            <div class="d-chip">M+1 <strong style="color:#a855f7;margin-left:4px;">${Utils.formatCurrency(d.previsionMoisSuivant)}</strong></div>
+          <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+            <div class="d-legend"><span class="d-legend-dot" style="background:#6366f1;"></span> CA réel</div>
+            <div class="d-legend"><span class="d-legend-dot" style="background:#a855f7;"></span> Prévision</div>
           </div>
-          <div style="height:200px;">
+          <div style="height:220px;">
             <canvas id="chart-forecast"></canvas>
           </div>
         </div>
+      </div>
 
-        <div style="display:flex;flex-direction:column;gap:16px;">
-          <!-- Service du jour -->
-          <a href="#/planning" class="d-card" style="text-decoration:none;color:inherit;flex:1;">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-              <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;width:34px;height:34px;border-radius:10px;font-size:15px;">
-                <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
-              </div>
-              <div>
-                <div class="d-lbl" style="margin:0;">Service du jour</div>
-                <div style="font-size:11px;color:#9ca3af;">${d.programmesCount} programmé${d.programmesCount !== 1 ? 's' : ''}</div>
-              </div>
+      <!-- ROW 3: Service du jour + Objectif + Recouvrement + Flotte — 4 mini cards -->
+      <div class="sc-grid" style="grid-template-columns:repeat(4,1fr);">
+        <!-- Service du jour -->
+        <a href="#/planning" class="sc-card" style="text-decoration:none;color:inherit;">
+          <div class="sc-card-title"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> Service</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+            <div style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:8px;background:rgba(16,185,129,.06);">
+              <span style="width:5px;height:5px;border-radius:50%;background:#10b981;"></span>
+              <span style="font-size:10px;color:#6b7280;">Actifs</span>
+              <strong style="margin-left:auto;font-size:12px;color:#111827;">${d.serviceEnCours}</strong>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(16,185,129,.06);">
-                <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
-                <span style="font-size:11px;color:#6b7280;">En service</span>
-                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.serviceEnCours}</strong>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(249,115,22,.06);">
-                <span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span>
-                <span style="font-size:11px;color:#6b7280;">Pause</span>
-                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.serviceEnPause}</strong>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(107,114,128,.06);">
-                <span style="width:6px;height:6px;border-radius:50%;background:#6b7280;"></span>
-                <span style="font-size:11px;color:#6b7280;">Terminé</span>
-                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.serviceTermine}</strong>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(209,213,219,.15);">
-                <span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span>
-                <span style="font-size:11px;color:#6b7280;">Attente</span>
-                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.servicePasCommence}</strong>
-              </div>
+            <div style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:8px;background:rgba(249,115,22,.06);">
+              <span style="width:5px;height:5px;border-radius:50%;background:#f97316;"></span>
+              <span style="font-size:10px;color:#6b7280;">Pause</span>
+              <strong style="margin-left:auto;font-size:12px;color:#111827;">${d.serviceEnPause}</strong>
             </div>
-          </a>
+            <div style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:8px;background:rgba(107,114,128,.06);">
+              <span style="width:5px;height:5px;border-radius:50%;background:#6b7280;"></span>
+              <span style="font-size:10px;color:#6b7280;">Finis</span>
+              <strong style="margin-left:auto;font-size:12px;color:#111827;">${d.serviceTermine}</strong>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:8px;background:rgba(209,213,219,.08);">
+              <span style="width:5px;height:5px;border-radius:50%;background:#d1d5db;"></span>
+              <span style="font-size:10px;color:#6b7280;">Attente</span>
+              <strong style="margin-left:auto;font-size:12px;color:#111827;">${d.servicePasCommence}</strong>
+            </div>
+          </div>
+        </a>
 
-          <!-- Alertes -->
-          <a href="#/alertes" class="d-card" style="text-decoration:none;color:inherit;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <div class="d-icon" style="background:${d.alertesTotal > 0 ? 'rgba(239,68,68,.08)' : 'rgba(16,185,129,.08)'};color:${d.alertesTotal > 0 ? '#ef4444' : '#10b981'};width:34px;height:34px;border-radius:10px;font-size:15px;">
-                  <iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon>
-                </div>
-                <div class="d-lbl" style="margin:0;">Alertes</div>
-              </div>
-              <span class="d-tag ${d.alertesTotal > 0 ? 'red' : 'green'}">${d.alertesTotal > 0 ? d.alertesTotal + ' alerte' + (d.alertesTotal > 1 ? 's' : '') : 'Tout OK'}</span>
-            </div>
-            ${d.alertesCritiques > 0 ? `<div style="display:flex;gap:8px;margin-top:10px;">
-              <span class="d-tag red">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>
-              ${d.alertesUrgentes > 0 ? `<span class="d-tag orange">${d.alertesUrgentes} urgent${d.alertesUrgentes > 1 ? 's' : ''}</span>` : ''}
-            </div>` : ''}
-          </a>
+        <!-- Objectif -->
+        <div class="sc-card" style="text-align:center;">
+          <div class="sc-card-title" style="justify-content:center;"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon> Objectif</div>
+          <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+            ${gauge(d.progressionObjectif, progressColor, 72, 6)}
+            <div style="position:absolute;font-size:16px;font-weight:800;color:${progressColor};">${d.progressionObjectif}%</div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#111827;margin-top:6px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
+          <div style="font-size:11px;color:#9ca3af;">${d.joursRestants}j restants</div>
         </div>
+
+        <!-- Recouvrement -->
+        <div class="sc-card" style="text-align:center;">
+          <div class="sc-card-title" style="justify-content:center;"><iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Recouvrement</div>
+          <div style="position:relative;display:flex;align-items:center;justify-content:center;">
+            ${gauge(d.tauxRecouvrement, recouvrementColor, 72, 6)}
+            <div style="position:absolute;font-size:16px;font-weight:800;color:${recouvrementColor};">${d.tauxRecouvrement}%</div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#111827;margin-top:6px;">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div style="font-size:11px;color:#9ca3af;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
+        </div>
+
+        <!-- Flotte -->
+        <a href="#/vehicules" class="sc-card" style="text-decoration:none;color:inherit;">
+          <div class="sc-card-title"><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon> Flotte</div>
+          <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:8px;">
+            <span style="font-size:28px;font-weight:800;color:#111827;">${d.vehiclesActifs}</span>
+            <span style="font-size:14px;color:#9ca3af;font-weight:600;">/ ${d.vehiculesTotal}</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:#f3f4f6;color:#374151;">⚡ ${d.vehiclesEV} EV</span>
+            <span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:#f3f4f6;color:#374151;">⛽ ${d.vehiclesThermique}</span>
+          </div>
+        </a>
       </div>
 
-      <!-- Row 3.5: Planning Heatmap -->
-      <div class="d-grid" style="grid-template-columns:1fr;">
-        ${this._renderPlanningHeatmap(d)}
-      </div>
+      <!-- ROW 4: Alertes + Maintenance -->
+      <div class="sc-grid" style="grid-template-columns:1fr 1fr;">
+        <!-- Alertes -->
+        <a href="#/alertes" class="sc-card" style="text-decoration:none;color:inherit;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="sc-card-title" style="margin-bottom:0;">
+              <iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}" style="color:${d.alertesTotal > 0 ? '#ef4444' : '#10b981'};"></iconify-icon> Alertes
+            </div>
+            <span class="d-tag ${d.alertesTotal > 0 ? 'red' : 'green'}">${d.alertesTotal > 0 ? d.alertesTotal + ' alerte' + (d.alertesTotal > 1 ? 's' : '') : 'Tout OK'}</span>
+          </div>
+          ${d.alertesCritiques > 0 ? `<div style="display:flex;gap:8px;margin-top:10px;">
+            <span class="d-tag red">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>
+            ${d.alertesUrgentes > 0 ? `<span class="d-tag orange">${d.alertesUrgentes} urgent${d.alertesUrgentes > 1 ? 's' : ''}</span>` : ''}
+          </div>` : ''}
+        </a>
 
-      <!-- Row 4: Maintenance -->
-      <div class="d-grid" style="grid-template-columns:1fr;">
+        <!-- Maintenance -->
         ${this._renderMaintenancePanel(d)}
       </div>
 
@@ -1062,10 +990,8 @@ const DashboardPage = {
     const alerts = d.maintenanceAlerts || [];
 
     if (alerts.length === 0) {
-      return `<div class="d-card" style="display:flex;align-items:center;gap:14px;">
-        <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;">
-          <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
-        </div>
+      return `<div class="sc-card" style="display:flex;align-items:center;gap:14px;">
+        <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:18px;color:#10b981;"></iconify-icon>
         <div>
           <div style="font-size:14px;font-weight:700;color:#111827;">Maintenance OK</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Aucun entretien en retard</div>
@@ -1095,13 +1021,10 @@ const DashboardPage = {
       </div>`;
     }).join('');
 
-    return `<div class="d-card">
+    return `<div class="sc-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="d-icon" style="background:rgba(249,115,22,.08);color:#f97316;width:34px;height:34px;border-radius:10px;font-size:15px;display:flex;align-items:center;justify-content:center;">
-            <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
-          </div>
-          <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:#111827;">Maintenance</div>
+        <div class="sc-card-title" style="margin-bottom:0;">
+          <iconify-icon icon="solar:settings-bold-duotone" style="color:#f97316;"></iconify-icon> Maintenance
         </div>
         <a href="#/garage" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
       </div>
@@ -1114,8 +1037,8 @@ const DashboardPage = {
     const drivers = d.heatmapDrivers || [];
     const days = d.heatmapWeekDays || [];
     if (drivers.length === 0) {
-      return `<div class="d-card" style="display:flex;align-items:center;gap:14px;">
-        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
+      return `<div class="sc-card" style="display:flex;align-items:center;gap:14px;">
+        <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#6b7280;"></iconify-icon>
         <div>
           <div style="font-size:14px;font-weight:700;color:#111827;">Planning semaine</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Aucun chauffeur actif</div>
@@ -1160,13 +1083,10 @@ const DashboardPage = {
       <div class="d-legend"><span class="d-legend-dot" style="background:#e5e7eb;"></span> Repos</div>
     </div>`;
 
-    return `<div class="d-card">
+    return `<div class="sc-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;display:flex;align-items:center;justify-content:center;">
-            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
-          </div>
-          <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:#111827;">Planning semaine</div>
+        <div class="sc-card-title" style="margin-bottom:0;">
+          <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning semaine
         </div>
         <a href="#/planning" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
       </div>
