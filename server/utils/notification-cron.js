@@ -94,10 +94,21 @@ async function runChecks() {
     const notifSettings = settings.notifications;
 
     // Verifier si au moins un canal est actif
-    if (!notifSettings.pushActif && !notifSettings.smsActif) return;
+    if (!notifSettings.pushActif && !notifSettings.smsActif && !notifSettings.whatsappActif) return;
 
-    const canal = notifSettings.smsActif && notifSettings.pushActif ? 'both'
-      : notifSettings.smsActif ? 'sms' : 'push';
+    // Determiner le canal optimal selon les toggles actifs
+    const canaux = [];
+    if (notifSettings.pushActif) canaux.push('push');
+    if (notifSettings.smsActif) canaux.push('sms');
+    if (notifSettings.whatsappActif) canaux.push('whatsapp');
+
+    let canal;
+    if (canaux.length === 3) canal = 'all';
+    else if (canaux.length === 2) {
+      if (canaux.includes('push') && canaux.includes('sms')) canal = 'both';
+      else if (canaux.includes('push') && canaux.includes('whatsapp')) canal = 'push+whatsapp';
+      else canal = 'sms+whatsapp';
+    } else canal = canaux[0];
 
     // Charger les chauffeurs actifs
     const chauffeurs = await Chauffeur.find({ statut: 'actif' }).lean();

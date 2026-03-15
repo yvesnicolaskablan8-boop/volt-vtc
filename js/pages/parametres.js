@@ -1782,10 +1782,27 @@ const ParametresPage = {
               </label>
             </div>
 
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border-color);">
+              <div>
+                <div style="font-weight:500;font-size:var(--font-size-sm);"><iconify-icon icon="mdi:whatsapp" style="color:#25D366;margin-right:6px;"></iconify-icon> WhatsApp (Twilio)</div>
+                <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Messages WhatsApp aux chauffeurs via Twilio (~0.005$/msg).</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-whatsapp-actif" ${notif.whatsappActif ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
             <div class="form-group" style="border-top:1px solid var(--border-color);padding-top:var(--space-md);">
-              <label class="form-label"><iconify-icon icon="solar:phone-bold-duotone" style="color:var(--primary);margin-right:4px;"></iconify-icon> Telephone admin (pour alertes)</label>
+              <label class="form-label"><iconify-icon icon="solar:phone-bold-duotone" style="color:var(--primary);margin-right:4px;"></iconify-icon> Telephone admin (pour alertes SMS)</label>
               <input type="tel" class="form-control" id="notif-tel-admin" value="${notif.telephoneAdmin || ''}" placeholder="+225 07 XX XX XX XX">
               <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Recoit les SMS d'alerte retard des chauffeurs</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><iconify-icon icon="mdi:whatsapp" style="color:#25D366;margin-right:4px;"></iconify-icon> WhatsApp admin (pour alertes)</label>
+              <input type="tel" class="form-control" id="notif-tel-admin-whatsapp" value="${notif.telephoneAdminWhatsapp || ''}" placeholder="+225 07 XX XX XX XX">
+              <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Recoit les alertes WhatsApp. Laissez vide pour utiliser le meme numero SMS.</div>
             </div>
           </div>
         </div>
@@ -2018,6 +2035,7 @@ const ParametresPage = {
       const notifications = {
         pushActif: document.getElementById('notif-push-actif').checked,
         smsActif: document.getElementById('notif-sms-actif').checked,
+        whatsappActif: document.getElementById('notif-whatsapp-actif').checked,
         rappelDeadline24h: document.getElementById('notif-rappel-24h').checked,
         rappelDeadline1h: document.getElementById('notif-rappel-1h').checked,
         alerteDocuments30j: document.getElementById('notif-doc-30j').checked,
@@ -2025,7 +2043,8 @@ const ParametresPage = {
         alerteScoreFaible: document.getElementById('notif-score-faible').checked,
         scoreSeuilAlerte: parseInt(document.getElementById('notif-score-seuil').value) || 60,
         alerteAdminRetard: document.getElementById('notif-admin-retard').checked,
-        telephoneAdmin: document.getElementById('notif-tel-admin').value.trim()
+        telephoneAdmin: document.getElementById('notif-tel-admin').value.trim(),
+        telephoneAdminWhatsapp: document.getElementById('notif-tel-admin-whatsapp').value.trim()
       };
 
       const settings = Store.get('settings') || {};

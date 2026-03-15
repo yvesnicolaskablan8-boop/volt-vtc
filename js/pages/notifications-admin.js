@@ -111,6 +111,8 @@ const NotificationsAdminPage = {
     const aujourdHui = s ? s.aujourd_hui : 0;
     const echecs = s ? s.mois.echecs : 0;
     const coutSMS = s ? s.mois.coutEstimeSMS : 0;
+    const whatsappMois = s ? (s.mois.whatsapp || 0) : 0;
+    const coutWA = s ? (s.mois.coutEstimeWhatsApp || 0) : 0;
 
     container.innerHTML = `
       <div class="kpi-card">
@@ -147,6 +149,15 @@ const NotificationsAdminPage = {
         <div class="kpi-info">
           <div class="kpi-value">${coutSMS.toFixed(2)} $</div>
           <div class="kpi-label">Cout SMS estime</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:rgba(37,211,102,0.15);color:#25D366;">
+          <iconify-icon icon="mdi:whatsapp" style="font-size:24px;"></iconify-icon>
+        </div>
+        <div class="kpi-info">
+          <div class="kpi-value">${whatsappMois} <span style="font-size:12px;color:var(--text-muted);">(${coutWA.toFixed(3)} $)</span></div>
+          <div class="kpi-label">WhatsApp ce mois</div>
         </div>
       </div>
     `;
@@ -235,7 +246,11 @@ const NotificationsAdminPage = {
     const map = {
       push: { label: 'Push', color: '#3b82f6' },
       sms: { label: 'SMS', color: '#10b981' },
-      both: { label: 'Push+SMS', color: '#8b5cf6' }
+      both: { label: 'Push+SMS', color: '#8b5cf6' },
+      whatsapp: { label: 'WhatsApp', color: '#25D366' },
+      'push+whatsapp': { label: 'Push+WA', color: '#059669' },
+      'sms+whatsapp': { label: 'SMS+WA', color: '#0d9488' },
+      all: { label: 'Tous', color: '#f59e0b' }
     };
     const info = map[canal] || { label: canal || '-', color: '#6b7280' };
     return `<span style="font-size:11px;font-weight:600;color:${info.color};">${info.label}</span>`;
@@ -272,7 +287,11 @@ const NotificationsAdminPage = {
         <select class="form-control" id="notif-canal">
           <option value="push">Push uniquement</option>
           <option value="sms">SMS uniquement</option>
+          <option value="whatsapp">WhatsApp uniquement</option>
           <option value="both">Push + SMS</option>
+          <option value="push+whatsapp">Push + WhatsApp</option>
+          <option value="sms+whatsapp">SMS + WhatsApp</option>
+          <option value="all">Tous (Push + SMS + WhatsApp)</option>
         </select>
       </div>
       <div class="form-group">

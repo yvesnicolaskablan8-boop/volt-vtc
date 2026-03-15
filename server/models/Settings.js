@@ -44,6 +44,7 @@ const settingsSchema = new mongoose.Schema({
   },
   notifications: {
     smsActif: { type: Boolean, default: false },
+    whatsappActif: { type: Boolean, default: false },
     pushActif: { type: Boolean, default: true },
     rappelDeadline24h: { type: Boolean, default: true },
     rappelDeadline1h: { type: Boolean, default: true },
@@ -52,7 +53,8 @@ const settingsSchema = new mongoose.Schema({
     alerteScoreFaible: { type: Boolean, default: true },
     scoreSeuilAlerte: { type: Number, default: 60 },
     alerteAdminRetard: { type: Boolean, default: true },
-    telephoneAdmin: String
+    telephoneAdmin: String,
+    telephoneAdminWhatsapp: String
   }
 }, {
   toJSON: {

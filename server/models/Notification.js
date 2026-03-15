@@ -12,7 +12,7 @@ const notificationSchema = new mongoose.Schema({
   message: { type: String, required: true },
   canal: {
     type: String,
-    enum: ['push', 'sms', 'both'],
+    enum: ['push', 'sms', 'both', 'whatsapp', 'push+whatsapp', 'sms+whatsapp', 'all'],
     default: 'push'
   },
   statut: {
@@ -21,8 +21,10 @@ const notificationSchema = new mongoose.Schema({
     default: 'envoyee'
   },
   smsSid: String,       // Twilio Message SID si SMS
+  whatsappSid: String,  // Twilio Message SID si WhatsApp
   pushSent: { type: Boolean, default: false },
   smsSent: { type: Boolean, default: false },
+  whatsappSent: { type: Boolean, default: false },
   erreur: String,       // Message d'erreur si echec
   dateLue: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }

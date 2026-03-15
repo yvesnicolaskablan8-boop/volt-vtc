@@ -54,8 +54,9 @@ router.post('/send', async (req, res, next) => {
       return res.status(400).json({ error: 'Titre et message requis' });
     }
 
-    if (!['push', 'sms', 'both'].includes(canal)) {
-      return res.status(400).json({ error: 'Canal invalide (push, sms, both)' });
+    const validCanals = ['push', 'sms', 'both', 'whatsapp', 'push+whatsapp', 'sms+whatsapp', 'all'];
+    if (!validCanals.includes(canal)) {
+      return res.status(400).json({ error: `Canal invalide (${validCanals.join(', ')})` });
     }
 
     const results = await notifService.notifyAll('annonce', titre, message, canal);
@@ -98,18 +99,20 @@ router.get('/stats', async (req, res, next) => {
       Notification.countDocuments({ dateCreation: { $gte: monthStart }, statut: 'echec' })
     ]);
 
-    // Compter les SMS envoyes ce mois
-    const smsMois = await Notification.countDocuments({
-      dateCreation: { $gte: monthStart },
-      smsSent: true
-    });
+    // Compter les SMS et WhatsApp envoyes ce mois
+    const [smsMois, whatsappMois] = await Promise.all([
+      Notification.countDocuments({ dateCreation: { $gte: monthStart }, smsSent: true }),
+      Notification.countDocuments({ dateCreation: { $gte: monthStart }, whatsappSent: true })
+    ]);
 
     res.json({
       mois: {
         total: totalMois,
         echecs,
         sms: smsMois,
-        coutEstimeSMS: Math.round(smsMois * 0.05 * 100) / 100 // ~0.05$ par SMS
+        whatsapp: whatsappMois,
+        coutEstimeSMS: Math.round(smsMois * 0.05 * 100) / 100, // ~0.05$ par SMS
+        coutEstimeWhatsApp: Math.round(whatsappMois * 0.005 * 1000) / 1000 // ~0.005$ par WhatsApp
       },
       aujourd_hui: totalJour,
       parType: parType.reduce((acc, t) => { acc[t._id] = t.count; return acc; }, {}),

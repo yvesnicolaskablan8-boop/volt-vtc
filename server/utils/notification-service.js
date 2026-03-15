@@ -172,6 +172,60 @@ async function sendSMS(telephone, message) {
   }
 }
 
+// ===================== WHATSAPP (TWILIO REST API) =====================
+
+/**
+ * Envoie un message WhatsApp via l'API REST Twilio
+ */
+async function sendWhatsApp(telephone, message) {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const fromWhatsApp = process.env.TWILIO_WHATSAPP_NUMBER;
+
+  if (!accountSid || !authToken || !fromWhatsApp) {
+    return { success: false, error: 'Twilio WhatsApp non configure' };
+  }
+
+  // Normaliser le numero : s'assurer qu'il commence par +225
+  let to = telephone.replace(/\s+/g, '');
+  if (!to.startsWith('+')) {
+    to = '+225' + to;
+  }
+
+  try {
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const auth = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+
+    const body = new URLSearchParams({
+      To: `whatsapp:${to}`,
+      From: fromWhatsApp.startsWith('whatsapp:') ? fromWhatsApp : `whatsapp:${fromWhatsApp}`,
+      Body: `[Pilote] ${message}`
+    });
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: body.toString()
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      console.log(`[NotifService] WhatsApp envoye a ${to} — SID: ${data.sid}`);
+      return { success: true, sid: data.sid };
+    } else {
+      console.error(`[NotifService] WhatsApp echec a ${to}:`, data.message || data.code);
+      return { success: false, error: data.message || `Twilio error ${data.code}` };
+    }
+  } catch (err) {
+    console.error(`[NotifService] WhatsApp error:`, err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // ===================== DISPATCH PRINCIPAL =====================
 
 /**
@@ -189,22 +243,32 @@ async function notify(chauffeurId, type, titre, message, canal = 'push', data = 
     statut: 'envoyee',
     pushSent: false,
     smsSent: false,
+    whatsappSent: false,
     dateCreation: new Date().toISOString()
   };
 
   let pushResult = null;
   let smsResult = null;
+  let whatsappResult = null;
+
+  const doPush = ['push', 'both', 'push+whatsapp', 'all'].includes(canal);
+  const doSms = ['sms', 'both', 'sms+whatsapp', 'all'].includes(canal);
+  const doWhatsapp = ['whatsapp', 'push+whatsapp', 'sms+whatsapp', 'all'].includes(canal);
 
   // Envoyer push
-  if (canal === 'push' || canal === 'both') {
+  if (doPush) {
     pushResult = await sendPush(chauffeurId, titre, message, { ...data, type });
     notif.pushSent = pushResult.success;
   }
 
+  // Recuperer le telephone si SMS ou WhatsApp
+  let chauffeur = null;
+  if (doSms || doWhatsapp) {
+    chauffeur = await Chauffeur.findOne({ id: chauffeurId }).lean();
+  }
+
   // Envoyer SMS
-  if (canal === 'sms' || canal === 'both') {
-    // Recuperer le telephone du chauffeur
-    const chauffeur = await Chauffeur.findOne({ id: chauffeurId }).lean();
+  if (doSms) {
     if (chauffeur && chauffeur.telephone) {
       smsResult = await sendSMS(chauffeur.telephone, message);
       notif.smsSent = smsResult.success;
@@ -214,13 +278,26 @@ async function notify(chauffeurId, type, titre, message, canal = 'push', data = 
     }
   }
 
-  // Determiner le statut global
-  const pushOk = canal === 'sms' || (pushResult && pushResult.success);
-  const smsOk = canal === 'push' || (smsResult && smsResult.success);
-  notif.statut = (pushOk || smsOk) ? 'envoyee' : 'echec';
+  // Envoyer WhatsApp
+  if (doWhatsapp) {
+    if (chauffeur && chauffeur.telephone) {
+      whatsappResult = await sendWhatsApp(chauffeur.telephone, message);
+      notif.whatsappSent = whatsappResult.success;
+      if (whatsappResult.sid) notif.whatsappSid = whatsappResult.sid;
+    } else {
+      whatsappResult = { success: false, error: 'Pas de telephone' };
+    }
+  }
 
-  if (!pushOk && pushResult) notif.erreur = `Push: ${pushResult.error}`;
-  if (!smsOk && smsResult) notif.erreur = (notif.erreur ? notif.erreur + ' | ' : '') + `SMS: ${smsResult.error}`;
+  // Determiner le statut global — au moins un canal reussi = ok
+  const errors = [];
+  if (doPush && pushResult && !pushResult.success) errors.push(`Push: ${pushResult.error}`);
+  if (doSms && smsResult && !smsResult.success) errors.push(`SMS: ${smsResult.error}`);
+  if (doWhatsapp && whatsappResult && !whatsappResult.success) errors.push(`WhatsApp: ${whatsappResult.error}`);
+
+  const anySuccess = notif.pushSent || notif.smsSent || notif.whatsappSent;
+  notif.statut = anySuccess ? 'envoyee' : 'echec';
+  if (errors.length > 0) notif.erreur = errors.join(' | ');
 
   // Sauvegarder en DB
   try {
@@ -249,7 +326,7 @@ async function notifyAll(type, titre, message, canal = 'push', data = {}) {
 }
 
 /**
- * Envoie un SMS a l'admin (pour les alertes admin)
+ * Envoie un SMS/WhatsApp a l'admin (pour les alertes admin)
  */
 async function notifyAdmin(titre, message, settings) {
   const tel = settings?.notifications?.telephoneAdmin;
@@ -258,7 +335,22 @@ async function notifyAdmin(titre, message, settings) {
     return { success: false, error: 'Pas de telephone admin' };
   }
 
-  return await sendSMS(tel, `${titre}\n${message}`);
+  const fullMessage = `${titre}\n${message}`;
+  const results = { sms: null, whatsapp: null };
+
+  // Toujours envoyer par SMS si configure
+  results.sms = await sendSMS(tel, fullMessage);
+
+  // Aussi envoyer par WhatsApp si active
+  if (settings?.notifications?.whatsappActif) {
+    const waTel = settings?.notifications?.telephoneAdminWhatsapp || tel;
+    results.whatsapp = await sendWhatsApp(waTel, fullMessage);
+  }
+
+  return {
+    success: (results.sms?.success || results.whatsapp?.success) || false,
+    ...results
+  };
 }
 
 // ===================== EXPORTS =====================
@@ -269,6 +361,7 @@ module.exports = {
   generateVAPIDKeys,
   sendPush,
   sendSMS,
+  sendWhatsApp,
   notify,
   notifyAll,
   notifyAdmin
