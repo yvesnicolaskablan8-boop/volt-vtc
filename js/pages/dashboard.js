@@ -827,9 +827,9 @@ const DashboardPage = {
           <span style="font-size:12px;color:#6b7280;font-weight:500;">• ${Utils.formatCurrency(d.caMoyenJour)} / jour</span>
         </div>
 
-        <!-- Chart as background (full-width sparkline behind) -->
-        <div style="position:absolute;top:20px;right:0;left:30%;bottom:80px;z-index:1;opacity:.5;">
-          ${sparkline(last6Rev, '#374151', 500, 120)}
+        <!-- Chart as background (Chart.js canvas — line + bars like SellCraft) -->
+        <div style="position:absolute;top:10px;right:24px;left:35%;bottom:90px;z-index:1;">
+          <canvas id="chart-hero-ca"></canvas>
         </div>
 
         <!-- 3 mini KPI cards at the bottom (inside the hero, like SellCraft) -->
@@ -1193,6 +1193,78 @@ const DashboardPage = {
 
   _loadCharts(d) {
     this._charts = [];
+
+    // ======= Hero CA chart (SellCraft style — bars + line) =======
+    const heroCtx = document.getElementById('chart-hero-ca');
+    if (heroCtx && d.monthlyRevenue && d.monthlyRevenue.length > 0) {
+      const last6 = d.monthlyRevenue.slice(-6);
+      const heroLabels = last6.map(m => m.month);
+      const heroData = last6.map(m => m.revenue);
+      this._charts.push(new Chart(heroCtx, {
+        type: 'bar',
+        data: {
+          labels: heroLabels,
+          datasets: [
+            {
+              type: 'bar',
+              label: 'CA',
+              data: heroData,
+              backgroundColor: 'rgba(0,0,0,.06)',
+              borderRadius: 4,
+              borderSkipped: false,
+              barPercentage: 0.5,
+              order: 2
+            },
+            {
+              type: 'line',
+              label: 'Tendance',
+              data: heroData,
+              borderColor: '#111827',
+              borderWidth: 2,
+              pointBackgroundColor: '#fff',
+              pointBorderColor: '#111827',
+              pointBorderWidth: 2,
+              pointRadius: (ctx) => ctx.dataIndex === heroData.length - 1 ? 5 : 0,
+              pointHoverRadius: 5,
+              tension: 0,
+              fill: false,
+              order: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#111827',
+              titleFont: { size: 11 },
+              bodyFont: { size: 12, weight: '700' },
+              padding: { top: 6, bottom: 6, left: 10, right: 10 },
+              cornerRadius: 8,
+              caretSize: 6,
+              callbacks: {
+                title: () => '',
+                label: (ctx) => {
+                  if (ctx.datasetIndex === 1) {
+                    const pct = d.caTrend >= 0 ? '+' : '';
+                    return `${pct}${Math.abs(Math.round(d.caTrend))}%`;
+                  }
+                  return '';
+                }
+              },
+              filter: (item) => item.datasetIndex === 1 && item.dataIndex === heroData.length - 1
+            }
+          },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          }
+        }
+      }));
+    }
 
     // ======= Forecast chart (line + projected bar) =======
     const forecastCtx = document.getElementById('chart-forecast');
