@@ -8,6 +8,8 @@
 .sidebar {
   width: var(--sidebar-width);
   background: var(--bg-sidebar-solid);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
   border-right: 1px solid var(--border-color);
   position: fixed;
   top: 0;
@@ -46,7 +48,7 @@
   font-size: var(--font-size-xl);
   font-weight: 700;
   letter-spacing: 2px;
-  background: linear-gradient(135deg, var(--pilote-blue), var(--pilote-cyan));
+  background: linear-gradient(135deg, #6366f1, #a855f7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -160,8 +162,8 @@
 .header {
   height: var(--header-height);
   background: var(--glass-bg);
-  backdrop-filter: var(--blur-sm);
-  -webkit-backdrop-filter: var(--blur-sm);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -340,7 +342,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--pilote-blue), var(--pilote-cyan));
+  background: linear-gradient(135deg, #6366f1, #a855f7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -401,7 +403,7 @@
   height: 40px;
   min-width: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--pilote-blue), var(--pilote-cyan));
+  background: linear-gradient(135deg, #6366f1, #a855f7);
   display: flex;
   align-items: center;
   justify-content: center;

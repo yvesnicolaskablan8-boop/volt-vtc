@@ -1,8 +1,8 @@
 /* ========== CARDS ========== */
 .card {
   background: var(--glass-bg);
-  backdrop-filter: var(--blur-sm);
-  -webkit-backdrop-filter: var(--blur-sm);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: var(--space-lg);
@@ -52,10 +52,9 @@
 /* ========== KPI CARDS ========== */
 .kpi-card {
   background: var(--glass-bg);
-  backdrop-filter: var(--blur-sm);
-  -webkit-backdrop-filter: var(--blur-sm);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
   border: 1px solid var(--glass-border);
-  border-top: 2px solid var(--accent-subtle);
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   box-shadow: var(--shadow-card);
@@ -199,7 +198,7 @@
 
 .btn-primary:hover {
   background: linear-gradient(135deg, var(--pilote-blue-dim), var(--pilote-blue));
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
 }
 
 .btn-secondary {
