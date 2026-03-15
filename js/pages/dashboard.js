@@ -532,189 +532,504 @@ const DashboardPage = {
   },
 
   _template(d) {
+    const caTrendSign = d.caTrend >= 0 ? '+' : '';
+    const recouvrementColor = d.tauxRecouvrement >= 80 ? '#0d9488' : d.tauxRecouvrement >= 50 ? '#d97706' : '#dc2626';
+    const progressColor = d.progressionObjectif >= 80 ? '#0d9488' : d.progressionObjectif >= 50 ? '#d97706' : '#dc2626';
+    const session = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : {};
+    const userName = session.prenom || 'Patron';
+
+    // SVG semi-donut arc helper (like the Customers chart in reference)
+    const arc = (pct, color, secondColor = '#f97316', size = 120, stroke = 14) => {
+      const r = (size - stroke) / 2;
+      const circ = Math.PI * r; // semi-circle
+      const mainOffset = circ - (Math.min(pct, 100) / 100) * circ;
+      return `<svg width="${size}" height="${size * 0.65}" viewBox="0 0 ${size} ${size * 0.65}" style="display:block;margin:0 auto;">
+        <path d="M ${stroke/2} ${size*0.6} A ${r} ${r} 0 0 1 ${size - stroke/2} ${size*0.6}" fill="none" stroke="#e5e7eb" stroke-width="${stroke}" stroke-linecap="round"/>
+        <path d="M ${stroke/2} ${size*0.6} A ${r} ${r} 0 0 1 ${size - stroke/2} ${size*0.6}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+          stroke-dasharray="${circ}" stroke-dashoffset="${mainOffset}" style="transition:stroke-dashoffset .8s ease;"/>
+      </svg>`;
+    };
+
+    // SVG circular gauge helper
+    const gauge = (pct, color, size = 72, stroke = 6) => {
+      const r = (size - stroke) / 2;
+      const circ = 2 * Math.PI * r;
+      const offset = circ - (Math.min(pct, 100) / 100) * circ;
+      return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform:rotate(-90deg);">
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#e5e7eb" stroke-width="${stroke}"/>
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+          stroke-dasharray="${circ}" stroke-dashoffset="${offset}" style="transition:stroke-dashoffset .8s ease;"/>
+      </svg>`;
+    };
+
+    // Mini sparkline SVG with area fill
+    const sparkline = (values, color = '#0d9488', w = 90, h = 32) => {
+      if (!values || values.length < 2) return '';
+      const max = Math.max(...values, 1);
+      const min = Math.min(...values, 0);
+      const range = max - min || 1;
+      const step = w / (values.length - 1);
+      const pts = values.map((v, i) => `${i * step},${h - ((v - min) / range) * (h - 4) - 2}`);
+      const line = pts.join(' ');
+      const area = `${pts.join(' ')} ${w},${h} 0,${h}`;
+      return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;">
+        <polygon points="${area}" fill="${color}" opacity="0.08"/>
+        <polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="${(values.length-1)*step}" cy="${h - ((values[values.length-1] - min) / range) * (h-4) - 2}" r="3" fill="${color}"/>
+      </svg>`;
+    };
+
+    const last6Rev = d.monthlyRevenue ? d.monthlyRevenue.slice(-6).map(m => m.revenue) : [];
+
     return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Tableau de bord</h1>
-        <div class="page-actions">
-          <input type="date" id="dashboard-period" class="form-control" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="width:155px;font-size:var(--font-size-xs);padding:4px 8px;">
-          <button class="btn btn-sm ${this._monthView ? 'btn-primary' : 'btn-secondary'}" onclick="DashboardPage._toggleMonthView()" style="font-size:var(--font-size-xs);padding:4px 10px;" title="${this._monthView ? 'Voir le jour' : 'Voir le mois entier'}">
-            <iconify-icon icon="${this._monthView ? 'solar:calendar-minimalistic-bold' : 'solar:calendar-bold-duotone'}"></iconify-icon> ${this._monthView ? 'Mois' : 'Jour'}
-          </button>
-          ${this._selectedPeriod || this._monthView ? `<button class="btn btn-sm btn-secondary" onclick="DashboardPage._resetToToday()" style="font-size:var(--font-size-xs);padding:4px 10px;">
-            <iconify-icon icon="solar:restart-bold"></iconify-icon> Aujourd'hui
-          </button>` : ''}
-          ${this._isToday() ? `<span id="live-indicator" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--font-size-xs);color:#22c55e;background:rgba(34,197,94,0.1);padding:4px 10px;border-radius:20px;font-weight:600;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite;"></span> EN DIRECT
-          </span>` : ''}
-          <div style="position:relative;">
-            <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
-            <input type="text" id="dashboard-search" class="form-control" placeholder="Rechercher un chauffeur..." style="padding-left:32px;font-size:var(--font-size-xs);width:200px;" oninput="DashboardPage._filterByDriver(this.value)">
-          </div>
-        </div>
-      </div>
       <style>
-        @keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-        #live-indicator.pulse { animation: flash-indicator 1.5s; }
-        @keyframes flash-indicator { 0% { background:rgba(34,197,94,0.3); } 100% { background:rgba(34,197,94,0.1); } }
+        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+        @keyframes dSlide { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+        #live-indicator.pulse { animation:flash-indicator 1.5s }
+        @keyframes flash-indicator { 0%{background:rgba(99,102,241,.3)} 100%{background:rgba(99,102,241,.08)} }
+
+        .d-wrap { animation: dSlide .5s cubic-bezier(.16,1,.3,1); }
+        .d-bg {
+          background: linear-gradient(160deg, #f0f4ff 0%, #faf5ff 40%, #fdf2f8 100%);
+          margin: -24px -28px;
+          padding: 32px 32px 40px;
+          min-height: 100vh;
+        }
+        [data-theme="dark"] .d-bg { background: linear-gradient(160deg, #0c0f1a 0%, #13111c 40%, #170f14 100%); }
+
+        .d-grid { display:grid; gap:16px; margin-bottom:16px; }
+        .d-card {
+          background: rgba(255,255,255,.72);
+          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+          border-radius: 20px;
+          padding: 22px 24px;
+          border: 1px solid rgba(255,255,255,.6);
+          box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.04);
+          transition: all .25s cubic-bezier(.16,1,.3,1);
+          position: relative;
+          overflow: hidden;
+        }
+        [data-theme="dark"] .d-card {
+          background: rgba(30,27,40,.65);
+          border-color: rgba(255,255,255,.06);
+          box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 8px 32px rgba(0,0,0,.15);
+        }
+        .d-card:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(99,102,241,.1); border-color:rgba(99,102,241,.15); }
+        [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(99,102,241,.15); border-color:rgba(99,102,241,.2); }
+
+        .d-card.hero {
+          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+          border: none;
+          color: #fff;
+          box-shadow: 0 4px 24px rgba(99,102,241,.25);
+        }
+        .d-card.hero:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(99,102,241,.35); }
+        .d-card.hero::after {
+          content:''; position:absolute; top:-40%; right:-20%; width:200px; height:200px;
+          background:radial-gradient(circle, rgba(255,255,255,.12) 0%, transparent 70%);
+          pointer-events:none;
+        }
+
+        .d-icon {
+          width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+          font-size:18px; flex-shrink:0;
+        }
+
+        .d-lbl {
+          font-size: 13px; font-weight: 600; color: #6b7280;
+          letter-spacing: .2px;
+        }
+        [data-theme="dark"] .d-lbl { color: #9ca3af; }
+
+        .d-val {
+          font-size: 28px; font-weight: 800; color: #111827;
+          line-height: 1.1; letter-spacing: -.5px;
+          font-feature-settings: 'tnum';
+        }
+        [data-theme="dark"] .d-val { color: #f9fafb; }
+        .d-val.xl { font-size: 32px; }
+        .d-val.hero { color: #fff; font-size: 36px; }
+
+        .d-sub { font-size: 12px; color: #9ca3af; margin-top: 4px; font-weight:500; }
+        [data-theme="dark"] .d-sub { color: #6b7280; }
+
+        .d-tag {
+          display:inline-flex; align-items:center; gap:3px; padding:4px 10px; border-radius:20px;
+          font-size: 11px; font-weight: 700;
+        }
+        .d-tag.purple { background:rgba(99,102,241,.08); color:#6366f1; }
+        .d-tag.green { background:rgba(16,185,129,.08); color:#10b981; }
+        .d-tag.red { background:rgba(239,68,68,.08); color:#ef4444; }
+        .d-tag.orange { background:rgba(249,115,22,.08); color:#f97316; }
+        .d-tag.white { background:rgba(255,255,255,.2); color:#fff; }
+        [data-theme="dark"] .d-tag.purple { background:rgba(99,102,241,.15); }
+        [data-theme="dark"] .d-tag.green { background:rgba(16,185,129,.15); }
+        [data-theme="dark"] .d-tag.red { background:rgba(239,68,68,.15); }
+        [data-theme="dark"] .d-tag.orange { background:rgba(249,115,22,.15); }
+
+        .d-pill {
+          display:inline-flex; align-items:center; gap:4px; padding:5px 12px; border-radius:12px;
+          font-size:11px; font-weight:600; background:rgba(0,0,0,.04); color:#4b5563;
+        }
+        [data-theme="dark"] .d-pill { background:rgba(255,255,255,.06); color:#d1d5db; }
+
+        .d-chip {
+          display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border-radius:12px;
+          font-size:12px; font-weight:600; background:rgba(0,0,0,.03); color:#4b5563;
+        }
+        [data-theme="dark"] .d-chip { background:rgba(255,255,255,.06); color:#d1d5db; }
+
+        .d-gauge-wrap { position:relative; display:flex; align-items:center; justify-content:center; }
+        .d-gauge-txt { position:absolute; font-weight:800; }
+
+        .d-legend {
+          display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#4b5563;
+        }
+        .d-legend-dot { width:8px; height:8px; border-radius:50%; }
+        [data-theme="dark"] .d-legend { color:#d1d5db; }
+
+        .d-bar-track { height:6px; border-radius:6px; background:rgba(0,0,0,.06); overflow:hidden; }
+        [data-theme="dark"] .d-bar-track { background:rgba(255,255,255,.06); }
+        .d-bar-fill { height:100%; border-radius:6px; transition:width .6s cubic-bezier(.16,1,.3,1); }
+
+        .d-section-title {
+          font-size:11px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:1px;
+          margin-bottom:10px; margin-top:6px;
+        }
+
+        @media(max-width:900px) {
+          .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
+          .d-g3 { grid-template-columns:1fr !important; }
+          .d-g21 { grid-template-columns:1fr !important; }
+        }
+        @media(max-width:600px) {
+          .d-g4 { grid-template-columns:1fr !important; }
+          .d-bg { margin:-16px; padding:16px 16px 24px; }
+        }
       </style>
 
-      <!-- KPI Cards -->
-      <div class="grid-4">
-        <a href="#/versements" class="kpi-card ${d.totalDettes > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
-          <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.totalDettes > 0 ? Utils.formatCurrency(d.totalDettes) : '<span style="color:var(--success)">0 FCFA</span>'}</div>
-          <div class="kpi-label">Dettes chauffeurs</div>
-          <div class="kpi-trend ${d.totalDettes > 0 ? 'down' : 'up'}">
-            ${d.totalDettes > 0 ? `<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers > 1 ? 's' : ''} endetté${d.nbDetteDrivers > 1 ? 's' : ''}` : '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Aucune dette ✔'}
-          </div>
-        </a>
-        <a href="#/versements" class="kpi-card ${d.retardCount > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
-          <div class="kpi-icon"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="kpi-label">Versements — ${d.periodLabel}</div>
-          <div class="kpi-trend ${d.retardCount > 0 ? 'down' : 'up'}">
-            <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.retardCount} en retard
-          </div>
-        </a>
-        <a href="#/planning" class="kpi-card cyan" style="text-decoration:none;color:inherit;cursor:pointer;">
-          <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.programmesCount}</div>
-          <div class="kpi-label">Chauffeurs programmés — ${d.periodLabel}</div>
-          <div class="kpi-trend up">
-            <iconify-icon icon="solar:record-circle-bold-duotone" style="color:var(--success);font-size:6px"></iconify-icon> ${d.activeCount} actifs sur ${d.totalChauffeurs}
-          </div>
-        </a>
-        <a href="#/alertes" class="kpi-card ${d.alertesTotal > 0 ? 'red' : 'green'}" style="text-decoration:none;color:inherit;cursor:pointer;">
-          <div class="kpi-icon"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.alertesTotal}</div>
-          <div class="kpi-label">Alertes actives</div>
-          <div class="kpi-trend ${d.alertesCritiques > 0 ? 'down' : d.alertesTotal === 0 ? 'up' : ''}">
-            ${d.alertesCritiques > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone" style="color:var(--danger)"></iconify-icon> ${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}` : d.alertesTotal === 0 ? '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tout est en ordre' : `<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${d.alertesUrgentes} urgente${d.alertesUrgentes > 1 ? 's' : ''}`}
-          </div>
-        </a>
-      </div>
+      <div class="d-wrap">
+      <div class="d-bg">
 
-      <!-- KPI Row 2 -->
-      <div class="grid-4" style="margin-top:var(--space-sm);">
-        <div class="kpi-card ${d.tauxRecouvrement >= 80 ? 'green' : d.tauxRecouvrement >= 50 ? '' : 'red'}">
-          <div class="kpi-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.tauxRecouvrement}%</div>
-          <div class="kpi-label">Taux de recouvrement</div>
-          <div class="kpi-trend ${d.tauxRecouvrement >= 80 ? 'up' : 'down'}">
-            <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> ${Utils.formatCurrency(d.totalVerse)} / ${Utils.formatCurrency(d.totalAttendu)}
-          </div>
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
+        <div>
+          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Bienvenue,</div>
+          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;">${userName} !</div>
         </div>
-        <a href="#/versements" class="kpi-card red" style="text-decoration:none;color:inherit;cursor:pointer;">
-          <div class="kpi-icon"><iconify-icon icon="solar:fire-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" style="color:var(--danger)">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
-          <div class="kpi-label">Pertes enregistrées</div>
-          <div class="kpi-trend down">
-            ${d.totalPertes > 0 ? `<iconify-icon icon="solar:danger-circle-bold-duotone" style="color:var(--danger)"></iconify-icon> ${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers > 1 ? 's' : ''}` : '<iconify-icon icon="solar:danger-circle-bold-duotone" style="color:var(--danger)"></iconify-icon> Pertes irrécupérables'}
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:0;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border-radius:14px;border:1px solid rgba(0,0,0,.06);padding:3px;">
+            <input type="date" id="dashboard-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:#374151;font-weight:500;outline:none;">
+            <button onclick="DashboardPage._toggleMonthView()" style="font-size:12px;padding:6px 14px;border-radius:11px;background:${this._monthView ? '#6366f1' : 'transparent'};color:${this._monthView ? '#fff' : '#6b7280'};border:none;font-weight:600;cursor:pointer;transition:all .2s;">
+              ${this._monthView ? 'Mois' : 'Jour'}
+            </button>
+            ${this._selectedPeriod || this._monthView ? '<button onclick="DashboardPage._resetToToday()" style="font-size:13px;padding:6px 8px;border-radius:11px;background:transparent;border:none;cursor:pointer;color:#6b7280;"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>' : ''}
           </div>
-        </a>
-        <a href="#/vehicules" class="kpi-card" style="text-decoration:none;color:inherit;cursor:pointer;">
-          <div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.vehiclesActifs}</div>
-          <div class="kpi-label">Véhicules en service</div>
-          <div class="kpi-trend up">
-            ⚡ ${d.vehiclesEV} élec. <span style="margin:0 2px">&bull;</span> ⛽ ${d.vehiclesThermique} therm.
-          </div>
-        </a>
-        <div class="kpi-card ${d.totalDepensesMois > 0 ? '' : 'green'}">
-          <div class="kpi-icon"><iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(d.totalDepensesMois)}</div>
-          <div class="kpi-label">Dépenses — ${d.periodLabel}</div>
-          <div class="kpi-trend ${d.totalDepensesMois > 0 ? 'down' : 'up'}">
-            <iconify-icon icon="solar:tag-bold-duotone"></iconify-icon> ${Object.keys(d.depensesByType).length} catégories
+          ${this._isToday() ? '<span id="live-indicator" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#6366f1;background:rgba(99,102,241,.08);padding:5px 14px;border-radius:20px;font-weight:700;backdrop-filter:blur(8px);"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;animation:pulse-dot 2s infinite;"></span>LIVE</span>' : `<span style="font-size:12px;color:#9ca3af;font-weight:500;">${d.periodLabel}</span>`}
+          <div style="position:relative;">
+            <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:#9ca3af;pointer-events:none;"></iconify-icon>
+            <input type="text" id="dashboard-search" placeholder="Rechercher..." style="padding:8px 14px 8px 34px;font-size:12px;width:160px;border-radius:14px;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border:1px solid rgba(0,0,0,.06);color:#374151;outline:none;font-weight:500;" oninput="DashboardPage._filterByDriver(this.value)">
           </div>
         </div>
       </div>
 
+      <!-- Row 1: Hero CA + 3 metric cards -->
+      <div class="d-grid d-g4" style="grid-template-columns:1.6fr 1fr 1fr 1fr;">
 
+        <!-- CA Hero Card -->
+        <a href="#/versements" class="d-card hero" style="text-decoration:none;color:#fff;grid-row:span 1;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,.65);">Chiffre d'affaires</div>
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;">
+              <iconify-icon icon="solar:graph-new-up-bold" style="font-size:18px;color:#fff;"></iconify-icon>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <div class="d-val hero">${Utils.formatCurrency(d.caThisMonth)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+            <span class="d-tag white">
+              <iconify-icon icon="${d.caTrend >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}" style="font-size:10px;"></iconify-icon>
+              ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
+            </span>
+            <span style="font-size:11px;color:rgba(255,255,255,.5);">vs période préc.</span>
+          </div>
+          <div style="margin-top:14px;">${sparkline(last6Rev, 'rgba(255,255,255,.45)', 140, 36)}</div>
+        </a>
 
-      <!-- Maintenance Alerts -->
-      ${this._renderMaintenanceAlerts(d)}
+        <!-- Versements -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;">
+              <iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;">Versements</div>
+          </div>
+          <div class="d-val xl" style="color:#10b981;">${d.nbVersementsPeriode}</div>
+          <div class="d-sub">${Utils.formatCurrency(d.caMoyenJour)} / jour</div>
+          <div style="margin-top:10px;">
+            <span class="d-tag ${d.retardCount > 0 ? 'red' : 'green'}">${d.retardCount} en retard</span>
+          </div>
+        </a>
 
-      <!-- Dépenses véhicules (masqué du dashboard) -->
+        <!-- Objectif -->
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;">
+              <iconify-icon icon="solar:target-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;">Objectif</div>
+          </div>
+          <div class="d-gauge-wrap" style="margin:4px 0;">
+            ${gauge(d.progressionObjectif, progressColor, 64, 5)}
+            <div class="d-gauge-txt" style="color:${progressColor};font-size:14px;">${d.progressionObjectif}%</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
+          <div class="d-sub" style="text-align:center;">${d.joursRestants}j restants</div>
+        </div>
 
-      <!-- Prévisions CA -->
-      ${this._renderForecastSection(d)}
+        <!-- Recouvrement -->
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;">
+              <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;">Recouvrement</div>
+          </div>
+          <div class="d-gauge-wrap" style="margin:4px 0;">
+            ${gauge(d.tauxRecouvrement, recouvrementColor, 64, 5)}
+            <div class="d-gauge-txt" style="color:${recouvrementColor};font-size:14px;">${d.tauxRecouvrement}%</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div class="d-sub" style="text-align:center;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
+        </div>
+      </div>
+
+      <!-- Row 2: Chauffeurs + Dettes + Pertes + Flotte -->
+      <div class="d-grid d-g4" style="grid-template-columns:1.4fr 1fr 1fr 1fr;">
+
+        <!-- Chauffeurs with donut -->
+        <a href="#/chauffeurs" class="d-card" style="text-decoration:none;color:inherit;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <div class="d-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;">
+              <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;">Chauffeurs</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="position:relative;">
+              ${arc(d.totalChauffeurs > 0 ? (d.activeCount / d.totalChauffeurs * 100) : 0, '#10b981', '#f97316', 100, 12)}
+              <div style="position:absolute;top:45%;left:50%;transform:translate(-50%,-30%);text-align:center;">
+                <div style="font-size:22px;font-weight:800;color:#111827;">${d.totalChauffeurs}</div>
+                <div style="font-size:9px;color:#9ca3af;font-weight:600;">Total</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div class="d-legend"><span class="d-legend-dot" style="background:#10b981;"></span> Actifs</div>
+                <strong style="font-size:13px;color:#374151;">${d.activeCount}</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div class="d-legend"><span class="d-legend-dot" style="background:#f97316;"></span> Suspendus</div>
+                <strong style="font-size:13px;color:#374151;">${d.suspendusCount}</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div class="d-legend"><span class="d-legend-dot" style="background:#d1d5db;"></span> Inactifs</div>
+                <strong style="font-size:13px;color:#374151;">${d.inactifsCount}</strong>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <!-- Dettes -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalDettes > 0 ? 'border-color:rgba(239,68,68,.2);background:rgba(255,255,255,.72);' : ''}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;color:#ef4444;">Dettes</div>
+          </div>
+          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(d.totalDettes)}</div>
+          <div class="d-sub">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#ef4444,#f87171);"></div>
+          </div>
+        </a>
+
+        <!-- Pertes -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalPertes > 0 ? 'border-color:rgba(249,115,22,.2);' : ''}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(249,115,22,.1);color:#f97316;">
+              <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;color:#f97316;">Pertes</div>
+          </div>
+          <div class="d-val" style="color:#f97316;">${Utils.formatCurrency(d.totalPertes)}</div>
+          <div class="d-sub">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#f97316,#fb923c);"></div>
+          </div>
+        </a>
+
+        <!-- Flotte -->
+        <a href="#/vehicules" class="d-card" style="text-decoration:none;color:inherit;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;">
+              <iconify-icon icon="solar:bus-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;">Flotte</div>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:5px;">
+            <span class="d-val">${d.vehiclesActifs}</span>
+            <span style="font-size:15px;color:#9ca3af;font-weight:600;">/ ${d.vehiculesTotal}</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:12px;">
+            <span class="d-pill">⚡ ${d.vehiclesEV}</span>
+            <span class="d-pill">⛽ ${d.vehiclesThermique}</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Row 3: Chart (large) + Side panel -->
+      <div class="d-grid d-g21" style="grid-template-columns:1.8fr 1fr;">
+        <div class="d-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;">
+                <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
+              </div>
+              <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:#111827;">Évolution CA</div>
+            </div>
+            <span class="d-tag ${d.tendancePctMois >= 0 ? 'green' : 'red'}">
+              <iconify-icon icon="${d.tendancePctMois >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}" style="font-size:10px;"></iconify-icon>
+              ${d.tendancePctMois >= 0 ? '+' : ''}${d.tendancePctMois}%
+            </span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+            <div class="d-chip">Proj. <strong style="color:#6366f1;margin-left:4px;">${Utils.formatCurrency(d.projectionFinMois)}</strong></div>
+            <div class="d-chip">M+1 <strong style="color:#a855f7;margin-left:4px;">${Utils.formatCurrency(d.previsionMoisSuivant)}</strong></div>
+          </div>
+          <div style="height:200px;">
+            <canvas id="chart-forecast"></canvas>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <!-- Service du jour -->
+          <a href="#/planning" class="d-card" style="text-decoration:none;color:inherit;flex:1;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+              <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;width:34px;height:34px;border-radius:10px;font-size:15px;">
+                <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
+              </div>
+              <div>
+                <div class="d-lbl" style="margin:0;">Service du jour</div>
+                <div style="font-size:11px;color:#9ca3af;">${d.programmesCount} programmé${d.programmesCount !== 1 ? 's' : ''}</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(16,185,129,.06);">
+                <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
+                <span style="font-size:11px;color:#6b7280;">En service</span>
+                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.serviceEnCours}</strong>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(249,115,22,.06);">
+                <span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span>
+                <span style="font-size:11px;color:#6b7280;">Pause</span>
+                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.serviceEnPause}</strong>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(107,114,128,.06);">
+                <span style="width:6px;height:6px;border-radius:50%;background:#6b7280;"></span>
+                <span style="font-size:11px;color:#6b7280;">Terminé</span>
+                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.serviceTermine}</strong>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(209,213,219,.15);">
+                <span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span>
+                <span style="font-size:11px;color:#6b7280;">Attente</span>
+                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.servicePasCommence}</strong>
+              </div>
+            </div>
+          </a>
+
+          <!-- Alertes -->
+          <a href="#/alertes" class="d-card" style="text-decoration:none;color:inherit;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="d-icon" style="background:${d.alertesTotal > 0 ? 'rgba(239,68,68,.08)' : 'rgba(16,185,129,.08)'};color:${d.alertesTotal > 0 ? '#ef4444' : '#10b981'};width:34px;height:34px;border-radius:10px;font-size:15px;">
+                  <iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon>
+                </div>
+                <div class="d-lbl" style="margin:0;">Alertes</div>
+              </div>
+              <span class="d-tag ${d.alertesTotal > 0 ? 'red' : 'green'}">${d.alertesTotal > 0 ? d.alertesTotal + ' alerte' + (d.alertesTotal > 1 ? 's' : '') : 'Tout OK'}</span>
+            </div>
+            ${d.alertesCritiques > 0 ? `<div style="display:flex;gap:8px;margin-top:10px;">
+              <span class="d-tag red">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>
+              ${d.alertesUrgentes > 0 ? `<span class="d-tag orange">${d.alertesUrgentes} urgent${d.alertesUrgentes > 1 ? 's' : ''}</span>` : ''}
+            </div>` : ''}
+          </a>
+        </div>
+      </div>
+
+      <!-- Row 4: Maintenance -->
+      <div class="d-grid" style="grid-template-columns:1fr;">
+        ${this._renderMaintenancePanel(d)}
+      </div>
+
+      </div>
+      </div>
     `;
   },
 
-  // =================== PRÉVISIONS CA ===================
+  _renderMaintenancePanel(d) {
+    const typeLabels = { vidange:'Vidange', revision:'Révision', pneus:'Pneus', freins:'Freins', filtres:'Filtres', climatisation:'Clim.', courroie:'Courroie', controle_technique:'CT', batterie:'Batterie', amortisseurs:'Amort.', echappement:'Échap.', carrosserie:'Carrosserie', autre:'Autre' };
+    const alerts = d.maintenanceAlerts || [];
 
-  _renderForecastSection(d) {
-    if (!d.forecastChartData || d.forecastChartData.length === 0) return '';
-
-    const progressColor = d.progressionObjectif >= 80 ? '#22c55e' : d.progressionObjectif >= 50 ? '#f59e0b' : '#ef4444';
-    const progressIcon = d.progressionObjectif >= 80 ? 'solar:check-circle-bold-duotone' : d.progressionObjectif >= 50 ? 'solar:clock-circle-bold-duotone' : 'solar:danger-triangle-bold-duotone';
-    const tendanceIcon = d.tendancePctMois >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold';
-    const tendanceColor = d.tendancePctMois >= 0 ? '#22c55e' : '#ef4444';
-    const tendanceSign = d.tendancePctMois >= 0 ? '+' : '';
-
-    return `
-      <div class="card" style="margin-top:var(--space-lg);border-left:4px solid var(--pilote-blue);">
-        <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:graph-new-up-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Prévisions de chiffre d'affaires</span>
-          <span style="font-size:var(--font-size-xs);color:var(--text-muted);">Basé sur les ${d.forecastChartData.length - 1} derniers mois</span>
+    if (alerts.length === 0) {
+      return `<div class="d-card" style="display:flex;align-items:center;gap:14px;">
+        <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;">
+          <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
         </div>
-
-        <!-- 3 mini cards -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;">
-          <!-- Projection fin de mois -->
-          <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);position:relative;overflow:hidden;">
-            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">
-              <iconify-icon icon="solar:calendar-mark-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Projection fin de mois
-            </div>
-            <div style="font-size:var(--font-size-xl);font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.projectionFinMois)}</div>
-            <div style="display:flex;align-items:center;gap:4px;margin-top:4px;font-size:var(--font-size-xs);">
-              <iconify-icon icon="${tendanceIcon}" style="color:${tendanceColor};"></iconify-icon>
-              <span style="color:${tendanceColor};font-weight:600;">${tendanceSign}${d.tendancePctMois}%</span>
-              <span style="color:var(--text-muted);">vs mois précédent</span>
-            </div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${Utils.formatCurrency(d.caMoyenJour)}/jour × ${d.joursRestants}j restants</div>
-          </div>
-
-          <!-- Prévision mois prochain -->
-          <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);">
-            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">
-              <iconify-icon icon="solar:graph-new-up-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Prévision mois prochain
-            </div>
-            <div style="font-size:var(--font-size-xl);font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.previsionMoisSuivant)}</div>
-            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:4px;">
-              Régression linéaire ${d.trendSlope > 0 ? '<span style="color:#22c55e;">↗ tendance haussière</span>' : d.trendSlope < 0 ? '<span style="color:#ef4444;">↘ tendance baissière</span>' : '<span style="color:var(--text-muted);">→ stable</span>'}
-            </div>
-          </div>
-
-          <!-- Objectif mensuel -->
-          <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);">
-            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">
-              <iconify-icon icon="solar:target-bold-duotone" style="color:${progressColor};"></iconify-icon> Objectif mensuel
-              <span style="font-size:10px;opacity:0.7;">${d.isObjectifManuel ? '(manuel)' : '(auto)'}</span>
-            </div>
-            <div style="font-size:var(--font-size-xl);font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.objectifMensuel)}</div>
-            <div style="margin-top:8px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <span style="font-size:10px;color:var(--text-muted);">Progression</span>
-                <span style="font-size:var(--font-size-xs);font-weight:700;color:${progressColor};">
-                  <iconify-icon icon="${progressIcon}"></iconify-icon> ${d.progressionObjectif}%
-                </span>
-              </div>
-              <div style="height:6px;background:var(--bg-primary);border-radius:3px;overflow:hidden;">
-                <div style="height:100%;width:${Math.min(d.progressionObjectif, 100)}%;background:${progressColor};border-radius:3px;transition:width 0.5s;"></div>
-              </div>
-              <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${Utils.formatCurrency(d.caThisMonth)} / ${Utils.formatCurrency(d.objectifMensuel)}</div>
-            </div>
-          </div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#111827;">Maintenance OK</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Aucun entretien en retard</div>
         </div>
+      </div>`;
+    }
 
-        <!-- Sparkline chart -->
-        <div style="height:180px;">
-          <canvas id="chart-forecast"></canvas>
+    const rows = alerts.slice(0, 4).map(m => {
+      const isRetard = m.statut === 'en_retard';
+      const color = isRetard ? '#dc2626' : '#d97706';
+      const badgeLabel = isRetard ? 'RETARD' : 'URGENT';
+      let echeance = '';
+      if (m.prochaineDate) {
+        const jours = Math.ceil((new Date(m.prochaineDate) - new Date()) / 86400000);
+        if (jours < 0) echeance = Math.abs(jours) + 'j retard';
+        else if (jours === 0) echeance = "aujourd'hui";
+        else echeance = 'dans ' + jours + 'j';
+      }
+      const typeLabel = typeLabels[m.type] || m.type;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.04);cursor:pointer;transition:background .2s;" onclick="Router.navigate('/vehicules/${m.vehiculeId}')" onmouseover="this.style.background='rgba(0,0,0,.04)'" onmouseout="this.style.background='rgba(0,0,0,.02)'">
+        <div style="width:6px;height:6px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:#111827;">${typeLabel} <span class="d-tag ${isRetard ? 'red' : 'orange'}" style="font-size:9px;padding:1px 6px;">${badgeLabel}</span></div>
+          <div style="font-size:10px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.vehiculeLabel}</div>
         </div>
+        ${echeance ? `<div style="font-size:10px;color:${color};font-weight:600;white-space:nowrap;">${echeance}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div class="d-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="d-icon" style="background:rgba(249,115,22,.08);color:#f97316;width:34px;height:34px;border-radius:10px;font-size:15px;display:flex;align-items:center;justify-content:center;">
+            <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
+          </div>
+          <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:#111827;">Maintenance</div>
+        </div>
+        <a href="#/garage" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
       </div>
-    `;
+      <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
+      ${alerts.length > 4 ? `<div style="text-align:center;padding:4px;font-size:10px;color:#9ca3af;margin-top:4px;">+ ${alerts.length - 4} autre(s)</div>` : ''}
+    </div>`;
   },
 
   // =================== CHARTS ===================
@@ -743,11 +1058,11 @@ const DashboardPage = {
               type: 'line',
               label: 'CA réel',
               data: actualData,
-              borderColor: '#3b82f6',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99, 102, 241, 0.08)',
               fill: true,
               borderWidth: 2.5,
-              pointBackgroundColor: '#3b82f6',
+              pointBackgroundColor: '#6366f1',
               pointBorderColor: Utils.chartBorderColor(),
               pointBorderWidth: 2,
               pointRadius: 4,
@@ -805,52 +1120,6 @@ const DashboardPage = {
         }
       }));
     }
-  },
-
-  _renderMaintenanceAlerts(d) {
-    if (!d.maintenanceAlerts || d.maintenanceAlerts.length === 0) return '';
-
-    const typeLabels = { vidange:'Vidange', revision:'Revision', pneus:'Pneus', freins:'Freins', filtres:'Filtres', climatisation:'Clim.', courroie:'Courroie', controle_technique:'CT', batterie:'Batterie', amortisseurs:'Amortisseurs', echappement:'Echappement', carrosserie:'Carrosserie', autre:'Autre' };
-    const hasRetard = d.maintenanceAlerts.some(m => m.statut === 'en_retard');
-    const borderColor = hasRetard ? '#ef4444' : '#f59e0b';
-
-    const rows = d.maintenanceAlerts.slice(0, 5).map(m => {
-      const isRetard = m.statut === 'en_retard';
-      const color = isRetard ? '#ef4444' : '#f59e0b';
-      const icon = isRetard ? 'solar:danger-circle-bold-duotone' : 'solar:danger-triangle-bold-duotone';
-      const badgeLabel = isRetard ? 'EN RETARD' : 'URGENT';
-      let echeance = '';
-      if (m.prochaineDate) {
-        const jours = Math.ceil((new Date(m.prochaineDate) - new Date()) / 86400000);
-        if (jours < 0) echeance = Math.abs(jours) + 'j de retard';
-        else if (jours === 0) echeance = "aujourd\u2019hui";
-        else echeance = 'dans ' + jours + 'j';
-      }
-      const typeLabel = typeLabels[m.type] || m.type;
-      const chauffeurInfo = m.chauffeurNom ? ' \u2014 ' + m.chauffeurNom : '';
-
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);cursor:pointer;" onclick="Router.navigate('/vehicules/${m.vehiculeId}')">
-        <iconify-icon icon="${icon}" style="color:${color};font-size:0.9rem;flex-shrink:0;"></iconify-icon>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:600;">${typeLabel} <span style="font-size:var(--font-size-xs);font-weight:700;color:${color};">${badgeLabel}</span></div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.vehiculeLabel} (${m.immatriculation})${chauffeurInfo}</div>
-        </div>
-        ${echeance ? `<div style="font-size:var(--font-size-xs);color:${color};font-weight:600;white-space:nowrap;">${echeance}</div>` : ''}
-      </div>`;
-    }).join('');
-
-    const moreText = d.maintenanceAlerts.length > 5 ? `<div style="text-align:center;padding:4px;font-size:var(--font-size-xs);color:var(--text-muted);">+ ${d.maintenanceAlerts.length - 5} autre(s)...</div>` : '';
-
-    return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid ${borderColor};">
-      <div class="card-header">
-        <span class="card-title"><iconify-icon icon="solar:tuning-2-bold-duotone" style="color:${borderColor};"></iconify-icon> Alertes maintenance (${d.maintenanceAlerts.length})</span>
-        <a href="#/garage" class="btn btn-sm btn-secondary">Voir tout</a>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        ${rows}
-        ${moreText}
-      </div>
-    </div>`;
   },
 
 
