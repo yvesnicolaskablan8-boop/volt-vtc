@@ -833,58 +833,58 @@ const DashboardPage = {
         </div>
 
         <!-- 3 mini KPI cards at the bottom (inside the hero, like SellCraft) -->
-        <div style="display:flex;gap:12px;margin-top:24px;padding-bottom:24px;position:relative;z-index:3;">
+        <div style="display:flex;gap:14px;margin-top:24px;padding-bottom:24px;position:relative;z-index:3;">
 
-          <!-- Versements (cream/green tint — like Total Orders) -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(220,252,231,.5);border-radius:16px;padding:16px 18px;border:1px solid rgba(187,247,208,.3);transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <!-- Versements (cream/yellow-green tint — like Total Orders) -->
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(253,246,220,.65);border-radius:20px;padding:22px 20px 18px;border:1px solid rgba(253,230,138,.25);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <div style="font-size:12px;font-weight:500;color:#6b7280;">Versements</div>
-              <span style="font-size:14px;color:#9ca3af;cursor:pointer;">⋮</span>
+              <div style="font-size:13px;font-weight:600;color:#6b7280;">Versements</div>
+              <span style="font-size:16px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
             </div>
-            <div style="font-size:26px;font-weight:900;color:#111827;margin:6px 0;letter-spacing:-.8px;font-feature-settings:'tnum';">${d.nbVersementsPeriode}</div>
+            <div style="font-size:34px;font-weight:900;color:#111827;margin:12px 0 14px;letter-spacing:-1.2px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalVerse)}</div>
             <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:5px;">
-                <span class="d-tag ${d.retardCount > 0 ? 'red' : 'green'}" style="padding:2px 7px;font-size:10px;">${d.retardCount > 0 ? '-' : '+'}${d.retardCount}</span>
-                <span style="font-size:10px;color:#6b7280;">${d.retardCount} en retard</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:${d.caTrend >= 0 ? 'rgba(34,197,94,.15);color:#16a34a' : 'rgba(239,68,68,.15);color:#dc2626'};">${d.caTrend >= 0 ? '+' : ''}${Math.abs(Math.round(d.caTrend))}%</span>
+                <span style="font-size:11px;color:#6b7280;font-weight:500;">${d.nbVersementsPeriode} Ce mois</span>
               </div>
-              <div style="width:30px;height:30px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;">
-                <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:14px;color:#fff;"></iconify-icon>
+              <div style="width:34px;height:34px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:15px;color:#fff;"></iconify-icon>
               </div>
             </div>
           </a>
 
           <!-- Dettes (rose/salmon tint — like Cancel Orders) -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(254,226,226,.4);border-radius:16px;padding:16px 18px;border:1px solid rgba(254,202,202,.3);transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(254,226,226,.45);border-radius:20px;padding:22px 20px 18px;border:1px solid rgba(254,202,202,.25);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <div style="font-size:12px;font-weight:500;color:#6b7280;">Dettes</div>
-              <span style="font-size:14px;color:#9ca3af;cursor:pointer;">⋮</span>
+              <div style="font-size:13px;font-weight:600;color:#6b7280;">Dettes</div>
+              <span style="font-size:16px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
             </div>
-            <div style="font-size:26px;font-weight:900;color:#111827;margin:6px 0;letter-spacing:-.8px;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalDettes)}</div>
+            <div style="font-size:34px;font-weight:900;color:#111827;margin:12px 0 14px;letter-spacing:-1.2px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalDettes)}</div>
             <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:5px;">
-                <span class="d-tag red" style="padding:2px 7px;font-size:10px;">${d.nbDetteDrivers > 0 ? '-' : ''}${d.nbDetteDrivers}</span>
-                <span style="font-size:10px;color:#6b7280;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(239,68,68,.15);color:#dc2626;">${d.nbDetteDrivers > 0 ? '-' : ''}${d.nbDetteDrivers}</span>
+                <span style="font-size:11px;color:#6b7280;font-weight:500;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''} Ce mois</span>
               </div>
-              <div style="width:30px;height:30px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;">
-                <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:14px;color:#fff;"></iconify-icon>
+              <div style="width:34px;height:34px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:15px;color:#fff;"></iconify-icon>
               </div>
             </div>
           </a>
 
           <!-- Pertes (lavender/purple tint — like Total Visitors) -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(237,233,254,.45);border-radius:16px;padding:16px 18px;border:1px solid rgba(221,214,254,.3);transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(237,233,254,.5);border-radius:20px;padding:22px 20px 18px;border:1px solid rgba(221,214,254,.25);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <div style="font-size:12px;font-weight:500;color:#6b7280;">Pertes</div>
-              <span style="font-size:14px;color:#9ca3af;cursor:pointer;">⋮</span>
+              <div style="font-size:13px;font-weight:600;color:#6b7280;">Pertes</div>
+              <span style="font-size:16px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
             </div>
-            <div style="font-size:26px;font-weight:900;color:#111827;margin:6px 0;letter-spacing:-.8px;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalPertes)}</div>
+            <div style="font-size:34px;font-weight:900;color:#111827;margin:12px 0 14px;letter-spacing:-1.2px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalPertes)}</div>
             <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="display:flex;align-items:center;gap:5px;">
-                <span class="d-tag orange" style="padding:2px 7px;font-size:10px;">${d.nbPerteDrivers > 0 ? '-' : ''}${d.nbPerteDrivers}</span>
-                <span style="font-size:10px;color:#6b7280;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(34,197,94,.15);color:#16a34a;">+${Math.abs(Math.round(d.caTrend))}%</span>
+                <span style="font-size:11px;color:#6b7280;font-weight:500;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''} Ce mois</span>
               </div>
-              <div style="width:30px;height:30px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;">
-                <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:14px;color:#fff;"></iconify-icon>
+              <div style="width:34px;height:34px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <iconify-icon icon="solar:arrow-right-up-bold" style="font-size:15px;color:#fff;"></iconify-icon>
               </div>
             </div>
           </a>
