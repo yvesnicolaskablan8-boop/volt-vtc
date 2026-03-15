@@ -33,9 +33,17 @@ const ComptabilitePage = {
 
   _template() {
     return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Comptabilité</h1>
-        <div class="page-actions">
+      <div class="d-wrap"><div class="d-bg">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
+        <div>
+          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Finance</div>
+          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
+            <iconify-icon icon="solar:calculator-bold-duotone" style="color:#6366f1;"></iconify-icon> Comptabilité
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-secondary" onclick="ComptabilitePage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
           <button class="btn btn-secondary" onclick="ComptabilitePage._exportCSV()"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> CSV</button>
           <button class="btn btn-secondary" onclick="ComptabilitePage._exportComptable()"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Export comptable</button>
@@ -58,6 +66,8 @@ const ComptabilitePage = {
 
       <!-- Contenu dynamique -->
       <div id="compta-content"></div>
+
+      </div></div>
     `;
   },
 
@@ -150,116 +160,116 @@ const ComptabilitePage = {
     });
 
     return `
-      <!-- KPIs financiers simplifiés -->
-      <div class="grid-4" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card green">
-          <div class="kpi-icon"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon></div>
-          <div class="kpi-value" style="color:var(--success)">${Utils.formatCurrency(totalRecettes)}</div>
-          <div class="kpi-label">Encaissements du mois</div>
-          <div class="kpi-trend ${trendRecettes >= 0 ? 'up' : 'down'}">
-            <iconify-icon icon="solar:arrow-${trendRecettes >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(trendRecettes).toFixed(1)}% vs mois dernier
+      <!-- KPIs financiers -->
+      <div class="d-grid d-g4" style="margin-bottom:24px;">
+        <div class="d-card">
+          <div class="d-icon" style="background:rgba(16,185,129,.12);color:#10b981;"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon></div>
+          <div class="d-val" style="color:#10b981;">${Utils.formatCurrency(totalRecettes)}</div>
+          <div class="d-lbl">Encaissements du mois</div>
+          <div class="d-tag ${trendRecettes >= 0 ? 'green' : 'red'}" style="margin-top:8px;">
+            <iconify-icon icon="solar:arrow-${trendRecettes >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(trendRecettes).toFixed(1)}%
           </div>
         </div>
-        <div class="kpi-card red">
-          <div class="kpi-icon"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon></div>
-          <div class="kpi-value" style="color:var(--danger)">${Utils.formatCurrency(totalDepenses)}</div>
-          <div class="kpi-label">Décaissements du mois</div>
-          <div class="kpi-trend ${trendDepenses <= 0 ? 'up' : 'down'}">
-            <iconify-icon icon="solar:arrow-${trendDepenses <= 0 ? 'down' : 'up'}-bold"></iconify-icon> ${Math.abs(trendDepenses).toFixed(1)}% vs mois dernier
+        <div class="d-card">
+          <div class="d-icon" style="background:rgba(239,68,68,.12);color:#ef4444;"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon></div>
+          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(totalDepenses)}</div>
+          <div class="d-lbl">Décaissements du mois</div>
+          <div class="d-tag ${trendDepenses <= 0 ? 'green' : 'red'}" style="margin-top:8px;">
+            <iconify-icon icon="solar:arrow-${trendDepenses <= 0 ? 'down' : 'up'}-bold"></iconify-icon> ${Math.abs(trendDepenses).toFixed(1)}%
           </div>
         </div>
-        <div class="kpi-card ${resultat >= 0 ? 'green' : 'red'}">
-          <div class="kpi-icon"><iconify-icon icon="solar:scale-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(resultat)}</div>
-          <div class="kpi-label">${resultat >= 0 ? 'Bénéfice du mois' : 'Perte du mois'}</div>
-          <div class="kpi-trend ${resultat >= 0 ? 'up' : 'down'}">
+        <div class="d-card"${resultat < 0 ? ' style="border-color:rgba(239,68,68,.2);"' : ''}>
+          <div class="d-icon" style="background:${resultat >= 0 ? 'rgba(16,185,129,.12);color:#10b981' : 'rgba(239,68,68,.12);color:#ef4444'};"><iconify-icon icon="solar:scale-bold-duotone"></iconify-icon></div>
+          <div class="d-val" style="color:${resultat >= 0 ? '#10b981' : '#ef4444'};">${Utils.formatCurrency(resultat)}</div>
+          <div class="d-lbl">${resultat >= 0 ? 'Bénéfice du mois' : 'Perte du mois'}</div>
+          <div class="d-tag ${resultat >= 0 ? 'green' : 'red'}" style="margin-top:8px;">
             <iconify-icon icon="solar:${resultat >= 0 ? 'emoji-funny-circle-bold-duotone' : 'sad-circle-bold-duotone'}"></iconify-icon> ${resultat >= 0 ? 'Positif' : 'Négatif'}
           </div>
         </div>
-        <div class="kpi-card cyan">
-          <div class="kpi-icon"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(soldeTotal)}</div>
-          <div class="kpi-label">Solde de trésorerie</div>
-          ${totalImpaye > 0 ? `<div class="kpi-trend down"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${Utils.formatCurrency(totalImpaye)} impayé</div>` : '<div class="kpi-trend up"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tout est à jour</div>'}
+        <div class="d-card">
+          <div class="d-icon" style="background:rgba(59,130,246,.12);color:#3b82f6;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
+          <div class="d-val" style="color:#3b82f6;">${Utils.formatCurrency(soldeTotal)}</div>
+          <div class="d-lbl">Solde de trésorerie</div>
+          ${totalImpaye > 0 ? `<div class="d-tag red" style="margin-top:8px;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${Utils.formatCurrency(totalImpaye)} impayé</div>` : '<div class="d-tag green" style="margin-top:8px;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> À jour</div>'}
         </div>
       </div>
 
       <!-- Commission Partenaire Yango -->
-      <div class="yango-section" id="compta-yango-section" style="margin-bottom:var(--space-lg);">
-        <div class="yango-section-header">
-          <div class="yango-section-title">
-            <iconify-icon icon="solar:hand-money-bold-duotone" style="color:#FC4C02"></iconify-icon>
-            <span>Commission Partenaire</span>
-            <span class="yango-badge-live">REVENU</span>
+      <div class="d-card" id="compta-yango-section" style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="d-icon" style="background:rgba(252,76,2,.12);color:#FC4C02;width:36px;height:36px;font-size:16px;"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
+            <span style="font-weight:700;font-size:15px;">Commission Partenaire</span>
+            <span class="d-tag green" style="font-size:10px;">REVENU</span>
           </div>
-          <div class="yango-section-actions" style="display:flex;align-items:center;gap:8px;">
-            <input type="date" id="cy-date-from" style="padding:4px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:var(--font-size-xs);" />
-            <span style="color:var(--text-muted);font-size:var(--font-size-xs);">au</span>
-            <input type="date" id="cy-date-to" style="padding:4px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:var(--font-size-xs);" />
-            <button class="btn btn-sm yango-refresh-btn" onclick="ComptabilitePage._loadYangoCommission()" id="compta-yango-refresh">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="date" id="cy-date-from" style="padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.5);color:inherit;font-size:12px;backdrop-filter:blur(8px);" />
+            <span style="color:#9ca3af;font-size:12px;">au</span>
+            <input type="date" id="cy-date-to" style="padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.5);color:inherit;font-size:12px;backdrop-filter:blur(8px);" />
+            <button class="btn btn-sm" onclick="ComptabilitePage._loadYangoCommission()" id="compta-yango-refresh" style="border-radius:12px;background:rgba(252,76,2,.1);color:#FC4C02;border:none;">
               <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
             </button>
           </div>
         </div>
-        <div class="grid-2" id="compta-yango-kpis">
-          <div class="kpi-card yango-kpi" style="border-top-color:rgba(34, 197, 94, 0.5) !important;">
-            <div class="kpi-icon yango-icon-green"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value" id="cy-comm-mois" style="color:var(--success)"><div class="yango-skeleton"></div></div>
-            <div class="kpi-label" id="cy-comm-mois-label">Commission du mois</div>
+        <div class="d-grid d-g21" id="compta-yango-kpis">
+          <div class="d-card">
+            <div class="d-icon" style="background:rgba(16,185,129,.12);color:#10b981;"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
+            <div class="d-val" id="cy-comm-mois" style="color:#10b981;"><div class="yango-skeleton"></div></div>
+            <div class="d-lbl" id="cy-comm-mois-label">Commission du mois</div>
           </div>
-          <div class="kpi-card yango-kpi" style="border-top-color:rgba(34, 197, 94, 0.5) !important;">
-            <div class="kpi-icon yango-icon-green"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value" id="cy-comm-jour" style="color:var(--success)"><div class="yango-skeleton"></div></div>
-            <div class="kpi-label" id="cy-comm-jour-label">Commission aujourd'hui</div>
+          <div class="d-card">
+            <div class="d-icon" style="background:rgba(16,185,129,.12);color:#10b981;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div class="d-val" id="cy-comm-jour" style="color:#10b981;"><div class="yango-skeleton"></div></div>
+            <div class="d-lbl" id="cy-comm-jour-label">Commission aujourd'hui</div>
           </div>
         </div>
-        <div style="margin-top:var(--space-sm);padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
+        <div style="margin-top:12px;padding:8px 12px;border-radius:12px;background:rgba(252,76,2,.06);font-size:12px;color:#9ca3af;display:flex;align-items:center;gap:8px;">
           <iconify-icon icon="solar:info-circle-bold-duotone" style="color:#FC4C02"></iconify-icon>
           Commission partenaire reversée par Yango, calculée automatiquement a partir des transactions réelles.
         </div>
       </div>
 
       <!-- Guide rapide pour non-comptable -->
-      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--pilote-blue);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));">
-        <div style="display:flex;align-items:center;gap:var(--space-md);">
-          <div style="width:48px;height:48px;border-radius:50%;background:var(--pilote-blue-glow);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--pilote-blue);"><iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon></div>
+      <div class="d-card" style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div class="d-icon" style="background:rgba(99,102,241,.12);color:#6366f1;width:48px;height:48px;font-size:20px;"><iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon></div>
           <div style="flex:1;">
-            <h3 style="font-size:var(--font-size-base);margin-bottom:4px;">Comment ça marche ?</h3>
-            <p style="font-size:var(--font-size-sm);line-height:1.6;">
-              <strong style="color:var(--success);">Encaissement</strong> = argent qui rentre (versements chauffeurs, paiements clients, <strong>commission Yango</strong>)<br>
-              <strong style="color:var(--danger);">Décaissement</strong> = argent qui sort (carburant, maintenance, salaires, loyers, assurance)<br>
-              <strong style="color:var(--pilote-blue);">Bénéfice</strong> = Encaissements − Décaissements. Si positif, vous gagnez de l'argent !
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;">Comment ça marche ?</h3>
+            <p style="font-size:13px;line-height:1.6;color:#6b7280;">
+              <strong style="color:#10b981;">Encaissement</strong> = argent qui rentre (versements chauffeurs, paiements clients, <strong>commission Yango</strong>)<br>
+              <strong style="color:#ef4444;">Décaissement</strong> = argent qui sort (carburant, maintenance, salaires, loyers, assurance)<br>
+              <strong style="color:#6366f1;">Bénéfice</strong> = Encaissements − Décaissements. Si positif, vous gagnez de l'argent !
             </p>
           </div>
         </div>
       </div>
 
       <!-- Charts -->
-      <div class="charts-grid">
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Encaissements vs Décaissements (6 mois)</div>
+      <div class="d-grid d-g21" style="margin-bottom:24px;">
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <div class="d-icon" style="background:rgba(59,130,246,.12);color:#3b82f6;width:32px;height:32px;font-size:14px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
+            <span style="font-weight:700;font-size:14px;">Encaissements vs Décaissements (6 mois)</span>
           </div>
-          <div class="chart-container" style="height:300px;">
-            <canvas id="chart-compta-overview"></canvas>
-          </div>
+          <div style="height:300px;"><canvas id="chart-compta-overview"></canvas></div>
         </div>
-
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Répartition des dépenses du mois</div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <div class="d-icon" style="background:rgba(245,158,11,.12);color:#f59e0b;width:32px;height:32px;font-size:14px;"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon></div>
+            <span style="font-weight:700;font-size:14px;">Répartition des dépenses du mois</span>
           </div>
-          <div class="chart-container" style="height:300px;">
-            <canvas id="chart-compta-depenses"></canvas>
-          </div>
+          <div style="height:300px;"><canvas id="chart-compta-depenses"></canvas></div>
         </div>
       </div>
 
       <!-- Dernières opérations -->
-      <div class="card" style="margin-top:var(--space-lg);">
-        <div class="card-header">
-          <span class="card-title">Dernières opérations</span>
-          <button class="btn btn-sm btn-secondary" onclick="document.querySelector('[data-tab=journal]').click()">Voir tout</button>
+      <div class="d-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="d-icon" style="background:rgba(99,102,241,.12);color:#6366f1;width:32px;height:32px;font-size:14px;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></div>
+            <span style="font-weight:700;font-size:14px;">Dernières opérations</span>
+          </div>
+          <button class="btn btn-sm" onclick="document.querySelector('[data-tab=journal]').click()" style="border-radius:12px;background:rgba(99,102,241,.1);color:#6366f1;border:none;font-size:12px;padding:6px 14px;">Voir tout</button>
         </div>
         <div id="compta-recent-ops"></div>
       </div>
