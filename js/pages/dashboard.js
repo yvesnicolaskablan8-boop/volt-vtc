@@ -818,18 +818,22 @@ const DashboardPage = {
           <button style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;padding:4px;">⋮</button>
         </div>
 
-        <!-- Big number + trend -->
-        <div style="font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;line-height:1;font-feature-settings:'tnum';position:relative;z-index:2;">${Utils.formatCurrency(d.caThisMonth)}</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;position:relative;z-index:2;">
-          <span class="d-tag ${d.caTrend >= 0 ? 'green' : 'red'}">
-            ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
-          </span>
-          <span style="font-size:12px;color:#6b7280;font-weight:500;">• ${Utils.formatCurrency(d.caMoyenJour)} / jour</span>
-        </div>
-
-        <!-- Chart as background (Chart.js canvas — line + bars like SellCraft) -->
-        <div style="position:relative;z-index:1;height:100px;margin-top:16px;margin-bottom:-8px;">
-          <canvas id="chart-hero-ca"></canvas>
+        <!-- CA number (left) + Chart (right) — side by side like SellCraft -->
+        <div style="display:flex;align-items:flex-end;gap:24px;position:relative;z-index:2;">
+          <!-- Left: big number + trend -->
+          <div style="flex-shrink:0;">
+            <div style="font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.caThisMonth)}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+              <span class="d-tag ${d.caTrend >= 0 ? 'green' : 'red'}">
+                ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
+              </span>
+              <span style="font-size:12px;color:#6b7280;font-weight:500;">• ${Utils.formatCurrency(d.caMoyenJour)} / jour</span>
+            </div>
+          </div>
+          <!-- Right: Chart (bars + line like SellCraft) -->
+          <div style="flex:1;height:110px;min-width:0;">
+            <canvas id="chart-hero-ca"></canvas>
+          </div>
         </div>
 
         <!-- 3 mini KPI cards at the bottom (inside the hero, like SellCraft) -->
