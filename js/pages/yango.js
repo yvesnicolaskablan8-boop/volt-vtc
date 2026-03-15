@@ -178,20 +178,20 @@ const YangoPage = {
         <style>
           .fleet-btn { display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all 0.2s;user-select:none; }
           .fleet-btn:hover { filter:brightness(1.15);transform:scale(1.05); }
-          .fleet-btn.active { border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,0.3); }
-          .fleet-btn.dimmed { opacity:0.4; }
+          .fleet-btn.active { border-color:rgba(255,255,255,0.6); }
+          .fleet-btn.dimmed { background:#3a3f47 !important;color:rgba(255,255,255,0.4);border-color:transparent; }
         </style>
         <div id="yp-fleet-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
-          <div class="fleet-btn active" data-fleet-filter="free" style="background:#22c55e;" onclick="YangoPage._toggleFleetFilter('free', this)">
+          <div class="fleet-btn active" data-fleet-filter="free" data-color="#22c55e" style="background:#22c55e;" onclick="YangoPage._toggleFleetFilter('free', this)">
             <span id="yp-fleet-free">-</span> Disponible
           </div>
-          <div class="fleet-btn active" data-fleet-filter="in_order" style="background:#f97316;" onclick="YangoPage._toggleFleetFilter('in_order', this)">
+          <div class="fleet-btn active" data-fleet-filter="in_order" data-color="#f97316" style="background:#f97316;" onclick="YangoPage._toggleFleetFilter('in_order', this)">
             <span id="yp-fleet-inorder">-</span> Commande active
           </div>
-          <div class="fleet-btn active" data-fleet-filter="busy" style="background:#ef4444;" onclick="YangoPage._toggleFleetFilter('busy', this)">
+          <div class="fleet-btn active" data-fleet-filter="busy" data-color="#ef4444" style="background:#ef4444;" onclick="YangoPage._toggleFleetFilter('busy', this)">
             <span id="yp-fleet-busy">-</span> Occupés
           </div>
-          <div class="fleet-btn active" data-fleet-filter="offline" style="background:#6b7280;" onclick="YangoPage._toggleFleetFilter('offline', this)">
+          <div class="fleet-btn active" data-fleet-filter="offline" data-color="#6b7280" style="background:#6b7280;" onclick="YangoPage._toggleFleetFilter('offline', this)">
             <span id="yp-fleet-offline">-</span> Hors ligne
           </div>
           <div style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:var(--bg-tertiary);color:var(--text-primary);font-size:12px;font-weight:600;">
@@ -618,14 +618,19 @@ const YangoPage = {
   },
 
   _toggleFleetFilter(status, btn) {
+    const originalColor = btn.dataset.color || '#6b7280';
     if (this._fleetFilters.has(status)) {
+      // Désactiver le filtre → bouton gris
       this._fleetFilters.delete(status);
       btn.classList.remove('active');
       btn.classList.add('dimmed');
+      btn.style.background = '';  // Le CSS .dimmed prend le relais
     } else {
+      // Réactiver le filtre → bouton coloré
       this._fleetFilters.add(status);
       btn.classList.add('active');
       btn.classList.remove('dimmed');
+      btn.style.background = originalColor;
     }
     this._renderFleetMarkers();
   },
