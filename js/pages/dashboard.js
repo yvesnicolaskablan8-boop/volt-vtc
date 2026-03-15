@@ -807,7 +807,7 @@ const DashboardPage = {
       </div>
 
       <!-- Row 1: Hero CA with sparkline (SellCraft "Total Sales" style) -->
-      <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;padding:24px 28px;margin-bottom:16px;">
+      <a href="#/versements" style="display:block;text-decoration:none;color:inherit;padding:24px 28px;margin-bottom:16px;background:#fff;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03);position:relative;overflow:hidden;transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.08)'" onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03)'">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div>
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
