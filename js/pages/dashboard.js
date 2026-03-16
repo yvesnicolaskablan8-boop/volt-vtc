@@ -1089,9 +1089,15 @@ const DashboardPage = {
   _renderMesTaches() {
     const session = typeof Auth !== 'undefined' ? Auth.getSession() : null;
     const userId = session ? session.userId : '';
+    const isAdmin = session && session.role === 'Administrateur';
     const allTaches = Store.get('taches') || [];
-    // Taches assignees a l'utilisateur courant (ou toutes si admin)
-    const mesTaches = allTaches.filter(t => t.assigneA === userId && t.statut !== 'terminee' && t.statut !== 'annulee');
+
+    // Admin: taches qu'il a creees (attribuees aux autres)
+    // Non-admin: taches qui lui sont assignees
+    const mesTaches = isAdmin
+      ? allTaches.filter(t => t.creePar === userId && t.statut !== 'terminee' && t.statut !== 'annulee')
+      : allTaches.filter(t => t.assigneA === userId && t.statut !== 'terminee' && t.statut !== 'annulee');
+
     const aFaire = mesTaches.filter(t => t.statut === 'a_faire').length;
     const enCours = mesTaches.filter(t => t.statut === 'en_cours').length;
     const urgentes = mesTaches.filter(t => t.priorite === 'urgente').length;
@@ -1103,13 +1109,9 @@ const DashboardPage = {
       return (pOrd[a.priorite] ?? 2) - (pOrd[b.priorite] ?? 2);
     }).slice(0, 3);
 
-    const prioriteColors = { basse: '#3b82f6', normale: '#22c55e', haute: '#f97316', urgente: '#ef4444' };
+    const statutLabels = { a_faire: 'A faire', en_cours: 'En cours' };
 
-    // Dynamic color based on task state
-    // Red: urgent tasks or tasks en retard
-    // Orange: haute priorite tasks
-    // Yellow/amber: tasks a faire (normal)
-    // Green: no pending tasks — all good
+    // Dynamic color
     let cardGrad, cardShadow;
     if (enRetard > 0 || urgentes > 0) {
       cardGrad = 'linear-gradient(135deg,#ef4444,#f87171)';
@@ -1125,15 +1127,22 @@ const DashboardPage = {
       cardShadow = '0 4px 20px rgba(34,197,94,.35)';
     }
 
+    const title = isAdmin ? 'Taches attribuees' : 'Mes taches';
+    const subtitle = isAdmin
+      ? `${mesTaches.length} tache${mesTaches.length !== 1 ? 's' : ''} en cours`
+      : `${mesTaches.length} en cours / a faire`;
+    const emptyMsg = isAdmin ? 'Aucune tache attribuee' : 'Aucune tache en attente';
+    const icon = isAdmin ? 'solar:users-group-rounded-bold-duotone' : 'solar:checklist-bold-duotone';
+
     return `
       <a href="#/taches" class="d-card" style="text-decoration:none;color:inherit;background:${cardGrad};border:none;box-shadow:${cardShadow};padding:16px 20px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
           <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(4px);">
-            <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
+            <iconify-icon icon="${icon}"></iconify-icon>
           </div>
           <div>
-            <div style="font-weight:700;font-size:var(--font-size-sm);color:#fff;margin:0;">Mes taches</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.8);">${mesTaches.length} en cours / a faire</div>
+            <div style="font-weight:700;font-size:var(--font-size-sm);color:#fff;margin:0;">${title}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.8);">${subtitle}</div>
           </div>
           ${enRetard > 0 ? `<span style="margin-left:auto;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(239,68,68,.9);color:#fff;">${enRetard} en retard</span>` : ''}
         </div>
@@ -1151,16 +1160,17 @@ const DashboardPage = {
         </div>
         ${top3.length > 0 ? `<div style="display:flex;flex-direction:column;gap:4px;">
           ${top3.map(t => {
-            const pc = prioriteColors[t.priorite] || '#6b7280';
+            const sLabel = statutLabels[t.statut] || t.statut;
             const isLate = t.dateEcheance && t.dateEcheance < new Date().toISOString().split('T')[0];
             return `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.15);font-size:11px;">
               <span style="width:5px;height:5px;border-radius:50%;background:#fff;flex-shrink:0;"></span>
               <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:#fff;">${t.titre}</span>
+              ${isAdmin ? `<span style="font-size:10px;color:rgba(255,255,255,.7);">${t.assigneANom || 'Non assigne'}</span>` : ''}
               ${isLate ? '<span style="color:#fecaca;font-weight:600;font-size:10px;">En retard</span>' : ''}
-              ${t.dateEcheance ? `<span style="font-size:10px;color:rgba(255,255,255,.7);">${Utils.formatDate(t.dateEcheance)}</span>` : ''}
+              <span style="padding:2px 6px;border-radius:8px;font-size:9px;font-weight:600;background:rgba(255,255,255,.2);color:#fff;">${sLabel}</span>
             </div>`;
           }).join('')}
-        </div>` : `<div style="text-align:center;padding:8px;color:rgba(255,255,255,.7);font-size:12px;">Aucune tache en attente</div>`}
+        </div>` : `<div style="text-align:center;padding:8px;color:rgba(255,255,255,.7);font-size:12px;">${emptyMsg}</div>`}
       </a>`;
   },
 
