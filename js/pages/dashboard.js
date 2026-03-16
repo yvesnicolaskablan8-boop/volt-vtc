@@ -405,7 +405,7 @@ const DashboardPage = {
     const periodLabel = isMonthView ? monthLabel : Utils.formatDate(selectedDay);
 
     // =================== PLANNING HEATMAP (semaine) ===================
-    const hmToday = now.toISOString().split('T')[0];
+    const hmToday = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const hmSel = new Date(selectedDay);
     const hmDow = hmSel.getDay() || 7; // 1=Lun ... 7=Dim
     const hmMonday = new Date(hmSel);
@@ -415,7 +415,7 @@ const DashboardPage = {
     for (let i = 0; i < 7; i++) {
       const d = new Date(hmMonday);
       d.setDate(hmMonday.getDate() + i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       heatmapWeekDays.push({ date: ds, label: dayLabels[i], dayNum: d.getDate(), isToday: ds === hmToday });
     }
     const activeDrivers = chauffeurs.filter(c => c.statut === 'actif').sort((a, b) => (a.prenom || '').localeCompare(b.prenom || ''));
@@ -428,7 +428,7 @@ const DashboardPage = {
         const isPlanned = planning.some(p => p.chauffeurId === c.id && p.date === wd.date);
         if (!isPlanned) return 'repos';
         // Planned — check if future
-        if (wd.date > hmToday) return 'programme';
+        if (wd.date >= hmToday) return 'programme';
         // Past or today — check versement
         const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime'));
         return hasVersement ? 'verse' : 'en_retard';
