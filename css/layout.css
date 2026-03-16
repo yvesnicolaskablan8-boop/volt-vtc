@@ -495,7 +495,9 @@
   padding: var(--space-xl);
   max-width: 1600px;
   width: 100%;
-  overflow-x: hidden;
+  box-sizing: border-box;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ========== PAGE HEADER ========== */

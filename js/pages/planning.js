@@ -53,7 +53,7 @@ const PlanningPage = {
       </div>
 
       <!-- Navigation & Filtres -->
-      <div class="card planning-nav-card" style="margin-bottom:var(--space-lg);padding:var(--space-sm) var(--space-md);overflow:hidden;">
+      <div class="card planning-nav-card" style="margin-bottom:var(--space-lg);padding:var(--space-sm) var(--space-md);overflow:visible;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
           <div style="display:flex;align-items:center;gap:6px;">
             <button class="btn btn-sm btn-secondary" id="btn-prev" style="padding:4px 8px;"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
@@ -424,8 +424,8 @@ const PlanningPage = {
         }
       </style>
 
-      <div class="card" style="padding:16px;overflow-x:auto;border-radius:20px;max-width:100%;">
-        <div class="pg-grid" style="min-width:750px;">
+      <div class="card" style="padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:20px;max-width:100%;box-sizing:border-box;">
+        <div class="pg-grid" style="min-width:700px;">
           <!-- Header -->
           <div></div>
           ${days.map(d => `
