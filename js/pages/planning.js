@@ -320,6 +320,7 @@ const PlanningPage = {
         <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(100,116,139,.08);font-size:12px;font-weight:600;color:#64748b;"><span style="width:7px;height:7px;border-radius:50%;background:#64748b;"></span> Repos</div>
         <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(239,68,68,.08);font-size:12px;font-weight:600;color:#ef4444;"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;"></span> Maladie</div>
         <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(59,130,246,.08);font-size:12px;font-weight:600;color:#3b82f6;"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;"></span> Congé</div>
+        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(239,68,68,.08);font-size:12px;font-weight:600;color:#ef4444;"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;"></span> Suspendu</div>
       </div>
 
       <!-- Grille planning moderne -->
@@ -419,10 +420,19 @@ const PlanningPage = {
               : `<div class="pg-avatar" style="background:linear-gradient(135deg,${avatarColor},${avatarColor}dd);">${initials}</div>`;
             const vehLabel = ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '';
 
-            let html = `<a href="#/chauffeurs/${ch.id}" class="pg-driver ${rowClass}" title="${ch.prenom} ${ch.nom}">
+            const isSuspendu = ch.statut === 'suspendu';
+            const isRepos = ch.statut === 'repos';
+            const statutBadge = isSuspendu
+              ? '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(239,68,68,.12);color:#ef4444;font-weight:600;white-space:nowrap;">Suspendu</span>'
+              : isRepos
+                ? '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(100,116,139,.12);color:#64748b;font-weight:600;white-space:nowrap;">Repos</span>'
+                : '';
+            const driverOpacity = isSuspendu ? 'opacity:.5;' : '';
+
+            let html = `<a href="#/chauffeurs/${ch.id}" class="pg-driver ${rowClass}" title="${ch.prenom} ${ch.nom}" style="${driverOpacity}">
               ${avatarHtml}
               <div class="pg-driver-info">
-                <div class="pg-driver-name">${ch.prenom} ${ch.nom}</div>
+                <div class="pg-driver-name" style="display:flex;align-items:center;gap:4px;">${ch.prenom} ${ch.nom} ${statutBadge}</div>
                 ${vehLabel ? `<div class="pg-driver-sub">${vehLabel}</div>` : ''}
               </div>
             </a>`;
@@ -432,6 +442,15 @@ const PlanningPage = {
               const absences = this._getDriverAbsencesForDate(ch.id, d.date);
               const isToday = this._isToday(d.date);
               const todayBg = isToday ? 'background:rgba(99,102,241,.08);border-left:2px solid rgba(99,102,241,.2);border-right:2px solid rgba(99,102,241,.2);' : '';
+
+              // Chauffeur suspendu — toutes les cellules grisées
+              if (isSuspendu) {
+                return `<div class="pg-cell ${rowClass}" style="${todayBg}opacity:.4;">
+                  <div style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:repeating-linear-gradient(135deg,transparent,transparent 3px,rgba(239,68,68,.06) 3px,rgba(239,68,68,.06) 6px);border:1px dashed rgba(239,68,68,.25);font-size:10px;color:#ef4444;font-weight:600;" title="Chauffeur suspendu">
+                    <iconify-icon icon="solar:forbidden-circle-bold-duotone" style="font-size:14px;"></iconify-icon>
+                  </div>
+                </div>`;
+              }
 
               if (absences.length > 0) {
                 const a = absences[0];
@@ -451,6 +470,15 @@ const PlanningPage = {
                       ${this._getShiftTimeShort(s)}
                     </div>`;
                   }).join('')}
+                </div>`;
+              }
+
+              // Chauffeur en repos (statut global) — cellule repos
+              if (isRepos) {
+                return `<div class="pg-cell ${rowClass}" style="${todayBg}opacity:.5;">
+                  <div style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:linear-gradient(135deg,rgba(100,116,139,.08),rgba(100,116,139,.04));border:1px dashed rgba(100,116,139,.25);font-size:10px;color:#94a3b8;font-weight:600;" title="Chauffeur au repos">
+                    <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:14px;"></iconify-icon>
+                  </div>
                 </div>`;
               }
 
