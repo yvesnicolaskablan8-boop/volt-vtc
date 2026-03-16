@@ -189,7 +189,9 @@ const TachesPage = {
         </span>
       </div>
 
-      <div class="utc-titre">${t.titre}</div>
+      <div class="utc-titre">
+        ${!isDone && t.statut === 'en_cours' ? '<span class="utc-encours-badge"><iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon> En cours</span> ' : ''}${t.titre}
+      </div>
       ${t.description ? `<div class="utc-desc">${t.description}</div>` : ''}
 
       <div class="utc-meta">
@@ -207,9 +209,13 @@ const TachesPage = {
 
       ${!isDone ? `
       <div class="utc-actions">
+        ${t.statut === 'a_faire' ? `
+        <button class="btn-utc btn-utc-start btn-utc-done-full" onclick="TachesPage._changeStatut('${t.id}', 'en_cours')">
+          <iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Je m'en occupe
+        </button>` : `
         <button class="btn-utc btn-utc-done btn-utc-done-full" onclick="TachesPage._changeStatut('${t.id}', 'terminee')">
           <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tache effectuee
-        </button>
+        </button>`}
         <button class="btn-utc btn-utc-detail" onclick="TachesPage._viewTache('${t.id}')">
           <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
         </button>
@@ -271,7 +277,8 @@ const TachesPage = {
       .utc-type { display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text-muted); }
       .utc-priorite { display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700; }
 
-      .utc-titre { font-size:15px;font-weight:700;color:var(--text-primary);line-height:1.35; }
+      .utc-titre { font-size:15px;font-weight:700;color:var(--text-primary);line-height:1.35;display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
+      .utc-encours-badge { display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(59,130,246,.12);color:#3b82f6;white-space:nowrap; }
       .utc-desc { font-size:12px;color:var(--text-muted);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
 
       .utc-meta { display:flex;flex-wrap:wrap;gap:10px;font-size:12px; }
