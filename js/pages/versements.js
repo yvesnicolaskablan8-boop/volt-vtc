@@ -214,59 +214,75 @@ const VersementsPage = {
         </div>
       </div>
 
-      <!-- KPIs -->
-      <div class="d-grid" style="grid-template-columns:repeat(auto-fill,minmax(185px,1fr));margin-bottom:24px;">
-        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('attendu')" title="Cliquez pour voir le détail">
+      <!-- KPIs — Row 1 : Montant attendu + Versé + Taux + Programmés -->
+      <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#6366f1,#818cf8);border:none;box-shadow:0 4px 20px rgba(99,102,241,.25);" onclick="VersementsPage._showKpiDetail('attendu')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">Montant attendu</div>
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Montant attendu</div>
           </div>
-          <div class="d-val">${Utils.formatCurrency(d.totalAttendu)}</div>
-          <div class="d-sub">${d.periodLabel}</div>
+          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalAttendu)}</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.6);">${d.periodLabel}</div>
         </div>
-        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('verse')" title="Cliquez pour voir le détail">
+        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#10b981,#34d399);border:none;box-shadow:0 4px 20px rgba(16,185,129,.25);" onclick="VersementsPage._showKpiDetail('verse')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">Montant versé</div>
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Montant versé</div>
           </div>
-          <div class="d-val" style="color:#10b981;">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="d-sub">${d.periodLabel}</div>
+          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.6);">${d.periodLabel}</div>
         </div>
-        <div class="d-card" style="cursor:pointer;${d.tauxRecouvrement < 80 ? 'border-color:rgba(239,68,68,.2);' : ''}" onclick="VersementsPage._showKpiDetail('taux')">
+        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,${d.tauxRecouvrement >= 80 ? '#10b981,#34d399' : '#ef4444,#f87171'});border:none;box-shadow:0 4px 20px ${d.tauxRecouvrement >= 80 ? 'rgba(16,185,129,.25)' : 'rgba(239,68,68,.25)'};" onclick="VersementsPage._showKpiDetail('taux')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:${d.tauxRecouvrement >= 80 ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};color:${d.tauxRecouvrement >= 80 ? '#10b981' : '#ef4444'};"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">Taux recouvrement</div>
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Taux recouvrement</div>
           </div>
-          <div class="d-val" style="color:${d.tauxRecouvrement >= 80 ? '#10b981' : '#ef4444'};">${d.tauxRecouvrement.toFixed(1)}%</div>
+          <div class="d-val" style="color:#fff;">${d.tauxRecouvrement.toFixed(1)}%</div>
+          <div class="d-bar-track" style="margin-top:10px;background:rgba(255,255,255,.15);">
+            <div class="d-bar-fill" style="width:${Math.min(d.tauxRecouvrement,100)}%;background:rgba(255,255,255,.5);"></div>
+          </div>
         </div>
-        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('programmes')">
+        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#3b82f6,#60a5fa);border:none;box-shadow:0 4px 20px rgba(59,130,246,.25);" onclick="VersementsPage._showKpiDetail('programmes')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">Chauffeurs programmés</div>
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Chauffeurs programmés</div>
           </div>
-          <div class="d-val">${d.nbChauffeursProgrammes}</div>
+          <div class="d-val" style="color:#fff;">${d.nbChauffeursProgrammes}</div>
         </div>
-        <div class="d-card" style="cursor:pointer;${d.byStatus.retard > 0 ? 'border-color:rgba(239,68,68,.2);' : ''}" onclick="VersementsPage._showKpiDetail('retard')">
+      </div>
+
+      <!-- KPIs — Row 2 : En retard + Dettes + Pertes -->
+      <div class="d-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;">
+        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;box-shadow:0 4px 20px rgba(139,92,246,.25);" onclick="VersementsPage._showKpiDetail('retard')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:#ef4444;">En retard</div>
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">En retard</div>
           </div>
-          <div class="d-val" style="color:#ef4444;">${d.byStatus.retard}</div>
+          <div class="d-val" style="color:#fff;">${d.byStatus.retard}</div>
+          <div style="margin-top:10px;">
+            <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);font-size:11px;font-weight:700;color:#fff;">${d.byStatus.retard > 0 ? 'Action requise' : 'Tout est OK'}</span>
+          </div>
         </div>
-        <div class="d-card" style="cursor:pointer;${d.totalDettes > 0 ? 'border-color:rgba(245,158,11,.2);' : ''}" onclick="document.getElementById('dette-section')?.scrollIntoView({behavior:'smooth'})">
+        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#f97316,#fb923c);border:none;box-shadow:0 4px 20px rgba(249,115,22,.25);" onclick="document.getElementById('dette-section')?.scrollIntoView({behavior:'smooth'})">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:#f59e0b;">Dettes</div>
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Dettes</div>
           </div>
-          <div class="d-val" style="color:${d.totalDettes > 0 ? '#f59e0b' : '#10b981'};">${d.totalDettes > 0 ? Utils.formatCurrency(d.totalDettes) : '0 FCFA'}</div>
-          <div class="d-sub">${d.totalDettes > 0 ? d.nbDetteDrivers + ' chauffeur' + (d.nbDetteDrivers > 1 ? 's' : '') : 'Aucune dette'}</div>
+          <div class="d-val" style="color:#fff;">${d.totalDettes > 0 ? Utils.formatCurrency(d.totalDettes) : '0 FCFA'}</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.6);">${d.totalDettes > 0 ? d.nbDetteDrivers + ' chauffeur' + (d.nbDetteDrivers > 1 ? 's' : '') : 'Aucune dette'}</div>
+          <div class="d-bar-track" style="margin-top:10px;background:rgba(255,255,255,.15);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
+          </div>
         </div>
-        <div class="d-card" style="${d.totalPertes > 0 ? 'border-color:rgba(239,68,68,.2);' : ''}">
+        <div class="d-card" style="color:#fff;background:linear-gradient(135deg,#ef4444,#f87171);border:none;box-shadow:0 4px 20px rgba(239,68,68,.25);">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:#ef4444;">Pertes</div>
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Pertes</div>
           </div>
-          <div class="d-val" style="color:#ef4444;">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
+          <div class="d-val" style="color:#fff;">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
+          <div class="d-bar-track" style="margin-top:10px;background:rgba(255,255,255,.15);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
+          </div>
         </div>
       </div>
 
