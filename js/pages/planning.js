@@ -276,12 +276,12 @@ const PlanningPage = {
     return `
       <!-- KPIs semaine -->
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card green">
+        <div class="kpi-card">
           <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${chauffeurs.length}</div>
           <div class="kpi-label">Chauffeurs actifs</div>
         </div>
-        <div class="kpi-card cyan">
+        <div class="kpi-card blue">
           <div class="kpi-icon"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${filledSlots}</div>
           <div class="kpi-label">Créneaux planifiés</div>
@@ -292,7 +292,7 @@ const PlanningPage = {
           <div class="kpi-label">Chauffeurs absents</div>
         </div>
         <div class="kpi-card ${filledSlots / totalSlots >= 0.7 ? 'green' : 'red'}">
-          <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
+          <div class="kpi-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${totalSlots > 0 ? Math.round(filledSlots / totalSlots * 100) : 0}%</div>
           <div class="kpi-label">Taux de couverture</div>
         </div>

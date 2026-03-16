@@ -106,86 +106,54 @@ const YangoPage = {
       </div>
 
       <!-- KPIs Row 1: Main metrics -->
-      <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);">
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(34,197,94,.1);color:#22c55e;">
-              <iconify-icon icon="solar:user-check-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;">Chauffeurs en service</div>
-          </div>
-          <div class="d-val" id="yp-drivers-total"><div class="yango-skeleton"></div></div>
-          <div class="d-sub" id="yp-drivers-detail"><div class="yango-skeleton-sm"></div></div>
+      <div class="grid-4" style="margin-bottom:var(--space-md);">
+        <div class="kpi-card green">
+          <div class="kpi-icon"><iconify-icon icon="solar:user-check-bold-duotone"></iconify-icon></div>
+          <div class="kpi-label">Chauffeurs en service</div>
+          <div class="kpi-value" id="yp-drivers-total"><div class="yango-skeleton"></div></div>
+          <div class="d-sub" id="yp-drivers-detail" style="margin-top:6px;"><div class="yango-skeleton-sm"></div></div>
         </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(252,76,2,.1);color:#FC4C02;">
-              <iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;" id="yp-ca-label">CA du jour</div>
-          </div>
-          <div class="d-val" style="color:#FC4C02;" id="yp-ca-today"><div class="yango-skeleton"></div></div>
-          <div class="d-sub" id="yp-ca-detail"><div class="yango-skeleton-sm"></div></div>
+        <div class="kpi-card orange">
+          <div class="kpi-icon"><iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon></div>
+          <div class="kpi-label" id="yp-ca-label">CA du jour</div>
+          <div class="kpi-value" style="color:#FC4C02;" id="yp-ca-today"><div class="yango-skeleton"></div></div>
+          <div class="d-sub" id="yp-ca-detail" style="margin-top:6px;"><div class="yango-skeleton-sm"></div></div>
         </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;">
-              <iconify-icon icon="solar:bus-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;" id="yp-courses-label">Courses aujourd'hui</div>
-          </div>
-          <div class="d-val" id="yp-courses-today"><div class="yango-skeleton"></div></div>
-          <div class="d-sub" id="yp-courses-detail"><div class="yango-skeleton-sm"></div></div>
+        <div class="kpi-card blue">
+          <div class="kpi-icon"><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon></div>
+          <div class="kpi-label" id="yp-courses-label">Courses aujourd'hui</div>
+          <div class="kpi-value" id="yp-courses-today"><div class="yango-skeleton"></div></div>
+          <div class="d-sub" id="yp-courses-detail" style="margin-top:6px;"><div class="yango-skeleton-sm"></div></div>
         </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;">
-              <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;" id="yp-commission-label">Commission partenaire</div>
-          </div>
-          <div class="d-val" style="color:#10b981;" id="yp-commission"><div class="yango-skeleton"></div></div>
-          <div class="d-sub" id="yp-commission-detail"><div class="yango-skeleton-sm"></div></div>
+        <div class="kpi-card cyan">
+          <div class="kpi-icon"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
+          <div class="kpi-label" id="yp-commission-label">Commission partenaire</div>
+          <div class="kpi-value" style="color:#10b981;" id="yp-commission"><div class="yango-skeleton"></div></div>
+          <div class="d-sub" id="yp-commission-detail" style="margin-top:6px;"><div class="yango-skeleton-sm"></div></div>
         </div>
       </div>
 
       <!-- KPIs Row 2: Period totals + Activity -->
-      <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);">
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;">
-              <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;" id="yp-ca-month-label">CA du mois</div>
-          </div>
-          <div class="d-val" id="yp-ca-month"><div class="yango-skeleton"></div></div>
+      <div class="grid-4" style="margin-bottom:var(--space-md);">
+        <div class="kpi-card purple">
+          <div class="kpi-icon"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
+          <div class="kpi-label" id="yp-ca-month-label">CA du mois</div>
+          <div class="kpi-value" id="yp-ca-month"><div class="yango-skeleton"></div></div>
         </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;">
-              <iconify-icon icon="solar:sale-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;" id="yp-commission-month-label">Frais Yango (prélevés)</div>
-          </div>
-          <div class="d-val" style="color:#ef4444;" id="yp-commission-month"><div class="yango-skeleton"></div></div>
+        <div class="kpi-card red">
+          <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
+          <div class="kpi-label" id="yp-commission-month-label">Frais Yango (prélevés)</div>
+          <div class="kpi-value" style="color:#ef4444;" id="yp-commission-month"><div class="yango-skeleton"></div></div>
         </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(6,182,212,.1);color:#06b6d4;">
-              <iconify-icon icon="solar:route-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;" id="yp-courses-month-label">Courses du mois</div>
-          </div>
-          <div class="d-val" id="yp-courses-month"><div class="yango-skeleton"></div></div>
+        <div class="kpi-card cyan">
+          <div class="kpi-icon"><iconify-icon icon="solar:route-bold-duotone"></iconify-icon></div>
+          <div class="kpi-label" id="yp-courses-month-label">Courses du mois</div>
+          <div class="kpi-value" id="yp-courses-month"><div class="yango-skeleton"></div></div>
         </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;">
-              <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;">Temps d'activite moyen</div>
-          </div>
-          <div class="d-val" id="yp-activity-time"><div class="yango-skeleton"></div></div>
+        <div class="kpi-card yellow">
+          <div class="kpi-icon"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div>
+          <div class="kpi-label">Temps d'activite moyen</div>
+          <div class="kpi-value" id="yp-activity-time"><div class="yango-skeleton"></div></div>
         </div>
       </div>
 
