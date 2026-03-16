@@ -90,18 +90,17 @@
 </head>
 <body>
   <!-- Splash Screen -->
-  <div id="splash-screen" style="position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0e1a;transition:opacity .5s ease,visibility .5s ease;">
-    <div style="text-align:center;animation:splashFadeIn .8s ease-out both;">
-      <img src="assets/logo-pilote.png" alt="Pilote" style="width:90px;height:90px;margin-bottom:32px;animation:splashPulse 2s ease-in-out infinite;filter:drop-shadow(0 0 30px rgba(59,130,246,.4));">
-
-      <div style="width:180px;height:3px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin:0 auto;">
+  <div id="splash-screen" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f1629 0%,#1a1f3a 50%,#0f1629 100%);transition:opacity .5s ease,visibility .5s ease;">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashFadeIn .8s ease-out both;">
+      <img src="assets/logo-pilote.png" alt="Pilote" style="width:88px;height:88px;animation:splashPulse 2s ease-in-out infinite;filter:drop-shadow(0 0 24px rgba(59,130,246,.35));">
+      <div style="width:160px;height:3px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-top:28px;">
         <div id="splash-progress" style="width:0%;height:100%;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:3px;transition:width .3s ease;"></div>
       </div>
     </div>
   </div>
   <style>
-    @keyframes splashFadeIn{from{opacity:0;transform:translateY(20px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
-    @keyframes splashPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.85}}
+    @keyframes splashFadeIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+    @keyframes splashPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.88}}
   </style>
   <script>
   (function(){
