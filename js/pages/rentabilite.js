@@ -19,42 +19,62 @@ const RentabilitePage = {
   _getData() {
     const vehicules = Store.get('vehicules');
     const versements = Store.get('versements');
+    const chauffeurs = Store.get('chauffeurs') || [];
     const courses = Store.get('courses').filter(c => c.statut === 'terminee');
     const now = new Date();
+
+    // Map véhicule → chauffeurs assignés (pour relier les versements)
+    const vehiculeChauffeurIds = {};
+    chauffeurs.forEach(ch => {
+      if (ch.vehiculeAssigne) {
+        if (!vehiculeChauffeurIds[ch.vehiculeAssigne]) vehiculeChauffeurIds[ch.vehiculeAssigne] = [];
+        vehiculeChauffeurIds[ch.vehiculeAssigne].push(ch.id);
+      }
+    });
 
     // Per-vehicle analysis
     const analysis = vehicules.map(v => {
       const vCourses = courses.filter(c => c.vehiculeId === v.id);
-      const vVersements = versements.filter(vs => vs.vehiculeId === v.id);
+      // Relier versements via vehiculeId OU via les chauffeurs assignés au véhicule
+      const chIds = vehiculeChauffeurIds[v.id] || [];
+      const vVersements = versements.filter(vs => vs.vehiculeId === v.id || chIds.includes(vs.chauffeurId));
 
-      // Revenue (company commission = 20% of rides)
-      const totalRevenue = vVersements.filter(vs => vs.statut !== 'supprime').reduce((s, vs) => s + vs.montantVerse, 0);
+      const totalRevenue = vVersements.filter(vs => vs.statut !== 'supprime' && vs.montantVerse > 0).reduce((s, vs) => s + vs.montantVerse, 0);
       const totalCA = vCourses.reduce((s, c) => s + c.montantTTC, 0);
 
       // Months in service
       const startDate = new Date(v.dateCreation);
       const monthsInService = Math.max(1, Math.round((now - startDate) / (30 * 24 * 60 * 60 * 1000)));
 
-      // Costs
-      const maintenanceTotal = (v.coutsMaintenance || []).reduce((s, m) => s + m.montant, 0);
-      const assuranceTotal = (v.primeAnnuelle / 12) * monthsInService;
+      // Costs — only real expenses
+      const maintenanceTotal = (v.coutsMaintenance || []).reduce((s, m) => s + (m.montant || 0), 0);
+      const assuranceTotal = (v.primeAnnuelle && v.primeAnnuelle > 0) ? (v.primeAnnuelle / 12) * monthsInService : 0;
 
-      // Acquisition cost
-      let acquisitionTotal;
+      // Acquisition cost = only what has been paid so far
+      let acquisitionTotal = 0;
       if (v.typeAcquisition === 'leasing') {
-        const monthsPaid = Math.min(monthsInService, v.dureeLeasing);
-        acquisitionTotal = v.apportInitial + (v.mensualiteLeasing * monthsPaid);
+        const monthsPaid = Math.min(monthsInService, v.dureeLeasing || 36);
+        acquisitionTotal = (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * monthsPaid);
       } else {
-        acquisitionTotal = v.prixAchat;
+        acquisitionTotal = v.prixAchat || 0;
       }
 
-      // Energy cost estimate (FCFA - coutEnergie is per liter for thermal, per kWh for EV)
+      // Energy cost — only if kilometrage is tracked, otherwise 0
       const isEV = v.typeEnergie === 'electrique';
-      const defaultConsommation = isEV ? 15 : 6.5;
-      const defaultCoutEnergie = isEV ? 120 : 800;
-      const energyCost = (v.kilometrage * (v.consommation || defaultConsommation) / 100) * (v.coutEnergie || defaultCoutEnergie);
+      let energyCost = 0;
+      if (v.kilometrage && v.kilometrage > 0 && v.consommation && v.coutEnergie) {
+        energyCost = (v.kilometrage * v.consommation / 100) * v.coutEnergie;
+      }
 
-      const totalCost = acquisitionTotal + maintenanceTotal + assuranceTotal + energyCost;
+      // Also count real depenses from the store for this vehicle
+      const depenses = Store.get('depenses') || [];
+      const vehiculeDepenses = depenses.filter(dep => dep.vehiculeId === v.id).reduce((s, dep) => s + (dep.montant || 0), 0);
+
+      // Also count réparations from the store
+      const reparations = Store.get('reparations') || [];
+      const vehiculeReparations = reparations.filter(r => r.vehiculeId === v.id).reduce((s, r) => s + (r.coutReel || r.coutEstime || 0), 0);
+
+      const totalCost = acquisitionTotal + maintenanceTotal + assuranceTotal + energyCost + vehiculeDepenses + vehiculeReparations;
 
       const monthlyRevenue = totalRevenue / monthsInService;
       const monthlyCost = totalCost / monthsInService;
@@ -326,30 +346,30 @@ const RentabilitePage = {
         <div class="rent-chart-wrap">
           <div class="rent-section-title">
             <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">TCO par véhicule</div>
+            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Revenus vs Coûts par véhicule</div>
           </div>
-          <div style="height:320px;"><canvas id="chart-tco"></canvas></div>
+          <div style="height:340px;"><canvas id="chart-rev-vs-cost"></canvas></div>
+        </div>
+        <div class="rent-chart-wrap">
+          <div class="rent-section-title">
+            <div class="rent-section-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon></div>
+            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Répartition des coûts</div>
+          </div>
+          <div style="height:340px;"><canvas id="chart-cost-breakdown"></canvas></div>
         </div>
         <div class="rent-chart-wrap">
           <div class="rent-section-title">
             <div class="rent-section-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Leasing vs Cash (48 mois)</div>
+            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Profit mensuel par véhicule</div>
           </div>
-          <div style="height:320px;"><canvas id="chart-leasing-cash"></canvas></div>
-        </div>
-        <div class="rent-chart-wrap">
-          <div class="rent-section-title">
-            <div class="rent-section-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Profit mensuel</div>
-          </div>
-          <div style="height:320px;"><canvas id="chart-monthly-profit"></canvas></div>
+          <div style="height:340px;"><canvas id="chart-monthly-profit"></canvas></div>
         </div>
         <div class="rent-chart-wrap">
           <div class="rent-section-title">
             <div class="rent-section-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Amortissement (5 ans)</div>
+            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Projection leasing (36 mois)</div>
           </div>
-          <div style="height:320px;"><canvas id="chart-depreciation"></canvas></div>
+          <div style="height:340px;"><canvas id="chart-projection"></canvas></div>
         </div>
       </div>
 
@@ -412,209 +432,183 @@ const RentabilitePage = {
   _loadCharts(d) {
     this._charts = [];
     const cd = this._chartDefaults();
+    const shortLabel = (a) => a.vehicule.immatriculation || `${a.vehicule.marque} ${a.vehicule.modele}`.slice(0, 12);
 
-    // TCO stacked bar chart — modern rounded
-    const tcoCtx = document.getElementById('chart-tco');
-    if (tcoCtx) {
-      this._charts.push(new Chart(tcoCtx, {
+    // 1. Revenus vs Coûts — grouped bar with gradient
+    const revCostCtx = document.getElementById('chart-rev-vs-cost');
+    if (revCostCtx) {
+      const ctx2d = revCostCtx.getContext('2d');
+      const revGrad = ctx2d.createLinearGradient(0, 340, 0, 0);
+      revGrad.addColorStop(0, 'rgba(16,185,129,.15)');
+      revGrad.addColorStop(1, 'rgba(16,185,129,.9)');
+      const costGrad = ctx2d.createLinearGradient(0, 340, 0, 0);
+      costGrad.addColorStop(0, 'rgba(239,68,68,.15)');
+      costGrad.addColorStop(1, 'rgba(239,68,68,.9)');
+
+      this._charts.push(new Chart(revCostCtx, {
         type: 'bar',
         data: {
-          labels: d.analysis.map(a => `${a.vehicule.marque} ${a.vehicule.modele}`),
+          labels: d.analysis.map(a => shortLabel(a)),
           datasets: [
-            { label: 'Acquisition', data: d.analysis.map(a => Math.round(a.acquisitionTotal)), backgroundColor: '#6366f1', hoverBackgroundColor: '#818cf8', borderRadius: 10, borderSkipped: false },
-            { label: 'Assurance', data: d.analysis.map(a => a.assuranceTotal), backgroundColor: '#fbbf24', hoverBackgroundColor: '#fcd34d', borderRadius: 10, borderSkipped: false },
-            { label: 'Maintenance', data: d.analysis.map(a => Math.round(a.maintenanceTotal)), backgroundColor: '#f87171', hoverBackgroundColor: '#fca5a5', borderRadius: 10, borderSkipped: false },
-            { label: 'Énergie', data: d.analysis.map(a => a.energyCost), backgroundColor: '#22d3ee', hoverBackgroundColor: '#67e8f9', borderRadius: 10, borderSkipped: false }
+            { label: 'Revenus', data: d.analysis.map(a => Math.round(a.totalRevenue)), backgroundColor: revGrad, hoverBackgroundColor: '#10b981', borderRadius: 12, borderSkipped: false, barPercentage: 0.7 },
+            { label: 'Coûts', data: d.analysis.map(a => Math.round(a.totalCost)), backgroundColor: costGrad, hoverBackgroundColor: '#ef4444', borderRadius: 12, borderSkipped: false, barPercentage: 0.7 }
           ]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: {
             tooltip: { ...cd.tooltip, callbacks: {
-              title: (items) => {
-                const idx = items[0].dataIndex;
-                const a = d.analysis[idx];
-                return `${a.vehicule.marque} ${a.vehicule.modele} (${a.isEV ? '⚡ EV' : '⛽ Thermique'})`;
-              },
               label: (ctx) => ` ${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}`,
-              afterBody: (items) => {
-                const idx = items[0].dataIndex;
-                const a = d.analysis[idx];
-                return `\n  TCO total: ${Utils.formatCurrency(a.totalCost)}\n  Coût/km: ${a.coutParKm} FCFA`;
-              }
+              afterBody: (items) => { const a = d.analysis[items[0].dataIndex]; return `\n  Profit: ${Utils.formatCurrency(a.totalRevenue - a.totalCost)}\n  RSI: ${a.roi.toFixed(1)}%`; }
             }},
-            legend: cd.legend
+            legend: { ...cd.legend, position: 'top' }
           },
           scales: {
-            x: { stacked: true, grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 11 } } },
-            y: { stacked: true, grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11 }, callback: (v) => Utils.formatCurrency(v) }, border: { display: false } }
+            x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 10 }, maxRotation: 45 } },
+            y: { grid: { color: cd.gridColor, drawBorder: false }, ticks: { color: cd.tickColor, font: { size: 10 }, callback: v => (v/1000000).toFixed(1) + 'M' }, border: { display: false } }
           }
         }
       }));
     }
 
-    // Leasing vs Cash comparison
-    if (d.cumulativeLeasingCost.length > 0) {
-      const lcCtx = document.getElementById('chart-leasing-cash');
-      if (lcCtx) {
-        const labels = Array.from({ length: 49 }, (_, i) => i === 0 ? '0' : `${i}`);
-        let crossoverMonth = null;
-        for (let m = 1; m < d.cumulativeLeasingCost.length; m++) {
-          const diffPrev = d.cumulativeLeasingCost[m - 1] - d.cumulativeCashCost[m - 1];
-          const diffCurr = d.cumulativeLeasingCost[m] - d.cumulativeCashCost[m];
-          if ((diffPrev >= 0 && diffCurr < 0) || (diffPrev <= 0 && diffCurr > 0)) { crossoverMonth = m; break; }
-        }
+    // 2. Répartition des coûts — Doughnut moderne
+    const costBrkCtx = document.getElementById('chart-cost-breakdown');
+    if (costBrkCtx) {
+      const totalAcq = d.analysis.reduce((s, a) => s + (a.acquisitionTotal || 0), 0);
+      const totalMaint = d.analysis.reduce((s, a) => s + (a.maintenanceTotal || 0), 0);
+      const totalAssur = d.analysis.reduce((s, a) => s + (a.assuranceTotal || 0), 0);
+      const totalEnergy = d.analysis.reduce((s, a) => s + (a.energyCost || 0), 0);
+      const costData = [totalAcq, totalMaint, totalAssur, totalEnergy].map(v => Math.round(v));
+      const costLabels = ['Leasing / Achat', 'Maintenance', 'Assurance', 'Énergie'];
+      const costColors = ['#6366f1', '#f87171', '#fbbf24', '#22d3ee'];
+      const costHover = ['#818cf8', '#fca5a5', '#fcd34d', '#67e8f9'];
 
-        const ctxCanvas = lcCtx.getContext('2d');
-        const leasingGrad = ctxCanvas.createLinearGradient(0, 0, 0, 320);
-        leasingGrad.addColorStop(0, 'rgba(99,102,241,.25)');
-        leasingGrad.addColorStop(1, 'rgba(99,102,241,.02)');
-        const cashGrad = ctxCanvas.createLinearGradient(0, 0, 0, 320);
-        cashGrad.addColorStop(0, 'rgba(34,197,94,.25)');
-        cashGrad.addColorStop(1, 'rgba(34,197,94,.02)');
-
-        this._charts.push(new Chart(lcCtx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [
-              {
-                label: 'Leasing', data: d.cumulativeLeasingCost, borderColor: '#6366f1', borderWidth: 2.5, pointRadius: 0,
-                pointHoverRadius: 6, pointHoverBorderWidth: 2, pointHoverBackgroundColor: '#6366f1', pointHoverBorderColor: '#fff',
-                fill: true, backgroundColor: leasingGrad, tension: 0.4
-              },
-              {
-                label: 'Cash', data: d.cumulativeCashCost, borderColor: '#22c55e', borderWidth: 2.5, pointRadius: 0,
-                pointHoverRadius: 6, pointHoverBorderWidth: 2, pointHoverBackgroundColor: '#22c55e', pointHoverBorderColor: '#fff',
-                fill: true, backgroundColor: cashGrad, tension: 0.4
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-              tooltip: { ...cd.tooltip, callbacks: {
-                label: (ctx) => ` ${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}`,
-                afterBody: (items) => {
-                  const month = items[0].dataIndex;
-                  const diff = Math.abs(d.cumulativeLeasingCost[month] - d.cumulativeCashCost[month]);
-                  let lines = [`\n  Écart: ${Utils.formatCurrency(diff)}`];
-                  if (crossoverMonth !== null) lines.push(`  Seuil de rentabilité: mois ${crossoverMonth}`);
-                  return lines.join('\n');
-                }
-              }},
-              legend: cd.legend
-            },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 10 }, maxTicksLimit: 12 }, title: { display: true, text: 'Mois', color: cd.tickColor, font: { size: 11 } } },
-              y: { grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11 }, callback: (v) => Utils.formatCurrency(v) }, border: { display: false } }
-            }
-          }
-        }));
-      }
-    }
-
-    // Monthly profit bar
-    const profitCtx = document.getElementById('chart-monthly-profit');
-    if (profitCtx) {
-      this._charts.push(new Chart(profitCtx, {
-        type: 'bar',
+      this._charts.push(new Chart(costBrkCtx, {
+        type: 'doughnut',
         data: {
-          labels: d.analysis.map(a => `${a.vehicule.marque} ${a.vehicule.modele}`),
+          labels: costLabels,
           datasets: [{
-            label: 'Profit mensuel',
-            data: d.analysis.map(a => a.monthlyProfit),
-            backgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? '#34d399' : '#f87171'),
-            hoverBackgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? '#6ee7b7' : '#fca5a5'),
-            borderRadius: 12,
-            borderSkipped: false,
-            barPercentage: 0.65,
-            categoryPercentage: 0.7
+            data: costData,
+            backgroundColor: costColors,
+            hoverBackgroundColor: costHover,
+            borderWidth: 0,
+            hoverOffset: 12,
+            spacing: 4
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
+          cutout: '65%',
           plugins: {
-            legend: { display: false },
             tooltip: { ...cd.tooltip, callbacks: {
-              title: (items) => {
-                const idx = items[0].dataIndex;
-                const a = d.analysis[idx];
-                return `${a.vehicule.marque} ${a.vehicule.modele}`;
-              },
-              label: (ctx) => ` Profit mensuel: ${Utils.formatCurrency(ctx.raw)}`,
-              afterBody: (items) => {
-                const idx = items[0].dataIndex;
-                const a = d.analysis[idx];
-                return [`\n  Revenu/mois: ${Utils.formatCurrency(a.monthlyRevenue)}`, `  Coût/mois: ${Utils.formatCurrency(a.monthlyCost)}`, `  RSI: ${a.roi.toFixed(1)}%`].join('\n');
+              label: (ctx) => {
+                const total = costData.reduce((s, v) => s + v, 0);
+                const pct = total > 0 ? (ctx.raw / total * 100).toFixed(1) : 0;
+                return ` ${ctx.label}: ${Utils.formatCurrency(ctx.raw)} (${pct}%)`;
               }
-            }}
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 11 } } },
-            y: { grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11 }, callback: (v) => Utils.formatCurrency(v) }, border: { display: false } }
+            }},
+            legend: { position: 'bottom', labels: { color: cd.tickColor, font: { size: 12, weight: 600 }, usePointStyle: true, pointStyle: 'circle', padding: 16 } }
           }
         }
       }));
     }
 
-    // Depreciation chart
-    const depCtx = document.getElementById('chart-depreciation');
-    if (depCtx) {
-      const depColors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316'];
-      const datasets = d.analysis.map((a, i) => {
-        const depRate = a.isEV ? 0.85 : 0.80;
-        const data = [];
-        for (let y = 0; y <= 5; y++) data.push(Math.round(a.vehicule.prixAchat * Math.pow(depRate, y)));
-        const color = depColors[i % depColors.length];
-        return {
-          label: `${a.vehicule.marque} ${a.vehicule.modele}${a.isEV ? ' ⚡' : ''}`,
-          data,
-          borderColor: color,
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: color,
-          pointBorderColor: cd.isDark ? '#1a2235' : '#fff',
-          pointBorderWidth: 2,
-          pointHoverRadius: 7,
-          pointHoverBorderWidth: 2,
-          pointHoverBackgroundColor: color,
-          pointHoverBorderColor: '#fff',
-          borderDash: a.isEV ? [] : [6, 4],
-          tension: 0.3
-        };
+    // 3. Profit mensuel — bar chart avec gradient
+    const profitCtx = document.getElementById('chart-monthly-profit');
+    if (profitCtx) {
+      const ctx2d = profitCtx.getContext('2d');
+      const profitBgs = d.analysis.map(a => {
+        const g = ctx2d.createLinearGradient(0, 340, 0, 0);
+        if (a.monthlyProfit >= 0) { g.addColorStop(0, 'rgba(16,185,129,.1)'); g.addColorStop(1, 'rgba(16,185,129,.85)'); }
+        else { g.addColorStop(0, 'rgba(239,68,68,.1)'); g.addColorStop(1, 'rgba(239,68,68,.85)'); }
+        return g;
       });
 
-      this._charts.push(new Chart(depCtx, {
-        type: 'line',
+      this._charts.push(new Chart(profitCtx, {
+        type: 'bar',
         data: {
-          labels: ['Année 0', 'Année 1', 'Année 2', 'Année 3', 'Année 4', 'Année 5'],
-          datasets
+          labels: d.analysis.map(a => shortLabel(a)),
+          datasets: [{
+            label: 'Profit/mois',
+            data: d.analysis.map(a => a.monthlyProfit),
+            backgroundColor: profitBgs,
+            hoverBackgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? '#34d399' : '#f87171'),
+            borderRadius: 14, borderSkipped: false, barPercentage: 0.6
+          }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { ...cd.tooltip, callbacks: {
+              label: (ctx) => ` Profit: ${Utils.formatCurrency(ctx.raw)}/mois`,
+              afterLabel: (ctx) => { const a = d.analysis[ctx.dataIndex]; return `  Revenu: ${Utils.formatCurrency(a.monthlyRevenue)}/mois\n  Coût: ${Utils.formatCurrency(a.monthlyCost)}/mois`; }
+            }}
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 10 }, maxRotation: 45 } },
+            y: { grid: { color: cd.gridColor, drawBorder: false }, ticks: { color: cd.tickColor, font: { size: 10 }, callback: v => Utils.formatCurrency(v) }, border: { display: false } }
+          }
+        }
+      }));
+    }
+
+    // 4. Projection leasing — area chart (coût cumulé vs revenus cumulés sur durée leasing)
+    const projCtx = document.getElementById('chart-projection');
+    if (projCtx) {
+      const ctx2d = projCtx.getContext('2d');
+      const months = 36;
+      const labels = Array.from({ length: months + 1 }, (_, i) => i === 0 ? '0' : `${i}`);
+
+      // Coût leasing cumulé moyen (toute la flotte)
+      const avgMensualite = d.analysis.reduce((s, a) => s + (a.vehicule.mensualiteLeasing || 0), 0);
+      const totalApport = d.analysis.reduce((s, a) => s + (a.vehicule.apportInitial || 0), 0);
+      const avgMonthlyRevenue = d.analysis.reduce((s, a) => s + a.monthlyRevenue, 0);
+      const costCumul = labels.map((_, i) => totalApport + avgMensualite * i);
+      const revCumul = labels.map((_, i) => avgMonthlyRevenue * i);
+
+      const costGrad = ctx2d.createLinearGradient(0, 0, 0, 340);
+      costGrad.addColorStop(0, 'rgba(239,68,68,.3)');
+      costGrad.addColorStop(1, 'rgba(239,68,68,.02)');
+      const revGrad = ctx2d.createLinearGradient(0, 0, 0, 340);
+      revGrad.addColorStop(0, 'rgba(16,185,129,.3)');
+      revGrad.addColorStop(1, 'rgba(16,185,129,.02)');
+
+      this._charts.push(new Chart(projCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Revenus cumulés', data: revCumul, borderColor: '#10b981', borderWidth: 3, pointRadius: 0,
+              pointHoverRadius: 6, pointHoverBackgroundColor: '#10b981', pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+              fill: true, backgroundColor: revGrad, tension: 0.4
+            },
+            {
+              label: 'Coût leasing cumulé', data: costCumul, borderColor: '#ef4444', borderWidth: 3, pointRadius: 0,
+              pointHoverRadius: 6, pointHoverBackgroundColor: '#ef4444', pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
+              fill: true, backgroundColor: costGrad, tension: 0.1, borderDash: [8, 4]
+            }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
           interaction: { mode: 'index', intersect: false },
           plugins: {
             tooltip: { ...cd.tooltip, callbacks: {
+              title: (items) => `Mois ${items[0].label}`,
               label: (ctx) => ` ${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}`,
-              afterLabel: (ctx) => {
-                const a = d.analysis[ctx.datasetIndex];
-                const year = ctx.dataIndex;
-                if (year === 0) return '';
-                const depPercent = ((1 - ctx.raw / a.vehicule.prixAchat) * 100).toFixed(1);
-                return `  Dépréciation: -${depPercent}% (${a.isEV ? '15' : '20'}%/an)`;
+              afterBody: (items) => {
+                const m = items[0].dataIndex;
+                const diff = revCumul[m] - costCumul[m];
+                return `\n  ${diff >= 0 ? '✅ Rentable' : '⏳ Pas encore rentable'}: ${Utils.formatCurrency(Math.abs(diff))}`;
               }
             }},
-            legend: cd.legend
+            legend: { ...cd.legend, position: 'top' }
           },
           scales: {
-            x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 11 } } },
-            y: { grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11 }, callback: (v) => Utils.formatCurrency(v) }, border: { display: false } }
+            x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 10 }, maxTicksLimit: 12 }, title: { display: true, text: 'Mois', color: cd.tickColor, font: { size: 11, weight: 600 } } },
+            y: { grid: { color: cd.gridColor, drawBorder: false }, ticks: { color: cd.tickColor, font: { size: 10 }, callback: v => (v/1000000).toFixed(0) + 'M' }, border: { display: false } }
           }
         }
       }));
