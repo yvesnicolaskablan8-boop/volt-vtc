@@ -63,9 +63,9 @@ const PlanningPage = {
               <button class="btn btn-sm btn-secondary" id="btn-next" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
-              <div style="display:flex;align-items:center;gap:5px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:3px 8px;min-width:0;flex:1 1 120px;">
-                <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:14px;flex-shrink:0;"></iconify-icon>
-                <input type="text" id="filter-planning-search" class="form-control" placeholder="Rechercher..." value="${this._filterSearch}" style="width:100%;max-width:140px;font-size:12px;padding:4px 6px;border:none;background:transparent;font-weight:500;min-width:0;">
+              <div style="display:flex;align-items:center;gap:4px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:2px 6px;">
+                <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:13px;flex-shrink:0;"></iconify-icon>
+                <input type="text" id="filter-planning-search" class="form-control" placeholder="Nom..." value="${this._filterSearch}" style="width:80px;font-size:11px;padding:3px 4px;border:none;background:transparent;font-weight:500;min-width:0;">
               </div>
               <div class="tabs" id="planning-view-tabs" style="margin:0;flex-shrink:0;">
                 <div class="tab active" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
