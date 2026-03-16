@@ -369,25 +369,21 @@ const TachesPage = {
       </div>
 
       <!-- KPIs -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
+      <div class="d-grid d-g4" style="margin-bottom:var(--space-lg);">
         ${[
-          { val: taches.length, label: 'Total taches', icon: 'solar:checklist-bold-duotone', bg: '#6366f1', bgDark: '#4f46e5', shadow: 'rgba(99,102,241,.4)' },
-          { val: aFaire.length, label: 'A faire', icon: 'solar:hourglass-bold-duotone', bg: '#f97316', bgDark: '#ea580c', shadow: 'rgba(249,115,22,.4)' },
-          { val: enCours.length, label: 'En cours', icon: 'solar:play-circle-bold-duotone', bg: '#3b82f6', bgDark: '#2563eb', shadow: 'rgba(59,130,246,.4)' },
-          { val: terminees.length, label: 'Terminees', icon: 'solar:check-circle-bold-duotone', bg: '#22c55e', bgDark: '#16a34a', shadow: 'rgba(34,197,94,.4)' }
+          { val: taches.length, label: 'Total taches', icon: 'solar:checklist-bold-duotone', bg1: '#6366f1', bg2: '#818cf8', shadow: 'rgba(99,102,241,.25)' },
+          { val: aFaire.length, label: 'A faire', icon: 'solar:hourglass-bold-duotone', bg1: '#f97316', bg2: '#fb923c', shadow: 'rgba(249,115,22,.25)' },
+          { val: enCours.length, label: 'En cours', icon: 'solar:play-circle-bold-duotone', bg1: '#3b82f6', bg2: '#60a5fa', shadow: 'rgba(59,130,246,.25)' },
+          { val: terminees.length, label: 'Terminees', icon: 'solar:check-circle-bold-duotone', bg1: '#10b981', bg2: '#34d399', shadow: 'rgba(16,185,129,.25)' }
         ].map(k => `
-          <div style="background:linear-gradient(135deg,${k.bg},${k.bgDark});border-radius:18px;padding:22px 20px;position:relative;overflow:hidden;box-shadow:0 4px 20px ${k.shadow};transition:transform .2s,box-shadow .2s;cursor:default;" onmouseenter="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 32px ${k.shadow}'" onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 20px ${k.shadow}'">
-            <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.12);"></div>
-            <div style="position:absolute;bottom:-15px;right:20px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.08);"></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div>
-                <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.8);margin-bottom:8px;">${k.label}</div>
-                <div style="font-size:38px;font-weight:900;color:#fff;letter-spacing:-1px;line-height:1;text-shadow:0 2px 8px rgba(0,0,0,.2);">${k.val}</div>
-              </div>
-              <div style="width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;">
+          <div class="d-card" style="color:#fff;background:linear-gradient(135deg,${k.bg1},${k.bg2});border:none;box-shadow:0 4px 20px ${k.shadow};">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+              <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
                 <iconify-icon icon="${k.icon}"></iconify-icon>
               </div>
+              <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">${k.label}</div>
             </div>
+            <div class="d-val xl" style="color:#fff;">${k.val}</div>
           </div>
         `).join('')}
       </div>
