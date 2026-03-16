@@ -1887,14 +1887,29 @@ const PlanningPage = {
           const result = await Store.yangoRecharge(chauffeurId, amount, desc);
 
           // Enregistrer automatiquement comme dépense
+          const depId = 'DEP-' + Math.random().toString(36).substr(2, 6).toUpperCase();
           Store.add('depenses', {
-            id: 'DEP-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+            id: depId,
             vehiculeId: ch.vehiculeId || '',
             chauffeurId: chauffeurId,
             typeDepense: 'recharge_yango',
             montant: amount,
             date: new Date().toISOString().split('T')[0],
             commentaire: desc,
+            dateCreation: new Date().toISOString()
+          });
+
+          // Auto-comptabilité : décaissement recharge Yango
+          Store.add('comptabilite', {
+            id: Utils.generateId('OP'),
+            type: 'depense',
+            date: new Date().toISOString().slice(0,10),
+            categorie: 'recharge_yango',
+            description: `Recharge Yango — ${nom}`,
+            montant: amount,
+            modePaiement: 'virement',
+            reference: depId,
+            notes: 'Créé automatiquement depuis recharge Yango (planning)',
             dateCreation: new Date().toISOString()
           });
 

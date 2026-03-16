@@ -578,7 +578,42 @@ const VersementsPage = {
       };
 
       Store.add('versements', versement);
+      // Auto-create comptabilité encaissement
+      if (versement.montantVerse && versement.montantVerse > 0 && versement.statut === 'valide') {
+        const ch = Store.findById('chauffeurs', versement.chauffeurId);
+        const chLabel = ch ? (ch.prenom + ' ' + ch.nom) : versement.chauffeurId;
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'recette',
+          date: versement.date || new Date().toISOString().slice(0,10),
+          categorie: 'commissions_courses',
+          description: 'Versement ' + chLabel + ' — ' + Utils.formatCurrency(versement.montantVerse),
+          montant: versement.montantVerse,
+          modePaiement: versement.moyenPaiement || 'especes',
+          reference: versement.id,
+          notes: 'Créé automatiquement depuis les versements',
+          dateCreation: new Date().toISOString()
+        });
+      }
       Modal.close();
+
+      // Auto-comptabilité : perte et profits si manquant traité en perte
+      if (manquant > 0 && traitementManquant === 'perte') {
+        const chPerte = Store.findById('chauffeurs', versement.chauffeurId);
+        const nomPerte = chPerte ? `${chPerte.prenom} ${chPerte.nom}` : versement.chauffeurId;
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'depense',
+          date: versement.date || new Date().toISOString().slice(0,10),
+          categorie: 'autres_depenses',
+          description: `Perte versement ${nomPerte} — manquant ${Utils.formatCurrency(manquant)}`,
+          montant: manquant,
+          modePaiement: 'especes',
+          reference: versement.id,
+          notes: 'Perte et profits — créé automatiquement (manquant versement)',
+          dateCreation: new Date().toISOString()
+        });
+      }
 
       // Message contextuel
       if (manquant > 0) {
@@ -742,6 +777,41 @@ const VersementsPage = {
         values.dateValidation = new Date().toISOString();
       }
       Store.update('versements', id, values);
+      // Auto-create comptabilité encaissement if status just became valide
+      if (values.statut === 'valide' && !versement.dateValidation && values.montantVerse > 0) {
+        const ch = Store.findById('chauffeurs', versement.chauffeurId);
+        const chLabel = ch ? (ch.prenom + ' ' + ch.nom) : versement.chauffeurId;
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'recette',
+          date: versement.date || new Date().toISOString().slice(0,10),
+          categorie: 'commissions_courses',
+          description: 'Versement ' + chLabel + ' — ' + Utils.formatCurrency(values.montantVerse),
+          montant: values.montantVerse,
+          modePaiement: values.moyenPaiement || 'especes',
+          reference: versement.id,
+          notes: 'Créé automatiquement depuis les versements (modification)',
+          dateCreation: new Date().toISOString()
+        });
+      }
+      // Auto-comptabilité : perte et profits si manquant traité en perte (modification)
+      if (manquant > 0 && values.traitementManquant === 'perte') {
+        const chPerte = Store.findById('chauffeurs', versement.chauffeurId);
+        const nomPerte = chPerte ? `${chPerte.prenom} ${chPerte.nom}` : versement.chauffeurId;
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'depense',
+          date: versement.date || new Date().toISOString().slice(0,10),
+          categorie: 'autres_depenses',
+          description: `Perte versement ${nomPerte} — manquant ${Utils.formatCurrency(manquant)}`,
+          montant: manquant,
+          modePaiement: 'especes',
+          reference: versement.id,
+          notes: 'Perte et profits — créé automatiquement (modification versement)',
+          dateCreation: new Date().toISOString()
+        });
+      }
+
       Modal.close();
       if (manquant > 0) {
         if (values.traitementManquant === 'dette') {
@@ -829,10 +899,28 @@ const VersementsPage = {
   },
 
   _validate(id) {
+    const versement = Store.findById('versements', id);
     Store.update('versements', id, {
       statut: 'valide',
       dateValidation: new Date().toISOString()
     });
+    // Auto-create comptabilit\u00e9 encaissement if not already validated
+    if (versement && versement.montantVerse > 0 && !versement.dateValidation) {
+      const ch = Store.findById('chauffeurs', versement.chauffeurId);
+      const chLabel = ch ? (ch.prenom + ' ' + ch.nom) : versement.chauffeurId;
+      Store.add('comptabilite', {
+        id: Utils.generateId('OP'),
+        type: 'recette',
+        date: versement.date || new Date().toISOString().slice(0,10),
+        categorie: 'commissions_courses',
+        description: 'Versement ' + chLabel + ' \u2014 ' + Utils.formatCurrency(versement.montantVerse),
+        montant: versement.montantVerse,
+        modePaiement: versement.moyenPaiement || 'especes',
+        reference: versement.id,
+        notes: 'Cr\u00e9\u00e9 automatiquement depuis les versements (validation)',
+        dateCreation: new Date().toISOString()
+      });
+    }
     Toast.success('Versement valid\u00e9');
     this.render();
     Header.refreshNotifications();
@@ -1844,12 +1932,30 @@ const VersementsPage = {
             dateCreation: new Date().toISOString()
           });
         }
+        // Auto-create comptabilité encaissement for quick-pay
+        if (montant > 0 && statut === 'valide') {
+          const ch = chauffeurs.find(c => c.id === chauffeurId);
+          const chLabel = ch ? (ch.prenom + ' ' + ch.nom) : chauffeurId;
+          Store.add('comptabilite', {
+            id: Utils.generateId('OP'),
+            type: 'recette',
+            date: date || new Date().toISOString().slice(0,10),
+            categorie: 'commissions_courses',
+            description: 'Versement ' + chLabel + ' — ' + Utils.formatCurrency(montant),
+            montant: montant,
+            modePaiement: values.moyenPaiement || 'especes',
+            reference: existing ? existing.id : 'VRS-quick',
+            notes: 'Créé automatiquement depuis les versements (paiement rapide)',
+            dateCreation: new Date().toISOString()
+          });
+        }
 
         Modal.close();
 
-        // Si perte → créer une dépense en comptabilité
+        // Si perte → créer une dépense + écriture comptable perte et profits
         if (manquant > 0 && traitementManquant === 'perte') {
           const chForVeh = chauffeurs.find(c => c.id === chauffeurId);
+          const nomPerte = chForVeh ? `${chForVeh.prenom} ${chForVeh.nom}` : chauffeurId;
           Store.add('depenses', {
             id: Utils.generateId('DEP'),
             vehiculeId: chForVeh?.vehiculeAssigne || '',
@@ -1858,6 +1964,20 @@ const VersementsPage = {
             montant: manquant,
             date,
             commentaire: `Perte sur versement partiel du ${Utils.formatDate(date)}`,
+            dateCreation: new Date().toISOString()
+          });
+
+          // Auto-comptabilité : perte et profits
+          Store.add('comptabilite', {
+            id: Utils.generateId('OP'),
+            type: 'depense',
+            date: date || new Date().toISOString().slice(0,10),
+            categorie: 'autres_depenses',
+            description: `Perte versement ${nomPerte} — manquant ${Utils.formatCurrency(manquant)}`,
+            montant: manquant,
+            modePaiement: 'especes',
+            reference: existing ? existing.id : 'VRS-perte',
+            notes: 'Perte et profits — créé automatiquement (paiement rapide)',
             dateCreation: new Date().toISOString()
           });
         }
@@ -2232,6 +2352,21 @@ const VersementsPage = {
           referencePaiement: values.referencePaiement,
           commentaire: values.commentaire || 'Recouvrement de dette',
           dateValidation: new Date(values.dateEncaissement + 'T' + new Date().toTimeString().split(' ')[0]).toISOString(),
+          dateCreation: new Date().toISOString()
+        });
+        // Auto-create comptabilité encaissement for recouvrement
+        const chRec = chauffeurs.find(c => c.id === chauffeurId);
+        const chRecLabel = chRec ? (chRec.prenom + ' ' + chRec.nom) : chauffeurId;
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'recette',
+          date: values.dateRecette || new Date().toISOString().slice(0,10),
+          categorie: 'commissions_courses',
+          description: 'Recouvrement dette ' + chRecLabel + ' — ' + Utils.formatCurrency(montant),
+          montant: montant,
+          modePaiement: values.moyenPaiement || 'especes',
+          reference: 'REC-' + chauffeurId,
+          notes: 'Créé automatiquement depuis les versements (recouvrement)',
           dateCreation: new Date().toISOString()
         });
 

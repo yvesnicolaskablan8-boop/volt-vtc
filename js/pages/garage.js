@@ -234,6 +234,23 @@ const GaragePage = {
         maintenances.push(maint);
         Store.update('vehicules', vehiculeId, { maintenancesPlanifiees: maintenances });
 
+        // Auto-create comptabilité entry if maintenance is terminee with cost
+        if (maint.statut === 'terminee' && maint.coutEstime > 0) {
+          const vehLabel = vehicule.immatriculation || vehicule.marque + ' ' + vehicule.modele;
+          Store.add('comptabilite', {
+            id: Utils.generateId('OP'),
+            type: 'depense',
+            date: maint.prochaineDate || new Date().toISOString().slice(0,10),
+            categorie: 'maintenance',
+            description: 'Maintenance ' + (maint.label || maint.type) + ' — ' + vehLabel,
+            montant: maint.coutEstime,
+            modePaiement: 'especes',
+            reference: maint.id,
+            notes: 'Créé automatiquement depuis le garage (maintenance)',
+            dateCreation: new Date().toISOString()
+          });
+        }
+
         Modal.close();
         Toast.show('Maintenance planifiée', 'success');
         const content = document.getElementById('garage-tab-content');
@@ -339,6 +356,23 @@ const GaragePage = {
           dateCreation: new Date().toISOString()
         };
         Store.add('reparations', item);
+        // Auto-create comptabilité entry
+        if (item.coutReel && item.coutReel > 0) {
+          const veh = Store.findById('vehicules', item.vehiculeId);
+          const vehLabel = veh ? (veh.immatriculation || veh.marque + ' ' + veh.modele) : item.vehiculeId;
+          Store.add('comptabilite', {
+            id: Utils.generateId('OP'),
+            type: 'depense',
+            date: item.date || new Date().toISOString().slice(0,10),
+            categorie: 'maintenance',
+            description: 'Réparation ' + item.type + ' — ' + vehLabel + (item.description ? ' : ' + item.description : ''),
+            montant: item.coutReel,
+            modePaiement: 'especes',
+            reference: item.id,
+            notes: 'Créé automatiquement depuis le garage',
+            dateCreation: new Date().toISOString()
+          });
+        }
         Modal.close(); Toast.show('R\u00e9paration ajout\u00e9e', 'success');
         this._renderReparationsTab(document.getElementById('garage-tab-content'));
       }

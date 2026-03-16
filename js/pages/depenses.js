@@ -254,6 +254,23 @@ const DepensesPage = {
     };
 
     Store.add('depenses', depense);
+    // Auto-create comptabilité entry
+    if (depense.montant && depense.montant > 0) {
+      const veh = Store.findById('vehicules', depense.vehiculeId);
+      const vehLabel = veh ? (veh.immatriculation || veh.marque + ' ' + veh.modele) : '';
+      Store.add('comptabilite', {
+        id: Utils.generateId('OP'),
+        type: 'depense',
+        date: depense.date || new Date().toISOString().slice(0,10),
+        categorie: depense.typeDepense === 'carburant' ? 'carburant' : depense.typeDepense === 'reparation' ? 'maintenance' : depense.typeDepense === 'assurance' ? 'assurance' : depense.typeDepense === 'recharge_yango' ? 'recharge_yango' : 'autres_depenses',
+        description: (this._typeLabels[depense.typeDepense] || 'Dépense') + (vehLabel ? ' — ' + vehLabel : '') + (depense.commentaire ? ' : ' + depense.commentaire : ''),
+        montant: depense.montant,
+        modePaiement: 'especes',
+        reference: depense.id,
+        notes: 'Créé automatiquement depuis les dépenses',
+        dateCreation: new Date().toISOString()
+      });
+    }
     Modal.close();
     Toast.show('Dépense ajoutée', 'success');
     this.render();

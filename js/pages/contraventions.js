@@ -437,6 +437,30 @@ const ContraventionsPage = {
     }
 
     Store.update('contraventions', id, updates);
+
+    // Auto-comptabilité : décaissement quand contravention payée
+    if (updates.statut === 'payee') {
+      const contraventions = Store.get('contraventions') || [];
+      const c = contraventions.find(x => x.id === id);
+      if (c && c.montant > 0) {
+        const chauffeurs = Store.get('chauffeurs') || [];
+        const ch = chauffeurs.find(x => x.id === c.chauffeurId);
+        const nom = ch ? `${ch.prenom} ${ch.nom}` : (c.chauffeurId || '');
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'depense',
+          date: new Date().toISOString().slice(0,10),
+          categorie: 'autres_depenses',
+          description: `Contravention ${nom} — ${c.typeInfraction || 'amende'}`,
+          montant: c.montant,
+          modePaiement: 'especes',
+          reference: id,
+          notes: 'Créé automatiquement depuis les contraventions',
+          dateCreation: new Date().toISOString()
+        });
+      }
+    }
+
     Modal.close();
     Toast.show('Contravention mise \u00e0 jour', 'success');
     this.render();
@@ -448,6 +472,28 @@ const ContraventionsPage = {
       statut: 'payee',
       datePaiement: new Date().toISOString()
     });
+
+    // Auto-comptabilité : décaissement
+    const contraventions = Store.get('contraventions') || [];
+    const c = contraventions.find(x => x.id === id);
+    if (c && c.montant > 0) {
+      const chauffeurs = Store.get('chauffeurs') || [];
+      const ch = chauffeurs.find(x => x.id === c.chauffeurId);
+      const nom = ch ? `${ch.prenom} ${ch.nom}` : (c.chauffeurId || '');
+      Store.add('comptabilite', {
+        id: Utils.generateId('OP'),
+        type: 'depense',
+        date: new Date().toISOString().slice(0,10),
+        categorie: 'autres_depenses',
+        description: `Contravention ${nom} — ${c.typeInfraction || 'amende'}`,
+        montant: c.montant,
+        modePaiement: 'especes',
+        reference: id,
+        notes: 'Créé automatiquement depuis les contraventions',
+        dateCreation: new Date().toISOString()
+      });
+    }
+
     Toast.show('Contravention marqu\u00e9e comme pay\u00e9e', 'success');
     this.render();
   },
@@ -492,6 +538,22 @@ const ContraventionsPage = {
 
       if (data.waveLaunchUrl) {
         window.open(data.waveLaunchUrl, '_blank');
+
+        // Auto-comptabilité : décaissement Wave
+        if (c.montant > 0) {
+          Store.add('comptabilite', {
+            id: Utils.generateId('OP'),
+            type: 'depense',
+            date: new Date().toISOString().slice(0,10),
+            categorie: 'autres_depenses',
+            description: `Contravention ${name} — ${c.typeInfraction || 'amende'} (Wave)`,
+            montant: c.montant,
+            modePaiement: 'wave',
+            reference: id,
+            notes: 'Créé automatiquement depuis les contraventions (paiement Wave)',
+            dateCreation: new Date().toISOString()
+          });
+        }
       } else {
         Toast.show('URL de paiement non disponible', 'error');
       }
