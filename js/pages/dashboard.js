@@ -1101,6 +1101,8 @@ const DashboardPage = {
 
   _renderMesTaches() {
     const session = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+    // Chauffeurs n'ont pas accès aux taches
+    if (session && session.role === 'chauffeur') return '';
     const userId = session ? session.userId : '';
     const isAdmin = session && session.role === 'Administrateur';
     const allTaches = Store.get('taches') || [];

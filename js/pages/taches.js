@@ -16,8 +16,17 @@ const TachesPage = {
     return s ? s.userId : '';
   },
 
+  _isChauffeur() {
+    const s = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+    return s && s.role === 'chauffeur';
+  },
+
   render() {
     const container = document.getElementById('page-content');
+    if (this._isChauffeur()) {
+      container.innerHTML = `<div class="empty-state"><iconify-icon icon="solar:lock-bold-duotone" style="font-size:3rem;color:var(--text-muted);"></iconify-icon><h3>Acces non autorise</h3><p style="color:var(--text-muted);">Cette fonctionnalite n'est pas disponible pour les chauffeurs.</p></div>`;
+      return;
+    }
     if (this._isAdmin()) {
       container.innerHTML = this._adminPageTemplate();
       this._renderTab(this._activeTab);
@@ -777,7 +786,7 @@ const TachesPage = {
   },
 
   _formFields(existing) {
-    const users = Store.get('users') || [];
+    const users = (Store.get('users') || []).filter(u => u.role !== 'chauffeur');
 
     return [
       { name: 'titre', label: 'Titre de la tache', type: 'text', required: true, default: existing ? existing.titre : '', placeholder: 'Ex: Preparer les documents comptables...' },
