@@ -776,40 +776,57 @@ const DashboardPage = {
 
         /* Heatmap */
         .d-hm-grid {
-          display:grid; grid-template-columns:110px repeat(7,1fr); gap:4px; align-items:center;
+          display:grid; grid-template-columns:120px repeat(7,1fr); gap:3px 4px; align-items:center;
         }
         .d-hm-head {
-          text-align:center; font-size:11px; font-weight:700; color:#6b7280; padding:6px 0;
-          text-transform:uppercase; letter-spacing:.5px;
+          text-align:center; font-size:11px; font-weight:700; color:#9ca3af; padding:8px 0 6px;
+          text-transform:uppercase; letter-spacing:.8px;
+          border-bottom:2px solid transparent;
         }
-        .d-hm-head.today { background:rgba(99,102,241,.08); border-radius:10px; color:#6366f1; }
-        [data-theme="dark"] .d-hm-head { color:#9ca3af; }
-        [data-theme="dark"] .d-hm-head.today { background:rgba(99,102,241,.15); }
-        .d-hm-daynum { font-size:9px; font-weight:500; color:#9ca3af; }
+        .d-hm-head.today {
+          color:#6366f1;
+          background:linear-gradient(180deg, rgba(99,102,241,.06) 0%, rgba(99,102,241,.02) 100%);
+          border-radius:12px 12px 0 0;
+          border-bottom:2px solid #6366f1;
+        }
+        .d-hm-head .d-hm-daynum { display:block; font-size:16px; font-weight:800; color:#374151; margin-top:2px; }
+        .d-hm-head.today .d-hm-daynum { color:#6366f1; }
+        [data-theme="dark"] .d-hm-head { color:#6b7280; }
+        [data-theme="dark"] .d-hm-head.today { background:rgba(99,102,241,.1); }
+        [data-theme="dark"] .d-hm-head .d-hm-daynum { color:#d1d5db; }
         .d-hm-driver {
           display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#374151;
           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:4px 0;
         }
         [data-theme="dark"] .d-hm-driver { color:#d1d5db; }
         .d-hm-avatar {
-          width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+          width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
           font-size:9px; font-weight:700; color:#fff; flex-shrink:0;
+          box-shadow:0 2px 6px rgba(0,0,0,.15);
+          border:2px solid rgba(255,255,255,.8);
         }
+        .d-hm-row-even { background:rgba(0,0,0,.015); border-radius:8px; }
+        [data-theme="dark"] .d-hm-row-even { background:rgba(255,255,255,.02); }
         .d-hm-cell {
-          height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center;
-          font-size:13px; cursor:pointer; transition:all .15s ease;
+          height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+          font-size:13px; cursor:pointer; transition:all .2s cubic-bezier(.16,1,.3,1);
+          position:relative;
         }
-        .d-hm-cell:hover { transform:scale(1.08); box-shadow:0 2px 8px rgba(0,0,0,.1); }
-        .hm-verse { background:rgba(16,185,129,.15); color:#10b981; }
-        .hm-programme { background:rgba(99,102,241,.12); color:#6366f1; }
-        .hm-en_retard { background:rgba(239,68,68,.15); color:#ef4444; }
-        .hm-absent { background:rgba(249,115,22,.12); color:#f97316; }
-        .hm-repos { background:rgba(0,0,0,.03); color:#d1d5db; }
-        [data-theme="dark"] .hm-verse { background:rgba(16,185,129,.2); }
-        [data-theme="dark"] .hm-programme { background:rgba(99,102,241,.2); }
-        [data-theme="dark"] .hm-en_retard { background:rgba(239,68,68,.2); }
-        [data-theme="dark"] .hm-absent { background:rgba(249,115,22,.18); }
-        [data-theme="dark"] .hm-repos { background:rgba(255,255,255,.04); color:#4b5563; }
+        .d-hm-cell:hover { transform:scale(1.1); box-shadow:0 4px 12px rgba(0,0,0,.12); z-index:2; }
+        .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(52,211,153,.12)); color:#10b981; }
+        .hm-programme { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#6366f1; }
+        .hm-en_retard { background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(248,113,113,.1)); color:#ef4444; }
+        .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f97316; }
+        .hm-repos { background:rgba(0,0,0,.025); color:#d1d5db; }
+        .hm-verse:hover { background:linear-gradient(135deg,rgba(16,185,129,.28),rgba(52,211,153,.2)); }
+        .hm-programme:hover { background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(139,92,246,.18)); }
+        .hm-en_retard:hover { background:linear-gradient(135deg,rgba(239,68,68,.28),rgba(248,113,113,.2)); }
+        .hm-absent:hover { background:linear-gradient(135deg,rgba(249,115,22,.25),rgba(251,146,60,.15)); }
+        [data-theme="dark"] .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.22),rgba(52,211,153,.15)); }
+        [data-theme="dark"] .hm-programme { background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(139,92,246,.15)); }
+        [data-theme="dark"] .hm-en_retard { background:linear-gradient(135deg,rgba(239,68,68,.22),rgba(248,113,113,.15)); }
+        [data-theme="dark"] .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.2),rgba(251,146,60,.12)); }
+        [data-theme="dark"] .hm-repos { background:rgba(255,255,255,.03); color:#4b5563; }
 
         @media(max-width:900px) {
           .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
@@ -825,8 +842,9 @@ const DashboardPage = {
           .d-grid { gap:8px !important; }
           .d-legend { font-size:10px !important; white-space:nowrap; }
           .d-chauffeurs-donut { flex-direction:column !important; gap:6px !important; align-items:center !important; }
-          .d-chauffeurs-donut svg { width:70px !important; height:70px !important; }
-          .d-chauffeurs-donut .d-donut-center { font-size:16px !important; }
+          .d-chauffeurs-donut > div:first-child { max-width:80px !important; }
+          .d-chauffeurs-donut svg { width:70px !important; height:auto !important; }
+          .d-chauffeurs-donut .d-donut-center { font-size:14px !important; }
           .d-chauffeurs-legends { flex-direction:row !important; flex-wrap:wrap !important; gap:6px 12px !important; justify-content:center !important; width:100% !important; }
           .d-chauffeurs-legends > div { justify-content:flex-start !important; gap:6px !important; }
           .d-chauffeurs-legends strong { font-size:12px !important; }
@@ -1176,44 +1194,51 @@ const DashboardPage = {
     const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
 
     // Header row
-    let html = '<div class="d-hm-grid">';
+    let html = '<div class="d-hm-grid" style="animation:dSlide .5s cubic-bezier(.16,1,.3,1);">';
     html += '<div></div>'; // empty top-left
     days.forEach(wd => {
-      html += `<div class="d-hm-head ${wd.isToday ? 'today' : ''}">${wd.label}<br><span class="d-hm-daynum">${wd.dayNum}</span></div>`;
+      html += `<div class="d-hm-head ${wd.isToday ? 'today' : ''}">
+        <span>${wd.label}</span>
+        <span class="d-hm-daynum">${wd.dayNum}</span>
+      </div>`;
     });
 
     // Driver rows
     drivers.forEach((dr, idx) => {
       const color = avatarColors[idx % avatarColors.length];
-      html += `<div class="d-hm-driver"><div class="d-hm-avatar" style="background:${color};">${dr.initials}</div><span>${dr.prenom}</span></div>`;
+      const rowClass = idx % 2 === 1 ? ' d-hm-row-even' : '';
+      html += `<div class="d-hm-driver${rowClass}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;"><div class="d-hm-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${dr.initials}</div><span>${dr.prenom}</span></div>`;
       dr.cells.forEach((cell, ci) => {
         const status = cell.status;
         const heures = cell.heures;
         const shiftId = cell.shiftId;
         const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}${heures ? ' (' + heures + ')' : ''}`;
-        const content = status === 'programme' && heures ? `<span style="font-size:9px;font-weight:600;letter-spacing:-.3px;">${heures}</span>` : (statusIcons[status] || '');
+        const content = status === 'programme' && heures ? `<span style="font-size:9px;font-weight:700;letter-spacing:-.2px;">${heures}</span>` : (statusIcons[status] || '');
         const onclick = shiftId ? `DashboardPage._openShift('${shiftId}')` : `Router.navigate('/planning')`;
-        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="${onclick}">${content}</div>`;
+        html += `<div class="d-hm-cell hm-${status}${rowClass}" title="${tooltip}" onclick="${onclick}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30 + ci * 15}ms both;">${content}</div>`;
       });
     });
     html += '</div>';
 
-    // Legend
-    html += `<div style="display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;">
-      <div class="d-legend"><span class="d-legend-dot" style="background:#10b981;"></span> Versé</div>
-      <div class="d-legend"><span class="d-legend-dot" style="background:#6366f1;"></span> Programmé</div>
-      <div class="d-legend"><span class="d-legend-dot" style="background:#ef4444;"></span> En retard</div>
-      <div class="d-legend"><span class="d-legend-dot" style="background:#f97316;"></span> Absent</div>
-      <div class="d-legend"><span class="d-legend-dot" style="background:#e5e7eb;"></span> Repos</div>
+    // Legend — modern pills
+    html += `<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.08);font-size:11px;font-weight:600;color:#10b981;"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Versé</div>
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#6366f1;"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;"></span> Programmé</div>
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> En retard</div>
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
     </div>`;
 
-    return `<div class="d-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;display:flex;align-items:center;justify-content:center;">
-            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
+    return `<div class="d-card" style="padding:24px 20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
+            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#fff;"></iconify-icon>
           </div>
-          <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:#111827;">Planning semaine</div>
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#111827;letter-spacing:-.3px;">Planning semaine</div>
+            <div style="font-size:11px;color:#9ca3af;font-weight:500;margin-top:1px;">${drivers.length} chauffeur${drivers.length > 1 ? 's' : ''} actif${drivers.length > 1 ? 's' : ''}</div>
+          </div>
         </div>
         <a href="#/planning" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
       </div>
