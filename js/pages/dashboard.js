@@ -1106,9 +1106,9 @@ const DashboardPage = {
     const prioriteColors = { basse: '#3b82f6', normale: '#22c55e', haute: '#f97316', urgente: '#ef4444' };
 
     return `
-      <a href="#/taches" class="d-card" style="text-decoration:none;color:inherit;border-left:4px solid #eab308;background:linear-gradient(135deg, rgba(234,179,8,.1) 0%, rgba(250,204,21,.04) 100%);box-shadow:0 2px 12px rgba(234,179,8,.15);">
+      <a href="#/taches" class="d-card" style="text-decoration:none;color:inherit;border-left:5px solid #f59e0b;background:linear-gradient(135deg, rgba(245,158,11,.15) 0%, rgba(234,179,8,.06) 100%);box-shadow:0 2px 16px rgba(245,158,11,.2);">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <div class="d-icon" style="background:linear-gradient(135deg,#eab308,#facc15);color:#fff;width:36px;height:36px;border-radius:10px;font-size:16px;box-shadow:0 4px 14px rgba(234,179,8,.4);">
+          <div class="d-icon" style="background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;width:36px;height:36px;border-radius:10px;font-size:16px;box-shadow:0 4px 14px rgba(245,158,11,.5);">
             <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
           </div>
           <div>
