@@ -396,6 +396,14 @@
     bottom: 0;
     padding: var(--space-md);
     padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .modal-footer .btn {
+    font-size: var(--font-size-xs);
+    padding: 8px 12px;
+    white-space: nowrap;
   }
 
   /* === TABLES === */

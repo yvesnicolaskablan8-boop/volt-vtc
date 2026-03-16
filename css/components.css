@@ -613,6 +613,7 @@ textarea.form-control {
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--border-color);
+  flex-wrap: wrap;
 }
 
 /* ========== TOASTS ========== */
