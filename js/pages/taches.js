@@ -8,7 +8,7 @@ const TachesPage = {
 
   _isAdmin() {
     const s = typeof Auth !== 'undefined' ? Auth.getSession() : null;
-    return s && s.role === 'admin';
+    return s && s.role === 'Administrateur';
   },
 
   render() {
