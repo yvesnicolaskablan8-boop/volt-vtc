@@ -177,7 +177,7 @@ const RentabilitePage = {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Analyse financière</div>
-          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
             <iconify-icon icon="solar:pie-chart-2-bold-duotone" style="color:#6366f1;"></iconify-icon> Rentabilité
           </div>
         </div>
@@ -219,7 +219,7 @@ const RentabilitePage = {
       <div class="d-card" style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
           <div class="d-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:bolt-bold-duotone"></iconify-icon></div>
-          <div style="font-size:14px;font-weight:700;color:#111827;">Comparaison Électrique vs Thermique</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Comparaison Électrique vs Thermique</div>
         </div>
         <div class="grid-2" style="gap:var(--space-lg);">
           <div>
@@ -273,28 +273,28 @@ const RentabilitePage = {
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:700;color:#111827;">TCO par véhicule</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">TCO par véhicule</div>
           </div>
           <div style="height:320px;"><canvas id="chart-tco"></canvas></div>
         </div>
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:700;color:#111827;">Leasing vs Cash</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Leasing vs Cash</div>
           </div>
           <div style="height:320px;"><canvas id="chart-leasing-cash"></canvas></div>
         </div>
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(245,158,11,.08);color:#f59e0b;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:700;color:#111827;">Profit mensuel par véhicule</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Profit mensuel par véhicule</div>
           </div>
           <div style="height:320px;"><canvas id="chart-monthly-profit"></canvas></div>
         </div>
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(139,92,246,.08);color:#8b5cf6;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:700;color:#111827;">Amortissement des véhicules</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Amortissement des véhicules</div>
           </div>
           <div style="height:320px;"><canvas id="chart-depreciation"></canvas></div>
         </div>
@@ -304,7 +304,7 @@ const RentabilitePage = {
       <div class="d-card" style="margin-top:16px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
           <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></div>
-          <div style="font-size:14px;font-weight:700;color:#111827;">Détail par véhicule</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Détail par véhicule</div>
         </div>
         <div id="rentabilite-table"></div>
       </div>

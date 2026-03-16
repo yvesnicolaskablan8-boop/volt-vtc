@@ -63,7 +63,7 @@ const ContraventionsPage = {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Gestion</div>
-          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
             <iconify-icon icon="solar:document-text-bold-duotone" style="color:#6366f1;"></iconify-icon> Contraventions
           </div>
         </div>
@@ -109,11 +109,11 @@ const ContraventionsPage = {
       <!-- Filters -->
       <div class="d-card" style="padding:12px 16px;margin-bottom:16px;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <select id="filter-chauffeur" class="filter-select" style="padding:6px 12px;border-radius:11px;border:1px solid rgba(0,0,0,.06);background:rgba(255,255,255,.7);font-size:12px;font-weight:500;color:#374151;">
+          <select id="filter-chauffeur" class="filter-select" style="padding:6px 12px;border-radius:11px;border:1px solid var(--border-color);background:var(--bg-secondary);font-size:12px;font-weight:500;color:var(--text-primary);">
             <option value="">Tous les chauffeurs</option>
             ${data.chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
           </select>
-          <select id="filter-statut" class="filter-select" style="padding:6px 12px;border-radius:11px;border:1px solid rgba(0,0,0,.06);background:rgba(255,255,255,.7);font-size:12px;font-weight:500;color:#374151;">
+          <select id="filter-statut" class="filter-select" style="padding:6px 12px;border-radius:11px;border:1px solid var(--border-color);background:var(--bg-secondary);font-size:12px;font-weight:500;color:var(--text-primary);">
             <option value="">Tous les statuts</option>
             <option value="impayee">Impayée</option>
             <option value="payee">Payée</option>

@@ -197,13 +197,13 @@ const VersementsPage = {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Suivi financier</div>
-          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
             <iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#6366f1;"></iconify-icon> Versements
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:0;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border-radius:14px;border:1px solid rgba(0,0,0,.06);padding:3px;">
-            <input type="date" id="versements-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:#374151;font-weight:500;outline:none;">
+          <div style="display:flex;align-items:center;gap:0;background:var(--bg-secondary);backdrop-filter:blur(12px);border-radius:14px;border:1px solid var(--border-color);padding:3px;">
+            <input type="date" id="versements-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:var(--text-primary);font-weight:500;outline:none;">
             ${this._selectedPeriod ? '<button onclick="VersementsPage._resetToToday()" style="font-size:13px;padding:6px 8px;border-radius:11px;background:transparent;border:none;cursor:pointer;color:#6b7280;"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>' : ''}
           </div>
           <button class="btn btn-secondary" onclick="VersementsPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>

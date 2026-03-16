@@ -49,7 +49,7 @@ const YangoPage = {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Fleet Management</div>
-          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
             <iconify-icon icon="solar:bus-bold-duotone" style="color:#FC4C02;"></iconify-icon> Yango Fleet
           </div>
         </div>
@@ -72,16 +72,16 @@ const YangoPage = {
             <button class="yango-date-preset active" data-preset="today" onclick="YangoPage._setDatePreset('today')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:rgba(252,76,2,.1);color:#FC4C02;transition:all .2s;display:flex;align-items:center;gap:5px;">
               <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> Aujourd'hui
             </button>
-            <button class="yango-date-preset" data-preset="yesterday" onclick="YangoPage._setDatePreset('yesterday')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all .2s;display:flex;align-items:center;gap:5px;">
+            <button class="yango-date-preset" data-preset="yesterday" onclick="YangoPage._setDatePreset('yesterday')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text-secondary, #6b7280);transition:all .2s;display:flex;align-items:center;gap:5px;">
               <iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Hier
             </button>
-            <button class="yango-date-preset" data-preset="week" onclick="YangoPage._setDatePreset('week')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all .2s;display:flex;align-items:center;gap:5px;">
+            <button class="yango-date-preset" data-preset="week" onclick="YangoPage._setDatePreset('week')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text-secondary, #6b7280);transition:all .2s;display:flex;align-items:center;gap:5px;">
               <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Semaine
             </button>
-            <button class="yango-date-preset" data-preset="month" onclick="YangoPage._setDatePreset('month')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all .2s;display:flex;align-items:center;gap:5px;">
+            <button class="yango-date-preset" data-preset="month" onclick="YangoPage._setDatePreset('month')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text-secondary, #6b7280);transition:all .2s;display:flex;align-items:center;gap:5px;">
               <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois
             </button>
-            <button class="yango-date-preset" data-preset="custom" onclick="YangoPage._toggleCustomDates()" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all .2s;display:flex;align-items:center;gap:5px;">
+            <button class="yango-date-preset" data-preset="custom" onclick="YangoPage._toggleCustomDates()" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text-secondary, #6b7280);transition:all .2s;display:flex;align-items:center;gap:5px;">
               <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Personnalise
             </button>
           </div>
@@ -165,7 +165,7 @@ const YangoPage = {
               <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
             </div>
             <div>
-              <div style="font-size:14px;font-weight:700;color:#111827;" id="yp-planning-title">Chauffeurs programmés — Aujourd'hui</div>
+              <div style="font-size:14px;font-weight:700;color:var(--text-primary);" id="yp-planning-title">Chauffeurs programmés — Aujourd'hui</div>
             </div>
             <span id="yp-planning-live" style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>
           </div>
@@ -191,7 +191,7 @@ const YangoPage = {
             <div class="d-icon" style="background:rgba(252,76,2,.08);color:#FC4C02;">
               <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
             </div>
-            <div style="font-size:14px;font-weight:700;color:#111827;">Synchronisation Yango → Pilote</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Synchronisation Yango → Pilote</div>
           </div>
           <span class="d-tag purple" id="yp-sync-status-badge">--</span>
         </div>

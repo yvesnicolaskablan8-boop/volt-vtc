@@ -39,7 +39,7 @@ const ComptabilitePage = {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Finance</div>
-          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
+          <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
             <iconify-icon icon="solar:calculator-bold-duotone" style="color:#6366f1;"></iconify-icon> Comptabilité
           </div>
         </div>
@@ -235,7 +235,7 @@ const ComptabilitePage = {
           <div class="d-icon" style="background:rgba(99,102,241,.12);color:#6366f1;width:48px;height:48px;font-size:20px;"><iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon></div>
           <div style="flex:1;">
             <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;">Comment ça marche ?</h3>
-            <p style="font-size:13px;line-height:1.6;color:#6b7280;">
+            <p style="font-size:13px;line-height:1.6;color:var(--text-secondary);">
               <strong style="color:#10b981;">Encaissement</strong> = argent qui rentre (versements chauffeurs, paiements clients, <strong>commission Yango</strong>)<br>
               <strong style="color:#ef4444;">Décaissement</strong> = argent qui sort (carburant, maintenance, salaires, loyers, assurance)<br>
               <strong style="color:#6366f1;">Bénéfice</strong> = Encaissements − Décaissements. Si positif, vous gagnez de l'argent !
