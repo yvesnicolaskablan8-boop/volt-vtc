@@ -369,27 +369,24 @@ const TachesPage = {
       </div>
 
       <!-- KPIs -->
-      <div class="d-grid d-g4" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card">
-          <div class="kpi-icon"><iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${taches.length}</div>
-          <div class="kpi-label">Total taches</div>
-        </div>
-        <div class="kpi-card orange">
-          <div class="kpi-icon"><iconify-icon icon="solar:hourglass-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${aFaire.length}</div>
-          <div class="kpi-label">A faire</div>
-        </div>
-        <div class="kpi-card blue">
-          <div class="kpi-icon"><iconify-icon icon="solar:play-circle-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${enCours.length}</div>
-          <div class="kpi-label">En cours</div>
-        </div>
-        <div class="kpi-card green">
-          <div class="kpi-icon"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${terminees.length}</div>
-          <div class="kpi-label">Terminees</div>
-        </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
+        ${[
+          { val: taches.length, label: 'Total taches', icon: 'solar:checklist-bold-duotone', color: '#818cf8', bg1: 'rgba(99,102,241,.25)', bg2: 'rgba(99,102,241,.10)', border: 'rgba(99,102,241,.35)' },
+          { val: aFaire.length, label: 'A faire', icon: 'solar:hourglass-bold-duotone', color: '#fb923c', bg1: 'rgba(249,115,22,.25)', bg2: 'rgba(249,115,22,.10)', border: 'rgba(249,115,22,.35)' },
+          { val: enCours.length, label: 'En cours', icon: 'solar:play-circle-bold-duotone', color: '#60a5fa', bg1: 'rgba(59,130,246,.25)', bg2: 'rgba(59,130,246,.10)', border: 'rgba(59,130,246,.35)' },
+          { val: terminees.length, label: 'Terminees', icon: 'solar:check-circle-bold-duotone', color: '#4ade80', bg1: 'rgba(34,197,94,.25)', bg2: 'rgba(34,197,94,.10)', border: 'rgba(34,197,94,.35)' }
+        ].map(k => `
+          <div style="background:linear-gradient(135deg,${k.bg1},${k.bg2});border:1.5px solid ${k.border};border-radius:18px;padding:22px 20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;" onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 30px rgba(0,0,0,.25)'" onmouseleave="this.style.transform='';this.style.boxShadow=''">
+            <div style="position:absolute;top:-12px;right:-12px;width:60px;height:60px;border-radius:50%;background:${k.bg1};opacity:.5;"></div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+              <div style="width:44px;height:44px;border-radius:14px;background:${k.color};display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;box-shadow:0 4px 14px ${k.bg1};">
+                <iconify-icon icon="${k.icon}"></iconify-icon>
+              </div>
+              <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.7);">${k.label}</div>
+            </div>
+            <div style="font-size:36px;font-weight:900;color:${k.color};letter-spacing:-1px;line-height:1;">${k.val}</div>
+          </div>
+        `).join('')}
       </div>
 
       <!-- Tabs -->
