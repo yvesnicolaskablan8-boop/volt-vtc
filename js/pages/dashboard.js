@@ -1106,41 +1106,41 @@ const DashboardPage = {
     const prioriteColors = { basse: '#3b82f6', normale: '#22c55e', haute: '#f97316', urgente: '#ef4444' };
 
     return `
-      <a href="#/taches" class="kpi-card yellow" style="text-decoration:none;color:inherit;cursor:pointer;padding:16px 20px;">
+      <a href="#/taches" class="d-card" style="text-decoration:none;color:inherit;background:linear-gradient(135deg,#f59e0b,#fbbf24);border:none;box-shadow:0 4px 20px rgba(245,158,11,.35);padding:16px 20px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <div class="kpi-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);box-shadow:0 4px 12px rgba(245,158,11,.25);color:#fff;width:42px;height:42px;border-radius:12px;font-size:1.15rem;margin-bottom:0;">
+          <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(4px);">
             <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
           </div>
           <div>
-            <div class="d-lbl" style="margin:0;">Mes taches</div>
-            <div style="font-size:11px;color:#9ca3af;">${mesTaches.length} en cours / a faire</div>
+            <div style="font-weight:700;font-size:var(--font-size-sm);color:#fff;margin:0;">Mes taches</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.8);">${mesTaches.length} en cours / a faire</div>
           </div>
-          ${enRetard > 0 ? `<span class="d-tag red" style="margin-left:auto;">${enRetard} en retard</span>` : ''}
+          ${enRetard > 0 ? `<span style="margin-left:auto;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(239,68,68,.9);color:#fff;">${enRetard} en retard</span>` : ''}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:${top3.length > 0 ? '10px' : '0'};">
-          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(249,115,22,.06);">
-            <span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>
-            <span style="font-size:11px;color:#6b7280;">A faire</span>
-            <strong style="margin-left:auto;font-size:13px;color:#374151;">${aFaire}</strong>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.2);">
+            <span style="width:6px;height:6px;border-radius:50%;background:#fff;"></span>
+            <span style="font-size:11px;color:rgba(255,255,255,.85);">A faire</span>
+            <strong style="margin-left:auto;font-size:13px;color:#fff;">${aFaire}</strong>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(59,130,246,.06);">
-            <span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span>
-            <span style="font-size:11px;color:#6b7280;">En cours</span>
-            <strong style="margin-left:auto;font-size:13px;color:#374151;">${enCours}</strong>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.2);">
+            <span style="width:6px;height:6px;border-radius:50%;background:#fff;"></span>
+            <span style="font-size:11px;color:rgba(255,255,255,.85);">En cours</span>
+            <strong style="margin-left:auto;font-size:13px;color:#fff;">${enCours}</strong>
           </div>
         </div>
         ${top3.length > 0 ? `<div style="display:flex;flex-direction:column;gap:4px;">
           ${top3.map(t => {
             const pc = prioriteColors[t.priorite] || '#6b7280';
             const isLate = t.dateEcheance && t.dateEcheance < new Date().toISOString().split('T')[0];
-            return `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;background:var(--bg-secondary);font-size:11px;">
-              <span style="width:5px;height:5px;border-radius:50%;background:${pc};flex-shrink:0;"></span>
-              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--text-primary);">${t.titre}</span>
-              ${isLate ? '<span style="color:#ef4444;font-weight:600;font-size:10px;">En retard</span>' : ''}
-              ${t.dateEcheance ? `<span style="font-size:10px;color:#9ca3af;">${Utils.formatDate(t.dateEcheance)}</span>` : ''}
+            return `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.15);font-size:11px;">
+              <span style="width:5px;height:5px;border-radius:50%;background:#fff;flex-shrink:0;"></span>
+              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:#fff;">${t.titre}</span>
+              ${isLate ? '<span style="color:#fecaca;font-weight:600;font-size:10px;">En retard</span>' : ''}
+              ${t.dateEcheance ? `<span style="font-size:10px;color:rgba(255,255,255,.7);">${Utils.formatDate(t.dateEcheance)}</span>` : ''}
             </div>`;
           }).join('')}
-        </div>` : `<div style="text-align:center;padding:8px;color:#9ca3af;font-size:12px;">Aucune tache en attente</div>`}
+        </div>` : `<div style="text-align:center;padding:8px;color:rgba(255,255,255,.7);font-size:12px;">Aucune tache en attente</div>`}
       </a>`;
   },
 
