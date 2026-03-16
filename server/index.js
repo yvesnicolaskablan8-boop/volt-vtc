@@ -44,6 +44,7 @@ app.use('/api/versementRecurrents', require('./routes/crud')('VersementRecurrent
 app.use('/api/reparations', require('./routes/crud')('Reparation'));
 app.use('/api/incidents', require('./routes/crud')('Incident'));
 app.use('/api/activityLogs', require('./routes/crud')('ActivityLog'));
+app.use('/api/taches', require('./routes/tache-hooks'));
 app.use('/api/taches', require('./routes/crud')('Tache'));
 app.use('/api/controlesTechniques', require('./routes/crud')('ControleTechnique'));
 app.use('/api/yango', require('./routes/yango'));

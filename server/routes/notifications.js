@@ -123,4 +123,57 @@ router.get('/stats', async (req, res, next) => {
   }
 });
 
+// =================== PUSH SUBSCRIPTION (ADMIN/USERS) ===================
+
+const PushSubscription = require('../models/PushSubscription');
+
+// GET /api/notifications/push/vapid-key
+router.get('/push/vapid-key', (req, res) => {
+  const key = notifService.getVapidPublicKey();
+  if (!key) return res.status(503).json({ error: 'Push non configure' });
+  res.json({ publicKey: key });
+});
+
+// POST /api/notifications/push/subscribe
+router.post('/push/subscribe', async (req, res, next) => {
+  try {
+    const { subscription } = req.body;
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId || !subscription) {
+      return res.status(400).json({ error: 'userId et subscription requis' });
+    }
+
+    await PushSubscription.findOneAndUpdate(
+      { 'subscription.endpoint': subscription.endpoint },
+      {
+        userId,
+        subscription,
+        userAgent: req.headers['user-agent'] || '',
+        dateCreation: new Date().toISOString()
+      },
+      { upsert: true, new: true }
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/notifications/push/subscribe
+router.delete('/push/subscribe', async (req, res, next) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    const { endpoint } = req.body;
+    if (endpoint) {
+      await PushSubscription.deleteOne({ userId, 'subscription.endpoint': endpoint });
+    } else {
+      await PushSubscription.deleteMany({ userId });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

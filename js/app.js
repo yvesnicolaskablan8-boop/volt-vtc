@@ -335,6 +335,68 @@ const App = {
         localStorage.setItem('pilote_company_name', ent.nom);
       }
     } catch (e) { /* silent */ }
+
+    // Enregistrer le push pour les notifications taches (non-chauffeur)
+    this._registerPushSubscription();
+  },
+
+  async _registerPushSubscription() {
+    try {
+      const session = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+      if (!session || session.role === 'chauffeur') return;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+      const reg = await navigator.serviceWorker.ready;
+
+      // Verifier si deja abonne
+      let sub = await reg.pushManager.getSubscription();
+      if (sub) return; // Deja abonne
+
+      // Demander permission
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+
+      // Recuperer la cle VAPID
+      const apiBase = Store._apiBase || '/api';
+      const token = Auth.getToken();
+      const vapidRes = await fetch(apiBase + '/notifications/push/vapid-key', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!vapidRes.ok) return;
+      const { publicKey } = await vapidRes.json();
+      if (!publicKey) return;
+
+      // S'abonner au push
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this._urlBase64ToUint8Array(publicKey)
+      });
+
+      // Envoyer la subscription au serveur
+      await fetch(apiBase + '/notifications/push/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ subscription: sub.toJSON() })
+      });
+
+      console.log('[Push] Subscription enregistree');
+    } catch (e) {
+      console.warn('[Push] Registration failed:', e.message);
+    }
+  },
+
+  _urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
   },
 
   _showLogin() {

@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const pushSubscriptionSchema = new mongoose.Schema({
-  chauffeurId: { type: String, required: true },
+  chauffeurId: { type: String },  // Pour les chauffeurs (app driver)
+  userId: { type: String },        // Pour les utilisateurs admin/operateurs (app admin)
   subscription: {
     endpoint: { type: String, required: true },
     expirationTime: mongoose.Schema.Types.Mixed,

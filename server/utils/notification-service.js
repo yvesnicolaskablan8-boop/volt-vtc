@@ -118,6 +118,49 @@ async function sendPush(chauffeurId, titre, message, data = {}) {
   }
 }
 
+/**
+ * Envoie une notification push a un utilisateur admin/operateur (par userId)
+ */
+async function sendPushToUser(userId, titre, message, data = {}) {
+  if (!webPush || !process.env.VAPID_PUBLIC_KEY) {
+    return { success: false, error: 'Push non configure' };
+  }
+
+  try {
+    const subs = await PushSubscription.find({ userId }).lean();
+    if (subs.length === 0) {
+      return { success: false, error: 'Aucune subscription push pour cet utilisateur' };
+    }
+
+    const payload = JSON.stringify({
+      titre,
+      message,
+      url: data.url || '/#/taches',
+      type: data.type || 'tache',
+      timestamp: Date.now()
+    });
+
+    const results = [];
+    for (const sub of subs) {
+      try {
+        await webPush.sendNotification(sub.subscription, payload);
+        results.push({ endpoint: sub.subscription.endpoint, success: true });
+      } catch (err) {
+        if (err.statusCode === 404 || err.statusCode === 410) {
+          await PushSubscription.deleteOne({ _id: sub._id });
+        }
+        results.push({ endpoint: sub.subscription.endpoint, success: false, error: err.message });
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    return { success: successCount > 0, sent: successCount, total: subs.length };
+  } catch (err) {
+    console.error(`[NotifService] Push user error for ${userId}:`, err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // ===================== SMS (TWILIO REST API) =====================
 
 /**
@@ -360,6 +403,7 @@ module.exports = {
   getVapidPublicKey,
   generateVAPIDKeys,
   sendPush,
+  sendPushToUser,
   sendSMS,
   sendWhatsApp,
   notify,

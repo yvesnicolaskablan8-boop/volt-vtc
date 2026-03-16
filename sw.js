@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-v210';
+const CACHE_NAME = 'pilote-v211';
 const ASSETS = [
   './',
   './index.html',
@@ -63,6 +63,51 @@ self.addEventListener('activate', (e) => {
     )
   );
   self.clients.claim();
+});
+
+// Push — afficher la notification systeme
+self.addEventListener('push', (event) => {
+  let data;
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { titre: 'Pilote', message: event.data ? event.data.text() : 'Nouvelle notification' };
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.titre || 'Pilote', {
+      body: data.message || 'Nouvelle notification',
+      icon: './icons/icon-192.png',
+      badge: './icons/icon-72.png',
+      data: {
+        url: data.url || '/#/taches',
+        type: data.type || 'tache'
+      },
+      tag: data.type || 'pilote-notification',
+      vibrate: [200, 100, 200]
+    })
+  );
+});
+
+// Click sur notification — ouvrir/focus l'app
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const url = event.notification.data?.url || '/#/taches';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      // Focus l'onglet existant
+      for (const client of clients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(self.location.origin + url);
+          return client.focus();
+        }
+      }
+      // Sinon ouvrir un nouvel onglet
+      return self.clients.openWindow(self.location.origin + url);
+    })
+  );
 });
 
 // Fetch — network first, fallback to cache
