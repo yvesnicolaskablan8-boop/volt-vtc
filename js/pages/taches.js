@@ -489,8 +489,6 @@ const TachesPage = {
         }},
         { label: '', key: 'actions', render: (t) => {
           return `<div style="display:flex;gap:4px;flex-wrap:nowrap;">
-            ${t.statut === 'a_faire' ? `<button class="btn btn-sm btn-primary" onclick="TachesPage._changeStatut('${t.id}', 'en_cours')" title="Demarrer"><iconify-icon icon="solar:play-bold-duotone"></iconify-icon></button>` : ''}
-            ${t.statut === 'en_cours' ? `<button class="btn btn-sm btn-success" onclick="TachesPage._changeStatut('${t.id}', 'terminee')" title="Tache effectuee"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button>` : ''}
             <button class="btn btn-sm btn-secondary" onclick="TachesPage._viewTache('${t.id}')" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
             <button class="btn btn-sm btn-secondary" onclick="TachesPage._editTache('${t.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
             ${t.recurrenceActif ? `<button class="btn btn-sm btn-secondary" onclick="TachesPage._toggleRecurrence('${t.id}')" title="Arreter la recurrence" style="color:#f59e0b;"><iconify-icon icon="solar:stop-bold-duotone"></iconify-icon></button>` : ''}
