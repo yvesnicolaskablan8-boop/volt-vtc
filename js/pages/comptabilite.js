@@ -161,36 +161,36 @@ const ComptabilitePage = {
 
     return `
       <!-- KPIs financiers -->
-      <div class="d-grid d-g4" style="margin-bottom:24px;">
-        <div class="d-card">
-          <div class="d-icon" style="background:rgba(16,185,129,.12);color:#10b981;"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon></div>
-          <div class="d-val" style="color:#10b981;">${Utils.formatCurrency(totalRecettes)}</div>
-          <div class="d-lbl">Encaissements du mois</div>
-          <div class="d-tag ${trendRecettes >= 0 ? 'green' : 'red'}" style="margin-top:8px;">
+      <div class="kpi-grid" style="margin-bottom:24px;">
+        <div class="kpi-card green">
+          <div class="kpi-icon"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon></div>
+          <div class="kpi-value">${Utils.formatCurrency(totalRecettes)}</div>
+          <div class="kpi-label">Encaissements du mois</div>
+          <div class="kpi-trend ${trendRecettes >= 0 ? 'green' : 'red'}">
             <iconify-icon icon="solar:arrow-${trendRecettes >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(trendRecettes).toFixed(1)}%
           </div>
         </div>
-        <div class="d-card">
-          <div class="d-icon" style="background:rgba(239,68,68,.12);color:#ef4444;"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon></div>
-          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(totalDepenses)}</div>
-          <div class="d-lbl">Décaissements du mois</div>
-          <div class="d-tag ${trendDepenses <= 0 ? 'green' : 'red'}" style="margin-top:8px;">
+        <div class="kpi-card red">
+          <div class="kpi-icon"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon></div>
+          <div class="kpi-value">${Utils.formatCurrency(totalDepenses)}</div>
+          <div class="kpi-label">Décaissements du mois</div>
+          <div class="kpi-trend ${trendDepenses <= 0 ? 'green' : 'red'}">
             <iconify-icon icon="solar:arrow-${trendDepenses <= 0 ? 'down' : 'up'}-bold"></iconify-icon> ${Math.abs(trendDepenses).toFixed(1)}%
           </div>
         </div>
-        <div class="d-card"${resultat < 0 ? ' style="border-color:rgba(239,68,68,.2);"' : ''}>
-          <div class="d-icon" style="background:${resultat >= 0 ? 'rgba(16,185,129,.12);color:#10b981' : 'rgba(239,68,68,.12);color:#ef4444'};"><iconify-icon icon="solar:scale-bold-duotone"></iconify-icon></div>
-          <div class="d-val" style="color:${resultat >= 0 ? '#10b981' : '#ef4444'};">${Utils.formatCurrency(resultat)}</div>
-          <div class="d-lbl">${resultat >= 0 ? 'Bénéfice du mois' : 'Perte du mois'}</div>
-          <div class="d-tag ${resultat >= 0 ? 'green' : 'red'}" style="margin-top:8px;">
+        <div class="kpi-card ${resultat >= 0 ? 'green' : 'red'}">
+          <div class="kpi-icon"><iconify-icon icon="solar:scale-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${Utils.formatCurrency(resultat)}</div>
+          <div class="kpi-label">${resultat >= 0 ? 'Bénéfice du mois' : 'Perte du mois'}</div>
+          <div class="kpi-trend ${resultat >= 0 ? 'green' : 'red'}">
             <iconify-icon icon="solar:${resultat >= 0 ? 'emoji-funny-circle-bold-duotone' : 'sad-circle-bold-duotone'}"></iconify-icon> ${resultat >= 0 ? 'Positif' : 'Négatif'}
           </div>
         </div>
-        <div class="d-card">
-          <div class="d-icon" style="background:rgba(59,130,246,.12);color:#3b82f6;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
-          <div class="d-val" style="color:#3b82f6;">${Utils.formatCurrency(soldeTotal)}</div>
-          <div class="d-lbl">Solde de trésorerie</div>
-          ${totalImpaye > 0 ? `<div class="d-tag red" style="margin-top:8px;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ${Utils.formatCurrency(totalImpaye)} impayé</div>` : '<div class="d-tag green" style="margin-top:8px;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> À jour</div>'}
+        <div class="kpi-card blue">
+          <div class="kpi-icon"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${Utils.formatCurrency(soldeTotal)}</div>
+          <div class="kpi-label">Solde de trésorerie</div>
+          ${totalImpaye > 0 ? '<div class="kpi-trend red"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ' + Utils.formatCurrency(totalImpaye) + ' impayé</div>' : '<div class="kpi-trend green"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> À jour</div>'}
         </div>
       </div>
 
@@ -516,14 +516,17 @@ const ComptabilitePage = {
     return `
       <div class="grid-3" style="margin-bottom:var(--space-lg);">
         <div class="kpi-card green">
+          <div class="kpi-icon"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(totalRec)}</div>
           <div class="kpi-label">Total encaissements ${year}</div>
         </div>
         <div class="kpi-card red">
+          <div class="kpi-icon"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(totalDep)}</div>
           <div class="kpi-label">Total décaissements ${year}</div>
         </div>
         <div class="kpi-card ${resultat >= 0 ? 'green' : 'red'}">
+          <div class="kpi-icon"><iconify-icon icon="solar:scale-bold-duotone"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(resultat)}</div>
           <div class="kpi-label">Résultat net (marge: ${marge.toFixed(1)}%)</div>
         </div>
