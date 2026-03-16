@@ -32,14 +32,44 @@ const RentabilitePage = {
       }
     });
 
+    // Helper : montant d'un versement (tester plusieurs champs)
+    const getVersementMontant = (vs) => vs.montantVerse || vs.montantNet || vs.montant || vs.montantBrut || 0;
+
+    // Build reverse map: chauffeurId → vehiculeId from versements themselves
+    const chauffeurToVehicle = {};
+    chauffeurs.forEach(ch => {
+      if (ch.vehiculeAssigne) chauffeurToVehicle[ch.id] = ch.vehiculeAssigne;
+    });
+    // Also from versements that have both chauffeurId and vehiculeId
+    versements.forEach(vs => {
+      if (vs.chauffeurId && vs.vehiculeId && !chauffeurToVehicle[vs.chauffeurId]) {
+        chauffeurToVehicle[vs.chauffeurId] = vs.vehiculeId;
+      }
+    });
+
+    // Debug: log versement fields to understand data
+    if (versements.length > 0) {
+      const sample = versements[0];
+      console.log('[Rentabilité] Sample versement:', JSON.stringify({
+        id: sample.id, chauffeurId: sample.chauffeurId, vehiculeId: sample.vehiculeId,
+        montantVerse: sample.montantVerse, montantNet: sample.montantNet, montant: sample.montant,
+        montantBrut: sample.montantBrut, statut: sample.statut
+      }));
+    }
+
     // Per-vehicle analysis
     const analysis = vehicules.map(v => {
       const vCourses = courses.filter(c => c.vehiculeId === v.id);
       // Relier versements via vehiculeId OU via les chauffeurs assignés au véhicule
       const chIds = vehiculeChauffeurIds[v.id] || [];
-      const vVersements = versements.filter(vs => vs.vehiculeId === v.id || chIds.includes(vs.chauffeurId));
+      // Also check chauffeurToVehicle reverse map
+      const allLinkedChauffeurs = [...chIds];
+      Object.entries(chauffeurToVehicle).forEach(([chId, vId]) => {
+        if (vId === v.id && !allLinkedChauffeurs.includes(chId)) allLinkedChauffeurs.push(chId);
+      });
+      const vVersements = versements.filter(vs => vs.vehiculeId === v.id || allLinkedChauffeurs.includes(vs.chauffeurId));
 
-      const totalRevenue = vVersements.filter(vs => vs.statut !== 'supprime' && vs.montantVerse > 0).reduce((s, vs) => s + vs.montantVerse, 0);
+      const totalRevenue = vVersements.filter(vs => vs.statut !== 'supprime').reduce((s, vs) => s + getVersementMontant(vs), 0);
       const totalCA = vCourses.reduce((s, c) => s + c.montantTTC, 0);
 
       // Months in service
@@ -113,20 +143,28 @@ const RentabilitePage = {
     });
 
     // Total fleet — revenus calculés depuis TOUS les versements (pas juste ceux liés à un véhicule)
-    const fleetTotalRevenue = versements.filter(vs => vs.statut !== 'supprime' && vs.montantVerse > 0).reduce((s, vs) => s + vs.montantVerse, 0);
+    const allVersementsValides = versements.filter(vs => vs.statut !== 'supprime' && getVersementMontant(vs) > 0);
+    const fleetTotalRevenue = allVersementsValides.reduce((s, vs) => s + getVersementMontant(vs), 0);
     const fleetTotalCost = analysis.reduce((s, a) => s + a.totalCost, 0);
     const fleetProfit = fleetTotalRevenue - fleetTotalCost;
     const fleetROI = fleetTotalCost > 0 ? ((fleetTotalRevenue - fleetTotalCost) / fleetTotalCost) * 100 : 0;
-    console.log('[Rentabilité] Versements total:', versements.length, '| Versements avec montant:', versements.filter(vs => vs.statut !== 'supprime' && vs.montantVerse > 0).length, '| Revenue:', fleetTotalRevenue, '| Coûts:', fleetTotalCost);
+    // Versements non liés à un véhicule (pour diagnostic)
+    const linkedRevenue = analysis.reduce((s, a) => s + a.totalRevenue, 0);
+    const unlinkedRevenue = fleetTotalRevenue - linkedRevenue;
+    console.log('[Rentabilité] Versements:', versements.length, '| Avec montant:', allVersementsValides.length, '| Revenue totale:', fleetTotalRevenue, '| Liée véhicules:', linkedRevenue, '| Non liée:', unlinkedRevenue, '| Coûts:', fleetTotalCost);
 
     // Leasing vs Cash comparison
     const leasingVehicles = analysis.filter(a => a.vehicule.typeAcquisition === 'leasing');
     const cashVehicles = analysis.filter(a => a.vehicule.typeAcquisition === 'cash');
 
-    const avgLeasingROI = leasingVehicles.length > 0
-      ? leasingVehicles.reduce((s, a) => s + a.roi, 0) / leasingVehicles.length : 0;
-    const avgCashROI = cashVehicles.length > 0
-      ? cashVehicles.reduce((s, a) => s + a.roi, 0) / cashVehicles.length : 0;
+    // RSI leasing/cash basé sur les revenus RÉELS de la flotte (pas per-vehicle)
+    const leasingTotalCost = leasingVehicles.reduce((s, a) => s + a.totalCost, 0);
+    const cashTotalCost = cashVehicles.reduce((s, a) => s + a.totalCost, 0);
+    // Distribuer le revenu fleet proportionnellement au nombre de véhicules
+    const leasingRevenuePart = leasingVehicles.length > 0 ? fleetTotalRevenue * (leasingVehicles.length / analysis.length) : 0;
+    const cashRevenuePart = cashVehicles.length > 0 ? fleetTotalRevenue * (cashVehicles.length / analysis.length) : 0;
+    const avgLeasingROI = leasingTotalCost > 0 ? ((leasingRevenuePart - leasingTotalCost) / leasingTotalCost) * 100 : 0;
+    const avgCashROI = cashTotalCost > 0 ? ((cashRevenuePart - cashTotalCost) / cashTotalCost) * 100 : 0;
 
     // EV vs Thermique comparison
     const evVehicles = analysis.filter(a => a.isEV);
@@ -196,6 +234,11 @@ const RentabilitePage = {
     const resultatMensuelMoyen = avgMonthsService > 0 ? resultatCumule / avgMonthsService : 0;
     const moisRecuperation = resultatMensuelMoyen > 0 ? Math.ceil((investTotal - Math.max(0, resultatCumule)) / resultatMensuelMoyen) : null;
 
+    // Debug data
+    const debugPerVehicle = analysis.map(a =>
+      `${a.vehicule.marque || ''} ${a.vehicule.modele || a.vehicule.immatriculation || a.vehicule.id}: rev=${Utils.formatCurrency(a.totalRevenue)}, coût=${Utils.formatCurrency(a.totalCost)}, acq=${Utils.formatCurrency(a.acquisitionTotal)}, chauffeurs=[${(vehiculeChauffeurIds[a.vehicule.id]||[]).join(',')}]`
+    ).join('<br>');
+
     return {
       analysis, fleetTotalRevenue, fleetTotalCost, fleetProfit, fleetROI,
       avgLeasingROI, avgCashROI, cumulativeLeasingCost, cumulativeCashCost,
@@ -204,6 +247,12 @@ const RentabilitePage = {
       avgEVCoutKm, avgThermalCoutKm, avgEVEnergy, avgThermalEnergy,
       avgEVMaintenance, avgThermalMaintenance, avgEVROI, avgThermalROI,
       energySavingsPercent,
+      debugVersementsTotal: versements.length,
+      debugVersementsAvecMontant: allVersementsValides.length,
+      debugLinkedRevenue: linkedRevenue,
+      debugUnlinkedRevenue: unlinkedRevenue,
+      debugAcquisitionTotal: analysis.reduce((s, a) => s + a.acquisitionTotal, 0),
+      debugPerVehicle,
       investTotal, resultatCumule, rsiGlobal, moisRecuperation, vehiculeCount: vehicules.length
     };
   },
@@ -287,6 +336,15 @@ const RentabilitePage = {
           <div class="rent-progress-fill" style="width:${rsiPct}%;"></div>
         </div>
         <div style="text-align:right;margin-top:8px;font-size:12px;font-weight:700;color:${rsiBarColor};">${rsiPct.toFixed(0)}% récupéré</div>
+      </div>
+
+      <!-- ===== DIAGNOSTIC (temporaire) ===== -->
+      <div style="background:rgba(99,102,241,.08);border:1px dashed rgba(99,102,241,.3);border-radius:14px;padding:16px;margin-bottom:18px;font-size:12px;color:var(--text-muted);font-family:monospace;">
+        <div style="font-weight:700;color:#6366f1;margin-bottom:8px;">🔍 Diagnostic RSI (temporaire)</div>
+        <div>Véhicules: ${d.vehiculeCount} | Versements total: ${d.debugVersementsTotal} | Versements avec montant: ${d.debugVersementsAvecMontant}</div>
+        <div>Revenus (tous versements): ${Utils.formatCurrency(d.fleetTotalRevenue)} | Revenus liés véhicules: ${Utils.formatCurrency(d.debugLinkedRevenue)} | Non liés: ${Utils.formatCurrency(d.debugUnlinkedRevenue)}</div>
+        <div>Coûts flotte: ${Utils.formatCurrency(d.fleetTotalCost)} (dont acquisition: ${Utils.formatCurrency(d.debugAcquisitionTotal)})</div>
+        <div style="margin-top:6px;">${d.debugPerVehicle}</div>
       </div>
 
       <!-- ===== KPIs FLOTTE ===== -->
