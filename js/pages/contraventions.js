@@ -385,7 +385,7 @@ const ContraventionsPage = {
           </div>
         </form>`,
       () => this._saveNew(),
-      { width: '640px' }
+      'modal-lg'
     );
 
     // Bind add line button

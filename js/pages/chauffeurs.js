@@ -1853,9 +1853,9 @@ const ChauffeursPage = {
         </div>`;
       }).join('');
 
-    Modal.show(
-      `<iconify-icon icon="solar:document-text-bold-duotone" style="color:#ef4444;"></iconify-icon> Contraventions \u2014 ${ch.prenom} ${ch.nom}`,
-      `<div style="margin-bottom:16px;display:flex;gap:12px;">
+    Modal.open({
+      title: `<iconify-icon icon="solar:document-text-bold-duotone" style="color:#ef4444;"></iconify-icon> Contraventions \u2014 ${ch.prenom} ${ch.nom}`,
+      body: `<div style="margin-bottom:16px;display:flex;gap:12px;">
         <div style="flex:1;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:14px;text-align:center;">
           <div style="font-size:22px;font-weight:900;color:#ef4444;">${Utils.formatCurrency(totalImpaye)}</div>
           <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Total impay\u00e9</div>
@@ -1870,8 +1870,9 @@ const ChauffeursPage = {
         <button class="btn btn-primary" id="btn-add-contra-from-fiche" style="background:#ef4444;border-color:#ef4444;">
           <iconify-icon icon="solar:add-circle-bold"></iconify-icon> D\u00e9clarer des contraventions
         </button>
-      </div>`
-    );
+      </div>`,
+      footer: `<button class="btn btn-secondary" data-action="cancel">Fermer</button>`
+    });
 
     setTimeout(() => {
       const btn = document.getElementById('btn-add-contra-from-fiche');
