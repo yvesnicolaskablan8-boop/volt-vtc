@@ -6,7 +6,7 @@ const DashboardPage = {
   _refreshInterval: null,
   _lastData: null,
   _selectedPeriod: null, // null = today/current month
-  _monthView: true, // true = mois entier par défaut (plus pertinent)
+  _monthView: false, // false = jour, true = mois entier
 
   render() {
     const container = document.getElementById('page-content');
@@ -405,8 +405,7 @@ const DashboardPage = {
     const periodLabel = isMonthView ? monthLabel : Utils.formatDate(selectedDay);
 
     // =================== PLANNING HEATMAP (semaine) ===================
-    // Use local date (not UTC) to avoid timezone issues
-    const hmToday = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const hmToday = now.toISOString().split('T')[0];
     const hmSel = new Date(selectedDay);
     const hmDow = hmSel.getDay() || 7; // 1=Lun ... 7=Dim
     const hmMonday = new Date(hmSel);
@@ -416,7 +415,7 @@ const DashboardPage = {
     for (let i = 0; i < 7; i++) {
       const d = new Date(hmMonday);
       d.setDate(hmMonday.getDate() + i);
-      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const ds = d.toISOString().split('T')[0];
       heatmapWeekDays.push({ date: ds, label: dayLabels[i], dayNum: d.getDate(), isToday: ds === hmToday });
     }
     const activeDrivers = chauffeurs.filter(c => c.statut === 'actif').sort((a, b) => (a.prenom || '').localeCompare(b.prenom || ''));
@@ -424,20 +423,15 @@ const DashboardPage = {
       const cells = heatmapWeekDays.map(wd => {
         // Check absence
         const hasAbsence = absences.some(a => a.chauffeurId === c.id && wd.date >= a.dateDebut && wd.date <= a.dateFin);
-        if (hasAbsence) return { status: 'absent', heure: '' };
+        if (hasAbsence) return 'absent';
         // Check if planned
-        const planEntry = planning.find(p => p.chauffeurId === c.id && p.date === wd.date);
-        if (!planEntry) return { status: 'repos', heure: '' };
-        // Extract hours (e.g. "06:00"-"00:00" → "6h-00h")
-        const fmtH = (h) => h ? h.replace(/^0/, '').split(':')[0] + 'h' : '';
-        const hDebut = fmtH(planEntry.heureDebut);
-        const hFin = fmtH(planEntry.heureFin);
-        const heure = hDebut && hFin ? `${hDebut}-${hFin}` : hDebut || '';
+        const isPlanned = planning.some(p => p.chauffeurId === c.id && p.date === wd.date);
+        if (!isPlanned) return 'repos';
         // Planned — check if future
-        if (wd.date >= hmToday) return { status: 'programme', heure };
-        // Past only — check versement
+        if (wd.date > hmToday) return 'programme';
+        // Past or today — check versement
         const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime'));
-        return { status: hasVersement ? 'verse' : 'en_retard', heure };
+        return hasVersement ? 'verse' : 'en_retard';
       });
       return { id: c.id, prenom: c.prenom, nom: c.nom, initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), cells };
     });
@@ -777,38 +771,13 @@ const DashboardPage = {
           .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
           .d-g3 { grid-template-columns:1fr !important; }
           .d-g21 { grid-template-columns:1fr !important; }
-          .d-hero-kpis { gap:10px !important; }
-          .d-hero-kpis a { min-height:110px !important; }
-          .d-hero-kpis a div:nth-child(2) { font-size:28px !important; }
         }
         @media(max-width:600px) {
-          .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
-          .d-bg { margin:-16px; padding:12px 10px 24px; }
-          .d-hero-wrap { padding:14px 12px 0 !important; border-radius:14px !important; margin-bottom:12px !important; overflow:hidden !important; }
-          .d-hero-ca { gap:12px !important; }
-          .d-hero-ca > div:first-child > div:first-child { font-size:24px !important; letter-spacing:-1px !important; word-break:break-all !important; }
-          .d-hero-ca > div:last-child { height:60px !important; }
-          .d-hero-kpis { gap:6px !important; padding-bottom:14px !important; }
-          .d-hero-kpis > a { min-height:auto !important; padding:10px 12px !important; border-radius:12px !important; overflow:hidden !important; }
-          .d-hero-kpis > a > div:first-child > div:first-child { font-size:11px !important; }
-          .d-hero-kpis > a > div:nth-child(2) { font-size:18px !important; margin:4px 0 6px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
-          .d-hero-kpis > a > div:last-child { flex-wrap:nowrap !important; overflow:hidden !important; }
-          .d-hero-kpis > a > div:last-child span { font-size:9px !important; white-space:nowrap !important; }
-          .d-hero-kpis > a > div:last-child span:last-child { display:none !important; }
-          .d-hm-grid { grid-template-columns:36px repeat(7,1fr) !important; gap:2px !important; }
-          .d-hm-driver { font-size:10px !important; }
+          .d-g4 { grid-template-columns:1fr !important; }
+          .d-bg { margin:-16px; padding:16px 16px 24px; }
+          .d-hm-grid { grid-template-columns:40px repeat(7,1fr); gap:2px; }
           .d-hm-driver span:last-child { display:none; }
-          .d-hm-avatar { width:22px !important; height:22px !important; font-size:8px !important; }
-          .d-hm-cell { height:24px !important; border-radius:5px !important; font-size:9px !important; }
-          .d-hm-head { font-size:10px !important; }
-          .d-header-row { flex-wrap:wrap !important; gap:10px !important; }
-          .d-header-controls { flex-wrap:wrap; gap:6px !important; }
-          .d-card { padding:12px !important; border-radius:12px !important; overflow:hidden !important; }
-          .d-card .d-val { font-size:18px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
-          .d-card .d-lbl { font-size:11px !important; }
-          .d-val { font-size:18px !important; }
-          .d-grid { gap:8px !important; }
-          .d-legend { font-size:10px !important; }
+          .d-hm-cell { height:26px; border-radius:6px; font-size:10px; }
         }
       </style>
 
@@ -816,12 +785,12 @@ const DashboardPage = {
       <div class="d-bg">
 
       <!-- Header -->
-      <div class="d-header-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Bienvenue,</div>
           <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;">${userName} !</div>
         </div>
-        <div class="d-header-controls" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:0;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border-radius:14px;border:1px solid rgba(0,0,0,.06);padding:3px;">
             <input type="date" id="dashboard-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:#374151;font-weight:500;outline:none;">
             <button onclick="DashboardPage._toggleMonthView()" style="font-size:12px;padding:6px 14px;border-radius:11px;background:${this._monthView ? '#6366f1' : 'transparent'};color:${this._monthView ? '#fff' : '#6b7280'};border:none;font-weight:600;cursor:pointer;transition:all .2s;">
@@ -837,81 +806,79 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Row 1: SellCraft "Total Sales" — single hero card with chart bg + 3 mini KPIs inside -->
-      <div class="d-hero-wrap" style="background:#fff;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03);position:relative;overflow:visible;margin-bottom:16px;padding:24px 28px 0;">
+      <!-- Row 1: Hero CA + 3 metric cards -->
+      <div class="d-grid d-g4" style="grid-template-columns:1.6fr 1fr 1fr 1fr;">
 
-        <!-- Top: title + 3-dot menu -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <iconify-icon icon="solar:graph-new-up-bold-duotone" style="font-size:18px;color:#374151;"></iconify-icon>
-            <span style="font-size:15px;font-weight:700;color:#111827;">Chiffre d'affaires</span>
+        <!-- CA Hero Card -->
+        <a href="#/versements" class="d-card hero" style="text-decoration:none;color:#fff;grid-row:span 1;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,.65);">Chiffre d'affaires</div>
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;">
+              <iconify-icon icon="solar:graph-new-up-bold" style="font-size:18px;color:#fff;"></iconify-icon>
+            </div>
           </div>
-          <button style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer;padding:4px;">⋮</button>
+          <div style="margin-top:12px;">
+            <div class="d-val hero">${Utils.formatCurrency(d.caThisMonth)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+            <span class="d-tag white">
+              <iconify-icon icon="${d.caTrend >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}" style="font-size:10px;"></iconify-icon>
+              ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
+            </span>
+            <span style="font-size:11px;color:rgba(255,255,255,.5);">vs période préc.</span>
+          </div>
+          <div style="margin-top:14px;">${sparkline(last6Rev, 'rgba(255,255,255,.45)', 140, 36)}</div>
+        </a>
+
+        <!-- Versements -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;">
+              <iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;">Versements</div>
+          </div>
+          <div class="d-val xl" style="color:#10b981;">${d.nbVersementsPeriode}</div>
+          <div class="d-sub">${Utils.formatCurrency(d.caMoyenJour)} / jour</div>
+          <div style="margin-top:10px;">
+            <span class="d-tag ${d.retardCount > 0 ? 'red' : 'green'}">${d.retardCount} en retard</span>
+          </div>
+        </a>
+
+        <!-- Objectif -->
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;">
+              <iconify-icon icon="solar:target-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;">Objectif</div>
+          </div>
+          <div class="d-gauge-wrap" style="margin:4px 0;">
+            ${gauge(d.progressionObjectif, progressColor, 64, 5)}
+            <div class="d-gauge-txt" style="color:${progressColor};font-size:14px;">${d.progressionObjectif}%</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
+          <div class="d-sub" style="text-align:center;">${d.joursRestants}j restants</div>
         </div>
 
-        <!-- CA number (left) + Chart (right) — side by side like SellCraft -->
-        <div class="d-hero-ca" style="display:flex;align-items:flex-end;gap:24px;position:relative;z-index:2;">
-          <!-- Left: big number + trend -->
-          <div style="flex-shrink:0;">
-            <div style="font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.caThisMonth)}</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
-              <span class="d-tag ${d.caTrend >= 0 ? 'green' : 'red'}">
-                ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
-              </span>
-              <span style="font-size:12px;color:#6b7280;font-weight:500;">• ${Utils.formatCurrency(d.caMoyenJour)} / jour</span>
+        <!-- Recouvrement -->
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;">
+              <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon>
             </div>
+            <div class="d-lbl" style="margin:0;">Recouvrement</div>
           </div>
-          <!-- Right: Chart (bars + line like SellCraft) -->
-          <div style="flex:1;height:110px;min-width:0;">
-            <canvas id="chart-hero-ca"></canvas>
+          <div class="d-gauge-wrap" style="margin:4px 0;">
+            ${gauge(d.tauxRecouvrement, recouvrementColor, 64, 5)}
+            <div class="d-gauge-txt" style="color:${recouvrementColor};font-size:14px;">${d.tauxRecouvrement}%</div>
           </div>
-        </div>
-
-        <!-- 3 mini KPI cards — staggered, clean -->
-        <div class="d-hero-kpis" style="display:flex;gap:14px;margin-top:8px;padding-bottom:24px;position:relative;z-index:3;align-items:flex-end;">
-
-          <!-- Versements (vert) -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(220,252,231,.7);border-radius:18px;padding:22px 20px;border:1px solid rgba(187,247,208,.35);box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;margin-top:30px;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <div style="font-size:14px;font-weight:600;color:#374151;">Versements</div>
-              <span style="font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
-            </div>
-            <div style="font-size:36px;font-weight:900;color:#111827;margin:14px 0 16px;letter-spacing:-1.2px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalVerse)}</div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;background:${d.caTrend >= 0 ? 'rgba(34,197,94,.18);color:#16a34a' : 'rgba(239,68,68,.18);color:#dc2626'};">${d.caTrend >= 0 ? '+' : ''}${Math.abs(Math.round(d.caTrend))}%</span>
-              <span style="font-size:11px;color:#6b7280;font-weight:500;">${d.nbVersementsPeriode} Ce mois</span>
-            </div>
-          </a>
-
-          <!-- Dettes (orange vif) -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(255,237,213,.7);border-radius:18px;padding:22px 20px;border:1px solid rgba(253,186,116,.35);box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;margin-top:10px;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <div style="font-size:14px;font-weight:600;color:#374151;">Dettes</div>
-              <span style="font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
-            </div>
-            <div style="font-size:36px;font-weight:900;color:#111827;margin:14px 0 16px;letter-spacing:-1.2px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalDettes)}</div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;background:rgba(245,158,11,.18);color:#d97706;">${d.nbDetteDrivers > 0 ? '-' : ''}${d.nbDetteDrivers}</span>
-              <span style="font-size:11px;color:#6b7280;font-weight:500;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''} Ce mois</span>
-            </div>
-          </a>
-
-          <!-- Pertes (rouge) -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(254,226,226,.65);border-radius:18px;padding:22px 20px;border:1px solid rgba(252,165,165,.35);box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;margin-top:-10px;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <div style="font-size:14px;font-weight:600;color:#374151;">Pertes</div>
-              <span style="font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
-            </div>
-            <div style="font-size:36px;font-weight:900;color:#111827;margin:14px 0 16px;letter-spacing:-1.2px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalPertes)}</div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;background:rgba(239,68,68,.18);color:#dc2626;">${d.nbPerteDrivers > 0 ? '-' : ''}${d.nbPerteDrivers}</span>
-              <span style="font-size:11px;color:#6b7280;font-weight:500;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''} Ce mois</span>
-            </div>
-          </a>
+          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div class="d-sub" style="text-align:center;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
         </div>
       </div>
 
-      <!-- Row 2: Chauffeurs + Objectif + Recouvrement + Flotte -->
+      <!-- Row 2: Chauffeurs + Dettes + Pertes + Flotte -->
       <div class="d-grid d-g4" style="grid-template-columns:1.4fr 1fr 1fr 1fr;">
 
         <!-- Chauffeurs with donut -->
@@ -947,37 +914,35 @@ const DashboardPage = {
           </div>
         </a>
 
-        <!-- Objectif -->
-        <div class="d-card">
+        <!-- Dettes -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalDettes > 0 ? 'border-color:rgba(239,68,68,.2);background:rgba(255,255,255,.72);' : ''}">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;">
-              <iconify-icon icon="solar:target-bold-duotone"></iconify-icon>
+            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;">Objectif</div>
+            <div class="d-lbl" style="margin:0;color:#ef4444;">Dettes</div>
           </div>
-          <div class="d-gauge-wrap" style="margin:4px 0;">
-            ${gauge(d.progressionObjectif, progressColor, 64, 5)}
-            <div class="d-gauge-txt" style="color:${progressColor};font-size:14px;">${d.progressionObjectif}%</div>
+          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(d.totalDettes)}</div>
+          <div class="d-sub">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#ef4444,#f87171);"></div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
-          <div class="d-sub" style="text-align:center;">${d.joursRestants}j restants</div>
-        </div>
+        </a>
 
-        <!-- Recouvrement -->
-        <div class="d-card">
+        <!-- Pertes -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalPertes > 0 ? 'border-color:rgba(249,115,22,.2);' : ''}">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;">
-              <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon>
+            <div class="d-icon" style="background:rgba(249,115,22,.1);color:#f97316;">
+              <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;">Recouvrement</div>
+            <div class="d-lbl" style="margin:0;color:#f97316;">Pertes</div>
           </div>
-          <div class="d-gauge-wrap" style="margin:4px 0;">
-            ${gauge(d.tauxRecouvrement, recouvrementColor, 64, 5)}
-            <div class="d-gauge-txt" style="color:${recouvrementColor};font-size:14px;">${d.tauxRecouvrement}%</div>
+          <div class="d-val" style="color:#f97316;">${Utils.formatCurrency(d.totalPertes)}</div>
+          <div class="d-sub">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#f97316,#fb923c);"></div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="d-sub" style="text-align:center;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
-        </div>
+        </a>
 
         <!-- Flotte -->
         <a href="#/vehicules" class="d-card" style="text-decoration:none;color:inherit;">
@@ -998,8 +963,30 @@ const DashboardPage = {
         </a>
       </div>
 
-      <!-- Row 3: Service + Alertes -->
-      <div class="d-grid" style="grid-template-columns:1fr 1fr;">
+      <!-- Row 3: Chart (large) + Side panel -->
+      <div class="d-grid d-g21" style="grid-template-columns:1.8fr 1fr;">
+        <div class="d-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;">
+                <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
+              </div>
+              <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:#111827;">Évolution CA</div>
+            </div>
+            <span class="d-tag ${d.tendancePctMois >= 0 ? 'green' : 'red'}">
+              <iconify-icon icon="${d.tendancePctMois >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}" style="font-size:10px;"></iconify-icon>
+              ${d.tendancePctMois >= 0 ? '+' : ''}${d.tendancePctMois}%
+            </span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+            <div class="d-chip">Proj. <strong style="color:#6366f1;margin-left:4px;">${Utils.formatCurrency(d.projectionFinMois)}</strong></div>
+            <div class="d-chip">M+1 <strong style="color:#a855f7;margin-left:4px;">${Utils.formatCurrency(d.previsionMoisSuivant)}</strong></div>
+          </div>
+          <div style="height:200px;">
+            <canvas id="chart-forecast"></canvas>
+          </div>
+        </div>
+
         <div style="display:flex;flex-direction:column;gap:16px;">
           <!-- Service du jour -->
           <a href="#/planning" class="d-card" style="text-decoration:none;color:inherit;flex:1;">
@@ -1138,7 +1125,7 @@ const DashboardPage = {
 
     const statusIcons = {
       verse: '<iconify-icon icon="solar:check-circle-bold" style="font-size:14px;"></iconify-icon>',
-      programme: '',
+      programme: '<iconify-icon icon="solar:clock-circle-bold" style="font-size:14px;"></iconify-icon>',
       en_retard: '<iconify-icon icon="solar:danger-triangle-bold" style="font-size:14px;"></iconify-icon>',
       absent: '<iconify-icon icon="solar:minus-circle-bold" style="font-size:14px;"></iconify-icon>',
       repos: ''
@@ -1157,12 +1144,9 @@ const DashboardPage = {
     drivers.forEach((dr, idx) => {
       const color = avatarColors[idx % avatarColors.length];
       html += `<div class="d-hm-driver"><div class="d-hm-avatar" style="background:${color};">${dr.initials}</div><span>${dr.prenom}</span></div>`;
-      dr.cells.forEach((cell, ci) => {
-        const status = typeof cell === 'object' ? cell.status : cell;
-        const heure = typeof cell === 'object' ? cell.heure : '';
-        const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}${heure ? ' (' + heure + ')' : ''}`;
-        const content = heure || statusIcons[status];
-        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="Router.navigate('/chauffeurs/${dr.id}')">${content}</div>`;
+      dr.cells.forEach((status, ci) => {
+        const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}`;
+        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="Router.navigate('/chauffeurs/${dr.id}')">${statusIcons[status]}</div>`;
       });
     });
     html += '</div>';
@@ -1195,205 +1179,89 @@ const DashboardPage = {
   _loadCharts(d) {
     this._charts = [];
 
-    // ======= Hero CA chart — modern gradient bars + smooth line + permanent % pill =======
-    const heroCtx = document.getElementById('chart-hero-ca');
-    if (heroCtx && d.monthlyRevenue && d.monthlyRevenue.length > 0) {
-      const heroMonths = d.monthlyRevenue.slice(-12);
-      const heroLabels = heroMonths.map(m => m.month);
-      const heroData = heroMonths.map(m => m.revenue);
+    // ======= Forecast chart (line + projected bar) =======
+    const forecastCtx = document.getElementById('chart-forecast');
+    if (forecastCtx && d.forecastChartData && d.forecastChartData.length > 0) {
+      const labels = d.forecastChartData.map(f => f.label);
+      const actualData = d.forecastChartData.map(f => f.type === 'actual' ? f.value : null);
+      const forecastData = d.forecastChartData.map((f, i) => {
+        // Connect forecast point to last actual point
+        if (f.type === 'forecast') return f.value;
+        if (i === d.forecastChartData.length - 2) return f.value; // bridge point
+        return null;
+      });
 
-      // Compute month-over-month % for last point
-      const lastVal = heroData[heroData.length - 1] || 0;
-      const prevVal = heroData.length >= 2 ? heroData[heroData.length - 2] : 0;
-      const lastPct = prevVal > 0 ? ((lastVal - prevVal) / prevVal * 100) : 0;
-      const pctLabel = `${lastPct >= 0 ? '+' : ''}${Math.round(lastPct * 10) / 10}%`;
-      const pctPositive = lastPct >= 0;
-
-      // Custom plugin: permanent pill tooltip + gradient fill under line
-      const heroPlugins = {
-        id: 'heroCustom',
-        afterDraw(chart) {
-          const ctx = chart.ctx;
-          const meta = chart.getDatasetMeta(1); // line dataset
-          if (!meta || !meta.data.length) return;
-
-          // --- Gradient fill under the line ---
-          const points = meta.data;
-          const yAxis = chart.scales.y;
-          const bottom = yAxis.bottom;
-          ctx.save();
-          ctx.beginPath();
-          ctx.moveTo(points[0].x, points[0].y);
-          for (let i = 1; i < points.length; i++) {
-            const xc = (points[i - 1].x + points[i].x) / 2;
-            const yc = (points[i - 1].y + points[i].y) / 2;
-            ctx.quadraticCurveTo(points[i - 1].x, points[i - 1].y, xc, yc);
-          }
-          ctx.quadraticCurveTo(points[points.length - 2].x, points[points.length - 2].y, points[points.length - 1].x, points[points.length - 1].y);
-          ctx.lineTo(points[points.length - 1].x, bottom);
-          ctx.lineTo(points[0].x, bottom);
-          ctx.closePath();
-          const grad = ctx.createLinearGradient(0, chart.scales.y.top, 0, bottom);
-          grad.addColorStop(0, 'rgba(99, 102, 241, 0.12)');
-          grad.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
-          ctx.fillStyle = grad;
-          ctx.fill();
-          ctx.restore();
-
-          // --- Permanent pill on last point ---
-          const lastPoint = points[points.length - 1];
-          const x = lastPoint.x;
-          const y = lastPoint.y;
-          const text = pctLabel;
-          ctx.save();
-          ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
-          const tw = ctx.measureText(text).width;
-          const pw = tw + 18;
-          const ph = 26;
-          const px = Math.min(x - pw / 2, chart.width - pw - 5);
-          const py = y - ph - 14;
-
-          // Shadow
-          ctx.shadowColor = 'rgba(0,0,0,.15)';
-          ctx.shadowBlur = 8;
-          ctx.shadowOffsetY = 2;
-
-          // Pill shape
-          const r = ph / 2;
-          ctx.beginPath();
-          ctx.moveTo(px + r, py);
-          ctx.lineTo(px + pw - r, py);
-          ctx.arcTo(px + pw, py, px + pw, py + r, r);
-          ctx.arcTo(px + pw, py + ph, px + pw - r, py + ph, r);
-          ctx.lineTo(px + r, py + ph);
-          ctx.arcTo(px, py + ph, px, py + r, r);
-          ctx.arcTo(px, py, px + r, py, r);
-          ctx.closePath();
-          ctx.fillStyle = '#111827';
-          ctx.fill();
-          ctx.shadowColor = 'transparent';
-
-          // Caret
-          const cx2 = px + pw / 2;
-          ctx.beginPath();
-          ctx.moveTo(cx2 - 5, py + ph - 0.5);
-          ctx.lineTo(cx2 + 5, py + ph - 0.5);
-          ctx.lineTo(cx2, py + ph + 6);
-          ctx.closePath();
-          ctx.fillStyle = '#111827';
-          ctx.fill();
-
-          // Text
-          ctx.fillStyle = '#fff';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(text, px + pw / 2, py + ph / 2 + 0.5);
-          ctx.restore();
-
-          // --- Glow dot on last point ---
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(x, y, 7, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(99, 102, 241, 0.2)';
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(x, y, 4, 0, Math.PI * 2);
-          ctx.fillStyle = '#6366f1';
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(x, y, 2, 0, Math.PI * 2);
-          ctx.fillStyle = '#fff';
-          ctx.fill();
-          ctx.restore();
-        }
-      };
-
-      // Gradient for bars
-      const ctx2d = heroCtx.getContext('2d');
-      const barGrad = ctx2d.createLinearGradient(0, 0, 0, 140);
-      barGrad.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
-      barGrad.addColorStop(1, 'rgba(99, 102, 241, 0.04)');
-
-      this._charts.push(new Chart(heroCtx, {
+      this._charts.push(new Chart(forecastCtx, {
         type: 'bar',
         data: {
-          labels: heroLabels,
+          labels,
           datasets: [
             {
-              type: 'bar',
-              label: 'CA',
-              data: heroData,
-              backgroundColor: barGrad,
-              hoverBackgroundColor: 'rgba(99, 102, 241, 0.35)',
-              borderRadius: 6,
-              borderSkipped: false,
-              barPercentage: 0.7,
-              categoryPercentage: 0.85,
-              order: 2
+              type: 'line',
+              label: 'CA réel',
+              data: actualData,
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99, 102, 241, 0.08)',
+              fill: true,
+              borderWidth: 2.5,
+              pointBackgroundColor: '#6366f1',
+              pointBorderColor: Utils.chartBorderColor(),
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 7,
+              spanGaps: false,
+              order: 1
             },
             {
               type: 'line',
-              label: 'Tendance',
-              data: heroData,
-              borderColor: '#6366f1',
+              label: 'Prévision',
+              data: forecastData,
+              borderColor: '#8b5cf6',
+              backgroundColor: 'rgba(139, 92, 246, 0.08)',
+              fill: true,
               borderWidth: 2.5,
-              pointBackgroundColor: 'transparent',
-              pointBorderColor: 'transparent',
-              pointRadius: 0,
-              pointHoverRadius: 6,
-              pointHoverBackgroundColor: '#fff',
-              pointHoverBorderColor: '#6366f1',
-              pointHoverBorderWidth: 3,
-              tension: 0.4,
-              fill: false,
-              order: 1
+              borderDash: [6, 4],
+              pointBackgroundColor: '#8b5cf6',
+              pointBorderColor: Utils.chartBorderColor(),
+              pointBorderWidth: 2,
+              pointRadius: (ctx) => {
+                return ctx.dataIndex === d.forecastChartData.length - 1 ? 6 : 0;
+              },
+              pointHoverRadius: 8,
+              spanGaps: true,
+              order: 2
             }
           ]
         },
-        plugins: [heroPlugins],
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: { padding: { top: 44, right: 12, left: 4 } },
           interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { display: false },
+            legend: {
+              position: 'top',
+              align: 'end',
+              labels: { boxWidth: 12, padding: 10, font: { size: 11 } }
+            },
             tooltip: {
-              enabled: true,
-              backgroundColor: '#111827',
-              titleFont: { size: 11, weight: '600' },
-              titleColor: 'rgba(255,255,255,.6)',
-              bodyFont: { size: 13, weight: '700' },
-              padding: { top: 8, bottom: 8, left: 14, right: 14 },
-              cornerRadius: 12,
-              caretSize: 6,
-              displayColors: false,
               callbacks: {
-                title: (items) => items[0] ? heroLabels[items[0].dataIndex] : '',
                 label: (ctx) => {
-                  if (ctx.datasetIndex === 0) return Utils.formatCurrency(ctx.raw);
-                  if (ctx.datasetIndex === 1 && ctx.dataIndex > 0) {
-                    const prev = heroData[ctx.dataIndex - 1];
-                    const cur = heroData[ctx.dataIndex];
-                    if (prev > 0) {
-                      const pct = ((cur - prev) / prev * 100);
-                      return `${pct >= 0 ? '↑' : '↓'} ${Math.abs(Math.round(pct * 10) / 10)}%`;
-                    }
-                  }
-                  return '';
+                  const val = Utils.formatCurrency(ctx.raw);
+                  const isPrev = ctx.dataset.label === 'Prévision';
+                  return `${ctx.dataset.label} : ${val}${isPrev ? ' (estimé)' : ''}`;
                 }
               }
             }
           },
           scales: {
-            x: { display: false },
-            y: { display: false, beginAtZero: true }
+            y: {
+              beginAtZero: true,
+              ticks: { callback: (val) => Utils.formatCurrency(val) }
+            }
           }
         }
       }));
     }
-
-    // (Forecast chart removed — hero chart already shows CA evolution)
   },
 
 
