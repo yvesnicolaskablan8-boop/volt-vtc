@@ -12,7 +12,8 @@ const Table = {
       actions = null,
       toolbar = '',
       initialPage = 1,
-      onPageChange = null
+      onPageChange = null,
+      rowClass = null
     } = config;
 
     let currentPage = initialPage;
@@ -64,7 +65,7 @@ const Table = {
               ${pageData.length === 0 ? `
                 <tr><td colspan="${columns.length + (actions ? 1 : 0)}" class="text-center text-muted" style="padding:24px;">Aucune donnée trouvée</td></tr>
               ` : pageData.map(row => `
-                <tr ${onRowClick ? `data-id="${row.id}" style="cursor:pointer"` : ''}>
+                <tr class="${rowClass ? rowClass(row) : ''}" ${onRowClick ? `data-id="${row.id}" style="cursor:pointer"` : ''}>
                   ${columns.map(col => `
                     <td class="${col.primary ? 'primary' : ''}">${col.render ? col.render(row) : (row[col.key] != null ? row[col.key] : '-')}</td>
                   `).join('')}

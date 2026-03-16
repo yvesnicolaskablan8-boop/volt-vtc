@@ -179,8 +179,10 @@ const TachesPage = {
 
     const cardBorder = isLate ? 'border-left:4px solid #ef4444' : isDueToday ? 'border-left:4px solid #f59e0b' : t.priorite === 'urgente' ? 'border-left:4px solid #ef4444' : t.priorite === 'haute' ? 'border-left:4px solid #f97316' : 'border-left:4px solid var(--border-color)';
 
+    const pendingClass = !isDone ? (t.statut === 'en_cours' ? 'utc-pending utc-encours' : 'utc-pending utc-afaire') : '';
+
     return `
-    <div class="utc ${isDone ? 'utc-done' : ''} ${isLate ? 'utc-late' : ''}" style="${cardBorder}">
+    <div class="utc ${isDone ? 'utc-done' : ''} ${isLate ? 'utc-late' : ''} ${pendingClass}" style="${cardBorder}">
       <div class="utc-top">
         <div class="utc-type">
           <iconify-icon icon="${typeIcons[t.type] || typeIcons.autre}" style="font-size:14px;"></iconify-icon>
@@ -296,7 +298,14 @@ const TachesPage = {
       .utc { background:var(--bg-primary);border-radius:14px;padding:16px 18px;border:1px solid var(--border-color);transition:all .2s;display:flex;flex-direction:column;gap:8px; }
       .utc:hover { box-shadow:0 4px 16px rgba(0,0,0,.06);transform:translateY(-1px); }
       .utc-late { background:rgba(239,68,68,.03); }
-      .utc-done { opacity:.7; }
+      .utc-done { opacity:.55; }
+
+      /* Highlight unfinished tasks */
+      .utc-pending { box-shadow:0 0 0 1px rgba(59,130,246,.18), 0 2px 12px rgba(59,130,246,.08); }
+      .utc-afaire { background:linear-gradient(135deg, rgba(249,115,22,.04) 0%, rgba(249,115,22,.01) 100%); box-shadow:0 0 0 1px rgba(249,115,22,.2), 0 2px 12px rgba(249,115,22,.08); }
+      .utc-encours { background:linear-gradient(135deg, rgba(59,130,246,.05) 0%, rgba(59,130,246,.01) 100%); box-shadow:0 0 0 1px rgba(59,130,246,.22), 0 2px 12px rgba(59,130,246,.1); }
+      .utc-afaire:hover { box-shadow:0 0 0 1px rgba(249,115,22,.3), 0 4px 20px rgba(249,115,22,.12); }
+      .utc-encours:hover { box-shadow:0 0 0 1px rgba(59,130,246,.32), 0 4px 20px rgba(59,130,246,.14); }
 
       .utc-top { display:flex;align-items:center;justify-content:space-between;gap:8px; }
       .utc-type { display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text-muted); }
@@ -329,6 +338,8 @@ const TachesPage = {
       [data-theme="dark"] .utc { background:var(--bg-secondary); }
       [data-theme="dark"] .utc:hover { box-shadow:0 4px 16px rgba(0,0,0,.2); }
       [data-theme="dark"] .utc-late { background:rgba(239,68,68,.08); }
+      [data-theme="dark"] .utc-afaire { background:linear-gradient(135deg, rgba(249,115,22,.08) 0%, rgba(249,115,22,.02) 100%); }
+      [data-theme="dark"] .utc-encours { background:linear-gradient(135deg, rgba(59,130,246,.1) 0%, rgba(59,130,246,.03) 100%); }
       [data-theme="dark"] .ts-header .ts-count { background:rgba(255,255,255,.1); }
 
       @media (max-width:600px) {
@@ -419,6 +430,13 @@ const TachesPage = {
         .tache-priorite.haute { background:rgba(249,115,22,0.12);color:#f97316; }
         .tache-priorite.urgente { background:rgba(239,68,68,0.12);color:#ef4444; }
         .tache-type { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(99,102,241,0.12);color:#6366f1; }
+
+        /* Admin table row highlights */
+        .tache-row-done td { opacity:.55; }
+        .tache-row-afaire td { background:rgba(249,115,22,.04); }
+        .tache-row-encours td { background:rgba(59,130,246,.06); }
+        .tache-row-afaire td:first-child { box-shadow:inset 3px 0 0 #f59e0b; }
+        .tache-row-encours td:first-child { box-shadow:inset 3px 0 0 #3b82f6; }
       </style>
     `;
   },
@@ -522,7 +540,13 @@ const TachesPage = {
         }}
       ],
       data: taches,
-      pageSize: 15
+      pageSize: 15,
+      rowClass: (t) => {
+        if (t.statut === 'terminee' || t.statut === 'annulee') return 'tache-row-done';
+        if (t.statut === 'a_faire') return 'tache-row-afaire';
+        if (t.statut === 'en_cours') return 'tache-row-encours';
+        return '';
+      }
     });
   },
 
