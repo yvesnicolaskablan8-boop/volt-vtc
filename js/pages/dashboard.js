@@ -769,15 +769,22 @@ const DashboardPage = {
 
         @media(max-width:900px) {
           .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
-          .d-g3 { grid-template-columns:1fr !important; }
+          .d-g3 { grid-template-columns:1fr 1fr !important; }
           .d-g21 { grid-template-columns:1fr !important; }
         }
         @media(max-width:600px) {
-          .d-g4 { grid-template-columns:1fr !important; }
-          .d-bg { margin:-16px; padding:16px 16px 24px; }
-          .d-hm-grid { grid-template-columns:40px repeat(7,1fr); gap:2px; }
+          .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
+          .d-bg { margin:-16px; padding:12px 10px 24px; }
+          .d-card { padding:12px !important; }
+          .d-val { font-size:20px !important; }
+          .d-lbl { font-size:11px !important; }
+          .d-grid { gap:8px !important; }
+          .d-hm-grid { grid-template-columns:36px repeat(7,1fr) !important; gap:2px !important; }
+          .d-hm-driver { font-size:10px !important; }
           .d-hm-driver span:last-child { display:none; }
-          .d-hm-cell { height:26px; border-radius:6px; font-size:10px; }
+          .d-hm-avatar { width:22px !important; height:22px !important; font-size:8px !important; }
+          .d-hm-cell { height:24px; border-radius:5px; font-size:9px; }
+          .d-hm-head { font-size:10px !important; }
         }
       </style>
 
