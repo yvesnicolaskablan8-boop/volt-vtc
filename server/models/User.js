@@ -11,7 +11,6 @@ const userSchema = new mongoose.Schema({
   pin: String,
   statut: { type: String, default: 'actif' },
   avatar: String,
-  whatsappNotif: { type: Boolean, default: true },
   passwordHash: String,
   mustChangePassword: { type: Boolean, default: true },
   permissions: {

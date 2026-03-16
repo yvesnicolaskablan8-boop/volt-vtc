@@ -282,10 +282,6 @@ async function sendWhatsAppToUser(userId, message) {
     if (!user || !user.telephone) {
       return { success: false, error: 'Pas de telephone pour cet utilisateur' };
     }
-    // Verifier que l'utilisateur a active les notifications WhatsApp
-    if (user.whatsappNotif === false) {
-      return { success: false, error: 'WhatsApp desactive par l\'utilisateur' };
-    }
     return await sendWhatsApp(user.telephone, message);
   } catch (err) {
     console.error(`[NotifService] WhatsApp user error for ${userId}:`, err.message);
