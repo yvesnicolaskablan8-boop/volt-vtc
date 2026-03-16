@@ -99,7 +99,7 @@ const ChauffeursPage = {
           render: (c) => {
             if (!c.vehiculeAssigne) return '<span class="text-muted">Non assigné</span>';
             const v = vehicules.find(x => x.id === c.vehiculeAssigne);
-            return v ? `${v.marque} ${v.modele}` : c.vehiculeAssigne;
+            return v ? `${v.immatriculation}` : c.vehiculeAssigne;
           }
         },
         {

@@ -407,7 +407,7 @@ const PlanningPage = {
                 return `<div class="pm-cell ${typeClass}${rowClass}" onclick="PlanningPage._editShift('${s.id}')">${this._getShiftTimeShort(s)}</div>`;
               }
               if (isRepos) {
-                return `<div class="pm-cell pm-repos${rowClass}"><iconify-icon icon="solar:moon-sleep-bold" style="font-size:11px;"></iconify-icon></div>`;
+                return `<div class="pm-cell pm-repos${rowClass}" ${onclick} style="cursor:pointer;"><iconify-icon icon="solar:moon-sleep-bold" style="font-size:11px;"></iconify-icon></div>`;
               }
               return `<div class="pm-cell pm-empty${rowClass}" ${onclick}></div>`;
             }).join('');
@@ -614,8 +614,8 @@ const PlanningPage = {
                 </div>`;
               }
               if (isRepos) {
-                return `<div class="pg-cell ${rowClass}" style="${todayBg}opacity:.5;">
-                  <div style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:linear-gradient(135deg,rgba(100,116,139,.08),rgba(100,116,139,.04));border:1px dashed rgba(100,116,139,.25);font-size:10px;color:#94a3b8;font-weight:600;">
+                return `<div class="pg-cell ${rowClass}" style="${todayBg}cursor:pointer;" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
+                  <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:linear-gradient(135deg,rgba(100,116,139,.08),rgba(100,116,139,.04));border:1px dashed rgba(100,116,139,.25);font-size:10px;color:#94a3b8;font-weight:600;">
                     <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:14px;"></iconify-icon>
                   </div>
                 </div>`;
