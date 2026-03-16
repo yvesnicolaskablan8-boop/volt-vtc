@@ -57,6 +57,7 @@ const PlanningPage = {
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
           <div style="display:flex;align-items:center;gap:var(--space-sm);">
             <button class="btn btn-sm btn-secondary" id="btn-prev"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
+            <button class="btn btn-sm btn-secondary" id="btn-today" style="font-size:var(--font-size-xs);padding:4px 10px;">Aujourd'hui</button>
             <h3 id="planning-period-label" style="margin:0;min-width:180px;text-align:center;font-size:var(--font-size-base);"></h3>
             <button class="btn btn-sm btn-secondary" id="btn-next"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
           </div>
