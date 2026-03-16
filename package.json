@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Pilote - Gestion de flotte VTC",
   "scripts": {
+    "postinstall": "cd server && npm install --production",
     "start": "cd server && node index.js",
-    "dev": "cd server && node --watch index.js",
-    "install": "cd server && npm install"
+    "dev": "cd server && node --watch index.js"
   },
   "engines": {
     "node": ">=18.0.0"
