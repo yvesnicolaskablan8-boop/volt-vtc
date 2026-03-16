@@ -970,11 +970,10 @@ const DashboardPage = {
         </a>
       </div>
 
-      <!-- Row 3: Service + Alertes -->
-      <div class="d-grid" style="grid-template-columns:1fr 1fr;">
-        <div style="display:flex;flex-direction:column;gap:16px;">
+      <!-- Row 3: Service + Alertes (côte à côte) -->
+      <div class="d-grid" style="grid-template-columns:1fr 1fr;align-items:start;">
           <!-- Service du jour -->
-          <a href="#/planning" class="d-card" style="text-decoration:none;color:inherit;flex:1;">
+          <a href="#/planning" class="d-card" style="text-decoration:none;color:inherit;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
               <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;width:34px;height:34px;border-radius:10px;font-size:15px;">
                 <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
@@ -1024,7 +1023,6 @@ const DashboardPage = {
               ${d.alertesUrgentes > 0 ? `<span class="d-tag orange">${d.alertesUrgentes} urgent${d.alertesUrgentes > 1 ? 's' : ''}</span>` : ''}
             </div>` : ''}
           </a>
-        </div>
       </div>
 
       <!-- Row 3.5: Planning Heatmap -->
