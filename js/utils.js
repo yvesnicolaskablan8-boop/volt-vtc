@@ -271,30 +271,42 @@ const Utils = {
     const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
 
     Chart.defaults.color = isDark ? '#94a3b8' : '#64748b';
-    Chart.defaults.borderColor = isDark ? '#1e293b' : '#e2e8f0';
+    Chart.defaults.borderColor = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
     Chart.defaults.font.family = "'Inter', sans-serif";
     Chart.defaults.font.size = 12;
+    Chart.defaults.font.weight = 500;
     Chart.defaults.plugins.legend.labels.usePointStyle = true;
     Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
-    Chart.defaults.plugins.legend.labels.padding = 16;
-    Chart.defaults.plugins.tooltip.backgroundColor = isDark ? '#1a2235' : '#ffffff';
-    Chart.defaults.plugins.tooltip.titleColor = isDark ? '#f1f5f9' : '#0f172a';
-    Chart.defaults.plugins.tooltip.bodyColor = isDark ? '#94a3b8' : '#475569';
-    Chart.defaults.plugins.tooltip.borderColor = '#3b82f6';
+    Chart.defaults.plugins.legend.labels.padding = 18;
+    Chart.defaults.plugins.legend.labels.font = { size: 12, weight: 500 };
+    Chart.defaults.plugins.tooltip.backgroundColor = isDark ? 'rgba(15,23,42,.95)' : 'rgba(255,255,255,.97)';
+    Chart.defaults.plugins.tooltip.titleColor = isDark ? '#f1f5f9' : '#111827';
+    Chart.defaults.plugins.tooltip.bodyColor = isDark ? '#cbd5e1' : '#4b5563';
+    Chart.defaults.plugins.tooltip.borderColor = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
     Chart.defaults.plugins.tooltip.borderWidth = 1;
-    Chart.defaults.plugins.tooltip.cornerRadius = 8;
-    Chart.defaults.plugins.tooltip.padding = 12;
+    Chart.defaults.plugins.tooltip.cornerRadius = 12;
+    Chart.defaults.plugins.tooltip.padding = 14;
     Chart.defaults.plugins.tooltip.displayColors = true;
-    Chart.defaults.plugins.tooltip.boxPadding = 4;
+    Chart.defaults.plugins.tooltip.boxPadding = 6;
+    Chart.defaults.plugins.tooltip.titleFont = { size: 13, weight: 700 };
+    Chart.defaults.plugins.tooltip.bodyFont = { size: 12 };
+    Chart.defaults.plugins.tooltip.caretSize = 6;
+    Chart.defaults.plugins.tooltip.caretPadding = 8;
     Chart.defaults.elements.point.radius = 3;
     Chart.defaults.elements.point.hoverRadius = 6;
+    Chart.defaults.elements.point.borderWidth = 2;
+    Chart.defaults.elements.point.hoverBorderWidth = 2;
     Chart.defaults.elements.line.tension = 0.4;
-    Chart.defaults.elements.bar.borderRadius = 4;
-    Chart.defaults.scale.grid = { color: isDark ? 'rgba(30, 41, 59, 0.5)' : 'rgba(226, 232, 240, 0.8)' };
+    Chart.defaults.elements.line.borderWidth = 2.5;
+    Chart.defaults.elements.bar.borderRadius = 8;
+    Chart.defaults.elements.bar.borderSkipped = false;
+    Chart.defaults.scale.grid = { color: isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)', drawBorder: false };
+    Chart.defaults.scale.border = { display: false };
+    Chart.defaults.scale.ticks = { ...Chart.defaults.scale.ticks, padding: 8 };
 
     // Animation d'entrée
     Chart.defaults.animation = {
-      duration: 800,
+      duration: 900,
       easing: 'easeOutQuart'
     };
 

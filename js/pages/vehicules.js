@@ -97,6 +97,7 @@ const VehiculesPage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Véhicules & Garage</h1>
         <div class="page-actions" id="vehicules-page-actions">
+          <button class="btn btn-warning" onclick="document.querySelector('.garage-tab[data-ltab=maintenance]').click()" style="display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Garage</button>
           <button class="btn btn-primary" id="btn-add-vehicule"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter</button>
         </div>
       </div>

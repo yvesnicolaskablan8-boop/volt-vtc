@@ -313,8 +313,42 @@ const RentabilitePage = {
     `;
   },
 
+  _chartDefaults() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+    const tickColor = isDark ? '#94a3b8' : '#6b7280';
+    return {
+      tooltip: {
+        backgroundColor: isDark ? 'rgba(15,23,42,.95)' : 'rgba(255,255,255,.97)',
+        titleColor: isDark ? '#f1f5f9' : '#111827',
+        bodyColor: isDark ? '#cbd5e1' : '#4b5563',
+        borderColor: isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)',
+        borderWidth: 1,
+        cornerRadius: 12,
+        padding: 14,
+        boxPadding: 6,
+        titleFont: { size: 13, weight: 700 },
+        bodyFont: { size: 12 },
+        displayColors: true,
+        usePointStyle: true,
+      },
+      legend: {
+        labels: { color: tickColor, font: { size: 12, weight: 500 }, usePointStyle: true, pointStyle: 'circle', padding: 16 }
+      },
+      gridColor, tickColor, isDark
+    };
+  },
+
+  _makeGradient(ctx, color1, color2, vertical) {
+    const gradient = ctx.createLinearGradient(0, 0, vertical ? 0 : ctx.canvas.width, vertical ? ctx.canvas.height : 0);
+    gradient.addColorStop(0, color1);
+    gradient.addColorStop(1, color2);
+    return gradient;
+  },
+
   _loadCharts(d) {
     this._charts = [];
+    const cd = this._chartDefaults();
 
     // TCO stacked bar chart
     const tcoCtx = document.getElementById('chart-tco');
@@ -324,35 +358,34 @@ const RentabilitePage = {
         data: {
           labels: d.analysis.map(a => `${a.vehicule.marque} ${a.vehicule.modele}`),
           datasets: [
-            { label: 'Acquisition', data: d.analysis.map(a => Math.round(a.acquisitionTotal)), backgroundColor: '#3b82f6', hoverBackgroundColor: '#2563eb' },
-            { label: 'Assurance', data: d.analysis.map(a => a.assuranceTotal), backgroundColor: '#facc15', hoverBackgroundColor: '#eab308' },
-            { label: 'Maintenance', data: d.analysis.map(a => Math.round(a.maintenanceTotal)), backgroundColor: '#ef4444', hoverBackgroundColor: '#dc2626' },
-            { label: 'Énergie', data: d.analysis.map(a => a.energyCost), backgroundColor: '#22d3ee', hoverBackgroundColor: '#06b6d4' }
+            { label: 'Acquisition', data: d.analysis.map(a => Math.round(a.acquisitionTotal)), backgroundColor: 'rgba(99,102,241,.8)', hoverBackgroundColor: '#6366f1', borderRadius: 6, borderSkipped: false },
+            { label: 'Assurance', data: d.analysis.map(a => a.assuranceTotal), backgroundColor: 'rgba(250,204,21,.8)', hoverBackgroundColor: '#facc15', borderRadius: 6, borderSkipped: false },
+            { label: 'Maintenance', data: d.analysis.map(a => Math.round(a.maintenanceTotal)), backgroundColor: 'rgba(239,68,68,.8)', hoverBackgroundColor: '#ef4444', borderRadius: 6, borderSkipped: false },
+            { label: 'Énergie', data: d.analysis.map(a => a.energyCost), backgroundColor: 'rgba(34,211,238,.8)', hoverBackgroundColor: '#22d3ee', borderRadius: 6, borderSkipped: false }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            tooltip: {
-              callbacks: {
-                title: (items) => {
-                  const idx = items[0].dataIndex;
-                  const a = d.analysis[idx];
-                  return `${a.vehicule.marque} ${a.vehicule.modele} (${a.isEV ? 'EV' : 'Thermique'})`;
-                },
-                label: (ctx) => `${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}`,
-                afterBody: (items) => {
-                  const idx = items[0].dataIndex;
-                  const a = d.analysis[idx];
-                  return `\nTCO total: ${Utils.formatCurrency(a.totalCost)}\nCoût/km: ${a.coutParKm} FCFA`;
-                }
+            tooltip: { ...cd.tooltip, callbacks: {
+              title: (items) => {
+                const idx = items[0].dataIndex;
+                const a = d.analysis[idx];
+                return `${a.vehicule.marque} ${a.vehicule.modele} (${a.isEV ? '⚡ EV' : '⛽ Thermique'})`;
+              },
+              label: (ctx) => ` ${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}`,
+              afterBody: (items) => {
+                const idx = items[0].dataIndex;
+                const a = d.analysis[idx];
+                return `\n  TCO total: ${Utils.formatCurrency(a.totalCost)}\n  Coût/km: ${a.coutParKm} FCFA`;
               }
-            }
+            }},
+            legend: cd.legend
           },
           scales: {
-            x: { stacked: true },
-            y: { stacked: true, ticks: { callback: (v) => Utils.formatCurrency(v) } }
+            x: { stacked: true, grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 11 } } },
+            y: { stacked: true, grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11 }, callback: (v) => Utils.formatCurrency(v) }, border: { display: false } }
           }
         }
       }));
@@ -363,16 +396,20 @@ const RentabilitePage = {
       const lcCtx = document.getElementById('chart-leasing-cash');
       if (lcCtx) {
         const labels = Array.from({ length: 49 }, (_, i) => i === 0 ? '0' : `${i}`);
-        // Find crossover month (where leasing becomes cheaper or vice versa)
         let crossoverMonth = null;
         for (let m = 1; m < d.cumulativeLeasingCost.length; m++) {
           const diffPrev = d.cumulativeLeasingCost[m - 1] - d.cumulativeCashCost[m - 1];
           const diffCurr = d.cumulativeLeasingCost[m] - d.cumulativeCashCost[m];
-          if ((diffPrev >= 0 && diffCurr < 0) || (diffPrev <= 0 && diffCurr > 0)) {
-            crossoverMonth = m;
-            break;
-          }
+          if ((diffPrev >= 0 && diffCurr < 0) || (diffPrev <= 0 && diffCurr > 0)) { crossoverMonth = m; break; }
         }
+
+        const ctxCanvas = lcCtx.getContext('2d');
+        const leasingGrad = ctxCanvas.createLinearGradient(0, 0, 0, 320);
+        leasingGrad.addColorStop(0, 'rgba(99,102,241,.25)');
+        leasingGrad.addColorStop(1, 'rgba(99,102,241,.02)');
+        const cashGrad = ctxCanvas.createLinearGradient(0, 0, 0, 320);
+        cashGrad.addColorStop(0, 'rgba(34,197,94,.25)');
+        cashGrad.addColorStop(1, 'rgba(34,197,94,.02)');
 
         this._charts.push(new Chart(lcCtx, {
           type: 'line',
@@ -380,12 +417,14 @@ const RentabilitePage = {
             labels,
             datasets: [
               {
-                label: 'Leasing', data: d.cumulativeLeasingCost, borderColor: '#3b82f6', borderWidth: 2, pointRadius: 0,
-                pointHoverRadius: 8, pointHoverBorderWidth: 3, pointHoverBackgroundColor: '#3b82f6', pointHoverBorderColor: '#fff'
+                label: 'Leasing', data: d.cumulativeLeasingCost, borderColor: '#6366f1', borderWidth: 2.5, pointRadius: 0,
+                pointHoverRadius: 6, pointHoverBorderWidth: 2, pointHoverBackgroundColor: '#6366f1', pointHoverBorderColor: '#fff',
+                fill: true, backgroundColor: leasingGrad, tension: 0.4
               },
               {
-                label: 'Cash', data: d.cumulativeCashCost, borderColor: '#22c55e', borderWidth: 2, pointRadius: 0,
-                pointHoverRadius: 8, pointHoverBorderWidth: 3, pointHoverBackgroundColor: '#22c55e', pointHoverBorderColor: '#fff'
+                label: 'Cash', data: d.cumulativeCashCost, borderColor: '#22c55e', borderWidth: 2.5, pointRadius: 0,
+                pointHoverRadius: 6, pointHoverBorderWidth: 2, pointHoverBackgroundColor: '#22c55e', pointHoverBorderColor: '#fff',
+                fill: true, backgroundColor: cashGrad, tension: 0.4
               }
             ]
           },
@@ -394,26 +433,21 @@ const RentabilitePage = {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-              tooltip: {
-                callbacks: {
-                  label: (ctx) => `${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}`,
-                  afterBody: (items) => {
-                    const month = items[0].dataIndex;
-                    const leasingVal = d.cumulativeLeasingCost[month];
-                    const cashVal = d.cumulativeCashCost[month];
-                    const diff = Math.abs(leasingVal - cashVal);
-                    let lines = [`\nEcart: ${Utils.formatCurrency(diff)}`];
-                    if (crossoverMonth !== null) {
-                      lines.push(`Seuil de rentabilite: mois ${crossoverMonth}`);
-                    }
-                    return lines.join('\n');
-                  }
+              tooltip: { ...cd.tooltip, callbacks: {
+                label: (ctx) => ` ${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}`,
+                afterBody: (items) => {
+                  const month = items[0].dataIndex;
+                  const diff = Math.abs(d.cumulativeLeasingCost[month] - d.cumulativeCashCost[month]);
+                  let lines = [`\n  Écart: ${Utils.formatCurrency(diff)}`];
+                  if (crossoverMonth !== null) lines.push(`  Seuil de rentabilité: mois ${crossoverMonth}`);
+                  return lines.join('\n');
                 }
-              }
+              }},
+              legend: cd.legend
             },
             scales: {
-              x: { title: { display: true, text: 'Mois', color: '#94a3b8' } },
-              y: { ticks: { callback: (v) => Utils.formatCurrency(v) } }
+              x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 10 }, maxTicksLimit: 12 }, title: { display: true, text: 'Mois', color: cd.tickColor, font: { size: 11 } } },
+              y: { grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11 }, callback: (v) => Utils.formatCurrency(v) }, border: { display: false } }
             }
           }
         }));
@@ -430,9 +464,12 @@ const RentabilitePage = {
           datasets: [{
             label: 'Profit mensuel',
             data: d.analysis.map(a => a.monthlyProfit),
-            backgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? '#22c55e' : '#ef4444'),
-            hoverBackgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? '#16a34a' : '#dc2626'),
-            borderRadius: 4
+            backgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? 'rgba(34,197,94,.75)' : 'rgba(239,68,68,.75)'),
+            hoverBackgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? '#22c55e' : '#ef4444'),
+            borderRadius: 8,
+            borderSkipped: false,
+            barPercentage: 0.7,
+            categoryPercentage: 0.7
           }]
         },
         options: {
@@ -440,53 +477,52 @@ const RentabilitePage = {
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            tooltip: {
-              callbacks: {
-                title: (items) => {
-                  const idx = items[0].dataIndex;
-                  const a = d.analysis[idx];
-                  return `${a.vehicule.marque} ${a.vehicule.modele}`;
-                },
-                label: (ctx) => `Profit mensuel: ${Utils.formatCurrency(ctx.raw)}`,
-                afterBody: (items) => {
-                  const idx = items[0].dataIndex;
-                  const a = d.analysis[idx];
-                  return [
-                    `\nRevenu/mois: ${Utils.formatCurrency(a.monthlyRevenue)}`,
-                    `Coût/mois: ${Utils.formatCurrency(a.monthlyCost)}`,
-                    `ROI: ${a.roi.toFixed(1)}%`
-                  ].join('\n');
-                }
+            tooltip: { ...cd.tooltip, callbacks: {
+              title: (items) => {
+                const idx = items[0].dataIndex;
+                const a = d.analysis[idx];
+                return `${a.vehicule.marque} ${a.vehicule.modele}`;
+              },
+              label: (ctx) => ` Profit mensuel: ${Utils.formatCurrency(ctx.raw)}`,
+              afterBody: (items) => {
+                const idx = items[0].dataIndex;
+                const a = d.analysis[idx];
+                return [`\n  Revenu/mois: ${Utils.formatCurrency(a.monthlyRevenue)}`, `  Coût/mois: ${Utils.formatCurrency(a.monthlyCost)}`, `  ROI: ${a.roi.toFixed(1)}%`].join('\n');
               }
-            }
+            }}
           },
-          scales: { y: { ticks: { callback: (v) => Utils.formatCurrency(v) } } }
+          scales: {
+            x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 11 } } },
+            y: { grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11 }, callback: (v) => Utils.formatCurrency(v) }, border: { display: false } }
+          }
         }
       }));
     }
 
-    // Depreciation chart (EV retains value better: 15%/year vs 20%/year)
+    // Depreciation chart
     const depCtx = document.getElementById('chart-depreciation');
     if (depCtx) {
-      const depColors = ['#3b82f6', '#22c55e', '#facc15', '#ef4444', '#8b5cf6', '#22d3ee', '#f59e0b', '#ec4899', '#14b8a6'];
+      const depColors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316'];
       const datasets = d.analysis.map((a, i) => {
         const depRate = a.isEV ? 0.85 : 0.80;
         const data = [];
-        for (let y = 0; y <= 5; y++) {
-          data.push(Math.round(a.vehicule.prixAchat * Math.pow(depRate, y)));
-        }
+        for (let y = 0; y <= 5; y++) data.push(Math.round(a.vehicule.prixAchat * Math.pow(depRate, y)));
         const color = depColors[i % depColors.length];
         return {
           label: `${a.vehicule.marque} ${a.vehicule.modele}${a.isEV ? ' ⚡' : ''}`,
           data,
           borderColor: color,
-          borderWidth: 2,
-          pointRadius: 3,
-          pointHoverRadius: 8,
-          pointHoverBorderWidth: 3,
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointBackgroundColor: color,
+          pointBorderColor: cd.isDark ? '#1a2235' : '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 7,
+          pointHoverBorderWidth: 2,
           pointHoverBackgroundColor: color,
           pointHoverBorderColor: '#fff',
-          borderDash: a.isEV ? [5, 3] : []
+          borderDash: a.isEV ? [] : [6, 4],
+          tension: 0.3
         };
       });
 
@@ -501,21 +537,22 @@ const RentabilitePage = {
           maintainAspectRatio: false,
           interaction: { mode: 'index', intersect: false },
           plugins: {
-            tooltip: {
-              callbacks: {
-                label: (ctx) => `${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}`,
-                afterLabel: (ctx) => {
-                  const a = d.analysis[ctx.datasetIndex];
-                  const year = ctx.dataIndex;
-                  if (year === 0) return '';
-                  const depPercent = ((1 - ctx.raw / a.vehicule.prixAchat) * 100).toFixed(1);
-                  const depRate = a.isEV ? '15%' : '20%';
-                  return `Depreciation: -${depPercent}% (taux: ${depRate}/an)`;
-                }
+            tooltip: { ...cd.tooltip, callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}`,
+              afterLabel: (ctx) => {
+                const a = d.analysis[ctx.datasetIndex];
+                const year = ctx.dataIndex;
+                if (year === 0) return '';
+                const depPercent = ((1 - ctx.raw / a.vehicule.prixAchat) * 100).toFixed(1);
+                return `  Dépréciation: -${depPercent}% (${a.isEV ? '15' : '20'}%/an)`;
               }
-            }
+            }},
+            legend: cd.legend
           },
-          scales: { y: { ticks: { callback: (v) => Utils.formatCurrency(v) } } }
+          scales: {
+            x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 11 } } },
+            y: { grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11 }, callback: (v) => Utils.formatCurrency(v) }, border: { display: false } }
+          }
         }
       }));
     }
