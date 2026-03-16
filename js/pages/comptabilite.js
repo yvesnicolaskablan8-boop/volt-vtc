@@ -262,23 +262,6 @@ const ComptabilitePage = {
     // Solde total (toutes opérations)
     const soldeTotal = ops.reduce((s, o) => s + (o.type === 'recette' ? o.montant : -o.montant), 0);
 
-    // RSI — Retour Sur Investissement
-    const vehicules = Store.get('vehicules') || [];
-    const investTotal = vehicules.reduce((s, v) => {
-      if (v.typeAcquisition === 'leasing') {
-        return s + (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * (v.dureeLeasing || 0));
-      }
-      return s + (v.prixAchat || 0);
-    }, 0);
-    const resultatTotal = ops.reduce((s, o) => s + (o.type === 'recette' ? o.montant : -o.montant), 0);
-    const rsi = investTotal > 0 ? (resultatTotal / investTotal * 100) : 0;
-    // Mois d'activité pour annualiser
-    const dates = ops.map(o => new Date(o.date)).filter(d => !isNaN(d));
-    const firstOp = dates.length > 0 ? new Date(Math.min(...dates)) : now;
-    const moisActivite = Math.max(1, (now.getFullYear() - firstOp.getFullYear()) * 12 + now.getMonth() - firstOp.getMonth() + 1);
-    const resultatMensuelMoyen = resultatTotal / moisActivite;
-    const moisRecuperation = resultatMensuelMoyen > 0 ? Math.ceil((investTotal - Math.max(0, resultatTotal)) / resultatMensuelMoyen) : null;
-
     // Last month for comparison
     const lm = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
     const ly = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
@@ -333,43 +316,6 @@ const ComptabilitePage = {
           ${totalImpaye > 0 ? '<div class="kpi-trend red"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ' + Utils.formatCurrency(totalImpaye) + ' impayé</div>' : '<div class="kpi-trend green"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> À jour</div>'}
         </div>
       </div>
-
-      <!-- RSI — Retour Sur Investissement -->
-      ${investTotal > 0 ? `
-      <div class="d-card" style="margin-bottom:24px;background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(168,85,247,.08));border:1px solid rgba(99,102,241,.2);">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <div class="d-icon" style="background:rgba(99,102,241,.15);color:#6366f1;width:40px;height:40px;font-size:18px;"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
-          <div>
-            <span style="font-weight:700;font-size:15px;">Retour Sur Investissement (RSI)</span>
-            <div style="font-size:11px;color:var(--text-muted);">Basé sur ${vehicules.length} véhicule${vehicules.length > 1 ? 's' : ''} — investissement total : ${Utils.formatCurrency(investTotal)}</div>
-          </div>
-        </div>
-        <div class="d-grid d-g4" style="gap:12px;">
-          <div style="text-align:center;padding:16px;border-radius:16px;background:var(--bg-secondary);">
-            <div style="font-size:24px;font-weight:800;color:${rsi >= 0 ? '#10b981' : '#ef4444'};">${rsi.toFixed(1)}%</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">RSI global</div>
-          </div>
-          <div style="text-align:center;padding:16px;border-radius:16px;background:var(--bg-secondary);">
-            <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(investTotal)}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Investissement total</div>
-          </div>
-          <div style="text-align:center;padding:16px;border-radius:16px;background:var(--bg-secondary);">
-            <div style="font-size:24px;font-weight:800;color:${resultatTotal >= 0 ? '#10b981' : '#ef4444'};">${Utils.formatCurrency(resultatTotal)}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Résultat cumulé</div>
-          </div>
-          <div style="text-align:center;padding:16px;border-radius:16px;background:var(--bg-secondary);">
-            <div style="font-size:24px;font-weight:800;color:${moisRecuperation !== null && moisRecuperation <= 0 ? '#10b981' : '#f59e0b'};">${moisRecuperation !== null ? (moisRecuperation <= 0 ? 'Récupéré !' : moisRecuperation + ' mois') : '—'}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${moisRecuperation !== null && moisRecuperation <= 0 ? 'Investissement amorti' : 'Délai de récupération'}</div>
-          </div>
-        </div>
-        <div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-          <div style="flex:1;height:8px;border-radius:8px;background:var(--bg-tertiary);overflow:hidden;">
-            <div style="height:100%;border-radius:8px;background:${rsi >= 100 ? '#10b981' : rsi >= 50 ? '#3b82f6' : rsi >= 0 ? '#f59e0b' : '#ef4444'};width:${Math.min(Math.max(rsi, 0), 100)}%;transition:width 0.6s;"></div>
-          </div>
-          <span style="font-size:12px;font-weight:700;color:${rsi >= 100 ? '#10b981' : rsi >= 50 ? '#3b82f6' : '#f59e0b'};">${Math.min(rsi, 100).toFixed(0)}% récupéré</span>
-        </div>
-      </div>
-      ` : ''}
 
       <!-- Commission Partenaire Yango -->
       <div class="d-card" id="compta-yango-section" style="margin-bottom:24px;">
