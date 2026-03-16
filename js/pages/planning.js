@@ -346,14 +346,15 @@ const PlanningPage = {
     // Compact heatmap grid (same style as dashboard)
     html += `
       <style>
-        .pm-grid { display:grid; grid-template-columns:70px repeat(7,1fr); gap:2px; align-items:center; }
-        .pm-head { text-align:center; font-size:10px; font-weight:700; color:var(--text-muted); padding:6px 0 4px; text-transform:uppercase; }
+        .pm-grid-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -12px; padding:0 12px; }
+        .pm-grid { display:grid; grid-template-columns:80px repeat(7,minmax(44px,1fr)); gap:3px; align-items:center; min-width:420px; }
+        .pm-head { text-align:center; font-size:11px; font-weight:700; color:var(--text-muted); padding:8px 0 6px; text-transform:uppercase; }
         .pm-head.today { color:#6366f1; background:rgba(99,102,241,.08); border-radius:8px 8px 0 0; border-bottom:2px solid #6366f1; }
-        .pm-head .pm-daynum { display:block; font-size:14px; font-weight:800; color:var(--text-primary); margin-top:1px; }
+        .pm-head .pm-daynum { display:block; font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px; }
         .pm-head.today .pm-daynum { color:#6366f1; }
-        .pm-driver { display:flex; align-items:center; padding:2px 0; overflow:hidden; }
-        .pm-driver-name { font-size:10px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
-        .pm-cell { height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; font-size:9px; font-weight:700; }
+        .pm-driver { display:flex; align-items:center; padding:4px 0; overflow:hidden; }
+        .pm-driver-name { font-size:12px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
+        .pm-cell { height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; font-size:11px; font-weight:700; }
         .pm-cell:active { transform:scale(1.1); }
         .pm-shift { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#6366f1; }
         .pm-shift-m { background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.08)); color:#22c55e; }
@@ -372,6 +373,7 @@ const PlanningPage = {
       </style>
 
       <div class="card" style="padding:12px;border-radius:16px;">
+        <div class="pm-grid-scroll">
         <div class="pm-grid">
           <div></div>
           ${days.map(d => `<div class="pm-head ${this._isToday(d.date) ? 'today' : ''}">
@@ -415,16 +417,17 @@ const PlanningPage = {
             return row;
           }).join('')}
         </div>
+        </div>
 
         <!-- Légende compact -->
-        <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;justify-content:center;">
-          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#22c55e;"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;"></span>Mat</div>
-          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#3b82f6;"><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;"></span>AM</div>
-          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#f59e0b;"><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;"></span>Jour</div>
-          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#8b5cf6;"><span style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;"></span>Nuit</div>
-          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#f97316;"><span style="width:5px;height:5px;border-radius:50%;background:#f97316;"></span>Abs</div>
-          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#ef4444;"><span style="width:5px;height:5px;border-radius:50%;background:#ef4444;"></span>Mal</div>
-          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#94a3b8;"><span style="width:5px;height:5px;border-radius:50%;background:#d1d5db;"></span>Repos</div>
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#22c55e;"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;"></span>Mat</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;"></span>AM</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#f59e0b;"><span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;"></span>Jour</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#8b5cf6;"><span style="width:7px;height:7px;border-radius:50%;background:#8b5cf6;"></span>Nuit</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#f97316;"><span style="width:7px;height:7px;border-radius:50%;background:#f97316;"></span>Abs</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#ef4444;"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;"></span>Mal</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#94a3b8;"><span style="width:7px;height:7px;border-radius:50%;background:#d1d5db;"></span>Repos</div>
         </div>
       </div>
     `;
