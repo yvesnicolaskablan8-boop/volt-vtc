@@ -1,17 +1,29 @@
 /**
- * Tache Hooks — Notifications push lors de creation/modification de taches
+ * Tache Hooks — Notifications push + WhatsApp lors de creation/modification de taches
  *
  * Intercepte POST et PUT sur /api/taches pour envoyer des notifications
- * push aux utilisateurs assignes.
+ * push et WhatsApp aux utilisateurs assignes.
  */
 
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
-const { sendPushToUser } = require('../utils/notification-service');
+const { sendPushToUser, sendWhatsAppToUser } = require('../utils/notification-service');
 const Tache = require('../models/Tache');
 
 const router = express.Router();
 router.use(authMiddleware);
+
+/**
+ * Envoie push + WhatsApp a un utilisateur (fire-and-forget)
+ */
+function notifyUser(userId, titre, message, pushData = {}) {
+  // Push
+  sendPushToUser(userId, titre, message, pushData)
+    .catch(err => console.warn('[TacheHook] Push error:', err.message));
+  // WhatsApp
+  sendWhatsAppToUser(userId, `${titre}\n${message}`)
+    .catch(err => console.warn('[TacheHook] WhatsApp error:', err.message));
+}
 
 // POST /api/taches — Apres creation, notifier l'assigne
 router.post('/', async (req, res, next) => {
@@ -27,10 +39,10 @@ router.post('/', async (req, res, next) => {
 
       // Ne notifier que si assigne a quelqu'un d'autre que le createur
       if (assigneA && assigneA !== creePar) {
-        sendPushToUser(assigneA, 'Nouvelle tache', `${creeParNom} vous a assigne : "${titre}"`, {
+        notifyUser(assigneA, 'Nouvelle tache', `${creeParNom} vous a assigne : "${titre}"`, {
           url: '/#/taches',
           type: 'tache_nouvelle'
-        }).catch(err => console.warn('[TacheHook] Push error:', err.message));
+        });
       }
     } catch (e) { /* silent */ }
 
@@ -56,20 +68,20 @@ router.put('/:id', async (req, res, next) => {
         // 1. Reassignation a un nouvel utilisateur
         if (newAssigne && newAssigne !== before.assigneA && newAssigne !== (session.userId || session.id)) {
           const assignerNom = session.nom || session.login || 'Quelqu\'un';
-          sendPushToUser(newAssigne, 'Tache assignee', `${assignerNom} vous a assigne : "${before.titre}"`, {
+          notifyUser(newAssigne, 'Tache assignee', `${assignerNom} vous a assigne : "${before.titre}"`, {
             url: '/#/taches',
             type: 'tache_assignee'
-          }).catch(() => {});
+          });
         }
 
         // 2. Prise en charge ("en_cours") — notifier le createur
         if (newStatut === 'en_cours' && before.statut === 'a_faire' && before.creePar) {
           const preneurNom = req.body.assigneANom || session.nom || 'Quelqu\'un';
           if (before.creePar !== (session.userId || session.id)) {
-            sendPushToUser(before.creePar, 'Tache prise en charge', `${preneurNom} s'occupe de "${before.titre}"`, {
+            notifyUser(before.creePar, 'Tache prise en charge', `${preneurNom} s'occupe de "${before.titre}"`, {
               url: '/#/taches',
               type: 'tache_en_cours'
-            }).catch(() => {});
+            });
           }
         }
 
@@ -77,10 +89,10 @@ router.put('/:id', async (req, res, next) => {
         if (newStatut === 'terminee' && before.statut !== 'terminee' && before.creePar) {
           const finisseurNom = req.body.assigneANom || session.nom || 'Quelqu\'un';
           if (before.creePar !== (session.userId || session.id)) {
-            sendPushToUser(before.creePar, 'Tache terminee', `${finisseurNom} a termine "${before.titre}"`, {
+            notifyUser(before.creePar, 'Tache terminee', `${finisseurNom} a termine "${before.titre}"`, {
               url: '/#/taches',
               type: 'tache_terminee'
-            }).catch(() => {});
+            });
           }
         }
       } catch (e) { /* silent */ }

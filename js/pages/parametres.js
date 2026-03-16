@@ -1335,6 +1335,17 @@ const ParametresPage = {
                   <span class="toggle-slider"></span>
                 </label>
               </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border-color);">
+                <div>
+                  <div style="font-weight:500;font-size:var(--font-size-sm);"><iconify-icon icon="logos:whatsapp-icon" style="margin-right:4px;"></iconify-icon> Notifications WhatsApp (taches)</div>
+                  <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Recevoir les alertes de taches sur WhatsApp via votre numero</div>
+                  <div id="whatsapp-status-info" style="font-size:var(--font-size-xs);margin-top:4px;"></div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="pref-whatsapp-notifications">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -1402,7 +1413,7 @@ const ParametresPage = {
     });
   },
 
-  // ========================= PUSH NOTIFICATIONS TOGGLE =========================
+  // ========================= PUSH & WHATSAPP NOTIFICATIONS TOGGLE =========================
 
   async _initPushToggle() {
     const toggle = document.getElementById('pref-push-notifications');
@@ -1449,6 +1460,67 @@ const ParametresPage = {
         await this._enablePush(toggle, statusEl);
       } else {
         await this._disablePush(toggle, statusEl);
+      }
+    });
+
+    // WhatsApp toggle
+    this._initWhatsAppToggle(session);
+  },
+
+  async _initWhatsAppToggle(session) {
+    const waToggle = document.getElementById('pref-whatsapp-notifications');
+    const waStatus = document.getElementById('whatsapp-status-info');
+    if (!waToggle || !waStatus) return;
+
+    if (!session || session.role === 'chauffeur') {
+      waToggle.parentElement.parentElement.parentElement.style.display = 'none';
+      return;
+    }
+
+    // Charger l'etat actuel depuis le profil utilisateur
+    try {
+      const users = Store.get('users') || [];
+      const me = users.find(u => u.id === session.userId);
+      if (me) {
+        waToggle.checked = me.whatsappNotif !== false;
+        if (!me.telephone) {
+          waStatus.innerHTML = '<span style="color:var(--warning);font-weight:500;">Aucun numero de telephone configure sur votre profil utilisateur</span>';
+          waToggle.disabled = true;
+          return;
+        }
+        if (me.whatsappNotif !== false) {
+          waStatus.innerHTML = `<span style="color:#25D366;font-weight:500;">Actif — alertes envoyees au ${me.telephone}</span>`;
+        } else {
+          waStatus.innerHTML = '<span style="color:var(--text-muted);">Desactive — activez pour recevoir les alertes sur WhatsApp</span>';
+        }
+      } else {
+        waStatus.innerHTML = '<span style="color:var(--text-muted);">Profil non trouve</span>';
+        waToggle.disabled = true;
+        return;
+      }
+    } catch (e) {
+      waStatus.innerHTML = '<span style="color:var(--text-muted);">Impossible de verifier l\'etat</span>';
+    }
+
+    // Handle toggle change — met a jour le champ whatsappNotif de l'utilisateur
+    waToggle.addEventListener('change', async () => {
+      const val = waToggle.checked;
+      try {
+        waStatus.innerHTML = '<span style="color:var(--text-muted);">Mise a jour...</span>';
+        await Store.update('users', session.userId, { whatsappNotif: val });
+        if (val) {
+          const users = Store.get('users') || [];
+          const me = users.find(u => u.id === session.userId);
+          waStatus.innerHTML = `<span style="color:#25D366;font-weight:500;">Actif — alertes envoyees au ${me?.telephone || 'votre numero'}</span>`;
+          Toast.success('Notifications WhatsApp activees');
+        } else {
+          waStatus.innerHTML = '<span style="color:var(--text-muted);">Desactive — activez pour recevoir les alertes sur WhatsApp</span>';
+          Toast.success('Notifications WhatsApp desactivees');
+        }
+      } catch (e) {
+        waToggle.checked = !val;
+        waStatus.innerHTML = '<span style="color:var(--danger);">Erreur lors de la mise a jour</span>';
+        Toast.error('Erreur lors de la mise a jour');
       }
     });
   },

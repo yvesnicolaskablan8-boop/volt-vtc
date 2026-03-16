@@ -269,6 +269,30 @@ async function sendWhatsApp(telephone, message) {
   }
 }
 
+// ===================== WHATSAPP TO USER =====================
+
+/**
+ * Envoie un message WhatsApp a un utilisateur admin/operateur (par userId)
+ * Recherche le telephone dans le modele User
+ */
+async function sendWhatsAppToUser(userId, message) {
+  try {
+    const User = require('../models/User');
+    const user = await User.findOne({ id: userId }).lean();
+    if (!user || !user.telephone) {
+      return { success: false, error: 'Pas de telephone pour cet utilisateur' };
+    }
+    // Verifier que l'utilisateur a active les notifications WhatsApp
+    if (user.whatsappNotif === false) {
+      return { success: false, error: 'WhatsApp desactive par l\'utilisateur' };
+    }
+    return await sendWhatsApp(user.telephone, message);
+  } catch (err) {
+    console.error(`[NotifService] WhatsApp user error for ${userId}:`, err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // ===================== DISPATCH PRINCIPAL =====================
 
 /**
@@ -406,6 +430,7 @@ module.exports = {
   sendPushToUser,
   sendSMS,
   sendWhatsApp,
+  sendWhatsAppToUser,
   notify,
   notifyAll,
   notifyAdmin

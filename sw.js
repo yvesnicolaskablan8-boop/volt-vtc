@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-v212';
+const CACHE_NAME = 'pilote-v213';
 const ASSETS = [
   './',
   './index.html',
