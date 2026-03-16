@@ -349,13 +349,13 @@ const PlanningPage = {
     // Compact heatmap grid (same style as dashboard)
     html += `
       <style>
-        .pm-grid { display:grid; grid-template-columns:36px repeat(7,1fr); gap:2px; align-items:center; }
+        .pm-grid { display:grid; grid-template-columns:70px repeat(7,1fr); gap:2px; align-items:center; }
         .pm-head { text-align:center; font-size:10px; font-weight:700; color:var(--text-muted); padding:6px 0 4px; text-transform:uppercase; }
         .pm-head.today { color:#6366f1; background:rgba(99,102,241,.08); border-radius:8px 8px 0 0; border-bottom:2px solid #6366f1; }
         .pm-head .pm-daynum { display:block; font-size:14px; font-weight:800; color:var(--text-primary); margin-top:1px; }
         .pm-head.today .pm-daynum { color:#6366f1; }
-        .pm-driver { display:flex; align-items:center; justify-content:center; padding:2px 0; }
-        .pm-avatar { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff; flex-shrink:0; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+        .pm-driver { display:flex; align-items:center; padding:2px 0; overflow:hidden; }
+        .pm-driver-name { font-size:10px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
         .pm-cell { height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; font-size:9px; font-weight:700; }
         .pm-cell:active { transform:scale(1.1); }
         .pm-shift { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#6366f1; }
@@ -383,16 +383,12 @@ const PlanningPage = {
           </div>`).join('')}
 
           ${chauffeurs.map((ch, idx) => {
-            const color = avatarColors[idx % avatarColors.length];
-            const initials = ((ch.prenom||'')[0] + (ch.nom||'')[0]).toUpperCase();
             const rowClass = idx % 2 === 1 ? ' pm-row-even' : '';
-            const avatarHtml = ch.photo
-              ? `<img src="${ch.photo}" alt="${initials}" class="pm-avatar" style="object-fit:cover;">`
-              : `<div class="pm-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${initials}</div>`;
             const isSuspendu = ch.statut === 'suspendu';
             const isRepos = ch.statut === 'repos';
+            const shortName = ch.prenom + ' ' + (ch.nom||'').charAt(0) + '.';
 
-            let row = `<div class="pm-driver${rowClass}" title="${ch.prenom} ${ch.nom}">${avatarHtml}</div>`;
+            let row = `<div class="pm-driver${rowClass}" title="${ch.prenom} ${ch.nom}"><span class="pm-driver-name">${shortName}</span></div>`;
 
             row += days.map(d => {
               const shifts = this._getDriverShiftsForDate(ch.id, d.date);
