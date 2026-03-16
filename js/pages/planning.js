@@ -462,9 +462,6 @@ const PlanningPage = {
         </div>
       </div>
 
-      <!-- Service du jour -->
-      ${this._renderServiceDuJour(chauffeurs, days)}
-
       <!-- Légende pills -->
       <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;justify-content:center;">
         <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(34,197,94,.08);font-size:11px;font-weight:600;color:#22c55e;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> Matin</div>

@@ -47,14 +47,7 @@ const RentabilitePage = {
       }
     });
 
-    // Debug: log versement fields to understand data
     if (versements.length > 0) {
-      const sample = versements[0];
-      console.log('[Rentabilité] Sample versement:', JSON.stringify({
-        id: sample.id, chauffeurId: sample.chauffeurId, vehiculeId: sample.vehiculeId,
-        montantVerse: sample.montantVerse, montantNet: sample.montantNet, montant: sample.montant,
-        montantBrut: sample.montantBrut, statut: sample.statut
-      }));
     }
 
     // Per-vehicle analysis
@@ -73,9 +66,9 @@ const RentabilitePage = {
       const totalCA = vCourses.reduce((s, c) => s + c.montantTTC, 0);
 
       // Months in service — utiliser dateAcquisition si disponible, sinon dateCreation
+      // Math.ceil car si on est dans le mois 2, on a payé 2 mensualités
       const startDate = new Date(v.dateAcquisition || v.dateCreation);
-      const monthsInService = Math.max(1, Math.round((now - startDate) / (30 * 24 * 60 * 60 * 1000)));
-      console.log(`[Rent] ${v.immatriculation}: dateAcq=${v.dateAcquisition}, dateCrea=${v.dateCreation}, moisService=${monthsInService}, acqCost=${(v.apportInitial||0) + (v.mensualiteLeasing||0) * Math.min(monthsInService, v.dureeLeasing||36)}`);
+      const monthsInService = Math.max(1, Math.ceil((now - startDate) / (30 * 24 * 60 * 60 * 1000)));
 
       // Costs — only real expenses
       const maintenanceTotal = (v.coutsMaintenance || []).reduce((s, m) => s + (m.montant || 0), 0);
@@ -152,7 +145,6 @@ const RentabilitePage = {
     // Versements non liés à un véhicule (pour diagnostic)
     const linkedRevenue = analysis.reduce((s, a) => s + a.totalRevenue, 0);
     const unlinkedRevenue = fleetTotalRevenue - linkedRevenue;
-    console.log('[Rentabilité] Versements:', versements.length, '| Avec montant:', allVersementsValides.length, '| Revenue totale:', fleetTotalRevenue, '| Liée véhicules:', linkedRevenue, '| Non liée:', unlinkedRevenue, '| Coûts:', fleetTotalCost);
 
     // Leasing vs Cash comparison
     const leasingVehicles = analysis.filter(a => a.vehicule.typeAcquisition === 'leasing');
@@ -229,7 +221,6 @@ const RentabilitePage = {
     const reparationsTotal = (Store.get('reparations') || []).reduce((s, r) => s + (r.coutReel || r.coutEstime || 0), 0);
     const resultatCumule = fleetTotalRevenue - fleetTotalCost;
     const rsiGlobal = investTotal > 0 ? (resultatCumule / investTotal * 100) : 0;
-    console.log('[Rentabilité] investTotal:', investTotal, '| resultatCumule:', resultatCumule, '| rsiGlobal:', rsiGlobal.toFixed(1) + '%');
     // Délai de récupération
     const avgMonthsService = analysis.length > 0 ? analysis.reduce((s, a) => s + a.monthsInService, 0) / analysis.length : 1;
     const resultatMensuelMoyen = avgMonthsService > 0 ? resultatCumule / avgMonthsService : 0;
