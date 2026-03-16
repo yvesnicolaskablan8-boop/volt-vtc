@@ -423,19 +423,20 @@ const DashboardPage = {
       const cells = heatmapWeekDays.map(wd => {
         // Check absence
         const hasAbsence = absences.some(a => a.chauffeurId === c.id && wd.date >= a.dateDebut && wd.date <= a.dateFin);
-        if (hasAbsence) return { status: 'absent', heures: '' };
+        if (hasAbsence) return { status: 'absent', heures: '', shiftId: '' };
         // Check if planned
         const planEntry = planning.find(p => p.chauffeurId === c.id && p.date === wd.date);
-        if (!planEntry) return { status: 'repos', heures: '' };
+        if (!planEntry) return { status: 'repos', heures: '', shiftId: '' };
         // Format heures
         const h1 = planEntry.heureDebut ? planEntry.heureDebut.replace(':00','h').replace(':30','h30') : '';
         const h2 = planEntry.heureFin ? planEntry.heureFin.replace(':00','h').replace(':30','h30') : '';
         const heures = h1 && h2 ? `${h1}-${h2}` : h1 || h2 || '';
+        const shiftId = planEntry.id || '';
         // Planned — check if future or today
-        if (wd.date >= hmToday) return { status: 'programme', heures };
+        if (wd.date >= hmToday) return { status: 'programme', heures, shiftId };
         // Past — check versement
         const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime'));
-        return { status: hasVersement ? 'verse' : 'en_retard', heures };
+        return { status: hasVersement ? 'verse' : 'en_retard', heures, shiftId };
       });
       return { id: c.id, prenom: c.prenom, nom: c.nom, initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), cells };
     });
@@ -895,18 +896,18 @@ const DashboardPage = {
           </div>
         </a>
 
-        <!-- Versements -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;">
+        <!-- Versements (fond vert) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:linear-gradient(135deg,#10b981,#34d399);border:none;box-shadow:0 4px 20px rgba(16,185,129,.25);">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;">
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
               <iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;">Versements</div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Versements</div>
           </div>
-          <div class="d-val xl" style="color:#10b981;">${d.nbVersementsPeriode}</div>
-          <div class="d-sub">${Utils.formatCurrency(d.caMoyenJour)} / jour</div>
+          <div class="d-val xl" style="color:#fff;">${d.nbVersementsPeriode}</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.65);">${Utils.formatCurrency(d.caMoyenJour)} / jour</div>
           <div style="margin-top:10px;">
-            <span class="d-tag ${d.retardCount > 0 ? 'red' : 'green'}">${d.retardCount} en retard</span>
+            <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);font-size:11px;font-weight:700;color:#fff;">${d.retardCount} en retard</span>
           </div>
         </a>
 
@@ -979,33 +980,33 @@ const DashboardPage = {
           </div>
         </a>
 
-        <!-- Dettes (orange) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalDettes > 0 ? 'border-color:rgba(249,115,22,.2);background:rgba(255,255,255,.72);' : ''}">
+        <!-- Dettes (fond orange vif) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:linear-gradient(135deg,#f97316,#fb923c);border:none;box-shadow:0 4px 20px rgba(249,115,22,.25);">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(249,115,22,.1);color:#f97316;">
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
               <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;color:#f97316;">Dettes</div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Dettes</div>
           </div>
-          <div class="d-val" style="color:#f97316;">${Utils.formatCurrency(d.totalDettes)}</div>
-          <div class="d-sub">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#f97316,#fb923c);"></div>
+          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalDettes)}</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.65);">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;background:rgba(255,255,255,.15);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
           </div>
         </a>
 
-        <!-- Pertes (rouge) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalPertes > 0 ? 'border-color:rgba(239,68,68,.2);' : ''}">
+        <!-- Pertes (fond rouge) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:linear-gradient(135deg,#ef4444,#f87171);border:none;box-shadow:0 4px 20px rgba(239,68,68,.25);">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;">
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
               <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;color:#ef4444;">Pertes</div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Pertes</div>
           </div>
-          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(d.totalPertes)}</div>
-          <div class="d-sub">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#ef4444,#f87171);"></div>
+          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalPertes)}</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.65);">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;background:rgba(255,255,255,.15);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
           </div>
         </a>
 
@@ -1187,9 +1188,11 @@ const DashboardPage = {
       dr.cells.forEach((cell, ci) => {
         const status = cell.status;
         const heures = cell.heures;
+        const shiftId = cell.shiftId;
         const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}${heures ? ' (' + heures + ')' : ''}`;
         const content = status === 'programme' && heures ? `<span style="font-size:9px;font-weight:600;letter-spacing:-.3px;">${heures}</span>` : (statusIcons[status] || '');
-        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="Router.navigate('/planning')">${content}</div>`;
+        const onclick = shiftId ? `DashboardPage._openShift('${shiftId}')` : `Router.navigate('/planning')`;
+        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="${onclick}">${content}</div>`;
       });
     });
     html += '</div>';
@@ -1366,6 +1369,71 @@ const DashboardPage = {
       }
     };
     setTimeout(() => document.addEventListener('click', close), 0);
+  },
+
+  _openShift(shiftId) {
+    const shift = Store.findById('planning', shiftId);
+    if (!shift) { Router.navigate('/planning'); return; }
+    const chauffeurs = (Store.get('chauffeurs') || []).filter(c => c.statut === 'actif');
+    const chauffeur = chauffeurs.find(c => c.id === shift.chauffeurId);
+    const nom = chauffeur ? `${chauffeur.prenom} ${chauffeur.nom}` : 'Chauffeur';
+
+    const shiftPresets = { matin: ['06:00','14:00'], apres_midi: ['14:00','22:00'], journee: ['08:00','20:00'], nuit: ['22:00','06:00'] };
+    const editValues = { ...shift };
+    if (!editValues.heureDebut && editValues.typeCreneaux && shiftPresets[editValues.typeCreneaux]) {
+      editValues.heureDebut = shiftPresets[editValues.typeCreneaux][0];
+      editValues.heureFin = shiftPresets[editValues.typeCreneaux][1];
+    }
+    if (!editValues.heureDebut) {
+      editValues.typeCreneaux = 'custom';
+      editValues.heureDebut = '06:00';
+      editValues.heureFin = '00:00';
+    }
+
+    const fields = [
+      { type: 'row-start' },
+      { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
+      { name: 'date', label: 'Date', type: 'date', required: true },
+      { type: 'row-end' },
+      { name: 'typeCreneaux', label: 'Créneau type', type: 'select', required: false, options: [
+        { value: 'custom', label: 'Personnalisé' },
+        { value: 'matin', label: 'Matin (6h - 14h)' },
+        { value: 'apres_midi', label: 'Après-midi (14h - 22h)' },
+        { value: 'journee', label: 'Journée complète (8h - 20h)' },
+        { value: 'nuit', label: 'Nuit (22h - 6h)' }
+      ]},
+      { type: 'row-start' },
+      { name: 'heureDebut', label: 'Heure début', type: 'time', required: true },
+      { name: 'heureFin', label: 'Heure fin', type: 'time', required: true },
+      { type: 'row-end' },
+      { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
+    ];
+
+    Modal.form(`<iconify-icon icon="solar:calendar-bold-duotone" class="text-blue"></iconify-icon> Créneau — ${nom}`, FormBuilder.build(fields, editValues), () => {
+      const body = document.getElementById('modal-body');
+      if (!FormBuilder.validate(body, fields)) return;
+      const values = FormBuilder.getValues(body);
+      Store.update('planning', shiftId, values);
+      Toast.success('Créneau modifié');
+      Modal.close();
+      this._silentRefresh();
+    }, 'Enregistrer');
+
+    // Bind typeCreneaux → auto-fill heures
+    setTimeout(() => {
+      const typeSelect = document.querySelector('[name="typeCreneaux"]');
+      if (typeSelect) {
+        typeSelect.addEventListener('change', () => {
+          const preset = shiftPresets[typeSelect.value];
+          if (preset) {
+            const hd = document.querySelector('[name="heureDebut"]');
+            const hf = document.querySelector('[name="heureFin"]');
+            if (hd) hd.value = preset[0];
+            if (hf) hf.value = preset[1];
+          }
+        });
+      }
+    }, 100);
   },
 
   _shareWhatsApp() {
