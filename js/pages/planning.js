@@ -44,12 +44,41 @@ const PlanningPage = {
       <div style="max-width:100%;box-sizing:border-box;overflow:hidden;">
         <div class="page-header" style="flex-wrap:wrap;">
           <h1 style="font-size:clamp(1rem,4vw,1.5rem);"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning</h1>
-          <div class="page-actions" style="flex-wrap:wrap;gap:6px;">
-            <button class="btn btn-sm btn-secondary" onclick="PlanningPage._showTemplates()"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon> <span class="hide-mobile-text">Modèles</span></button>
-            <button class="btn btn-sm btn-secondary" onclick="PlanningPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> <span class="hide-mobile-text">PDF</span></button>
-            <button class="btn btn-sm btn-warning" onclick="PlanningPage._showDepRecurrentes()"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon> <span class="hide-mobile-text">Dépenses</span></button>
-            <button class="btn btn-sm btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> <span class="hide-mobile-text">Absence</span></button>
-            <button class="btn btn-sm btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> <span class="hide-mobile-text">Créneau</span></button>
+          <!-- Desktop: boutons visibles -->
+          <div class="page-actions planning-actions-desktop" style="flex-wrap:wrap;gap:6px;">
+            <button class="btn btn-sm btn-secondary" onclick="PlanningPage._showTemplates()"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon> Modèles</button>
+            <button class="btn btn-sm btn-secondary" onclick="PlanningPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
+            <button class="btn btn-sm btn-warning" onclick="PlanningPage._showDepRecurrentes()"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon> Dépenses</button>
+            <button class="btn btn-sm btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Absence</button>
+            <button class="btn btn-sm btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Créneau</button>
+          </div>
+          <!-- Mobile: bouton + avec dropdown -->
+          <div class="planning-actions-mobile" style="display:none;position:relative;">
+            <button class="btn btn-sm btn-primary" id="btn-planning-fab" style="padding:6px 12px;font-weight:700;">
+              <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:16px;"></iconify-icon> Actions
+            </button>
+            <div id="planning-fab-menu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.18);z-index:200;min-width:180px;padding:6px 0;animation:fadeInMenu .15s ease-out;">
+              <div class="planning-fab-item" onclick="PlanningPage._addShift();PlanningPage._closeFab();" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);transition:background .15s;">
+                <iconify-icon icon="solar:calendar-add-bold-duotone" style="font-size:16px;color:#22c55e;"></iconify-icon> Créneau
+              </div>
+              <div class="planning-fab-item" onclick="PlanningPage._addAbsence();PlanningPage._closeFab();" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);transition:background .15s;">
+                <iconify-icon icon="solar:calendar-minimalistic-bold-duotone" style="font-size:16px;color:#6366f1;"></iconify-icon> Absence
+              </div>
+              <div class="planning-fab-item" onclick="PlanningPage._showDepRecurrentes();PlanningPage._closeFab();" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);transition:background .15s;">
+                <iconify-icon icon="solar:wallet-2-bold-duotone" style="font-size:16px;color:#f59e0b;"></iconify-icon> Dépenses
+              </div>
+              <div style="height:1px;background:var(--border-color);margin:4px 0;"></div>
+              <div class="planning-fab-item" onclick="PlanningPage._exportPDF();PlanningPage._closeFab();" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);transition:background .15s;">
+                <iconify-icon icon="solar:document-bold-duotone" style="font-size:16px;color:var(--text-muted);"></iconify-icon> Export PDF
+              </div>
+              <div class="planning-fab-item" onclick="PlanningPage._showTemplates();PlanningPage._closeFab();" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);transition:background .15s;">
+                <iconify-icon icon="solar:copy-bold-duotone" style="font-size:16px;color:var(--text-muted);"></iconify-icon> Modèles
+              </div>
+            </div>
+            <style>
+              @keyframes fadeInMenu { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+              .planning-fab-item:hover { background:var(--bg-tertiary); }
+            </style>
           </div>
         </div>
 
@@ -109,8 +138,26 @@ const PlanningPage = {
       this._renderView();
     });
 
-    document.getElementById('btn-add-absence').addEventListener('click', () => this._addAbsence());
-    document.getElementById('btn-add-shift').addEventListener('click', () => this._addShift());
+    const btnAbsence = document.getElementById('btn-add-absence');
+    const btnShift = document.getElementById('btn-add-shift');
+    if (btnAbsence) btnAbsence.addEventListener('click', () => this._addAbsence());
+    if (btnShift) btnShift.addEventListener('click', () => this._addShift());
+
+    // Mobile FAB menu toggle
+    const btnFab = document.getElementById('btn-planning-fab');
+    if (btnFab) {
+      btnFab.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const menu = document.getElementById('planning-fab-menu');
+        if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+      });
+      document.addEventListener('click', () => this._closeFab(), { once: false });
+    }
+  },
+
+  _closeFab() {
+    const menu = document.getElementById('planning-fab-menu');
+    if (menu) menu.style.display = 'none';
   },
 
   _navigate(dir) {
