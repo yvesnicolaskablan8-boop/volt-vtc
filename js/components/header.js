@@ -3,6 +3,7 @@
  */
 const Header = {
   _handlers: {},
+  _prevTaskCount: null,
 
   init() {
     this._cleanup();
@@ -216,6 +217,13 @@ const Header = {
     }
 
     this._loadNotifications();
+
+    // Rafraichir les notifications toutes les 60s pour detecter les nouvelles taches
+    if (!this._notifInterval) {
+      this._notifInterval = setInterval(() => {
+        this._loadNotifications();
+      }, 60000);
+    }
   },
 
   _loadNotifications() {
@@ -343,6 +351,18 @@ const Header = {
           time: t.dateTerminaison ? Utils.formatDate(t.dateTerminaison.split('T')[0]) : ''
         });
       });
+    }
+
+    // Detecter les nouvelles taches pour jouer un son
+    const session2 = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+    if (session2 && session2.role !== 'chauffeur') {
+      const allT = Store.get('taches') || [];
+      const uid = session2.userId;
+      const currentTaskCount = allT.filter(t => t.assigneA === uid && t.statut === 'a_faire').length;
+      if (this._prevTaskCount !== null && currentTaskCount > this._prevTaskCount) {
+        this._playNotifSound();
+      }
+      this._prevTaskCount = currentTaskCount;
     }
 
     const count = notifications.length;
@@ -519,6 +539,28 @@ const Header = {
         dropdown.style.display = 'none';
       }
     });
+  },
+
+  _playNotifSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Double-tone notification: pleasant and brief
+      const playTone = (freq, start, duration, gain) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        g.gain.setValueAtTime(gain, ctx.currentTime + start);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + duration);
+      };
+      playTone(880, 0, 0.15, 0.12);
+      playTone(1175, 0.12, 0.2, 0.1);
+      setTimeout(() => ctx.close(), 500);
+    } catch (e) { /* Audio not supported */ }
   },
 
   refreshNotifications() {
