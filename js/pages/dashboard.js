@@ -771,13 +771,27 @@ const DashboardPage = {
           .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
           .d-g3 { grid-template-columns:1fr !important; }
           .d-g21 { grid-template-columns:1fr !important; }
+          .d-hero-ca { flex-direction:column !important; }
+          .d-hero-ca > div:last-child { height:80px !important; }
+          .d-hero-kpis { gap:10px !important; }
+          .d-hero-kpis a { min-height:120px !important; font-size:14px; margin-top:0 !important; }
+          .d-hero-kpis a div:nth-child(2) { font-size:28px !important; }
         }
         @media(max-width:600px) {
           .d-g4 { grid-template-columns:1fr !important; }
           .d-bg { margin:-16px; padding:16px 16px 24px; }
+          .d-hero-wrap { padding:16px 16px 0 !important; border-radius:14px !important; }
+          .d-hero-ca { flex-direction:column !important; gap:12px !important; }
+          .d-hero-ca > div:first-child div:first-child { font-size:32px !important; }
+          .d-hero-ca > div:last-child { height:70px !important; }
+          .d-hero-kpis { flex-direction:column !important; gap:10px !important; padding-bottom:16px !important; }
+          .d-hero-kpis a { min-height:auto !important; padding:16px !important; margin-top:0 !important; border-radius:14px !important; }
+          .d-hero-kpis a div:nth-child(2) { font-size:26px !important; margin:8px 0 10px !important; }
           .d-hm-grid { grid-template-columns:40px repeat(7,1fr); gap:2px; }
           .d-hm-driver span:last-child { display:none; }
           .d-hm-cell { height:26px; border-radius:6px; font-size:10px; }
+          .d-header-row { flex-direction:column !important; align-items:flex-start !important; gap:10px !important; }
+          .d-header-controls { flex-wrap:wrap; gap:8px !important; }
         }
       </style>
 
@@ -785,7 +799,7 @@ const DashboardPage = {
       <div class="d-bg">
 
       <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
+      <div class="d-header-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Bienvenue,</div>
           <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;">${userName} !</div>
@@ -807,7 +821,7 @@ const DashboardPage = {
       </div>
 
       <!-- Row 1: SellCraft "Total Sales" — single hero card with chart bg + 3 mini KPIs inside -->
-      <div style="background:#fff;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03);position:relative;overflow:visible;margin-bottom:16px;padding:24px 28px 0;">
+      <div class="d-hero-wrap" style="background:#fff;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03);position:relative;overflow:visible;margin-bottom:16px;padding:24px 28px 0;">
 
         <!-- Top: title + 3-dot menu -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -819,7 +833,7 @@ const DashboardPage = {
         </div>
 
         <!-- CA number (left) + Chart (right) — side by side like SellCraft -->
-        <div style="display:flex;align-items:flex-end;gap:24px;position:relative;z-index:2;">
+        <div class="d-hero-ca" style="display:flex;align-items:flex-end;gap:24px;position:relative;z-index:2;">
           <!-- Left: big number + trend -->
           <div style="flex-shrink:0;">
             <div style="font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.caThisMonth)}</div>
@@ -836,8 +850,8 @@ const DashboardPage = {
           </div>
         </div>
 
-        <!-- 3 mini KPI cards — staggered, clean (sans boutons flèche) -->
-        <div style="display:flex;gap:14px;margin-top:8px;padding-bottom:24px;position:relative;z-index:3;align-items:flex-end;">
+        <!-- 3 mini KPI cards — staggered, clean -->
+        <div class="d-hero-kpis" style="display:flex;gap:14px;margin-top:8px;padding-bottom:24px;position:relative;z-index:3;align-items:flex-end;">
 
           <!-- Versements (vert) -->
           <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(220,252,231,.7);border-radius:18px;padding:22px 20px;border:1px solid rgba(187,247,208,.35);box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;margin-top:30px;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
