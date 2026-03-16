@@ -38,8 +38,7 @@ const TachesPage = {
     const userId = this._currentUserId();
     const allTaches = Store.get('taches') || [];
     const mesTaches = allTaches.filter(t => t.assigneA === userId);
-    const aFaire = mesTaches.filter(t => t.statut === 'a_faire');
-    const enCours = mesTaches.filter(t => t.statut === 'en_cours');
+    const enAttente = mesTaches.filter(t => t.statut === 'a_faire' || t.statut === 'en_cours');
     const terminees = mesTaches.filter(t => t.statut === 'terminee' || t.statut === 'annulee');
     const today = new Date().toISOString().split('T')[0];
 
@@ -52,12 +51,10 @@ const TachesPage = {
       return (a.dateEcheance || '9999').localeCompare(b.dateEcheance || '9999');
     });
 
-    sortTasks(aFaire);
-    sortTasks(enCours);
+    sortTasks(enAttente);
 
     // Taches du jour (echeance aujourd'hui ou en retard)
-    const tachesDuJour = mesTaches.filter(t =>
-      (t.statut === 'a_faire' || t.statut === 'en_cours') &&
+    const tachesDuJour = enAttente.filter(t =>
       t.dateEcheance && t.dateEcheance <= today
     );
 
@@ -68,19 +65,12 @@ const TachesPage = {
 
       <!-- Résumé rapide -->
       <div class="taches-user-summary">
-        <div class="tus-card tus-afaire" onclick="document.getElementById('taches-section-afaire').scrollIntoView({behavior:'smooth'})">
+        <div class="tus-card tus-afaire" onclick="document.getElementById('taches-section-afaire')?.scrollIntoView({behavior:'smooth'})">
           <div class="tus-icon" style="background:rgba(249,115,22,.15);color:#f97316;">
-            <iconify-icon icon="solar:hourglass-bold-duotone"></iconify-icon>
+            <iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon>
           </div>
-          <div class="tus-num">${aFaire.length}</div>
-          <div class="tus-label">A faire</div>
-        </div>
-        <div class="tus-card tus-encours" onclick="document.getElementById('taches-section-encours').scrollIntoView({behavior:'smooth'})">
-          <div class="tus-icon" style="background:rgba(59,130,246,.15);color:#3b82f6;">
-            <iconify-icon icon="solar:play-circle-bold-duotone"></iconify-icon>
-          </div>
-          <div class="tus-num">${enCours.length}</div>
-          <div class="tus-label">En cours</div>
+          <div class="tus-num">${enAttente.length}</div>
+          <div class="tus-label">A effectuer</div>
         </div>
         <div class="tus-card tus-done">
           <div class="tus-icon" style="background:rgba(34,197,94,.15);color:#22c55e;">
@@ -90,7 +80,7 @@ const TachesPage = {
           <div class="tus-label">Terminees</div>
         </div>
         ${tachesDuJour.length > 0 ? `
-        <div class="tus-card tus-urgent" onclick="document.getElementById('taches-section-afaire').scrollIntoView({behavior:'smooth'})">
+        <div class="tus-card tus-urgent" onclick="document.getElementById('taches-section-afaire')?.scrollIntoView({behavior:'smooth'})">
           <div class="tus-icon" style="background:rgba(239,68,68,.15);color:#ef4444;">
             <iconify-icon icon="solar:alarm-bold-duotone"></iconify-icon>
           </div>
@@ -99,7 +89,7 @@ const TachesPage = {
         </div>` : ''}
       </div>
 
-      ${mesTaches.filter(t => t.statut !== 'terminee' && t.statut !== 'annulee').length === 0 ? `
+      ${enAttente.length === 0 ? `
         <div class="taches-empty-hero">
           <div class="teh-icon"><iconify-icon icon="solar:cup-star-bold-duotone"></iconify-icon></div>
           <h2>Tout est fait !</h2>
@@ -107,29 +97,16 @@ const TachesPage = {
         </div>
       ` : ''}
 
-      <!-- Section A FAIRE -->
-      ${aFaire.length > 0 ? `
+      <!-- Section A EFFECTUER -->
+      ${enAttente.length > 0 ? `
       <div id="taches-section-afaire" class="taches-section">
         <div class="ts-header ts-orange">
-          <iconify-icon icon="solar:hourglass-bold-duotone"></iconify-icon>
-          <span>A faire</span>
-          <span class="ts-count">${aFaire.length}</span>
+          <iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon>
+          <span>A effectuer</span>
+          <span class="ts-count">${enAttente.length}</span>
         </div>
         <div class="taches-cards-grid">
-          ${aFaire.map(t => this._renderUserTaskCard(t, today)).join('')}
-        </div>
-      </div>` : ''}
-
-      <!-- Section EN COURS -->
-      ${enCours.length > 0 ? `
-      <div id="taches-section-encours" class="taches-section">
-        <div class="ts-header ts-blue">
-          <iconify-icon icon="solar:play-circle-bold-duotone"></iconify-icon>
-          <span>En cours</span>
-          <span class="ts-count">${enCours.length}</span>
-        </div>
-        <div class="taches-cards-grid">
-          ${enCours.map(t => this._renderUserTaskCard(t, today)).join('')}
+          ${enAttente.map(t => this._renderUserTaskCard(t, today)).join('')}
         </div>
       </div>` : ''}
 
@@ -221,19 +198,9 @@ const TachesPage = {
 
       ${!isDone ? `
       <div class="utc-actions">
-        ${t.statut === 'a_faire' ? `
-          <button class="btn-utc btn-utc-start" onclick="TachesPage._changeStatut('${t.id}', 'en_cours')">
-            <iconify-icon icon="solar:play-bold-duotone"></iconify-icon> Demarrer
-          </button>
-          <button class="btn-utc btn-utc-done" onclick="TachesPage._changeStatut('${t.id}', 'terminee')">
-            <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Fait
-          </button>
-        ` : ''}
-        ${t.statut === 'en_cours' ? `
-          <button class="btn-utc btn-utc-done btn-utc-done-full" onclick="TachesPage._changeStatut('${t.id}', 'terminee')">
-            <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Marquer comme fait
-          </button>
-        ` : ''}
+        <button class="btn-utc btn-utc-done btn-utc-done-full" onclick="TachesPage._changeStatut('${t.id}', 'terminee')">
+          <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tache effectuee
+        </button>
         <button class="btn-utc btn-utc-detail" onclick="TachesPage._viewTache('${t.id}')">
           <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
         </button>
