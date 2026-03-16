@@ -161,7 +161,7 @@ const ComptabilitePage = {
 
     return `
       <!-- KPIs financiers -->
-      <div class="kpi-grid" style="margin-bottom:24px;">
+      <div class="d-grid d-g4" style="margin-bottom:24px;">
         <div class="kpi-card green">
           <div class="kpi-icon"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon></div>
           <div class="kpi-value">${Utils.formatCurrency(totalRecettes)}</div>
