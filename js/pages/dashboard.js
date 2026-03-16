@@ -1081,7 +1081,7 @@ const DashboardPage = {
               ${d.alertesUrgentes > 0 ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,255,255,.2);color:#fff;">${d.alertesUrgentes} urgent${d.alertesUrgentes > 1 ? 's' : ''}</span>` : ''}
             </div>` : ''}
           </a>`;
-          })()
+          })()}
       </div>
 
       <!-- Row 3.5: Planning Heatmap -->
