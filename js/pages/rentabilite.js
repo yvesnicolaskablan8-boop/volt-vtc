@@ -72,8 +72,8 @@ const RentabilitePage = {
       const totalRevenue = vVersements.filter(vs => vs.statut !== 'supprime').reduce((s, vs) => s + getVersementMontant(vs), 0);
       const totalCA = vCourses.reduce((s, c) => s + c.montantTTC, 0);
 
-      // Months in service
-      const startDate = new Date(v.dateCreation);
+      // Months in service — utiliser dateAcquisition si disponible, sinon dateCreation
+      const startDate = new Date(v.dateAcquisition || v.dateCreation);
       const monthsInService = Math.max(1, Math.round((now - startDate) / (30 * 24 * 60 * 60 * 1000)));
 
       // Costs — only real expenses

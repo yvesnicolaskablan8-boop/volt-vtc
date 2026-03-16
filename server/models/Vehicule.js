@@ -67,6 +67,7 @@ const vehiculeSchema = new mongoose.Schema({
   tempsRechargeNormale: Number,
   dernierRecharge: String,
   stationRechargeHabituelle: String,
+  dateAcquisition: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {
   toJSON: {

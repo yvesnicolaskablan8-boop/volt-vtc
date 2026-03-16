@@ -345,6 +345,7 @@ const VehiculesPage = {
             ` : `
               <div><span class="text-muted">Type</span><br><strong>Achat comptant</strong></div>
             `}
+            ${v.dateAcquisition ? `<div><span class="text-muted">Date d'acquisition</span><br><strong>${Utils.formatDate(v.dateAcquisition)}</strong></div>` : ''}
             <div><span class="text-muted">Assurance</span><br><strong>${v.assureur} - ${Utils.formatCurrency(v.primeAnnuelle)}/an</strong></div>
           </div>
         </div>
@@ -697,6 +698,7 @@ const VehiculesPage = {
       { name: 'dureeLeasing', label: 'Durée leasing (mois)', type: 'number', min: 0 },
       { type: 'row-end' },
       { name: 'apportInitial', label: 'Apport initial (FCFA)', type: 'number', min: 0 },
+      { name: 'dateAcquisition', label: "Date d'acquisition", type: 'date' },
       { type: 'heading', label: 'Opérationnel' },
       { type: 'row-start' },
       { name: 'kilometrage', label: 'Kilométrage actuel', type: 'number', min: 0 },
