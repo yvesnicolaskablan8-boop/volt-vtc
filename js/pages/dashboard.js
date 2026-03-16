@@ -778,15 +778,18 @@ const DashboardPage = {
         }
         @media(max-width:600px) {
           .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
-          .d-bg { margin:-16px; padding:12px 12px 24px; }
-          .d-hero-wrap { padding:14px 14px 0 !important; border-radius:14px !important; margin-bottom:12px !important; }
-          .d-hero-ca > div:first-child > div:first-child { font-size:28px !important; letter-spacing:-1px !important; }
-          .d-hero-ca > div:last-child { height:70px !important; }
-          .d-hero-kpis { gap:8px !important; padding-bottom:16px !important; }
-          .d-hero-kpis > a { min-height:100px !important; padding:12px 14px !important; border-radius:14px !important; }
-          .d-hero-kpis > a > div:nth-child(2) { font-size:22px !important; margin:6px 0 8px !important; }
-          .d-hero-kpis > a > div:last-child { flex-wrap:wrap; }
-          .d-hero-kpis > a > div:last-child span:last-child { display:none; }
+          .d-bg { margin:-16px; padding:12px 10px 24px; }
+          .d-hero-wrap { padding:14px 12px 0 !important; border-radius:14px !important; margin-bottom:12px !important; overflow:hidden !important; }
+          .d-hero-ca { gap:12px !important; }
+          .d-hero-ca > div:first-child > div:first-child { font-size:24px !important; letter-spacing:-1px !important; word-break:break-all !important; }
+          .d-hero-ca > div:last-child { height:60px !important; }
+          .d-hero-kpis { gap:6px !important; padding-bottom:14px !important; }
+          .d-hero-kpis > a { min-height:auto !important; padding:10px 12px !important; border-radius:12px !important; overflow:hidden !important; }
+          .d-hero-kpis > a > div:first-child > div:first-child { font-size:11px !important; }
+          .d-hero-kpis > a > div:nth-child(2) { font-size:18px !important; margin:4px 0 6px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+          .d-hero-kpis > a > div:last-child { flex-wrap:nowrap !important; overflow:hidden !important; }
+          .d-hero-kpis > a > div:last-child span { font-size:9px !important; white-space:nowrap !important; }
+          .d-hero-kpis > a > div:last-child span:last-child { display:none !important; }
           .d-hm-grid { grid-template-columns:36px repeat(7,1fr) !important; gap:2px !important; }
           .d-hm-driver { font-size:10px !important; }
           .d-hm-driver span:last-child { display:none; }
@@ -795,9 +798,12 @@ const DashboardPage = {
           .d-hm-head { font-size:10px !important; }
           .d-header-row { flex-wrap:wrap !important; gap:10px !important; }
           .d-header-controls { flex-wrap:wrap; gap:6px !important; }
-          .d-card { padding:14px !important; border-radius:14px !important; }
-          .d-val { font-size:20px !important; }
-          .d-grid { gap:10px !important; }
+          .d-card { padding:12px !important; border-radius:12px !important; overflow:hidden !important; }
+          .d-card .d-val { font-size:18px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
+          .d-card .d-lbl { font-size:11px !important; }
+          .d-val { font-size:18px !important; }
+          .d-grid { gap:8px !important; }
+          .d-legend { font-size:10px !important; }
         }
       </style>
 
@@ -1149,7 +1155,7 @@ const DashboardPage = {
 
     const statusIcons = {
       verse: '<iconify-icon icon="solar:check-circle-bold" style="font-size:14px;"></iconify-icon>',
-      programme: '<iconify-icon icon="solar:clock-circle-bold" style="font-size:14px;"></iconify-icon>',
+      programme: '',
       en_retard: '<iconify-icon icon="solar:danger-triangle-bold" style="font-size:14px;"></iconify-icon>',
       absent: '<iconify-icon icon="solar:minus-circle-bold" style="font-size:14px;"></iconify-icon>',
       repos: ''
