@@ -232,7 +232,7 @@ const VersementsPage = {
           <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalVerse)}</div>
           <div class="d-sub" style="color:rgba(255,255,255,.6);">${d.periodLabel}</div>
         </div>
-        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,${d.tauxRecouvrement >= 80 ? '#10b981,#34d399' : '#ef4444,#f87171'});border:none;box-shadow:0 4px 20px ${d.tauxRecouvrement >= 80 ? 'rgba(16,185,129,.25)' : 'rgba(239,68,68,.25)'};" onclick="VersementsPage._showKpiDetail('taux')">
+        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,${d.tauxRecouvrement >= 80 ? '#10b981,#34d399' : d.tauxRecouvrement >= 50 ? '#f97316,#fb923c' : '#ef4444,#f87171'});border:none;box-shadow:0 4px 20px ${d.tauxRecouvrement >= 80 ? 'rgba(16,185,129,.25)' : d.tauxRecouvrement >= 50 ? 'rgba(249,115,22,.25)' : 'rgba(239,68,68,.25)'};" onclick="VersementsPage._showKpiDetail('taux')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
             <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Taux recouvrement</div>
