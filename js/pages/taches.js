@@ -672,6 +672,24 @@ const TachesPage = {
 
   // =================== RECURRENCE ===================
 
+  _toggleRecurrenceSection() {
+    const fields = document.getElementById('recurrence-fields');
+    const chevron = document.getElementById('recurrence-chevron');
+    const badge = document.getElementById('recurrence-toggle-badge');
+    if (!fields) return;
+    const isVisible = fields.style.display !== 'none';
+    fields.style.display = isVisible ? 'none' : 'block';
+    if (chevron) chevron.style.transform = isVisible ? '' : 'rotate(180deg)';
+    if (isVisible) {
+      // Reset recurrence to aucune when collapsing
+      const sel = document.querySelector('[name="recurrence"]');
+      if (sel) sel.value = 'aucune';
+      if (badge) { badge.textContent = 'Desactivee'; badge.style.background = 'var(--bg-secondary)'; badge.style.color = 'var(--text-muted)'; }
+    } else {
+      if (badge) { badge.textContent = 'Activee'; badge.style.background = 'rgba(99,102,241,.12)'; badge.style.color = '#6366f1'; }
+    }
+  },
+
   _bindRecurrenceUI(existing) {
     setTimeout(() => {
       const sel = document.querySelector('[name="recurrence"]');
@@ -826,8 +844,18 @@ const TachesPage = {
       ] : []),
       // Recurrence (admin seulement, pas pour les instances generees)
       ...(this._isAdmin() && !(existing && existing.recurrenceParentId) ? [
-        { type: 'divider' },
-        { type: 'heading', label: 'Recurrence' },
+        { type: 'html', html: (() => {
+          const isRec = existing && existing.recurrence && existing.recurrence !== 'aucune';
+          return `<div id="recurrence-section">
+            <hr style="border-color:var(--border-color);margin:var(--space-md) 0;">
+            <div id="recurrence-toggle" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;" onclick="TachesPage._toggleRecurrenceSection()">
+              <iconify-icon icon="solar:restart-bold-duotone" style="color:#6366f1;font-size:18px;"></iconify-icon>
+              <span style="font-weight:600;color:var(--text-primary);font-size:var(--font-size-sm);">Tache recurrente</span>
+              <span id="recurrence-toggle-badge" style="padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${isRec ? 'rgba(99,102,241,.12)' : 'var(--bg-secondary)'};color:${isRec ? '#6366f1' : 'var(--text-muted)'};">${isRec ? 'Activee' : 'Desactivee'}</span>
+              <iconify-icon id="recurrence-chevron" icon="solar:alt-arrow-down-bold-duotone" style="margin-left:auto;color:var(--text-muted);transition:transform .2s;${isRec ? 'transform:rotate(180deg);' : ''}"></iconify-icon>
+            </div>
+            <div id="recurrence-fields" style="display:${isRec ? 'block' : 'none'};padding-top:8px;">`;
+        })() },
         { name: 'recurrence', label: 'Repetition', type: 'select', default: existing ? (existing.recurrence || 'aucune') : 'aucune', options: [
           { value: 'aucune', label: 'Aucune (tache unique)' },
           { value: 'quotidien', label: 'Tous les jours' },
@@ -843,7 +871,8 @@ const TachesPage = {
               </label>`;
             }).join('')}
           </div></div>` },
-        { name: 'jourMois', label: 'Jour du mois', type: 'number', min: 1, max: 31, default: existing ? (existing.jourMois || 1) : 1 }
+        { name: 'jourMois', label: 'Jour du mois', type: 'number', min: 1, max: 31, default: existing ? (existing.jourMois || 1) : 1 },
+        { type: 'html', html: `</div></div>` }
       ] : [])
     ];
   }
