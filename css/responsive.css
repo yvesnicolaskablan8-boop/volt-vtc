@@ -415,6 +415,7 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     font-size: var(--font-size-xs);
+    min-width: 600px;
   }
 
   .data-table th,
