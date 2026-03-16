@@ -498,24 +498,16 @@ const RentabilitePage = {
     const cd = this._chartDefaults();
     const shortLabel = (a) => a.vehicule.immatriculation || `${a.vehicule.marque} ${a.vehicule.modele}`.slice(0, 12);
 
-    // 1. Revenus vs Coûts — grouped bar with gradient
+    // 1. Revenus vs Coûts — grouped bar
     const revCostCtx = document.getElementById('chart-rev-vs-cost');
     if (revCostCtx) {
-      const ctx2d = revCostCtx.getContext('2d');
-      const revGrad = ctx2d.createLinearGradient(0, 340, 0, 0);
-      revGrad.addColorStop(0, 'rgba(16,185,129,.15)');
-      revGrad.addColorStop(1, 'rgba(16,185,129,.9)');
-      const costGrad = ctx2d.createLinearGradient(0, 340, 0, 0);
-      costGrad.addColorStop(0, 'rgba(239,68,68,.15)');
-      costGrad.addColorStop(1, 'rgba(239,68,68,.9)');
-
       this._charts.push(new Chart(revCostCtx, {
         type: 'bar',
         data: {
           labels: d.analysis.map(a => shortLabel(a)),
           datasets: [
-            { label: 'Revenus', data: d.analysis.map(a => Math.round(a.totalRevenue)), backgroundColor: revGrad, hoverBackgroundColor: '#10b981', borderRadius: 12, borderSkipped: false, barPercentage: 0.7 },
-            { label: 'Coûts', data: d.analysis.map(a => Math.round(a.totalCost)), backgroundColor: costGrad, hoverBackgroundColor: '#ef4444', borderRadius: 12, borderSkipped: false, barPercentage: 0.7 }
+            { label: 'Revenus', data: d.analysis.map(a => Math.round(a.totalRevenue)), backgroundColor: 'rgba(16,185,129,.8)', hoverBackgroundColor: '#10b981', borderRadius: 10, borderSkipped: false, barPercentage: 0.7 },
+            { label: 'Coûts', data: d.analysis.map(a => Math.round(a.totalCost)), backgroundColor: 'rgba(239,68,68,.8)', hoverBackgroundColor: '#ef4444', borderRadius: 10, borderSkipped: false, barPercentage: 0.7 }
           ]
         },
         options: {
@@ -529,7 +521,7 @@ const RentabilitePage = {
           },
           scales: {
             x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 10 }, maxRotation: 45 } },
-            y: { grid: { color: cd.gridColor, drawBorder: false }, ticks: { color: cd.tickColor, font: { size: 10 }, callback: v => (v/1000000).toFixed(1) + 'M' }, border: { display: false } }
+            y: { grid: { color: cd.gridColor, drawBorder: false }, ticks: { color: cd.tickColor, font: { size: 10 }, callback: v => v >= 1000000 ? (v/1000000).toFixed(1) + 'M' : Math.round(v/1000) + 'K' }, border: { display: false } }
           }
         }
       }));
@@ -577,17 +569,9 @@ const RentabilitePage = {
       }));
     }
 
-    // 3. Profit mensuel — bar chart avec gradient
+    // 3. Profit mensuel — bar chart
     const profitCtx = document.getElementById('chart-monthly-profit');
     if (profitCtx) {
-      const ctx2d = profitCtx.getContext('2d');
-      const profitBgs = d.analysis.map(a => {
-        const g = ctx2d.createLinearGradient(0, 340, 0, 0);
-        if (a.monthlyProfit >= 0) { g.addColorStop(0, 'rgba(16,185,129,.1)'); g.addColorStop(1, 'rgba(16,185,129,.85)'); }
-        else { g.addColorStop(0, 'rgba(239,68,68,.1)'); g.addColorStop(1, 'rgba(239,68,68,.85)'); }
-        return g;
-      });
-
       this._charts.push(new Chart(profitCtx, {
         type: 'bar',
         data: {
@@ -595,9 +579,9 @@ const RentabilitePage = {
           datasets: [{
             label: 'Profit/mois',
             data: d.analysis.map(a => a.monthlyProfit),
-            backgroundColor: profitBgs,
+            backgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? 'rgba(16,185,129,.8)' : 'rgba(239,68,68,.8)'),
             hoverBackgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? '#34d399' : '#f87171'),
-            borderRadius: 14, borderSkipped: false, barPercentage: 0.6
+            borderRadius: 10, borderSkipped: false, barPercentage: 0.6
           }]
         },
         options: {
@@ -620,7 +604,6 @@ const RentabilitePage = {
     // 4. Projection leasing — area chart (coût cumulé vs revenus cumulés sur durée leasing)
     const projCtx = document.getElementById('chart-projection');
     if (projCtx) {
-      const ctx2d = projCtx.getContext('2d');
       const months = 36;
       const labels = Array.from({ length: months + 1 }, (_, i) => i === 0 ? '0' : `${i}`);
 
@@ -631,13 +614,6 @@ const RentabilitePage = {
       const costCumul = labels.map((_, i) => totalApport + avgMensualite * i);
       const revCumul = labels.map((_, i) => avgMonthlyRevenue * i);
 
-      const costGrad = ctx2d.createLinearGradient(0, 0, 0, 340);
-      costGrad.addColorStop(0, 'rgba(239,68,68,.3)');
-      costGrad.addColorStop(1, 'rgba(239,68,68,.02)');
-      const revGrad = ctx2d.createLinearGradient(0, 0, 0, 340);
-      revGrad.addColorStop(0, 'rgba(16,185,129,.3)');
-      revGrad.addColorStop(1, 'rgba(16,185,129,.02)');
-
       this._charts.push(new Chart(projCtx, {
         type: 'line',
         data: {
@@ -646,12 +622,12 @@ const RentabilitePage = {
             {
               label: 'Revenus cumulés', data: revCumul, borderColor: '#10b981', borderWidth: 3, pointRadius: 0,
               pointHoverRadius: 6, pointHoverBackgroundColor: '#10b981', pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
-              fill: true, backgroundColor: revGrad, tension: 0.4
+              fill: true, backgroundColor: 'rgba(16,185,129,.12)', tension: 0.4
             },
             {
               label: 'Coût leasing cumulé', data: costCumul, borderColor: '#ef4444', borderWidth: 3, pointRadius: 0,
               pointHoverRadius: 6, pointHoverBackgroundColor: '#ef4444', pointHoverBorderColor: '#fff', pointHoverBorderWidth: 2,
-              fill: true, backgroundColor: costGrad, tension: 0.1, borderDash: [8, 4]
+              fill: true, backgroundColor: 'rgba(239,68,68,.12)', tension: 0.1, borderDash: [8, 4]
             }
           ]
         },
