@@ -307,14 +307,6 @@
     display: none;
   }
 
-  /* Planning: hide desktop actions, show mobile FAB */
-  .planning-actions-desktop {
-    display: none !important;
-  }
-  .planning-actions-mobile {
-    display: block !important;
-  }
-
   /* Planning nav card */
   .planning-nav-card > div {
     flex-direction: column !important;
