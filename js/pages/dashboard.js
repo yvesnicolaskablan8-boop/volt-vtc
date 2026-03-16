@@ -775,10 +775,12 @@ const DashboardPage = {
         @media(max-width:600px) {
           .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
           .d-bg { margin:-16px; padding:12px 10px 24px; }
-          .d-card { padding:12px !important; }
+          .d-card { padding:12px !important; overflow:hidden; }
           .d-val { font-size:20px !important; }
           .d-lbl { font-size:11px !important; }
           .d-grid { gap:8px !important; }
+          .d-legend { font-size:10px !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+          .d-card svg { width:70px !important; height:70px !important; }
           .d-hm-grid { grid-template-columns:36px repeat(7,1fr) !important; gap:2px !important; }
           .d-hm-driver { font-size:10px !important; }
           .d-hm-driver span:last-child { display:none; }
@@ -971,7 +973,7 @@ const DashboardPage = {
       </div>
 
       <!-- Row 3: Service + Alertes (côte à côte) -->
-      <div class="d-grid" style="grid-template-columns:1fr 1fr;align-items:start;">
+      <div class="d-grid" style="grid-template-columns:1fr 1fr;align-items:stretch;">
           <!-- Service du jour -->
           <a href="#/planning" class="d-card" style="text-decoration:none;color:inherit;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">

@@ -12,13 +12,6 @@ const YangoPage = {
   _dateFrom: null,
   _dateTo: null,
   _planningDate: null, // null = today
-  _map: null,
-  _mapMarkers: {},
-  _mapInterval: null,
-  _mapFitted: false,
-  _fleetDrivers: [],
-  _fleetFilters: new Set(['free', 'in_order', 'busy', 'offline']),
-  _fleetMarkers: {},
 
   render() {
     const container = document.getElementById('page-content');
@@ -37,18 +30,30 @@ const YangoPage = {
     }
     this._charts.forEach(c => c.destroy());
     this._charts = [];
-    if (this._mapInterval) { clearInterval(this._mapInterval); this._mapInterval = null; }
-    if (this._map) { this._map.remove(); this._map = null; }
-    this._mapMarkers = {};
-    this._mapFitted = false;
   },
 
   _template() {
     const today = new Date().toISOString().split('T')[0];
     return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:bus-bold-duotone" style="color:#FC4C02"></iconify-icon> Yango Fleet</h1>
-        <div class="page-actions">
+      <style>
+        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+        .fleet-btn { display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all 0.2s;user-select:none; }
+        .fleet-btn:hover { filter:brightness(1.15);transform:scale(1.05); }
+        .fleet-btn.active { border-color:rgba(255,255,255,0.6); }
+        .fleet-btn.dimmed { background:#3a3f47 !important;color:rgba(255,255,255,0.4);border-color:transparent; }
+      </style>
+
+      <div class="d-wrap"><div class="d-bg">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
+        <div>
+          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Fleet Management</div>
+          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
+            <iconify-icon icon="solar:bus-bold-duotone" style="color:#FC4C02;"></iconify-icon> Yango Fleet
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <div class="yango-filter-group">
             <select id="yp-work-rule-select" class="yango-filter-select" onchange="YangoPage._onWorkRuleChange()" title="Filtrer par categorie">
               <option value="">Toutes categories</option>
@@ -61,158 +66,144 @@ const YangoPage = {
       </div>
 
       <!-- Date Picker Bar -->
-      <div class="yango-date-bar">
-        <div class="yango-date-presets">
-          <button class="yango-date-preset active" data-preset="today" onclick="YangoPage._setDatePreset('today')">
-            <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> Aujourd'hui
-          </button>
-          <button class="yango-date-preset" data-preset="yesterday" onclick="YangoPage._setDatePreset('yesterday')">
-            <iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Hier
-          </button>
-          <button class="yango-date-preset" data-preset="week" onclick="YangoPage._setDatePreset('week')">
-            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Cette semaine
-          </button>
-          <button class="yango-date-preset" data-preset="month" onclick="YangoPage._setDatePreset('month')">
-            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Ce mois
-          </button>
-          <button class="yango-date-preset" data-preset="custom" onclick="YangoPage._toggleCustomDates()">
-            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Personnalise
-          </button>
+      <div class="d-card" style="padding:12px 16px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button class="yango-date-preset active" data-preset="today" onclick="YangoPage._setDatePreset('today')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:rgba(252,76,2,.1);color:#FC4C02;transition:all .2s;display:flex;align-items:center;gap:5px;">
+              <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> Aujourd'hui
+            </button>
+            <button class="yango-date-preset" data-preset="yesterday" onclick="YangoPage._setDatePreset('yesterday')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all .2s;display:flex;align-items:center;gap:5px;">
+              <iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Hier
+            </button>
+            <button class="yango-date-preset" data-preset="week" onclick="YangoPage._setDatePreset('week')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all .2s;display:flex;align-items:center;gap:5px;">
+              <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Semaine
+            </button>
+            <button class="yango-date-preset" data-preset="month" onclick="YangoPage._setDatePreset('month')" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all .2s;display:flex;align-items:center;gap:5px;">
+              <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois
+            </button>
+            <button class="yango-date-preset" data-preset="custom" onclick="YangoPage._toggleCustomDates()" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all .2s;display:flex;align-items:center;gap:5px;">
+              <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Personnalise
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="yp-live-badge" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#FC4C02;background:rgba(252,76,2,.08);padding:5px 14px;border-radius:20px;font-weight:700;">
+              <span style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>EN DIRECT
+            </span>
+            <span class="d-sub" id="yp-last-update"></span>
+          </div>
         </div>
-        <div class="yango-date-custom" id="yp-date-custom" style="display:none;">
+        <div class="yango-date-custom" id="yp-date-custom" style="display:none;margin-top:10px;">
           <div class="yango-date-inputs">
-            <label>
-              <span>Du</span>
-              <input type="date" id="yp-date-from" class="yango-date-input" value="${today}" max="${today}">
-            </label>
-            <label>
-              <span>Au</span>
-              <input type="date" id="yp-date-to" class="yango-date-input" value="${today}" max="${today}">
-            </label>
-            <button class="btn btn-sm yango-date-apply" onclick="YangoPage._applyCustomDates()">
+            <label><span>Du</span><input type="date" id="yp-date-from" class="yango-date-input" value="${today}" max="${today}"></label>
+            <label><span>Au</span><input type="date" id="yp-date-to" class="yango-date-input" value="${today}" max="${today}"></label>
+            <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;" onclick="YangoPage._applyCustomDates()">
               <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Appliquer
             </button>
           </div>
         </div>
-        <div class="yango-date-label" id="yp-date-label">
-          <iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon>
-          <span id="yp-date-label-text">Aujourd'hui</span>
-        </div>
-      </div>
-
-      <!-- Live indicator -->
-      <div class="yango-section" style="padding:0;">
-        <div class="yango-section-header" style="border-bottom:none;padding:12px var(--space-lg);">
-          <div class="yango-section-title">
-            <img src="https://avatars.githubusercontent.com/u/36020155?s=20" alt="" class="yango-logo-icon" onerror="this.style.display='none'">
-            <span id="yp-period-label">Donnees en temps reel</span>
-            <span class="yango-badge-live" id="yp-live-badge">EN DIRECT</span>
-          </div>
-          <span class="yango-last-update" id="yp-last-update"></span>
-        </div>
+        <div id="yp-date-label" style="display:none;"><span id="yp-date-label-text">Aujourd'hui</span></div>
+        <span id="yp-period-label" style="display:none;">Donnees en temps reel</span>
       </div>
 
       <!-- KPIs Row 1: Main metrics -->
-      <div class="grid-4" style="margin-top:var(--space-md);">
-        <div class="kpi-card yango-kpi">
-          <div class="kpi-icon yango-icon-green"><iconify-icon icon="solar:user-check-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" id="yp-drivers-total"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label">Chauffeurs en service</div>
-          <div class="kpi-trend neutral" id="yp-drivers-detail"><div class="yango-skeleton-sm"></div></div>
+      <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);">
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(34,197,94,.1);color:#22c55e;">
+              <iconify-icon icon="solar:user-check-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;">Chauffeurs en service</div>
+          </div>
+          <div class="d-val" id="yp-drivers-total"><div class="yango-skeleton"></div></div>
+          <div class="d-sub" id="yp-drivers-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
-        <div class="kpi-card yango-kpi">
-          <div class="kpi-icon yango-icon-orange"><iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" id="yp-ca-today"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label" id="yp-ca-label">CA du jour</div>
-          <div class="kpi-trend neutral" id="yp-ca-detail"><div class="yango-skeleton-sm"></div></div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(252,76,2,.1);color:#FC4C02;">
+              <iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;" id="yp-ca-label">CA du jour</div>
+          </div>
+          <div class="d-val" style="color:#FC4C02;" id="yp-ca-today"><div class="yango-skeleton"></div></div>
+          <div class="d-sub" id="yp-ca-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
-        <div class="kpi-card yango-kpi">
-          <div class="kpi-icon yango-icon-blue"><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" id="yp-courses-today"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label" id="yp-courses-label">Courses aujourd'hui</div>
-          <div class="kpi-trend neutral" id="yp-courses-detail"><div class="yango-skeleton-sm"></div></div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;">
+              <iconify-icon icon="solar:bus-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;" id="yp-courses-label">Courses aujourd'hui</div>
+          </div>
+          <div class="d-val" id="yp-courses-today"><div class="yango-skeleton"></div></div>
+          <div class="d-sub" id="yp-courses-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
-        <div class="kpi-card yango-kpi" style="border-top-color:rgba(34,197,94,0.5) !important;">
-          <div class="kpi-icon yango-icon-green"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" id="yp-commission" style="color:var(--success)"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label" id="yp-commission-label">Commission partenaire</div>
-          <div class="kpi-trend neutral" id="yp-commission-detail"><div class="yango-skeleton-sm"></div></div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;">
+              <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;" id="yp-commission-label">Commission partenaire</div>
+          </div>
+          <div class="d-val" style="color:#10b981;" id="yp-commission"><div class="yango-skeleton"></div></div>
+          <div class="d-sub" id="yp-commission-detail"><div class="yango-skeleton-sm"></div></div>
         </div>
       </div>
 
       <!-- KPIs Row 2: Period totals + Activity -->
-      <div class="grid-4" style="margin-top:var(--space-sm);">
-        <div class="kpi-card">
-          <div class="kpi-icon"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" id="yp-ca-month"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label" id="yp-ca-month-label">CA du mois</div>
-        </div>
-        <div class="kpi-card red">
-          <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" id="yp-commission-month" style="color:var(--danger)"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label" id="yp-commission-month-label">Frais Yango (prélevés)</div>
-        </div>
-        <div class="kpi-card cyan">
-          <div class="kpi-icon"><iconify-icon icon="solar:route-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" id="yp-courses-month"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label" id="yp-courses-month-label">Courses du mois</div>
-        </div>
-        <div class="kpi-card yellow">
-          <div class="kpi-icon"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value" id="yp-activity-time"><div class="yango-skeleton"></div></div>
-          <div class="kpi-label">Temps d'activite moyen</div>
-        </div>
-      </div>
-
-      <!-- Carte temps réel -->
-      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #22c55e;overflow:hidden;">
-        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
-          <span class="card-title" style="display:flex;align-items:center;gap:8px;">
-            <iconify-icon icon="solar:map-bold-duotone" style="color:#FC4C02;"></iconify-icon>
-            Positions en temps réel
-            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse-dot 2s infinite;"></span>
-          </span>
-          <span class="badge badge-info" id="yp-map-count">--</span>
-        </div>
-        <!-- Barre de statuts Yango Fleet -->
-        <style>
-          .fleet-btn { display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all 0.2s;user-select:none; }
-          .fleet-btn:hover { filter:brightness(1.15);transform:scale(1.05); }
-          .fleet-btn.active { border-color:rgba(255,255,255,0.6); }
-          .fleet-btn.dimmed { background:#3a3f47 !important;color:rgba(255,255,255,0.4);border-color:transparent; }
-        </style>
-        <div id="yp-fleet-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
-          <div class="fleet-btn active" data-fleet-filter="free" data-color="#22c55e" style="background:#22c55e;" onclick="YangoPage._toggleFleetFilter('free', this)">
-            <span id="yp-fleet-free">-</span> Disponible
+      <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);">
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;">
+              <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;" id="yp-ca-month-label">CA du mois</div>
           </div>
-          <div class="fleet-btn active" data-fleet-filter="in_order" data-color="#f97316" style="background:#f97316;" onclick="YangoPage._toggleFleetFilter('in_order', this)">
-            <span id="yp-fleet-inorder">-</span> Commande active
-          </div>
-          <div class="fleet-btn active" data-fleet-filter="busy" data-color="#ef4444" style="background:#ef4444;" onclick="YangoPage._toggleFleetFilter('busy', this)">
-            <span id="yp-fleet-busy">-</span> Occupés
-          </div>
-          <div class="fleet-btn active" data-fleet-filter="offline" data-color="#6b7280" style="background:#6b7280;" onclick="YangoPage._toggleFleetFilter('offline', this)">
-            <span id="yp-fleet-offline">-</span> Hors ligne
-          </div>
-          <div style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;background:var(--bg-tertiary);color:var(--text-primary);font-size:12px;font-weight:600;">
-            <iconify-icon icon="solar:users-group-rounded-bold" style="font-size:14px;"></iconify-icon>
-            <span id="yp-fleet-total">-</span>
-          </div>
+          <div class="d-val" id="yp-ca-month"><div class="yango-skeleton"></div></div>
         </div>
-        <div id="yp-realtime-map" style="height:500px;border-radius:var(--radius-md);z-index:0;"></div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;">
+              <iconify-icon icon="solar:sale-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;" id="yp-commission-month-label">Frais Yango (prélevés)</div>
+          </div>
+          <div class="d-val" style="color:#ef4444;" id="yp-commission-month"><div class="yango-skeleton"></div></div>
+        </div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(6,182,212,.1);color:#06b6d4;">
+              <iconify-icon icon="solar:route-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;" id="yp-courses-month-label">Courses du mois</div>
+          </div>
+          <div class="d-val" id="yp-courses-month"><div class="yango-skeleton"></div></div>
+        </div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;">
+              <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;">Temps d'activite moyen</div>
+          </div>
+          <div class="d-val" id="yp-activity-time"><div class="yango-skeleton"></div></div>
+        </div>
       </div>
 
       <!-- Chauffeurs programmés — Planning -->
-      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
-        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-          <span class="card-title" style="display:flex;align-items:center;gap:8px;">
-            <iconify-icon icon="solar:calendar-bold-duotone" style="color:#FC4C02;"></iconify-icon>
-            <span id="yp-planning-title">Chauffeurs programmés — Aujourd'hui</span>
+      <div class="d-card" style="margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="d-icon" style="background:rgba(252,76,2,.08);color:#FC4C02;">
+              <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
+            </div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#111827;" id="yp-planning-title">Chauffeurs programmés — Aujourd'hui</div>
+            </div>
             <span id="yp-planning-live" style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>
-          </span>
+          </div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <input type="date" id="yp-planning-date" class="form-control" value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="width:145px;font-size:var(--font-size-xs);padding:4px 8px;" onchange="YangoPage._onPlanningDateChange()">
-            <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;padding:4px 8px;" onclick="YangoPage._resetPlanningDate()" title="Aujourd'hui">
+            <input type="date" id="yp-planning-date" class="form-control" value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="width:145px;font-size:var(--font-size-xs);padding:4px 8px;border-radius:11px;" onchange="YangoPage._onPlanningDateChange()">
+            <button class="btn btn-sm" style="background:#FC4C02;color:#fff;border-color:#FC4C02;padding:4px 8px;border-radius:11px;" onclick="YangoPage._resetPlanningDate()" title="Aujourd'hui">
               <iconify-icon icon="solar:calendar-minimalistic-bold"></iconify-icon>
             </button>
           </div>
@@ -224,15 +215,19 @@ const YangoPage = {
           </div>
         </div>
       </div>
-      <style>@keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }</style>
 
       <!-- Synchronisation Yango → Pilote -->
-      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #FC4C02;">
-        <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:refresh-bold-duotone" style="color:#FC4C02"></iconify-icon> Synchronisation Yango → Pilote</span>
-          <span class="badge" id="yp-sync-status-badge">--</span>
+      <div class="d-card" style="margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="d-icon" style="background:rgba(252,76,2,.08);color:#FC4C02;">
+              <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
+            </div>
+            <div style="font-size:14px;font-weight:700;color:#111827;">Synchronisation Yango → Pilote</div>
+          </div>
+          <span class="d-tag purple" id="yp-sync-status-badge">--</span>
         </div>
-        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:var(--space-md);">
+        <div class="d-sub" style="margin-bottom:14px;">
           Recupere automatiquement les courses et l'activite de chaque chauffeur depuis Yango, puis met a jour les scores de conduite et le temps d'activite dans Pilote. La sync automatique s'execute chaque nuit a 2h.
         </div>
         <div style="display:flex;gap:var(--space-sm);align-items:center;flex-wrap:wrap;">
@@ -244,7 +239,7 @@ const YangoPage = {
           </button>
           <div style="display:flex;align-items:center;gap:6px;">
             <label style="font-size:var(--font-size-xs);color:var(--text-muted);">Date :</label>
-            <input type="date" class="form-control" id="yp-sync-date" style="width:auto;font-size:var(--font-size-xs);padding:4px 8px;" max="${new Date().toISOString().split('T')[0]}">
+            <input type="date" class="form-control" id="yp-sync-date" style="width:auto;font-size:var(--font-size-xs);padding:4px 8px;border-radius:11px;" max="${new Date().toISOString().split('T')[0]}">
             <button class="btn btn-sm btn-outline" onclick="YangoPage._triggerSyncDate()">
               <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
             </button>
@@ -254,10 +249,14 @@ const YangoPage = {
       </div>
 
       <!-- Commission info -->
-      <div style="margin-top:var(--space-md);padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
-        <iconify-icon icon="solar:info-circle-bold-duotone" style="color:#FC4C02"></iconify-icon>
-        Le chiffre d'affaires est calcule a partir des transactions reelles (especes + carte). La commission Yango et la commission partenaire sont issues des donnees financieres de la plateforme. Rafraichissement automatique toutes les 2 minutes.
+      <div class="d-card" style="margin-top:16px;padding:14px 18px;display:flex;align-items:center;gap:10px;">
+        <div class="d-icon" style="background:rgba(252,76,2,.08);color:#FC4C02;width:32px;height:32px;border-radius:10px;font-size:15px;">
+          <iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon>
+        </div>
+        <div class="d-sub" style="margin:0;">Le chiffre d'affaires est calcule a partir des transactions reelles (especes + carte). La commission Yango et la commission partenaire sont issues des donnees financieres de la plateforme. Rafraichissement automatique toutes les 2 minutes.</div>
       </div>
+
+      </div></div>
     `;
   },
 
@@ -286,7 +285,6 @@ const YangoPage = {
       this._data = stats;
       this._updatePeriodLabels();
       this._renderKPIs(stats);
-      if (!this._map) this._initMap();
       this._loadPiloteActivity();
 
       // Update sync status badge
@@ -592,212 +590,6 @@ const YangoPage = {
     setVal('yp-activity-time', tempsActivite > 0 ? `${tempsActivite} min` : '--');
   },
 
-  // =================== CARTE TEMPS RÉEL ===================
-
-  _initMap() {
-    if (typeof L === 'undefined') return;
-    const container = document.getElementById('yp-realtime-map');
-    if (!container) return;
-
-    // Nettoyer si déjà initialisée
-    if (this._map) { this._map.remove(); this._map = null; }
-    if (this._mapInterval) { clearInterval(this._mapInterval); this._mapInterval = null; }
-    this._mapMarkers = {};
-
-    this._map = L.map(container, { zoomControl: true, attributionControl: false }).setView([5.345, -4.025], 12);
-    // Carte sombre style Yango Fleet
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '© CARTO'
-    }).addTo(this._map);
-
-    // Premier chargement + polling 15s
-    this._refreshMap();
-    this._refreshFleetStatus();
-    this._mapInterval = setInterval(() => { this._refreshMap(); this._refreshFleetStatus(); }, 15000);
-  },
-
-  _toggleFleetFilter(status, btn) {
-    const originalColor = btn.dataset.color || '#6b7280';
-    if (this._fleetFilters.has(status)) {
-      // Désactiver le filtre → bouton gris
-      this._fleetFilters.delete(status);
-      btn.classList.remove('active');
-      btn.classList.add('dimmed');
-      btn.style.background = '';  // Le CSS .dimmed prend le relais
-    } else {
-      // Réactiver le filtre → bouton coloré
-      this._fleetFilters.add(status);
-      btn.classList.add('active');
-      btn.classList.remove('dimmed');
-      btn.style.background = originalColor;
-    }
-    this._renderFleetMarkers();
-  },
-
-  async _refreshFleetStatus() {
-    try {
-      const token = typeof Auth !== 'undefined' ? Auth.getToken() : localStorage.getItem('pilote_token');
-      const res = await fetch('/api/yango/fleet-status', { headers: { 'Authorization': 'Bearer ' + token } });
-      if (!res.ok) return;
-      const data = await res.json();
-      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-      set('yp-fleet-free', data.disponible || 0);
-      set('yp-fleet-inorder', data.commandeActive || 0);
-      set('yp-fleet-busy', data.occupe || 0);
-      set('yp-fleet-offline', data.horsLigne || 0);
-      set('yp-fleet-total', data.total || 0);
-
-      // Stocker les chauffeurs pour les filtrer
-      this._fleetDrivers = data.drivers || [];
-      this._renderFleetMarkers();
-    } catch (e) {
-      console.warn('[FleetStatus] Error:', e.message);
-    }
-  },
-
-  _renderFleetMarkers() {
-    if (!this._map) return;
-    // Construire map yangoDriverId → status
-    const yangoStatusMap = {};
-    this._fleetDrivers.forEach(d => { yangoStatusMap[d.id] = d.status; });
-
-    // Montrer/masquer les markers existants selon filtre
-    Object.keys(this._mapMarkers).forEach(chauffeurId => {
-      const markerData = this._mapMarkers[chauffeurId];
-      if (!markerData) return;
-      const marker = markerData.marker || markerData;
-      const status = markerData.yangoStatus || 'offline';
-      if (this._fleetFilters.has(status)) {
-        if (!this._map.hasLayer(marker)) marker.addTo(this._map);
-      } else {
-        if (this._map.hasLayer(marker)) this._map.removeLayer(marker);
-      }
-    });
-  },
-
-  async _refreshMap() {
-    if (!this._map) return;
-    try {
-      const token = typeof Auth !== 'undefined' ? Auth.getToken() : localStorage.getItem('pilote_token');
-      const res = await fetch('/api/gps/positions', { headers: { 'Authorization': 'Bearer ' + token } });
-      if (!res.ok) return;
-      const positions = await res.json();
-
-      // Construire map yangoDriverId → yangoStatus depuis fleet-status
-      const chauffeurs = Store.get('chauffeurs') || [];
-      const chauffeurToYango = {};
-      chauffeurs.forEach(c => { if (c.yangoDriverId) chauffeurToYango[c.id] = c.yangoDriverId; });
-      const yangoStatusMap = {};
-      this._fleetDrivers.forEach(d => { yangoStatusMap[d.id] = d.status; });
-
-      // Filtrer par chauffeurs programmés du jour
-      const selectedDate = this._planningDate || new Date().toISOString().split('T')[0];
-      const planning = Store.get('planning') || [];
-      const scheduledIds = new Set(planning.filter(p => p.date === selectedDate).map(p => p.chauffeurId));
-
-      const now = Date.now();
-      const MAX_AGE = 8 * 60 * 60 * 1000;
-
-      const filtered = positions.filter(p => {
-        if (!scheduledIds.has(p.chauffeurId)) return false;
-        const age = now - new Date(p.updatedAt).getTime();
-        return age < MAX_AGE;
-      });
-      const countEl = document.getElementById('yp-map-count');
-      if (countEl) countEl.textContent = filtered.length;
-
-      const activeIds = new Set();
-      const statusColors = { free: '#22c55e', in_order: '#f97316', busy: '#ef4444', offline: '#6b7280' };
-      const statusLabels = { free: 'Disponible', in_order: 'Commande active', busy: 'Occupé', offline: 'Hors ligne' };
-
-      filtered.forEach(p => {
-        activeIds.add(p.chauffeurId);
-        const age = now - new Date(p.updatedAt).getTime();
-        const isFresh = age < 5 * 60 * 1000;
-        const heading = p.heading || 0;
-
-        // Statut Yango réel si disponible
-        const yangoId = chauffeurToYango[p.chauffeurId];
-        const yangoStatus = yangoId ? (yangoStatusMap[yangoId] || 'offline') : (isFresh ? 'free' : 'offline');
-        const color = statusColors[yangoStatus] || '#6b7280';
-        const statusTxt = statusLabels[yangoStatus] || 'Hors ligne';
-
-        const ageTxt = age < 60000 ? 'À l\'instant'
-          : age < 3600000 ? `Il y a ${Math.round(age / 60000)} min`
-          : `Il y a ${Math.round(age / 3600000)}h${String(Math.round((age % 3600000) / 60000)).padStart(2, '0')}`;
-
-        const carRotation = isFresh && p.heading ? heading : 0;
-        const icon = L.divIcon({
-          className: '',
-          iconSize: [36, 36],
-          iconAnchor: [18, 18],
-          html: `<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5));transform:rotate(${carRotation}deg);">
-            <svg width="28" height="28" viewBox="0 0 28 28">
-              <rect x="9" y="2" width="10" height="24" rx="4" fill="${color}"/>
-              <rect x="10" y="5" width="8" height="5" rx="1.5" fill="#fff" opacity="0.3"/>
-              <rect x="10" y="17" width="8" height="4" rx="1.2" fill="#fff" opacity="0.2"/>
-              <rect x="7" y="7" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
-              <rect x="18.5" y="7" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
-              <rect x="7" y="16" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
-              <rect x="18.5" y="16" width="2.5" height="5" rx="1" fill="${color}" opacity="0.7"/>
-            </svg>
-          </div>`
-        });
-
-        const popupContent = `<div style="font-size:12px;min-width:160px;line-height:1.6;">
-          <div style="font-weight:700;font-size:13px;margin-bottom:4px;">${p.prenom} ${p.nom}</div>
-          ${p.vehicule ? `<div style="font-size:10px;color:#999;margin-bottom:2px;">🚗 ${p.vehicule}</div>` : ''}
-          <div style="font-size:11px;"><span style="color:${color};">●</span> ${statusTxt}</div>
-          <div style="font-size:10px;color:#888;">${ageTxt}</div>
-        </div>`;
-
-        const existing = this._mapMarkers[p.chauffeurId];
-        if (existing && existing.marker) {
-          // Update existing
-          existing.marker.setLatLng([p.lat, p.lng]);
-          existing.marker.setIcon(icon);
-          existing.marker.getPopup().setContent(popupContent);
-          existing.yangoStatus = yangoStatus;
-          // Appliquer filtre de visibilité
-          if (this._fleetFilters.has(yangoStatus)) {
-            if (!this._map.hasLayer(existing.marker)) existing.marker.addTo(this._map);
-          } else {
-            if (this._map.hasLayer(existing.marker)) this._map.removeLayer(existing.marker);
-          }
-        } else {
-          // Create new
-          const marker = L.marker([p.lat, p.lng], { icon });
-          marker.bindPopup(popupContent);
-          // Ajouter seulement si le filtre est actif pour ce statut
-          if (this._fleetFilters.has(yangoStatus)) {
-            marker.addTo(this._map);
-          }
-          this._mapMarkers[p.chauffeurId] = { marker, yangoStatus };
-        }
-      });
-
-      // Supprimer markers déconnectés
-      Object.keys(this._mapMarkers).forEach(id => {
-        if (!activeIds.has(id)) {
-          const entry = this._mapMarkers[id];
-          const mkr = entry && entry.marker ? entry.marker : entry;
-          if (mkr && this._map.hasLayer(mkr)) this._map.removeLayer(mkr);
-          delete this._mapMarkers[id];
-        }
-      });
-
-      // Ajuster la vue au premier chargement avec des positions
-      if (filtered.length > 0 && !this._mapFitted) {
-        const bounds = L.latLngBounds(filtered.map(p => [p.lat, p.lng]));
-        this._map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-        this._mapFitted = true;
-      }
-    } catch (e) {
-      console.warn('[YangoMap] Refresh error:', e.message);
-    }
-  },
-
   // =================== PLANNING DATE PICKER ===================
 
   _onPlanningDateChange() {
@@ -810,8 +602,6 @@ const YangoPage = {
     const live = document.getElementById('yp-planning-live');
     if (title) title.textContent = this._planningDate ? `Chauffeurs programmés — ${Utils.formatDate(this._planningDate)}` : 'Chauffeurs programmés — Aujourd\'hui';
     if (live) live.style.display = this._planningDate ? 'none' : '';
-    this._mapFitted = false;
-    this._refreshMap();
     this._loadPiloteActivity();
   },
 
@@ -824,8 +614,6 @@ const YangoPage = {
     const live = document.getElementById('yp-planning-live');
     if (title) title.textContent = 'Chauffeurs programmés — Aujourd\'hui';
     if (live) live.style.display = '';
-    this._mapFitted = false;
-    this._refreshMap();
     this._loadPiloteActivity();
   },
 
