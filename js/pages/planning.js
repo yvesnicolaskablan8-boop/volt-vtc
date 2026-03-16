@@ -16,6 +16,8 @@ const PlanningPage = {
   _filterChauffeurId: '',
   _filterSearch: '',
 
+  _retryTimer: null,
+
   render() {
     const now = new Date();
     // Set current week start to Monday
@@ -34,6 +36,7 @@ const PlanningPage = {
   destroy() {
     this._charts.forEach(c => c.destroy());
     this._charts = [];
+    if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
   },
 
   _template() {
@@ -122,6 +125,7 @@ const PlanningPage = {
 
     const label = document.getElementById('planning-period-label');
     const ct = document.getElementById('planning-content');
+    if (!label || !ct) return;
 
     try {
       switch (this._currentView) {
@@ -139,6 +143,20 @@ const PlanningPage = {
           ct.innerHTML = this._renderStatsView();
           this._loadStatsCharts();
           break;
+      }
+
+      // Si le contenu est vide (données pas encore chargées), programmer un retry
+      const chauffeurs = this._getChauffeurs();
+      if ((!chauffeurs || chauffeurs.length === 0) && !this._retryTimer) {
+        ct.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:60px 20px;color:var(--text-muted);">
+          <div class="spinner" style="width:32px;height:32px;border:3px solid var(--border-color);border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite;"></div>
+          <span style="font-size:13px;">Chargement des données...</span>
+          <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+        </div>`;
+        this._retryTimer = setTimeout(() => {
+          this._retryTimer = null;
+          this._renderView();
+        }, 1500);
       }
     } catch (err) {
       console.error('[Planning] Render error:', err);
