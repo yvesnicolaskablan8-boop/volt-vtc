@@ -158,6 +158,18 @@ const RentabilitePage = {
       }
     }
 
+    // RSI global — investissement total vs résultat cumulé
+    const investTotal = vehicules.reduce((s, v) => {
+      if (v.typeAcquisition === 'leasing') return s + (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * (v.dureeLeasing || 0));
+      return s + (v.prixAchat || 0);
+    }, 0);
+    const resultatCumule = fleetTotalRevenue - fleetTotalCost;
+    const rsiGlobal = investTotal > 0 ? (resultatCumule / investTotal * 100) : 0;
+    // Délai de récupération
+    const avgMonthsService = analysis.length > 0 ? analysis.reduce((s, a) => s + a.monthsInService, 0) / analysis.length : 1;
+    const resultatMensuelMoyen = avgMonthsService > 0 ? resultatCumule / avgMonthsService : 0;
+    const moisRecuperation = resultatMensuelMoyen > 0 ? Math.ceil((investTotal - Math.max(0, resultatCumule)) / resultatMensuelMoyen) : null;
+
     return {
       analysis, fleetTotalRevenue, fleetTotalCost, fleetProfit, fleetROI,
       avgLeasingROI, avgCashROI, cumulativeLeasingCost, cumulativeCashCost,
@@ -165,12 +177,43 @@ const RentabilitePage = {
       evCount: evVehicles.length, thermalCount: thermalVehicles.length,
       avgEVCoutKm, avgThermalCoutKm, avgEVEnergy, avgThermalEnergy,
       avgEVMaintenance, avgThermalMaintenance, avgEVROI, avgThermalROI,
-      energySavingsPercent
+      energySavingsPercent,
+      investTotal, resultatCumule, rsiGlobal, moisRecuperation, vehiculeCount: vehicules.length
     };
   },
 
   _template(d) {
+    const rsiColor = d.rsiGlobal >= 50 ? '#10b981' : d.rsiGlobal >= 0 ? '#f59e0b' : '#ef4444';
+    const rsiBarColor = d.rsiGlobal >= 100 ? '#10b981' : d.rsiGlobal >= 50 ? '#3b82f6' : d.rsiGlobal >= 0 ? '#f59e0b' : '#ef4444';
+    const rsiPct = Math.min(Math.max(d.rsiGlobal, 0), 100);
+
     return `
+      <style>
+        .rent-hero { position:relative;border-radius:24px;padding:32px;margin-bottom:24px;overflow:hidden;background:linear-gradient(135deg,#1e1b4b,#312e81,#4338ca);box-shadow:0 20px 60px rgba(99,102,241,.25); }
+        .rent-hero::before { content:'';position:absolute;top:-50%;right:-30%;width:80%;height:200%;background:radial-gradient(circle,rgba(139,92,246,.15) 0%,transparent 70%);pointer-events:none; }
+        .rent-hero::after { content:'';position:absolute;bottom:-40%;left:-20%;width:60%;height:150%;background:radial-gradient(circle,rgba(16,185,129,.1) 0%,transparent 60%);pointer-events:none; }
+        .rent-hero * { position:relative;z-index:1; }
+        .rent-kpi-glass { background:rgba(255,255,255,.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:20px;text-align:center;transition:transform .2s,box-shadow .2s; }
+        .rent-kpi-glass:hover { transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.2); }
+        .rent-kpi-val { font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.1; }
+        .rent-kpi-lbl { font-size:11px;color:rgba(255,255,255,.6);margin-top:6px;font-weight:500; }
+        .rent-progress { height:10px;border-radius:10px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:18px; }
+        .rent-progress-fill { height:100%;border-radius:10px;transition:width 1s ease-out;background:linear-gradient(90deg,${rsiBarColor},${rsiBarColor}cc); box-shadow:0 0 12px ${rsiBarColor}66; }
+        .rent-card { border-radius:20px;padding:24px;background:var(--bg-secondary);border:1px solid var(--border-color);transition:transform .2s,box-shadow .2s; }
+        .rent-card:hover { transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.08); }
+        .rent-chart-wrap { border-radius:20px;padding:24px;background:var(--bg-secondary);border:1px solid var(--border-color); }
+        .rent-section-title { display:flex;align-items:center;gap:10px;margin-bottom:18px; }
+        .rent-section-icon { width:38px;height:38px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px; }
+        .rent-compare-row { display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);font-size:13px; }
+        .rent-compare-row:last-child { border-bottom:none; }
+        .rent-badge { display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700; }
+        @media(max-width:768px) {
+          .rent-hero { padding:20px;border-radius:18px; }
+          .rent-kpi-val { font-size:20px; }
+          .rent-hero-grid { grid-template-columns:1fr 1fr !important; }
+        }
+      </style>
+
       <div class="d-wrap"><div class="d-bg">
 
       <!-- Header -->
@@ -183,128 +226,172 @@ const RentabilitePage = {
         </div>
       </div>
 
-      <!-- KPIs -->
-      <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);">
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">Revenus totaux flotte</div>
-          </div>
-          <div class="d-val" style="color:#10b981;">${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
-        </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;"><iconify-icon icon="solar:graph-down-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">Coûts totaux flotte</div>
-          </div>
-          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(d.fleetTotalCost)}</div>
-        </div>
-        <div class="d-card" style="${d.fleetProfit < 0 ? 'border-color:rgba(239,68,68,.2);' : ''}">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:${d.fleetProfit >= 0 ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};color:${d.fleetProfit >= 0 ? '#10b981' : '#ef4444'};"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">Profit net flotte</div>
-          </div>
-          <div class="d-val" style="color:${d.fleetProfit >= 0 ? '#10b981' : '#ef4444'};">${Utils.formatCurrency(d.fleetProfit)}</div>
-        </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">RSI global</div>
-          </div>
-          <div class="d-val" style="color:#6366f1;">${d.fleetROI.toFixed(1)}%</div>
-        </div>
-      </div>
-
-      <!-- EV vs Thermique comparison -->
-      <div class="d-card" style="margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <div class="d-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:bolt-bold-duotone"></iconify-icon></div>
-          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Comparaison Électrique vs Thermique</div>
-        </div>
-        <div class="grid-2" style="gap:var(--space-lg);">
-          <div>
-            <div style="margin-bottom:var(--space-md);"><span class="d-tag yellow"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:10px"></iconify-icon> ${d.evCount} véhicules électriques</span></div>
-            <div style="display:flex;flex-direction:column;gap:8px;font-size:var(--font-size-sm);">
-              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">RSI moyen</span><strong style="color:#f59e0b">${d.avgEVROI.toFixed(1)}%</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût énergie moyen</span><strong>${Utils.formatCurrency(d.avgEVEnergy)}</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Maintenance moyenne</span><strong>${Utils.formatCurrency(d.avgEVMaintenance)}</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût moyen/km</span><strong>${d.avgEVCoutKm} FCFA/km</strong></div>
-            </div>
+      <!-- ===== RSI HERO BLOCK ===== -->
+      <div class="rent-hero">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+          <div style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;backdrop-filter:blur(8px);">
+            <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
           </div>
           <div>
-            <div style="margin-bottom:var(--space-md);"><span class="d-tag purple"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:10px"></iconify-icon> ${d.thermalCount} véhicules thermiques</span></div>
-            <div style="display:flex;flex-direction:column;gap:8px;font-size:var(--font-size-sm);">
-              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">RSI moyen</span><strong>${d.avgThermalROI.toFixed(1)}%</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût énergie moyen</span><strong>${Utils.formatCurrency(d.avgThermalEnergy)}</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Maintenance moyenne</span><strong>${Utils.formatCurrency(d.avgThermalMaintenance)}</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût moyen/km</span><strong>${d.avgThermalCoutKm} FCFA/km</strong></div>
+            <div style="font-size:17px;font-weight:800;color:#fff;">Retour Sur Investissement (RSI)</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.5);">Basé sur ${d.vehiculeCount} véhicule${d.vehiculeCount > 1 ? 's' : ''} — investissement total : ${Utils.formatCurrency(d.investTotal)}</div>
+          </div>
+        </div>
+
+        <div class="rent-hero-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+          <div class="rent-kpi-glass">
+            <div class="rent-kpi-val" style="color:${rsiColor};">${d.rsiGlobal.toFixed(1)}%</div>
+            <div class="rent-kpi-lbl">RSI global</div>
+          </div>
+          <div class="rent-kpi-glass">
+            <div class="rent-kpi-val" style="color:#fff;">${Utils.formatCurrency(d.investTotal)}</div>
+            <div class="rent-kpi-lbl">Investissement total</div>
+          </div>
+          <div class="rent-kpi-glass">
+            <div class="rent-kpi-val" style="color:${d.resultatCumule >= 0 ? '#34d399' : '#f87171'};">${Utils.formatCurrency(d.resultatCumule)}</div>
+            <div class="rent-kpi-lbl">Résultat cumulé</div>
+          </div>
+          <div class="rent-kpi-glass">
+            <div class="rent-kpi-val" style="color:${d.moisRecuperation !== null && d.moisRecuperation <= 0 ? '#34d399' : '#fbbf24'};">${d.moisRecuperation !== null ? (d.moisRecuperation <= 0 ? 'Récupéré !' : d.moisRecuperation + ' mois') : '—'}</div>
+            <div class="rent-kpi-lbl">${d.moisRecuperation !== null && d.moisRecuperation <= 0 ? 'Investissement amorti' : 'Délai de récupération'}</div>
+          </div>
+        </div>
+
+        <div class="rent-progress">
+          <div class="rent-progress-fill" style="width:${rsiPct}%;"></div>
+        </div>
+        <div style="text-align:right;margin-top:8px;font-size:12px;font-weight:700;color:${rsiBarColor};">${rsiPct.toFixed(0)}% récupéré</div>
+      </div>
+
+      <!-- ===== KPIs FLOTTE ===== -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;">
+        <div class="rent-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div class="rent-section-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;">Revenus flotte</div>
+          </div>
+          <div style="font-size:22px;font-weight:900;color:#10b981;letter-spacing:-.3px;">${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
+        </div>
+        <div class="rent-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div class="rent-section-icon" style="background:rgba(239,68,68,.1);color:#ef4444;"><iconify-icon icon="solar:graph-down-bold-duotone"></iconify-icon></div>
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;">Coûts flotte</div>
+          </div>
+          <div style="font-size:22px;font-weight:900;color:#ef4444;letter-spacing:-.3px;">${Utils.formatCurrency(d.fleetTotalCost)}</div>
+        </div>
+        <div class="rent-card" style="${d.fleetProfit < 0 ? 'border-color:rgba(239,68,68,.25);' : ''}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div class="rent-section-icon" style="background:${d.fleetProfit >= 0 ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};color:${d.fleetProfit >= 0 ? '#10b981' : '#ef4444'};"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon></div>
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;">Profit net</div>
+          </div>
+          <div style="font-size:22px;font-weight:900;color:${d.fleetProfit >= 0 ? '#10b981' : '#ef4444'};letter-spacing:-.3px;">${Utils.formatCurrency(d.fleetProfit)}</div>
+        </div>
+        <div class="rent-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;">RSI flotte</div>
+          </div>
+          <div style="font-size:22px;font-weight:900;color:#6366f1;letter-spacing:-.3px;">${d.fleetROI.toFixed(1)}%</div>
+        </div>
+      </div>
+
+      <!-- ===== EV vs THERMIQUE ===== -->
+      <div class="rent-card" style="margin-bottom:20px;">
+        <div class="rent-section-title">
+          <div class="rent-section-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:bolt-bold-duotone"></iconify-icon></div>
+          <div style="font-size:15px;font-weight:800;color:var(--text-primary);">Électrique vs Thermique</div>
+          ${d.energySavingsPercent > 0 ? `<span class="rent-badge" style="background:rgba(16,185,129,.1);color:#10b981;margin-left:auto;"><iconify-icon icon="solar:leaf-bold-duotone" style="font-size:10px;"></iconify-icon> -${d.energySavingsPercent}% énergie EV</span>` : ''}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div style="padding:18px;border-radius:16px;background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.12);">
+            <div style="margin-bottom:14px;"><span class="rent-badge" style="background:rgba(245,158,11,.15);color:#f59e0b;"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:10px"></iconify-icon> ${d.evCount} EV</span></div>
+            <div class="rent-compare-row"><span style="color:var(--text-muted);">RSI moyen</span><strong style="color:#f59e0b">${d.avgEVROI.toFixed(1)}%</strong></div>
+            <div class="rent-compare-row"><span style="color:var(--text-muted);">Coût énergie</span><strong>${Utils.formatCurrency(d.avgEVEnergy)}</strong></div>
+            <div class="rent-compare-row"><span style="color:var(--text-muted);">Maintenance</span><strong>${Utils.formatCurrency(d.avgEVMaintenance)}</strong></div>
+            <div class="rent-compare-row"><span style="color:var(--text-muted);">Coût/km</span><strong>${d.avgEVCoutKm} FCFA</strong></div>
+          </div>
+          <div style="padding:18px;border-radius:16px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.12);">
+            <div style="margin-bottom:14px;"><span class="rent-badge" style="background:rgba(139,92,246,.15);color:#8b5cf6;"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:10px"></iconify-icon> ${d.thermalCount} Thermiques</span></div>
+            <div class="rent-compare-row"><span style="color:var(--text-muted);">RSI moyen</span><strong style="color:#8b5cf6">${d.avgThermalROI.toFixed(1)}%</strong></div>
+            <div class="rent-compare-row"><span style="color:var(--text-muted);">Coût énergie</span><strong>${Utils.formatCurrency(d.avgThermalEnergy)}</strong></div>
+            <div class="rent-compare-row"><span style="color:var(--text-muted);">Maintenance</span><strong>${Utils.formatCurrency(d.avgThermalMaintenance)}</strong></div>
+            <div class="rent-compare-row"><span style="color:var(--text-muted);">Coût/km</span><strong>${d.avgThermalCoutKm} FCFA</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== LEASING vs CASH ===== -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;">
+        <div class="rent-card" style="background:linear-gradient(135deg,var(--bg-secondary),rgba(99,102,241,.04));">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div class="rent-section-icon" style="background:rgba(99,102,241,.12);color:#6366f1;"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon></div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text-primary);">Leasing</div>
+              <div style="font-size:11px;color:var(--text-muted);">${d.leasingCount} véhicule${d.leasingCount > 1 ? 's' : ''}</div>
             </div>
           </div>
+          <div style="font-size:28px;font-weight:900;color:#6366f1;margin-bottom:6px;">${d.avgLeasingROI.toFixed(1)}%</div>
+          <div style="font-size:11px;color:var(--text-muted);">RSI moyen — trésorerie préservée</div>
         </div>
-        ${d.energySavingsPercent > 0 ? `
-        <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(0,0,0,.06);text-align:center;">
-          <span class="d-tag green"><iconify-icon icon="solar:leaf-bold-duotone" style="font-size:10px;"></iconify-icon> Les véhicules électriques économisent ~${d.energySavingsPercent}% en coûts d'énergie</span>
-        </div>
-        ` : ''}
-      </div>
-
-      <!-- Leasing vs Cash summary -->
-      <div class="d-grid" style="grid-template-columns:1fr 1fr;">
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">Leasing (${d.leasingCount} véhicules)</div>
+        <div class="rent-card" style="background:linear-gradient(135deg,var(--bg-secondary),rgba(16,185,129,.04));">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div class="rent-section-icon" style="background:rgba(16,185,129,.12);color:#10b981;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text-primary);">Cash</div>
+              <div style="font-size:11px;color:var(--text-muted);">${d.cashCount} véhicule${d.cashCount > 1 ? 's' : ''}</div>
+            </div>
           </div>
-          <div class="d-val" style="color:#6366f1;">${d.avgLeasingROI.toFixed(1)}%</div>
-          <div class="d-sub">RSI moyen — trésorerie préservée, charges déductibles</div>
-        </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">Cash (${d.cashCount} véhicules)</div>
-          </div>
-          <div class="d-val" style="color:#10b981;">${d.avgCashROI.toFixed(1)}%</div>
-          <div class="d-sub">RSI moyen — pas de mensualités, coût total inférieur</div>
+          <div style="font-size:28px;font-weight:900;color:#10b981;margin-bottom:6px;">${d.avgCashROI.toFixed(1)}%</div>
+          <div style="font-size:11px;color:var(--text-muted);">RSI moyen — pas de mensualités</div>
         </div>
       </div>
 
-      <!-- Charts -->
-      <div class="d-grid" style="grid-template-columns:1fr 1fr;margin-top:8px;">
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">TCO par véhicule</div>
+      <!-- ===== CHARTS ===== -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;">
+        <div class="rent-chart-wrap">
+          <div class="rent-section-title">
+            <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
+            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">TCO par véhicule</div>
           </div>
           <div style="height:320px;"><canvas id="chart-tco"></canvas></div>
         </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Leasing vs Cash</div>
+        <div class="rent-chart-wrap">
+          <div class="rent-section-title">
+            <div class="rent-section-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
+            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Leasing vs Cash (48 mois)</div>
           </div>
           <div style="height:320px;"><canvas id="chart-leasing-cash"></canvas></div>
         </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(245,158,11,.08);color:#f59e0b;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Profit mensuel par véhicule</div>
+        <div class="rent-chart-wrap">
+          <div class="rent-section-title">
+            <div class="rent-section-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
+            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Profit mensuel</div>
           </div>
           <div style="height:320px;"><canvas id="chart-monthly-profit"></canvas></div>
         </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(139,92,246,.08);color:#8b5cf6;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
-            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Amortissement des véhicules</div>
+        <div class="rent-chart-wrap">
+          <div class="rent-section-title">
+            <div class="rent-section-icon" style="background:rgba(139,92,246,.1);color:#8b5cf6;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
+            <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Amortissement (5 ans)</div>
           </div>
           <div style="height:320px;"><canvas id="chart-depreciation"></canvas></div>
         </div>
       </div>
 
-      <!-- Detail table -->
-      <div class="d-card" style="margin-top:16px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-          <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></div>
-          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Détail par véhicule</div>
+      <!-- ===== RSI par véhicule — Radar ===== -->
+      <div class="rent-chart-wrap" style="margin-bottom:24px;">
+        <div class="rent-section-title">
+          <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon></div>
+          <div style="font-size:14px;font-weight:800;color:var(--text-primary);">RSI par véhicule</div>
+        </div>
+        <div style="height:350px;"><canvas id="chart-rsi-vehicule"></canvas></div>
+      </div>
+
+      <!-- ===== TABLE DETAIL ===== -->
+      <div class="rent-card">
+        <div class="rent-section-title">
+          <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></div>
+          <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Détail par véhicule</div>
         </div>
         <div id="rentabilite-table"></div>
       </div>
@@ -315,25 +402,26 @@ const RentabilitePage = {
 
   _chartDefaults() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const gridColor = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+    const gridColor = isDark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.05)';
     const tickColor = isDark ? '#94a3b8' : '#6b7280';
     return {
       tooltip: {
-        backgroundColor: isDark ? 'rgba(15,23,42,.95)' : 'rgba(255,255,255,.97)',
+        backgroundColor: isDark ? 'rgba(15,23,42,.97)' : 'rgba(255,255,255,.98)',
         titleColor: isDark ? '#f1f5f9' : '#111827',
         bodyColor: isDark ? '#cbd5e1' : '#4b5563',
-        borderColor: isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)',
+        borderColor: isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)',
         borderWidth: 1,
-        cornerRadius: 12,
-        padding: 14,
-        boxPadding: 6,
-        titleFont: { size: 13, weight: 700 },
-        bodyFont: { size: 12 },
+        cornerRadius: 16,
+        padding: 16,
+        boxPadding: 8,
+        titleFont: { size: 13, weight: 800 },
+        bodyFont: { size: 12, weight: 500 },
         displayColors: true,
         usePointStyle: true,
+        caretSize: 8,
       },
       legend: {
-        labels: { color: tickColor, font: { size: 12, weight: 500 }, usePointStyle: true, pointStyle: 'circle', padding: 16 }
+        labels: { color: tickColor, font: { size: 12, weight: 600 }, usePointStyle: true, pointStyle: 'rectRounded', padding: 20 }
       },
       gridColor, tickColor, isDark
     };
@@ -350,7 +438,7 @@ const RentabilitePage = {
     this._charts = [];
     const cd = this._chartDefaults();
 
-    // TCO stacked bar chart
+    // TCO stacked bar chart — modern rounded
     const tcoCtx = document.getElementById('chart-tco');
     if (tcoCtx) {
       this._charts.push(new Chart(tcoCtx, {
@@ -358,10 +446,10 @@ const RentabilitePage = {
         data: {
           labels: d.analysis.map(a => `${a.vehicule.marque} ${a.vehicule.modele}`),
           datasets: [
-            { label: 'Acquisition', data: d.analysis.map(a => Math.round(a.acquisitionTotal)), backgroundColor: 'rgba(99,102,241,.8)', hoverBackgroundColor: '#6366f1', borderRadius: 6, borderSkipped: false },
-            { label: 'Assurance', data: d.analysis.map(a => a.assuranceTotal), backgroundColor: 'rgba(250,204,21,.8)', hoverBackgroundColor: '#facc15', borderRadius: 6, borderSkipped: false },
-            { label: 'Maintenance', data: d.analysis.map(a => Math.round(a.maintenanceTotal)), backgroundColor: 'rgba(239,68,68,.8)', hoverBackgroundColor: '#ef4444', borderRadius: 6, borderSkipped: false },
-            { label: 'Énergie', data: d.analysis.map(a => a.energyCost), backgroundColor: 'rgba(34,211,238,.8)', hoverBackgroundColor: '#22d3ee', borderRadius: 6, borderSkipped: false }
+            { label: 'Acquisition', data: d.analysis.map(a => Math.round(a.acquisitionTotal)), backgroundColor: '#6366f1', hoverBackgroundColor: '#818cf8', borderRadius: 10, borderSkipped: false },
+            { label: 'Assurance', data: d.analysis.map(a => a.assuranceTotal), backgroundColor: '#fbbf24', hoverBackgroundColor: '#fcd34d', borderRadius: 10, borderSkipped: false },
+            { label: 'Maintenance', data: d.analysis.map(a => Math.round(a.maintenanceTotal)), backgroundColor: '#f87171', hoverBackgroundColor: '#fca5a5', borderRadius: 10, borderSkipped: false },
+            { label: 'Énergie', data: d.analysis.map(a => a.energyCost), backgroundColor: '#22d3ee', hoverBackgroundColor: '#67e8f9', borderRadius: 10, borderSkipped: false }
           ]
         },
         options: {
@@ -464,11 +552,11 @@ const RentabilitePage = {
           datasets: [{
             label: 'Profit mensuel',
             data: d.analysis.map(a => a.monthlyProfit),
-            backgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? 'rgba(34,197,94,.75)' : 'rgba(239,68,68,.75)'),
-            hoverBackgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? '#22c55e' : '#ef4444'),
-            borderRadius: 8,
+            backgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? '#34d399' : '#f87171'),
+            hoverBackgroundColor: d.analysis.map(a => a.monthlyProfit >= 0 ? '#6ee7b7' : '#fca5a5'),
+            borderRadius: 12,
             borderSkipped: false,
-            barPercentage: 0.7,
+            barPercentage: 0.65,
             categoryPercentage: 0.7
           }]
         },
@@ -487,7 +575,7 @@ const RentabilitePage = {
               afterBody: (items) => {
                 const idx = items[0].dataIndex;
                 const a = d.analysis[idx];
-                return [`\n  Revenu/mois: ${Utils.formatCurrency(a.monthlyRevenue)}`, `  Coût/mois: ${Utils.formatCurrency(a.monthlyCost)}`, `  ROI: ${a.roi.toFixed(1)}%`].join('\n');
+                return [`\n  Revenu/mois: ${Utils.formatCurrency(a.monthlyRevenue)}`, `  Coût/mois: ${Utils.formatCurrency(a.monthlyCost)}`, `  RSI: ${a.roi.toFixed(1)}%`].join('\n');
               }
             }}
           },
@@ -552,6 +640,56 @@ const RentabilitePage = {
           scales: {
             x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 11 } } },
             y: { grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11 }, callback: (v) => Utils.formatCurrency(v) }, border: { display: false } }
+          }
+        }
+      }));
+    }
+
+    // RSI par véhicule — horizontal bar chart
+    const rsiCtx = document.getElementById('chart-rsi-vehicule');
+    if (rsiCtx) {
+      const sorted = [...d.analysis].sort((a, b) => b.roi - a.roi);
+      const rsiColors = sorted.map(a => a.roi >= 20 ? '#10b981' : a.roi >= 0 ? '#f59e0b' : '#ef4444');
+      const ctxC = rsiCtx.getContext('2d');
+      const rsiGrads = sorted.map((a, i) => {
+        const g = ctxC.createLinearGradient(0, 0, ctxC.canvas.width, 0);
+        g.addColorStop(0, rsiColors[i] + '33');
+        g.addColorStop(1, rsiColors[i]);
+        return g;
+      });
+
+      this._charts.push(new Chart(rsiCtx, {
+        type: 'bar',
+        data: {
+          labels: sorted.map(a => `${a.vehicule.marque} ${a.vehicule.modele}`),
+          datasets: [{
+            label: 'RSI',
+            data: sorted.map(a => parseFloat(a.roi.toFixed(1))),
+            backgroundColor: rsiGrads,
+            hoverBackgroundColor: rsiColors,
+            borderRadius: 10,
+            borderSkipped: false,
+            barPercentage: 0.6,
+            categoryPercentage: 0.8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: { ...cd.tooltip, callbacks: {
+              label: (ctx) => ` RSI: ${ctx.raw}%`,
+              afterLabel: (ctx) => {
+                const a = sorted[ctx.dataIndex];
+                return `  Revenu: ${Utils.formatCurrency(a.totalRevenue)}\n  Coût: ${Utils.formatCurrency(a.totalCost)}\n  Profit: ${Utils.formatCurrency(a.totalRevenue - a.totalCost)}`;
+              }
+            }}
+          },
+          scales: {
+            x: { grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11, weight: 600 }, callback: v => v + '%' }, border: { display: false } },
+            y: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 12, weight: 600 } } }
           }
         }
       }));
