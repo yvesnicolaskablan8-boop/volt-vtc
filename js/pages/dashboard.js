@@ -975,8 +975,8 @@ const DashboardPage = {
           <div class="d-chauffeurs-donut" style="display:flex;align-items:center;gap:16px;">
             <div style="position:relative;flex-shrink:0;">
               ${arc(d.totalChauffeurs > 0 ? (d.activeCount / d.totalChauffeurs * 100) : 0, '#10b981', '#f97316', 100, 12)}
-              <div style="position:absolute;top:45%;left:50%;transform:translate(-50%,-30%);text-align:center;">
-                <div class="d-donut-center" style="font-size:22px;font-weight:800;color:#111827;">${d.totalChauffeurs}</div>
+              <div style="position:absolute;top:55%;left:50%;transform:translate(-50%,-30%);text-align:center;">
+                <div class="d-donut-center" style="font-size:20px;font-weight:800;color:#111827;">${d.totalChauffeurs}</div>
                 <div style="font-size:9px;color:#9ca3af;font-weight:600;">Total</div>
               </div>
             </div>
