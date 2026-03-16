@@ -75,6 +75,7 @@ const RentabilitePage = {
       // Months in service — utiliser dateAcquisition si disponible, sinon dateCreation
       const startDate = new Date(v.dateAcquisition || v.dateCreation);
       const monthsInService = Math.max(1, Math.round((now - startDate) / (30 * 24 * 60 * 60 * 1000)));
+      console.log(`[Rent] ${v.immatriculation}: dateAcq=${v.dateAcquisition}, dateCrea=${v.dateCreation}, moisService=${monthsInService}, acqCost=${(v.apportInitial||0) + (v.mensualiteLeasing||0) * Math.min(monthsInService, v.dureeLeasing||36)}`);
 
       // Costs — only real expenses
       const maintenanceTotal = (v.coutsMaintenance || []).reduce((s, m) => s + (m.montant || 0), 0);
