@@ -288,6 +288,11 @@ const App = {
   },
 
   _showApp() {
+    // Dismiss splash screen
+    if (typeof window._splashDismiss === 'function') {
+      window._splashDismiss();
+    }
+
     // Hide login overlay
     const loginOverlay = document.getElementById('login-overlay');
     if (loginOverlay) {
@@ -399,6 +404,11 @@ const App = {
   },
 
   _showLogin() {
+    // Dismiss splash screen
+    if (typeof window._splashDismiss === 'function') {
+      window._splashDismiss();
+    }
+
     // Remove fast-hide class so login overlay becomes visible
     document.documentElement.classList.remove('pilote-has-token');
 
