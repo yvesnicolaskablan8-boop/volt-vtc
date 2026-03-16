@@ -499,7 +499,7 @@ const TachesPage = {
         { label: 'Assigne a', key: 'assigneA', render: (t) => {
           if (!t.assigneA) return '<span style="color:var(--text-muted);">Non assigne</span>';
           const u = users.find(x => x.id === t.assigneA);
-          return u ? `<strong>${u.nom || u.login}</strong>` : (t.assigneANom || t.assigneA);
+          return u ? `<strong>${[u.prenom, u.nom].filter(Boolean).join(' ') || u.login}</strong>` : (t.assigneANom || t.assigneA);
         }},
         { label: 'Priorite', key: 'priorite', render: (t) => `<span class="tache-priorite ${t.priorite}">${prioriteLabels[t.priorite] || t.priorite}</span>` },
         { label: 'Echeance', key: 'dateEcheance', render: (t) => {
@@ -549,10 +549,10 @@ const TachesPage = {
         Store.add('taches', {
           id: Utils.generateId('TCH'),
           ...values,
-          assigneANom: assignedUser ? (assignedUser.nom || assignedUser.login) : '',
+          assigneANom: assignedUser ? ([assignedUser.prenom, assignedUser.nom].filter(Boolean).join(' ') || assignedUser.login) : '',
           statut: 'a_faire',
           creePar: session.userId || '',
-          creeParNom: session.nom || session.login || '',
+          creeParNom: [session.prenom, session.nom].filter(Boolean).join(' ') || session.login || '',
           dateCreation: new Date().toISOString(),
           dateModification: new Date().toISOString(),
           ...recData
@@ -588,7 +588,7 @@ const TachesPage = {
 
         Store.update('taches', id, {
           ...values,
-          assigneANom: assignedUser ? (assignedUser.nom || assignedUser.login) : '',
+          assigneANom: assignedUser ? ([assignedUser.prenom, assignedUser.nom].filter(Boolean).join(' ') || assignedUser.login) : '',
           dateModification: new Date().toISOString(),
           dateTerminaison: (values.statut === 'terminee' && !tache.dateTerminaison) ? new Date().toISOString() : tache.dateTerminaison,
           ...recData
@@ -620,7 +620,7 @@ const TachesPage = {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:var(--font-size-sm);">
           <div><span class="text-muted">Type</span><br><span class="tache-type">${typeLabels[tache.type] || tache.type}</span></div>
           <div><span class="text-muted">Priorite</span><br><span class="tache-priorite ${tache.priorite}">${prioriteLabels[tache.priorite] || tache.priorite}</span></div>
-          <div><span class="text-muted">Assigne a</span><br><strong>${assigned ? (assigned.nom || assigned.login) : (tache.assigneANom || 'Non assigne')}</strong></div>
+          <div><span class="text-muted">Assigne a</span><br><strong>${assigned ? ([assigned.prenom, assigned.nom].filter(Boolean).join(' ') || assigned.login) : (tache.assigneANom || 'Non assigne')}</strong></div>
           <div><span class="text-muted">Statut</span><br><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${statutColors[tache.statut]}1f;color:${statutColors[tache.statut]};">${statutLabels[tache.statut]}</span></div>
           <div><span class="text-muted">Echeance</span><br><strong>${tache.dateEcheance ? Utils.formatDate(tache.dateEcheance) : '—'}</strong></div>
           <div><span class="text-muted">Creee par</span><br><strong>${tache.creeParNom || '—'}</strong></div>
@@ -858,7 +858,7 @@ const TachesPage = {
         { value: 'urgente', label: 'Urgente' }
       ]},
       { type: 'row-end' },
-      { name: 'assigneA', label: 'Assigner a', type: 'select', default: existing ? existing.assigneA : '', placeholder: 'Selectionner un utilisateur...', options: [{ value: '', label: 'Non assigne' }, ...users.map(u => ({ value: u.id, label: u.nom || u.login }))] },
+      { name: 'assigneA', label: 'Assigner a', type: 'select', default: existing ? existing.assigneA : '', placeholder: 'Selectionner un utilisateur...', options: [{ value: '', label: 'Non assigne' }, ...users.map(u => ({ value: u.id, label: [u.prenom, u.nom].filter(Boolean).join(' ') || u.login }))] },
       { name: 'dateEcheance', label: 'Date d\'echeance', type: 'date', default: existing ? existing.dateEcheance : '' },
       { name: 'description', label: 'Description', type: 'textarea', rows: 3, default: existing ? existing.description : '', placeholder: 'Decrivez la tache en detail...' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2, default: existing ? existing.commentaire : '', placeholder: 'Note ou commentaire...' },
