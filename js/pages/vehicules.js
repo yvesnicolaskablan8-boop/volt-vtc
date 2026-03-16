@@ -69,20 +69,20 @@ const VehiculesPage = {
 
     // Delegate to GaragePage for garage tabs
     if (typeof GaragePage !== 'undefined') {
-      // Update actions for garage tabs — keep "Ajouter véhicule" always visible
+      // Update actions for garage tabs — context-specific add buttons
       if (actions) {
         const addBtnMap = {
-          reparations: `<button class="btn btn-primary btn-sm" onclick="GaragePage._addReparation()"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Réparation</button>`,
-          ct: `<button class="btn btn-primary btn-sm" onclick="GaragePage._addCT()"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> CT</button>`,
+          maintenance: `<button class="btn btn-primary" onclick="GaragePage._addMaintenance()"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Planifier maintenance</button>`,
+          reparations: `<button class="btn btn-primary" onclick="GaragePage._addReparation()"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter réparation</button>`,
+          ct: `<button class="btn btn-primary" onclick="GaragePage._addCT()"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Enregistrer CT</button>`,
+          assurances: '',
+          tco: ''
         };
         actions.innerHTML = `
           <button class="btn btn-sm btn-outline" onclick="GaragePage._updateKmModal()" title="Mettre a jour le kilometrage">
             <iconify-icon icon="solar:route-bold-duotone"></iconify-icon> Maj km
           </button>
           ${addBtnMap[tab] || ''}
-          <button class="btn btn-primary" onclick="VehiculesPage._add()">
-            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter véhicule
-          </button>
         `;
       }
       GaragePage._activeTab = tab;

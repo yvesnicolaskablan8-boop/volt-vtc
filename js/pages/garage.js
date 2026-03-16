@@ -190,6 +190,58 @@ const GaragePage = {
     }
   },
 
+  _addMaintenance() {
+    const vehicules = Store.get('vehicules').filter(v => v.statut === 'en_service');
+    const vOpts = vehicules.map(v => `<option value="${v.id}">${this._vLabel(v)}</option>`).join('');
+    const typeLabels = { vidange:'Vidange', revision:'Révision', pneus:'Pneus', freins:'Freins', filtres:'Filtres', climatisation:'Climatisation', courroie:'Courroie', controle_technique:'Contrôle technique', batterie:'Batterie', amortisseurs:'Amortisseurs', echappement:'Échappement', carrosserie:'Carrosserie', autre:'Autre' };
+    const tOpts = Object.entries(typeLabels).map(([k,v]) => `<option value="${k}">${v}</option>`).join('');
+    const today = new Date().toISOString().split('T')[0];
+
+    Modal.form(
+      '<iconify-icon icon="solar:tuning-2-bold-duotone" style="color:#6366f1"></iconify-icon> Planifier une maintenance',
+      `<form id="form-maint-add" class="modal-form">
+        <div class="form-group"><label>Véhicule *</label><select name="vehiculeId" class="form-control" required><option value="">Choisir...</option>${vOpts}</select></div>
+        <div class="form-row">
+          <div class="form-group"><label>Type *</label><select name="type" class="form-control" required>${tOpts}</select></div>
+          <div class="form-group"><label>Statut</label><select name="statut" class="form-control"><option value="a_venir">À venir</option><option value="urgent">Urgent</option><option value="en_retard">En retard</option><option value="terminee">Terminée</option></select></div>
+        </div>
+        <div class="form-group"><label>Description</label><input type="text" name="label" class="form-control" placeholder="Ex: Vidange + filtre huile"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Date prévue *</label><input type="date" name="prochaineDate" class="form-control" value="${today}" required></div>
+          <div class="form-group"><label>Coût estimé (FCFA)</label><input type="number" name="coutEstime" class="form-control" min="0" placeholder="0"></div>
+        </div>
+        <div class="form-group"><label>Notes</label><textarea name="notes" class="form-control" rows="2" placeholder="Détails supplémentaires..."></textarea></div>
+      </form>`,
+      () => {
+        const fd = new FormData(document.getElementById('form-maint-add'));
+        const vehiculeId = fd.get('vehiculeId');
+        if (!vehiculeId) { Toast.show('Sélectionnez un véhicule', 'error'); return; }
+        const vehicule = Store.findById('vehicules', vehiculeId);
+        if (!vehicule) return;
+
+        const maint = {
+          id: 'MAINT-' + Math.random().toString(36).substr(2,6).toUpperCase(),
+          type: fd.get('type'),
+          label: fd.get('label') || '',
+          statut: fd.get('statut'),
+          prochaineDate: fd.get('prochaineDate'),
+          coutEstime: parseFloat(fd.get('coutEstime')) || 0,
+          notes: fd.get('notes') || '',
+          dateCreation: new Date().toISOString()
+        };
+
+        const maintenances = vehicule.maintenancesPlanifiees || [];
+        maintenances.push(maint);
+        Store.update('vehicules', vehiculeId, { maintenancesPlanifiees: maintenances });
+
+        Modal.close();
+        Toast.show('Maintenance planifiée', 'success');
+        const content = document.getElementById('garage-tab-content');
+        if (content) this._renderMaintenanceTab(content);
+      }
+    );
+  },
+
   // =================== ONGLET REPARATIONS ===================
 
   _renderReparationsTab(container) {
