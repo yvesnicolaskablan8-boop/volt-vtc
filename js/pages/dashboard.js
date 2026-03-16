@@ -405,7 +405,8 @@ const DashboardPage = {
     const periodLabel = isMonthView ? monthLabel : Utils.formatDate(selectedDay);
 
     // =================== PLANNING HEATMAP (semaine) ===================
-    const hmToday = now.toISOString().split('T')[0];
+    // Use local date (not UTC) to avoid timezone issues
+    const hmToday = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const hmSel = new Date(selectedDay);
     const hmDow = hmSel.getDay() || 7; // 1=Lun ... 7=Dim
     const hmMonday = new Date(hmSel);
@@ -415,7 +416,7 @@ const DashboardPage = {
     for (let i = 0; i < 7; i++) {
       const d = new Date(hmMonday);
       d.setDate(hmMonday.getDate() + i);
-      const ds = d.toISOString().split('T')[0];
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       heatmapWeekDays.push({ date: ds, label: dayLabels[i], dayNum: d.getDate(), isToday: ds === hmToday });
     }
     const activeDrivers = chauffeurs.filter(c => c.statut === 'actif').sort((a, b) => (a.prenom || '').localeCompare(b.prenom || ''));
@@ -771,35 +772,31 @@ const DashboardPage = {
           .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
           .d-g3 { grid-template-columns:1fr !important; }
           .d-g21 { grid-template-columns:1fr !important; }
-          .d-hero-ca { flex-direction:column !important; }
-          .d-hero-ca > div:last-child { height:80px !important; }
           .d-hero-kpis { gap:10px !important; }
-          .d-hero-kpis a { min-height:120px !important; font-size:14px; margin-top:0 !important; }
+          .d-hero-kpis a { min-height:110px !important; }
           .d-hero-kpis a div:nth-child(2) { font-size:28px !important; }
         }
         @media(max-width:600px) {
-          .d-g4 { grid-template-columns:1fr !important; }
+          .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
           .d-bg { margin:-16px; padding:12px 12px 24px; }
-          .d-hero-wrap { padding:16px 14px 0 !important; border-radius:14px !important; margin-bottom:12px !important; }
-          .d-hero-ca { flex-direction:column !important; gap:10px !important; }
-          .d-hero-ca > div:first-child { flex-shrink:1 !important; }
+          .d-hero-wrap { padding:14px 14px 0 !important; border-radius:14px !important; margin-bottom:12px !important; }
           .d-hero-ca > div:first-child > div:first-child { font-size:28px !important; letter-spacing:-1px !important; }
-          .d-hero-ca > div:last-child { height:60px !important; }
-          .d-hero-kpis { flex-direction:column !important; gap:10px !important; padding-bottom:16px !important; margin-top:4px !important; }
-          .d-hero-kpis > a { min-height:auto !important; padding:14px 16px !important; margin-top:0 !important; border-radius:14px !important; }
-          .d-hero-kpis > a > div:nth-child(2) { font-size:24px !important; margin:6px 0 8px !important; }
+          .d-hero-ca > div:last-child { height:70px !important; }
+          .d-hero-kpis { gap:8px !important; padding-bottom:16px !important; }
+          .d-hero-kpis > a { min-height:100px !important; padding:12px 14px !important; border-radius:14px !important; }
+          .d-hero-kpis > a > div:nth-child(2) { font-size:22px !important; margin:6px 0 8px !important; }
+          .d-hero-kpis > a > div:last-child { flex-wrap:wrap; }
+          .d-hero-kpis > a > div:last-child span:last-child { display:none; }
           .d-hm-grid { grid-template-columns:36px repeat(7,1fr) !important; gap:2px !important; }
           .d-hm-driver { font-size:10px !important; }
           .d-hm-driver span:last-child { display:none; }
           .d-hm-avatar { width:22px !important; height:22px !important; font-size:8px !important; }
           .d-hm-cell { height:24px !important; border-radius:5px !important; font-size:9px !important; }
           .d-hm-head { font-size:10px !important; }
-          .d-header-row { flex-direction:column !important; align-items:flex-start !important; gap:10px !important; }
-          .d-header-row > div:first-child > div:last-child { font-size:22px !important; }
-          .d-header-controls { flex-wrap:wrap; gap:6px !important; width:100%; }
-          .d-header-controls input[type="text"] { width:100% !important; }
+          .d-header-row { flex-wrap:wrap !important; gap:10px !important; }
+          .d-header-controls { flex-wrap:wrap; gap:6px !important; }
           .d-card { padding:14px !important; border-radius:14px !important; }
-          .d-val { font-size:22px !important; }
+          .d-val { font-size:20px !important; }
           .d-grid { gap:10px !important; }
         }
       </style>
