@@ -747,7 +747,7 @@ const RapportsPage = {
 
     return {
       title: 'Analyse de rentabilite',
-      headers: ['Vehicule', 'Energie', 'Type acq.', 'Prix achat (FCFA)', 'CA genere (FCFA)', 'Couts maint. (FCFA)', 'Assurance/an (FCFA)', 'Profit estime (FCFA)', 'ROI (%)'],
+      headers: ['Vehicule', 'Energie', 'Type acq.', 'Prix achat (FCFA)', 'CA genere (FCFA)', 'Couts maint. (FCFA)', 'Assurance/an (FCFA)', 'Profit estime (FCFA)', 'RSI (%)'],
       rows: vehicules.map(v => {
         const vCourses = courses.filter(c => c.vehiculeId === v.id);
         const revenue = versements.filter(vs => vs.vehiculeId === v.id && vs.statut !== 'supprime').reduce((s, vs) => s + vs.montantVerse, 0);

@@ -209,7 +209,7 @@ const RentabilitePage = {
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;">ROI global</div>
+            <div class="d-lbl" style="margin:0;">RSI global</div>
           </div>
           <div class="d-val" style="color:#6366f1;">${d.fleetROI.toFixed(1)}%</div>
         </div>
@@ -225,7 +225,7 @@ const RentabilitePage = {
           <div>
             <div style="margin-bottom:var(--space-md);"><span class="d-tag yellow"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:10px"></iconify-icon> ${d.evCount} véhicules électriques</span></div>
             <div style="display:flex;flex-direction:column;gap:8px;font-size:var(--font-size-sm);">
-              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">ROI moyen</span><strong style="color:#f59e0b">${d.avgEVROI.toFixed(1)}%</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">RSI moyen</span><strong style="color:#f59e0b">${d.avgEVROI.toFixed(1)}%</strong></div>
               <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût énergie moyen</span><strong>${Utils.formatCurrency(d.avgEVEnergy)}</strong></div>
               <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Maintenance moyenne</span><strong>${Utils.formatCurrency(d.avgEVMaintenance)}</strong></div>
               <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût moyen/km</span><strong>${d.avgEVCoutKm} FCFA/km</strong></div>
@@ -234,7 +234,7 @@ const RentabilitePage = {
           <div>
             <div style="margin-bottom:var(--space-md);"><span class="d-tag purple"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:10px"></iconify-icon> ${d.thermalCount} véhicules thermiques</span></div>
             <div style="display:flex;flex-direction:column;gap:8px;font-size:var(--font-size-sm);">
-              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">ROI moyen</span><strong>${d.avgThermalROI.toFixed(1)}%</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">RSI moyen</span><strong>${d.avgThermalROI.toFixed(1)}%</strong></div>
               <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût énergie moyen</span><strong>${Utils.formatCurrency(d.avgThermalEnergy)}</strong></div>
               <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Maintenance moyenne</span><strong>${Utils.formatCurrency(d.avgThermalMaintenance)}</strong></div>
               <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût moyen/km</span><strong>${d.avgThermalCoutKm} FCFA/km</strong></div>
@@ -256,7 +256,7 @@ const RentabilitePage = {
             <div class="d-lbl" style="margin:0;">Leasing (${d.leasingCount} véhicules)</div>
           </div>
           <div class="d-val" style="color:#6366f1;">${d.avgLeasingROI.toFixed(1)}%</div>
-          <div class="d-sub">ROI moyen — trésorerie préservée, charges déductibles</div>
+          <div class="d-sub">RSI moyen — trésorerie préservée, charges déductibles</div>
         </div>
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
@@ -264,7 +264,7 @@ const RentabilitePage = {
             <div class="d-lbl" style="margin:0;">Cash (${d.cashCount} véhicules)</div>
           </div>
           <div class="d-val" style="color:#10b981;">${d.avgCashROI.toFixed(1)}%</div>
-          <div class="d-sub">ROI moyen — pas de mensualités, coût total inférieur</div>
+          <div class="d-sub">RSI moyen — pas de mensualités, coût total inférieur</div>
         </div>
       </div>
 
@@ -580,7 +580,7 @@ const RentabilitePage = {
         { label: 'Revenu (comm.)', render: (a) => Utils.formatCurrency(a.totalRevenue), value: (a) => a.totalRevenue },
         { label: 'Coût total', render: (a) => Utils.formatCurrency(a.totalCost), value: (a) => a.totalCost },
         { label: 'Profit/mois', render: (a) => `<span class="${a.monthlyProfit >= 0 ? 'text-success' : 'text-danger'}">${Utils.formatCurrency(a.monthlyProfit)}</span>`, value: (a) => a.monthlyProfit },
-        { label: 'ROI', render: (a) => `<span class="${a.roi >= 0 ? 'text-success' : 'text-danger'}">${a.roi.toFixed(1)}%</span>`, value: (a) => a.roi },
+        { label: 'RSI', render: (a) => `<span class="${a.roi >= 0 ? 'text-success' : 'text-danger'}">${a.roi.toFixed(1)}%</span>`, value: (a) => a.roi },
         { label: 'Valeur résiduelle', render: (a) => Utils.formatCurrency(a.bookValue), value: (a) => a.bookValue }
       ],
       data: d.analysis,
