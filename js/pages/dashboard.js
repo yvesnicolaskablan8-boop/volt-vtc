@@ -1198,7 +1198,7 @@ const DashboardPage = {
   _loadCharts(d) {
     this._charts = [];
 
-    // ======= Hero CA chart (SellCraft style — thick gray bars + thin line + permanent % pill) =======
+    // ======= Hero CA chart — modern gradient bars + smooth line + permanent % pill =======
     const heroCtx = document.getElementById('chart-hero-ca');
     if (heroCtx && d.monthlyRevenue && d.monthlyRevenue.length > 0) {
       const heroMonths = d.monthlyRevenue.slice(-12);
@@ -1210,75 +1210,112 @@ const DashboardPage = {
       const prevVal = heroData.length >= 2 ? heroData[heroData.length - 2] : 0;
       const lastPct = prevVal > 0 ? ((lastVal - prevVal) / prevVal * 100) : 0;
       const pctLabel = `${lastPct >= 0 ? '+' : ''}${Math.round(lastPct * 10) / 10}%`;
+      const pctPositive = lastPct >= 0;
 
-      // Create hatched/striped pattern (visible gray diagonal stripes)
-      const ctx2d = heroCtx.getContext('2d');
-      const patternCanvas = document.createElement('canvas');
-      patternCanvas.width = 8; patternCanvas.height = 8;
-      const pCtx = patternCanvas.getContext('2d');
-      // Fill with light gray base
-      pCtx.fillStyle = 'rgba(0,0,0,.07)';
-      pCtx.fillRect(0, 0, 8, 8);
-      // Draw diagonal stripes
-      pCtx.strokeStyle = 'rgba(0,0,0,.06)';
-      pCtx.lineWidth = 2;
-      pCtx.beginPath(); pCtx.moveTo(0, 8); pCtx.lineTo(8, 0); pCtx.stroke();
-      pCtx.beginPath(); pCtx.moveTo(-2, 2); pCtx.lineTo(2, -2); pCtx.stroke();
-      pCtx.beginPath(); pCtx.moveTo(6, 10); pCtx.lineTo(10, 6); pCtx.stroke();
-      const stripePattern = ctx2d.createPattern(patternCanvas, 'repeat');
-
-      // Custom plugin: draw permanent pill tooltip on last point
-      const permanentTooltipPlugin = {
-        id: 'permanentTooltip',
+      // Custom plugin: permanent pill tooltip + gradient fill under line
+      const heroPlugins = {
+        id: 'heroCustom',
         afterDraw(chart) {
+          const ctx = chart.ctx;
           const meta = chart.getDatasetMeta(1); // line dataset
           if (!meta || !meta.data.length) return;
-          const lastPoint = meta.data[meta.data.length - 1];
-          if (!lastPoint) return;
-          const cx = chart.ctx;
+
+          // --- Gradient fill under the line ---
+          const points = meta.data;
+          const yAxis = chart.scales.y;
+          const bottom = yAxis.bottom;
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 1; i < points.length; i++) {
+            const xc = (points[i - 1].x + points[i].x) / 2;
+            const yc = (points[i - 1].y + points[i].y) / 2;
+            ctx.quadraticCurveTo(points[i - 1].x, points[i - 1].y, xc, yc);
+          }
+          ctx.quadraticCurveTo(points[points.length - 2].x, points[points.length - 2].y, points[points.length - 1].x, points[points.length - 1].y);
+          ctx.lineTo(points[points.length - 1].x, bottom);
+          ctx.lineTo(points[0].x, bottom);
+          ctx.closePath();
+          const grad = ctx.createLinearGradient(0, chart.scales.y.top, 0, bottom);
+          grad.addColorStop(0, 'rgba(99, 102, 241, 0.12)');
+          grad.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
+          ctx.fillStyle = grad;
+          ctx.fill();
+          ctx.restore();
+
+          // --- Permanent pill on last point ---
+          const lastPoint = points[points.length - 1];
           const x = lastPoint.x;
           const y = lastPoint.y;
-
-          // Draw pill background
           const text = pctLabel;
-          cx.save();
-          cx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
-          const tw = cx.measureText(text).width;
-          const pw = tw + 16;
-          const ph = 24;
-          const px = x - pw / 2;
-          const py = y - ph - 12;
+          ctx.save();
+          ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+          const tw = ctx.measureText(text).width;
+          const pw = tw + 18;
+          const ph = 26;
+          const px = Math.min(x - pw / 2, chart.width - pw - 5);
+          const py = y - ph - 14;
 
-          // Rounded rect (pill)
+          // Shadow
+          ctx.shadowColor = 'rgba(0,0,0,.15)';
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetY = 2;
+
+          // Pill shape
           const r = ph / 2;
-          cx.beginPath();
-          cx.moveTo(px + r, py);
-          cx.lineTo(px + pw - r, py);
-          cx.arcTo(px + pw, py, px + pw, py + r, r);
-          cx.arcTo(px + pw, py + ph, px + pw - r, py + ph, r);
-          cx.lineTo(px + r, py + ph);
-          cx.arcTo(px, py + ph, px, py + r, r);
-          cx.arcTo(px, py, px + r, py, r);
-          cx.closePath();
-          cx.fillStyle = '#111827';
-          cx.fill();
+          ctx.beginPath();
+          ctx.moveTo(px + r, py);
+          ctx.lineTo(px + pw - r, py);
+          ctx.arcTo(px + pw, py, px + pw, py + r, r);
+          ctx.arcTo(px + pw, py + ph, px + pw - r, py + ph, r);
+          ctx.lineTo(px + r, py + ph);
+          ctx.arcTo(px, py + ph, px, py + r, r);
+          ctx.arcTo(px, py, px + r, py, r);
+          ctx.closePath();
+          ctx.fillStyle = '#111827';
+          ctx.fill();
+          ctx.shadowColor = 'transparent';
 
-          // Small triangle/caret pointing down
-          cx.beginPath();
-          cx.moveTo(x - 5, py + ph);
-          cx.lineTo(x + 5, py + ph);
-          cx.lineTo(x, py + ph + 6);
-          cx.closePath();
-          cx.fill();
+          // Caret
+          const cx2 = px + pw / 2;
+          ctx.beginPath();
+          ctx.moveTo(cx2 - 5, py + ph - 0.5);
+          ctx.lineTo(cx2 + 5, py + ph - 0.5);
+          ctx.lineTo(cx2, py + ph + 6);
+          ctx.closePath();
+          ctx.fillStyle = '#111827';
+          ctx.fill();
 
           // Text
-          cx.fillStyle = '#fff';
-          cx.textAlign = 'center';
-          cx.textBaseline = 'middle';
-          cx.fillText(text, px + pw / 2, py + ph / 2);
-          cx.restore();
+          ctx.fillStyle = '#fff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(text, px + pw / 2, py + ph / 2 + 0.5);
+          ctx.restore();
+
+          // --- Glow dot on last point ---
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x, y, 7, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(99, 102, 241, 0.2)';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#6366f1';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fillStyle = '#fff';
+          ctx.fill();
+          ctx.restore();
         }
       };
+
+      // Gradient for bars
+      const ctx2d = heroCtx.getContext('2d');
+      const barGrad = ctx2d.createLinearGradient(0, 0, 0, 140);
+      barGrad.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
+      barGrad.addColorStop(1, 'rgba(99, 102, 241, 0.04)');
 
       this._charts.push(new Chart(heroCtx, {
         type: 'bar',
@@ -1289,60 +1326,61 @@ const DashboardPage = {
               type: 'bar',
               label: 'CA',
               data: heroData,
-              backgroundColor: stripePattern || 'rgba(0,0,0,.1)',
-              borderRadius: 3,
+              backgroundColor: barGrad,
+              hoverBackgroundColor: 'rgba(99, 102, 241, 0.35)',
+              borderRadius: 6,
               borderSkipped: false,
-              barPercentage: 0.82,
-              categoryPercentage: 0.88,
+              barPercentage: 0.7,
+              categoryPercentage: 0.85,
               order: 2
             },
             {
               type: 'line',
               label: 'Tendance',
               data: heroData,
-              borderColor: '#374151',
-              borderWidth: 1.5,
-              pointBackgroundColor: '#fff',
-              pointBorderColor: '#374151',
-              pointBorderWidth: 2,
-              pointRadius: (ctx) => ctx.dataIndex === heroData.length - 1 ? 5 : 0,
-              pointHoverRadius: 5,
-              tension: 0,
+              borderColor: '#6366f1',
+              borderWidth: 2.5,
+              pointBackgroundColor: 'transparent',
+              pointBorderColor: 'transparent',
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#fff',
+              pointHoverBorderColor: '#6366f1',
+              pointHoverBorderWidth: 3,
+              tension: 0.4,
               fill: false,
               order: 1
             }
           ]
         },
-        plugins: [permanentTooltipPlugin],
+        plugins: [heroPlugins],
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: { padding: { top: 40, right: 10 } },
+          layout: { padding: { top: 44, right: 12, left: 4 } },
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { display: false },
             tooltip: {
               enabled: true,
               backgroundColor: '#111827',
-              titleFont: { size: 0 },
-              bodyFont: { size: 12, weight: '700' },
-              padding: { top: 6, bottom: 6, left: 12, right: 12 },
-              cornerRadius: 16,
+              titleFont: { size: 11, weight: '600' },
+              titleColor: 'rgba(255,255,255,.6)',
+              bodyFont: { size: 13, weight: '700' },
+              padding: { top: 8, bottom: 8, left: 14, right: 14 },
+              cornerRadius: 12,
               caretSize: 6,
               displayColors: false,
               callbacks: {
-                title: () => '',
+                title: (items) => items[0] ? heroLabels[items[0].dataIndex] : '',
                 label: (ctx) => {
-                  if (ctx.datasetIndex === 0) {
-                    return Utils.formatCurrency(ctx.raw);
-                  }
-                  // Show % change vs previous month
+                  if (ctx.datasetIndex === 0) return Utils.formatCurrency(ctx.raw);
                   if (ctx.datasetIndex === 1 && ctx.dataIndex > 0) {
                     const prev = heroData[ctx.dataIndex - 1];
                     const cur = heroData[ctx.dataIndex];
                     if (prev > 0) {
                       const pct = ((cur - prev) / prev * 100);
-                      return `${pct >= 0 ? '+' : ''}${Math.round(pct * 10) / 10}%`;
+                      return `${pct >= 0 ? '↑' : '↓'} ${Math.abs(Math.round(pct * 10) / 10)}%`;
                     }
                   }
                   return '';
