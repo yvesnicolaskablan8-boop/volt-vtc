@@ -83,6 +83,12 @@ const TachesPage = {
         <button class="tache-tab ${this._activeTab === 'urgentes' ? 'active' : ''}" data-tab="urgentes" style="color:#ef4444;">
           <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon> Urgentes (${urgentes.length})
         </button>` : ''}
+        ${this._isAdmin() ? (() => {
+          const recurrentes = taches.filter(t => t.recurrenceActif && t.recurrence && t.recurrence !== 'aucune');
+          return `<button class="tache-tab ${this._activeTab === 'recurrentes' ? 'active' : ''}" data-tab="recurrentes" style="color:#6366f1;">
+            <iconify-icon icon="solar:restart-bold-duotone"></iconify-icon> Recurrentes (${recurrentes.length})
+          </button>`;
+        })() : ''}
       </div>
 
       <div id="tache-tab-content"></div>
@@ -126,6 +132,8 @@ const TachesPage = {
       taches = taches.filter(t => t.statut === 'terminee' || t.statut === 'annulee');
     } else if (tab === 'urgentes') {
       taches = taches.filter(t => t.priorite === 'urgente' && t.statut !== 'terminee' && t.statut !== 'annulee');
+    } else if (tab === 'recurrentes') {
+      taches = taches.filter(t => t.recurrenceActif && t.recurrence && t.recurrence !== 'aucune');
     }
 
     // Sort: urgentes first, then by echeance
@@ -158,8 +166,15 @@ const TachesPage = {
       columns: [
         { label: 'Tache', key: 'titre', primary: true, render: (t) => {
           const isLate = t.dateEcheance && t.dateEcheance < new Date().toISOString().split('T')[0] && t.statut !== 'terminee' && t.statut !== 'annulee';
+          const recLabels = { quotidien: 'Quotidien', hebdomadaire: 'Hebdo', mensuel: 'Mensuel' };
+          const isRec = t.recurrenceActif && t.recurrence && t.recurrence !== 'aucune';
+          const isInstance = !!t.recurrenceParentId;
           return `<div>
-            <div style="font-weight:600;">${t.titre}</div>
+            <div style="font-weight:600;display:flex;align-items:center;gap:6px;">
+              ${t.titre}
+              ${isRec ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(99,102,241,.12);color:#6366f1;"><iconify-icon icon="solar:restart-bold-duotone" style="font-size:12px;"></iconify-icon>${recLabels[t.recurrence] || ''}</span>` : ''}
+              ${isInstance ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(34,197,94,.12);color:#22c55e;"><iconify-icon icon="solar:copy-bold-duotone" style="font-size:12px;"></iconify-icon>Auto</span>` : ''}
+            </div>
             ${t.description ? `<div style="font-size:11px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.description}</div>` : ''}
             ${isLate ? '<span style="font-size:10px;color:#ef4444;font-weight:600;">En retard</span>' : ''}
           </div>`;
@@ -188,6 +203,7 @@ const TachesPage = {
             ${t.statut === 'en_cours' ? `<button class="btn btn-sm btn-success" onclick="TachesPage._changeStatut('${t.id}', 'terminee')" title="Tache effectuee"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button>` : ''}
             <button class="btn btn-sm btn-secondary" onclick="TachesPage._viewTache('${t.id}')" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
             ${adm ? `<button class="btn btn-sm btn-secondary" onclick="TachesPage._editTache('${t.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>` : ''}
+            ${adm && t.recurrenceActif ? `<button class="btn btn-sm btn-secondary" onclick="TachesPage._toggleRecurrence('${t.id}')" title="Arreter la recurrence" style="color:#f59e0b;"><iconify-icon icon="solar:stop-bold-duotone"></iconify-icon></button>` : ''}
             ${adm ? `<button class="btn btn-sm btn-danger" onclick="TachesPage._deleteTache('${t.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>` : ''}
           </div>`;
         }}
@@ -214,6 +230,9 @@ const TachesPage = {
         const users = Store.get('users') || [];
         const assignedUser = users.find(u => u.id === values.assigneA);
 
+        // Recuperer les valeurs de recurrence
+        const recData = this._getRecurrenceValues(body);
+
         Store.add('taches', {
           id: Utils.generateId('TCH'),
           ...values,
@@ -222,14 +241,16 @@ const TachesPage = {
           creePar: session.userId || '',
           creeParNom: session.nom || session.login || '',
           dateCreation: new Date().toISOString(),
-          dateModification: new Date().toISOString()
+          dateModification: new Date().toISOString(),
+          ...recData
         });
 
         Modal.close();
-        Toast.success('Tache creee avec succes');
+        Toast.success(recData.recurrenceActif ? 'Tache recurrente creee avec succes' : 'Tache creee avec succes');
         this.render();
       }
     );
+    this._bindRecurrenceUI();
   },
 
   _editTache(id) {
@@ -249,11 +270,15 @@ const TachesPage = {
         const users = Store.get('users') || [];
         const assignedUser = users.find(u => u.id === values.assigneA);
 
+        // Recuperer les valeurs de recurrence (sauf si instance generee)
+        const recData = !tache.recurrenceParentId ? this._getRecurrenceValues(body) : {};
+
         Store.update('taches', id, {
           ...values,
           assigneANom: assignedUser ? (assignedUser.nom || assignedUser.login) : '',
           dateModification: new Date().toISOString(),
-          dateTerminaison: (values.statut === 'terminee' && !tache.dateTerminaison) ? new Date().toISOString() : tache.dateTerminaison
+          dateTerminaison: (values.statut === 'terminee' && !tache.dateTerminaison) ? new Date().toISOString() : tache.dateTerminaison,
+          ...recData
         });
 
         Modal.close();
@@ -261,6 +286,7 @@ const TachesPage = {
         this.render();
       }
     );
+    this._bindRecurrenceUI(tache);
   },
 
   _viewTache(id) {
@@ -287,6 +313,38 @@ const TachesPage = {
           <div><span class="text-muted">Creee par</span><br><strong>${tache.creeParNom || '—'}</strong></div>
           ${tache.description ? `<div style="grid-column:1/-1;"><span class="text-muted">Description</span><br><div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-top:4px;">${tache.description}</div></div>` : ''}
           ${tache.commentaire ? `<div style="grid-column:1/-1;"><span class="text-muted">Commentaire</span><br><div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-top:4px;">${tache.commentaire}</div></div>` : ''}
+          ${(() => {
+            const recLabels = { quotidien: 'Tous les jours', hebdomadaire: 'Chaque semaine', mensuel: 'Chaque mois' };
+            const jourLabels = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+            const isRec = tache.recurrenceActif && tache.recurrence && tache.recurrence !== 'aucune';
+            const isInstance = !!tache.recurrenceParentId;
+            if (!isRec && !isInstance) return '';
+            let detail = '';
+            if (isRec) {
+              detail = `<div style="grid-column:1/-1;padding:10px;background:rgba(99,102,241,.08);border-radius:var(--radius-sm);border-left:3px solid #6366f1;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                  <iconify-icon icon="solar:restart-bold-duotone" style="color:#6366f1;font-size:18px;"></iconify-icon>
+                  <strong style="color:#6366f1;">Tache recurrente</strong>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">
+                  Frequence : <strong>${recLabels[tache.recurrence]}</strong>
+                  ${tache.recurrence === 'hebdomadaire' && tache.joursSemaine ? ' — ' + tache.joursSemaine.map(j => jourLabels[j]).join(', ') : ''}
+                  ${tache.recurrence === 'mensuel' && tache.jourMois ? ' — le ' + tache.jourMois + ' du mois' : ''}
+                  ${tache.prochaineExecution ? '<br>Prochaine generation : <strong>' + Utils.formatDate(tache.prochaineExecution) + '</strong>' : ''}
+                </div>
+              </div>`;
+            }
+            if (isInstance) {
+              detail = `<div style="grid-column:1/-1;padding:10px;background:rgba(34,197,94,.08);border-radius:var(--radius-sm);border-left:3px solid #22c55e;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <iconify-icon icon="solar:copy-bold-duotone" style="color:#22c55e;font-size:18px;"></iconify-icon>
+                  <strong style="color:#22c55e;">Generee automatiquement</strong>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">Cette tache a ete creee automatiquement par une tache recurrente.</div>
+              </div>`;
+            }
+            return detail;
+          })()}
           <div><span class="text-muted">Creee le</span><br><strong>${tache.dateCreation ? Utils.formatDate(tache.dateCreation.split('T')[0]) : '—'}</strong></div>
           ${tache.dateTerminaison ? `<div><span class="text-muted">Terminee le</span><br><strong>${Utils.formatDate(tache.dateTerminaison.split('T')[0])}</strong></div>` : ''}
         </div>
@@ -324,6 +382,127 @@ const TachesPage = {
 
   // =================== FORM ===================
 
+  _bindRecurrenceUI(existing) {
+    setTimeout(() => {
+      const sel = document.querySelector('[name="recurrence"]');
+      if (!sel) return;
+      sel.addEventListener('change', () => TachesPage._onRecurrenceChange());
+      // Masquer jourMois par defaut si pas mensuel
+      const val = sel.value;
+      const jourMoisInput = document.querySelector('[name="jourMois"]');
+      const jourMoisContainer = jourMoisInput ? jourMoisInput.closest('.form-group') : null;
+      if (jourMoisContainer) jourMoisContainer.style.display = val === 'mensuel' ? '' : 'none';
+      const joursDiv = document.getElementById('field-joursSemaine');
+      if (joursDiv) {
+        const parent = joursDiv.closest('.form-group');
+        if (parent) parent.style.display = val === 'hebdomadaire' ? '' : 'none';
+      }
+    }, 100);
+  },
+
+  _toggleRecurrence(id) {
+    if (!this._isAdmin()) return;
+    const tache = Store.findById('taches', id);
+    if (!tache) return;
+    const newState = !tache.recurrenceActif;
+    if (!newState && !confirm('Arreter la recurrence de cette tache ? Les taches deja generees seront conservees.')) return;
+    Store.update('taches', id, {
+      recurrenceActif: newState,
+      dateModification: new Date().toISOString()
+    });
+    Toast.success(newState ? 'Recurrence reactivee' : 'Recurrence arretee');
+    this.render();
+  },
+
+  _onRecurrenceChange() {
+    const sel = document.querySelector('[name="recurrence"]');
+    if (!sel) return;
+    const val = sel.value;
+    const joursDiv = document.getElementById('field-joursSemaine');
+    const jourMoisGroup = document.querySelector('[name="jourMois"]');
+    const jourMoisContainer = jourMoisGroup ? jourMoisGroup.closest('.form-group') : null;
+
+    if (joursDiv) {
+      joursDiv.style.display = val === 'hebdomadaire' ? 'flex' : 'none';
+      const parent = joursDiv.closest('.form-group');
+      if (parent) parent.style.display = val === 'hebdomadaire' ? '' : 'none';
+    }
+    if (jourMoisContainer) jourMoisContainer.style.display = val === 'mensuel' ? '' : 'none';
+  },
+
+  _toggleJourSemaine(label, jour) {
+    const cb = label.querySelector('input[type="checkbox"]');
+    cb.checked = !cb.checked;
+    if (cb.checked) {
+      label.style.borderColor = '#6366f1';
+      label.style.background = 'rgba(99,102,241,.12)';
+      label.style.color = '#6366f1';
+    } else {
+      label.style.borderColor = 'var(--border-color)';
+      label.style.background = 'var(--bg-secondary)';
+      label.style.color = 'var(--text-muted)';
+    }
+  },
+
+  _getRecurrenceValues(body) {
+    const recurrence = body.querySelector('[name="recurrence"]');
+    if (!recurrence || recurrence.value === 'aucune') {
+      return { recurrence: 'aucune', recurrenceActif: false, joursSemaine: [], jourMois: null, prochaineExecution: '' };
+    }
+
+    const val = recurrence.value;
+    let joursSemaine = [];
+    let jourMois = null;
+    let prochaineExecution = '';
+
+    if (val === 'hebdomadaire') {
+      const checks = body.querySelectorAll('#field-joursSemaine input[type="checkbox"]:checked');
+      checks.forEach(c => joursSemaine.push(parseInt(c.value)));
+      if (joursSemaine.length === 0) joursSemaine = [1]; // Lundi par defaut
+    }
+
+    if (val === 'mensuel') {
+      const jm = body.querySelector('[name="jourMois"]');
+      jourMois = jm ? parseInt(jm.value) || 1 : 1;
+    }
+
+    // Calculer prochaine execution
+    const today = new Date();
+    if (val === 'quotidien') {
+      const next = new Date(today);
+      next.setDate(next.getDate() + 1);
+      prochaineExecution = next.toISOString().split('T')[0];
+    } else if (val === 'hebdomadaire') {
+      const dow = today.getDay();
+      const sorted = [...joursSemaine].sort((a, b) => a - b);
+      let found = false;
+      for (const j of sorted) {
+        if (j > dow) {
+          const next = new Date(today);
+          next.setDate(next.getDate() + (j - dow));
+          prochaineExecution = next.toISOString().split('T')[0];
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        const next = new Date(today);
+        next.setDate(next.getDate() + (7 - dow + sorted[0]));
+        prochaineExecution = next.toISOString().split('T')[0];
+      }
+    } else if (val === 'mensuel') {
+      const next = new Date(today);
+      if (next.getDate() >= jourMois) {
+        next.setMonth(next.getMonth() + 1);
+      }
+      const maxDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+      next.setDate(Math.min(jourMois, maxDay));
+      prochaineExecution = next.toISOString().split('T')[0];
+    }
+
+    return { recurrence: val, recurrenceActif: true, joursSemaine, jourMois, prochaineExecution };
+  },
+
   _formFields(existing) {
     const users = Store.get('users') || [];
 
@@ -355,6 +534,27 @@ const TachesPage = {
           { value: 'terminee', label: 'Terminee' },
           { value: 'annulee', label: 'Annulee' }
         ]}
+      ] : []),
+      // Recurrence (admin seulement, pas pour les instances generees)
+      ...(this._isAdmin() && !(existing && existing.recurrenceParentId) ? [
+        { type: 'divider' },
+        { type: 'heading', label: 'Recurrence' },
+        { name: 'recurrence', label: 'Repetition', type: 'select', default: existing ? (existing.recurrence || 'aucune') : 'aucune', options: [
+          { value: 'aucune', label: 'Aucune (tache unique)' },
+          { value: 'quotidien', label: 'Tous les jours' },
+          { value: 'hebdomadaire', label: 'Chaque semaine' },
+          { value: 'mensuel', label: 'Chaque mois' }
+        ]},
+        { type: 'html', html: `<div class="form-group"><label class="form-label">Jours de la semaine</label><div id="field-joursSemaine" style="display:${existing && existing.recurrence === 'hebdomadaire' ? 'flex' : 'none'};gap:6px;flex-wrap:wrap;">
+            ${['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'].map((j, i) => {
+              const checked = existing && existing.joursSemaine && existing.joursSemaine.includes(i);
+              return `<label style="display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid ${checked ? '#6366f1' : 'var(--border-color)'};background:${checked ? 'rgba(99,102,241,.12)' : 'var(--bg-secondary)'};color:${checked ? '#6366f1' : 'var(--text-muted)'};transition:all .2s;" onclick="TachesPage._toggleJourSemaine(this,${i})">
+                <input type="checkbox" name="jour_${i}" value="${i}" ${checked ? 'checked' : ''} style="display:none;">
+                ${j}
+              </label>`;
+            }).join('')}
+          </div></div>` },
+        { name: 'jourMois', label: 'Jour du mois', type: 'number', min: 1, max: 31, default: existing ? (existing.jourMois || 1) : 1 }
       ] : [])
     ];
   }

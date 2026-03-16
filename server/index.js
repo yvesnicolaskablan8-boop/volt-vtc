@@ -109,6 +109,10 @@ const startServer = async () => {
     const waveCron = require('./utils/wave-cron');
     waveCron.start();
 
+    // Demarrer le CRON Taches recurrentes (toutes les 30min)
+    const tacheCron = require('./utils/tache-cron');
+    tacheCron.start();
+
   });
 };
 

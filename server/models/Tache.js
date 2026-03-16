@@ -15,7 +15,14 @@ const tacheSchema = new mongoose.Schema({
   dateCreation: { type: String, default: () => new Date().toISOString() },
   dateModification: String,
   dateTerminaison: String,
-  commentaire: String
+  commentaire: String,
+  // Recurrence
+  recurrence: { type: String, default: 'aucune' }, // aucune, quotidien, hebdomadaire, mensuel
+  joursSemaine: [Number], // pour hebdomadaire: 0=Dim,1=Lun,...6=Sam
+  jourMois: Number, // pour mensuel: 1-31
+  recurrenceActif: { type: Boolean, default: false },
+  recurrenceParentId: String, // id de la tache modele (pour les instances generees)
+  prochaineExecution: String // date ISO de la prochaine generation
 }, {
   toJSON: {
     transform(doc, ret) {
@@ -28,5 +35,6 @@ const tacheSchema = new mongoose.Schema({
 
 tacheSchema.index({ assigneA: 1, statut: 1 });
 tacheSchema.index({ dateEcheance: 1 });
+tacheSchema.index({ recurrenceActif: 1, prochaineExecution: 1 });
 
 module.exports = mongoose.model('Tache', tacheSchema);
