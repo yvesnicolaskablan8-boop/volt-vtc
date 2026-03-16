@@ -111,28 +111,6 @@ const VehiculesPage = {
         </div>
       </div>
 
-      <!-- Onglets Flotte / Garage -->
-      <div class="garage-tabs" style="display:flex;gap:0;margin-bottom:var(--space-lg);border-bottom:2px solid var(--border-color);overflow-x:auto;">
-        <button class="garage-tab ${this._activeListTab === 'flotte' ? 'active' : ''}" data-ltab="flotte">
-          <iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Flotte
-        </button>
-        <button class="garage-tab ${this._activeListTab === 'maintenance' ? 'active' : ''}" data-ltab="maintenance">
-          <iconify-icon icon="solar:tuning-2-bold-duotone"></iconify-icon> Maintenance
-        </button>
-        <button class="garage-tab ${this._activeListTab === 'reparations' ? 'active' : ''}" data-ltab="reparations">
-          <iconify-icon icon="solar:wrench-bold-duotone"></iconify-icon> Réparations
-        </button>
-        <button class="garage-tab ${this._activeListTab === 'ct' ? 'active' : ''}" data-ltab="ct">
-          <iconify-icon icon="solar:clipboard-check-bold-duotone"></iconify-icon> CT
-        </button>
-        <button class="garage-tab ${this._activeListTab === 'assurances' ? 'active' : ''}" data-ltab="assurances">
-          <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Assurances
-        </button>
-        <button class="garage-tab ${this._activeListTab === 'tco' ? 'active' : ''}" data-ltab="tco">
-          <iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> TCO
-        </button>
-      </div>
-
       <div id="vehicules-list-tab-content">
         <div class="grid-4" style="margin-bottom:var(--space-lg);">
           <div class="kpi-card"><div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total flotte</div></div>
