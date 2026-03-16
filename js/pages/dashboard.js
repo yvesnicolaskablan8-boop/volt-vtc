@@ -1105,8 +1105,28 @@ const DashboardPage = {
 
     const prioriteColors = { basse: '#3b82f6', normale: '#22c55e', haute: '#f97316', urgente: '#ef4444' };
 
+    // Dynamic color based on task state
+    // Red: urgent tasks or tasks en retard
+    // Orange: haute priorite tasks
+    // Yellow/amber: tasks a faire (normal)
+    // Green: no pending tasks — all good
+    let cardGrad, cardShadow;
+    if (enRetard > 0 || urgentes > 0) {
+      cardGrad = 'linear-gradient(135deg,#ef4444,#f87171)';
+      cardShadow = '0 4px 20px rgba(239,68,68,.35)';
+    } else if (mesTaches.some(t => t.priorite === 'haute')) {
+      cardGrad = 'linear-gradient(135deg,#f97316,#fb923c)';
+      cardShadow = '0 4px 20px rgba(249,115,22,.35)';
+    } else if (mesTaches.length > 0) {
+      cardGrad = 'linear-gradient(135deg,#f59e0b,#fbbf24)';
+      cardShadow = '0 4px 20px rgba(245,158,11,.35)';
+    } else {
+      cardGrad = 'linear-gradient(135deg,#22c55e,#4ade80)';
+      cardShadow = '0 4px 20px rgba(34,197,94,.35)';
+    }
+
     return `
-      <a href="#/taches" class="d-card" style="text-decoration:none;color:inherit;background:linear-gradient(135deg,#f59e0b,#fbbf24);border:none;box-shadow:0 4px 20px rgba(245,158,11,.35);padding:16px 20px;">
+      <a href="#/taches" class="d-card" style="text-decoration:none;color:inherit;background:${cardGrad};border:none;box-shadow:${cardShadow};padding:16px 20px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
           <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(4px);">
             <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>

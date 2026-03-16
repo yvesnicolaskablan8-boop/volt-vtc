@@ -359,11 +359,13 @@ const PlanningPage = {
         }
         .pg-empty {
           width:100%; padding:6px 4px; border-radius:10px; text-align:center;
-          border:1.5px dashed rgba(0,0,0,.08); opacity:0.3; transition:all .2s;
+          border:1.5px dashed var(--border-color); opacity:0.3; transition:all .2s;
         }
         .pg-empty:hover { opacity:1; border-color:#6366f1; background:rgba(99,102,241,.04); }
         .pg-row-even .pg-driver, .pg-row-even .pg-cell { background:rgba(0,0,0,.012); border-radius:10px; }
-        [data-theme="dark"] .pg-row-even .pg-driver, [data-theme="dark"] .pg-row-even .pg-cell { background:rgba(255,255,255,.02); }
+        [data-theme="dark"] .pg-row-even .pg-driver, [data-theme="dark"] .pg-row-even .pg-cell { background:rgba(255,255,255,.03); }
+        [data-theme="dark"] .pg-avatar { border-color:rgba(255,255,255,.15); }
+        [data-theme="dark"] .pg-driver:hover { background:rgba(99,102,241,.1); }
         @media(max-width:768px) {
           .pg-grid { grid-template-columns:120px repeat(7,1fr); gap:2px 4px; }
           .pg-avatar { width:26px; height:26px; font-size:9px; }
@@ -376,7 +378,7 @@ const PlanningPage = {
         }
       </style>
 
-      <div class="card" style="padding:20px;overflow-x:auto;background:rgba(255,255,255,.72);backdrop-filter:blur(20px);border-radius:20px;border:1px solid rgba(255,255,255,.6);box-shadow:0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.04);">
+      <div class="card" style="padding:20px;overflow-x:auto;border-radius:20px;">
         <div class="pg-grid" style="min-width:800px;">
           <!-- Header -->
           <div></div>
@@ -474,36 +476,36 @@ const PlanningPage = {
     const servicePasCommence = Math.max(0, programmesCount - todayPointages.length);
 
     return `
-      <div class="card" style="margin-bottom:var(--space-lg);padding:16px 20px;background:rgba(255,255,255,.72);backdrop-filter:blur(20px);border-radius:16px;border:1px solid rgba(255,255,255,.6);">
+      <div class="card" style="margin-bottom:var(--space-lg);padding:16px 20px;border-radius:16px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <div style="width:34px;height:34px;border-radius:10px;background:rgba(16,185,129,.08);color:#10b981;display:flex;align-items:center;justify-content:center;font-size:15px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(16,185,129,.12);color:#10b981;display:flex;align-items:center;justify-content:center;font-size:15px;">
             <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
           </div>
           <div>
             <div style="font-weight:600;font-size:var(--font-size-sm);color:var(--text-primary);">Service du jour</div>
-            <div style="font-size:11px;color:#9ca3af;">${programmesCount} programme${programmesCount !== 1 ? 's' : ''}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${programmesCount} programme${programmesCount !== 1 ? 's' : ''}</div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
-          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(16,185,129,.06);">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(16,185,129,.1);">
             <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
-            <span style="font-size:11px;color:#6b7280;">En service</span>
-            <strong style="margin-left:auto;font-size:13px;color:#374151;">${serviceEnCours}</strong>
+            <span style="font-size:11px;color:var(--text-muted);">En service</span>
+            <strong style="margin-left:auto;font-size:13px;color:var(--text-primary);">${serviceEnCours}</strong>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(249,115,22,.06);">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(249,115,22,.1);">
             <span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span>
-            <span style="font-size:11px;color:#6b7280;">Pause</span>
-            <strong style="margin-left:auto;font-size:13px;color:#374151;">${serviceEnPause}</strong>
+            <span style="font-size:11px;color:var(--text-muted);">Pause</span>
+            <strong style="margin-left:auto;font-size:13px;color:var(--text-primary);">${serviceEnPause}</strong>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(107,114,128,.06);">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(107,114,128,.1);">
             <span style="width:6px;height:6px;border-radius:50%;background:#6b7280;"></span>
-            <span style="font-size:11px;color:#6b7280;">Termine</span>
-            <strong style="margin-left:auto;font-size:13px;color:#374151;">${serviceTermine}</strong>
+            <span style="font-size:11px;color:var(--text-muted);">Termine</span>
+            <strong style="margin-left:auto;font-size:13px;color:var(--text-primary);">${serviceTermine}</strong>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(209,213,219,.15);">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(209,213,219,.1);">
             <span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span>
-            <span style="font-size:11px;color:#6b7280;">Attente</span>
-            <strong style="margin-left:auto;font-size:13px;color:#374151;">${servicePasCommence}</strong>
+            <span style="font-size:11px;color:var(--text-muted);">Attente</span>
+            <strong style="margin-left:auto;font-size:13px;color:var(--text-primary);">${servicePasCommence}</strong>
           </div>
         </div>
       </div>`;
