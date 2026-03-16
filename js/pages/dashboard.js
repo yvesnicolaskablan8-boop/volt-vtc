@@ -882,7 +882,7 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Row 1: Hero CA + 3 metric cards -->
+      <!-- Row 1: Hero CA + Versements + Dettes + Pertes -->
       <div class="d-grid d-g4" style="grid-template-columns:1.6fr 1fr 1fr 1fr;">
 
         <!-- CA Hero Card -->
@@ -930,40 +930,38 @@ const DashboardPage = {
           </div>
         </a>
 
-        <!-- Objectif -->
-        <div class="d-card">
+        <!-- Dettes (fond orange vif) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:linear-gradient(135deg,#f97316,#fb923c);border:none;box-shadow:0 4px 20px rgba(249,115,22,.25);">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;">
-              <iconify-icon icon="solar:target-bold-duotone"></iconify-icon>
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;">Objectif</div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Dettes</div>
           </div>
-          <div class="d-gauge-wrap" style="margin:4px 0;">
-            ${gauge(d.progressionObjectif, progressColor, 64, 5)}
-            <div class="d-gauge-txt" style="color:${progressColor};font-size:14px;">${d.progressionObjectif}%</div>
+          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalDettes)}</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.65);">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;background:rgba(255,255,255,.15);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
-          <div class="d-sub" style="text-align:center;">${d.joursRestants}j restants</div>
-        </div>
+        </a>
 
-        <!-- Recouvrement -->
-        <div class="d-card">
+        <!-- Pertes (fond rouge) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:linear-gradient(135deg,#ef4444,#f87171);border:none;box-shadow:0 4px 20px rgba(239,68,68,.25);">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;">
-              <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon>
+            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
+              <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;">Recouvrement</div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Pertes</div>
           </div>
-          <div class="d-gauge-wrap" style="margin:4px 0;">
-            ${gauge(d.tauxRecouvrement, recouvrementColor, 64, 5)}
-            <div class="d-gauge-txt" style="color:${recouvrementColor};font-size:14px;">${d.tauxRecouvrement}%</div>
+          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalPertes)}</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.65);">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;background:rgba(255,255,255,.15);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="d-sub" style="text-align:center;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
-        </div>
+        </a>
       </div>
 
-      <!-- Row 2: Chauffeurs + Dettes + Pertes + Flotte -->
+      <!-- Row 2: Chauffeurs + Objectif + Recouvrement + Flotte -->
       <div class="d-grid d-g4" style="grid-template-columns:1.4fr 1fr 1fr 1fr;">
 
         <!-- Chauffeurs with donut -->
@@ -999,35 +997,37 @@ const DashboardPage = {
           </div>
         </a>
 
-        <!-- Dettes (fond orange vif) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:linear-gradient(135deg,#f97316,#fb923c);border:none;box-shadow:0 4px 20px rgba(249,115,22,.25);">
+        <!-- Objectif -->
+        <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
-              <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;">
+              <iconify-icon icon="solar:target-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Dettes</div>
+            <div class="d-lbl" style="margin:0;">Objectif</div>
           </div>
-          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalDettes)}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.65);">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;background:rgba(255,255,255,.15);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
+          <div class="d-gauge-wrap" style="margin:4px 0;">
+            ${gauge(d.progressionObjectif, progressColor, 64, 5)}
+            <div class="d-gauge-txt" style="color:${progressColor};font-size:14px;">${d.progressionObjectif}%</div>
           </div>
-        </a>
+          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
+          <div class="d-sub" style="text-align:center;">${d.joursRestants}j restants</div>
+        </div>
 
-        <!-- Pertes (fond rouge) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:linear-gradient(135deg,#ef4444,#f87171);border:none;box-shadow:0 4px 20px rgba(239,68,68,.25);">
+        <!-- Recouvrement -->
+        <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
-              <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
+            <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;">
+              <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Pertes</div>
+            <div class="d-lbl" style="margin:0;">Recouvrement</div>
           </div>
-          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalPertes)}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.65);">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;background:rgba(255,255,255,.15);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
+          <div class="d-gauge-wrap" style="margin:4px 0;">
+            ${gauge(d.tauxRecouvrement, recouvrementColor, 64, 5)}
+            <div class="d-gauge-txt" style="color:${recouvrementColor};font-size:14px;">${d.tauxRecouvrement}%</div>
           </div>
-        </a>
+          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div class="d-sub" style="text-align:center;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
+        </div>
 
         <!-- Flotte -->
         <a href="#/vehicules" class="d-card" style="text-decoration:none;color:inherit;">
