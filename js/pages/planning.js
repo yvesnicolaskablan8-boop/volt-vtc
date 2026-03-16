@@ -50,17 +50,16 @@ const PlanningPage = {
       </div>
 
       <!-- Navigation & Filtres -->
-      <div class="card" style="margin-bottom:var(--space-lg);padding:var(--space-md);">
+      <div class="card planning-nav-card" style="margin-bottom:var(--space-lg);padding:var(--space-md);">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
           <div style="display:flex;align-items:center;gap:var(--space-sm);">
             <button class="btn btn-sm btn-secondary" id="btn-prev"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
-            <h3 id="planning-period-label" style="margin:0;min-width:220px;text-align:center;font-size:var(--font-size-base);"></h3>
+            <h3 id="planning-period-label" style="margin:0;min-width:180px;text-align:center;font-size:var(--font-size-base);"></h3>
             <button class="btn btn-sm btn-secondary" id="btn-next"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
-            <button class="btn btn-sm btn-secondary" id="btn-today" style="margin-left:var(--space-sm);">Aujourd'hui</button>
           </div>
           <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px 10px;">
-              <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:16px;"></iconify-icon>
+            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px 10px;flex:1;min-width:0;">
+              <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:16px;flex-shrink:0;"></iconify-icon>
               <input type="text" id="filter-planning-search" class="form-control" placeholder="Rechercher un chauffeur..." value="${this._filterSearch}" style="width:200px;font-size:var(--font-size-sm);padding:6px 8px;border:none;background:transparent;font-weight:500;">
             </div>
             <div class="tabs" id="planning-view-tabs" style="margin:0;">

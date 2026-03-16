@@ -352,9 +352,8 @@ const App = {
       let sub = await reg.pushManager.getSubscription();
       if (sub) return; // Deja abonne
 
-      // Demander permission
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') return;
+      // Ne re-souscrire que si la permission est deja accordee (activation via Parametres)
+      if (Notification.permission !== 'granted') return;
 
       // Recuperer la cle VAPID
       const apiBase = Store._apiBase || '/api';

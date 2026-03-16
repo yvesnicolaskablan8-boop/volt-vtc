@@ -1324,6 +1324,17 @@ const ParametresPage = {
                   <span class="toggle-slider"></span>
                 </label>
               </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border-color);">
+                <div>
+                  <div style="font-weight:500;font-size:var(--font-size-sm);"><iconify-icon icon="solar:bell-bold-duotone" style="color:var(--primary);margin-right:4px;"></iconify-icon> Notifications push (taches)</div>
+                  <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Recevoir des alertes meme quand l'app est fermee</div>
+                  <div id="push-status-info" style="font-size:var(--font-size-xs);margin-top:4px;"></div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="pref-push-notifications">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -1357,6 +1368,9 @@ const ParametresPage = {
   },
 
   _bindPreferencesEvents() {
+    // Push notifications — detect current state and handle toggle
+    this._initPushToggle();
+
     // Theme radio buttons — apply immediately via ThemeManager
     document.querySelectorAll('input[name="pref-theme"]').forEach(radio => {
       radio.addEventListener('change', () => {
@@ -1386,6 +1400,142 @@ const ParametresPage = {
       Store.set('settings', settings);
       Toast.success('Préférences sauvegardées');
     });
+  },
+
+  // ========================= PUSH NOTIFICATIONS TOGGLE =========================
+
+  async _initPushToggle() {
+    const toggle = document.getElementById('pref-push-notifications');
+    const statusEl = document.getElementById('push-status-info');
+    if (!toggle || !statusEl) return;
+
+    const session = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+    if (!session || session.role === 'chauffeur') {
+      toggle.parentElement.parentElement.parentElement.style.display = 'none';
+      return;
+    }
+
+    // Check browser support
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      toggle.disabled = true;
+      statusEl.innerHTML = '<span style="color:var(--text-muted);">Non supporte par ce navigateur</span>';
+      return;
+    }
+
+    // Check current permission & subscription state
+    try {
+      const perm = Notification.permission;
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+
+      if (perm === 'granted' && sub) {
+        toggle.checked = true;
+        statusEl.innerHTML = '<span style="color:var(--success);font-weight:500;">Actif — vous recevrez des notifications push</span>';
+      } else if (perm === 'denied') {
+        toggle.disabled = true;
+        statusEl.innerHTML = '<span style="color:var(--danger);">Bloque par le navigateur — autorisez les notifications dans les parametres du navigateur</span>';
+      } else {
+        toggle.checked = false;
+        statusEl.innerHTML = '<span style="color:var(--text-muted);">Desactive — activez pour recevoir des alertes</span>';
+      }
+    } catch (e) {
+      toggle.checked = false;
+      statusEl.innerHTML = '<span style="color:var(--text-muted);">Impossible de verifier l\'etat</span>';
+    }
+
+    // Handle toggle change
+    toggle.addEventListener('change', async () => {
+      if (toggle.checked) {
+        await this._enablePush(toggle, statusEl);
+      } else {
+        await this._disablePush(toggle, statusEl);
+      }
+    });
+  },
+
+  async _enablePush(toggle, statusEl) {
+    try {
+      // Request permission
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        toggle.checked = false;
+        statusEl.innerHTML = '<span style="color:var(--danger);">Permission refusee — autorisez les notifications dans les parametres du navigateur</span>';
+        return;
+      }
+
+      statusEl.innerHTML = '<span style="color:var(--text-muted);">Activation en cours...</span>';
+
+      const reg = await navigator.serviceWorker.ready;
+
+      // Check if already subscribed
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        // Get VAPID key
+        const apiBase = Store._apiBase || '/api';
+        const token = Auth.getToken();
+        const vapidRes = await fetch(apiBase + '/notifications/push/vapid-key', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!vapidRes.ok) throw new Error('Impossible de recuperer la cle VAPID');
+        const { publicKey } = await vapidRes.json();
+        if (!publicKey) throw new Error('Cle VAPID manquante');
+
+        // Subscribe
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: App._urlBase64ToUint8Array(publicKey)
+        });
+
+        // Send to server
+        await fetch(apiBase + '/notifications/push/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ subscription: sub.toJSON() })
+        });
+      }
+
+      statusEl.innerHTML = '<span style="color:var(--success);font-weight:500;">Actif — vous recevrez des notifications push</span>';
+      Toast.success('Notifications push activees');
+    } catch (e) {
+      toggle.checked = false;
+      statusEl.innerHTML = '<span style="color:var(--danger);">Erreur : ' + (e.message || 'echec activation') + '</span>';
+      Toast.error('Impossible d\'activer les notifications : ' + (e.message || 'erreur'));
+    }
+  },
+
+  async _disablePush(toggle, statusEl) {
+    try {
+      statusEl.innerHTML = '<span style="color:var(--text-muted);">Desactivation en cours...</span>';
+
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+
+      if (sub) {
+        // Unsubscribe from browser
+        await sub.unsubscribe();
+
+        // Remove from server
+        const apiBase = Store._apiBase || '/api';
+        const token = Auth.getToken();
+        await fetch(apiBase + '/notifications/push/subscribe', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ endpoint: sub.endpoint })
+        });
+      }
+
+      statusEl.innerHTML = '<span style="color:var(--text-muted);">Desactive — activez pour recevoir des alertes</span>';
+      Toast.success('Notifications push desactivees');
+    } catch (e) {
+      toggle.checked = true;
+      statusEl.innerHTML = '<span style="color:var(--danger);">Erreur lors de la desactivation</span>';
+    }
   },
 
   // ========================= ONGLET VERSEMENTS (DEADLINE + PENALITES) =========================
