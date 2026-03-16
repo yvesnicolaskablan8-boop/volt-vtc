@@ -655,17 +655,56 @@ const DashboardPage = {
         [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(99,102,241,.15); border-color:rgba(99,102,241,.2); }
 
         .d-card.hero {
-          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-          border: none;
+          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 35%, #a855f7 65%, #c084fc 100%);
+          background-size: 200% 200%;
+          animation: heroGradient 8s ease infinite;
+          border: 1px solid rgba(255,255,255,.18);
           color: #fff;
-          box-shadow: 0 4px 24px rgba(99,102,241,.25);
+          box-shadow: 0 4px 24px rgba(99,102,241,.3), 0 0 60px rgba(139,92,246,.15), inset 0 1px 0 rgba(255,255,255,.15);
+          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+          position: relative;
+          overflow: hidden;
         }
-        .d-card.hero:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(99,102,241,.35); }
+        @keyframes heroGradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .d-card.hero:hover { transform:translateY(-3px); box-shadow:0 12px 48px rgba(99,102,241,.4), 0 0 80px rgba(139,92,246,.2), inset 0 1px 0 rgba(255,255,255,.2); }
+        .d-card.hero::before {
+          content:''; position:absolute; top:-50%; left:-30%; width:260px; height:260px;
+          background:radial-gradient(circle, rgba(255,255,255,.1) 0%, transparent 60%);
+          pointer-events:none; animation: heroBubble1 12s ease-in-out infinite;
+        }
         .d-card.hero::after {
-          content:''; position:absolute; top:-40%; right:-20%; width:200px; height:200px;
-          background:radial-gradient(circle, rgba(255,255,255,.12) 0%, transparent 70%);
-          pointer-events:none;
+          content:''; position:absolute; bottom:-40%; right:-20%; width:200px; height:200px;
+          background:radial-gradient(circle, rgba(255,255,255,.08) 0%, transparent 65%);
+          pointer-events:none; animation: heroBubble2 10s ease-in-out infinite reverse;
         }
+        @keyframes heroBubble1 {
+          0%,100% { transform:translate(0,0) scale(1); }
+          50% { transform:translate(30px,20px) scale(1.15); }
+        }
+        @keyframes heroBubble2 {
+          0%,100% { transform:translate(0,0) scale(1); }
+          50% { transform:translate(-20px,-15px) scale(1.1); }
+        }
+        .hero-glass-overlay {
+          position:absolute; top:0; left:0; right:0; bottom:0;
+          background: linear-gradient(180deg, rgba(255,255,255,.06) 0%, transparent 50%, rgba(0,0,0,.08) 100%);
+          pointer-events:none; z-index:0;
+        }
+        .hero-shimmer {
+          position:absolute; top:0; left:-100%; width:60%; height:100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+          pointer-events:none; animation: heroShimmer 6s ease-in-out infinite;
+        }
+        @keyframes heroShimmer {
+          0% { left:-100%; }
+          50% { left:150%; }
+          100% { left:150%; }
+        }
+        .hero-content { position:relative; z-index:1; }
 
         .d-icon {
           width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center;
@@ -828,23 +867,32 @@ const DashboardPage = {
 
         <!-- CA Hero Card -->
         <a href="#/versements" class="d-card hero" style="text-decoration:none;color:#fff;grid-row:span 1;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,.65);">Chiffre d'affaires</div>
-            <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;">
-              <iconify-icon icon="solar:graph-new-up-bold" style="font-size:18px;color:#fff;"></iconify-icon>
+          <div class="hero-glass-overlay"></div>
+          <div class="hero-shimmer"></div>
+          <div class="hero-content">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1.2px;">Chiffre d'affaires</div>
+                <div class="d-val hero" style="margin-top:8px;">${Utils.formatCurrency(d.caThisMonth)}</div>
+              </div>
+              <div style="width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;">
+                <iconify-icon icon="solar:graph-new-up-bold" style="font-size:20px;color:#fff;"></iconify-icon>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+              <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:${d.caTrend >= 0 ? 'rgba(52,211,153,.2)' : 'rgba(248,113,113,.2)'};backdrop-filter:blur(6px);border:1px solid ${d.caTrend >= 0 ? 'rgba(52,211,153,.25)' : 'rgba(248,113,113,.25)'};font-size:11px;font-weight:700;color:#fff;">
+                <iconify-icon icon="${d.caTrend >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}" style="font-size:10px;"></iconify-icon>
+                ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
+              </span>
+              <span style="font-size:11px;color:rgba(255,255,255,.45);font-weight:500;">vs période préc.</span>
+            </div>
+            <div style="margin-top:14px;height:60px;position:relative;">
+              <canvas id="hero-ca-chart" style="width:100%;height:60px;"></canvas>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;">
+              ${(d.forecastChartData || []).map(m => `<span style="font-size:9px;color:rgba(255,255,255,.35);font-weight:500;">${m.label}</span>`).join('')}
             </div>
           </div>
-          <div style="margin-top:12px;">
-            <div class="d-val hero">${Utils.formatCurrency(d.caThisMonth)}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
-            <span class="d-tag white">
-              <iconify-icon icon="${d.caTrend >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}" style="font-size:10px;"></iconify-icon>
-              ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
-            </span>
-            <span style="font-size:11px;color:rgba(255,255,255,.5);">vs période préc.</span>
-          </div>
-          <div style="margin-top:14px;">${sparkline(last6Rev, 'rgba(255,255,255,.45)', 140, 36)}</div>
         </a>
 
         <!-- Versements -->
@@ -1174,7 +1222,100 @@ const DashboardPage = {
   _loadCharts(d) {
     this._charts = [];
 
-    // (Forecast chart supprimé — redondant)
+    // === Hero CA mini chart (Chart.js interactif) ===
+    const heroCanvas = document.getElementById('hero-ca-chart');
+    if (heroCanvas && typeof Chart !== 'undefined' && d.forecastChartData && d.forecastChartData.length > 1) {
+      const ctx = heroCanvas.getContext('2d');
+      heroCanvas.height = 60;
+
+      // Gradient fill
+      const gradient = ctx.createLinearGradient(0, 0, 0, 60);
+      gradient.addColorStop(0, 'rgba(255,255,255,.25)');
+      gradient.addColorStop(0.5, 'rgba(255,255,255,.08)');
+      gradient.addColorStop(1, 'rgba(255,255,255,0)');
+
+      const labels = d.forecastChartData.map(m => m.label);
+      const values = d.forecastChartData.map(m => m.value);
+      const isForecast = d.forecastChartData.map(m => m.type === 'forecast');
+
+      // Point colors: white for actual, dashed for forecast
+      const pointBg = isForecast.map(f => f ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.9)');
+      const pointBorder = isForecast.map(f => f ? 'rgba(255,255,255,.3)' : '#fff');
+
+      const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            fill: true,
+            backgroundColor: gradient,
+            borderColor: 'rgba(255,255,255,.7)',
+            borderWidth: 2.5,
+            pointRadius: values.map((_, i) => i === values.length - 1 ? 5 : 3),
+            pointHoverRadius: 7,
+            pointBackgroundColor: pointBg,
+            pointBorderColor: pointBorder,
+            pointBorderWidth: 2,
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2,
+            tension: 0.4,
+            segment: {
+              borderDash: (ctx) => isForecast[ctx.p1DataIndex] ? [5, 4] : undefined,
+              borderColor: (ctx) => isForecast[ctx.p1DataIndex] ? 'rgba(255,255,255,.4)' : undefined
+            }
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 1200,
+            easing: 'easeOutQuart'
+          },
+          layout: { padding: { top: 4, bottom: 0, left: 0, right: 0 } },
+          scales: {
+            x: { display: false },
+            y: { display: false, beginAtZero: true }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(255,255,255,.95)',
+              titleColor: '#374151',
+              bodyColor: '#111827',
+              titleFont: { size: 10, weight: '500' },
+              bodyFont: { size: 13, weight: '700' },
+              padding: { top: 6, bottom: 6, left: 10, right: 10 },
+              cornerRadius: 10,
+              borderColor: 'rgba(99,102,241,.15)',
+              borderWidth: 1,
+              displayColors: false,
+              caretSize: 6,
+              callbacks: {
+                title: (items) => items[0].label,
+                label: (item) => {
+                  const val = item.raw;
+                  const fc = isForecast[item.dataIndex] ? ' (prévision)' : '';
+                  return Utils.formatCurrency(val) + fc;
+                }
+              }
+            }
+          },
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          hover: {
+            mode: 'index',
+            intersect: false
+          }
+        }
+      });
+      this._charts.push(chart);
+    }
   },
 
 
