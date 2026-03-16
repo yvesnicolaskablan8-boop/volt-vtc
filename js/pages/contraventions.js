@@ -274,57 +274,110 @@ const ContraventionsPage = {
     { value: 'autre', label: 'Autre' }
   ],
 
+  _typeIcons: {
+    exces_vitesse: 'solar:speedometer-bold-duotone',
+    stationnement: 'solar:map-point-bold-duotone',
+    feu_rouge: 'solar:traffic-light-bold-duotone',
+    documents: 'solar:document-text-bold-duotone',
+    telephone: 'solar:phone-calling-bold-duotone',
+    autre: 'solar:danger-triangle-bold-duotone'
+  },
+
   _contraLineHtml(idx) {
-    return `<div class="contra-line" data-idx="${idx}" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;">
-      ${idx > 0 ? `<button type="button" onclick="this.closest('.contra-line').remove()" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;"><iconify-icon icon="solar:close-circle-bold"></iconify-icon></button>` : ''}
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">Contravention ${idx + 1}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Type *</label>
-          <select name="type_${idx}" required style="font-size:13px;">
+    const colors = ['#ef4444', '#f97316', '#8b5cf6', '#3b82f6', '#06b6d4', '#22c55e'];
+    const c = colors[idx % colors.length];
+    return `<div class="contra-line" data-idx="${idx}" style="border-left:3px solid ${c};background:linear-gradient(135deg,${c}08,transparent);border-radius:0 14px 14px 0;padding:16px 16px 16px 20px;margin-bottom:12px;position:relative;transition:all .2s;">
+      ${idx > 0 ? `<button type="button" onclick="this.closest('.contra-line').remove();ContraventionsPage._updateContraCount()" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;" onmouseenter="this.style.background='#ef4444';this.style.color='#fff'" onmouseleave="this.style.background='rgba(239,68,68,.1)';this.style.color='#ef4444'"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>` : ''}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="width:28px;height:28px;border-radius:8px;background:${c};display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;">
+          <iconify-icon icon="solar:document-text-bold"></iconify-icon>
+        </div>
+        <span style="font-size:13px;font-weight:700;color:${c};">Infraction #${idx + 1}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="position:relative;">
+          <label style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Type d'infraction *</label>
+          <select name="type_${idx}" required style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);font-weight:500;appearance:auto;">
             ${this._typeOptions.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
           </select>
         </div>
-        <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Montant (FCFA) *</label>
-          <input type="number" name="montant_${idx}" required min="1" placeholder="0" style="font-size:13px;">
+        <div style="position:relative;">
+          <label style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Montant (FCFA) *</label>
+          <input type="number" name="montant_${idx}" required min="1" placeholder="25 000" style="width:100%;font-size:14px;font-weight:700;padding:10px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;">
         </div>
-        <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Lieu</label>
-          <input type="text" name="lieu_${idx}" placeholder="ex: Boulevard Latrille" style="font-size:13px;">
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Lieu</label>
+          <input type="text" name="lieu_${idx}" placeholder="ex: Boulevard Latrille, Cocody" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;">
         </div>
-        <div class="form-group" style="margin:0;">
-          <label style="font-size:12px;">Description</label>
-          <input type="text" name="description_${idx}" placeholder="D\u00e9tails..." style="font-size:13px;">
+        <div>
+          <label style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Description</label>
+          <input type="text" name="description_${idx}" placeholder="D\u00e9tails de l'infraction..." style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;">
         </div>
       </div>
     </div>`;
   },
 
+  _updateContraCount() {
+    const container = document.getElementById('contra-lines-container');
+    if (!container) return;
+    const count = container.querySelectorAll('.contra-line').length;
+    const badge = document.getElementById('contra-count-badge');
+    if (badge) badge.textContent = count;
+  },
+
   _add(chauffeurs, preselectedChauffeurId) {
     Modal.form(
-      '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#3b82f6;"></iconify-icon> D\u00e9claration de contraventions',
-      `<form id="form-contravention" class="modal-form">
-          <div class="form-group">
-            <label>Chauffeur *</label>
-            <select name="chauffeurId" required>
-              <option value="">S\u00e9lectionner...</option>
-              ${chauffeurs.map(c => `<option value="${c.id}" ${c.id === preselectedChauffeurId ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`).join('')}
-            </select>
+      '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#ef4444;"></iconify-icon> D\u00e9claration de contraventions',
+      `<form id="form-contravention" class="modal-form" style="padding:0;">
+          <!-- En-tete avec icone -->
+          <div style="background:linear-gradient(135deg,#ef4444,#f97316);border-radius:14px;padding:20px;margin-bottom:20px;color:#fff;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size:24px;"></iconify-icon>
+              <span style="font-size:16px;font-weight:800;">Nouvelle d\u00e9claration</span>
+            </div>
+            <div style="font-size:12px;opacity:.8;">Renseignez le chauffeur concern\u00e9 et ajoutez une ou plusieurs infractions</div>
           </div>
-          <div class="form-group">
-            <label>Date *</label>
-            <input type="date" name="date" required value="${new Date().toISOString().split('T')[0]}">
+
+          <!-- Chauffeur + Date sur une ligne -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
+                <iconify-icon icon="solar:user-bold-duotone" style="color:#6366f1;"></iconify-icon> Chauffeur *
+              </label>
+              <select name="chauffeurId" required style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;">
+                <option value="">S\u00e9lectionner un chauffeur...</option>
+                ${chauffeurs.map(c => `<option value="${c.id}" ${c.id === preselectedChauffeurId ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
+                <iconify-icon icon="solar:calendar-bold-duotone" style="color:#f97316;"></iconify-icon> Date *
+              </label>
+              <input type="date" name="date" required value="${new Date().toISOString().split('T')[0]}" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;box-sizing:border-box;">
+            </div>
           </div>
-          <div class="form-group">
-            <label>Commentaire admin</label>
-            <textarea name="commentaire" rows="2" placeholder="Note interne..."></textarea>
+
+          <!-- Note admin (compact) -->
+          <div style="margin-bottom:20px;">
+            <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
+              <iconify-icon icon="solar:chat-round-dots-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Note interne (optionnel)
+            </label>
+            <textarea name="commentaire" rows="2" placeholder="Commentaire pour l'\u00e9quipe..." style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);resize:vertical;box-sizing:border-box;"></textarea>
           </div>
-          <hr style="border:none;border-top:1px solid var(--border-color);margin:16px 0;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Infractions</div>
-            <button type="button" id="btn-add-contra-line" style="display:inline-flex;align-items:center;gap:4px;background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">
-              <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter une infraction
+
+          <!-- Section infractions -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--border-color);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:32px;height:32px;border-radius:10px;background:#ef4444;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;">
+                <iconify-icon icon="solar:list-bold"></iconify-icon>
+              </div>
+              <div>
+                <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Infractions</div>
+                <div style="font-size:11px;color:var(--text-muted);"><span id="contra-count-badge">1</span> infraction(s)</div>
+              </div>
+            </div>
+            <button type="button" id="btn-add-contra-line" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(99,102,241,.3);transition:all .2s;" onmouseenter="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 16px rgba(99,102,241,.4)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(99,102,241,.3)'">
+              <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter
             </button>
           </div>
           <div id="contra-lines-container">
@@ -332,7 +385,7 @@ const ContraventionsPage = {
           </div>
         </form>`,
       () => this._saveNew(),
-      { width: '600px' }
+      { width: '640px' }
     );
 
     // Bind add line button
@@ -343,6 +396,10 @@ const ContraventionsPage = {
           const container = document.getElementById('contra-lines-container');
           const idx = container.querySelectorAll('.contra-line').length;
           container.insertAdjacentHTML('beforeend', ContraventionsPage._contraLineHtml(idx));
+          ContraventionsPage._updateContraCount();
+          // Scroll to new line
+          const newLine = container.lastElementChild;
+          if (newLine) newLine.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
       }
     }, 100);
