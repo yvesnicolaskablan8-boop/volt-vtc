@@ -42,33 +42,31 @@ const PlanningPage = {
   _template() {
     return `
       <div style="max-width:100%;box-sizing:border-box;overflow:hidden;">
-        <div class="page-header" style="flex-wrap:wrap;">
-          <h1 style="font-size:clamp(1rem,4vw,1.5rem);"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning</h1>
-          <div class="page-actions" style="flex-wrap:wrap;gap:6px;">
-            <button class="btn btn-sm btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Absence</button>
-            <button class="btn btn-sm btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Créneau</button>
+        <!-- Header + Navigation fusionnés -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;padding:10px 16px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-lg);max-width:100%;box-sizing:border-box;">
+          <!-- Titre + boutons actions -->
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <h1 style="font-size:clamp(0.95rem,3.5vw,1.25rem);margin:0;display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:calendar-bold-duotone" style="color:#6366f1;"></iconify-icon> Planning</h1>
+            <button class="btn btn-sm btn-primary" id="btn-add-absence" style="padding:4px 10px;font-size:11px;"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Absence</button>
+            <button class="btn btn-sm btn-success" id="btn-add-shift" style="padding:4px 10px;font-size:11px;"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Cr\u00e9neau</button>
           </div>
-        </div>
-
-        <!-- Navigation & Filtres -->
-        <div class="card planning-nav-card" style="margin-bottom:var(--space-lg);padding:var(--space-sm) var(--space-md);overflow:hidden;max-width:100%;box-sizing:border-box;">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
-            <div style="display:flex;align-items:center;gap:6px;min-width:0;">
-              <button class="btn btn-sm btn-secondary" id="btn-prev" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
-              <button class="btn btn-sm btn-secondary" id="btn-today" style="font-size:11px;padding:4px 8px;flex-shrink:0;">Auj.</button>
-              <h3 id="planning-period-label" style="margin:0;text-align:center;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;"></h3>
-              <button class="btn btn-sm btn-secondary" id="btn-next" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
+          <!-- Navigation semaine/mois -->
+          <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+            <button class="btn btn-sm btn-secondary" id="btn-prev" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
+            <button class="btn btn-sm btn-secondary" id="btn-today" style="font-size:11px;padding:4px 8px;flex-shrink:0;">Auj.</button>
+            <h3 id="planning-period-label" style="margin:0;text-align:center;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;"></h3>
+            <button class="btn btn-sm btn-secondary" id="btn-next" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
+          </div>
+          <!-- Recherche + onglets vue -->
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
+            <div style="display:flex;align-items:center;gap:4px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:2px 6px;">
+              <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:13px;flex-shrink:0;"></iconify-icon>
+              <input type="text" id="filter-planning-search" class="form-control" placeholder="Nom..." value="${this._filterSearch}" style="width:80px;font-size:11px;padding:3px 4px;border:none;background:transparent;font-weight:500;min-width:0;">
             </div>
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
-              <div style="display:flex;align-items:center;gap:4px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:2px 6px;">
-                <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:13px;flex-shrink:0;"></iconify-icon>
-                <input type="text" id="filter-planning-search" class="form-control" placeholder="Nom..." value="${this._filterSearch}" style="width:80px;font-size:11px;padding:3px 4px;border:none;background:transparent;font-weight:500;min-width:0;">
-              </div>
-              <div class="tabs" id="planning-view-tabs" style="margin:0;flex-shrink:0;">
-                <div class="tab active" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
-                <div class="tab" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
-                <div class="tab" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
-              </div>
+            <div class="tabs" id="planning-view-tabs" style="margin:0;flex-shrink:0;">
+              <div class="tab active" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
+              <div class="tab" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
+              <div class="tab" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
             </div>
           </div>
         </div>

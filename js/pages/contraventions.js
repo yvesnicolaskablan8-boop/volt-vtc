@@ -265,24 +265,51 @@ const ContraventionsPage = {
     );
   },
 
-  _add(chauffeurs) {
-    const typeOptions = [
-      { value: 'exces_vitesse', label: 'Exc\u00e8s de vitesse' },
-      { value: 'stationnement', label: 'Stationnement' },
-      { value: 'feu_rouge', label: 'Feu rouge' },
-      { value: 'documents', label: 'Documents' },
-      { value: 'telephone', label: 'T\u00e9l\u00e9phone au volant' },
-      { value: 'autre', label: 'Autre' }
-    ];
+  _typeOptions: [
+    { value: 'exces_vitesse', label: 'Exc\u00e8s de vitesse' },
+    { value: 'stationnement', label: 'Stationnement' },
+    { value: 'feu_rouge', label: 'Feu rouge' },
+    { value: 'documents', label: 'Documents' },
+    { value: 'telephone', label: 'T\u00e9l\u00e9phone au volant' },
+    { value: 'autre', label: 'Autre' }
+  ],
 
+  _contraLineHtml(idx) {
+    return `<div class="contra-line" data-idx="${idx}" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;">
+      ${idx > 0 ? `<button type="button" onclick="this.closest('.contra-line').remove()" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;"><iconify-icon icon="solar:close-circle-bold"></iconify-icon></button>` : ''}
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">Contravention ${idx + 1}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Type *</label>
+          <select name="type_${idx}" required style="font-size:13px;">
+            ${this._typeOptions.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Montant (FCFA) *</label>
+          <input type="number" name="montant_${idx}" required min="1" placeholder="0" style="font-size:13px;">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Lieu</label>
+          <input type="text" name="lieu_${idx}" placeholder="ex: Boulevard Latrille" style="font-size:13px;">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label style="font-size:12px;">Description</label>
+          <input type="text" name="description_${idx}" placeholder="D\u00e9tails..." style="font-size:13px;">
+        </div>
+      </div>
+    </div>`;
+  },
+
+  _add(chauffeurs, preselectedChauffeurId) {
     Modal.form(
-      '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#3b82f6;"></iconify-icon> Nouvelle contravention',
+      '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#3b82f6;"></iconify-icon> D\u00e9claration de contraventions',
       `<form id="form-contravention" class="modal-form">
           <div class="form-group">
             <label>Chauffeur *</label>
             <select name="chauffeurId" required>
               <option value="">S\u00e9lectionner...</option>
-              ${chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
+              ${chauffeurs.map(c => `<option value="${c.id}" ${c.id === preselectedChauffeurId ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
@@ -290,62 +317,87 @@ const ContraventionsPage = {
             <input type="date" name="date" required value="${new Date().toISOString().split('T')[0]}">
           </div>
           <div class="form-group">
-            <label>Type *</label>
-            <select name="type" required>
-              ${typeOptions.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Lieu</label>
-            <input type="text" name="lieu" placeholder="ex: Boulevard Latrille, Cocody">
-          </div>
-          <div class="form-group">
-            <label>Montant (FCFA) *</label>
-            <input type="number" name="montant" required min="1" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label>Description</label>
-            <textarea name="description" rows="2" placeholder="D\u00e9tails de l'infraction..."></textarea>
-          </div>
-          <div class="form-group">
             <label>Commentaire admin</label>
             <textarea name="commentaire" rows="2" placeholder="Note interne..."></textarea>
           </div>
+          <hr style="border:none;border-top:1px solid var(--border-color);margin:16px 0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Infractions</div>
+            <button type="button" id="btn-add-contra-line" style="display:inline-flex;align-items:center;gap:4px;background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">
+              <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter une infraction
+            </button>
+          </div>
+          <div id="contra-lines-container">
+            ${this._contraLineHtml(0)}
+          </div>
         </form>`,
-      () => this._saveNew()
+      () => this._saveNew(),
+      { width: '600px' }
     );
+
+    // Bind add line button
+    setTimeout(() => {
+      const btn = document.getElementById('btn-add-contra-line');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const container = document.getElementById('contra-lines-container');
+          const idx = container.querySelectorAll('.contra-line').length;
+          container.insertAdjacentHTML('beforeend', ContraventionsPage._contraLineHtml(idx));
+        });
+      }
+    }, 100);
   },
 
   async _saveNew() {
     const form = document.getElementById('form-contravention');
     const fd = new FormData(form);
     const chauffeurId = fd.get('chauffeurId');
-    const montant = parseInt(fd.get('montant'));
+    const date = fd.get('date');
+    const commentaire = fd.get('commentaire') || '';
 
-    if (!chauffeurId || !montant) {
-      Toast.show('Chauffeur et montant requis', 'error');
+    if (!chauffeurId) {
+      Toast.show('Chauffeur requis', 'error');
       return;
     }
 
     const chauffeur = (Store.get('chauffeurs') || []).find(c => c.id === chauffeurId);
+    const lines = document.querySelectorAll('#contra-lines-container .contra-line');
+    let count = 0;
 
-    const contravention = {
-      id: 'CTR-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
-      chauffeurId,
-      vehiculeId: chauffeur ? chauffeur.vehiculeAssigne : '',
-      date: fd.get('date'),
-      type: fd.get('type'),
-      lieu: fd.get('lieu') || '',
-      montant,
-      description: fd.get('description') || '',
-      commentaire: fd.get('commentaire') || '',
-      statut: 'impayee',
-      dateCreation: new Date().toISOString()
-    };
+    lines.forEach((line, i) => {
+      const idx = line.dataset.idx;
+      const type = fd.get(`type_${idx}`);
+      const montant = parseInt(fd.get(`montant_${idx}`));
+      const lieu = fd.get(`lieu_${idx}`) || '';
+      const description = fd.get(`description_${idx}`) || '';
 
-    Store.add('contraventions', contravention);
+      if (!type || !montant || montant <= 0) return;
+
+      const contravention = {
+        id: 'CTR-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+        chauffeurId,
+        vehiculeId: chauffeur ? chauffeur.vehiculeAssigne : '',
+        date,
+        type,
+        lieu,
+        montant,
+        description,
+        commentaire,
+        statut: 'impayee',
+        dateCreation: new Date().toISOString()
+      };
+
+      Store.add('contraventions', contravention);
+      count++;
+    });
+
+    if (count === 0) {
+      Toast.show('Au moins une infraction avec montant requis', 'error');
+      return;
+    }
+
     Modal.close();
-    Toast.show('Contravention ajout\u00e9e', 'success');
+    Toast.show(`${count} contravention${count > 1 ? 's' : ''} ajout\u00e9e${count > 1 ? 's' : ''}`, 'success');
     this.render();
   },
 

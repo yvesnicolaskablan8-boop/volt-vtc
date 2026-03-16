@@ -171,6 +171,7 @@ const ChauffeursPage = {
         <div class="page-actions">
           <button class="btn btn-primary" onclick="ChauffeursPage._showBilanMensuel('${c.id}')"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Bilan mensuel</button>
           <button class="btn btn-secondary" onclick="ChauffeursPage._showHistorique('${c.id}')"><iconify-icon icon="solar:history-bold-duotone"></iconify-icon> Historique</button>
+          <button class="btn btn-secondary" onclick="ChauffeursPage._showContraventions('${c.id}')" style="color:#ef4444;border-color:rgba(239,68,68,.3);"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> Contraventions${(() => { const nb = (Store.get('contraventions') || []).filter(x => x.chauffeurId === c.id && x.statut === 'impayee').length; return nb > 0 ? ` <span style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;">${nb}</span>` : ''; })()}</button>
           <button class="btn btn-secondary" onclick="ChauffeursPage._edit('${c.id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>
           <button class="btn btn-danger" onclick="ChauffeursPage._delete('${c.id}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer</button>
         </div>
@@ -1822,6 +1823,66 @@ const ChauffeursPage = {
         this.renderDetail(chauffeurId);
       }
     );
+  },
+
+  // =================== CONTRAVENTIONS ===================
+
+  _showContraventions(chauffeurId) {
+    const ch = Store.findById('chauffeurs', chauffeurId);
+    if (!ch) return;
+    const contraventions = (Store.get('contraventions') || []).filter(c => c.chauffeurId === chauffeurId);
+    const typeLabels = { exces_vitesse: 'Exc\u00e8s de vitesse', stationnement: 'Stationnement', feu_rouge: 'Feu rouge', documents: 'Documents', telephone: 'T\u00e9l\u00e9phone', autre: 'Autre' };
+    const statutColors = { impayee: '#ef4444', payee: '#22c55e', contestee: '#f59e0b' };
+    const statutLabels = { impayee: 'Impay\u00e9e', payee: 'Pay\u00e9e', contestee: 'Contest\u00e9e' };
+
+    const totalImpaye = contraventions.filter(c => c.statut === 'impayee').reduce((s, c) => s + (c.montant || 0), 0);
+
+    const listHtml = contraventions.length === 0
+      ? '<div style="text-align:center;padding:30px;color:var(--text-muted);"><iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:40px;color:#22c55e;display:block;margin-bottom:8px;"></iconify-icon>Aucune contravention</div>'
+      : contraventions.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(c => {
+        const sc = statutColors[c.statut] || '#6b7280';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:var(--bg-secondary);border:1px solid var(--border-color);margin-bottom:8px;">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="font-weight:700;font-size:13px;color:var(--text-primary);">${typeLabels[c.type] || c.type}</span>
+              <span style="background:${sc};color:#fff;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;">${statutLabels[c.statut] || c.statut}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);">${Utils.formatDate(c.date)}${c.lieu ? ' \u2014 ' + c.lieu : ''}</div>
+          </div>
+          <div style="font-size:16px;font-weight:800;color:${sc};">${Utils.formatCurrency(c.montant || 0)}</div>
+        </div>`;
+      }).join('');
+
+    Modal.show(
+      `<iconify-icon icon="solar:document-text-bold-duotone" style="color:#ef4444;"></iconify-icon> Contraventions \u2014 ${ch.prenom} ${ch.nom}`,
+      `<div style="margin-bottom:16px;display:flex;gap:12px;">
+        <div style="flex:1;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:14px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;color:#ef4444;">${Utils.formatCurrency(totalImpaye)}</div>
+          <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Total impay\u00e9</div>
+        </div>
+        <div style="flex:1;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:14px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;color:#6366f1;">${contraventions.length}</div>
+          <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Total contraventions</div>
+        </div>
+      </div>
+      <div style="max-height:350px;overflow-y:auto;">${listHtml}</div>
+      <div style="margin-top:16px;text-align:center;">
+        <button class="btn btn-primary" id="btn-add-contra-from-fiche" style="background:#ef4444;border-color:#ef4444;">
+          <iconify-icon icon="solar:add-circle-bold"></iconify-icon> D\u00e9clarer des contraventions
+        </button>
+      </div>`
+    );
+
+    setTimeout(() => {
+      const btn = document.getElementById('btn-add-contra-from-fiche');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          Modal.close();
+          const chauffeurs = Store.get('chauffeurs') || [];
+          ContraventionsPage._add(chauffeurs, chauffeurId);
+        });
+      }
+    }, 100);
   },
 
   // =================== BILAN MENSUEL ===================
