@@ -19,6 +19,8 @@ const ComptabilitePage = {
   _todayCommission: null,
 
   render() {
+    // Réconciliation auto : importer les opérations existantes sans écriture comptable
+    this._reconcileAll();
     const container = document.getElementById('page-content');
     container.innerHTML = this._template();
     this._bindEvents();
@@ -99,6 +101,127 @@ const ComptabilitePage = {
       case 'depenses': ct.innerHTML = this._renderDepenses(); this._bindDepensesEvents(); break;
       case 'budget': ct.innerHTML = this._renderBudget(); this._loadBudgetCharts(); break;
       case 'categories': ct.innerHTML = this._renderCategories(); break;
+    }
+  },
+
+  // ========================= RECONCILIATION AUTO =========================
+
+  _reconcileAll() {
+    const existing = Store.get('comptabilite') || [];
+    const refs = new Set(existing.map(o => o.reference).filter(Boolean));
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const _ch = (id) => { const c = chauffeurs.find(x => x.id === id); return c ? `${c.prenom} ${c.nom}` : (id || ''); };
+    let added = 0;
+
+    // 1. Versements validés → encaissements
+    const versements = Store.get('versements') || [];
+    versements.forEach(v => {
+      if (refs.has(v.id)) return;
+      if (v.statut === 'valide' && v.montantVerse > 0) {
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'recette',
+          date: v.date || v.dateService || v.dateCreation?.slice(0,10) || new Date().toISOString().slice(0,10),
+          categorie: 'commissions_courses',
+          description: `Versement ${_ch(v.chauffeurId)} — ${Utils.formatCurrency(v.montantVerse)}`,
+          montant: v.montantVerse,
+          modePaiement: v.moyenPaiement || 'especes',
+          reference: v.id,
+          notes: 'Réconciliation automatique — versement existant',
+          dateCreation: new Date().toISOString()
+        });
+        refs.add(v.id);
+        added++;
+      }
+      // Pertes sur versements
+      if (v.traitementManquant === 'perte' && v.manquant > 0 && !refs.has(v.id + '-perte')) {
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'depense',
+          date: v.date || v.dateService || v.dateCreation?.slice(0,10) || new Date().toISOString().slice(0,10),
+          categorie: 'autres_depenses',
+          description: `Perte versement ${_ch(v.chauffeurId)} — manquant ${Utils.formatCurrency(v.manquant)}`,
+          montant: v.manquant,
+          modePaiement: 'especes',
+          reference: v.id + '-perte',
+          notes: 'Réconciliation automatique — perte versement',
+          dateCreation: new Date().toISOString()
+        });
+        refs.add(v.id + '-perte');
+        added++;
+      }
+    });
+
+    // 2. Réparations terminées → décaissements
+    const reparations = Store.get('reparations') || [];
+    reparations.forEach(r => {
+      if (refs.has(r.id)) return;
+      const montant = r.coutReel || r.coutEstime || 0;
+      if (montant > 0) {
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'depense',
+          date: r.dateFin || r.dateDebut || r.dateCreation?.slice(0,10) || new Date().toISOString().slice(0,10),
+          categorie: 'maintenance',
+          description: `Réparation ${r.description || r.type || ''} — ${r.vehiculeId || ''}`,
+          montant,
+          modePaiement: 'especes',
+          reference: r.id,
+          notes: 'Réconciliation automatique — réparation garage',
+          dateCreation: new Date().toISOString()
+        });
+        refs.add(r.id);
+        added++;
+      }
+    });
+
+    // 3. Dépenses → décaissements
+    const depenses = Store.get('depenses') || [];
+    const _catMap = { carburant:'carburant', recharge_electrique:'carburant', lavage:'maintenance', peage:'autres_depenses', parking:'autres_depenses', recharge_yango:'recharge_yango', assurance:'assurance', leasing:'leasing', reparation:'maintenance', entretien:'maintenance', perte_versement:'autres_depenses' };
+    depenses.forEach(d => {
+      if (refs.has(d.id)) return;
+      if (d.montant > 0) {
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'depense',
+          date: d.date || d.dateCreation?.slice(0,10) || new Date().toISOString().slice(0,10),
+          categorie: _catMap[d.typeDepense] || 'autres_depenses',
+          description: `${d.typeDepense || 'Dépense'} — ${d.commentaire || d.description || ''}`.slice(0, 120),
+          montant: d.montant,
+          modePaiement: d.moyenPaiement || 'especes',
+          reference: d.id,
+          notes: 'Réconciliation automatique — dépense véhicule',
+          dateCreation: new Date().toISOString()
+        });
+        refs.add(d.id);
+        added++;
+      }
+    });
+
+    // 4. Contraventions payées → décaissements
+    const contraventions = Store.get('contraventions') || [];
+    contraventions.forEach(c => {
+      if (refs.has(c.id)) return;
+      if (c.statut === 'payee' && c.montant > 0) {
+        Store.add('comptabilite', {
+          id: Utils.generateId('OP'),
+          type: 'depense',
+          date: c.datePaiement?.slice(0,10) || c.date || new Date().toISOString().slice(0,10),
+          categorie: 'autres_depenses',
+          description: `Contravention ${_ch(c.chauffeurId)} — ${c.typeInfraction || 'amende'}`,
+          montant: c.montant,
+          modePaiement: 'especes',
+          reference: c.id,
+          notes: 'Réconciliation automatique — contravention payée',
+          dateCreation: new Date().toISOString()
+        });
+        refs.add(c.id);
+        added++;
+      }
+    });
+
+    if (added > 0) {
+      console.log(`[Comptabilité] Réconciliation : ${added} écritures importées`);
     }
   },
 
