@@ -112,11 +112,12 @@ const RentabilitePage = {
       };
     });
 
-    // Total fleet
-    const fleetTotalRevenue = analysis.reduce((s, a) => s + a.totalRevenue, 0);
+    // Total fleet — revenus calculés depuis TOUS les versements (pas juste ceux liés à un véhicule)
+    const fleetTotalRevenue = versements.filter(vs => vs.statut !== 'supprime' && vs.montantVerse > 0).reduce((s, vs) => s + vs.montantVerse, 0);
     const fleetTotalCost = analysis.reduce((s, a) => s + a.totalCost, 0);
     const fleetProfit = fleetTotalRevenue - fleetTotalCost;
     const fleetROI = fleetTotalCost > 0 ? ((fleetTotalRevenue - fleetTotalCost) / fleetTotalCost) * 100 : 0;
+    console.log('[Rentabilité] Versements total:', versements.length, '| Versements avec montant:', versements.filter(vs => vs.statut !== 'supprime' && vs.montantVerse > 0).length, '| Revenue:', fleetTotalRevenue, '| Coûts:', fleetTotalCost);
 
     // Leasing vs Cash comparison
     const leasingVehicles = analysis.filter(a => a.vehicule.typeAcquisition === 'leasing');
@@ -178,13 +179,18 @@ const RentabilitePage = {
       }
     }
 
-    // RSI global — investissement total vs résultat cumulé
+    // RSI global — investissement total (coût d'acquisition complet) vs résultat cumulé
     const investTotal = vehicules.reduce((s, v) => {
-      if (v.typeAcquisition === 'leasing') return s + (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * (v.dureeLeasing || 0));
+      if (v.typeAcquisition === 'leasing') return s + (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * (v.dureeLeasing || 36));
       return s + (v.prixAchat || 0);
     }, 0);
+    // Résultat = revenus réels - coûts opérationnels (hors acquisition)
+    const coutOperationnel = analysis.reduce((s, a) => s + a.maintenanceTotal + a.assuranceTotal + a.energyCost, 0);
+    const depensesTotal = (Store.get('depenses') || []).reduce((s, dep) => s + (dep.montant || 0), 0);
+    const reparationsTotal = (Store.get('reparations') || []).reduce((s, r) => s + (r.coutReel || r.coutEstime || 0), 0);
     const resultatCumule = fleetTotalRevenue - fleetTotalCost;
     const rsiGlobal = investTotal > 0 ? (resultatCumule / investTotal * 100) : 0;
+    console.log('[Rentabilité] investTotal:', investTotal, '| resultatCumule:', resultatCumule, '| rsiGlobal:', rsiGlobal.toFixed(1) + '%');
     // Délai de récupération
     const avgMonthsService = analysis.length > 0 ? analysis.reduce((s, a) => s + a.monthsInService, 0) / analysis.length : 1;
     const resultatMensuelMoyen = avgMonthsService > 0 ? resultatCumule / avgMonthsService : 0;
@@ -309,9 +315,9 @@ const RentabilitePage = {
         <div class="rent-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
             <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
-            <div style="font-size:12px;color:var(--text-muted);font-weight:600;">RSI flotte</div>
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;">RSI</div>
           </div>
-          <div style="font-size:22px;font-weight:900;color:#6366f1;letter-spacing:-.3px;">${d.fleetROI.toFixed(1)}%</div>
+          <div style="font-size:22px;font-weight:900;color:${d.rsiGlobal >= 0 ? '#6366f1' : '#ef4444'};letter-spacing:-.3px;">${d.rsiGlobal.toFixed(1)}%</div>
         </div>
       </div>
 
