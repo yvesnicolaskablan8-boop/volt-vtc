@@ -1054,21 +1054,34 @@ const DashboardPage = {
           ${this._renderMesTaches()}
 
           <!-- Alertes -->
-          <a href="#/alertes" class="d-card" style="text-decoration:none;color:inherit;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <div class="d-icon" style="background:${d.alertesTotal > 0 ? 'rgba(239,68,68,.08)' : 'rgba(16,185,129,.08)'};color:${d.alertesTotal > 0 ? '#ef4444' : '#10b981'};width:34px;height:34px;border-radius:10px;font-size:15px;">
-                  <iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon>
-                </div>
-                <div class="d-lbl" style="margin:0;">Alertes</div>
+          ${(() => {
+            let aGrad, aShadow;
+            if (d.alertesCritiques > 0) {
+              aGrad = 'linear-gradient(135deg,#ef4444,#f87171)';
+              aShadow = '0 4px 20px rgba(239,68,68,.35)';
+            } else if (d.alertesTotal > 0) {
+              aGrad = 'linear-gradient(135deg,#f97316,#fb923c)';
+              aShadow = '0 4px 20px rgba(249,115,22,.35)';
+            } else {
+              aGrad = 'linear-gradient(135deg,#22c55e,#4ade80)';
+              aShadow = '0 4px 20px rgba(34,197,94,.35)';
+            }
+            return `<a href="#/alertes" class="d-card" style="text-decoration:none;color:inherit;background:${aGrad};border:none;box-shadow:${aShadow};padding:16px 20px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:${d.alertesCritiques > 0 ? '12px' : '0'};">
+              <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(4px);">
+                <iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon>
               </div>
-              <span class="d-tag ${d.alertesTotal > 0 ? 'red' : 'green'}">${d.alertesTotal > 0 ? d.alertesTotal + ' alerte' + (d.alertesTotal > 1 ? 's' : '') : 'Tout OK'}</span>
+              <div>
+                <div style="font-weight:700;font-size:var(--font-size-sm);color:#fff;margin:0;">Alertes</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.8);">${d.alertesTotal > 0 ? d.alertesTotal + ' alerte' + (d.alertesTotal > 1 ? 's' : '') : 'Tout est OK'}</div>
+              </div>
             </div>
-            ${d.alertesCritiques > 0 ? `<div style="display:flex;gap:8px;margin-top:10px;">
-              <span class="d-tag red">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>
-              ${d.alertesUrgentes > 0 ? `<span class="d-tag orange">${d.alertesUrgentes} urgent${d.alertesUrgentes > 1 ? 's' : ''}</span>` : ''}
+            ${d.alertesCritiques > 0 || d.alertesUrgentes > 0 ? `<div style="display:flex;gap:8px;">
+              ${d.alertesCritiques > 0 ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,255,255,.2);color:#fff;">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>` : ''}
+              ${d.alertesUrgentes > 0 ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,255,255,.2);color:#fff;">${d.alertesUrgentes} urgent${d.alertesUrgentes > 1 ? 's' : ''}</span>` : ''}
             </div>` : ''}
-          </a>
+          </a>`;
+          })()
       </div>
 
       <!-- Row 3.5: Planning Heatmap -->
