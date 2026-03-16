@@ -65,22 +65,38 @@ app.use('/driver', express.static(path.join(__dirname, '..', 'driver')));
 app.use('/monitor', express.static(path.join(__dirname, '..', 'monitor')));
 
 // Serve frontend static files in production
-const frontendPath = path.join(__dirname, '..');
+// Railway: rootDirectory peut etre "/" (tout le repo) ou "server/" (juste le backend)
+// On detecte automatiquement ou sont les fichiers frontend
+const fs = require('fs');
+const possiblePaths = [
+  path.join(__dirname, '..'),           // Standard: server/ est un sous-dossier
+  __dirname,                             // Cas ou tout est a plat
+  path.join(__dirname, '..', '..'),      // Cas nested
+];
+let frontendPath = possiblePaths.find(p => fs.existsSync(path.join(p, 'index.html'))) || path.join(__dirname, '..');
 console.log('[Server] __dirname:', __dirname);
 console.log('[Server] Frontend path:', frontendPath);
+console.log('[Server] index.html exists:', fs.existsSync(path.join(frontendPath, 'index.html')));
 
 app.use(express.static(frontendPath));
 
 // SPA fallback - serve index.html for non-API routes
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) return;
+  const indexFile = path.join(frontendPath, 'index.html');
   if (req.path.startsWith('/driver')) {
-    return res.sendFile(path.join(frontendPath, 'driver', 'index.html'));
+    const f = path.join(frontendPath, 'driver', 'index.html');
+    return fs.existsSync(f) ? res.sendFile(f) : res.status(404).send('Driver app not found');
   }
   if (req.path.startsWith('/monitor')) {
-    return res.sendFile(path.join(frontendPath, 'monitor', 'index.html'));
+    const f = path.join(frontendPath, 'monitor', 'index.html');
+    return fs.existsSync(f) ? res.sendFile(f) : res.status(404).send('Monitor app not found');
   }
-  res.sendFile(path.join(frontendPath, 'index.html'));
+  if (fs.existsSync(indexFile)) {
+    res.sendFile(indexFile);
+  } else {
+    res.status(503).send('App en cours de mise a jour. Veuillez vider le cache (Railway rootDirectory doit pointer vers la racine du repo, pas server/).');
+  }
 });
 
 // Error handler
