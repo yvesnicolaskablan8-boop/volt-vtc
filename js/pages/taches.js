@@ -6,6 +6,11 @@ const TachesPage = {
   _activeTab: 'tous',
   _table: null,
 
+  _isAdmin() {
+    const s = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+    return s && s.role === 'admin';
+  },
+
   render() {
     const container = document.getElementById('page-content');
     container.innerHTML = this._pageTemplate();
@@ -30,9 +35,9 @@ const TachesPage = {
       <div class="page-header">
         <h1><iconify-icon icon="solar:checklist-bold-duotone" style="color:#6366f1;"></iconify-icon> Gestion des taches</h1>
         <div class="page-actions">
-          <button class="btn btn-primary" onclick="TachesPage._addTache()">
+          ${this._isAdmin() ? `<button class="btn btn-primary" onclick="TachesPage._addTache()">
             <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouvelle tache
-          </button>
+          </button>` : ''}
         </div>
       </div>
 
@@ -176,15 +181,16 @@ const TachesPage = {
           const c = colors[t.statut] || '#6b7280';
           return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${c}1f;color:${c};">${statutLabels[t.statut] || t.statut}</span>`;
         }},
-        { label: '', key: 'actions', render: (t) => `
-          <div style="display:flex;gap:4px;flex-wrap:nowrap;">
+        { label: '', key: 'actions', render: (t) => {
+          const adm = TachesPage._isAdmin();
+          return `<div style="display:flex;gap:4px;flex-wrap:nowrap;">
             ${t.statut === 'a_faire' ? `<button class="btn btn-sm btn-primary" onclick="TachesPage._changeStatut('${t.id}', 'en_cours')" title="Demarrer"><iconify-icon icon="solar:play-bold-duotone"></iconify-icon></button>` : ''}
             ${t.statut === 'en_cours' ? `<button class="btn btn-sm btn-success" onclick="TachesPage._changeStatut('${t.id}', 'terminee')" title="Tache effectuee"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button>` : ''}
             <button class="btn btn-sm btn-secondary" onclick="TachesPage._viewTache('${t.id}')" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
-            <button class="btn btn-sm btn-secondary" onclick="TachesPage._editTache('${t.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
-            <button class="btn btn-sm btn-danger" onclick="TachesPage._deleteTache('${t.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
-          </div>
-        `}
+            ${adm ? `<button class="btn btn-sm btn-secondary" onclick="TachesPage._editTache('${t.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>` : ''}
+            ${adm ? `<button class="btn btn-sm btn-danger" onclick="TachesPage._deleteTache('${t.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>` : ''}
+          </div>`;
+        }}
       ],
       data: taches,
       pageSize: 15
@@ -194,6 +200,7 @@ const TachesPage = {
   // =================== CRUD ===================
 
   _addTache() {
+    if (!this._isAdmin()) { Toast.error('Seul un administrateur peut creer des taches'); return; }
     const fields = this._formFields();
     Modal.form(
       '<iconify-icon icon="solar:checklist-bold-duotone" style="color:#6366f1;"></iconify-icon> Nouvelle tache',
@@ -226,6 +233,7 @@ const TachesPage = {
   },
 
   _editTache(id) {
+    if (!this._isAdmin()) { Toast.error('Seul un administrateur peut modifier les taches'); return; }
     const tache = Store.findById('taches', id);
     if (!tache) return;
 
@@ -284,7 +292,7 @@ const TachesPage = {
         </div>
       `,
       footer: `
-        <button class="btn btn-secondary" onclick="TachesPage._editTache('${id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>
+        ${this._isAdmin() ? `<button class="btn btn-secondary" onclick="TachesPage._editTache('${id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>` : ''}
         ${tache.statut === 'a_faire' ? `<button class="btn btn-primary" onclick="TachesPage._changeStatut('${id}', 'en_cours')"><iconify-icon icon="solar:play-bold-duotone"></iconify-icon> Demarrer</button>` : ''}
         ${tache.statut === 'en_cours' ? `<button class="btn btn-success" onclick="TachesPage._changeStatut('${id}', 'terminee')"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tache effectuee</button>` : ''}
         ${tache.statut === 'a_faire' ? `<button class="btn btn-success" onclick="TachesPage._changeStatut('${id}', 'terminee')"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tache effectuee</button>` : ''}
@@ -307,6 +315,7 @@ const TachesPage = {
   },
 
   _deleteTache(id) {
+    if (!this._isAdmin()) { Toast.error('Seul un administrateur peut supprimer les taches'); return; }
     if (!confirm('Supprimer cette tache ?')) return;
     Store.delete('taches', id);
     Toast.success('Tache supprimee');

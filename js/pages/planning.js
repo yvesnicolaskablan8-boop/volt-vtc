@@ -362,13 +362,14 @@ const PlanningPage = {
         .pg-row-even .pg-driver, .pg-row-even .pg-cell { background:rgba(0,0,0,.012); border-radius:10px; }
         [data-theme="dark"] .pg-row-even .pg-driver, [data-theme="dark"] .pg-row-even .pg-cell { background:rgba(255,255,255,.02); }
         @media(max-width:768px) {
-          .pg-grid { grid-template-columns:100px repeat(7,1fr); gap:2px; }
-          .pg-avatar { width:24px; height:24px; font-size:8px; }
-          .pg-driver-name { font-size:11px; }
+          .pg-grid { grid-template-columns:120px repeat(7,1fr); gap:2px 4px; }
+          .pg-avatar { width:26px; height:26px; font-size:9px; }
+          .pg-driver-name { font-size:12px; }
           .pg-driver-sub { display:none; }
-          .pg-head { font-size:10px; }
-          .pg-head .pg-daynum { font-size:14px; }
-          .pg-shift { font-size:10px; padding:4px 2px; }
+          .pg-head { font-size:11px; }
+          .pg-head .pg-daynum { font-size:16px; }
+          .pg-shift { font-size:11px; padding:5px 3px; }
+          .pg-absence { font-size:10px; padding:5px 3px; }
         }
       </style>
 
