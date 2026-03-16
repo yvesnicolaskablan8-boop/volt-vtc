@@ -970,30 +970,8 @@ const DashboardPage = {
         </a>
       </div>
 
-      <!-- Row 3: Chart (large) + Side panel -->
-      <div class="d-grid d-g21" style="grid-template-columns:1.8fr 1fr;">
-        <div class="d-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;">
-                <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
-              </div>
-              <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:#111827;">Évolution CA</div>
-            </div>
-            <span class="d-tag ${d.tendancePctMois >= 0 ? 'green' : 'red'}">
-              <iconify-icon icon="${d.tendancePctMois >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}" style="font-size:10px;"></iconify-icon>
-              ${d.tendancePctMois >= 0 ? '+' : ''}${d.tendancePctMois}%
-            </span>
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-            <div class="d-chip">Proj. <strong style="color:#6366f1;margin-left:4px;">${Utils.formatCurrency(d.projectionFinMois)}</strong></div>
-            <div class="d-chip">M+1 <strong style="color:#a855f7;margin-left:4px;">${Utils.formatCurrency(d.previsionMoisSuivant)}</strong></div>
-          </div>
-          <div style="height:200px;">
-            <canvas id="chart-forecast"></canvas>
-          </div>
-        </div>
-
+      <!-- Row 3: Service + Alertes -->
+      <div class="d-grid" style="grid-template-columns:1fr 1fr;">
         <div style="display:flex;flex-direction:column;gap:16px;">
           <!-- Service du jour -->
           <a href="#/planning" class="d-card" style="text-decoration:none;color:inherit;flex:1;">
@@ -1186,89 +1164,7 @@ const DashboardPage = {
   _loadCharts(d) {
     this._charts = [];
 
-    // ======= Forecast chart (line + projected bar) =======
-    const forecastCtx = document.getElementById('chart-forecast');
-    if (forecastCtx && d.forecastChartData && d.forecastChartData.length > 0) {
-      const labels = d.forecastChartData.map(f => f.label);
-      const actualData = d.forecastChartData.map(f => f.type === 'actual' ? f.value : null);
-      const forecastData = d.forecastChartData.map((f, i) => {
-        // Connect forecast point to last actual point
-        if (f.type === 'forecast') return f.value;
-        if (i === d.forecastChartData.length - 2) return f.value; // bridge point
-        return null;
-      });
-
-      this._charts.push(new Chart(forecastCtx, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            {
-              type: 'line',
-              label: 'CA réel',
-              data: actualData,
-              borderColor: '#6366f1',
-              backgroundColor: 'rgba(99, 102, 241, 0.08)',
-              fill: true,
-              borderWidth: 2.5,
-              pointBackgroundColor: '#6366f1',
-              pointBorderColor: Utils.chartBorderColor(),
-              pointBorderWidth: 2,
-              pointRadius: 4,
-              pointHoverRadius: 7,
-              spanGaps: false,
-              order: 1
-            },
-            {
-              type: 'line',
-              label: 'Prévision',
-              data: forecastData,
-              borderColor: '#8b5cf6',
-              backgroundColor: 'rgba(139, 92, 246, 0.08)',
-              fill: true,
-              borderWidth: 2.5,
-              borderDash: [6, 4],
-              pointBackgroundColor: '#8b5cf6',
-              pointBorderColor: Utils.chartBorderColor(),
-              pointBorderWidth: 2,
-              pointRadius: (ctx) => {
-                return ctx.dataIndex === d.forecastChartData.length - 1 ? 6 : 0;
-              },
-              pointHoverRadius: 8,
-              spanGaps: true,
-              order: 2
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: {
-              position: 'top',
-              align: 'end',
-              labels: { boxWidth: 12, padding: 10, font: { size: 11 } }
-            },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => {
-                  const val = Utils.formatCurrency(ctx.raw);
-                  const isPrev = ctx.dataset.label === 'Prévision';
-                  return `${ctx.dataset.label} : ${val}${isPrev ? ' (estimé)' : ''}`;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { callback: (val) => Utils.formatCurrency(val) }
-            }
-          }
-        }
-      }));
-    }
+    // (Forecast chart supprimé — redondant)
   },
 
 
