@@ -370,22 +370,26 @@ const TachesPage = {
 
       <!-- KPIs -->
       <div class="d-grid d-g4" style="margin-bottom:var(--space-lg);">
-        ${[
-          { val: taches.length, label: 'Total taches', icon: 'solar:checklist-bold-duotone', bg1: '#6366f1', bg2: '#818cf8', shadow: 'rgba(99,102,241,.25)' },
-          { val: aFaire.length, label: 'A faire', icon: 'solar:hourglass-bold-duotone', bg1: '#f97316', bg2: '#fb923c', shadow: 'rgba(249,115,22,.25)' },
-          { val: enCours.length, label: 'En cours', icon: 'solar:play-circle-bold-duotone', bg1: '#3b82f6', bg2: '#60a5fa', shadow: 'rgba(59,130,246,.25)' },
-          { val: terminees.length, label: 'Terminees', icon: 'solar:check-circle-bold-duotone', bg1: '#10b981', bg2: '#34d399', shadow: 'rgba(16,185,129,.25)' }
-        ].map(k => `
-          <div class="d-card" style="color:#fff;background:linear-gradient(135deg,${k.bg1},${k.bg2});border:none;box-shadow:0 4px 20px ${k.shadow};">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-              <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
-                <iconify-icon icon="${k.icon}"></iconify-icon>
-              </div>
-              <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">${k.label}</div>
-            </div>
-            <div class="d-val xl" style="color:#fff;">${k.val}</div>
-          </div>
-        `).join('')}
+        <div class="kpi-card">
+          <div class="kpi-icon"><iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${taches.length}</div>
+          <div class="kpi-label">Total taches</div>
+        </div>
+        <div class="kpi-card orange">
+          <div class="kpi-icon"><iconify-icon icon="solar:hourglass-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${aFaire.length}</div>
+          <div class="kpi-label">A faire</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-icon"><iconify-icon icon="solar:play-circle-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${enCours.length}</div>
+          <div class="kpi-label">En cours</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-icon"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
+          <div class="kpi-value">${terminees.length}</div>
+          <div class="kpi-label">Terminees</div>
+        </div>
       </div>
 
       <!-- Tabs -->
@@ -420,19 +424,22 @@ const TachesPage = {
         .tache-tab { background:none;border:none;padding:10px 20px;cursor:pointer;font-size:var(--font-size-sm);font-weight:600;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;display:flex;align-items:center;gap:6px;white-space:nowrap;font-family:inherit; }
         .tache-tab:hover { color:var(--text-primary);background:var(--bg-secondary);border-radius:var(--radius-md) var(--radius-md) 0 0; }
         .tache-tab.active { color:#6366f1;border-bottom-color:#6366f1; }
-        .tache-priorite { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600; }
-        .tache-priorite.basse { background:rgba(59,130,246,0.12);color:#3b82f6; }
-        .tache-priorite.normale { background:rgba(34,197,94,0.12);color:#22c55e; }
-        .tache-priorite.haute { background:rgba(249,115,22,0.12);color:#f97316; }
-        .tache-priorite.urgente { background:rgba(239,68,68,0.12);color:#ef4444; }
-        .tache-type { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(99,102,241,0.12);color:#6366f1; }
+        .tache-priorite { display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700; }
+        .tache-priorite.basse { background:rgba(59,130,246,0.15);color:#60a5fa; }
+        .tache-priorite.normale { background:rgba(34,197,94,0.15);color:#4ade80; }
+        .tache-priorite.haute { background:#f97316;color:#fff; }
+        .tache-priorite.urgente { background:#ef4444;color:#fff; }
+        .tache-type { display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;background:#6366f1;color:#fff; }
 
-        /* Admin table row highlights */
-        .tache-row-done td { opacity:.55; }
-        .tache-row-afaire td { background:rgba(249,115,22,.04); }
-        .tache-row-encours td { background:rgba(59,130,246,.06); }
-        .tache-row-afaire td:first-child { box-shadow:inset 3px 0 0 #f59e0b; }
-        .tache-row-encours td:first-child { box-shadow:inset 3px 0 0 #3b82f6; }
+        /* Admin table row highlights — couleurs vives pour differencier */
+        .tache-row-done td { opacity:.45; }
+        .tache-row-afaire td { background:rgba(249,115,22,.15); }
+        .tache-row-encours td { background:rgba(59,130,246,.18); }
+        .tache-row-urgente td { background:rgba(239,68,68,.18); }
+        .tache-row-afaire td:first-child { box-shadow:inset 4px 0 0 #f97316; }
+        .tache-row-encours td:first-child { box-shadow:inset 4px 0 0 #3b82f6; }
+        .tache-row-urgente td:first-child { box-shadow:inset 4px 0 0 #ef4444; }
+        .tache-row-done td:first-child { box-shadow:inset 4px 0 0 #22c55e; }
       </style>
     `;
   },
@@ -524,7 +531,7 @@ const TachesPage = {
         { label: 'Statut', key: 'statut', render: (t) => {
           const colors = { a_faire: '#f59e0b', en_cours: '#3b82f6', terminee: '#22c55e', annulee: '#6b7280' };
           const c = colors[t.statut] || '#6b7280';
-          return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${c}1f;color:${c};">${statutLabels[t.statut] || t.statut}</span>`;
+          return `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;background:${c};color:#fff;">${statutLabels[t.statut] || t.statut}</span>`;
         }},
         { label: '', key: 'actions', render: (t) => {
           return `<div style="display:flex;gap:4px;flex-wrap:nowrap;">
@@ -539,8 +546,9 @@ const TachesPage = {
       pageSize: 15,
       rowClass: (t) => {
         if (t.statut === 'terminee' || t.statut === 'annulee') return 'tache-row-done';
-        if (t.statut === 'a_faire') return 'tache-row-afaire';
+        if (t.priorite === 'urgente' && t.statut !== 'terminee' && t.statut !== 'annulee') return 'tache-row-urgente';
         if (t.statut === 'en_cours') return 'tache-row-encours';
+        if (t.statut === 'a_faire') return 'tache-row-afaire';
         return '';
       }
     });
