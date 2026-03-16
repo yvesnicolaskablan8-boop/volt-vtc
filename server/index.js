@@ -65,18 +65,49 @@ app.use('/driver', express.static(path.join(__dirname, '..', 'driver')));
 app.use('/monitor', express.static(path.join(__dirname, '..', 'monitor')));
 
 // Serve frontend static files in production
-app.use(express.static(path.join(__dirname, '..')));
+// Detecter le chemin correct : sur Railway rootDirectory=server/ donc les fichiers frontend sont dans ..
+// En local, __dirname/.. contient les fichiers frontend
+const frontendPath = path.join(__dirname, '..');
+const fs = require('fs');
+
+// Verifier si les fichiers frontend existent au chemin attendu
+const indexPath = path.join(frontendPath, 'index.html');
+if (fs.existsSync(indexPath)) {
+  console.log('[Server] Frontend found at:', frontendPath);
+  app.use(express.static(frontendPath));
+} else {
+  // Fallback: chercher dans le dossier courant (si tout est copie a plat)
+  const altPath = __dirname;
+  if (fs.existsSync(path.join(altPath, 'index.html'))) {
+    console.log('[Server] Frontend found at (alt):', altPath);
+    app.use(express.static(altPath));
+  } else {
+    console.warn('[Server] WARNING: Frontend files NOT found at', frontendPath, 'or', altPath);
+    console.warn('[Server] __dirname =', __dirname);
+    console.warn('[Server] Files in parent:', fs.existsSync(frontendPath) ? fs.readdirSync(frontendPath).slice(0, 20) : 'DIR NOT EXISTS');
+  }
+}
+
+// Serve driver PWA — deja monte plus haut, mais SPA fallback ci-dessous
 
 // SPA fallback - serve index.html for non-API routes
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) return;
   if (req.path.startsWith('/driver')) {
-    return res.sendFile(path.join(__dirname, '..', 'driver', 'index.html'));
+    const driverIndex = path.join(frontendPath, 'driver', 'index.html');
+    if (fs.existsSync(driverIndex)) return res.sendFile(driverIndex);
+    return res.status(404).json({ error: 'Driver app not found' });
   }
   if (req.path.startsWith('/monitor')) {
-    return res.sendFile(path.join(__dirname, '..', 'monitor', 'index.html'));
+    const monitorIndex = path.join(frontendPath, 'monitor', 'index.html');
+    if (fs.existsSync(monitorIndex)) return res.sendFile(monitorIndex);
+    return res.status(404).json({ error: 'Monitor app not found' });
   }
-  res.sendFile(path.join(__dirname, '..', 'index.html'));
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({ error: 'Frontend not found', __dirname, frontendPath, indexExists: false });
+  }
 });
 
 // Error handler
