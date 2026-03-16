@@ -312,7 +312,7 @@ const PlanningPage = {
 
       <!-- Grille planning moderne -->
       <style>
-        .pg-grid { display:grid; grid-template-columns:160px repeat(7,1fr); gap:3px 4px; align-items:center; }
+        .pg-grid { display:grid; grid-template-columns:200px repeat(7,minmax(90px,1fr)); gap:3px 6px; align-items:center; }
         .pg-head {
           text-align:center; font-size:11px; font-weight:700; color:#9ca3af; padding:10px 0 8px;
           text-transform:uppercase; letter-spacing:.8px; border-bottom:2px solid transparent;
@@ -327,7 +327,7 @@ const PlanningPage = {
         .pg-head.today .pg-daynum { color:#6366f1; }
         .pg-driver {
           display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--text-primary);
-          white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:6px 4px;
+          padding:6px 4px;
           text-decoration:none; cursor:pointer; border-radius:10px; transition:background .15s;
         }
         .pg-driver:hover { background:rgba(99,102,241,.05); }
@@ -337,8 +337,8 @@ const PlanningPage = {
           box-shadow:0 2px 6px rgba(0,0,0,.15); border:2px solid rgba(255,255,255,.8);
           object-fit:cover;
         }
-        .pg-driver-info { overflow:hidden; }
-        .pg-driver-name { font-size:13px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .pg-driver-info { }
+        .pg-driver-name { font-size:13px; font-weight:600; color:var(--text-primary); }
         .pg-driver-sub { font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .pg-cell {
           min-height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
