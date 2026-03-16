@@ -424,15 +424,17 @@ const DashboardPage = {
       const cells = heatmapWeekDays.map(wd => {
         // Check absence
         const hasAbsence = absences.some(a => a.chauffeurId === c.id && wd.date >= a.dateDebut && wd.date <= a.dateFin);
-        if (hasAbsence) return 'absent';
+        if (hasAbsence) return { status: 'absent', heure: '' };
         // Check if planned
-        const isPlanned = planning.some(p => p.chauffeurId === c.id && p.date === wd.date);
-        if (!isPlanned) return 'repos';
+        const planEntry = planning.find(p => p.chauffeurId === c.id && p.date === wd.date);
+        if (!planEntry) return { status: 'repos', heure: '' };
+        // Extract hour (e.g. "06:00" → "6h")
+        const heure = planEntry.heureDebut ? planEntry.heureDebut.replace(/^0/, '').split(':')[0] + 'h' : '';
         // Planned — check if future
-        if (wd.date >= hmToday) return 'programme';
-        // Past only — check versement (aujourd'hui = programmé, pas en retard)
+        if (wd.date >= hmToday) return { status: 'programme', heure };
+        // Past only — check versement
         const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime'));
-        return hasVersement ? 'verse' : 'en_retard';
+        return { status: hasVersement ? 'verse' : 'en_retard', heure };
       });
       return { id: c.id, prenom: c.prenom, nom: c.nom, initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), cells };
     });
@@ -1174,9 +1176,12 @@ const DashboardPage = {
     drivers.forEach((dr, idx) => {
       const color = avatarColors[idx % avatarColors.length];
       html += `<div class="d-hm-driver"><div class="d-hm-avatar" style="background:${color};">${dr.initials}</div><span>${dr.prenom}</span></div>`;
-      dr.cells.forEach((status, ci) => {
-        const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}`;
-        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="Router.navigate('/chauffeurs/${dr.id}')">${statusIcons[status]}</div>`;
+      dr.cells.forEach((cell, ci) => {
+        const status = typeof cell === 'object' ? cell.status : cell;
+        const heure = typeof cell === 'object' ? cell.heure : '';
+        const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}${heure ? ' (' + heure + ')' : ''}`;
+        const content = heure || statusIcons[status];
+        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="Router.navigate('/chauffeurs/${dr.id}')">${content}</div>`;
       });
     });
     html += '</div>';
