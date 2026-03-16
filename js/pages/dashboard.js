@@ -807,7 +807,7 @@ const DashboardPage = {
       </div>
 
       <!-- Row 1: SellCraft "Total Sales" — single hero card with chart bg + 3 mini KPIs inside -->
-      <div style="background:#fff;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03);position:relative;overflow:hidden;margin-bottom:16px;padding:24px 28px 0;">
+      <div style="background:#fff;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.03);position:relative;overflow:visible;margin-bottom:16px;padding:24px 28px 0;">
 
         <!-- Top: title + 3-dot menu -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -840,7 +840,7 @@ const DashboardPage = {
         <div style="display:flex;gap:14px;margin-top:8px;padding-bottom:24px;position:relative;z-index:3;align-items:flex-end;">
 
           <!-- Versements (vert) — le plus bas -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(220,252,231,.7);border-radius:18px;padding:22px 20px 24px;border:1px solid rgba(187,247,208,.35);box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .15s;min-height:160px;display:flex;flex-direction:column;justify-content:space-between;margin-top:30px;overflow:hidden;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(220,252,231,.7);border-radius:18px;padding:22px 20px 24px;border:1px solid rgba(187,247,208,.35);box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .15s;min-height:160px;display:flex;flex-direction:column;justify-content:space-between;margin-top:30px;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
               <div style="font-size:14px;font-weight:600;color:#374151;">Versements</div>
               <span style="font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
@@ -858,7 +858,7 @@ const DashboardPage = {
           </a>
 
           <!-- Dettes (orange vif) — milieu, légèrement plus haut -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(255,237,213,.7);border-radius:18px;padding:22px 20px 24px;border:1px solid rgba(253,186,116,.35);box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .15s;min-height:160px;display:flex;flex-direction:column;justify-content:space-between;margin-top:10px;overflow:hidden;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(255,237,213,.7);border-radius:18px;padding:22px 20px 24px;border:1px solid rgba(253,186,116,.35);box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .15s;min-height:160px;display:flex;flex-direction:column;justify-content:space-between;margin-top:10px;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
               <div style="font-size:14px;font-weight:600;color:#374151;">Dettes</div>
               <span style="font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
@@ -876,7 +876,7 @@ const DashboardPage = {
           </a>
 
           <!-- Pertes (rouge) — le plus haut, chevauche le graphique -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(254,226,226,.65);border-radius:18px;padding:22px 20px 24px;border:1px solid rgba(252,165,165,.35);box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .15s;min-height:160px;display:flex;flex-direction:column;justify-content:space-between;margin-top:-10px;overflow:hidden;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(254,226,226,.65);border-radius:18px;padding:22px 20px 24px;border:1px solid rgba(252,165,165,.35);box-shadow:0 4px 20px rgba(0,0,0,.06);transition:transform .15s;min-height:160px;display:flex;flex-direction:column;justify-content:space-between;margin-top:-10px;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
               <div style="font-size:14px;font-weight:600;color:#374151;">Pertes</div>
               <span style="font-size:18px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
