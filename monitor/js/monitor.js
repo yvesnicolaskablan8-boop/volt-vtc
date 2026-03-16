@@ -535,13 +535,6 @@
         <div class="section-title">Finances — ${k.dateLabel}</div>
         <div class="kpi-grid">
 
-          <div class="kpi-card green clickable" onclick="window.__kpiDetail('recetteJour')">
-            <div class="kpi-icon"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value">${fmtCurrency(k.recetteJour)}</div>
-            <div class="kpi-label">Recette versee</div>
-            <div class="kpi-sub">${k.nbVersementsJour} versement${k.nbVersementsJour > 1 ? 's' : ''}</div>
-          </div>
-
           <div class="kpi-card blue clickable" onclick="window.__kpiDetail('attendue')">
             <div class="kpi-icon"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon></div>
             <div class="kpi-value">${fmtCurrency(k.recetteAttendue)}</div>
@@ -766,17 +759,6 @@
     if (!k) return;
 
     switch (type) {
-      case 'recetteJour':
-        showMonitorModal(
-          '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:var(--green)"></iconify-icon> Recette versee — ' + k.dateLabel,
-          '<div class="mon-detail-total">Total : <strong>' + fmtCurrency(k.recetteJour) + '</strong></div>' +
-          buildListRows(k.recetteJourDetail,
-            function(i) { return '<strong>' + fmtCurrency(i.montant) + '</strong>'; },
-            function(i) { return i.count + ' versement' + (i.count > 1 ? 's' : ''); }
-          )
-        );
-        break;
-
       case 'attendue':
         showMonitorModal(
           '<iconify-icon icon="solar:target-bold-duotone" style="color:var(--blue)"></iconify-icon> Recette attendue — ' + k.dateLabel,
