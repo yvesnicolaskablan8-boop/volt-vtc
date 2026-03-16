@@ -41,42 +41,44 @@ const PlanningPage = {
 
   _template() {
     return `
-      <div class="page-header" style="flex-wrap:wrap;">
-        <h1><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning Chauffeurs</h1>
-        <div class="page-actions" style="flex-wrap:wrap;">
-          <button class="btn btn-sm btn-secondary" onclick="PlanningPage._showTemplates()"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon> Modèles</button>
-          <button class="btn btn-sm btn-secondary" onclick="PlanningPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
-          <button class="btn btn-sm btn-warning" onclick="PlanningPage._showDepRecurrentes()"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon> Dépenses</button>
-          <button class="btn btn-sm btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Absence</button>
-          <button class="btn btn-sm btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Créneau</button>
-        </div>
-      </div>
-
-      <!-- Navigation & Filtres -->
-      <div class="card planning-nav-card" style="margin-bottom:var(--space-lg);padding:var(--space-sm) var(--space-md);overflow:visible;">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <button class="btn btn-sm btn-secondary" id="btn-prev" style="padding:4px 8px;"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
-            <button class="btn btn-sm btn-secondary" id="btn-today" style="font-size:11px;padding:4px 8px;">Auj.</button>
-            <h3 id="planning-period-label" style="margin:0;min-width:140px;text-align:center;font-size:13px;white-space:nowrap;"></h3>
-            <button class="btn btn-sm btn-secondary" id="btn-next" style="padding:4px 8px;"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:5px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:3px 8px;">
-              <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:14px;flex-shrink:0;"></iconify-icon>
-              <input type="text" id="filter-planning-search" class="form-control" placeholder="Rechercher..." value="${this._filterSearch}" style="width:140px;font-size:12px;padding:4px 6px;border:none;background:transparent;font-weight:500;">
-            </div>
-            <div class="tabs" id="planning-view-tabs" style="margin:0;">
-              <div class="tab active" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Semaine</div>
-              <div class="tab" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
-              <div class="tab" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
-            </div>
+      <div style="max-width:100%;box-sizing:border-box;overflow:hidden;">
+        <div class="page-header" style="flex-wrap:wrap;">
+          <h1 style="font-size:clamp(1rem,4vw,1.5rem);"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning</h1>
+          <div class="page-actions" style="flex-wrap:wrap;gap:6px;">
+            <button class="btn btn-sm btn-secondary" onclick="PlanningPage._showTemplates()"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon> <span class="hide-mobile-text">Modèles</span></button>
+            <button class="btn btn-sm btn-secondary" onclick="PlanningPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> <span class="hide-mobile-text">PDF</span></button>
+            <button class="btn btn-sm btn-warning" onclick="PlanningPage._showDepRecurrentes()"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon> <span class="hide-mobile-text">Dépenses</span></button>
+            <button class="btn btn-sm btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> <span class="hide-mobile-text">Absence</span></button>
+            <button class="btn btn-sm btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> <span class="hide-mobile-text">Créneau</span></button>
           </div>
         </div>
-      </div>
 
-      <!-- Contenu dynamique -->
-      <div id="planning-content"></div>
+        <!-- Navigation & Filtres -->
+        <div class="card planning-nav-card" style="margin-bottom:var(--space-lg);padding:var(--space-sm) var(--space-md);overflow:hidden;max-width:100%;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
+            <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+              <button class="btn btn-sm btn-secondary" id="btn-prev" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
+              <button class="btn btn-sm btn-secondary" id="btn-today" style="font-size:11px;padding:4px 8px;flex-shrink:0;">Auj.</button>
+              <h3 id="planning-period-label" style="margin:0;text-align:center;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;"></h3>
+              <button class="btn btn-sm btn-secondary" id="btn-next" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
+              <div style="display:flex;align-items:center;gap:5px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:3px 8px;min-width:0;flex:1 1 120px;">
+                <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:14px;flex-shrink:0;"></iconify-icon>
+                <input type="text" id="filter-planning-search" class="form-control" placeholder="Rechercher..." value="${this._filterSearch}" style="width:100%;max-width:140px;font-size:12px;padding:4px 6px;border:none;background:transparent;font-weight:500;min-width:0;">
+              </div>
+              <div class="tabs" id="planning-view-tabs" style="margin:0;flex-shrink:0;">
+                <div class="tab active" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
+                <div class="tab" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
+                <div class="tab" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contenu dynamique -->
+        <div id="planning-content" style="max-width:100%;box-sizing:border-box;"></div>
+      </div>
     `;
   },
 
