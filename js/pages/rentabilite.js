@@ -295,31 +295,6 @@ const RentabilitePage = {
         </div>
       </div>
 
-      <!-- ===== EV vs THERMIQUE ===== -->
-      <div class="rent-card" style="margin-bottom:20px;">
-        <div class="rent-section-title">
-          <div class="rent-section-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:bolt-bold-duotone"></iconify-icon></div>
-          <div style="font-size:15px;font-weight:800;color:var(--text-primary);">Électrique vs Thermique</div>
-          ${d.energySavingsPercent > 0 ? `<span class="rent-badge" style="background:rgba(16,185,129,.1);color:#10b981;margin-left:auto;"><iconify-icon icon="solar:leaf-bold-duotone" style="font-size:10px;"></iconify-icon> -${d.energySavingsPercent}% énergie EV</span>` : ''}
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-          <div style="padding:18px;border-radius:16px;background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.12);">
-            <div style="margin-bottom:14px;"><span class="rent-badge" style="background:rgba(245,158,11,.15);color:#f59e0b;"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:10px"></iconify-icon> ${d.evCount} EV</span></div>
-            <div class="rent-compare-row"><span style="color:var(--text-muted);">RSI moyen</span><strong style="color:#f59e0b">${d.avgEVROI.toFixed(1)}%</strong></div>
-            <div class="rent-compare-row"><span style="color:var(--text-muted);">Coût énergie</span><strong>${Utils.formatCurrency(d.avgEVEnergy)}</strong></div>
-            <div class="rent-compare-row"><span style="color:var(--text-muted);">Maintenance</span><strong>${Utils.formatCurrency(d.avgEVMaintenance)}</strong></div>
-            <div class="rent-compare-row"><span style="color:var(--text-muted);">Coût/km</span><strong>${d.avgEVCoutKm} FCFA</strong></div>
-          </div>
-          <div style="padding:18px;border-radius:16px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.12);">
-            <div style="margin-bottom:14px;"><span class="rent-badge" style="background:rgba(139,92,246,.15);color:#8b5cf6;"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:10px"></iconify-icon> ${d.thermalCount} Thermiques</span></div>
-            <div class="rent-compare-row"><span style="color:var(--text-muted);">RSI moyen</span><strong style="color:#8b5cf6">${d.avgThermalROI.toFixed(1)}%</strong></div>
-            <div class="rent-compare-row"><span style="color:var(--text-muted);">Coût énergie</span><strong>${Utils.formatCurrency(d.avgThermalEnergy)}</strong></div>
-            <div class="rent-compare-row"><span style="color:var(--text-muted);">Maintenance</span><strong>${Utils.formatCurrency(d.avgThermalMaintenance)}</strong></div>
-            <div class="rent-compare-row"><span style="color:var(--text-muted);">Coût/km</span><strong>${d.avgThermalCoutKm} FCFA</strong></div>
-          </div>
-        </div>
-      </div>
-
       <!-- ===== LEASING vs CASH ===== -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;">
         <div class="rent-card" style="background:linear-gradient(135deg,var(--bg-secondary),rgba(99,102,241,.04));">
