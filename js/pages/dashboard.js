@@ -428,8 +428,8 @@ const DashboardPage = {
         const isPlanned = planning.some(p => p.chauffeurId === c.id && p.date === wd.date);
         if (!isPlanned) return 'repos';
         // Planned — check if future
-        if (wd.date > hmToday) return 'programme';
-        // Past or today — check versement
+        if (wd.date >= hmToday) return 'programme';
+        // Past only — check versement (aujourd'hui = programmé, pas en retard)
         const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime'));
         return hasVersement ? 'verse' : 'en_retard';
       });
@@ -779,19 +779,28 @@ const DashboardPage = {
         }
         @media(max-width:600px) {
           .d-g4 { grid-template-columns:1fr !important; }
-          .d-bg { margin:-16px; padding:16px 16px 24px; }
-          .d-hero-wrap { padding:16px 16px 0 !important; border-radius:14px !important; }
-          .d-hero-ca { flex-direction:column !important; gap:12px !important; }
-          .d-hero-ca > div:first-child div:first-child { font-size:32px !important; }
-          .d-hero-ca > div:last-child { height:70px !important; }
-          .d-hero-kpis { flex-direction:column !important; gap:10px !important; padding-bottom:16px !important; }
-          .d-hero-kpis a { min-height:auto !important; padding:16px !important; margin-top:0 !important; border-radius:14px !important; }
-          .d-hero-kpis a div:nth-child(2) { font-size:26px !important; margin:8px 0 10px !important; }
-          .d-hm-grid { grid-template-columns:40px repeat(7,1fr); gap:2px; }
+          .d-bg { margin:-16px; padding:12px 12px 24px; }
+          .d-hero-wrap { padding:16px 14px 0 !important; border-radius:14px !important; margin-bottom:12px !important; }
+          .d-hero-ca { flex-direction:column !important; gap:10px !important; }
+          .d-hero-ca > div:first-child { flex-shrink:1 !important; }
+          .d-hero-ca > div:first-child > div:first-child { font-size:28px !important; letter-spacing:-1px !important; }
+          .d-hero-ca > div:last-child { height:60px !important; }
+          .d-hero-kpis { flex-direction:column !important; gap:10px !important; padding-bottom:16px !important; margin-top:4px !important; }
+          .d-hero-kpis > a { min-height:auto !important; padding:14px 16px !important; margin-top:0 !important; border-radius:14px !important; }
+          .d-hero-kpis > a > div:nth-child(2) { font-size:24px !important; margin:6px 0 8px !important; }
+          .d-hm-grid { grid-template-columns:36px repeat(7,1fr) !important; gap:2px !important; }
+          .d-hm-driver { font-size:10px !important; }
           .d-hm-driver span:last-child { display:none; }
-          .d-hm-cell { height:26px; border-radius:6px; font-size:10px; }
+          .d-hm-avatar { width:22px !important; height:22px !important; font-size:8px !important; }
+          .d-hm-cell { height:24px !important; border-radius:5px !important; font-size:9px !important; }
+          .d-hm-head { font-size:10px !important; }
           .d-header-row { flex-direction:column !important; align-items:flex-start !important; gap:10px !important; }
-          .d-header-controls { flex-wrap:wrap; gap:8px !important; }
+          .d-header-row > div:first-child > div:last-child { font-size:22px !important; }
+          .d-header-controls { flex-wrap:wrap; gap:6px !important; width:100%; }
+          .d-header-controls input[type="text"] { width:100% !important; }
+          .d-card { padding:14px !important; border-radius:14px !important; }
+          .d-val { font-size:22px !important; }
+          .d-grid { gap:10px !important; }
         }
       </style>
 
@@ -804,7 +813,7 @@ const DashboardPage = {
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Bienvenue,</div>
           <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;">${userName} !</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div class="d-header-controls" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:0;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border-radius:14px;border:1px solid rgba(0,0,0,.06);padding:3px;">
             <input type="date" id="dashboard-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:#374151;font-weight:500;outline:none;">
             <button onclick="DashboardPage._toggleMonthView()" style="font-size:12px;padding:6px 14px;border-radius:11px;background:${this._monthView ? '#6366f1' : 'transparent'};color:${this._monthView ? '#fff' : '#6b7280'};border:none;font-weight:600;cursor:pointer;transition:all .2s;">
