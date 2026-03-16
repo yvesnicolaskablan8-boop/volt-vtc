@@ -824,10 +824,11 @@ const DashboardPage = {
           .d-lbl { font-size:11px !important; }
           .d-grid { gap:8px !important; }
           .d-legend { font-size:10px !important; white-space:nowrap; }
-          .d-chauffeurs-donut { flex-direction:column !important; gap:8px !important; }
-          .d-chauffeurs-donut svg { width:80px !important; height:80px !important; }
-          .d-chauffeurs-donut .d-donut-center { font-size:18px !important; }
-          .d-chauffeurs-legends { gap:4px !important; }
+          .d-chauffeurs-donut { flex-direction:column !important; gap:6px !important; align-items:center !important; }
+          .d-chauffeurs-donut svg { width:70px !important; height:70px !important; }
+          .d-chauffeurs-donut .d-donut-center { font-size:16px !important; }
+          .d-chauffeurs-legends { flex-direction:row !important; flex-wrap:wrap !important; gap:6px 12px !important; justify-content:center !important; width:100% !important; }
+          .d-chauffeurs-legends > div { justify-content:flex-start !important; gap:6px !important; }
           .d-chauffeurs-legends strong { font-size:12px !important; }
           .d-hm-grid { grid-template-columns:36px repeat(7,1fr) !important; gap:2px !important; }
           .d-hm-driver { font-size:10px !important; }
