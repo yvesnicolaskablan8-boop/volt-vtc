@@ -1141,7 +1141,7 @@ const DashboardPage = {
         const heures = cell.heures;
         const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}${heures ? ' (' + heures + ')' : ''}`;
         const content = status === 'programme' && heures ? `<span style="font-size:9px;font-weight:600;letter-spacing:-.3px;">${heures}</span>` : (statusIcons[status] || '');
-        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="Router.navigate('/chauffeurs/${dr.id}')">${content}</div>`;
+        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="Router.navigate('/planning')">${content}</div>`;
       });
     });
     html += '</div>';
