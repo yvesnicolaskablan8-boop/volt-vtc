@@ -405,7 +405,7 @@ const RentabilitePage = {
             <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
             <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Revenus vs Coûts par véhicule</div>
           </div>
-          <div style="height:340px;"><canvas id="chart-rev-vs-cost"></canvas></div>
+          <div id="html-chart-rev-cost" style="padding:10px 0;"></div>
         </div>
         <div class="rent-chart-wrap">
           <div class="rent-section-title">
@@ -419,7 +419,7 @@ const RentabilitePage = {
             <div class="rent-section-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
             <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Profit mensuel par véhicule</div>
           </div>
-          <div style="height:340px;"><canvas id="chart-monthly-profit"></canvas></div>
+          <div id="html-chart-profit" style="padding:10px 0;"></div>
         </div>
         <div class="rent-chart-wrap">
           <div class="rent-section-title">
@@ -491,25 +491,38 @@ const RentabilitePage = {
     const cd = this._chartDefaults();
     const shortLabel = (a) => a.vehicule.immatriculation || `${a.vehicule.marque} ${a.vehicule.modele}`.slice(0, 12);
 
-    // 1. Revenus vs Coûts — grouped bar
-    const revCostEl = document.getElementById('chart-rev-vs-cost');
-    if (revCostEl) {
-      const revData = d.analysis.map(a => Math.round(a.totalRevenue) || 0);
-      const costDataBar = d.analysis.map(a => Math.round(a.totalCost) || 0);
-      const chartLabels = d.analysis.map(a => shortLabel(a));
-      console.log('[Chart RevCost] revenus:', JSON.stringify(revData), 'couts:', JSON.stringify(costDataBar));
-      const chart1 = new Chart(revCostEl.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: chartLabels,
-          datasets: [
-            { label: 'Revenus', data: revData, backgroundColor: 'rgb(16,185,129)' },
-            { label: 'Coûts', data: costDataBar, backgroundColor: 'rgb(239,68,68)' }
-          ]
-        }
-      });
-      this._charts.push(chart1);
-      console.log('[Chart RevCost] created, datasets:', chart1.data.datasets.length, 'points:', chart1.data.datasets[0].data.length);
+    // 1. Revenus vs Coûts — HTML bars
+    const revCostContainer = document.getElementById('html-chart-rev-cost');
+    if (revCostContainer) {
+      const maxVal = Math.max(...d.analysis.map(a => Math.max(a.totalRevenue, a.totalCost)));
+      const legendHtml = `<div style="display:flex;gap:16px;justify-content:center;margin-bottom:14px;font-size:12px;font-weight:600;">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:3px;background:#10b981;"></span><span style="color:var(--text-muted);">Revenus</span></span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:3px;background:#ef4444;"></span><span style="color:var(--text-muted);">Coûts</span></span>
+      </div>`;
+      const barsHtml = d.analysis.map(a => {
+        const revPct = maxVal > 0 ? (a.totalRevenue / maxVal * 100) : 0;
+        const costPct = maxVal > 0 ? (a.totalCost / maxVal * 100) : 0;
+        const label = a.vehicule.immatriculation || `${a.vehicule.marque} ${a.vehicule.modele}`.slice(0, 10);
+        return `<div style="margin-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:11px;font-weight:700;color:var(--text-primary);">${label}</span>
+            <span style="font-size:10px;color:var(--text-muted);">Profit: ${Utils.formatCurrency(a.totalRevenue - a.totalCost)}</span>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <div style="flex:1;height:14px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden;">
+              <div style="height:100%;width:${revPct}%;background:linear-gradient(90deg,#10b981,#34d399);border-radius:8px;transition:width .8s ease;"></div>
+            </div>
+            <span style="font-size:10px;color:#10b981;min-width:70px;text-align:right;">${Utils.formatCurrency(a.totalRevenue)}</span>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;margin-top:3px;">
+            <div style="flex:1;height:14px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden;">
+              <div style="height:100%;width:${costPct}%;background:linear-gradient(90deg,#ef4444,#f87171);border-radius:8px;transition:width .8s ease;"></div>
+            </div>
+            <span style="font-size:10px;color:#ef4444;min-width:70px;text-align:right;">${Utils.formatCurrency(a.totalCost)}</span>
+          </div>
+        </div>`;
+      }).join('');
+      revCostContainer.innerHTML = legendHtml + barsHtml;
     }
 
     // 2. Répartition des coûts — Doughnut moderne
@@ -554,35 +567,27 @@ const RentabilitePage = {
       }));
     }
 
-    // 3. Profit mensuel — bar chart
-    const profitEl = document.getElementById('chart-monthly-profit');
-    if (profitEl) {
-      const profitData = d.analysis.map(a => a.monthlyProfit || 0);
-      this._charts.push(new Chart(profitEl.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: d.analysis.map(a => shortLabel(a)),
-          datasets: [{
-            label: 'Profit/mois',
-            data: profitData,
-            backgroundColor: profitData.map(v => v >= 0 ? 'rgb(16,185,129)' : 'rgb(239,68,68)')
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { ...cd.tooltip, callbacks: {
-              label: (ctx) => ` Profit: ${Utils.formatCurrency(ctx.raw)}/mois`,
-              afterLabel: (ctx) => { const a = d.analysis[ctx.dataIndex]; return `  Revenu: ${Utils.formatCurrency(a.monthlyRevenue)}/mois\n  Coût: ${Utils.formatCurrency(a.monthlyCost)}/mois`; }
-            }}
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 10 }, maxRotation: 45 } },
-            y: { grid: { color: cd.gridColor, drawBorder: false }, ticks: { color: cd.tickColor, font: { size: 10 }, callback: v => Utils.formatCurrency(v) }, border: { display: false } }
-          }
-        }
-      }));
+    // 3. Profit mensuel — HTML bars
+    const profitContainer = document.getElementById('html-chart-profit');
+    if (profitContainer) {
+      const maxProfit = Math.max(...d.analysis.map(a => Math.abs(a.monthlyProfit)));
+      const barsHtml = d.analysis.map(a => {
+        const pct = maxProfit > 0 ? (Math.abs(a.monthlyProfit) / maxProfit * 100) : 0;
+        const isPositive = a.monthlyProfit >= 0;
+        const color = isPositive ? '#10b981' : '#ef4444';
+        const gradEnd = isPositive ? '#34d399' : '#f87171';
+        const label = a.vehicule.immatriculation || `${a.vehicule.marque} ${a.vehicule.modele}`.slice(0, 10);
+        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:75px;text-align:right;">${label}</span>
+          <div style="flex:1;height:20px;background:rgba(255,255,255,.05);border-radius:10px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${color},${gradEnd});border-radius:10px;transition:width .8s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;">
+              ${pct > 25 ? `<span style="font-size:9px;font-weight:800;color:#fff;">${Utils.formatCurrency(a.monthlyProfit)}/mois</span>` : ''}
+            </div>
+          </div>
+          ${pct <= 25 ? `<span style="font-size:10px;font-weight:700;color:${color};">${Utils.formatCurrency(a.monthlyProfit)}/mois</span>` : ''}
+        </div>`;
+      }).join('');
+      profitContainer.innerHTML = barsHtml;
     }
 
     // 4. Projection leasing — area chart (coût cumulé vs revenus cumulés sur durée leasing)
