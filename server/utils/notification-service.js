@@ -45,7 +45,7 @@ function initVAPID() {
  * Retourne la cle publique VAPID pour le frontend
  */
 function getVapidPublicKey() {
-  return process.env.VAPID_PUBLIC_KEY || null;
+  return (process.env.VAPID_PUBLIC_KEY || '').trim() || null;
 }
 
 /**
