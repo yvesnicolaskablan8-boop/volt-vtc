@@ -7,16 +7,15 @@ const tacheSchema = new mongoose.Schema({
   type: { type: String, default: 'autre' }, // maintenance, administratif, livraison, controle, autre
   priorite: { type: String, default: 'normale' }, // basse, normale, haute, urgente
   statut: { type: String, default: 'a_faire' }, // a_faire, en_cours, terminee, annulee
-  assigneA: String, // chauffeurId
-  assigneParId: String, // userId admin
-  assigneParNom: String, // nom admin
-  vehiculeId: String,
+  assigneA: String, // userId de l'utilisateur admin assigne
+  assigneANom: String, // nom affiche de l'utilisateur assigne
+  creePar: String, // userId du createur
+  creeParNom: String, // nom affiche du createur
   dateEcheance: String,
   dateCreation: { type: String, default: () => new Date().toISOString() },
   dateModification: String,
   dateTerminaison: String,
-  commentaireAdmin: String,
-  commentaireChauffeur: String
+  commentaire: String
 }, {
   toJSON: {
     transform(doc, ret) {

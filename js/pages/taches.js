@@ -1,6 +1,6 @@
 /**
- * TachesPage — Module Gestion des Taches
- * L'admin cree des taches et les assigne aux chauffeurs
+ * TachesPage — Module Gestion des Taches (admin uniquement)
+ * L'admin cree des taches et les assigne aux utilisateurs du panneau d'administration
  */
 const TachesPage = {
   _activeTab: 'tous',
@@ -132,8 +132,7 @@ const TachesPage = {
       return (a.dateEcheance || '9999').localeCompare(b.dateEcheance || '9999');
     });
 
-    const chauffeurs = Store.get('chauffeurs') || [];
-    const vehicules = Store.get('vehicules') || [];
+    const users = Store.get('users') || [];
     const typeLabels = { maintenance: 'Maintenance', administratif: 'Administratif', livraison: 'Livraison', controle: 'Controle', autre: 'Autre' };
     const prioriteLabels = { basse: 'Basse', normale: 'Normale', haute: 'Haute', urgente: 'Urgente' };
     const statutLabels = { a_faire: 'A faire', en_cours: 'En cours', terminee: 'Terminee', annulee: 'Annulee' };
@@ -162,8 +161,9 @@ const TachesPage = {
         }},
         { label: 'Type', key: 'type', render: (t) => `<span class="tache-type">${typeLabels[t.type] || t.type}</span>` },
         { label: 'Assigne a', key: 'assigneA', render: (t) => {
-          const ch = chauffeurs.find(c => c.id === t.assigneA);
-          return ch ? `<a href="#/chauffeurs/${ch.id}" style="color:var(--primary);text-decoration:none;">${ch.prenom} ${ch.nom}</a>` : (t.assigneA || '<span style="color:var(--text-muted);">Non assigne</span>');
+          if (!t.assigneA) return '<span style="color:var(--text-muted);">Non assigne</span>';
+          const u = users.find(x => x.id === t.assigneA);
+          return u ? `<strong>${u.nom || u.login}</strong>` : (t.assigneANom || t.assigneA);
         }},
         { label: 'Priorite', key: 'priorite', render: (t) => `<span class="tache-priorite ${t.priorite}">${prioriteLabels[t.priorite] || t.priorite}</span>` },
         { label: 'Echeance', key: 'dateEcheance', render: (t) => {
@@ -177,7 +177,9 @@ const TachesPage = {
           return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${c}1f;color:${c};">${statutLabels[t.statut] || t.statut}</span>`;
         }},
         { label: '', key: 'actions', render: (t) => `
-          <div style="display:flex;gap:4px;">
+          <div style="display:flex;gap:4px;flex-wrap:nowrap;">
+            ${t.statut === 'a_faire' ? `<button class="btn btn-sm btn-primary" onclick="TachesPage._changeStatut('${t.id}', 'en_cours')" title="Demarrer"><iconify-icon icon="solar:play-bold-duotone"></iconify-icon></button>` : ''}
+            ${t.statut === 'en_cours' ? `<button class="btn btn-sm btn-success" onclick="TachesPage._changeStatut('${t.id}', 'terminee')" title="Tache effectuee"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button>` : ''}
             <button class="btn btn-sm btn-secondary" onclick="TachesPage._viewTache('${t.id}')" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
             <button class="btn btn-sm btn-secondary" onclick="TachesPage._editTache('${t.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
             <button class="btn btn-sm btn-danger" onclick="TachesPage._deleteTache('${t.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
@@ -202,13 +204,16 @@ const TachesPage = {
         const values = FormBuilder.getValues(body);
 
         const session = typeof Auth !== 'undefined' ? Auth.getSession() : {};
+        const users = Store.get('users') || [];
+        const assignedUser = users.find(u => u.id === values.assigneA);
 
         Store.add('taches', {
           id: Utils.generateId('TCH'),
           ...values,
+          assigneANom: assignedUser ? (assignedUser.nom || assignedUser.login) : '',
           statut: 'a_faire',
-          assigneParId: session.userId || '',
-          assigneParNom: session.nom || session.login || '',
+          creePar: session.userId || '',
+          creeParNom: session.nom || session.login || '',
           dateCreation: new Date().toISOString(),
           dateModification: new Date().toISOString()
         });
@@ -233,8 +238,12 @@ const TachesPage = {
         if (!FormBuilder.validate(body, fields)) return;
         const values = FormBuilder.getValues(body);
 
+        const users = Store.get('users') || [];
+        const assignedUser = users.find(u => u.id === values.assigneA);
+
         Store.update('taches', id, {
           ...values,
+          assigneANom: assignedUser ? (assignedUser.nom || assignedUser.login) : '',
           dateModification: new Date().toISOString(),
           dateTerminaison: (values.statut === 'terminee' && !tache.dateTerminaison) ? new Date().toISOString() : tache.dateTerminaison
         });
@@ -250,14 +259,11 @@ const TachesPage = {
     const tache = Store.findById('taches', id);
     if (!tache) return;
 
-    const chauffeurs = Store.get('chauffeurs') || [];
-    const vehicules = Store.get('vehicules') || [];
-    const ch = chauffeurs.find(c => c.id === tache.assigneA);
-    const v = vehicules.find(x => x.id === tache.vehiculeId);
+    const users = Store.get('users') || [];
+    const assigned = users.find(u => u.id === tache.assigneA);
 
     const typeLabels = { maintenance: 'Maintenance', administratif: 'Administratif', livraison: 'Livraison', controle: 'Controle', autre: 'Autre' };
     const prioriteLabels = { basse: 'Basse', normale: 'Normale', haute: 'Haute', urgente: 'Urgente' };
-    const prioriteColors = { basse: '#3b82f6', normale: '#22c55e', haute: '#f97316', urgente: '#ef4444' };
     const statutLabels = { a_faire: 'A faire', en_cours: 'En cours', terminee: 'Terminee', annulee: 'Annulee' };
     const statutColors = { a_faire: '#f59e0b', en_cours: '#3b82f6', terminee: '#22c55e', annulee: '#6b7280' };
 
@@ -267,14 +273,12 @@ const TachesPage = {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:var(--font-size-sm);">
           <div><span class="text-muted">Type</span><br><span class="tache-type">${typeLabels[tache.type] || tache.type}</span></div>
           <div><span class="text-muted">Priorite</span><br><span class="tache-priorite ${tache.priorite}">${prioriteLabels[tache.priorite] || tache.priorite}</span></div>
-          <div><span class="text-muted">Assigne a</span><br><strong>${ch ? ch.prenom + ' ' + ch.nom : 'Non assigne'}</strong></div>
-          <div><span class="text-muted">Vehicule</span><br><strong>${v ? v.marque + ' ' + v.modele : '—'}</strong></div>
+          <div><span class="text-muted">Assigne a</span><br><strong>${assigned ? (assigned.nom || assigned.login) : (tache.assigneANom || 'Non assigne')}</strong></div>
           <div><span class="text-muted">Statut</span><br><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${statutColors[tache.statut]}1f;color:${statutColors[tache.statut]};">${statutLabels[tache.statut]}</span></div>
           <div><span class="text-muted">Echeance</span><br><strong>${tache.dateEcheance ? Utils.formatDate(tache.dateEcheance) : '—'}</strong></div>
+          <div><span class="text-muted">Creee par</span><br><strong>${tache.creeParNom || '—'}</strong></div>
           ${tache.description ? `<div style="grid-column:1/-1;"><span class="text-muted">Description</span><br><div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-top:4px;">${tache.description}</div></div>` : ''}
-          ${tache.commentaireAdmin ? `<div style="grid-column:1/-1;"><span class="text-muted">Commentaire admin</span><br><div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-top:4px;">${tache.commentaireAdmin}</div></div>` : ''}
-          ${tache.commentaireChauffeur ? `<div style="grid-column:1/-1;"><span class="text-muted">Commentaire chauffeur</span><br><div style="padding:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:var(--radius-sm);margin-top:4px;">${tache.commentaireChauffeur}</div></div>` : ''}
-          <div><span class="text-muted">Creee par</span><br><strong>${tache.assigneParNom || '—'}</strong></div>
+          ${tache.commentaire ? `<div style="grid-column:1/-1;"><span class="text-muted">Commentaire</span><br><div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-top:4px;">${tache.commentaire}</div></div>` : ''}
           <div><span class="text-muted">Creee le</span><br><strong>${tache.dateCreation ? Utils.formatDate(tache.dateCreation.split('T')[0]) : '—'}</strong></div>
           ${tache.dateTerminaison ? `<div><span class="text-muted">Terminee le</span><br><strong>${Utils.formatDate(tache.dateTerminaison.split('T')[0])}</strong></div>` : ''}
         </div>
@@ -282,7 +286,8 @@ const TachesPage = {
       footer: `
         <button class="btn btn-secondary" onclick="TachesPage._editTache('${id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>
         ${tache.statut === 'a_faire' ? `<button class="btn btn-primary" onclick="TachesPage._changeStatut('${id}', 'en_cours')"><iconify-icon icon="solar:play-bold-duotone"></iconify-icon> Demarrer</button>` : ''}
-        ${tache.statut === 'en_cours' ? `<button class="btn btn-success" onclick="TachesPage._changeStatut('${id}', 'terminee')"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Terminer</button>` : ''}
+        ${tache.statut === 'en_cours' ? `<button class="btn btn-success" onclick="TachesPage._changeStatut('${id}', 'terminee')"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tache effectuee</button>` : ''}
+        ${tache.statut === 'a_faire' ? `<button class="btn btn-success" onclick="TachesPage._changeStatut('${id}', 'terminee')"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tache effectuee</button>` : ''}
         <button class="btn btn-secondary" data-action="cancel">Fermer</button>
       `,
       size: 'large'
@@ -296,7 +301,8 @@ const TachesPage = {
     }
     Store.update('taches', id, update);
     Modal.close();
-    Toast.success('Tache marquee comme "' + (newStatut === 'en_cours' ? 'en cours' : newStatut === 'terminee' ? 'terminee' : newStatut) + '"');
+    const labels = { en_cours: 'en cours', terminee: 'effectuee', annulee: 'annulee' };
+    Toast.success('Tache marquee comme "' + (labels[newStatut] || newStatut) + '"');
     this.render();
   },
 
@@ -310,11 +316,10 @@ const TachesPage = {
   // =================== FORM ===================
 
   _formFields(existing) {
-    const chauffeurs = Store.get('chauffeurs') || [];
-    const vehicules = Store.get('vehicules') || [];
+    const users = Store.get('users') || [];
 
     return [
-      { name: 'titre', label: 'Titre de la tache', type: 'text', required: true, default: existing ? existing.titre : '', placeholder: 'Ex: Verifier les freins...' },
+      { name: 'titre', label: 'Titre de la tache', type: 'text', required: true, default: existing ? existing.titre : '', placeholder: 'Ex: Preparer les documents comptables...' },
       { type: 'row-start' },
       { name: 'type', label: 'Type', type: 'select', required: true, default: existing ? existing.type : 'autre', options: [
         { value: 'maintenance', label: 'Maintenance' },
@@ -330,13 +335,10 @@ const TachesPage = {
         { value: 'urgente', label: 'Urgente' }
       ]},
       { type: 'row-end' },
-      { type: 'row-start' },
-      { name: 'assigneA', label: 'Assigner a', type: 'select', default: existing ? existing.assigneA : '', placeholder: 'Selectionner un chauffeur...', options: [{ value: '', label: 'Non assigne' }, ...chauffeurs.map(c => ({ value: c.id, label: c.prenom + ' ' + c.nom }))] },
-      { name: 'vehiculeId', label: 'Vehicule (optionnel)', type: 'select', default: existing ? existing.vehiculeId : '', placeholder: 'Aucun', options: [{ value: '', label: 'Aucun' }, ...vehicules.map(v => ({ value: v.id, label: v.marque + ' ' + v.modele + ' (' + v.immatriculation + ')' }))] },
-      { type: 'row-end' },
+      { name: 'assigneA', label: 'Assigner a', type: 'select', default: existing ? existing.assigneA : '', placeholder: 'Selectionner un utilisateur...', options: [{ value: '', label: 'Non assigne' }, ...users.map(u => ({ value: u.id, label: u.nom || u.login }))] },
       { name: 'dateEcheance', label: 'Date d\'echeance', type: 'date', default: existing ? existing.dateEcheance : '' },
       { name: 'description', label: 'Description', type: 'textarea', rows: 3, default: existing ? existing.description : '', placeholder: 'Decrivez la tache en detail...' },
-      { name: 'commentaireAdmin', label: 'Note admin', type: 'textarea', rows: 2, default: existing ? existing.commentaireAdmin : '', placeholder: 'Note visible uniquement par l\'admin...' },
+      { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2, default: existing ? existing.commentaire : '', placeholder: 'Note ou commentaire...' },
       ...(existing ? [
         { name: 'statut', label: 'Statut', type: 'select', default: existing.statut, options: [
           { value: 'a_faire', label: 'A faire' },

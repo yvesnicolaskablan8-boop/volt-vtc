@@ -2105,39 +2105,4 @@ router.get('/documents/:docType/file', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// =================== TACHES ===================
-
-// GET /api/driver/taches — Taches assignees au chauffeur
-router.get('/taches', async (req, res, next) => {
-  try {
-    const Tache = require('../models/Tache');
-    const taches = await Tache.find({
-      assigneA: req.user.chauffeurId
-    }).sort({ dateEcheance: 1 }).lean();
-    res.json(taches.map(({ _id, __v, ...rest }) => rest));
-  } catch (err) { next(err); }
-});
-
-// PUT /api/driver/taches/:id/statut — Chauffeur met a jour le statut
-router.put('/taches/:id/statut', async (req, res, next) => {
-  try {
-    const Tache = require('../models/Tache');
-    const { statut, commentaireChauffeur } = req.body;
-    const allowed = ['en_cours', 'terminee'];
-    if (!allowed.includes(statut)) return res.status(400).json({ error: 'Statut invalide' });
-
-    const update = { statut, dateModification: new Date().toISOString() };
-    if (statut === 'terminee') update.dateTerminaison = new Date().toISOString();
-    if (commentaireChauffeur !== undefined) update.commentaireChauffeur = commentaireChauffeur;
-
-    const tache = await Tache.findOneAndUpdate(
-      { id: req.params.id, assigneA: req.user.chauffeurId },
-      { $set: update },
-      { new: true }
-    );
-    if (!tache) return res.status(404).json({ error: 'Tache non trouvee' });
-    res.json(tache.toJSON());
-  } catch (err) { next(err); }
-});
-
 module.exports = router;

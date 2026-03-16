@@ -28,7 +28,6 @@ const STATIC_ASSETS = [
   '/driver/js/pages/checklist.js',
   '/driver/js/pages/classement.js',
   '/driver/js/pages/contrat.js',
-  '/driver/js/pages/taches.js',
   '/driver/icons/logo-pilote.png'
 ];
 

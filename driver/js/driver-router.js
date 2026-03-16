@@ -39,8 +39,7 @@ const DriverRouter = {
       documents: 'Documents & Alertes',
       support: 'Signaler un problème',
       contraventions: 'Mes Contraventions',
-      contrat: 'Mon Contrat',
-      taches: 'Mes Taches'
+      contrat: 'Mon Contrat'
     };
     const titleEl = document.getElementById('page-title');
     if (titleEl) titleEl.textContent = titles[route] || 'Pilote Chauffeur';
