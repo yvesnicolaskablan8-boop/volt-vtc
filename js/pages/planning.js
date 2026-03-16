@@ -589,9 +589,9 @@ const PlanningPage = {
               const todayBg = isToday ? 'background:rgba(99,102,241,.08);border-left:2px solid rgba(99,102,241,.2);border-right:2px solid rgba(99,102,241,.2);' : '';
 
               if (isSuspendu) {
-                return `<div class="pg-cell ${rowClass}" style="${todayBg}opacity:.4;">
-                  <div style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:repeating-linear-gradient(135deg,transparent,transparent 3px,rgba(239,68,68,.06) 3px,rgba(239,68,68,.06) 6px);border:1px dashed rgba(239,68,68,.25);font-size:10px;color:#ef4444;font-weight:600;">
-                    <iconify-icon icon="solar:forbidden-circle-bold-duotone" style="font-size:14px;"></iconify-icon>
+                return `<div class="pg-cell ${rowClass}" style="${todayBg}">
+                  <div style="width:100%;padding:8px 4px;border-radius:10px;text-align:center;background:rgba(239,68,68,.15);border:1.5px solid rgba(239,68,68,.35);font-size:10px;color:#f87171;font-weight:700;">
+                    <iconify-icon icon="solar:forbidden-circle-bold-duotone" style="font-size:16px;"></iconify-icon>
                   </div>
                 </div>`;
               }
@@ -607,7 +607,7 @@ const PlanningPage = {
                   ${shifts.map(s => {
                     const sc = this._getShiftColor(s);
                     const overrideLabel = s.redevanceOverride ? `<div style="font-size:8px;opacity:.75;margin-top:1px;">${Utils.formatCurrency(s.redevanceOverride)}</div>` : '';
-                    return `<div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" class="pg-shift" style="background:linear-gradient(135deg,${sc}20,${sc}10);color:${sc};border:1px solid ${sc}35;" onclick="PlanningPage._editShift('${s.id}')">
+                    return `<div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" class="pg-shift" style="background:${sc};color:#fff;border:none;box-shadow:0 2px 8px ${sc}40;font-weight:700;" onclick="PlanningPage._editShift('${s.id}')">
                       ${this._getShiftTimeShort(s)}${overrideLabel}
                     </div>`;
                   }).join('')}
@@ -615,14 +615,14 @@ const PlanningPage = {
               }
               if (isRepos) {
                 return `<div class="pg-cell ${rowClass}" style="${todayBg}cursor:pointer;" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
-                  <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:linear-gradient(135deg,rgba(100,116,139,.08),rgba(100,116,139,.04));border:1px dashed rgba(100,116,139,.25);font-size:10px;color:#94a3b8;font-weight:600;">
-                    <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:14px;"></iconify-icon>
+                  <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="width:100%;padding:8px 4px;border-radius:10px;text-align:center;background:rgba(100,116,139,.15);border:1.5px solid rgba(100,116,139,.30);font-size:10px;color:#94a3b8;font-weight:700;">
+                    <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:16px;"></iconify-icon>
                   </div>
                 </div>`;
               }
               return `<div class="pg-cell ${rowClass}" style="${todayBg}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
-                <div class="pg-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}">
-                  <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:12px;color:#d1d5db;"></iconify-icon>
+                <div class="pg-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="background:rgba(99,102,241,.06);border:1.5px dashed rgba(99,102,241,.20);border-radius:10px;padding:6px 4px;">
+                  <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:14px;color:rgba(99,102,241,.4);"></iconify-icon>
                 </div>
               </div>`;
             }).join('');
