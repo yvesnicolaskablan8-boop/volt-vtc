@@ -839,8 +839,8 @@ const DashboardPage = {
         <!-- 3 mini KPI cards at the bottom (inside the hero, like SellCraft) -->
         <div style="display:flex;gap:14px;margin-top:24px;padding-bottom:24px;position:relative;z-index:3;">
 
-          <!-- Versements (cream/yellow-green tint — like Total Orders) -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(253,246,220,.65);border-radius:20px;padding:22px 20px 18px;border:1px solid rgba(253,230,138,.25);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <!-- Versements (vert) -->
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(220,252,231,.55);border-radius:20px;padding:22px 20px 18px;border:1px solid rgba(187,247,208,.3);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
               <div style="font-size:13px;font-weight:600;color:#6b7280;">Versements</div>
               <span style="font-size:16px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
@@ -857,8 +857,8 @@ const DashboardPage = {
             </div>
           </a>
 
-          <!-- Dettes (rose/salmon tint — like Cancel Orders) -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(254,226,226,.45);border-radius:20px;padding:22px 20px 18px;border:1px solid rgba(254,202,202,.25);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <!-- Dettes (orange vif) -->
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(255,237,213,.55);border-radius:20px;padding:22px 20px 18px;border:1px solid rgba(253,186,116,.3);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
               <div style="font-size:13px;font-weight:600;color:#6b7280;">Dettes</div>
               <span style="font-size:16px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
@@ -866,7 +866,7 @@ const DashboardPage = {
             <div style="font-size:34px;font-weight:900;color:#111827;margin:12px 0 14px;letter-spacing:-1.2px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalDettes)}</div>
             <div style="display:flex;align-items:center;justify-content:space-between;">
               <div style="display:flex;align-items:center;gap:6px;">
-                <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(239,68,68,.15);color:#dc2626;">${d.nbDetteDrivers > 0 ? '-' : ''}${d.nbDetteDrivers}</span>
+                <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(245,158,11,.15);color:#d97706;">${d.nbDetteDrivers > 0 ? '-' : ''}${d.nbDetteDrivers}</span>
                 <span style="font-size:11px;color:#6b7280;font-weight:500;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''} Ce mois</span>
               </div>
               <div style="width:34px;height:34px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -875,8 +875,8 @@ const DashboardPage = {
             </div>
           </a>
 
-          <!-- Pertes (lavender/purple tint — like Total Visitors) -->
-          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(237,233,254,.5);border-radius:20px;padding:22px 20px 18px;border:1px solid rgba(221,214,254,.25);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+          <!-- Pertes (rouge) -->
+          <a href="#/versements" style="flex:1;text-decoration:none;color:inherit;background:rgba(254,226,226,.5);border-radius:20px;padding:22px 20px 18px;border:1px solid rgba(252,165,165,.3);transition:transform .15s;min-height:140px;display:flex;flex-direction:column;justify-content:space-between;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
               <div style="font-size:13px;font-weight:600;color:#6b7280;">Pertes</div>
               <span style="font-size:16px;color:#9ca3af;cursor:pointer;line-height:1;">⋮</span>
@@ -884,7 +884,7 @@ const DashboardPage = {
             <div style="font-size:34px;font-weight:900;color:#111827;margin:12px 0 14px;letter-spacing:-1.2px;line-height:1;font-feature-settings:'tnum';">${Utils.formatCurrency(d.totalPertes)}</div>
             <div style="display:flex;align-items:center;justify-content:space-between;">
               <div style="display:flex;align-items:center;gap:6px;">
-                <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(34,197,94,.15);color:#16a34a;">+${Math.abs(Math.round(d.caTrend))}%</span>
+                <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(239,68,68,.15);color:#dc2626;">${d.nbPerteDrivers > 0 ? '-' : ''}${d.nbPerteDrivers}</span>
                 <span style="font-size:11px;color:#6b7280;font-weight:500;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''} Ce mois</span>
               </div>
               <div style="width:34px;height:34px;border-radius:50%;background:#111827;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
