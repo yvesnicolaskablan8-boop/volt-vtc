@@ -194,9 +194,14 @@ const VehiculesPage = {
         {
           label: 'Chauffeur', key: 'chauffeurAssigne',
           render: (v) => {
-            if (!v.chauffeurAssigne) return '<span class="text-muted">-</span>';
-            const c = chauffeurs.find(x => x.id === v.chauffeurAssigne);
-            return c ? `${c.prenom} ${c.nom}` : '-';
+            // Chercher via chauffeurAssigne du vehicule OU via vehiculeAssigne du chauffeur (reverse lookup)
+            let c = v.chauffeurAssigne ? chauffeurs.find(x => x.id === v.chauffeurAssigne) : null;
+            if (!c) c = chauffeurs.find(x => x.vehiculeAssigne === v.id);
+            if (!c) return '<span class="text-muted">-</span>';
+            return `<div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;">${c.prenom[0]}${c.nom[0]}</div>
+              <span style="font-weight:600;font-size:12px;">${c.prenom} ${c.nom}</span>
+            </div>`;
           }
         },
         {
@@ -217,7 +222,8 @@ const VehiculesPage = {
   },
 
   _detailTemplate(v) {
-    const chauffeur = v.chauffeurAssigne ? Store.findById('chauffeurs', v.chauffeurAssigne) : null;
+    let chauffeur = v.chauffeurAssigne ? Store.findById('chauffeurs', v.chauffeurAssigne) : null;
+    if (!chauffeur) chauffeur = (Store.get('chauffeurs') || []).find(x => x.vehiculeAssigne === v.id) || null;
     const courses = Store.query('courses', c => c.vehiculeId === v.id && c.statut === 'terminee');
     const totalCA = courses.reduce((s, c) => s + c.montantTTC, 0);
     const totalKm = courses.reduce((s, c) => s + c.distanceKm, 0);
