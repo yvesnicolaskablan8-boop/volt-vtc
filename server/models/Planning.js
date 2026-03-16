@@ -7,6 +7,7 @@ const planningSchema = new mongoose.Schema({
   typeCreneaux: { type: String, default: 'journee' },
   heureDebut: String,
   heureFin: String,
+  redevanceOverride: Number,
   notes: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {

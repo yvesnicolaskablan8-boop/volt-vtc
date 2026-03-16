@@ -109,7 +109,7 @@ const VersementsPage = {
       if (hasAbsence) return;
       const ch = chauffeurs.find(c => c.id === p.chauffeurId);
       if (!ch || ch.statut === 'inactif') return;
-      const redevance = ch.redevanceQuotidienne || 0;
+      const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
       if (redevance <= 0) return;
       detailProgrammes.push({ chauffeurId: p.chauffeurId, nom: ch.nom, prenom: ch.prenom, redevance, date: p.date });
       totalAttendu += redevance;
@@ -157,7 +157,7 @@ const VersementsPage = {
       if (hasAbsence) return;
       const ch2 = chauffeurs.find(c => c.id === p.chauffeurId);
       if (!ch2 || ch2.statut === 'inactif') return;
-      const redev = ch2.redevanceQuotidienne || 0;
+      const redev = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch2.redevanceQuotidienne || 0);
       if (redev <= 0) return;
       const hasValidOrDismissed = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime'));
       if (!hasValidOrDismissed) {

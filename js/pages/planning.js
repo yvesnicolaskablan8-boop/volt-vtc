@@ -466,8 +466,9 @@ const PlanningPage = {
                 return `<div class="pg-cell ${rowClass}" style="${todayBg}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
                   ${shifts.map(s => {
                     const sc = this._getShiftColor(s);
-                    return `<div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" class="pg-shift" style="background:linear-gradient(135deg,${sc}20,${sc}10);color:${sc};border:1px solid ${sc}35;" onclick="PlanningPage._editShift('${s.id}')" title="${this._getShiftTimeLabel(s)}">
-                      ${this._getShiftTimeShort(s)}
+                    const overrideLabel = s.redevanceOverride ? `<div style="font-size:8px;opacity:.75;margin-top:1px;">${Utils.formatCurrency(s.redevanceOverride)}</div>` : '';
+                    return `<div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" class="pg-shift" style="background:linear-gradient(135deg,${sc}20,${sc}10);color:${sc};border:1px solid ${sc}35;" onclick="PlanningPage._editShift('${s.id}')" title="${this._getShiftTimeLabel(s)}${s.redevanceOverride ? ' — Recette: ' + s.redevanceOverride + ' F' : ''}">
+                      ${this._getShiftTimeShort(s)}${overrideLabel}
                     </div>`;
                   }).join('')}
                 </div>`;
@@ -912,6 +913,7 @@ const PlanningPage = {
       { name: 'heureDebut', label: 'Heure début', type: 'time', required: true, default: '06:00' },
       { name: 'heureFin', label: 'Heure fin', type: 'time', required: true, default: '00:00' },
       { type: 'row-end' },
+      { name: 'redevanceOverride', label: 'Recette exceptionnelle (FCFA)', type: 'number', placeholder: 'Laisser vide = recette habituelle du chauffeur', min: 0 },
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2, placeholder: 'Zone, client particulier, instructions...' }
     ];
 
@@ -919,6 +921,12 @@ const PlanningPage = {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
+      // Convertir en nombre ou null
+      if (values.redevanceOverride !== undefined && values.redevanceOverride !== '' && values.redevanceOverride !== null) {
+        values.redevanceOverride = Number(values.redevanceOverride);
+      } else {
+        values.redevanceOverride = null;
+      }
 
       // Vérifier doublon : même chauffeur, même date, même créneau horaire
       const planning = Store.get('planning') || [];
@@ -1043,6 +1051,7 @@ const PlanningPage = {
       { name: 'heureDebut', label: 'Heure début', type: 'time', required: true },
       { name: 'heureFin', label: 'Heure fin', type: 'time', required: true },
       { type: 'row-end' },
+      { name: 'redevanceOverride', label: 'Recette exceptionnelle (FCFA)', type: 'number', placeholder: 'Laisser vide = recette habituelle du chauffeur', min: 0 },
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
     ];
 
@@ -1050,6 +1059,12 @@ const PlanningPage = {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
+      // Convertir en nombre ou null
+      if (values.redevanceOverride !== undefined && values.redevanceOverride !== '' && values.redevanceOverride !== null) {
+        values.redevanceOverride = Number(values.redevanceOverride);
+      } else {
+        values.redevanceOverride = null;
+      }
 
       // Vérifier doublon : même chauffeur, même date, même créneau horaire (exclure le créneau en cours d'édition)
       const planning = Store.get('planning') || [];
