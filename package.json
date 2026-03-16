@@ -1,0 +1,14 @@
+{
+  "name": "pilote-app",
+  "version": "1.0.0",
+  "description": "Pilote - Gestion de flotte VTC",
+  "main": "server/index.js",
+  "scripts": {
+    "postinstall": "cd server && npm install --production",
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
