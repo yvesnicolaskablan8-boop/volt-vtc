@@ -123,21 +123,31 @@ const PlanningPage = {
     const label = document.getElementById('planning-period-label');
     const ct = document.getElementById('planning-content');
 
-    switch (this._currentView) {
-      case 'week':
-        label.textContent = this._getWeekLabel();
-        ct.innerHTML = this._renderWeekView();
-        this._bindWeekEvents();
-        break;
-      case 'month':
-        label.textContent = `${Utils.getMonthName(this._currentMonth.getMonth())} ${this._currentMonth.getFullYear()}`;
-        ct.innerHTML = this._renderMonthView();
-        break;
-      case 'stats':
-        label.textContent = `${Utils.getMonthName(this._currentMonth.getMonth())} ${this._currentMonth.getFullYear()}`;
-        ct.innerHTML = this._renderStatsView();
-        this._loadStatsCharts();
-        break;
+    try {
+      switch (this._currentView) {
+        case 'week':
+          label.textContent = this._getWeekLabel();
+          ct.innerHTML = this._renderWeekView();
+          this._bindWeekEvents();
+          break;
+        case 'month':
+          label.textContent = `${Utils.getMonthName(this._currentMonth.getMonth())} ${this._currentMonth.getFullYear()}`;
+          ct.innerHTML = this._renderMonthView();
+          break;
+        case 'stats':
+          label.textContent = `${Utils.getMonthName(this._currentMonth.getMonth())} ${this._currentMonth.getFullYear()}`;
+          ct.innerHTML = this._renderStatsView();
+          this._loadStatsCharts();
+          break;
+      }
+    } catch (err) {
+      console.error('[Planning] Render error:', err);
+      ct.innerHTML = `<div class="card" style="padding:40px;text-align:center;">
+        <iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size:3rem;color:#f59e0b;"></iconify-icon>
+        <h3 style="margin:12px 0 8px;">Erreur d'affichage</h3>
+        <p style="color:var(--text-muted);font-size:13px;">${err.message}</p>
+        <button class="btn btn-primary" onclick="PlanningPage._renderView()" style="margin-top:12px;">Réessayer</button>
+      </div>`;
     }
   },
 
@@ -327,7 +337,7 @@ const PlanningPage = {
           position:relative;
         }
         .pg-head.today::after {
-          content:'Aujourd\\'hui';
+          content:"Aujourd'hui";
           display:block;
           font-size:8px;
           font-weight:700;
