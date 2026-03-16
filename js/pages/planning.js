@@ -41,35 +41,35 @@ const PlanningPage = {
 
   _template() {
     return `
-      <div class="page-header">
+      <div class="page-header" style="flex-wrap:wrap;">
         <h1><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning Chauffeurs</h1>
-        <div class="page-actions">
-          <button class="btn btn-secondary" onclick="PlanningPage._showTemplates()"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon> Modèles</button>
-          <button class="btn btn-secondary" onclick="PlanningPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
-          <button class="btn btn-warning" onclick="PlanningPage._showDepRecurrentes()"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon> Dépenses</button>
-          <button class="btn btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Déclarer une absence</button>
-          <button class="btn btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Ajouter un créneau</button>
+        <div class="page-actions" style="flex-wrap:wrap;">
+          <button class="btn btn-sm btn-secondary" onclick="PlanningPage._showTemplates()"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon> Modèles</button>
+          <button class="btn btn-sm btn-secondary" onclick="PlanningPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
+          <button class="btn btn-sm btn-warning" onclick="PlanningPage._showDepRecurrentes()"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon> Dépenses</button>
+          <button class="btn btn-sm btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Absence</button>
+          <button class="btn btn-sm btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Créneau</button>
         </div>
       </div>
 
       <!-- Navigation & Filtres -->
-      <div class="card planning-nav-card" style="margin-bottom:var(--space-lg);padding:var(--space-md);">
+      <div class="card planning-nav-card" style="margin-bottom:var(--space-lg);padding:var(--space-sm) var(--space-md);overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
-          <div style="display:flex;align-items:center;gap:var(--space-sm);">
-            <button class="btn btn-sm btn-secondary" id="btn-prev"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
-            <button class="btn btn-sm btn-secondary" id="btn-today" style="font-size:var(--font-size-xs);padding:4px 10px;">Aujourd'hui</button>
-            <h3 id="planning-period-label" style="margin:0;min-width:180px;text-align:center;font-size:var(--font-size-base);"></h3>
-            <button class="btn btn-sm btn-secondary" id="btn-next"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button class="btn btn-sm btn-secondary" id="btn-prev" style="padding:4px 8px;"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
+            <button class="btn btn-sm btn-secondary" id="btn-today" style="font-size:11px;padding:4px 8px;">Auj.</button>
+            <h3 id="planning-period-label" style="margin:0;min-width:140px;text-align:center;font-size:13px;white-space:nowrap;"></h3>
+            <button class="btn btn-sm btn-secondary" id="btn-next" style="padding:4px 8px;"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
           </div>
-          <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px 10px;flex:1;min-width:0;">
-              <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:16px;flex-shrink:0;"></iconify-icon>
-              <input type="text" id="filter-planning-search" class="form-control" placeholder="Rechercher un chauffeur..." value="${this._filterSearch}" style="width:200px;font-size:var(--font-size-sm);padding:6px 8px;border:none;background:transparent;font-weight:500;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:5px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:3px 8px;">
+              <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:14px;flex-shrink:0;"></iconify-icon>
+              <input type="text" id="filter-planning-search" class="form-control" placeholder="Rechercher..." value="${this._filterSearch}" style="width:140px;font-size:12px;padding:4px 6px;border:none;background:transparent;font-weight:500;">
             </div>
             <div class="tabs" id="planning-view-tabs" style="margin:0;">
-              <div class="tab active" data-view="week"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Semaine</div>
-              <div class="tab" data-view="month"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
-              <div class="tab" data-view="stats"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Statistiques</div>
+              <div class="tab active" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Semaine</div>
+              <div class="tab" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
+              <div class="tab" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
             </div>
           </div>
         </div>
@@ -330,21 +330,21 @@ const PlanningPage = {
       ${this._renderServiceDuJour(chauffeurs, days)}
 
       <!-- Légende pills -->
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;">
-        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(34,197,94,.08);font-size:12px;font-weight:600;color:#22c55e;"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;"></span> Matin</div>
-        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(59,130,246,.08);font-size:12px;font-weight:600;color:#3b82f6;"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;"></span> Après-midi</div>
-        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(245,158,11,.08);font-size:12px;font-weight:600;color:#f59e0b;"><span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;"></span> Journée</div>
-        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(139,92,246,.08);font-size:12px;font-weight:600;color:#8b5cf6;"><span style="width:7px;height:7px;border-radius:50%;background:#8b5cf6;"></span> Nuit</div>
-        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(99,102,241,.08);font-size:12px;font-weight:600;color:#6366f1;"><span style="width:7px;height:7px;border-radius:50%;background:#6366f1;"></span> Personnalisé</div>
-        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(100,116,139,.08);font-size:12px;font-weight:600;color:#64748b;"><span style="width:7px;height:7px;border-radius:50%;background:#64748b;"></span> Repos</div>
-        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(239,68,68,.08);font-size:12px;font-weight:600;color:#ef4444;"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;"></span> Maladie</div>
-        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(59,130,246,.08);font-size:12px;font-weight:600;color:#3b82f6;"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;"></span> Congé</div>
-        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(239,68,68,.08);font-size:12px;font-weight:600;color:#ef4444;"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;"></span> Suspendu</div>
+      <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;justify-content:center;">
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(34,197,94,.08);font-size:11px;font-weight:600;color:#22c55e;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> Matin</div>
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(59,130,246,.08);font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> AM</div>
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(245,158,11,.08);font-size:11px;font-weight:600;color:#f59e0b;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Journée</div>
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(139,92,246,.08);font-size:11px;font-weight:600;color:#8b5cf6;"><span style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;"></span> Nuit</div>
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#6366f1;"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;"></span> Perso.</div>
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(100,116,139,.08);font-size:11px;font-weight:600;color:#64748b;"><span style="width:6px;height:6px;border-radius:50%;background:#64748b;"></span> Repos</div>
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> Maladie</div>
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(59,130,246,.08);font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> Congé</div>
+        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> Susp.</div>
       </div>
 
       <!-- Grille planning moderne -->
       <style>
-        .pg-grid { display:grid; grid-template-columns:200px repeat(7,minmax(90px,1fr)); gap:3px 6px; align-items:center; }
+        .pg-grid { display:grid; grid-template-columns:180px repeat(7,1fr); gap:3px 4px; align-items:center; width:100%; }
         .pg-head {
           text-align:center; font-size:11px; font-weight:700; color:#9ca3af; padding:10px 0 8px;
           text-transform:uppercase; letter-spacing:.8px; border-bottom:2px solid transparent;
@@ -406,20 +406,26 @@ const PlanningPage = {
         [data-theme="dark"] .pg-row-even .pg-driver, [data-theme="dark"] .pg-row-even .pg-cell { background:rgba(255,255,255,.03); }
         [data-theme="dark"] .pg-avatar { border-color:rgba(255,255,255,.15); }
         [data-theme="dark"] .pg-driver:hover { background:rgba(99,102,241,.1); }
-        @media(max-width:768px) {
-          .pg-grid { grid-template-columns:120px repeat(7,1fr); gap:2px 4px; }
-          .pg-avatar { width:26px; height:26px; font-size:9px; }
+        @media(max-width:1200px) {
+          .pg-grid { grid-template-columns:140px repeat(7,1fr); gap:2px 3px; }
           .pg-driver-name { font-size:12px; }
+          .pg-shift { font-size:11px; padding:4px 2px; }
+          .pg-absence { font-size:10px; padding:4px 2px; }
+        }
+        @media(max-width:768px) {
+          .pg-grid { grid-template-columns:110px repeat(7,1fr); gap:2px 2px; }
+          .pg-avatar { width:24px; height:24px; font-size:8px; }
+          .pg-driver-name { font-size:11px; }
           .pg-driver-sub { display:none; }
-          .pg-head { font-size:11px; }
-          .pg-head .pg-daynum { font-size:16px; }
-          .pg-shift { font-size:11px; padding:5px 3px; }
-          .pg-absence { font-size:10px; padding:5px 3px; }
+          .pg-head { font-size:9px; padding:6px 0 4px; }
+          .pg-head .pg-daynum { font-size:14px; }
+          .pg-shift { font-size:10px; padding:4px 2px; }
+          .pg-absence { font-size:9px; padding:4px 2px; }
         }
       </style>
 
-      <div class="card" style="padding:20px;overflow-x:auto;border-radius:20px;">
-        <div class="pg-grid" style="min-width:800px;">
+      <div class="card" style="padding:16px;overflow-x:auto;border-radius:20px;max-width:100%;">
+        <div class="pg-grid" style="min-width:750px;">
           <!-- Header -->
           <div></div>
           ${days.map(d => `
@@ -554,7 +560,7 @@ const PlanningPage = {
             <div style="font-size:11px;color:var(--text-muted);">${programmesCount} programme${programmesCount !== 1 ? 's' : ''}</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
           <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(16,185,129,.1);">
             <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
             <span style="font-size:11px;color:var(--text-muted);">En service</span>
