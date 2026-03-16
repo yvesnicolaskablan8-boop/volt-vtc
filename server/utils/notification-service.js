@@ -22,18 +22,23 @@ try {
  * Initialise les VAPID keys pour le web push
  */
 function initVAPID() {
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const email = process.env.VAPID_EMAIL || 'contact@pilote.app';
+  const publicKey = (process.env.VAPID_PUBLIC_KEY || '').trim();
+  const privateKey = (process.env.VAPID_PRIVATE_KEY || '').trim();
+  const email = (process.env.VAPID_EMAIL || 'contact@pilote.app').trim();
 
   if (!webPush || !publicKey || !privateKey) {
     console.warn('[NotifService] VAPID keys manquantes — push desactive');
     return false;
   }
 
-  webPush.setVapidDetails(`mailto:${email}`, publicKey, privateKey);
-  console.log('[NotifService] VAPID configure');
-  return true;
+  try {
+    webPush.setVapidDetails(`mailto:${email}`, publicKey, privateKey);
+    console.log('[NotifService] VAPID configure');
+    return true;
+  } catch (err) {
+    console.error('[NotifService] VAPID init error (cles invalides?):', err.message);
+    return false;
+  }
 }
 
 /**
