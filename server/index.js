@@ -113,6 +113,10 @@ const startServer = async () => {
     const tacheCron = require('./utils/tache-cron');
     tacheCron.start();
 
+    // Demarrer le CRON Repos automatique (toutes les 2h)
+    const reposCron = require('./utils/repos-cron');
+    reposCron.start();
+
   });
 };
 

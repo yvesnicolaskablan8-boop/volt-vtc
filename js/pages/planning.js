@@ -847,7 +847,7 @@ const PlanningPage = {
   // =================== CRUD ===================
 
   _addShift(preselectedChId, preselectedDate) {
-    const chauffeurs = this._getChauffeurs().filter(c => c.statut === 'actif');
+    const chauffeurs = this._getChauffeurs().filter(c => c.statut === 'actif' || c.statut === 'repos');
     const fields = [
       { type: 'row-start' },
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, placeholder: 'Choisir un chauffeur...', options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })), default: preselectedChId || '' },
@@ -965,7 +965,7 @@ const PlanningPage = {
   _editShift(id) {
     const shift = Store.findById('planning', id);
     if (!shift) return;
-    const chauffeurs = this._getChauffeurs().filter(c => c.statut === 'actif');
+    const chauffeurs = this._getChauffeurs().filter(c => c.statut === 'actif' || c.statut === 'repos');
 
     // Déduire heureDebut/heureFin depuis le preset si ancien enregistrement
     const editValues = { ...shift };
@@ -1287,7 +1287,7 @@ const PlanningPage = {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('landscape');
     const planning = Store.get('planning') || [];
-    const chauffeurs = Store.get('chauffeurs').filter(c => c.statut === 'actif');
+    const chauffeurs = Store.get('chauffeurs').filter(c => c.statut === 'actif' || c.statut === 'repos');
 
     doc.setFontSize(18);
     doc.text('Planning des Chauffeurs', 14, 22);
@@ -1387,7 +1387,7 @@ const PlanningPage = {
         <div class="form-group"><label>Nom du modèle *</label><input type="text" name="nom" required placeholder="Ex: Carburant journalier"></div>
         <div class="form-group"><label>Chauffeur</label>
           <select name="chauffeurId"><option value="">Tous les chauffeurs planifiés</option>
-            ${chauffeurs.filter(c => c.statut === 'actif').map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
+            ${chauffeurs.filter(c => c.statut === 'actif' || c.statut === 'repos').map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
           </select></div>
         <div class="form-group"><label>Type de dépense *</label>
           <div style="display:flex;gap:8px;align-items:center">
@@ -1527,7 +1527,7 @@ const PlanningPage = {
             grid.push({ date: targetDay, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
               vehiculeId: ch ? ch.vehiculeAssigne : null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom });
           } else {
-            chauffeurs.filter(c => c.statut === 'actif').forEach(c => {
+            chauffeurs.filter(c => c.statut === 'actif' || c.statut === 'repos').forEach(c => {
               grid.push({ date: targetDay, chauffeurId: c.id, chauffeurNom: `${c.prenom} ${c.nom}`,
                 vehiculeId: c.vehiculeAssigne || null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom });
             });
@@ -1541,7 +1541,7 @@ const PlanningPage = {
             grid.push({ date: targetDate, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
               vehiculeId: ch ? ch.vehiculeAssigne : null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom });
           } else {
-            chauffeurs.filter(c => c.statut === 'actif').forEach(c => {
+            chauffeurs.filter(c => c.statut === 'actif' || c.statut === 'repos').forEach(c => {
               grid.push({ date: targetDate, chauffeurId: c.id, chauffeurNom: `${c.prenom} ${c.nom}`,
                 vehiculeId: c.vehiculeAssigne || null, typeDepense: m.typeDepense, montant: m.montant, modeleNom: m.nom });
             });

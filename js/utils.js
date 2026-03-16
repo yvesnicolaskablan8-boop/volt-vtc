@@ -86,6 +86,7 @@ const Utils = {
   statusBadge(statut) {
     const config = {
       actif: { class: 'badge-success', icon: 'solar:record-circle-bold-duotone', label: 'Actif' },
+      repos: { class: 'badge-info', icon: 'solar:moon-sleep-bold-duotone', label: 'Repos' },
       inactif: { class: 'badge-danger', icon: 'solar:record-circle-bold-duotone', label: 'Inactif' },
       suspendu: { class: 'badge-warning', icon: 'solar:record-circle-bold-duotone', label: 'Suspendu' },
       en_service: { class: 'badge-success', icon: 'solar:record-circle-bold-duotone', label: 'En service' },

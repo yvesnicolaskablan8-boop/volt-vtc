@@ -47,6 +47,7 @@ const ChauffeursPage = {
     const stats = {
       total: chauffeurs.length,
       actifs: chauffeurs.filter(c => c.statut === 'actif').length,
+      repos: chauffeurs.filter(c => c.statut === 'repos').length,
       suspendus: chauffeurs.filter(c => c.statut === 'suspendu').length,
       inactifs: chauffeurs.filter(c => c.statut === 'inactif').length
     };
@@ -62,8 +63,8 @@ const ChauffeursPage = {
       <div class="grid-4" style="margin-bottom: var(--space-lg);">
         <div class="kpi-card"><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total</div></div>
         <div class="kpi-card green"><div class="kpi-value">${stats.actifs}</div><div class="kpi-label">Actifs</div></div>
+        <div class="kpi-card blue"><div class="kpi-value">${stats.repos}</div><div class="kpi-label">Repos</div></div>
         <div class="kpi-card yellow"><div class="kpi-value">${stats.suspendus}</div><div class="kpi-label">Suspendus</div></div>
-        <div class="kpi-card red"><div class="kpi-value">${stats.inactifs}</div><div class="kpi-label">Inactifs</div></div>
       </div>
 
       <div id="chauffeurs-table"></div>
@@ -1200,6 +1201,7 @@ const ChauffeursPage = {
       { name: 'dateDebutContrat', label: 'Début contrat', type: 'date', required: true },
       { name: 'statut', label: 'Statut', type: 'select', options: [
         { value: 'actif', label: 'Actif' },
+        { value: 'repos', label: 'Repos' },
         { value: 'inactif', label: 'Inactif' },
         { value: 'suspendu', label: 'Suspendu' }
       ]},
