@@ -492,38 +492,25 @@ const RentabilitePage = {
     const shortLabel = (a) => a.vehicule.immatriculation || `${a.vehicule.marque} ${a.vehicule.modele}`.slice(0, 12);
 
     // 1. Revenus vs Coûts — grouped bar
-    const revCostCtx = document.getElementById('chart-rev-vs-cost');
-    if (revCostCtx) {
+    const revCostEl = document.getElementById('chart-rev-vs-cost');
+    if (revCostEl) {
       const revData = d.analysis.map(a => Math.round(a.totalRevenue) || 0);
-      const costData = d.analysis.map(a => Math.round(a.totalCost) || 0);
+      const costDataBar = d.analysis.map(a => Math.round(a.totalCost) || 0);
       const chartLabels = d.analysis.map(a => shortLabel(a));
-      console.log('[Chart RevCost] labels:', chartLabels, 'revenus:', revData, 'couts:', costData);
-      try {
-        this._charts.push(new Chart(revCostCtx, {
-          type: 'bar',
-          data: {
-            labels: chartLabels,
-            datasets: [
-              { label: 'Revenus', data: revData, backgroundColor: '#10b981', borderRadius: 8 },
-              { label: 'Coûts', data: costData, backgroundColor: '#ef4444', borderRadius: 8 }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: {
-              tooltip: { callbacks: {
-                label: (ctx) => ` ${ctx.dataset.label}: ${Utils.formatCurrency(ctx.raw)}`
-              }},
-              legend: { position: 'top', labels: { color: cd.tickColor } }
-            },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 10 }, maxRotation: 45 } },
-              y: { grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 10 }, callback: v => v >= 1000000 ? (v/1000000).toFixed(1) + 'M' : Math.round(v/1000) + 'K' } }
-            }
-          }
-        }));
-      } catch(e) { console.error('[Chart RevCost] Error:', e); }
-    } else { console.warn('[Chart RevCost] Canvas not found!'); }
+      console.log('[Chart RevCost] revenus:', JSON.stringify(revData), 'couts:', JSON.stringify(costDataBar));
+      const chart1 = new Chart(revCostEl.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: chartLabels,
+          datasets: [
+            { label: 'Revenus', data: revData, backgroundColor: 'rgb(16,185,129)' },
+            { label: 'Coûts', data: costDataBar, backgroundColor: 'rgb(239,68,68)' }
+          ]
+        }
+      });
+      this._charts.push(chart1);
+      console.log('[Chart RevCost] created, datasets:', chart1.data.datasets.length, 'points:', chart1.data.datasets[0].data.length);
+    }
 
     // 2. Répartition des coûts — Doughnut moderne
     const costBrkCtx = document.getElementById('chart-cost-breakdown');
@@ -568,19 +555,17 @@ const RentabilitePage = {
     }
 
     // 3. Profit mensuel — bar chart
-    const profitCtx = document.getElementById('chart-monthly-profit');
-    if (profitCtx) {
+    const profitEl = document.getElementById('chart-monthly-profit');
+    if (profitEl) {
       const profitData = d.analysis.map(a => a.monthlyProfit || 0);
-      console.log('[Chart Profit] data:', profitData);
-      this._charts.push(new Chart(profitCtx, {
+      this._charts.push(new Chart(profitEl.getContext('2d'), {
         type: 'bar',
         data: {
           labels: d.analysis.map(a => shortLabel(a)),
           datasets: [{
             label: 'Profit/mois',
             data: profitData,
-            backgroundColor: profitData.map(v => v >= 0 ? '#10b981' : '#ef4444'),
-            borderRadius: 8
+            backgroundColor: profitData.map(v => v >= 0 ? 'rgb(16,185,129)' : 'rgb(239,68,68)')
           }]
         },
         options: {
