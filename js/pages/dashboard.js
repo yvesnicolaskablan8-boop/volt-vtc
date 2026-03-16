@@ -438,7 +438,7 @@ const DashboardPage = {
         const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime'));
         return { status: hasVersement ? 'verse' : 'en_retard', heures, shiftId };
       });
-      return { id: c.id, prenom: c.prenom, nom: c.nom, initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), cells };
+      return { id: c.id, prenom: c.prenom, nom: c.nom, photo: c.photo || '', initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), cells };
     });
 
     return {
@@ -1207,7 +1207,10 @@ const DashboardPage = {
     drivers.forEach((dr, idx) => {
       const color = avatarColors[idx % avatarColors.length];
       const rowClass = idx % 2 === 1 ? ' d-hm-row-even' : '';
-      html += `<div class="d-hm-driver${rowClass}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;"><div class="d-hm-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${dr.initials}</div><span>${dr.prenom}</span></div>`;
+      const avatarHtml = dr.photo
+        ? `<img src="${dr.photo}" alt="${dr.initials}" class="d-hm-avatar" style="object-fit:cover;">`
+        : `<div class="d-hm-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${dr.initials}</div>`;
+      html += `<div class="d-hm-driver${rowClass}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">${avatarHtml}<span>${dr.prenom}</span></div>`;
       dr.cells.forEach((cell, ci) => {
         const status = cell.status;
         const heures = cell.heures;
