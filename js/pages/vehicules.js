@@ -5,12 +5,14 @@
 const VehiculesPage = {
   _charts: [],
   _carburantChart: null,
+  _activeListTab: 'flotte',
 
   render() {
     const container = document.getElementById('page-content');
     const vehicules = Store.get('vehicules');
     container.innerHTML = this._listTemplate(vehicules);
     this._bindListEvents(vehicules);
+    this._bindListTabEvents();
   },
 
   renderDetail(id) {
@@ -36,6 +38,50 @@ const VehiculesPage = {
       clearInterval(this._yangoRefreshInterval);
       this._yangoRefreshInterval = null;
     }
+    // Cleanup garage charts
+    if (typeof GaragePage !== 'undefined') GaragePage.destroy();
+  },
+
+  _bindListTabEvents() {
+    document.querySelectorAll('.garage-tab[data-ltab]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        this._activeListTab = tab.dataset.ltab;
+        document.querySelectorAll('.garage-tab[data-ltab]').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        this._renderListTab(this._activeListTab);
+      });
+    });
+  },
+
+  _renderListTab(tab) {
+    const content = document.getElementById('vehicules-list-tab-content');
+    const actions = document.getElementById('vehicules-page-actions');
+    if (!content) return;
+
+    // Cleanup garage charts before switching
+    if (typeof GaragePage !== 'undefined') GaragePage.destroy();
+
+    if (tab === 'flotte') {
+      // Re-render full list view
+      this.render();
+      return;
+    }
+
+    // Delegate to GaragePage for garage tabs
+    if (typeof GaragePage !== 'undefined') {
+      // Update actions for garage
+      if (actions) {
+        actions.innerHTML = `
+          <button class="btn btn-sm btn-outline" onclick="GaragePage._updateKmModal()" title="Mettre a jour le kilometrage">
+            <iconify-icon icon="solar:route-bold-duotone"></iconify-icon> Maj km
+          </button>
+        `;
+      }
+      GaragePage._activeTab = tab;
+      content.innerHTML = '<div id="garage-tab-content"></div>';
+      GaragePage._renderTab(tab);
+      // GaragePage renders into #garage-tab-content
+    }
   },
 
   _listTemplate(vehicules) {
@@ -49,27 +95,52 @@ const VehiculesPage = {
 
     return `
       <div class="page-header">
-        <h1><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Véhicules</h1>
-        <div class="page-actions">
+        <h1><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Véhicules & Garage</h1>
+        <div class="page-actions" id="vehicules-page-actions">
           <button class="btn btn-primary" id="btn-add-vehicule"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter</button>
         </div>
       </div>
 
-      <div class="grid-4" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card"><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total flotte</div></div>
-        <div class="kpi-card green"><div class="kpi-value">${stats.enService}</div><div class="kpi-label">En service</div></div>
-        <div class="kpi-card yellow"><div class="kpi-value">${stats.enMaintenance}</div><div class="kpi-label">En maintenance</div></div>
-        <div class="kpi-card cyan">
-          <div class="kpi-value">
-            <span style="color:var(--pilote-yellow)">${stats.electriques} <iconify-icon icon="solar:bolt-bold-duotone" style="font-size:16px"></iconify-icon></span>
-            <span style="color:var(--text-muted);font-size:14px;margin:0 4px;">/</span>
-            <span>${stats.thermiques} <iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:14px"></iconify-icon></span>
-          </div>
-          <div class="kpi-label">Électrique / Thermique</div>
-        </div>
+      <!-- Onglets Flotte / Garage -->
+      <div class="garage-tabs" style="display:flex;gap:0;margin-bottom:var(--space-lg);border-bottom:2px solid var(--border-color);overflow-x:auto;">
+        <button class="garage-tab ${this._activeListTab === 'flotte' ? 'active' : ''}" data-ltab="flotte">
+          <iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Flotte
+        </button>
+        <button class="garage-tab ${this._activeListTab === 'maintenance' ? 'active' : ''}" data-ltab="maintenance">
+          <iconify-icon icon="solar:tuning-2-bold-duotone"></iconify-icon> Maintenance
+        </button>
+        <button class="garage-tab ${this._activeListTab === 'reparations' ? 'active' : ''}" data-ltab="reparations">
+          <iconify-icon icon="solar:wrench-bold-duotone"></iconify-icon> Réparations
+        </button>
+        <button class="garage-tab ${this._activeListTab === 'ct' ? 'active' : ''}" data-ltab="ct">
+          <iconify-icon icon="solar:clipboard-check-bold-duotone"></iconify-icon> CT
+        </button>
+        <button class="garage-tab ${this._activeListTab === 'assurances' ? 'active' : ''}" data-ltab="assurances">
+          <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Assurances
+        </button>
+        <button class="garage-tab ${this._activeListTab === 'tco' ? 'active' : ''}" data-ltab="tco">
+          <iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> TCO
+        </button>
       </div>
 
-      <div id="vehicules-table"></div>
+      <div id="vehicules-list-tab-content">
+        <div class="grid-4" style="margin-bottom:var(--space-lg);">
+          <div class="kpi-card"><div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total flotte</div></div>
+          <div class="kpi-card green"><div class="kpi-icon"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div><div class="kpi-value">${stats.enService}</div><div class="kpi-label">En service</div></div>
+          <div class="kpi-card yellow"><div class="kpi-icon"><iconify-icon icon="solar:wrench-bold-duotone"></iconify-icon></div><div class="kpi-value">${stats.enMaintenance}</div><div class="kpi-label">En maintenance</div></div>
+          <div class="kpi-card cyan">
+            <div class="kpi-icon"><iconify-icon icon="solar:bolt-bold-duotone"></iconify-icon></div>
+            <div class="kpi-value">
+              <span style="color:var(--pilote-yellow)">${stats.electriques} <iconify-icon icon="solar:bolt-bold-duotone" style="font-size:16px"></iconify-icon></span>
+              <span style="color:var(--text-muted);font-size:14px;margin:0 4px;">/</span>
+              <span>${stats.thermiques} <iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:14px"></iconify-icon></span>
+            </div>
+            <div class="kpi-label">Électrique / Thermique</div>
+          </div>
+        </div>
+
+        <div id="vehicules-table"></div>
+      </div>
     `;
   },
 

@@ -57,9 +57,17 @@ const ContraventionsPage = {
     types.forEach(t => typeLabels[t.value] = t.label);
 
     return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:document-text-bold-duotone" style="vertical-align:middle;margin-right:8px"></iconify-icon>Contraventions</h1>
-        <div class="header-actions">
+      <div class="d-wrap"><div class="d-bg">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
+        <div>
+          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Gestion</div>
+          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
+            <iconify-icon icon="solar:document-text-bold-duotone" style="color:#6366f1;"></iconify-icon> Contraventions
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
           <button class="btn btn-primary" id="btn-add-contravention">
             <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter
           </button>
@@ -67,45 +75,59 @@ const ContraventionsPage = {
       </div>
 
       <!-- KPIs -->
-      <div class="kpi-grid grid-4">
-        <div class="kpi-card kpi-danger" id="kpi-total-impaye" style="cursor:pointer" title="Cliquer pour voir les d\u00e9tails">
-          <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(data.totalImpaye)}</div>
-          <div class="kpi-label">Total impay\u00e9 <iconify-icon icon="solar:eye-bold" style="font-size:0.75rem;vertical-align:middle;opacity:0.6"></iconify-icon></div>
+      <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);">
+        <div class="d-card" id="kpi-total-impaye" style="cursor:pointer;${data.totalImpaye > 0 ? 'border-color:rgba(239,68,68,.2);' : ''}" title="Cliquer pour voir les détails">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;color:#ef4444;">Total impayé</div>
+          </div>
+          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(data.totalImpaye)}</div>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-icon"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${data.nbMois}</div>
-          <div class="kpi-label">Ce mois</div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Ce mois</div>
+          </div>
+          <div class="d-val">${data.nbMois}</div>
         </div>
-        <div class="kpi-card kpi-success">
-          <div class="kpi-icon"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${data.nbPayees}</div>
-          <div class="kpi-label">Pay\u00e9es (mois)</div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Payées (mois)</div>
+          </div>
+          <div class="d-val" style="color:#10b981;">${data.nbPayees}</div>
         </div>
-        <div class="kpi-card kpi-warning">
-          <div class="kpi-icon"><iconify-icon icon="solar:chat-round-dots-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${data.nbContestees}</div>
-          <div class="kpi-label">Contest\u00e9es</div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:chat-round-dots-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Contestées</div>
+          </div>
+          <div class="d-val" style="color:#f59e0b;">${data.nbContestees}</div>
         </div>
       </div>
 
       <!-- Filters -->
-      <div class="filters-bar" style="margin-bottom:1rem">
-        <select id="filter-chauffeur" class="filter-select">
-          <option value="">Tous les chauffeurs</option>
-          ${data.chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
-        </select>
-        <select id="filter-statut" class="filter-select">
-          <option value="">Tous les statuts</option>
-          <option value="impayee">Impay\u00e9e</option>
-          <option value="payee">Pay\u00e9e</option>
-          <option value="contestee">Contest\u00e9e</option>
-        </select>
+      <div class="d-card" style="padding:12px 16px;margin-bottom:16px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <select id="filter-chauffeur" class="filter-select" style="padding:6px 12px;border-radius:11px;border:1px solid rgba(0,0,0,.06);background:rgba(255,255,255,.7);font-size:12px;font-weight:500;color:#374151;">
+            <option value="">Tous les chauffeurs</option>
+            ${data.chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
+          </select>
+          <select id="filter-statut" class="filter-select" style="padding:6px 12px;border-radius:11px;border:1px solid rgba(0,0,0,.06);background:rgba(255,255,255,.7);font-size:12px;font-weight:500;color:#374151;">
+            <option value="">Tous les statuts</option>
+            <option value="impayee">Impayée</option>
+            <option value="payee">Payée</option>
+            <option value="contestee">Contestée</option>
+          </select>
+        </div>
       </div>
 
       <!-- Table -->
-      <div id="contraventions-table"></div>
+      <div class="d-card">
+        <div id="contraventions-table"></div>
+      </div>
+
+      </div></div>
     `;
   },
 

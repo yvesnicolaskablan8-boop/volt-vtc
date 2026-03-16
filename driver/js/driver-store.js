@@ -86,6 +86,16 @@ const DriverStore = {
     return this._post('/absences', data);
   },
 
+  // ===== TACHES =====
+
+  getTaches() {
+    return this._get('/taches');
+  },
+
+  updateTacheStatut(id, statut, commentaire) {
+    return this._put('/taches/' + id + '/statut', { statut, commentaireChauffeur: commentaire });
+  },
+
   // ===== SERVICE / POINTAGE =====
 
   getServiceToday() {

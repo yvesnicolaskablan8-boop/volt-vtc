@@ -171,131 +171,145 @@ const RentabilitePage = {
 
   _template(d) {
     return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Rentabilité</h1>
+      <div class="d-wrap"><div class="d-bg">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
+        <div>
+          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Analyse financière</div>
+          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
+            <iconify-icon icon="solar:pie-chart-2-bold-duotone" style="color:#6366f1;"></iconify-icon> Rentabilité
+          </div>
+        </div>
       </div>
 
-      <div class="grid-4" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card green">
-          <div class="kpi-icon"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
-          <div class="kpi-label">Revenus totaux flotte</div>
+      <!-- KPIs -->
+      <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);">
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Revenus totaux flotte</div>
+          </div>
+          <div class="d-val" style="color:#10b981;">${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
         </div>
-        <div class="kpi-card red">
-          <div class="kpi-icon"><iconify-icon icon="solar:graph-down-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(d.fleetTotalCost)}</div>
-          <div class="kpi-label">Coûts totaux flotte</div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;"><iconify-icon icon="solar:graph-down-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Coûts totaux flotte</div>
+          </div>
+          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(d.fleetTotalCost)}</div>
         </div>
-        <div class="kpi-card ${d.fleetProfit >= 0 ? 'green' : 'red'}">
-          <div class="kpi-icon"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(d.fleetProfit)}</div>
-          <div class="kpi-label">Profit net flotte</div>
+        <div class="d-card" style="${d.fleetProfit < 0 ? 'border-color:rgba(239,68,68,.2);' : ''}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:${d.fleetProfit >= 0 ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};color:${d.fleetProfit >= 0 ? '#10b981' : '#ef4444'};"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Profit net flotte</div>
+          </div>
+          <div class="d-val" style="color:${d.fleetProfit >= 0 ? '#10b981' : '#ef4444'};">${Utils.formatCurrency(d.fleetProfit)}</div>
         </div>
-        <div class="kpi-card cyan">
-          <div class="kpi-icon"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${d.fleetROI.toFixed(1)}%</div>
-          <div class="kpi-label">ROI global</div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">ROI global</div>
+          </div>
+          <div class="d-val" style="color:#6366f1;">${d.fleetROI.toFixed(1)}%</div>
         </div>
       </div>
 
       <!-- EV vs Thermique comparison -->
-      <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--pilote-yellow);background:rgba(250,204,21,0.03);">
-        <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--pilote-yellow)"></iconify-icon> Comparaison Électrique vs Thermique</span>
+      <div class="d-card" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div class="d-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:bolt-bold-duotone"></iconify-icon></div>
+          <div style="font-size:14px;font-weight:700;color:#111827;">Comparaison Électrique vs Thermique</div>
         </div>
         <div class="grid-2" style="gap:var(--space-lg);">
           <div>
-            <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-md);">
-              <span class="badge badge-warning"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:8px"></iconify-icon> ${d.evCount} véhicules électriques</span>
-            </div>
+            <div style="margin-bottom:var(--space-md);"><span class="d-tag yellow"><iconify-icon icon="solar:bolt-bold-duotone" style="font-size:10px"></iconify-icon> ${d.evCount} véhicules électriques</span></div>
             <div style="display:flex;flex-direction:column;gap:8px;font-size:var(--font-size-sm);">
-              <div style="display:flex;justify-content:space-between;"><span class="text-muted">ROI moyen</span><strong style="color:var(--pilote-yellow)">${d.avgEVROI.toFixed(1)}%</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span class="text-muted">Coût énergie moyen</span><strong>${Utils.formatCurrency(d.avgEVEnergy)}</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span class="text-muted">Maintenance moyenne</span><strong>${Utils.formatCurrency(d.avgEVMaintenance)}</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span class="text-muted">Coût moyen/km</span><strong>${d.avgEVCoutKm} FCFA/km</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">ROI moyen</span><strong style="color:#f59e0b">${d.avgEVROI.toFixed(1)}%</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût énergie moyen</span><strong>${Utils.formatCurrency(d.avgEVEnergy)}</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Maintenance moyenne</span><strong>${Utils.formatCurrency(d.avgEVMaintenance)}</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût moyen/km</span><strong>${d.avgEVCoutKm} FCFA/km</strong></div>
             </div>
           </div>
           <div>
-            <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-md);">
-              <span class="badge badge-neutral"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:8px"></iconify-icon> ${d.thermalCount} véhicules thermiques</span>
-            </div>
+            <div style="margin-bottom:var(--space-md);"><span class="d-tag purple"><iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:10px"></iconify-icon> ${d.thermalCount} véhicules thermiques</span></div>
             <div style="display:flex;flex-direction:column;gap:8px;font-size:var(--font-size-sm);">
-              <div style="display:flex;justify-content:space-between;"><span class="text-muted">ROI moyen</span><strong>${d.avgThermalROI.toFixed(1)}%</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span class="text-muted">Coût énergie moyen</span><strong>${Utils.formatCurrency(d.avgThermalEnergy)}</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span class="text-muted">Maintenance moyenne</span><strong>${Utils.formatCurrency(d.avgThermalMaintenance)}</strong></div>
-              <div style="display:flex;justify-content:space-between;"><span class="text-muted">Coût moyen/km</span><strong>${d.avgThermalCoutKm} FCFA/km</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">ROI moyen</span><strong>${d.avgThermalROI.toFixed(1)}%</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût énergie moyen</span><strong>${Utils.formatCurrency(d.avgThermalEnergy)}</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Maintenance moyenne</span><strong>${Utils.formatCurrency(d.avgThermalMaintenance)}</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:#9ca3af;">Coût moyen/km</span><strong>${d.avgThermalCoutKm} FCFA/km</strong></div>
             </div>
           </div>
         </div>
         ${d.energySavingsPercent > 0 ? `
-        <div style="margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--border-primary);text-align:center;">
-          <span style="font-size:var(--font-size-sm);color:var(--success);font-weight:600;">
-            <iconify-icon icon="solar:leaf-bold-duotone"></iconify-icon> Les véhicules électriques économisent ~${d.energySavingsPercent}% en coûts d'énergie par rapport aux thermiques
-          </span>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(0,0,0,.06);text-align:center;">
+          <span class="d-tag green"><iconify-icon icon="solar:leaf-bold-duotone" style="font-size:10px;"></iconify-icon> Les véhicules électriques économisent ~${d.energySavingsPercent}% en coûts d'énergie</span>
         </div>
         ` : ''}
       </div>
 
       <!-- Leasing vs Cash summary -->
-      <div class="grid-2" style="margin-bottom:var(--space-lg);">
-        <div class="card" style="border-left:4px solid var(--pilote-blue);">
-          <div class="card-header"><span class="card-title"><iconify-icon icon="solar:document-bold-duotone" class="text-blue"></iconify-icon> Leasing (${d.leasingCount} véhicules)</span></div>
-          <div class="kpi-value" style="font-size:var(--font-size-xl);">${d.avgLeasingROI.toFixed(1)}% ROI moyen</div>
-          <p style="font-size:var(--font-size-sm);margin-top:var(--space-sm);">Avantages : trésorerie préservée, véhicules récents, charges déductibles</p>
+      <div class="d-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Leasing (${d.leasingCount} véhicules)</div>
+          </div>
+          <div class="d-val" style="color:#6366f1;">${d.avgLeasingROI.toFixed(1)}%</div>
+          <div class="d-sub">ROI moyen — trésorerie préservée, charges déductibles</div>
         </div>
-        <div class="card" style="border-left:4px solid var(--success);">
-          <div class="card-header"><span class="card-title"><iconify-icon icon="solar:money-bag-bold-duotone" class="text-success"></iconify-icon> Cash (${d.cashCount} véhicules)</span></div>
-          <div class="kpi-value" style="font-size:var(--font-size-xl);">${d.avgCashROI.toFixed(1)}% ROI moyen</div>
-          <p style="font-size:var(--font-size-sm);margin-top:var(--space-sm);">Avantages : pas de mensualités, actif au bilan, coût total inférieur</p>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
+            <div class="d-lbl" style="margin:0;">Cash (${d.cashCount} véhicules)</div>
+          </div>
+          <div class="d-val" style="color:#10b981;">${d.avgCashROI.toFixed(1)}%</div>
+          <div class="d-sub">ROI moyen — pas de mensualités, coût total inférieur</div>
         </div>
       </div>
 
       <!-- Charts -->
-      <div class="charts-grid">
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> TCO par véhicule</div>
+      <div class="d-grid" style="grid-template-columns:1fr 1fr;margin-top:8px;">
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
+            <div style="font-size:14px;font-weight:700;color:#111827;">TCO par véhicule</div>
           </div>
-          <div class="chart-container" style="height:320px;">
-            <canvas id="chart-tco"></canvas>
-          </div>
+          <div style="height:320px;"><canvas id="chart-tco"></canvas></div>
         </div>
-
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Comparaison Leasing vs Cash (coût cumulé)</div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
+            <div style="font-size:14px;font-weight:700;color:#111827;">Leasing vs Cash</div>
           </div>
-          <div class="chart-container" style="height:320px;">
-            <canvas id="chart-leasing-cash"></canvas>
-          </div>
+          <div style="height:320px;"><canvas id="chart-leasing-cash"></canvas></div>
         </div>
-
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Profit mensuel par véhicule</div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(245,158,11,.08);color:#f59e0b;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
+            <div style="font-size:14px;font-weight:700;color:#111827;">Profit mensuel par véhicule</div>
           </div>
-          <div class="chart-container" style="height:320px;">
-            <canvas id="chart-monthly-profit"></canvas>
-          </div>
+          <div style="height:320px;"><canvas id="chart-monthly-profit"></canvas></div>
         </div>
-
-        <div class="chart-card">
-          <div class="chart-header">
-            <div class="chart-title"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Amortissement des véhicules</div>
+        <div class="d-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(139,92,246,.08);color:#8b5cf6;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
+            <div style="font-size:14px;font-weight:700;color:#111827;">Amortissement des véhicules</div>
           </div>
-          <div class="chart-container" style="height:320px;">
-            <canvas id="chart-depreciation"></canvas>
-          </div>
+          <div style="height:320px;"><canvas id="chart-depreciation"></canvas></div>
         </div>
       </div>
 
       <!-- Detail table -->
-      <div class="card" style="margin-top:var(--space-lg);">
-        <div class="card-header">
-          <span class="card-title">Détail par véhicule</span>
+      <div class="d-card" style="margin-top:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></div>
+          <div style="font-size:14px;font-weight:700;color:#111827;">Détail par véhicule</div>
         </div>
         <div id="rentabilite-table"></div>
       </div>
+
+      </div></div>
     `;
   },
 

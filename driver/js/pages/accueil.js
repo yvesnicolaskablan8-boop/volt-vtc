@@ -208,6 +208,10 @@ const AccueilPage = {
             <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.75rem"></iconify-icon>
             <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Signaler un<br>problème</span>
           </button>
+          <button onclick="DriverRouter.navigate('taches')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(99,102,241,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(99,102,241,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
+            <iconify-icon icon="solar:checklist-bold-duotone" style="font-size:1.75rem"></iconify-icon>
+            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Mes<br>taches</span>
+          </button>
         </div>
       </div>
 
