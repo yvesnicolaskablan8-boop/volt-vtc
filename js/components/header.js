@@ -272,6 +272,79 @@ const Header = {
       });
     });
 
+    // Notifications taches (pour l'admin: taches prises en charge ou terminees)
+    const session = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+    const isAdmin = session && session.role === 'Administrateur';
+    if (isAdmin) {
+      const taches = Store.get('taches') || [];
+      const userId = session.userId;
+      // Taches creees par l'admin qui sont "en_cours" (prise en charge recente)
+      const enCours = taches.filter(t => t.creePar === userId && t.statut === 'en_cours' && t.assigneANom);
+      const termineesRecentes = taches.filter(t => {
+        if (t.creePar !== userId || t.statut !== 'terminee' || !t.dateTerminaison) return false;
+        const termDate = new Date(t.dateTerminaison);
+        const now = new Date();
+        return (now - termDate) < 24 * 60 * 60 * 1000; // dernières 24h
+      });
+      enCours.slice(0, 3).forEach(t => {
+        notifications.push({
+          icon: 'solar:hand-shake-bold-duotone',
+          iconBg: 'rgba(59,130,246,0.15)',
+          iconColor: '#3b82f6',
+          text: `<strong>${t.assigneANom}</strong> s'occupe de "${t.titre}"`,
+          time: 'En cours'
+        });
+      });
+      termineesRecentes.slice(0, 3).forEach(t => {
+        notifications.push({
+          icon: 'solar:check-circle-bold-duotone',
+          iconBg: 'rgba(34,197,94,0.15)',
+          iconColor: '#22c55e',
+          text: `<strong>${t.assigneANom}</strong> a terminé "${t.titre}"`,
+          time: t.dateTerminaison ? Utils.formatDate(t.dateTerminaison.split('T')[0]) : ''
+        });
+      });
+    } else if (session && session.role !== 'chauffeur') {
+      // Pour les utilisateurs non-admin
+      const taches = Store.get('taches') || [];
+      const userId = session.userId;
+      // Taches assignées à moi
+      const nouvelles = taches.filter(t => t.assigneA === userId && t.statut === 'a_faire');
+      if (nouvelles.length > 0) {
+        notifications.push({
+          icon: 'solar:checklist-bold-duotone',
+          iconBg: 'rgba(99,102,241,0.15)',
+          iconColor: '#6366f1',
+          text: `<strong>${nouvelles.length} tache${nouvelles.length > 1 ? 's' : ''}</strong> à effectuer`,
+          time: "Aujourd'hui"
+        });
+      }
+      // Taches que j'ai créées et qui sont prises en charge ou terminées
+      const enCoursCrees = taches.filter(t => t.creePar === userId && t.assigneA !== userId && t.statut === 'en_cours' && t.assigneANom);
+      enCoursCrees.slice(0, 3).forEach(t => {
+        notifications.push({
+          icon: 'solar:hand-shake-bold-duotone',
+          iconBg: 'rgba(59,130,246,0.15)',
+          iconColor: '#3b82f6',
+          text: `<strong>${t.assigneANom}</strong> s'occupe de "${t.titre}"`,
+          time: 'En cours'
+        });
+      });
+      const termCrees = taches.filter(t => {
+        if (t.creePar !== userId || t.assigneA === userId || t.statut !== 'terminee' || !t.dateTerminaison) return false;
+        return (new Date() - new Date(t.dateTerminaison)) < 24 * 60 * 60 * 1000;
+      });
+      termCrees.slice(0, 3).forEach(t => {
+        notifications.push({
+          icon: 'solar:check-circle-bold-duotone',
+          iconBg: 'rgba(34,197,94,0.15)',
+          iconColor: '#22c55e',
+          text: `<strong>${t.assigneANom}</strong> a terminé "${t.titre}"`,
+          time: t.dateTerminaison ? Utils.formatDate(t.dateTerminaison.split('T')[0]) : ''
+        });
+      });
+    }
+
     const count = notifications.length;
     const countEl = document.getElementById('notif-count');
     if (countEl) {

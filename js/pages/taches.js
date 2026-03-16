@@ -46,7 +46,7 @@ const TachesPage = {
   _userPageTemplate() {
     const userId = this._currentUserId();
     const allTaches = Store.get('taches') || [];
-    const mesTaches = allTaches.filter(t => t.assigneA === userId);
+    const mesTaches = allTaches.filter(t => t.assigneA === userId || t.creePar === userId);
     const enAttente = mesTaches.filter(t => t.statut === 'a_faire' || t.statut === 'en_cours');
     const terminees = mesTaches.filter(t => t.statut === 'terminee' || t.statut === 'annulee');
     const today = new Date().toISOString().split('T')[0];
@@ -68,8 +68,11 @@ const TachesPage = {
     );
 
     return `
-      <div class="page-header">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <h1><iconify-icon icon="solar:checklist-bold-duotone" style="color:#6366f1;"></iconify-icon> Mes taches</h1>
+        <button class="btn btn-primary" onclick="TachesPage._addTache()" style="display:inline-flex;align-items:center;gap:6px;">
+          <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouvelle tache
+        </button>
       </div>
 
       <!-- Résumé rapide -->
@@ -200,26 +203,48 @@ const TachesPage = {
           <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:14px;"></iconify-icon>
           ${echeanceText}
         </div>` : ''}
-        ${t.creeParNom ? `
-        <div class="utc-meta-item" style="color:var(--text-muted);">
-          <iconify-icon icon="solar:user-bold-duotone" style="font-size:14px;"></iconify-icon>
-          Assigne par ${t.creeParNom}
-        </div>` : ''}
+        ${(() => {
+          const currentUserId = TachesPage._currentUserId();
+          const isMyTask = t.assigneA === currentUserId;
+          const isCreator = t.creePar === currentUserId;
+          if (isCreator && !isMyTask && t.assigneANom) {
+            return `<div class="utc-meta-item" style="color:var(--text-muted);"><iconify-icon icon="solar:user-bold-duotone" style="font-size:14px;"></iconify-icon> Assigne a ${t.assigneANom}</div>`;
+          } else if (t.creeParNom) {
+            return `<div class="utc-meta-item" style="color:var(--text-muted);"><iconify-icon icon="solar:user-bold-duotone" style="font-size:14px;"></iconify-icon> Assigne par ${t.creeParNom}</div>`;
+          }
+          return '';
+        })()}
       </div>
 
-      ${!isDone ? `
-      <div class="utc-actions">
-        ${t.statut === 'a_faire' ? `
-        <button class="btn-utc btn-utc-start btn-utc-done-full" onclick="TachesPage._changeStatut('${t.id}', 'en_cours')">
-          <iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Je m'en occupe
-        </button>` : `
-        <button class="btn-utc btn-utc-done btn-utc-done-full" onclick="TachesPage._changeStatut('${t.id}', 'terminee')">
-          <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tache effectuee
-        </button>`}
-        <button class="btn-utc btn-utc-detail" onclick="TachesPage._viewTache('${t.id}')">
-          <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-        </button>
-      </div>` : `
+      ${!isDone ? (() => {
+        const currentUserId = TachesPage._currentUserId();
+        const isMyTask = t.assigneA === currentUserId;
+        if (isMyTask) {
+          return `<div class="utc-actions">
+            ${t.statut === 'a_faire' ? `
+            <button class="btn-utc btn-utc-start btn-utc-done-full" onclick="TachesPage._changeStatut('${t.id}', 'en_cours')">
+              <iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Je m'en occupe
+            </button>` : `
+            <button class="btn-utc btn-utc-done btn-utc-done-full" onclick="TachesPage._changeStatut('${t.id}', 'terminee')">
+              <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tache effectuee
+            </button>`}
+            <button class="btn-utc btn-utc-detail" onclick="TachesPage._viewTache('${t.id}')">
+              <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+            </button>
+          </div>`;
+        } else {
+          // Tache que j'ai créée pour quelqu'un d'autre — suivi seulement
+          return `<div class="utc-actions">
+            <span style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+              <iconify-icon icon="${t.statut === 'en_cours' ? 'solar:running-round-bold-duotone' : 'solar:clock-circle-bold-duotone'}" style="font-size:14px;"></iconify-icon>
+              ${t.statut === 'en_cours' ? 'En cours de traitement' : 'En attente'}
+            </span>
+            <button class="btn-utc btn-utc-detail" onclick="TachesPage._viewTache('${t.id}')">
+              <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+            </button>
+          </div>`;
+        }
+      })() : `
       <div class="utc-done-badge">
         <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
         ${t.statut === 'terminee' ? 'Terminee' : 'Annulee'}
@@ -504,7 +529,7 @@ const TachesPage = {
   // =================== CRUD ===================
 
   _addTache() {
-    if (!this._isAdmin()) { Toast.error('Seul un administrateur peut creer des taches'); return; }
+    if (this._isChauffeur()) { Toast.error('Acces non autorise'); return; }
     const fields = this._formFields();
     Modal.form(
       '<iconify-icon icon="solar:checklist-bold-duotone" style="color:#6366f1;"></iconify-icon> Nouvelle tache',
@@ -809,7 +834,12 @@ const TachesPage = {
   },
 
   _formFields(existing) {
-    const users = (Store.get('users') || []).filter(u => u.role !== 'chauffeur');
+    // Admin voit tous sauf chauffeurs, les autres voient tous sauf chauffeurs ET admin
+    const users = (Store.get('users') || []).filter(u => {
+      if (u.role === 'chauffeur') return false;
+      if (!this._isAdmin() && u.role === 'Administrateur') return false;
+      return true;
+    });
 
     return [
       { name: 'titre', label: 'Titre de la tache', type: 'text', required: true, default: existing ? existing.titre : '', placeholder: 'Ex: Preparer les documents comptables...' },
