@@ -298,82 +298,146 @@ const PlanningPage = {
         </div>
       </div>
 
-      <!-- Légende -->
-      <div class="card" style="margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);">
-        <div style="display:flex;gap:var(--space-md);flex-wrap:wrap;align-items:center;font-size:var(--font-size-xs);">
-          <span style="font-weight:600;color:var(--text-secondary);">Créneaux :</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#22c55e;vertical-align:middle;"></span> <strong>M</strong> Matin</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> <strong>AM</strong> Après-midi</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;vertical-align:middle;"></span> <strong>J</strong> Journée</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#8b5cf6;vertical-align:middle;"></span> <strong>N</strong> Nuit</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6366f1;vertical-align:middle;"></span> <strong>P</strong> Personnalisé</span>
-          <span style="margin-left:var(--space-md);font-weight:600;color:var(--text-secondary);">Absences :</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#64748b;vertical-align:middle;"></span> <strong>R</strong> Repos</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444;vertical-align:middle;"></span> <strong>M</strong> Maladie</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> <strong>C</strong> Congé</span>
-        </div>
+      <!-- Légende pills -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;">
+        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(34,197,94,.08);font-size:12px;font-weight:600;color:#22c55e;"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;"></span> Matin</div>
+        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(59,130,246,.08);font-size:12px;font-weight:600;color:#3b82f6;"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;"></span> Après-midi</div>
+        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(245,158,11,.08);font-size:12px;font-weight:600;color:#f59e0b;"><span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;"></span> Journée</div>
+        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(139,92,246,.08);font-size:12px;font-weight:600;color:#8b5cf6;"><span style="width:7px;height:7px;border-radius:50%;background:#8b5cf6;"></span> Nuit</div>
+        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(99,102,241,.08);font-size:12px;font-weight:600;color:#6366f1;"><span style="width:7px;height:7px;border-radius:50%;background:#6366f1;"></span> Personnalisé</div>
+        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(100,116,139,.08);font-size:12px;font-weight:600;color:#64748b;"><span style="width:7px;height:7px;border-radius:50%;background:#64748b;"></span> Repos</div>
+        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(239,68,68,.08);font-size:12px;font-weight:600;color:#ef4444;"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;"></span> Maladie</div>
+        <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(59,130,246,.08);font-size:12px;font-weight:600;color:#3b82f6;"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;"></span> Congé</div>
       </div>
 
-      <!-- Grille planning -->
-      <div class="card" style="padding:0;overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;min-width:800px;">
-          <thead>
-            <tr style="background:var(--bg-tertiary);">
-              <th style="padding:12px 16px;text-align:left;font-size:var(--font-size-sm);font-weight:600;color:var(--text-secondary);width:180px;border-bottom:2px solid var(--border-color);position:sticky;left:0;background:var(--bg-tertiary);z-index:1;">Chauffeur</th>
-              ${days.map(d => `
-                <th style="padding:12px 8px;text-align:center;font-size:var(--font-size-sm);border-bottom:2px solid var(--border-color);${this._isToday(d.date) ? 'background:var(--pilote-blue-glow);color:var(--pilote-blue);font-weight:700;' : 'color:var(--text-secondary);'}">
-                  <div style="font-weight:600;">${this._getDayName(d.dayIdx)}</div>
-                  <div style="font-size:var(--font-size-xs);${this._isToday(d.date) ? 'color:var(--pilote-blue);' : 'color:var(--text-muted);'}">${d.obj.getDate()}/${d.obj.getMonth() + 1}</div>
-                </th>
-              `).join('')}
-            </tr>
-          </thead>
-          <tbody>
-            ${chauffeurs.map(ch => `
-              <tr style="border-bottom:1px solid var(--border-color);">
-                <td style="padding:10px 16px;position:sticky;left:0;background:var(--bg-secondary);z-index:1;">
-                  <a href="#/chauffeurs/${ch.id}" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;" title="Voir le détail de ${ch.prenom} ${ch.nom}">
-                    ${Utils.getAvatarHtml(ch, '', 'width:32px;height:32px;font-size:11px;flex-shrink:0;')}
-                    <div>
-                      <div style="font-size:var(--font-size-sm);font-weight:500;color:var(--text-primary);">${ch.prenom} ${ch.nom}</div>
-                      <div style="font-size:10px;color:var(--text-muted);">${ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || ch.vehiculeAssigne) : 'Pas de véhicule'}</div>
-                    </div>
-                  </a>
-                </td>
-                ${days.map(d => {
-                  const shifts = this._getDriverShiftsForDate(ch.id, d.date);
-                  const absences = this._getDriverAbsencesForDate(ch.id, d.date);
-                  const isToday = this._isToday(d.date);
+      <!-- Grille planning moderne -->
+      <style>
+        .pg-grid { display:grid; grid-template-columns:160px repeat(7,1fr); gap:3px 4px; align-items:center; }
+        .pg-head {
+          text-align:center; font-size:11px; font-weight:700; color:#9ca3af; padding:10px 0 8px;
+          text-transform:uppercase; letter-spacing:.8px; border-bottom:2px solid transparent;
+        }
+        .pg-head.today {
+          color:#6366f1;
+          background:linear-gradient(180deg, rgba(99,102,241,.06) 0%, rgba(99,102,241,.02) 100%);
+          border-radius:12px 12px 0 0;
+          border-bottom:2px solid #6366f1;
+        }
+        .pg-head .pg-daynum { display:block; font-size:18px; font-weight:800; color:var(--text-primary); margin-top:2px; }
+        .pg-head.today .pg-daynum { color:#6366f1; }
+        .pg-driver {
+          display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--text-primary);
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:6px 4px;
+          text-decoration:none; cursor:pointer; border-radius:10px; transition:background .15s;
+        }
+        .pg-driver:hover { background:rgba(99,102,241,.05); }
+        .pg-avatar {
+          width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+          font-size:10px; font-weight:700; color:#fff; flex-shrink:0;
+          box-shadow:0 2px 6px rgba(0,0,0,.15); border:2px solid rgba(255,255,255,.8);
+          object-fit:cover;
+        }
+        .pg-driver-info { overflow:hidden; }
+        .pg-driver-name { font-size:13px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .pg-driver-sub { font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .pg-cell {
+          min-height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+          cursor:pointer; transition:all .2s cubic-bezier(.16,1,.3,1); position:relative;
+        }
+        .pg-cell:hover { transform:scale(1.06); box-shadow:0 4px 12px rgba(0,0,0,.1); z-index:2; }
+        .pg-shift {
+          width:100%; padding:6px 4px; border-radius:10px; text-align:center;
+          font-size:12px; font-weight:700; cursor:grab; transition:all .15s;
+        }
+        .pg-shift:hover { filter:brightness(1.05); }
+        .pg-absence {
+          width:100%; padding:6px 4px; border-radius:10px; text-align:center;
+          font-size:11px; font-weight:600; cursor:pointer;
+        }
+        .pg-empty {
+          width:100%; padding:6px 4px; border-radius:10px; text-align:center;
+          border:1.5px dashed rgba(0,0,0,.08); opacity:0.3; transition:all .2s;
+        }
+        .pg-empty:hover { opacity:1; border-color:#6366f1; background:rgba(99,102,241,.04); }
+        .pg-row-even .pg-driver, .pg-row-even .pg-cell { background:rgba(0,0,0,.012); border-radius:10px; }
+        [data-theme="dark"] .pg-row-even .pg-driver, [data-theme="dark"] .pg-row-even .pg-cell { background:rgba(255,255,255,.02); }
+        @media(max-width:768px) {
+          .pg-grid { grid-template-columns:100px repeat(7,1fr); gap:2px; }
+          .pg-avatar { width:24px; height:24px; font-size:8px; }
+          .pg-driver-name { font-size:11px; }
+          .pg-driver-sub { display:none; }
+          .pg-head { font-size:10px; }
+          .pg-head .pg-daynum { font-size:14px; }
+          .pg-shift { font-size:10px; padding:4px 2px; }
+        }
+      </style>
 
-                  if (absences.length > 0) {
-                    const a = absences[0];
-                    return `<td style="padding:4px;text-align:center;${isToday ? 'background:rgba(59,130,246,0.05);' : ''}">
-                      <div style="background:${this._absenceTypeColor(a.type)}22;border:1px solid ${this._absenceTypeColor(a.type)}44;border-radius:6px;padding:6px 4px;cursor:pointer;" onclick="PlanningPage._viewAbsence('${a.id}')" title="${this._absenceTypeLabel(a.type)}${a.motif ? ': ' + a.motif : ''}">
-                        <div style="font-size:10px;font-weight:600;color:${this._absenceTypeColor(a.type)};">${this._absenceTypeLabel(a.type)}</div>
-                      </div>
-                    </td>`;
-                  }
+      <div class="card" style="padding:20px;overflow-x:auto;background:rgba(255,255,255,.72);backdrop-filter:blur(20px);border-radius:20px;border:1px solid rgba(255,255,255,.6);box-shadow:0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.04);">
+        <div class="pg-grid" style="min-width:800px;">
+          <!-- Header -->
+          <div></div>
+          ${days.map(d => `
+            <div class="pg-head ${this._isToday(d.date) ? 'today' : ''}">
+              <span>${this._getDayName(d.dayIdx)}</span>
+              <span class="pg-daynum">${d.obj.getDate()}</span>
+            </div>
+          `).join('')}
 
-                  if (shifts.length > 0) {
-                    return `<td style="padding:4px;text-align:center;${isToday ? 'background:rgba(59,130,246,0.05);' : ''}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')" ondragenter="this.style.background='rgba(59,130,246,0.1)'" ondragleave="this.style.background='${isToday ? 'rgba(59,130,246,0.05)' : ''}'">
-                      ${shifts.map(s => `
-                        <div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="background:${this._getShiftColor(s)}22;border:1px solid ${this._getShiftColor(s)}44;border-radius:6px;padding:6px 4px;margin-bottom:2px;cursor:grab;" onclick="PlanningPage._editShift('${s.id}')" title="${this._getShiftTimeLabel(s)}">
-                          <div style="font-size:12px;font-weight:700;color:${this._getShiftColor(s)};">${this._getShiftTimeShort(s)}</div>
-                        </div>
-                      `).join('')}
-                    </td>`;
-                  }
+          <!-- Driver rows -->
+          ${chauffeurs.map((ch, idx) => {
+            const rowClass = idx % 2 === 1 ? 'pg-row-even' : '';
+            const avatarColor = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'][idx % 10];
+            const initials = ((ch.prenom||'')[0] + (ch.nom||'')[0]).toUpperCase();
+            const avatarHtml = ch.photo
+              ? `<img src="${ch.photo}" alt="${initials}" class="pg-avatar">`
+              : `<div class="pg-avatar" style="background:linear-gradient(135deg,${avatarColor},${avatarColor}dd);">${initials}</div>`;
+            const vehLabel = ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '';
 
-                  return `<td style="padding:4px;text-align:center;${isToday ? 'background:rgba(59,130,246,0.05);' : ''}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')" ondragenter="this.style.background='rgba(59,130,246,0.1)'" ondragleave="this.style.background='${isToday ? 'rgba(59,130,246,0.05)' : ''}'">
-                    <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="border:1px dashed var(--border-color);border-radius:6px;padding:8px 4px;cursor:pointer;opacity:0.4;transition:all 0.2s;" onmouseenter="this.style.opacity='1';this.style.borderColor='var(--pilote-blue)'" onmouseleave="this.style.opacity='0.4';this.style.borderColor='var(--border-color)'">
-                      <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:10px;color:var(--text-muted);"></iconify-icon>
-                    </div>
-                  </td>`;
-                }).join('')}
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            let html = `<a href="#/chauffeurs/${ch.id}" class="pg-driver ${rowClass}" title="${ch.prenom} ${ch.nom}">
+              ${avatarHtml}
+              <div class="pg-driver-info">
+                <div class="pg-driver-name">${ch.prenom} ${ch.nom}</div>
+                ${vehLabel ? `<div class="pg-driver-sub">${vehLabel}</div>` : ''}
+              </div>
+            </a>`;
+
+            html += days.map(d => {
+              const shifts = this._getDriverShiftsForDate(ch.id, d.date);
+              const absences = this._getDriverAbsencesForDate(ch.id, d.date);
+              const isToday = this._isToday(d.date);
+              const todayBg = isToday ? 'background:rgba(99,102,241,.03);' : '';
+
+              if (absences.length > 0) {
+                const a = absences[0];
+                const c = this._absenceTypeColor(a.type);
+                return `<div class="pg-cell ${rowClass}" style="${todayBg}" onclick="PlanningPage._viewAbsence('${a.id}')">
+                  <div class="pg-absence" style="background:linear-gradient(135deg,${c}18,${c}0d);color:${c};border:1px solid ${c}30;" title="${this._absenceTypeLabel(a.type)}${a.motif ? ': ' + a.motif : ''}">
+                    ${this._absenceTypeLabel(a.type)}
+                  </div>
+                </div>`;
+              }
+
+              if (shifts.length > 0) {
+                return `<div class="pg-cell ${rowClass}" style="${todayBg}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
+                  ${shifts.map(s => {
+                    const sc = this._getShiftColor(s);
+                    return `<div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" class="pg-shift" style="background:linear-gradient(135deg,${sc}20,${sc}10);color:${sc};border:1px solid ${sc}35;" onclick="PlanningPage._editShift('${s.id}')" title="${this._getShiftTimeLabel(s)}">
+                      ${this._getShiftTimeShort(s)}
+                    </div>`;
+                  }).join('')}
+                </div>`;
+              }
+
+              return `<div class="pg-cell ${rowClass}" style="${todayBg}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
+                <div class="pg-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}">
+                  <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:12px;color:#d1d5db;"></iconify-icon>
+                </div>
+              </div>`;
+            }).join('');
+
+            return html;
+          }).join('')}
+        </div>
       </div>
     `;
   },
