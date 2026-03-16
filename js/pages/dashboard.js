@@ -1109,9 +1109,11 @@ const DashboardPage = {
 
     // Admin: taches qu'il a creees (attribuees aux autres)
     // Non-admin: taches qui lui sont assignees
-    const mesTaches = isAdmin
-      ? allTaches.filter(t => t.creePar === userId && t.statut !== 'terminee' && t.statut !== 'annulee')
-      : allTaches.filter(t => t.assigneA === userId && t.statut !== 'terminee' && t.statut !== 'annulee');
+    const toutesLesMiennes = isAdmin
+      ? allTaches.filter(t => t.creePar === userId)
+      : allTaches.filter(t => t.assigneA === userId);
+    const mesTaches = toutesLesMiennes.filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
+    const terminees = toutesLesMiennes.filter(t => t.statut === 'terminee').length;
 
     const aFaire = mesTaches.filter(t => t.statut === 'a_faire').length;
     const enCours = mesTaches.filter(t => t.statut === 'en_cours').length;
@@ -1124,7 +1126,7 @@ const DashboardPage = {
       return (pOrd[a.priorite] ?? 2) - (pOrd[b.priorite] ?? 2);
     }).slice(0, 3);
 
-    const statutLabels = { a_faire: 'A faire', en_cours: 'En cours' };
+    const statutLabels = { a_faire: 'A faire', en_cours: 'En cours', terminee: 'Terminee' };
 
     // Dynamic color
     let cardGrad, cardShadow;
@@ -1143,9 +1145,10 @@ const DashboardPage = {
     }
 
     const title = isAdmin ? 'Taches attribuees' : 'Mes taches';
+    const totalMiennes = mesTaches.length + terminees;
     const subtitle = isAdmin
-      ? `${mesTaches.length} tache${mesTaches.length !== 1 ? 's' : ''} en cours`
-      : `${mesTaches.length} en cours / a faire`;
+      ? `${totalMiennes} tache${totalMiennes !== 1 ? 's' : ''} dont ${terminees} terminee${terminees !== 1 ? 's' : ''}`
+      : `${mesTaches.length} en cours / a faire, ${terminees} terminee${terminees !== 1 ? 's' : ''}`;
     const emptyMsg = isAdmin ? 'Aucune tache attribuee' : 'Aucune tache en attente';
     const icon = isAdmin ? 'solar:users-group-rounded-bold-duotone' : 'solar:checklist-bold-duotone';
 
@@ -1161,16 +1164,21 @@ const DashboardPage = {
           </div>
           ${enRetard > 0 ? `<span style="margin-left:auto;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(239,68,68,.9);color:#fff;">${enRetard} en retard</span>` : ''}
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:${top3.length > 0 ? '10px' : '0'};">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:${top3.length > 0 ? '10px' : '0'};">
           <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.2);">
-            <span style="width:6px;height:6px;border-radius:50%;background:#fff;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#fbbf24;"></span>
             <span style="font-size:11px;color:rgba(255,255,255,.85);">A faire</span>
             <strong style="margin-left:auto;font-size:13px;color:#fff;">${aFaire}</strong>
           </div>
           <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.2);">
-            <span style="width:6px;height:6px;border-radius:50%;background:#fff;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#60a5fa;"></span>
             <span style="font-size:11px;color:rgba(255,255,255,.85);">En cours</span>
             <strong style="margin-left:auto;font-size:13px;color:#fff;">${enCours}</strong>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.15);">
+            <span style="width:6px;height:6px;border-radius:50%;background:#4ade80;"></span>
+            <span style="font-size:11px;color:rgba(255,255,255,.85);">Terminees</span>
+            <strong style="margin-left:auto;font-size:13px;color:#fff;">${terminees}</strong>
           </div>
         </div>
         ${top3.length > 0 ? `<div style="display:flex;flex-direction:column;gap:4px;">
