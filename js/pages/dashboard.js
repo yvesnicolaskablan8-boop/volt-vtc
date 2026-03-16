@@ -776,7 +776,7 @@ const DashboardPage = {
 
         /* Heatmap */
         .d-hm-grid {
-          display:grid; grid-template-columns:120px repeat(7,1fr); gap:3px 4px; align-items:center;
+          display:grid; grid-template-columns:minmax(150px,auto) repeat(7,1fr); gap:3px 4px; align-items:center;
         }
         .d-hm-head {
           text-align:center; font-size:11px; font-weight:700; color:#9ca3af; padding:8px 0 6px;
@@ -1289,7 +1289,7 @@ const DashboardPage = {
       const avatarHtml = dr.photo
         ? `<img src="${dr.photo}" alt="${dr.initials}" class="d-hm-avatar" style="object-fit:cover;">`
         : `<div class="d-hm-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${dr.initials}</div>`;
-      html += `<div class="d-hm-driver${rowClass}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">${avatarHtml}<span>${dr.prenom}</span></div>`;
+      html += `<div class="d-hm-driver${rowClass}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">${avatarHtml}<span>${dr.prenom} ${dr.nom}</span></div>`;
       dr.cells.forEach((cell, ci) => {
         const status = cell.status;
         const heures = cell.heures;
