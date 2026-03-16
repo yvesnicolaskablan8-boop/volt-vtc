@@ -276,6 +276,12 @@ const PlanningPage = {
 
   // =================== VUE SEMAINE ===================
 
+  _isMobile() {
+    return window.innerWidth <= 768;
+  },
+
+  _mobileSelectedDay: 0, // index 0-6 dans la semaine
+
   _renderWeekView() {
     let chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
     if (this._filterSearch) {
@@ -285,7 +291,6 @@ const PlanningPage = {
         return fullName.includes(q);
       });
     }
-    // Map vehiculeId → immatriculation for display
     const vehMap = {};
     (Store.get('vehicules') || []).forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
     const days = [];
@@ -295,7 +300,13 @@ const PlanningPage = {
       days.push({ date: this._dateStr(d), dayIdx: i, obj: d });
     }
 
-    // KPIs for the week
+    // Auto-select today on mobile
+    if (this._isMobile()) {
+      const todayStr = this._dateStr(new Date());
+      const todayIdx = days.findIndex(d => d.date === todayStr);
+      if (todayIdx >= 0 && this._mobileSelectedDay === 0) this._mobileSelectedDay = todayIdx;
+    }
+
     const allShifts = this._getPlanning();
     const weekShifts = allShifts.filter(s => s.date >= days[0].date && s.date <= days[6].date);
     const totalSlots = chauffeurs.length * 7;
@@ -303,6 +314,121 @@ const PlanningPage = {
     const absencesWeek = this._getAbsences().filter(a => a.dateFin >= days[0].date && a.dateDebut <= days[6].date);
     const uniqueAbsDrivers = [...new Set(absencesWeek.map(a => a.chauffeurId))].length;
 
+    // Mobile → daily card view
+    if (this._isMobile()) {
+      return this._renderMobileDayView(chauffeurs, days, vehMap, { filledSlots, totalSlots, uniqueAbsDrivers });
+    }
+
+    // Desktop → grid view
+    return this._renderDesktopGridView(chauffeurs, days, vehMap, { filledSlots, totalSlots, uniqueAbsDrivers });
+  },
+
+  // =================== VUE MOBILE (jour par jour) ===================
+
+  _renderMobileDayView(chauffeurs, days, vehMap, stats) {
+    const sel = this._mobileSelectedDay;
+    const day = days[sel];
+    const dayShifts = this._getPlanning().filter(s => s.date === day.date);
+    const dayAbsences = this._getAbsences().filter(a => day.date >= a.dateDebut && day.date <= a.dateFin);
+
+    const planifies = dayShifts.length;
+    const absents = [...new Set(dayAbsences.map(a => a.chauffeurId))].length;
+    const disponibles = chauffeurs.length - absents;
+
+    return `
+      <!-- KPIs compact mobile -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
+        <div class="kpi-card" style="padding:10px 8px;text-align:center;">
+          <div class="kpi-value" style="font-size:1.25rem;">${disponibles}</div>
+          <div class="kpi-label" style="font-size:10px;">Disponibles</div>
+        </div>
+        <div class="kpi-card blue" style="padding:10px 8px;text-align:center;">
+          <div class="kpi-value" style="font-size:1.25rem;">${planifies}</div>
+          <div class="kpi-label" style="font-size:10px;">Planifiés</div>
+        </div>
+        <div class="kpi-card yellow" style="padding:10px 8px;text-align:center;">
+          <div class="kpi-value" style="font-size:1.25rem;">${absents}</div>
+          <div class="kpi-label" style="font-size:10px;">Absents</div>
+        </div>
+      </div>
+
+      <!-- Sélecteur de jour (bande scrollable) -->
+      <div style="display:flex;gap:4px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:4px 0;">
+        ${days.map((d, i) => {
+          const isToday = this._isToday(d.date);
+          const isSelected = i === sel;
+          const bg = isSelected
+            ? 'background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;'
+            : isToday
+              ? 'background:rgba(99,102,241,.12);color:#6366f1;border:1px solid rgba(99,102,241,.3);'
+              : 'background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border-color);';
+          return `<div onclick="PlanningPage._mobileSelectedDay=${i};PlanningPage._renderView();" style="flex:1;min-width:44px;text-align:center;padding:8px 4px;border-radius:12px;cursor:pointer;${bg}transition:all .2s;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;opacity:.8;">${this._getDayName(d.dayIdx)}</div>
+            <div style="font-size:18px;font-weight:800;margin-top:2px;">${d.obj.getDate()}</div>
+            ${isToday ? '<div style="width:5px;height:5px;border-radius:50%;background:currentColor;margin:3px auto 0;"></div>' : ''}
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- Liste des chauffeurs pour ce jour -->
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${chauffeurs.map((ch, idx) => {
+          const avatarColor = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'][idx % 10];
+          const initials = ((ch.prenom||'')[0] + (ch.nom||'')[0]).toUpperCase();
+          const avatarHtml = ch.photo
+            ? `<img src="${ch.photo}" alt="${initials}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`
+            : `<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${avatarColor},${avatarColor}dd);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">${initials}</div>`;
+
+          const isSuspendu = ch.statut === 'suspendu';
+          const isRepos = ch.statut === 'repos';
+          const shifts = this._getDriverShiftsForDate(ch.id, day.date);
+          const absences = this._getDriverAbsencesForDate(ch.id, day.date);
+
+          let statusHtml = '';
+          let cardBorder = 'border-left:3px solid transparent;';
+
+          if (isSuspendu) {
+            statusHtml = `<span style="font-size:11px;padding:3px 10px;border-radius:8px;background:rgba(239,68,68,.1);color:#ef4444;font-weight:600;">Suspendu</span>`;
+            cardBorder = 'border-left:3px solid #ef4444;opacity:.6;';
+          } else if (absences.length > 0) {
+            const a = absences[0];
+            const c = this._absenceTypeColor(a.type);
+            statusHtml = `<span style="font-size:11px;padding:3px 10px;border-radius:8px;background:${c}15;color:${c};font-weight:600;">${this._absenceTypeLabel(a.type)}</span>`;
+            cardBorder = `border-left:3px solid ${c};`;
+          } else if (shifts.length > 0) {
+            statusHtml = shifts.map(s => {
+              const sc = this._getShiftColor(s);
+              const label = this._getShiftTimeShort(s);
+              const redev = s.redevanceOverride ? ` · ${Utils.formatCurrency(s.redevanceOverride)}` : '';
+              return `<span style="font-size:11px;padding:3px 10px;border-radius:8px;background:${sc}18;color:${sc};font-weight:700;">${label}${redev}</span>`;
+            }).join(' ');
+            cardBorder = `border-left:3px solid ${this._getShiftColor(shifts[0])};`;
+          } else if (isRepos) {
+            statusHtml = `<span style="font-size:11px;padding:3px 10px;border-radius:8px;background:rgba(100,116,139,.1);color:#94a3b8;font-weight:600;">Repos</span>`;
+            cardBorder = 'border-left:3px solid #94a3b8;opacity:.6;';
+          } else {
+            statusHtml = `<span style="font-size:11px;padding:3px 10px;border-radius:8px;background:var(--bg-tertiary);color:var(--text-muted);font-weight:500;cursor:pointer;" onclick="PlanningPage._addShift('${ch.id}','${day.date}')">+ Ajouter créneau</span>`;
+            cardBorder = 'border-left:3px solid var(--border-color);';
+          }
+
+          const vehLabel = ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '';
+
+          return `<div class="card" style="padding:12px;${cardBorder}border-radius:12px;display:flex;align-items:center;gap:10px;">
+            <a href="#/chauffeurs/${ch.id}" style="flex-shrink:0;">${avatarHtml}</a>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ch.prenom} ${ch.nom}</div>
+              ${vehLabel ? `<div style="font-size:10px;color:var(--text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${vehLabel}</div>` : ''}
+              <div style="margin-top:6px;">${statusHtml}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+  },
+
+  // =================== VUE DESKTOP (grille 7 jours) ===================
+
+  _renderDesktopGridView(chauffeurs, days, vehMap, stats) {
     return `
       <!-- KPIs semaine -->
       <div class="grid-4" style="margin-bottom:var(--space-lg);">
@@ -313,17 +439,17 @@ const PlanningPage = {
         </div>
         <div class="kpi-card blue">
           <div class="kpi-icon"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${filledSlots}</div>
+          <div class="kpi-value">${stats.filledSlots}</div>
           <div class="kpi-label">Créneaux planifiés</div>
         </div>
         <div class="kpi-card yellow">
           <div class="kpi-icon"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${uniqueAbsDrivers}</div>
+          <div class="kpi-value">${stats.uniqueAbsDrivers}</div>
           <div class="kpi-label">Chauffeurs absents</div>
         </div>
-        <div class="kpi-card ${filledSlots / totalSlots >= 0.7 ? 'green' : 'red'}">
+        <div class="kpi-card ${stats.filledSlots / stats.totalSlots >= 0.7 ? 'green' : 'red'}">
           <div class="kpi-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${totalSlots > 0 ? Math.round(filledSlots / totalSlots * 100) : 0}%</div>
+          <div class="kpi-value">${stats.totalSlots > 0 ? Math.round(stats.filledSlots / stats.totalSlots * 100) : 0}%</div>
           <div class="kpi-label">Taux de couverture</div>
         </div>
       </div>
@@ -344,7 +470,7 @@ const PlanningPage = {
         <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> Susp.</div>
       </div>
 
-      <!-- Grille planning moderne -->
+      <!-- Grille planning desktop -->
       <style>
         .pg-grid { display:grid; grid-template-columns:180px repeat(7,1fr); gap:3px 4px; align-items:center; width:100%; }
         .pg-head {
@@ -414,21 +540,10 @@ const PlanningPage = {
           .pg-shift { font-size:11px; padding:4px 2px; }
           .pg-absence { font-size:10px; padding:4px 2px; }
         }
-        @media(max-width:768px) {
-          .pg-grid { grid-template-columns:110px repeat(7,1fr); gap:2px 2px; }
-          .pg-avatar { width:24px; height:24px; font-size:8px; }
-          .pg-driver-name { font-size:11px; }
-          .pg-driver-sub { display:none; }
-          .pg-head { font-size:9px; padding:6px 0 4px; }
-          .pg-head .pg-daynum { font-size:14px; }
-          .pg-shift { font-size:10px; padding:4px 2px; }
-          .pg-absence { font-size:9px; padding:4px 2px; }
-        }
       </style>
 
-      <div class="card" style="padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:20px;max-width:100%;box-sizing:border-box;">
+      <div class="card" style="padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:20px;">
         <div class="pg-grid" style="min-width:700px;">
-          <!-- Header -->
           <div></div>
           ${days.map(d => `
             <div class="pg-head ${this._isToday(d.date) ? 'today' : ''}">
@@ -437,7 +552,6 @@ const PlanningPage = {
             </div>
           `).join('')}
 
-          <!-- Driver rows -->
           ${chauffeurs.map((ch, idx) => {
             const rowClass = idx % 2 === 1 ? 'pg-row-even' : '';
             const avatarColor = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'][idx % 10];
@@ -446,7 +560,6 @@ const PlanningPage = {
               ? `<img src="${ch.photo}" alt="${initials}" class="pg-avatar">`
               : `<div class="pg-avatar" style="background:linear-gradient(135deg,${avatarColor},${avatarColor}dd);">${initials}</div>`;
             const vehLabel = ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '';
-
             const isSuspendu = ch.statut === 'suspendu';
             const isRepos = ch.statut === 'repos';
             const statutBadge = isSuspendu
@@ -470,53 +583,44 @@ const PlanningPage = {
               const isToday = this._isToday(d.date);
               const todayBg = isToday ? 'background:rgba(99,102,241,.08);border-left:2px solid rgba(99,102,241,.2);border-right:2px solid rgba(99,102,241,.2);' : '';
 
-              // Chauffeur suspendu — toutes les cellules grisées
               if (isSuspendu) {
                 return `<div class="pg-cell ${rowClass}" style="${todayBg}opacity:.4;">
-                  <div style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:repeating-linear-gradient(135deg,transparent,transparent 3px,rgba(239,68,68,.06) 3px,rgba(239,68,68,.06) 6px);border:1px dashed rgba(239,68,68,.25);font-size:10px;color:#ef4444;font-weight:600;" title="Chauffeur suspendu">
+                  <div style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:repeating-linear-gradient(135deg,transparent,transparent 3px,rgba(239,68,68,.06) 3px,rgba(239,68,68,.06) 6px);border:1px dashed rgba(239,68,68,.25);font-size:10px;color:#ef4444;font-weight:600;">
                     <iconify-icon icon="solar:forbidden-circle-bold-duotone" style="font-size:14px;"></iconify-icon>
                   </div>
                 </div>`;
               }
-
               if (absences.length > 0) {
                 const a = absences[0];
                 const c = this._absenceTypeColor(a.type);
                 return `<div class="pg-cell ${rowClass}" style="${todayBg}" onclick="PlanningPage._viewAbsence('${a.id}')">
-                  <div class="pg-absence" style="background:linear-gradient(135deg,${c}18,${c}0d);color:${c};border:1px solid ${c}30;" title="${this._absenceTypeLabel(a.type)}${a.motif ? ': ' + a.motif : ''}">
-                    ${this._absenceTypeLabel(a.type)}
-                  </div>
+                  <div class="pg-absence" style="background:linear-gradient(135deg,${c}18,${c}0d);color:${c};border:1px solid ${c}30;">${this._absenceTypeLabel(a.type)}</div>
                 </div>`;
               }
-
               if (shifts.length > 0) {
                 return `<div class="pg-cell ${rowClass}" style="${todayBg}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
                   ${shifts.map(s => {
                     const sc = this._getShiftColor(s);
                     const overrideLabel = s.redevanceOverride ? `<div style="font-size:8px;opacity:.75;margin-top:1px;">${Utils.formatCurrency(s.redevanceOverride)}</div>` : '';
-                    return `<div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" class="pg-shift" style="background:linear-gradient(135deg,${sc}20,${sc}10);color:${sc};border:1px solid ${sc}35;" onclick="PlanningPage._editShift('${s.id}')" title="${this._getShiftTimeLabel(s)}${s.redevanceOverride ? ' — Recette: ' + s.redevanceOverride + ' F' : ''}">
+                    return `<div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" class="pg-shift" style="background:linear-gradient(135deg,${sc}20,${sc}10);color:${sc};border:1px solid ${sc}35;" onclick="PlanningPage._editShift('${s.id}')">
                       ${this._getShiftTimeShort(s)}${overrideLabel}
                     </div>`;
                   }).join('')}
                 </div>`;
               }
-
-              // Chauffeur en repos (statut global) — cellule repos
               if (isRepos) {
                 return `<div class="pg-cell ${rowClass}" style="${todayBg}opacity:.5;">
-                  <div style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:linear-gradient(135deg,rgba(100,116,139,.08),rgba(100,116,139,.04));border:1px dashed rgba(100,116,139,.25);font-size:10px;color:#94a3b8;font-weight:600;" title="Chauffeur au repos">
+                  <div style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:linear-gradient(135deg,rgba(100,116,139,.08),rgba(100,116,139,.04));border:1px dashed rgba(100,116,139,.25);font-size:10px;color:#94a3b8;font-weight:600;">
                     <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:14px;"></iconify-icon>
                   </div>
                 </div>`;
               }
-
               return `<div class="pg-cell ${rowClass}" style="${todayBg}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
                 <div class="pg-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}">
                   <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:12px;color:#d1d5db;"></iconify-icon>
                 </div>
               </div>`;
             }).join('');
-
             return html;
           }).join('')}
         </div>
