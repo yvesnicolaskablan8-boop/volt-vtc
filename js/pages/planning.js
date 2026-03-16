@@ -320,13 +320,24 @@ const PlanningPage = {
           text-transform:uppercase; letter-spacing:.8px; border-bottom:2px solid transparent;
         }
         .pg-head.today {
-          color:#6366f1;
-          background:linear-gradient(180deg, rgba(99,102,241,.06) 0%, rgba(99,102,241,.02) 100%);
+          color:#fff;
+          background:linear-gradient(135deg, #6366f1, #818cf8);
           border-radius:12px 12px 0 0;
-          border-bottom:2px solid #6366f1;
+          border-bottom:3px solid #4f46e5;
+          position:relative;
+        }
+        .pg-head.today::after {
+          content:'Aujourd\\'hui';
+          display:block;
+          font-size:8px;
+          font-weight:700;
+          letter-spacing:1px;
+          text-transform:uppercase;
+          color:rgba(255,255,255,.8);
+          margin-top:2px;
         }
         .pg-head .pg-daynum { display:block; font-size:18px; font-weight:800; color:var(--text-primary); margin-top:2px; }
-        .pg-head.today .pg-daynum { color:#6366f1; }
+        .pg-head.today .pg-daynum { color:#fff; font-size:20px; }
         .pg-driver {
           display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--text-primary);
           padding:6px 4px;
@@ -410,7 +421,7 @@ const PlanningPage = {
               const shifts = this._getDriverShiftsForDate(ch.id, d.date);
               const absences = this._getDriverAbsencesForDate(ch.id, d.date);
               const isToday = this._isToday(d.date);
-              const todayBg = isToday ? 'background:rgba(99,102,241,.03);' : '';
+              const todayBg = isToday ? 'background:rgba(99,102,241,.08);border-left:2px solid rgba(99,102,241,.2);border-right:2px solid rgba(99,102,241,.2);' : '';
 
               if (absences.length > 0) {
                 const a = absences[0];
@@ -558,7 +569,7 @@ const PlanningPage = {
               <th style="padding:8px 12px;text-align:left;font-size:var(--font-size-xs);font-weight:600;color:var(--text-secondary);width:160px;border-bottom:2px solid var(--border-color);position:sticky;left:0;background:var(--bg-tertiary);z-index:1;">Chauffeur</th>
               ${dayHeaders.map(d => `
                 <th style="padding:4px 2px;text-align:center;font-size:10px;border-bottom:2px solid var(--border-color);min-width:30px;
-                  ${d.isToday ? 'background:var(--pilote-blue-glow);color:var(--pilote-blue);font-weight:700;' : d.isWeekend ? 'background:rgba(100,116,139,0.1);color:var(--text-muted);' : 'color:var(--text-secondary);'}">
+                  ${d.isToday ? 'background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;font-weight:700;' : d.isWeekend ? 'background:rgba(100,116,139,0.1);color:var(--text-muted);' : 'color:var(--text-secondary);'}">
                   <div style="font-weight:600;">${d.num}</div>
                   <div style="font-size:9px;">${this._getDayName(d.dow === 0 ? 6 : d.dow - 1)}</div>
                 </th>
@@ -580,7 +591,7 @@ const PlanningPage = {
 
                   if (absences.length > 0) {
                     const a = absences[0];
-                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(59,130,246,0.05);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
+                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.1);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                       <div style="width:24px;height:24px;border-radius:4px;background:${this._absenceTypeColor(a.type)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._absenceTypeLabel(a.type)}" onclick="PlanningPage._viewAbsence('${a.id}')">
                         ${a.type === 'repos' ? 'R' : a.type === 'conge' ? 'C' : a.type === 'maladie' ? 'M' : a.type === 'formation' ? 'F' : a.type === 'suspension' ? 'S' : 'P'}
                       </div>
@@ -589,14 +600,14 @@ const PlanningPage = {
 
                   if (shifts.length > 0) {
                     const s = shifts[0];
-                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(59,130,246,0.05);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
+                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.1);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                       <div style="width:24px;height:24px;border-radius:4px;background:${this._getShiftColor(s)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._getShiftTimeLabel(s)}" onclick="PlanningPage._editShift('${s.id}')">
                         ${this._shiftTypeShort(s.typeCreneaux)}
                       </div>
                     </td>`;
                   }
 
-                  return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(59,130,246,0.05);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
+                  return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.1);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                     <div style="width:24px;height:24px;border-radius:4px;border:1px dashed var(--border-color);margin:auto;opacity:0.3;"></div>
                   </td>`;
                 }).join('')}
