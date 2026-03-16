@@ -323,107 +323,119 @@ const PlanningPage = {
     return this._renderDesktopGridView(chauffeurs, days, vehMap, { filledSlots, totalSlots, uniqueAbsDrivers });
   },
 
-  // =================== VUE MOBILE (jour par jour) ===================
+  // =================== VUE MOBILE (grille compacte comme dashboard) ===================
 
   _renderMobileDayView(chauffeurs, days, vehMap, stats) {
-    const sel = this._mobileSelectedDay;
-    const day = days[sel];
-    const dayShifts = this._getPlanning().filter(s => s.date === day.date);
-    const dayAbsences = this._getAbsences().filter(a => day.date >= a.dateDebut && day.date <= a.dateFin);
+    const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
 
-    const planifies = dayShifts.length;
-    const absents = [...new Set(dayAbsences.map(a => a.chauffeurId))].length;
-    const disponibles = chauffeurs.length - absents;
-
-    return `
-      <!-- KPIs compact mobile -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
+    // KPIs compact
+    let html = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
         <div class="kpi-card" style="padding:10px 8px;text-align:center;">
-          <div class="kpi-value" style="font-size:1.25rem;">${disponibles}</div>
-          <div class="kpi-label" style="font-size:10px;">Disponibles</div>
+          <div class="kpi-value" style="font-size:1.25rem;">${chauffeurs.length}</div>
+          <div class="kpi-label" style="font-size:10px;">Actifs</div>
         </div>
         <div class="kpi-card blue" style="padding:10px 8px;text-align:center;">
-          <div class="kpi-value" style="font-size:1.25rem;">${planifies}</div>
+          <div class="kpi-value" style="font-size:1.25rem;">${stats.filledSlots}</div>
           <div class="kpi-label" style="font-size:10px;">Planifiés</div>
         </div>
         <div class="kpi-card yellow" style="padding:10px 8px;text-align:center;">
-          <div class="kpi-value" style="font-size:1.25rem;">${absents}</div>
+          <div class="kpi-value" style="font-size:1.25rem;">${stats.uniqueAbsDrivers}</div>
           <div class="kpi-label" style="font-size:10px;">Absents</div>
         </div>
       </div>
+    `;
 
-      <!-- Sélecteur de jour (bande scrollable) -->
-      <div style="display:flex;gap:4px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:4px 0;">
-        ${days.map((d, i) => {
-          const isToday = this._isToday(d.date);
-          const isSelected = i === sel;
-          const bg = isSelected
-            ? 'background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;'
-            : isToday
-              ? 'background:rgba(99,102,241,.12);color:#6366f1;border:1px solid rgba(99,102,241,.3);'
-              : 'background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border-color);';
-          return `<div onclick="PlanningPage._mobileSelectedDay=${i};PlanningPage._renderView();" style="flex:1;min-width:44px;text-align:center;padding:8px 4px;border-radius:12px;cursor:pointer;${bg}transition:all .2s;">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;opacity:.8;">${this._getDayName(d.dayIdx)}</div>
-            <div style="font-size:18px;font-weight:800;margin-top:2px;">${d.obj.getDate()}</div>
-            ${isToday ? '<div style="width:5px;height:5px;border-radius:50%;background:currentColor;margin:3px auto 0;"></div>' : ''}
-          </div>`;
-        }).join('')}
-      </div>
+    // Compact heatmap grid (same style as dashboard)
+    html += `
+      <style>
+        .pm-grid { display:grid; grid-template-columns:36px repeat(7,1fr); gap:2px; align-items:center; }
+        .pm-head { text-align:center; font-size:10px; font-weight:700; color:var(--text-muted); padding:6px 0 4px; text-transform:uppercase; }
+        .pm-head.today { color:#6366f1; background:rgba(99,102,241,.08); border-radius:8px 8px 0 0; border-bottom:2px solid #6366f1; }
+        .pm-head .pm-daynum { display:block; font-size:14px; font-weight:800; color:var(--text-primary); margin-top:1px; }
+        .pm-head.today .pm-daynum { color:#6366f1; }
+        .pm-driver { display:flex; align-items:center; justify-content:center; padding:2px 0; }
+        .pm-avatar { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff; flex-shrink:0; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+        .pm-cell { height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; font-size:9px; font-weight:700; }
+        .pm-cell:active { transform:scale(1.1); }
+        .pm-shift { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#6366f1; }
+        .pm-shift-m { background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.08)); color:#22c55e; }
+        .pm-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.08)); color:#3b82f6; }
+        .pm-shift-j { background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.08)); color:#f59e0b; }
+        .pm-shift-n { background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.08)); color:#8b5cf6; }
+        .pm-absence { background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.06)); color:#f97316; }
+        .pm-absence-maladie { background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(239,68,68,.06)); color:#ef4444; }
+        .pm-absence-conge { background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(59,130,246,.06)); color:#3b82f6; }
+        .pm-suspendu { background:repeating-linear-gradient(135deg,transparent,transparent 2px,rgba(239,68,68,.06) 2px,rgba(239,68,68,.06) 4px); color:#ef4444; opacity:.5; }
+        .pm-repos { background:rgba(0,0,0,.02); color:#d1d5db; }
+        [data-theme="dark"] .pm-repos { background:rgba(255,255,255,.03); color:#4b5563; }
+        .pm-empty { border:1px dashed var(--border-color); opacity:.3; }
+        .pm-row-even .pm-driver, .pm-row-even .pm-cell { background:rgba(0,0,0,.01); }
+        [data-theme="dark"] .pm-row-even .pm-driver, [data-theme="dark"] .pm-row-even .pm-cell { background:rgba(255,255,255,.02); }
+      </style>
 
-      <!-- Liste des chauffeurs pour ce jour -->
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        ${chauffeurs.map((ch, idx) => {
-          const avatarColor = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'][idx % 10];
-          const initials = ((ch.prenom||'')[0] + (ch.nom||'')[0]).toUpperCase();
-          const avatarHtml = ch.photo
-            ? `<img src="${ch.photo}" alt="${initials}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`
-            : `<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${avatarColor},${avatarColor}dd);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">${initials}</div>`;
+      <div class="card" style="padding:12px;border-radius:16px;">
+        <div class="pm-grid">
+          <div></div>
+          ${days.map(d => `<div class="pm-head ${this._isToday(d.date) ? 'today' : ''}">
+            <span>${this._getDayName(d.dayIdx)}</span>
+            <span class="pm-daynum">${d.obj.getDate()}</span>
+          </div>`).join('')}
 
-          const isSuspendu = ch.statut === 'suspendu';
-          const isRepos = ch.statut === 'repos';
-          const shifts = this._getDriverShiftsForDate(ch.id, day.date);
-          const absences = this._getDriverAbsencesForDate(ch.id, day.date);
+          ${chauffeurs.map((ch, idx) => {
+            const color = avatarColors[idx % avatarColors.length];
+            const initials = ((ch.prenom||'')[0] + (ch.nom||'')[0]).toUpperCase();
+            const rowClass = idx % 2 === 1 ? ' pm-row-even' : '';
+            const avatarHtml = ch.photo
+              ? `<img src="${ch.photo}" alt="${initials}" class="pm-avatar" style="object-fit:cover;">`
+              : `<div class="pm-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${initials}</div>`;
+            const isSuspendu = ch.statut === 'suspendu';
+            const isRepos = ch.statut === 'repos';
 
-          let statusHtml = '';
-          let cardBorder = 'border-left:3px solid transparent;';
+            let row = `<div class="pm-driver${rowClass}" title="${ch.prenom} ${ch.nom}">${avatarHtml}</div>`;
 
-          if (isSuspendu) {
-            statusHtml = `<span style="font-size:11px;padding:3px 10px;border-radius:8px;background:rgba(239,68,68,.1);color:#ef4444;font-weight:600;">Suspendu</span>`;
-            cardBorder = 'border-left:3px solid #ef4444;opacity:.6;';
-          } else if (absences.length > 0) {
-            const a = absences[0];
-            const c = this._absenceTypeColor(a.type);
-            statusHtml = `<span style="font-size:11px;padding:3px 10px;border-radius:8px;background:${c}15;color:${c};font-weight:600;">${this._absenceTypeLabel(a.type)}</span>`;
-            cardBorder = `border-left:3px solid ${c};`;
-          } else if (shifts.length > 0) {
-            statusHtml = shifts.map(s => {
-              const sc = this._getShiftColor(s);
-              const label = this._getShiftTimeShort(s);
-              const redev = s.redevanceOverride ? ` · ${Utils.formatCurrency(s.redevanceOverride)}` : '';
-              return `<span style="font-size:11px;padding:3px 10px;border-radius:8px;background:${sc}18;color:${sc};font-weight:700;">${label}${redev}</span>`;
-            }).join(' ');
-            cardBorder = `border-left:3px solid ${this._getShiftColor(shifts[0])};`;
-          } else if (isRepos) {
-            statusHtml = `<span style="font-size:11px;padding:3px 10px;border-radius:8px;background:rgba(100,116,139,.1);color:#94a3b8;font-weight:600;">Repos</span>`;
-            cardBorder = 'border-left:3px solid #94a3b8;opacity:.6;';
-          } else {
-            statusHtml = `<span style="font-size:11px;padding:3px 10px;border-radius:8px;background:var(--bg-tertiary);color:var(--text-muted);font-weight:500;cursor:pointer;" onclick="PlanningPage._addShift('${ch.id}','${day.date}')">+ Ajouter créneau</span>`;
-            cardBorder = 'border-left:3px solid var(--border-color);';
-          }
+            row += days.map(d => {
+              const shifts = this._getDriverShiftsForDate(ch.id, d.date);
+              const absences = this._getDriverAbsencesForDate(ch.id, d.date);
+              const onclick = `onclick="PlanningPage._addShift('${ch.id}','${d.date}')"`;
 
-          const vehLabel = ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '';
+              if (isSuspendu) {
+                return `<div class="pm-cell pm-suspendu${rowClass}"><iconify-icon icon="solar:forbidden-circle-bold" style="font-size:11px;"></iconify-icon></div>`;
+              }
+              if (absences.length > 0) {
+                const a = absences[0];
+                const cls = a.type === 'maladie' ? 'pm-absence-maladie' : a.type === 'conge' ? 'pm-absence-conge' : 'pm-absence';
+                const label = { repos:'R', conge:'C', maladie:'M', formation:'F', personnel:'P', suspension:'S' }[a.type] || 'A';
+                return `<div class="pm-cell ${cls}${rowClass}" onclick="PlanningPage._viewAbsence('${a.id}')">${label}</div>`;
+              }
+              if (shifts.length > 0) {
+                const s = shifts[0];
+                const typeClass = { matin:'pm-shift-m', apres_midi:'pm-shift-am', journee:'pm-shift-j', nuit:'pm-shift-n' }[s.typeCreneaux] || 'pm-shift';
+                return `<div class="pm-cell ${typeClass}${rowClass}" onclick="PlanningPage._editShift('${s.id}')">${this._getShiftTimeShort(s)}</div>`;
+              }
+              if (isRepos) {
+                return `<div class="pm-cell pm-repos${rowClass}"><iconify-icon icon="solar:moon-sleep-bold" style="font-size:11px;"></iconify-icon></div>`;
+              }
+              return `<div class="pm-cell pm-empty${rowClass}" ${onclick}></div>`;
+            }).join('');
 
-          return `<div class="card" style="padding:12px;${cardBorder}border-radius:12px;display:flex;align-items:center;gap:10px;">
-            <a href="#/chauffeurs/${ch.id}" style="flex-shrink:0;">${avatarHtml}</a>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ch.prenom} ${ch.nom}</div>
-              ${vehLabel ? `<div style="font-size:10px;color:var(--text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${vehLabel}</div>` : ''}
-              <div style="margin-top:6px;">${statusHtml}</div>
-            </div>
-          </div>`;
-        }).join('')}
+            return row;
+          }).join('')}
+        </div>
+
+        <!-- Légende compact -->
+        <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;justify-content:center;">
+          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#22c55e;"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;"></span>Mat</div>
+          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#3b82f6;"><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;"></span>AM</div>
+          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#f59e0b;"><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;"></span>Jour</div>
+          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#8b5cf6;"><span style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;"></span>Nuit</div>
+          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#f97316;"><span style="width:5px;height:5px;border-radius:50%;background:#f97316;"></span>Abs</div>
+          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#ef4444;"><span style="width:5px;height:5px;border-radius:50%;background:#ef4444;"></span>Mal</div>
+          <div style="display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;color:#94a3b8;"><span style="width:5px;height:5px;border-radius:50%;background:#d1d5db;"></span>Repos</div>
+        </div>
       </div>
     `;
+    return html;
   },
 
   // =================== VUE DESKTOP (grille 7 jours) ===================
