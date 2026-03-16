@@ -454,7 +454,7 @@ const DashboardPage = {
       depenses, monthDepenses, totalDepensesMois, depensesByType, vehicules,
       alertesTotal, alertesCritiques, alertesUrgentes,
       tauxRecouvrement, totalAttendu,
-      serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence,
+      serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence, programmesCount,
       heatmapWeekDays, heatmapDrivers,
       periodLabel, monthLabel, isMonthView,
       // === PRÉVISIONS CA ===
@@ -1048,42 +1048,10 @@ const DashboardPage = {
         </a>
       </div>
 
-      <!-- Row 3: Service + Alertes (côte à côte) -->
+      <!-- Row 3: Mes taches + Alertes (côte à côte) -->
       <div class="d-grid" style="grid-template-columns:1fr 1fr;align-items:stretch;">
-          <!-- Service du jour -->
-          <a href="#/planning" class="d-card" style="text-decoration:none;color:inherit;">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-              <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;width:34px;height:34px;border-radius:10px;font-size:15px;">
-                <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
-              </div>
-              <div>
-                <div class="d-lbl" style="margin:0;">Service du jour</div>
-                <div style="font-size:11px;color:#9ca3af;">${d.programmesCount} programmé${d.programmesCount !== 1 ? 's' : ''}</div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(16,185,129,.06);">
-                <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
-                <span style="font-size:11px;color:#6b7280;">En service</span>
-                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.serviceEnCours}</strong>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(249,115,22,.06);">
-                <span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span>
-                <span style="font-size:11px;color:#6b7280;">Pause</span>
-                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.serviceEnPause}</strong>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(107,114,128,.06);">
-                <span style="width:6px;height:6px;border-radius:50%;background:#6b7280;"></span>
-                <span style="font-size:11px;color:#6b7280;">Terminé</span>
-                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.serviceTermine}</strong>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(209,213,219,.15);">
-                <span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span>
-                <span style="font-size:11px;color:#6b7280;">Attente</span>
-                <strong style="margin-left:auto;font-size:13px;color:#374151;">${d.servicePasCommence}</strong>
-              </div>
-            </div>
-          </a>
+          <!-- Mes taches -->
+          ${this._renderMesTaches()}
 
           <!-- Alertes -->
           <a href="#/alertes" class="d-card" style="text-decoration:none;color:inherit;">
@@ -1116,6 +1084,64 @@ const DashboardPage = {
       </div>
       </div>
     `;
+  },
+
+  _renderMesTaches() {
+    const session = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+    const userId = session ? session.userId : '';
+    const allTaches = Store.get('taches') || [];
+    // Taches assignees a l'utilisateur courant (ou toutes si admin)
+    const mesTaches = allTaches.filter(t => t.assigneA === userId && t.statut !== 'terminee' && t.statut !== 'annulee');
+    const aFaire = mesTaches.filter(t => t.statut === 'a_faire').length;
+    const enCours = mesTaches.filter(t => t.statut === 'en_cours').length;
+    const urgentes = mesTaches.filter(t => t.priorite === 'urgente').length;
+    const enRetard = mesTaches.filter(t => t.dateEcheance && t.dateEcheance < new Date().toISOString().split('T')[0]).length;
+
+    // Top 3 taches les plus urgentes
+    const top3 = [...mesTaches].sort((a, b) => {
+      const pOrd = { urgente: 0, haute: 1, normale: 2, basse: 3 };
+      return (pOrd[a.priorite] ?? 2) - (pOrd[b.priorite] ?? 2);
+    }).slice(0, 3);
+
+    const prioriteColors = { basse: '#3b82f6', normale: '#22c55e', haute: '#f97316', urgente: '#ef4444' };
+
+    return `
+      <a href="#/taches" class="d-card" style="text-decoration:none;color:inherit;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:34px;height:34px;border-radius:10px;font-size:15px;">
+            <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
+          </div>
+          <div>
+            <div class="d-lbl" style="margin:0;">Mes taches</div>
+            <div style="font-size:11px;color:#9ca3af;">${mesTaches.length} en cours / a faire</div>
+          </div>
+          ${enRetard > 0 ? `<span class="d-tag red" style="margin-left:auto;">${enRetard} en retard</span>` : ''}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:${top3.length > 0 ? '10px' : '0'};">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(249,115,22,.06);">
+            <span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>
+            <span style="font-size:11px;color:#6b7280;">A faire</span>
+            <strong style="margin-left:auto;font-size:13px;color:#374151;">${aFaire}</strong>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(59,130,246,.06);">
+            <span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span>
+            <span style="font-size:11px;color:#6b7280;">En cours</span>
+            <strong style="margin-left:auto;font-size:13px;color:#374151;">${enCours}</strong>
+          </div>
+        </div>
+        ${top3.length > 0 ? `<div style="display:flex;flex-direction:column;gap:4px;">
+          ${top3.map(t => {
+            const pc = prioriteColors[t.priorite] || '#6b7280';
+            const isLate = t.dateEcheance && t.dateEcheance < new Date().toISOString().split('T')[0];
+            return `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;background:var(--bg-secondary);font-size:11px;">
+              <span style="width:5px;height:5px;border-radius:50%;background:${pc};flex-shrink:0;"></span>
+              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--text-primary);">${t.titre}</span>
+              ${isLate ? '<span style="color:#ef4444;font-weight:600;font-size:10px;">En retard</span>' : ''}
+              ${t.dateEcheance ? `<span style="font-size:10px;color:#9ca3af;">${Utils.formatDate(t.dateEcheance)}</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>` : `<div style="text-align:center;padding:8px;color:#9ca3af;font-size:12px;">Aucune tache en attente</div>`}
+      </a>`;
   },
 
   _renderMaintenancePanel(d) {

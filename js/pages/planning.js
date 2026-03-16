@@ -298,6 +298,9 @@ const PlanningPage = {
         </div>
       </div>
 
+      <!-- Service du jour -->
+      ${this._renderServiceDuJour(chauffeurs, days)}
+
       <!-- Légende pills -->
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;">
         <div style="display:flex;align-items:center;gap:5px;padding:5px 14px;border-radius:20px;background:rgba(34,197,94,.08);font-size:12px;font-weight:600;color:#22c55e;"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;"></span> Matin</div>
@@ -451,6 +454,59 @@ const PlanningPage = {
         this._addShift(chId, date);
       });
     });
+  },
+
+  _renderServiceDuJour(chauffeurs, days) {
+    const todayStr = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
+    // Only show if today is within the week
+    const isThisWeek = days.some(d => d.date === todayStr);
+    if (!isThisWeek) return '';
+
+    const pointages = Store.get('pointages') || [];
+    const todayPointages = pointages.filter(p => p.date === todayStr);
+    const planning = this._getPlanning();
+    const todayShifts = planning.filter(p => p.date === todayStr);
+    const programmesCount = todayShifts.length;
+
+    const serviceEnCours = todayPointages.filter(p => p.statut === 'en_service').length;
+    const serviceEnPause = todayPointages.filter(p => p.statut === 'pause').length;
+    const serviceTermine = todayPointages.filter(p => p.statut === 'termine').length;
+    const servicePasCommence = Math.max(0, programmesCount - todayPointages.length);
+
+    return `
+      <div class="card" style="margin-bottom:var(--space-lg);padding:16px 20px;background:rgba(255,255,255,.72);backdrop-filter:blur(20px);border-radius:16px;border:1px solid rgba(255,255,255,.6);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(16,185,129,.08);color:#10b981;display:flex;align-items:center;justify-content:center;font-size:15px;">
+            <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:var(--font-size-sm);color:var(--text-primary);">Service du jour</div>
+            <div style="font-size:11px;color:#9ca3af;">${programmesCount} programme${programmesCount !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(16,185,129,.06);">
+            <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
+            <span style="font-size:11px;color:#6b7280;">En service</span>
+            <strong style="margin-left:auto;font-size:13px;color:#374151;">${serviceEnCours}</strong>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(249,115,22,.06);">
+            <span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span>
+            <span style="font-size:11px;color:#6b7280;">Pause</span>
+            <strong style="margin-left:auto;font-size:13px;color:#374151;">${serviceEnPause}</strong>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(107,114,128,.06);">
+            <span style="width:6px;height:6px;border-radius:50%;background:#6b7280;"></span>
+            <span style="font-size:11px;color:#6b7280;">Termine</span>
+            <strong style="margin-left:auto;font-size:13px;color:#374151;">${serviceTermine}</strong>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(209,213,219,.15);">
+            <span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span>
+            <span style="font-size:11px;color:#6b7280;">Attente</span>
+            <strong style="margin-left:auto;font-size:13px;color:#374151;">${servicePasCommence}</strong>
+          </div>
+        </div>
+      </div>`;
   },
 
   // =================== VUE MOIS ===================
