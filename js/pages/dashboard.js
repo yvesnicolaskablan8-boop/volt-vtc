@@ -719,7 +719,7 @@ const DashboardPage = {
         [data-theme="dark"] .d-lbl { color: #9ca3af; }
 
         .d-val {
-          font-size: 28px; font-weight: 800; color: #111827;
+          font-size: 28px; font-weight: 800; color: var(--text-primary);
           line-height: 1.1; letter-spacing: -.5px;
           font-feature-settings: 'tnum';
         }
@@ -789,13 +789,13 @@ const DashboardPage = {
           border-radius:12px 12px 0 0;
           border-bottom:2px solid #6366f1;
         }
-        .d-hm-head .d-hm-daynum { display:block; font-size:16px; font-weight:800; color:#374151; margin-top:2px; }
+        .d-hm-head .d-hm-daynum { display:block; font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px; }
         .d-hm-head.today .d-hm-daynum { color:#6366f1; }
         [data-theme="dark"] .d-hm-head { color:#6b7280; }
         [data-theme="dark"] .d-hm-head.today { background:rgba(99,102,241,.1); }
         [data-theme="dark"] .d-hm-head .d-hm-daynum { color:#d1d5db; }
         .d-hm-driver {
-          display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#374151;
+          display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:var(--text-primary);
           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:4px 0;
         }
         [data-theme="dark"] .d-hm-driver { color:#d1d5db; }
@@ -864,11 +864,11 @@ const DashboardPage = {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Bienvenue,</div>
-          <div style="font-size:28px;font-weight:800;color:#111827;letter-spacing:-.6px;margin-top:2px;">${userName} !</div>
+          <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;">${userName} !</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:0;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border-radius:14px;border:1px solid rgba(0,0,0,.06);padding:3px;">
-            <input type="date" id="dashboard-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:#374151;font-weight:500;outline:none;">
+            <input type="date" id="dashboard-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:var(--text-primary);font-weight:500;outline:none;">
             <button onclick="DashboardPage._toggleMonthView()" style="font-size:12px;padding:6px 14px;border-radius:11px;background:${this._monthView ? '#6366f1' : 'transparent'};color:${this._monthView ? '#fff' : '#6b7280'};border:none;font-weight:600;cursor:pointer;transition:all .2s;">
               ${this._monthView ? 'Mois' : 'Jour'}
             </button>
@@ -877,7 +877,7 @@ const DashboardPage = {
           ${this._isToday() ? '<span id="live-indicator" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#6366f1;background:rgba(99,102,241,.08);padding:5px 14px;border-radius:20px;font-weight:700;backdrop-filter:blur(8px);"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;animation:pulse-dot 2s infinite;"></span>LIVE</span>' : `<span style="font-size:12px;color:#9ca3af;font-weight:500;">${d.periodLabel}</span>`}
           <div style="position:relative;">
             <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:#9ca3af;pointer-events:none;"></iconify-icon>
-            <input type="text" id="dashboard-search" placeholder="Rechercher..." style="padding:8px 14px 8px 34px;font-size:12px;width:160px;border-radius:14px;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border:1px solid rgba(0,0,0,.06);color:#374151;outline:none;font-weight:500;" oninput="DashboardPage._filterByDriver(this.value)">
+            <input type="text" id="dashboard-search" placeholder="Rechercher..." style="padding:8px 14px 8px 34px;font-size:12px;width:160px;border-radius:14px;background:rgba(255,255,255,.7);backdrop-filter:blur(12px);border:1px solid rgba(0,0,0,.06);color:var(--text-primary);outline:none;font-weight:500;" oninput="DashboardPage._filterByDriver(this.value)">
           </div>
         </div>
       </div>
@@ -976,22 +976,22 @@ const DashboardPage = {
             <div style="position:relative;flex-shrink:0;">
               ${arc(d.totalChauffeurs > 0 ? (d.activeCount / d.totalChauffeurs * 100) : 0, '#10b981', '#f97316', 100, 12)}
               <div style="position:absolute;top:55%;left:50%;transform:translate(-50%,-30%);text-align:center;">
-                <div class="d-donut-center" style="font-size:20px;font-weight:800;color:#111827;">${d.totalChauffeurs}</div>
+                <div class="d-donut-center" style="font-size:20px;font-weight:800;color:var(--text-primary);">${d.totalChauffeurs}</div>
                 <div style="font-size:9px;color:#9ca3af;font-weight:600;">Total</div>
               </div>
             </div>
             <div class="d-chauffeurs-legends" style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
                 <div class="d-legend"><span class="d-legend-dot" style="background:#10b981;"></span> Actifs</div>
-                <strong style="font-size:13px;color:#374151;flex-shrink:0;">${d.activeCount}</strong>
+                <strong style="font-size:13px;color:var(--text-primary);flex-shrink:0;">${d.activeCount}</strong>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
                 <div class="d-legend"><span class="d-legend-dot" style="background:#f97316;"></span> Suspendus</div>
-                <strong style="font-size:13px;color:#374151;flex-shrink:0;">${d.suspendusCount}</strong>
+                <strong style="font-size:13px;color:var(--text-primary);flex-shrink:0;">${d.suspendusCount}</strong>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
                 <div class="d-legend"><span class="d-legend-dot" style="background:#d1d5db;"></span> Inactifs</div>
-                <strong style="font-size:13px;color:#374151;flex-shrink:0;">${d.inactifsCount}</strong>
+                <strong style="font-size:13px;color:var(--text-primary);flex-shrink:0;">${d.inactifsCount}</strong>
               </div>
             </div>
           </div>
@@ -1009,7 +1009,7 @@ const DashboardPage = {
             ${gauge(d.progressionObjectif, progressColor, 64, 5)}
             <div class="d-gauge-txt" style="color:${progressColor};font-size:14px;">${d.progressionObjectif}%</div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-primary);text-align:center;margin-top:6px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
           <div class="d-sub" style="text-align:center;">${d.joursRestants}j restants</div>
         </div>
 
@@ -1025,7 +1025,7 @@ const DashboardPage = {
             ${gauge(d.tauxRecouvrement, recouvrementColor, 64, 5)}
             <div class="d-gauge-txt" style="color:${recouvrementColor};font-size:14px;">${d.tauxRecouvrement}%</div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:#374151;text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-primary);text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerse)}</div>
           <div class="d-sub" style="text-align:center;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
         </div>
 
@@ -1207,7 +1207,7 @@ const DashboardPage = {
           <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
         </div>
         <div>
-          <div style="font-size:14px;font-weight:700;color:#111827;">Maintenance OK</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Maintenance OK</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Aucun entretien en retard</div>
         </div>
       </div>`;
@@ -1228,7 +1228,7 @@ const DashboardPage = {
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.04);cursor:pointer;transition:background .2s;" onclick="Router.navigate('/vehicules/${m.vehiculeId}')" onmouseover="this.style.background='rgba(0,0,0,.04)'" onmouseout="this.style.background='rgba(0,0,0,.02)'">
         <div style="width:6px;height:6px;border-radius:50%;background:${color};flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:600;color:#111827;">${typeLabel} <span class="d-tag ${isRetard ? 'red' : 'orange'}" style="font-size:9px;padding:1px 6px;">${badgeLabel}</span></div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-primary);">${typeLabel} <span class="d-tag ${isRetard ? 'red' : 'orange'}" style="font-size:9px;padding:1px 6px;">${badgeLabel}</span></div>
           <div style="font-size:10px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.vehiculeLabel}</div>
         </div>
         ${echeance ? `<div style="font-size:10px;color:${color};font-weight:600;white-space:nowrap;">${echeance}</div>` : ''}
@@ -1241,7 +1241,7 @@ const DashboardPage = {
           <div class="d-icon" style="background:rgba(249,115,22,.08);color:#f97316;width:34px;height:34px;border-radius:10px;font-size:15px;display:flex;align-items:center;justify-content:center;">
             <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
           </div>
-          <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:#111827;">Maintenance</div>
+          <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:var(--text-primary);">Maintenance</div>
         </div>
         <a href="#/garage" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
       </div>
@@ -1257,7 +1257,7 @@ const DashboardPage = {
       return `<div class="d-card" style="display:flex;align-items:center;gap:14px;">
         <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
         <div>
-          <div style="font-size:14px;font-weight:700;color:#111827;">Planning semaine</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Planning semaine</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Aucun chauffeur actif</div>
         </div>
       </div>`;
@@ -1318,7 +1318,7 @@ const DashboardPage = {
             <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#fff;"></iconify-icon>
           </div>
           <div>
-            <div style="font-size:15px;font-weight:800;color:#111827;letter-spacing:-.3px;">Planning semaine</div>
+            <div style="font-size:15px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px;">Planning semaine</div>
             <div style="font-size:11px;color:#9ca3af;font-weight:500;margin-top:1px;">${drivers.length} chauffeur${drivers.length > 1 ? 's' : ''} actif${drivers.length > 1 ? 's' : ''}</div>
           </div>
         </div>
