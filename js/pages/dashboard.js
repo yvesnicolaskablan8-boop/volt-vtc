@@ -423,15 +423,19 @@ const DashboardPage = {
       const cells = heatmapWeekDays.map(wd => {
         // Check absence
         const hasAbsence = absences.some(a => a.chauffeurId === c.id && wd.date >= a.dateDebut && wd.date <= a.dateFin);
-        if (hasAbsence) return 'absent';
+        if (hasAbsence) return { status: 'absent', heures: '' };
         // Check if planned
-        const isPlanned = planning.some(p => p.chauffeurId === c.id && p.date === wd.date);
-        if (!isPlanned) return 'repos';
-        // Planned — check if future
-        if (wd.date >= hmToday) return 'programme';
-        // Past or today — check versement
+        const planEntry = planning.find(p => p.chauffeurId === c.id && p.date === wd.date);
+        if (!planEntry) return { status: 'repos', heures: '' };
+        // Format heures
+        const h1 = planEntry.heureDebut ? planEntry.heureDebut.replace(':00','h').replace(':30','h30') : '';
+        const h2 = planEntry.heureFin ? planEntry.heureFin.replace(':00','h').replace(':30','h30') : '';
+        const heures = h1 && h2 ? `${h1}-${h2}` : h1 || h2 || '';
+        // Planned — check if future or today
+        if (wd.date >= hmToday) return { status: 'programme', heures };
+        // Past — check versement
         const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime'));
-        return hasVersement ? 'verse' : 'en_retard';
+        return { status: hasVersement ? 'verse' : 'en_retard', heures };
       });
       return { id: c.id, prenom: c.prenom, nom: c.nom, initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), cells };
     });
@@ -779,8 +783,12 @@ const DashboardPage = {
           .d-val { font-size:20px !important; }
           .d-lbl { font-size:11px !important; }
           .d-grid { gap:8px !important; }
-          .d-legend { font-size:10px !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-          .d-card svg { width:70px !important; height:70px !important; }
+          .d-legend { font-size:10px !important; white-space:nowrap; }
+          .d-chauffeurs-donut { flex-direction:column !important; gap:8px !important; }
+          .d-chauffeurs-donut svg { width:80px !important; height:80px !important; }
+          .d-chauffeurs-donut .d-donut-center { font-size:18px !important; }
+          .d-chauffeurs-legends { gap:4px !important; }
+          .d-chauffeurs-legends strong { font-size:12px !important; }
           .d-hm-grid { grid-template-columns:36px repeat(7,1fr) !important; gap:2px !important; }
           .d-hm-driver { font-size:10px !important; }
           .d-hm-driver span:last-child { display:none; }
@@ -898,58 +906,58 @@ const DashboardPage = {
             </div>
             <div class="d-lbl" style="margin:0;">Chauffeurs</div>
           </div>
-          <div style="display:flex;align-items:center;gap:16px;">
-            <div style="position:relative;">
+          <div class="d-chauffeurs-donut" style="display:flex;align-items:center;gap:16px;">
+            <div style="position:relative;flex-shrink:0;">
               ${arc(d.totalChauffeurs > 0 ? (d.activeCount / d.totalChauffeurs * 100) : 0, '#10b981', '#f97316', 100, 12)}
               <div style="position:absolute;top:45%;left:50%;transform:translate(-50%,-30%);text-align:center;">
-                <div style="font-size:22px;font-weight:800;color:#111827;">${d.totalChauffeurs}</div>
+                <div class="d-donut-center" style="font-size:22px;font-weight:800;color:#111827;">${d.totalChauffeurs}</div>
                 <div style="font-size:9px;color:#9ca3af;font-weight:600;">Total</div>
               </div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
-              <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="d-chauffeurs-legends" style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
                 <div class="d-legend"><span class="d-legend-dot" style="background:#10b981;"></span> Actifs</div>
-                <strong style="font-size:13px;color:#374151;">${d.activeCount}</strong>
+                <strong style="font-size:13px;color:#374151;flex-shrink:0;">${d.activeCount}</strong>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
                 <div class="d-legend"><span class="d-legend-dot" style="background:#f97316;"></span> Suspendus</div>
-                <strong style="font-size:13px;color:#374151;">${d.suspendusCount}</strong>
+                <strong style="font-size:13px;color:#374151;flex-shrink:0;">${d.suspendusCount}</strong>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
                 <div class="d-legend"><span class="d-legend-dot" style="background:#d1d5db;"></span> Inactifs</div>
-                <strong style="font-size:13px;color:#374151;">${d.inactifsCount}</strong>
+                <strong style="font-size:13px;color:#374151;flex-shrink:0;">${d.inactifsCount}</strong>
               </div>
             </div>
           </div>
         </a>
 
-        <!-- Dettes -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalDettes > 0 ? 'border-color:rgba(239,68,68,.2);background:rgba(255,255,255,.72);' : ''}">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;">
-              <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;color:#ef4444;">Dettes</div>
-          </div>
-          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(d.totalDettes)}</div>
-          <div class="d-sub">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#ef4444,#f87171);"></div>
-          </div>
-        </a>
-
-        <!-- Pertes -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalPertes > 0 ? 'border-color:rgba(249,115,22,.2);' : ''}">
+        <!-- Dettes (orange) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalDettes > 0 ? 'border-color:rgba(249,115,22,.2);background:rgba(255,255,255,.72);' : ''}">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(249,115,22,.1);color:#f97316;">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
+            </div>
+            <div class="d-lbl" style="margin:0;color:#f97316;">Dettes</div>
+          </div>
+          <div class="d-val" style="color:#f97316;">${Utils.formatCurrency(d.totalDettes)}</div>
+          <div class="d-sub">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#f97316,#fb923c);"></div>
+          </div>
+        </a>
+
+        <!-- Pertes (rouge) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:inherit;${d.totalPertes > 0 ? 'border-color:rgba(239,68,68,.2);' : ''}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="d-icon" style="background:rgba(239,68,68,.1);color:#ef4444;">
               <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;color:#f97316;">Pertes</div>
+            <div class="d-lbl" style="margin:0;color:#ef4444;">Pertes</div>
           </div>
-          <div class="d-val" style="color:#f97316;">${Utils.formatCurrency(d.totalPertes)}</div>
+          <div class="d-val" style="color:#ef4444;">${Utils.formatCurrency(d.totalPertes)}</div>
           <div class="d-sub">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
           <div class="d-bar-track" style="margin-top:12px;">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#f97316,#fb923c);"></div>
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:linear-gradient(90deg,#ef4444,#f87171);"></div>
           </div>
         </a>
 
@@ -1110,7 +1118,6 @@ const DashboardPage = {
 
     const statusIcons = {
       verse: '<iconify-icon icon="solar:check-circle-bold" style="font-size:14px;"></iconify-icon>',
-      programme: '<iconify-icon icon="solar:clock-circle-bold" style="font-size:14px;"></iconify-icon>',
       en_retard: '<iconify-icon icon="solar:danger-triangle-bold" style="font-size:14px;"></iconify-icon>',
       absent: '<iconify-icon icon="solar:minus-circle-bold" style="font-size:14px;"></iconify-icon>',
       repos: ''
@@ -1129,9 +1136,12 @@ const DashboardPage = {
     drivers.forEach((dr, idx) => {
       const color = avatarColors[idx % avatarColors.length];
       html += `<div class="d-hm-driver"><div class="d-hm-avatar" style="background:${color};">${dr.initials}</div><span>${dr.prenom}</span></div>`;
-      dr.cells.forEach((status, ci) => {
-        const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}`;
-        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="Router.navigate('/chauffeurs/${dr.id}')">${statusIcons[status]}</div>`;
+      dr.cells.forEach((cell, ci) => {
+        const status = cell.status;
+        const heures = cell.heures;
+        const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}${heures ? ' (' + heures + ')' : ''}`;
+        const content = status === 'programme' && heures ? `<span style="font-size:9px;font-weight:600;letter-spacing:-.3px;">${heures}</span>` : (statusIcons[status] || '');
+        html += `<div class="d-hm-cell hm-${status}" title="${tooltip}" onclick="Router.navigate('/chauffeurs/${dr.id}')">${content}</div>`;
       });
     });
     html += '</div>';
