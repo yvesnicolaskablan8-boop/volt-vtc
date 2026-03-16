@@ -103,66 +103,6 @@ const ChauffeursPage = {
           }
         },
         {
-          label: 'Temps en ligne', key: 'tempsEnLigne',
-          render: (c) => {
-            const ptg = pointages.find(p => p.chauffeurId === c.id && p.date === today);
-            const gps = gpsData.find(g => g.chauffeurId === c.id && (g.date === today || g.date.startsWith(today)));
-            const yangoMin = gps?.evenements?.tempsActiviteYango || 0;
-            let minutes = 0;
-            let source = '';
-            if (ptg) {
-              minutes = ptg.dureeTotaleMinutes || 0;
-              if (ptg.statut === 'en_service' && ptg.heureDebut) {
-                const debut = new Date(ptg.heureDebut);
-                const now = new Date();
-                let pauseMs = 0, pauseStart = null;
-                for (const evt of (ptg.evenements || [])) {
-                  if (evt.type === 'pause') pauseStart = new Date(evt.heure);
-                  else if (evt.type === 'reprise' && pauseStart) { pauseMs += new Date(evt.heure) - pauseStart; pauseStart = null; }
-                }
-                minutes = Math.round((now - debut - pauseMs) / 60000);
-              }
-              source = 'pointage';
-            } else if (yangoMin > 0) {
-              minutes = yangoMin;
-              source = 'yango';
-            }
-            if (!minutes) return '<span class="text-muted">--</span>';
-            const h = Math.floor(minutes / 60);
-            const m = minutes % 60;
-            const pct = Math.min(100, Math.round((minutes / objectifMin) * 100));
-            const color = minutes >= objectifMin ? '#22c55e' : (pct >= 50 ? '#f59e0b' : '#ef4444');
-            return `<div style="min-width:90px">
-              <div style="font-size:0.82rem;font-weight:700;color:${color}">${h}h${String(m).padStart(2, '0')}${source === 'yango' ? ' <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">Y</span>' : ''}</div>
-              <div style="height:4px;background:var(--bg-tertiary);border-radius:2px;margin-top:3px;overflow:hidden">
-                <div style="height:100%;width:${pct}%;background:${color};border-radius:2px"></div>
-              </div>
-              <div style="font-size:0.6rem;color:var(--text-muted);margin-top:1px">${pct}% de ${Math.floor(objectifMin/60)}h${objectifMin%60 > 0 ? String(objectifMin%60).padStart(2,'0') : ''}</div>
-            </div>`;
-          },
-          value: (c) => {
-            const ptg = pointages.find(p => p.chauffeurId === c.id && p.date === today);
-            if (ptg) return ptg.dureeTotaleMinutes || 0;
-            const gps = gpsData.find(g => g.chauffeurId === c.id && (g.date === today || g.date.startsWith(today)));
-            return gps?.evenements?.tempsActiviteYango || -1;
-          }
-        },
-        {
-          label: 'Temps occup\u00e9', key: 'tempsOccupe',
-          render: (c) => {
-            const gps = gpsData.find(g => g.chauffeurId === c.id && (g.date === today || g.date.startsWith(today)));
-            const activite = gps?.evenements?.tempsActiviteYango || 0;
-            if (!activite) return '<span class="text-muted">--</span>';
-            const h = Math.floor(activite / 60);
-            const m = activite % 60;
-            return `<div style="font-size:0.82rem;font-weight:700;color:#6366f1">${h}h${String(m).padStart(2, '0')}</div>`;
-          },
-          value: (c) => {
-            const gps = gpsData.find(g => g.chauffeurId === c.id && (g.date === today || g.date.startsWith(today)));
-            return gps?.evenements?.tempsActiviteYango || -1;
-          }
-        },
-        {
           label: 'Score', key: 'scoreConduite',
           render: (c) => `<div class="score-circle ${Utils.scoreClass(c.scoreConduite)}">${c.scoreConduite}</div>`
         },
