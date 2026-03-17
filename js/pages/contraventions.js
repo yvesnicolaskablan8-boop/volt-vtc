@@ -522,8 +522,14 @@ const ContraventionsPage = {
 
     const inputStyle = 'width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:10px;font-size:13px;background:var(--bg-primary);color:var(--text-primary);transition:border-color .2s,box-shadow .2s;outline:none;';
     const labelStyle = 'display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text-primary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;';
-    const sectionStyle = 'background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;margin-top:14px;';
+    const sectionBase = 'border-radius:12px;padding:16px;margin-top:14px;border:none;';
     const sectionTitleStyle = 'display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;';
+    const sectionColors = {
+      assignation: 'background:rgba(59,130,246,0.06);',
+      infraction: 'background:rgba(245,158,11,0.06);',
+      financier: 'background:rgba(16,185,129,0.06);',
+      notes: 'background:rgba(139,92,246,0.06);'
+    };
 
     const statutColor = c.statut === 'payee' ? '#10b981' : c.statut === 'contestee' ? '#f59e0b' : '#ef4444';
     const statutLabel = c.statut === 'payee' ? 'Payée' : c.statut === 'contestee' ? 'Contestée' : 'Impayée';
@@ -541,7 +547,7 @@ const ContraventionsPage = {
           </div>
 
           <!-- Section : Assignation -->
-          <div style="${sectionStyle}">
+          <div style="${sectionBase}${sectionColors.assignation}">
             <div style="${sectionTitleStyle}">
               <iconify-icon icon="solar:user-bold-duotone" style="color:#3b82f6;font-size:15px;"></iconify-icon> Assignation
             </div>
@@ -563,7 +569,7 @@ const ContraventionsPage = {
           </div>
 
           <!-- Section : Infraction -->
-          <div style="${sectionStyle}">
+          <div style="${sectionBase}${sectionColors.infraction}">
             <div style="${sectionTitleStyle}">
               <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f59e0b;font-size:15px;"></iconify-icon> Infraction
             </div>
@@ -586,7 +592,7 @@ const ContraventionsPage = {
           </div>
 
           <!-- Section : Financier -->
-          <div style="${sectionStyle}">
+          <div style="${sectionBase}${sectionColors.financier}">
             <div style="${sectionTitleStyle}">
               <iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#10b981;font-size:15px;"></iconify-icon> Financier
             </div>
@@ -607,7 +613,7 @@ const ContraventionsPage = {
           </div>
 
           <!-- Section : Notes -->
-          <div style="${sectionStyle}">
+          <div style="${sectionBase}${sectionColors.notes}">
             <div style="${sectionTitleStyle}">
               <iconify-icon icon="solar:document-text-bold-duotone" style="color:#8b5cf6;font-size:15px;"></iconify-icon> Notes
             </div>
