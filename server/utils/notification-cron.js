@@ -89,7 +89,14 @@ async function runChecks() {
       _lastDateStr = todayStr;
     }
 
-    // Charger les settings
+    // Charger les chauffeurs actifs (nécessaire pour tous les checks)
+    const chauffeurs = await Chauffeur.find({ statut: 'actif' }).lean();
+    if (chauffeurs.length === 0) return;
+
+    // === CHECK 6 : Dettes automatiques (TOUJOURS, indépendant des settings notif) ===
+    await checkMissingPaymentDebts(chauffeurs, null);
+
+    // Charger les settings pour les notifications
     const settings = await Settings.findOne().lean();
     if (!settings || !settings.notifications) return;
 
@@ -111,10 +118,6 @@ async function runChecks() {
       else if (canaux.includes('push') && canaux.includes('whatsapp')) canal = 'push+whatsapp';
       else canal = 'sms+whatsapp';
     } else canal = canaux[0];
-
-    // Charger les chauffeurs actifs
-    const chauffeurs = await Chauffeur.find({ statut: 'actif' }).lean();
-    if (chauffeurs.length === 0) return;
 
     // === CHECK 1 : Deadline versement ===
     if (notifSettings.rappelDeadline24h || notifSettings.rappelDeadline1h) {
@@ -138,9 +141,6 @@ async function runChecks() {
     if (now.getDay() === 0) {
       await checkWeeklySummary(chauffeurs, canal);
     }
-
-    // === CHECK 6 : Dettes automatiques (versements manquants) ===
-    await checkMissingPaymentDebts(chauffeurs, canal);
 
   } catch (err) {
     console.error('[NotifCron] Erreur:', err.message);
@@ -571,18 +571,24 @@ async function checkMissingPaymentDebts(chauffeurs, canal) {
       _sentToday.add(cronKey);
       created++;
 
-      // Notifier le chauffeur (1 seule fois par jour manquant)
-      const notifKey = `dette_notif_${p.chauffeurId}_${p.date}`;
-      if (!_sentToday.has(notifKey)) {
-        await notifService.notify(
-          p.chauffeurId,
-          'dette_auto',
-          'Versement manquant — dette ajoutée',
-          `${ch.prenom}, aucun versement reçu pour le ${p.date}. Une dette de ${redevance.toLocaleString('fr-FR')} FCFA a été ajoutée.`,
-          canal,
-          { url: '/driver/#/versements' }
-        );
-        _sentToday.add(notifKey);
+      // Notifier le chauffeur (1 seule fois par jour manquant, seulement si canal dispo)
+      if (canal) {
+        const notifKey = `dette_notif_${p.chauffeurId}_${p.date}`;
+        if (!_sentToday.has(notifKey)) {
+          try {
+            await notifService.notify(
+              p.chauffeurId,
+              'dette_auto',
+              'Versement manquant — dette ajoutée',
+              `${ch.prenom}, aucun versement reçu pour le ${p.date}. Une dette de ${redevance.toLocaleString('fr-FR')} FCFA a été ajoutée.`,
+              canal,
+              { url: '/driver/#/versements' }
+            );
+          } catch (notifErr) {
+            console.warn(`[NotifCron] Notif dette échouée pour ${ch.prenom}:`, notifErr.message);
+          }
+          _sentToday.add(notifKey);
+        }
       }
     }
 
