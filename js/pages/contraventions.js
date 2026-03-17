@@ -661,26 +661,30 @@ const ContraventionsPage = {
 
     Store.update('contraventions', id, updates);
 
-    // Auto-comptabilité : décaissement quand contravention payée
+    // Créer une dette chauffeur quand contravention marquée payée
     if (updates.statut === 'payee') {
       const contraventions = Store.get('contraventions') || [];
       const c = contraventions.find(x => x.id === id);
-      if (c && c.montant > 0) {
-        const chauffeurs = Store.get('chauffeurs') || [];
-        const ch = chauffeurs.find(x => x.id === c.chauffeurId);
-        const nom = ch ? `${ch.prenom} ${ch.nom}` : (c.chauffeurId || '');
-        Store.add('comptabilite', {
-          id: Utils.generateId('OP'),
-          type: 'depense',
-          date: new Date().toISOString().slice(0,10),
-          categorie: 'autres_depenses',
-          description: `Contravention ${nom} — ${c.typeInfraction || 'amende'}`,
-          montant: c.montant,
-          modePaiement: 'especes',
-          reference: id,
-          notes: 'Créé automatiquement depuis les contraventions',
-          dateCreation: new Date().toISOString()
-        });
+      if (c && c.montant > 0 && c.chauffeurId) {
+        // Vérifier qu'une dette n'existe pas déjà pour cette contravention
+        const versements = Store.get('versements') || [];
+        const dejaCreee = versements.some(v => v.reference === id && v.traitementManquant === 'dette');
+        if (!dejaCreee) {
+          Store.create('versements', {
+            id: Utils.generateId('VRS'),
+            chauffeurId: c.chauffeurId,
+            date: new Date().toISOString().slice(0,10),
+            montantVerse: 0,
+            montantAttendu: c.montant,
+            manquant: c.montant,
+            statut: 'manquant',
+            traitementManquant: 'dette',
+            reference: id,
+            commentaire: `Contravention — ${c.type || 'amende'}`,
+            source: 'contravention',
+            dateCreation: new Date().toISOString()
+          });
+        }
       }
     }
 
@@ -696,25 +700,28 @@ const ContraventionsPage = {
       datePaiement: new Date().toISOString()
     });
 
-    // Auto-comptabilité : décaissement
+    // Créer une dette chauffeur
     const contraventions = Store.get('contraventions') || [];
     const c = contraventions.find(x => x.id === id);
-    if (c && c.montant > 0) {
-      const chauffeurs = Store.get('chauffeurs') || [];
-      const ch = chauffeurs.find(x => x.id === c.chauffeurId);
-      const nom = ch ? `${ch.prenom} ${ch.nom}` : (c.chauffeurId || '');
-      Store.add('comptabilite', {
-        id: Utils.generateId('OP'),
-        type: 'depense',
-        date: new Date().toISOString().slice(0,10),
-        categorie: 'autres_depenses',
-        description: `Contravention ${nom} — ${c.typeInfraction || 'amende'}`,
-        montant: c.montant,
-        modePaiement: 'especes',
-        reference: id,
-        notes: 'Créé automatiquement depuis les contraventions',
-        dateCreation: new Date().toISOString()
-      });
+    if (c && c.montant > 0 && c.chauffeurId) {
+      const versements = Store.get('versements') || [];
+      const dejaCreee = versements.some(v => v.reference === id && v.traitementManquant === 'dette');
+      if (!dejaCreee) {
+        Store.create('versements', {
+          id: Utils.generateId('VRS'),
+          chauffeurId: c.chauffeurId,
+          date: new Date().toISOString().slice(0,10),
+          montantVerse: 0,
+          montantAttendu: c.montant,
+          manquant: c.montant,
+          statut: 'manquant',
+          traitementManquant: 'dette',
+          reference: id,
+          commentaire: `Contravention — ${c.type || 'amende'}`,
+          source: 'contravention',
+          dateCreation: new Date().toISOString()
+        });
+      }
     }
 
     Toast.show('Contravention marqu\u00e9e comme pay\u00e9e', 'success');
@@ -762,20 +769,26 @@ const ContraventionsPage = {
       if (data.waveLaunchUrl) {
         window.open(data.waveLaunchUrl, '_blank');
 
-        // Auto-comptabilité : décaissement Wave
-        if (c.montant > 0) {
-          Store.add('comptabilite', {
-            id: Utils.generateId('OP'),
-            type: 'depense',
-            date: new Date().toISOString().slice(0,10),
-            categorie: 'autres_depenses',
-            description: `Contravention ${name} — ${c.typeInfraction || 'amende'} (Wave)`,
-            montant: c.montant,
-            modePaiement: 'wave',
-            reference: id,
-            notes: 'Créé automatiquement depuis les contraventions (paiement Wave)',
-            dateCreation: new Date().toISOString()
-          });
+        // Créer une dette chauffeur
+        if (c.montant > 0 && c.chauffeurId) {
+          const versements = Store.get('versements') || [];
+          const dejaCreee = versements.some(v => v.reference === id && v.traitementManquant === 'dette');
+          if (!dejaCreee) {
+            Store.create('versements', {
+              id: Utils.generateId('VRS'),
+              chauffeurId: c.chauffeurId,
+              date: new Date().toISOString().slice(0,10),
+              montantVerse: 0,
+              montantAttendu: c.montant,
+              manquant: c.montant,
+              statut: 'manquant',
+              traitementManquant: 'dette',
+              reference: id,
+              commentaire: `Contravention — ${c.type || 'amende'} (Wave)`,
+              source: 'contravention',
+              dateCreation: new Date().toISOString()
+            });
+          }
         }
       } else {
         Toast.show('URL de paiement non disponible', 'error');
