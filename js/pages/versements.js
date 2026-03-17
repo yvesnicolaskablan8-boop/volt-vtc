@@ -2197,8 +2197,8 @@ const VersementsPage = {
       <div class="card-header">
         <span class="card-title"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#f59e0b;"></iconify-icon> Suivi des dettes (${detteData.detteList.length} chauffeur${detteData.detteList.length > 1 ? 's' : ''})</span>
         <div style="display:flex;align-items:center;gap:12px;">
-          <button class="btn btn-sm" style="background:#f59e0b;color:white;border:none;display:flex;align-items:center;gap:4px;" onclick="VersementsPage._ajouterDette()">
-            <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter
+          <button class="btn btn-sm" style="background:#f59e0b;color:white;border:none;display:flex;align-items:center;gap:4px;padding:4px 10px;font-size:var(--font-size-xs);" onclick="VersementsPage._ajouterDette()">
+            <iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter
           </button>
           <div style="text-align:right;">
             ${detteData.totalDettes > 0 ? `<div style="font-size:var(--font-size-base);font-weight:700;color:#f59e0b;">Dettes : ${Utils.formatCurrency(detteData.totalDettes)}</div>` : ''}
