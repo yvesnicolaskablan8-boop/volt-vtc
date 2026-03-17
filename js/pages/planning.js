@@ -807,7 +807,7 @@ const PlanningPage = {
               <th style="padding:8px 12px;text-align:left;font-size:var(--font-size-xs);font-weight:600;color:var(--text-secondary);width:160px;border-bottom:2px solid var(--border-color);position:sticky;left:0;background:var(--bg-tertiary);z-index:1;">Chauffeur</th>
               ${dayHeaders.map(d => `
                 <th style="padding:4px 2px;text-align:center;font-size:10px;border-bottom:2px solid var(--border-color);min-width:30px;
-                  ${d.isToday ? 'background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;font-weight:700;' : d.isWeekend ? 'background:rgba(100,116,139,0.1);color:var(--text-muted);' : 'color:var(--text-secondary);'}">`
+                  ${d.isToday ? 'background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;font-weight:700;' : d.isWeekend ? 'background:rgba(100,116,139,0.1);color:var(--text-muted);' : 'color:var(--text-secondary);'}">
                   <div style="font-weight:600;">${d.num}</div>
                   <div style="font-size:9px;">${this._getDayName(d.dow === 0 ? 6 : d.dow - 1)}</div>
                 </th>
