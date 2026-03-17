@@ -565,7 +565,8 @@ const PlanningPage = {
           ${(() => {
             const todayColIdx = days.findIndex(d => this._isToday(d.date));
             if (todayColIdx >= 0) {
-              return `<div class="pg-today-stripe" style="grid-column:${todayColIdx + 2};grid-row:1 / -1;background:rgba(99,102,241,.12);border-left:2.5px solid rgba(99,102,241,.35);border-right:2.5px solid rgba(99,102,241,.35);border-radius:14px;pointer-events:none;z-index:0;margin:-4px -2px;padding:4px 2px;"></div>`;
+              const totalRows = chauffeurs.length + 1;
+              return `<div class="pg-today-stripe" style="grid-column:${todayColIdx + 2};grid-row:1 / span ${totalRows};background:rgba(99,102,241,.14);border-left:3px solid rgba(99,102,241,.4);border-right:3px solid rgba(99,102,241,.4);border-radius:16px;pointer-events:none;z-index:0;margin:-6px -4px;padding:6px 4px;"></div>`;
             }
             return '';
           })()}
