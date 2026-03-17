@@ -187,9 +187,28 @@ const App = {
 
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
+      // Force update: unregister old SWs and clear caches if version mismatch
+      const SW_VERSION = 291;
+      const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
+      if (storedSW < SW_VERSION) {
+        localStorage.setItem('pilote_sw_ver', SW_VERSION);
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          return Promise.all(regs.map(r => r.unregister()));
+        }).then(() => caches.keys()).then(keys => {
+          return Promise.all(keys.map(k => caches.delete(k)));
+        }).then(() => {
+          // Re-register fresh SW after purge
+          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+          window.location.reload(true);
+        });
+        return; // Stop init, page will reload
+      }
+
       navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
         .then(reg => {
           console.log('SW registered, scope:', reg.scope);
+          // Force immediate update check
+          reg.update();
           // Vérifier les mises à jour toutes les 60s
           setInterval(() => reg.update(), 60000);
           // Si un nouveau SW est en attente, l'activer
@@ -204,6 +223,10 @@ const App = {
               });
             }
           });
+          // Si un SW est déjà en attente (ex: update trouvée avant)
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
         })
         .catch(err => console.warn('SW registration failed:', err));
       // Recharger si le controller change (nouveau SW prend le contrôle)

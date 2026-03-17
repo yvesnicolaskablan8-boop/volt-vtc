@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-v291';
+const CACHE_NAME = 'pilote-v292';
 const ASSETS = [
   './',
   './index.html',
@@ -108,6 +108,13 @@ self.addEventListener('notificationclick', (event) => {
       return self.clients.openWindow(self.location.origin + url);
     })
   );
+});
+
+// Message — force skipWaiting si demandé par l'app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Fetch — network first, fallback to cache
