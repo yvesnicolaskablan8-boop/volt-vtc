@@ -531,7 +531,7 @@ const PlanningPage = {
         .pg-driver-sub { font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .pg-cell {
           min-height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
-          cursor:pointer; transition:all .2s cubic-bezier(.16,1,.3,1); position:relative; z-index:1;
+          cursor:pointer; transition:all .2s cubic-bezier(.16,1,.3,1); position:relative;
         }
         .pg-cell:hover { transform:scale(1.06); box-shadow:0 4px 12px rgba(0,0,0,.1); z-index:2; }
         .pg-shift {
@@ -561,15 +561,7 @@ const PlanningPage = {
       </style>
 
       <div class="card" style="padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:20px;">
-        <div class="pg-grid" style="min-width:700px;position:relative;">
-          ${(() => {
-            const todayColIdx = days.findIndex(d => this._isToday(d.date));
-            if (todayColIdx >= 0) {
-              const totalRows = chauffeurs.length + 1;
-              return `<div class="pg-today-stripe" style="grid-column:${todayColIdx + 2};grid-row:1 / span ${totalRows};background:rgba(99,102,241,.14);border-left:3px solid rgba(99,102,241,.4);border-right:3px solid rgba(99,102,241,.4);border-radius:16px;pointer-events:none;z-index:0;margin:-6px -4px;padding:6px 4px;"></div>`;
-            }
-            return '';
-          })()}
+        <div class="pg-grid" style="min-width:700px;">
           <div></div>
           ${days.map(d => `
             <div class="pg-head ${this._isToday(d.date) ? 'today' : ''}">
@@ -607,7 +599,7 @@ const PlanningPage = {
               const shifts = this._getDriverShiftsForDate(ch.id, d.date);
               const absences = this._getDriverAbsencesForDate(ch.id, d.date);
               const isToday = this._isToday(d.date);
-              const todayBg = '';
+              const todayBg = isToday ? 'background:rgba(99,102,241,.08);' : '';
 
               if (isSuspendu) {
                 return `<div class="pg-cell ${rowClass}" style="${todayBg}">
@@ -760,10 +752,6 @@ const PlanningPage = {
 
       <div class="card" style="padding:0;overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;min-width:${daysInMonth * 36 + 180}px;">
-          <colgroup>
-            <col style="width:160px;">
-            ${dayHeaders.map(d => `<col style="${d.isToday ? 'background:rgba(99,102,241,0.15);' : ''}">` ).join('')}
-          </colgroup>
           <thead>
             <tr style="background:var(--bg-tertiary);">
               <th style="padding:8px 12px;text-align:left;font-size:var(--font-size-xs);font-weight:600;color:var(--text-secondary);width:160px;border-bottom:2px solid var(--border-color);position:sticky;left:0;background:var(--bg-tertiary);z-index:1;">Chauffeur</th>
@@ -791,7 +779,7 @@ const PlanningPage = {
 
                   if (absences.length > 0) {
                     const a = absences[0];
-                    return `<td style="padding:2px;text-align:center;${d.isWeekend && !d.isToday ? 'background:rgba(100,116,139,0.05);' : ''}">
+                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.08);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                       <div style="width:24px;height:24px;border-radius:4px;background:${this._absenceTypeColor(a.type)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._absenceTypeLabel(a.type)}" onclick="PlanningPage._viewAbsence('${a.id}')">
                         ${a.type === 'repos' ? 'R' : a.type === 'conge' ? 'C' : a.type === 'maladie' ? 'M' : a.type === 'formation' ? 'F' : a.type === 'suspension' ? 'S' : 'P'}
                       </div>
@@ -800,14 +788,14 @@ const PlanningPage = {
 
                   if (shifts.length > 0) {
                     const s = shifts[0];
-                    return `<td style="padding:2px;text-align:center;${d.isWeekend && !d.isToday ? 'background:rgba(100,116,139,0.05);' : ''}">
+                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.08);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                       <div style="width:24px;height:24px;border-radius:4px;background:${this._getShiftColor(s)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._getShiftTimeLabel(s)}" onclick="PlanningPage._editShift('${s.id}')">
                         ${this._shiftTypeShort(s.typeCreneaux)}
                       </div>
                     </td>`;
                   }
 
-                  return `<td style="padding:2px;text-align:center;${d.isWeekend && !d.isToday ? 'background:rgba(100,116,139,0.05);' : ''}">
+                  return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.08);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                     <div style="width:24px;height:24px;border-radius:4px;border:1px dashed var(--border-color);margin:auto;opacity:0.3;"></div>
                   </td>`;
                 }).join('')}
