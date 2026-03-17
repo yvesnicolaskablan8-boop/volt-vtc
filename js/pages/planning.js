@@ -436,199 +436,160 @@ const PlanningPage = {
 
   // =================== VUE DESKTOP (grille 7 jours) ===================
 
+  _getShiftDuration(shift) {
+    if (shift.heureDebut && shift.heureFin) {
+      const [hd, md] = shift.heureDebut.split(':').map(Number);
+      const [hf, mf] = shift.heureFin.split(':').map(Number);
+      let diff = (hf * 60 + mf) - (hd * 60 + md);
+      if (diff <= 0) diff += 24 * 60;
+      return Math.round(diff / 60) + 'h';
+    }
+    return { matin: '8h', apres_midi: '8h', journee: '12h', nuit: '8h' }[shift.typeCreneaux] || '';
+  },
+
+  _getShiftTimeFull(shift) {
+    if (shift.heureDebut && shift.heureFin) {
+      return `${shift.heureDebut} - ${shift.heureFin}`;
+    }
+    const presets = { matin: '06:00 - 14:00', apres_midi: '14:00 - 22:00', journee: '08:00 - 20:00', nuit: '22:00 - 06:00' };
+    return presets[shift.typeCreneaux] || '';
+  },
+
   _renderDesktopGridView(chauffeurs, days, vehMap, stats) {
+    // Compute weekly hours per chauffeur
+    const weeklyHours = {};
+    chauffeurs.forEach(ch => {
+      let total = 0;
+      days.forEach(d => {
+        const shifts = this._getDriverShiftsForDate(ch.id, d.date);
+        shifts.forEach(s => {
+          const dur = this._getShiftDuration(s);
+          total += parseInt(dur) || 0;
+        });
+      });
+      weeklyHours[ch.id] = total;
+    });
+
     return `
-      <!-- KPIs semaine -->
-      <div class="grid-4" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card">
-          <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${chauffeurs.length}</div>
-          <div class="kpi-label">Chauffeurs actifs</div>
-        </div>
-        <div class="kpi-card blue">
-          <div class="kpi-icon"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${stats.filledSlots}</div>
-          <div class="kpi-label">Créneaux planifiés</div>
-        </div>
-        <div class="kpi-card yellow">
-          <div class="kpi-icon"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${stats.uniqueAbsDrivers}</div>
-          <div class="kpi-label">Chauffeurs absents</div>
-        </div>
-        <div class="kpi-card ${stats.filledSlots / stats.totalSlots >= 0.7 ? 'green' : 'red'}">
-          <div class="kpi-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${stats.totalSlots > 0 ? Math.round(stats.filledSlots / stats.totalSlots * 100) : 0}%</div>
-          <div class="kpi-label">Taux de couverture</div>
-        </div>
-      </div>
-
-      <!-- Légende pills -->
-      <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;justify-content:center;">
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(34,197,94,.08);font-size:11px;font-weight:600;color:#22c55e;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> Matin</div>
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(59,130,246,.08);font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> AM</div>
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(245,158,11,.08);font-size:11px;font-weight:600;color:#f59e0b;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Journée</div>
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(139,92,246,.08);font-size:11px;font-weight:600;color:#8b5cf6;"><span style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;"></span> Nuit</div>
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#6366f1;"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;"></span> Perso.</div>
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(100,116,139,.08);font-size:11px;font-weight:600;color:#64748b;"><span style="width:6px;height:6px;border-radius:50%;background:#64748b;"></span> Repos</div>
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> Maladie</div>
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(59,130,246,.08);font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> Congé</div>
-        <div style="display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:14px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> Susp.</div>
-      </div>
-
-      <!-- Grille planning desktop -->
       <style>
-        .pg-grid { display:grid; grid-template-columns:180px repeat(7,1fr); gap:3px 4px; align-items:center; width:100%; }
-        .pg-head {
-          text-align:center; font-size:11px; font-weight:700; color:#9ca3af; padding:10px 0 8px;
-          text-transform:uppercase; letter-spacing:.8px; border-bottom:2px solid transparent;
-        }
-        .pg-head.today {
-          color:#fff;
-          background:linear-gradient(135deg, #6366f1, #818cf8);
-          border-radius:12px 12px 0 0;
-          border-bottom:3px solid #4f46e5;
-          position:relative;
-        }
-        .pg-head.today::after {
-          content:"Aujourd'hui";
-          display:block;
-          font-size:8px;
-          font-weight:700;
-          letter-spacing:1px;
-          text-transform:uppercase;
-          color:rgba(255,255,255,.8);
-          margin-top:2px;
-        }
-        .pg-head .pg-daynum { display:block; font-size:18px; font-weight:800; color:var(--text-primary); margin-top:2px; }
-        .pg-head.today .pg-daynum { color:#fff; font-size:20px; }
-        .pg-driver {
-          display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--text-primary);
-          padding:6px 4px;
-          text-decoration:none; cursor:pointer; border-radius:10px; transition:background .15s;
-        }
-        .pg-driver:hover { background:rgba(99,102,241,.05); }
-        .pg-avatar {
-          width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-          font-size:10px; font-weight:700; color:#fff; flex-shrink:0;
-          box-shadow:0 2px 6px rgba(0,0,0,.15); border:2px solid rgba(255,255,255,.8);
-          object-fit:cover;
-        }
-        .pg-driver-info { }
-        .pg-driver-name { font-size:13px; font-weight:600; color:var(--text-primary); }
-        .pg-driver-sub { font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .pg-cell {
-          min-height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
-          cursor:pointer; transition:all .2s cubic-bezier(.16,1,.3,1); position:relative;
-        }
-        .pg-cell:hover { transform:scale(1.06); box-shadow:0 4px 12px rgba(0,0,0,.1); z-index:2; }
-        .pg-shift {
-          width:100%; padding:6px 4px; border-radius:10px; text-align:center;
-          font-size:12px; font-weight:700; cursor:grab; transition:all .15s;
-        }
-        .pg-shift:hover { filter:brightness(1.05); }
-        .pg-absence {
-          width:100%; padding:6px 4px; border-radius:10px; text-align:center;
-          font-size:11px; font-weight:600; cursor:pointer;
-        }
-        .pg-empty {
-          width:100%; padding:6px 4px; border-radius:10px; text-align:center;
-          border:1.5px dashed var(--border-color); opacity:0.3; transition:all .2s;
-        }
-        .pg-empty:hover { opacity:1; border-color:#6366f1; background:rgba(99,102,241,.04); }
-        .pg-row-even .pg-driver, .pg-row-even .pg-cell { background:rgba(0,0,0,.012); border-radius:10px; }
-        [data-theme="dark"] .pg-row-even .pg-driver, [data-theme="dark"] .pg-row-even .pg-cell { background:rgba(255,255,255,.03); }
-        [data-theme="dark"] .pg-avatar { border-color:rgba(255,255,255,.15); }
-        [data-theme="dark"] .pg-driver:hover { background:rgba(99,102,241,.1); }
+        .pgt { width:100%; border-collapse:separate; border-spacing:0; }
+        .pgt th { padding:12px 6px; text-align:center; font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; vertical-align:bottom; border-bottom:1px solid var(--border-color); }
+        .pgt th.pgt-today { color:var(--text-primary); font-weight:700; }
+        .pgt td { padding:6px 4px; vertical-align:middle; border-bottom:1px solid rgba(0,0,0,.04); }
+        [data-theme="dark"] .pgt td { border-bottom-color:rgba(255,255,255,.04); }
+        .pgt tr:last-child td { border-bottom:none; }
+        .pgt-driver { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; padding:4px 0; }
+        .pgt-driver:hover { opacity:.8; }
+        .pgt-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; flex-shrink:0; object-fit:cover; }
+        .pgt-name { font-size:13px; font-weight:600; color:var(--text-primary); line-height:1.2; }
+        .pgt-hours { font-size:11px; color:var(--text-muted); font-weight:500; }
+        .pgt-cell { display:flex; align-items:center; justify-content:center; min-height:42px; border-radius:10px; cursor:pointer; transition:background .15s; }
+        .pgt-cell:hover { background:rgba(0,0,0,.03); }
+        [data-theme="dark"] .pgt-cell:hover { background:rgba(255,255,255,.05); }
+        .pgt-shift { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:10px; background:var(--bg-secondary); border:1px solid var(--border-color); width:100%; cursor:pointer; transition:all .15s; }
+        .pgt-shift:hover { box-shadow:0 2px 8px rgba(0,0,0,.08); transform:translateY(-1px); }
+        .pgt-shift-time { font-size:12px; font-weight:600; color:var(--text-primary); white-space:nowrap; }
+        .pgt-shift-dur { font-size:11px; font-weight:500; color:var(--text-muted); white-space:nowrap; }
+        .pgt-shift-colored { border-color:transparent; }
+        .pgt-absence-cell { display:flex; align-items:center; justify-content:center; padding:8px 6px; border-radius:10px; width:100%; font-size:11px; font-weight:600; }
+        .pgt-empty { display:flex; align-items:center; justify-content:center; min-height:42px; border-radius:10px; }
+        .pgt-empty:hover .pgt-add-icon { opacity:1; }
+        .pgt-add-icon { opacity:0; transition:opacity .2s; font-size:16px; color:var(--text-muted); }
+        .pgt-today-col { background:rgba(99,102,241,.06); }
+        [data-theme="dark"] .pgt-today-col { background:rgba(99,102,241,.1); }
         @media(max-width:1200px) {
-          .pg-grid { grid-template-columns:140px repeat(7,1fr); gap:2px 3px; }
-          .pg-driver-name { font-size:12px; }
-          .pg-shift { font-size:11px; padding:4px 2px; }
-          .pg-absence { font-size:10px; padding:4px 2px; }
+          .pgt-shift { padding:6px 6px; gap:4px; }
+          .pgt-shift-time { font-size:11px; }
+          .pgt-name { font-size:12px; }
         }
       </style>
 
-      <div class="card" style="padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:20px;">
-        <div class="pg-grid" style="min-width:700px;">
-          <div></div>
-          ${days.map(d => `
-            <div class="pg-head ${this._isToday(d.date) ? 'today' : ''}">
-              <span>${this._getDayName(d.dayIdx)}</span>
-              <span class="pg-daynum">${d.obj.getDate()}</span>
-            </div>
-          `).join('')}
+      <div class="card" style="padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:16px;">
+        <table class="pgt" style="min-width:800px;">
+          <colgroup>
+            <col style="width:180px;">
+            ${days.map(d => `<col class="${this._isToday(d.date) ? 'pgt-today-col' : ''}">`).join('')}
+          </colgroup>
+          <thead>
+            <tr>
+              <th style="text-align:left;padding-left:16px;"></th>
+              ${days.map(d => {
+                const isToday = this._isToday(d.date);
+                return `<th class="${isToday ? 'pgt-today' : ''}">
+                  <div style="font-size:11px;font-weight:500;color:${isToday ? 'var(--text-primary)' : 'var(--text-muted)'};">${this._getDayName(d.dayIdx).toUpperCase()}</div>
+                  <div style="font-size:20px;font-weight:800;color:${isToday ? 'var(--text-primary)' : 'var(--text-secondary)'};margin-top:2px;">${d.obj.getDate()}</div>
+                </th>`;
+              }).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${chauffeurs.map((ch, idx) => {
+              const avatarColor = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'][idx % 10];
+              const initials = ((ch.prenom||'')[0] + (ch.nom||'')[0]).toUpperCase();
+              const avatarHtml = ch.photo
+                ? `<img src="${ch.photo}" alt="${initials}" class="pgt-avatar" style="object-fit:cover;">`
+                : `<div class="pgt-avatar" style="background:${avatarColor};">${initials}</div>`;
+              const isSuspendu = ch.statut === 'suspendu';
+              const isRepos = ch.statut === 'repos';
+              const wh = weeklyHours[ch.id] || 0;
 
-          ${chauffeurs.map((ch, idx) => {
-            const rowClass = idx % 2 === 1 ? 'pg-row-even' : '';
-            const avatarColor = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'][idx % 10];
-            const initials = ((ch.prenom||'')[0] + (ch.nom||'')[0]).toUpperCase();
-            const avatarHtml = ch.photo
-              ? `<img src="${ch.photo}" alt="${initials}" class="pg-avatar">`
-              : `<div class="pg-avatar" style="background:linear-gradient(135deg,${avatarColor},${avatarColor}dd);">${initials}</div>`;
-            const vehLabel = ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '';
-            const isSuspendu = ch.statut === 'suspendu';
-            const isRepos = ch.statut === 'repos';
-            const statutBadge = isSuspendu
-              ? '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(239,68,68,.12);color:#ef4444;font-weight:600;white-space:nowrap;">Suspendu</span>'
-              : isRepos
-                ? '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(100,116,139,.12);color:#64748b;font-weight:600;white-space:nowrap;">Repos</span>'
-                : '';
-            const driverOpacity = isSuspendu ? 'opacity:.5;' : '';
+              return `<tr style="${isSuspendu ? 'opacity:.45;' : ''}">
+                <td style="padding-left:16px;">
+                  <a href="#/chauffeurs/${ch.id}" class="pgt-driver">
+                    ${avatarHtml}
+                    <div>
+                      <div class="pgt-name">${ch.prenom} ${ch.nom}${isSuspendu ? ' <span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(239,68,68,.12);color:#ef4444;">Suspendu</span>' : isRepos ? ' <span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(100,116,139,.12);color:#64748b;">Repos</span>' : ''}</div>
+                      <div class="pgt-hours">${wh}h</div>
+                    </div>
+                  </a>
+                </td>
+                ${days.map(d => {
+                  const shifts = this._getDriverShiftsForDate(ch.id, d.date);
+                  const absences = this._getDriverAbsencesForDate(ch.id, d.date);
 
-            let html = `<a href="#/chauffeurs/${ch.id}" class="pg-driver ${rowClass}" title="${ch.prenom} ${ch.nom}" style="${driverOpacity}">
-              ${avatarHtml}
-              <div class="pg-driver-info">
-                <div class="pg-driver-name" style="display:flex;align-items:center;gap:4px;">${ch.prenom} ${ch.nom} ${statutBadge}</div>
-                ${vehLabel ? `<div class="pg-driver-sub">${vehLabel}</div>` : ''}
-              </div>
-            </a>`;
+                  if (isSuspendu) {
+                    return `<td><div class="pgt-empty" style="opacity:.3;"><iconify-icon icon="solar:forbidden-circle-bold-duotone" style="font-size:14px;color:#ef4444;"></iconify-icon></div></td>`;
+                  }
 
-            html += days.map(d => {
-              const shifts = this._getDriverShiftsForDate(ch.id, d.date);
-              const absences = this._getDriverAbsencesForDate(ch.id, d.date);
-              const isToday = this._isToday(d.date);
-              const todayBg = isToday ? 'background:rgba(99,102,241,.08);border-left:2px solid rgba(99,102,241,.2);border-right:2px solid rgba(99,102,241,.2);' : '';
+                  if (absences.length > 0) {
+                    const a = absences[0];
+                    const c = this._absenceTypeColor(a.type);
+                    return `<td><div class="pgt-absence-cell" style="background:${c}15;color:${c};border:1px solid ${c}25;" onclick="PlanningPage._viewAbsence('${a.id}')">${this._absenceTypeLabel(a.type)}</div></td>`;
+                  }
 
-              if (isSuspendu) {
-                return `<div class="pg-cell ${rowClass}" style="${todayBg}opacity:.4;">
-                  <div style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:repeating-linear-gradient(135deg,transparent,transparent 3px,rgba(239,68,68,.06) 3px,rgba(239,68,68,.06) 6px);border:1px dashed rgba(239,68,68,.25);font-size:10px;color:#ef4444;font-weight:600;">
-                    <iconify-icon icon="solar:forbidden-circle-bold-duotone" style="font-size:14px;"></iconify-icon>
-                  </div>
-                </div>`;
-              }
-              if (absences.length > 0) {
-                const a = absences[0];
-                const c = this._absenceTypeColor(a.type);
-                return `<div class="pg-cell ${rowClass}" style="${todayBg}" onclick="PlanningPage._viewAbsence('${a.id}')">
-                  <div class="pg-absence" style="background:linear-gradient(135deg,${c}18,${c}0d);color:${c};border:1px solid ${c}30;">${this._absenceTypeLabel(a.type)}</div>
-                </div>`;
-              }
-              if (shifts.length > 0) {
-                return `<div class="pg-cell ${rowClass}" style="${todayBg}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
-                  ${shifts.map(s => {
+                  if (shifts.length > 0) {
+                    const s = shifts[0];
                     const sc = this._getShiftColor(s);
-                    const overrideLabel = s.redevanceOverride ? `<div style="font-size:8px;opacity:.75;margin-top:1px;">${Utils.formatCurrency(s.redevanceOverride)}</div>` : '';
-                    return `<div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" class="pg-shift" style="background:linear-gradient(135deg,${sc}20,${sc}10);color:${sc};border:1px solid ${sc}35;" onclick="PlanningPage._editShift('${s.id}')">
-                      ${this._getShiftTimeShort(s)}${overrideLabel}
-                    </div>`;
-                  }).join('')}
-                </div>`;
-              }
-              if (isRepos) {
-                return `<div class="pg-cell ${rowClass}" style="${todayBg}cursor:pointer;" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
-                  <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:linear-gradient(135deg,rgba(100,116,139,.08),rgba(100,116,139,.04));border:1px dashed rgba(100,116,139,.25);font-size:10px;color:#94a3b8;font-weight:600;">
-                    <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:14px;"></iconify-icon>
-                  </div>
-                </div>`;
-              }
-              return `<div class="pg-cell ${rowClass}" style="${todayBg}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
-                <div class="pg-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}">
-                  <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:12px;color:#d1d5db;"></iconify-icon>
-                </div>
-              </div>`;
-            }).join('');
-            return html;
-          }).join('')}
-        </div>
+                    const timeFull = this._getShiftTimeFull(s);
+                    const dur = this._getShiftDuration(s);
+                    const overrideLabel = s.redevanceOverride ? ` <span style="font-size:9px;color:${sc};opacity:.7;">${Utils.formatCurrency(s.redevanceOverride)}</span>` : '';
+                    // Light colored background for shifts
+                    return `<td>
+                      <div class="pgt-shift pgt-shift-colored" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="background:${sc}12;border:1px solid ${sc}25;" onclick="PlanningPage._editShift('${s.id}')">
+                        <span class="pgt-shift-time" style="color:${sc};">${timeFull}</span>
+                        <span class="pgt-shift-dur" style="color:${sc};opacity:.6;">${dur}</span>${overrideLabel}
+                      </div>
+                    </td>`;
+                  }
+
+                  if (isRepos) {
+                    return `<td>
+                      <div class="pgt-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')" style="cursor:pointer;">
+                        <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:14px;color:var(--text-muted);opacity:.3;"></iconify-icon>
+                      </div>
+                    </td>`;
+                  }
+
+                  return `<td>
+                    <div class="pgt-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')" style="cursor:pointer;">
+                      <iconify-icon class="pgt-add-icon" icon="solar:add-circle-line-duotone"></iconify-icon>
+                    </div>
+                  </td>`;
+                }).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
       </div>
     `;
   },
