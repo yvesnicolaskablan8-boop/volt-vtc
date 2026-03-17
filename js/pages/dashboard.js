@@ -1274,7 +1274,7 @@ const DashboardPage = {
 
     const statusIcons = {
       verse: '<iconify-icon icon="solar:check-circle-bold" style="font-size:14px;"></iconify-icon>',
-      en_retard: '<iconify-icon icon="solar:danger-triangle-bold" style="font-size:14px;"></iconify-icon>',
+      en_retard: '',
       absent: '<iconify-icon icon="solar:minus-circle-bold" style="font-size:14px;"></iconify-icon>',
       repos: ''
     };
@@ -1299,7 +1299,9 @@ const DashboardPage = {
         ? `<img src="${dr.photo}" alt="${dr.initials}" class="d-hm-avatar" style="object-fit:cover;">`
         : `<div class="d-hm-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${dr.initials}</div>`;
       const plaque = (dr.vehiculeAssigne ? (vehMap[dr.vehiculeAssigne] || '') : '') || chauffeurPlaqueMap[dr.id] || '';
-      html += `<div class="d-hm-driver${rowClass}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">${avatarHtml}<div style="display:flex;flex-direction:column;line-height:1.2;overflow:hidden;"><span>${dr.prenom} ${dr.nom}</span>${plaque ? `<span style="font-size:9px;color:var(--text-muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${plaque}</span>` : ''}</div></div>`;
+      const hasRetard = dr.cells.some(c => c.status === 'en_retard');
+      const nameStyle = hasRetard ? 'color:#ef4444;' : '';
+      html += `<div class="d-hm-driver${rowClass}" style="${nameStyle}animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;" title="${dr.prenom} ${dr.nom}${hasRetard ? ' — Versement(s) en retard' : ''}">${avatarHtml}<div style="display:flex;flex-direction:column;line-height:1.2;overflow:hidden;"><span>${dr.prenom} ${dr.nom}</span>${plaque ? `<span style="font-size:9px;color:${hasRetard ? '#ef4444' : 'var(--text-muted)'};font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${plaque}</span>` : ''}</div></div>`;
       dr.cells.forEach((cell, ci) => {
         const status = cell.status;
         const heures = cell.heures;
