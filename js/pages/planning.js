@@ -349,6 +349,7 @@ const PlanningPage = {
         .pm-head.today .pm-daynum { color:#6366f1; }
         .pm-driver { display:flex; align-items:center; padding:4px 0; overflow:hidden; }
         .pm-driver-name { font-size:12px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
+        .pm-driver-plaque { font-size:9px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
         .pm-cell { height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; font-size:11px; font-weight:700; }
         .pm-cell:active { transform:scale(1.1); }
         .pm-shift { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#6366f1; }
@@ -381,8 +382,9 @@ const PlanningPage = {
             const isSuspendu = ch.statut === 'suspendu';
             const isRepos = ch.statut === 'repos';
             const shortName = ch.prenom + ' ' + (ch.nom||'').charAt(0) + '.';
+            const plaque1 = ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '';
 
-            let row = `<div class="pm-driver${rowClass}" title="${ch.prenom} ${ch.nom}"><span class="pm-driver-name">${shortName}</span></div>`;
+            let row = `<div class="pm-driver${rowClass}" title="${ch.prenom} ${ch.nom}${plaque1 ? ' — ' + plaque1 : ''}"><span class="pm-driver-name">${shortName}</span>${plaque1 ? `<span class="pm-driver-plaque">${plaque1}</span>` : ''}</div>`;
 
             row += days.map(d => {
               const shifts = this._getDriverShiftsForDate(ch.id, d.date);
@@ -603,8 +605,9 @@ const PlanningPage = {
                 ? ' <span style="font-size:9px;padding:1px 5px;border-radius:6px;background:rgba(100,116,139,.1);color:#64748b;font-weight:600;">Repos</span>'
                 : '';
 
-            let html = `<a href="#/chauffeurs/${ch.id}" class="pg-driver${rowClass}" title="${ch.prenom} ${ch.nom}" style="${isSuspendu ? 'opacity:.5;' : ''}animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">
-              ${avatarHtml}<span>${ch.prenom} ${ch.nom}${statutBadge}</span>
+            const plaque2 = ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '';
+            let html = `<a href="#/chauffeurs/${ch.id}" class="pg-driver${rowClass}" title="${ch.prenom} ${ch.nom}${plaque2 ? ' — ' + plaque2 : ''}" style="${isSuspendu ? 'opacity:.5;' : ''}animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">
+              ${avatarHtml}<div style="display:flex;flex-direction:column;line-height:1.2;"><span>${ch.prenom} ${ch.nom}${statutBadge}</span>${plaque2 ? `<span style="font-size:9px;color:var(--text-muted);font-weight:400;">${plaque2}</span>` : ''}</div>
             </a>`;
 
             html += days.map((d, ci) => {
@@ -735,6 +738,8 @@ const PlanningPage = {
         return fullName.includes(q);
       });
     }
+    const vehMap = {};
+    (Store.get('vehicules') || []).forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
     const year = this._currentMonth.getFullYear();
     const month = this._currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -785,7 +790,10 @@ const PlanningPage = {
                 <td style="padding:6px 12px;position:sticky;left:0;background:var(--bg-secondary);z-index:1;">
                   <a href="#/chauffeurs/${ch.id}" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:inherit;" title="Voir le détail de ${ch.prenom} ${ch.nom}">
                     ${Utils.getAvatarHtml(ch, '', 'width:24px;height:24px;font-size:9px;')}
-                    <span style="font-size:var(--font-size-xs);font-weight:500;">${ch.prenom} ${ch.nom.charAt(0)}.</span>
+                    <div style="display:flex;flex-direction:column;line-height:1.2;">
+                      <span style="font-size:var(--font-size-xs);font-weight:500;">${ch.prenom} ${ch.nom.charAt(0)}.</span>
+                      ${ch.vehiculeAssigne && vehMap[ch.vehiculeAssigne] ? `<span style="font-size:8px;color:var(--text-muted);">${vehMap[ch.vehiculeAssigne]}</span>` : ''}
+                    </div>
                   </a>
                 </td>
                 ${dayHeaders.map(d => {
@@ -826,6 +834,8 @@ const PlanningPage = {
 
   _renderStatsView() {
     const chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    const vehMap = {};
+    (Store.get('vehicules') || []).forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
     const planning = this._getPlanning();
     const absences = this._getAbsences();
     const year = this._currentMonth.getFullYear();
@@ -916,7 +926,10 @@ const PlanningPage = {
                   <td style="padding:10px 12px;">
                     <div style="display:flex;align-items:center;gap:8px;">
                       ${Utils.getAvatarHtml(st.chauffeur, '', 'width:28px;height:28px;font-size:10px;')}
-                      <span style="font-size:var(--font-size-sm);font-weight:500;">${st.chauffeur.prenom} ${st.chauffeur.nom}</span>
+                      <div style="display:flex;flex-direction:column;line-height:1.2;">
+                        <span style="font-size:var(--font-size-sm);font-weight:500;">${st.chauffeur.prenom} ${st.chauffeur.nom}</span>
+                        ${st.chauffeur.vehiculeAssigne && vehMap[st.chauffeur.vehiculeAssigne] ? `<span style="font-size:10px;color:var(--text-muted);">${vehMap[st.chauffeur.vehiculeAssigne]}</span>` : ''}
+                      </div>
                     </div>
                   </td>
                   <td style="padding:10px 8px;text-align:center;"><span class="badge badge-success">${st.joursTravailes}j</span></td>
