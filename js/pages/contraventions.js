@@ -123,7 +123,7 @@ const ContraventionsPage = {
       </div>
 
       <!-- Table -->
-      <div class="d-card">
+      <div class="d-card" style="overflow:visible;">
         <div id="contraventions-table"></div>
       </div>
 
@@ -191,7 +191,8 @@ const ContraventionsPage = {
         sortKey: 'date',
         sortDir: 'desc',
         pageSize: 15,
-        emptyMessage: 'Aucune contravention'
+        emptyMessage: 'Aucune contravention',
+        onRowClick: (id) => ContraventionsPage._edit(id)
       });
     };
 
