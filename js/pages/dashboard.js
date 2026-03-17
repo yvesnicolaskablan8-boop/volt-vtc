@@ -438,7 +438,7 @@ const DashboardPage = {
         const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime'));
         return { status: hasVersement ? 'verse' : 'en_retard', heures, shiftId };
       });
-      return { id: c.id, prenom: c.prenom, nom: c.nom, photo: c.photo || '', initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), cells };
+      return { id: c.id, prenom: c.prenom, nom: c.nom, photo: c.photo || '', initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), vehiculeAssigne: c.vehiculeAssigne || '', cells };
     });
 
     return {
@@ -1076,7 +1076,7 @@ const DashboardPage = {
                 <div style="font-size:11px;color:rgba(255,255,255,.8);">${d.alertesTotal > 0 ? d.alertesTotal + ' alerte' + (d.alertesTotal > 1 ? 's' : '') : 'Tout est OK'}</div>
               </div>
             </div>
-            ${d.alertesCritiques > 0 || d.alertesUrgentes > 0 ? `<div style="display:flex;gap:8px;">
+            ${d.alertesCritiques > 0 || d.alertesUrgentes > 0 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:52px;">
               ${d.alertesCritiques > 0 ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,255,255,.2);color:#fff;">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>` : ''}
               ${d.alertesUrgentes > 0 ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,255,255,.2);color:#fff;">${d.alertesUrgentes} urgent${d.alertesUrgentes > 1 ? 's' : ''}</span>` : ''}
             </div>` : ''}
@@ -1263,6 +1263,9 @@ const DashboardPage = {
       </div>`;
     }
 
+    const vehMap = {};
+    (Store.get('vehicules') || []).forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
+
     const statusIcons = {
       verse: '<iconify-icon icon="solar:check-circle-bold" style="font-size:14px;"></iconify-icon>',
       en_retard: '<iconify-icon icon="solar:danger-triangle-bold" style="font-size:14px;"></iconify-icon>',
@@ -1289,7 +1292,8 @@ const DashboardPage = {
       const avatarHtml = dr.photo
         ? `<img src="${dr.photo}" alt="${dr.initials}" class="d-hm-avatar" style="object-fit:cover;">`
         : `<div class="d-hm-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${dr.initials}</div>`;
-      html += `<div class="d-hm-driver${rowClass}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">${avatarHtml}<span>${dr.prenom} ${dr.nom}</span></div>`;
+      const plaque = dr.vehiculeAssigne ? (vehMap[dr.vehiculeAssigne] || '') : '';
+      html += `<div class="d-hm-driver${rowClass}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">${avatarHtml}<div style="display:flex;flex-direction:column;line-height:1.2;"><span>${dr.prenom} ${dr.nom}</span>${plaque ? `<span style="font-size:9px;color:var(--text-muted);font-weight:400;">${plaque}</span>` : ''}</div></div>`;
       dr.cells.forEach((cell, ci) => {
         const status = cell.status;
         const heures = cell.heures;
