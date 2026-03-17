@@ -19,6 +19,7 @@ const MenuPage = {
       { route: '/incidents', icon: 'solar:danger-triangle-bold-duotone', label: 'Incidents', color: '#f97316' },
       { route: '/alertes', icon: 'solar:bell-bing-bold-duotone', label: 'Alertes', color: '#eab308' },
       { route: '/rapports', icon: 'solar:file-download-bold-duotone', label: 'Rapports', color: '#6366f1' },
+      { route: '/mon-compte', icon: 'solar:user-circle-bold-duotone', label: 'Mon compte', color: '#6366f1' },
       { route: '/parametres', icon: 'solar:settings-bold-duotone', label: 'Paramètres', color: '#94a3b8' }
     ];
 

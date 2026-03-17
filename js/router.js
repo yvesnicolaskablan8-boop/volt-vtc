@@ -31,6 +31,7 @@ const Router = {
       '/activite': { page: ActivitePage, title: 'Journal d\'activite' },
       '/notifications-admin': { page: NotificationsAdminPage, title: 'Notifications' },
       '/parametres': { page: ParametresPage, title: 'Paramètres' },
+      '/mon-compte': { page: MonComptePage, title: 'Mon compte' },
       '/menu': { page: MenuPage, title: 'Menu' }
     };
 

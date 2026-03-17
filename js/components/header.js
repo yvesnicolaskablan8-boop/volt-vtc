@@ -101,19 +101,14 @@ const Header = {
     };
     this._on('userOutside', document, 'click', outsideHandler);
 
-    // Mon compte → Navigate to Paramètres > Mon compte
+    // Mon compte → Navigate to Mon compte page
     const profileBtn = document.getElementById('user-dropdown-profile');
     if (profileBtn) {
       const profileHandler = (e) => {
         e.stopPropagation();
         dropdown.classList.remove('active');
         userToggle.classList.remove('active');
-        Router.navigate('/parametres');
-        setTimeout(() => {
-          if (typeof Parametres !== 'undefined' && Parametres._switchTab) {
-            Parametres._switchTab('account');
-          }
-        }, 200);
+        Router.navigate('/mon-compte');
       };
       this._on('profileClick', profileBtn, 'click', profileHandler);
     }
