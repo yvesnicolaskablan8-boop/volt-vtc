@@ -206,8 +206,14 @@ const VersementsPage = {
             <input type="date" id="versements-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:var(--text-primary);font-weight:500;outline:none;">
             ${this._selectedPeriod ? '<button onclick="VersementsPage._resetToToday()" style="font-size:13px;padding:6px 8px;border-radius:11px;background:transparent;border:none;cursor:pointer;color:#6b7280;"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>' : ''}
           </div>
-          <button class="btn btn-secondary" onclick="VersementsPage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
-          <button class="btn btn-secondary" onclick="VersementsPage._exportCSV()"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> CSV</button>
+          <div style="position:relative;display:inline-block;" id="export-dropdown-wrap">
+            <button class="btn btn-secondary" onclick="document.getElementById('export-menu').style.display=document.getElementById('export-menu').style.display==='block'?'none':'block'"><iconify-icon icon="solar:export-bold-duotone"></iconify-icon> Exporter</button>
+            <div id="export-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;min-width:170px;overflow:hidden;">
+              <button onclick="VersementsPage._exportPDF();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:document-bold-duotone" style="font-size:16px;color:#ef4444;"></iconify-icon> Exporter en PDF</button>
+              <div style="height:1px;background:var(--border-color);margin:0 10px;"></div>
+              <button onclick="VersementsPage._exportCSV();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#10b981;"></iconify-icon> Exporter en CSV</button>
+            </div>
+          </div>
           <button class="btn btn-secondary" onclick="VersementsPage._cleanupGhosts()" title="Supprimer les versements fantômes (0 FCFA)"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Nettoyer</button>
           <button class="btn btn-success" onclick="VersementsPage._showRecettesRecurrentes()"><iconify-icon icon="solar:repeat-bold-duotone"></iconify-icon> Récurrents</button>
           <button class="btn btn-primary" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouveau versement</button>

@@ -46,8 +46,14 @@ const ComptabilitePage = {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-secondary" onclick="ComptabilitePage._exportPDF()"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon> PDF</button>
-          <button class="btn btn-secondary" onclick="ComptabilitePage._exportCSV()"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> CSV</button>
+          <div style="position:relative;display:inline-block;" id="compta-export-wrap">
+            <button class="btn btn-secondary" onclick="document.getElementById('compta-export-menu').style.display=document.getElementById('compta-export-menu').style.display==='block'?'none':'block'"><iconify-icon icon="solar:export-bold-duotone"></iconify-icon> Exporter</button>
+            <div id="compta-export-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;min-width:170px;overflow:hidden;">
+              <button onclick="ComptabilitePage._exportPDF();document.getElementById('compta-export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:document-bold-duotone" style="font-size:16px;color:#ef4444;"></iconify-icon> Exporter en PDF</button>
+              <div style="height:1px;background:var(--border-color);margin:0 10px;"></div>
+              <button onclick="ComptabilitePage._exportCSV();document.getElementById('compta-export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#10b981;"></iconify-icon> Exporter en CSV</button>
+            </div>
+          </div>
           <button class="btn btn-secondary" onclick="ComptabilitePage._exportComptable()"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Export comptable</button>
           <button class="btn btn-success" id="btn-add-recette"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Encaissement</button>
           <button class="btn btn-danger" id="btn-add-depense"><iconify-icon icon="solar:minus-circle-bold-duotone"></iconify-icon> Décaissement</button>

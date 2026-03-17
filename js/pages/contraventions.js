@@ -510,62 +510,79 @@ const ContraventionsPage = {
     if (!c) return;
 
     const chauffeurs = Store.get('chauffeurs') || [];
+    const vehicules = Store.get('vehicules') || [];
     const typeOptions = [
-      { value: 'exces_vitesse', label: 'Exc\u00e8s de vitesse' },
+      { value: 'exces_vitesse', label: 'Excès de vitesse' },
       { value: 'stationnement', label: 'Stationnement' },
       { value: 'feu_rouge', label: 'Feu rouge' },
       { value: 'documents', label: 'Documents' },
-      { value: 'telephone', label: 'T\u00e9l\u00e9phone au volant' },
+      { value: 'telephone', label: 'Téléphone au volant' },
       { value: 'autre', label: 'Autre' }
     ];
 
+    const inputStyle = 'width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-primary);color:var(--text-primary);';
+    const labelStyle = 'display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;';
+
     Modal.form(
       '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;"></iconify-icon> Modifier contravention',
-      `<form id="form-contravention-edit" class="modal-form">
-          <div class="form-group">
-            <label>Chauffeur</label>
-            <select name="chauffeurId">
-              ${chauffeurs.map(ch => `<option value="${ch.id}" ${ch.id === c.chauffeurId ? 'selected' : ''}>${ch.prenom} ${ch.nom}</option>`).join('')}
-            </select>
+      `<form id="form-contravention-edit">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label style="${labelStyle}">Chauffeur <span style="color:#ef4444;">*</span></label>
+              <select name="chauffeurId" style="${inputStyle}">
+                ${chauffeurs.map(ch => `<option value="${ch.id}" ${ch.id === c.chauffeurId ? 'selected' : ''}>${ch.prenom} ${ch.nom}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label style="${labelStyle}">Véhicule</label>
+              <select name="vehiculeId" style="${inputStyle}">
+                <option value="">— Aucun —</option>
+                ${vehicules.map(v => `<option value="${v.id}" ${v.id === c.vehiculeId ? 'selected' : ''}>${v.immatriculation || ''} ${v.marque || ''} ${v.modele || ''}</option>`).join('')}
+              </select>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Date</label>
-            <input type="date" name="date" value="${c.date || ''}">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+            <div>
+              <label style="${labelStyle}">Date <span style="color:#ef4444;">*</span></label>
+              <input type="date" name="date" value="${c.date || ''}" style="${inputStyle}">
+            </div>
+            <div>
+              <label style="${labelStyle}">Type</label>
+              <select name="type" style="${inputStyle}">
+                ${typeOptions.map(t => `<option value="${t.value}" ${t.value === c.type ? 'selected' : ''}>${t.label}</option>`).join('')}
+              </select>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Type</label>
-            <select name="type">
-              ${typeOptions.map(t => `<option value="${t.value}" ${t.value === c.type ? 'selected' : ''}>${t.label}</option>`).join('')}
-            </select>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+            <div>
+              <label style="${labelStyle}">Montant (FCFA) <span style="color:#ef4444;">*</span></label>
+              <input type="number" name="montant" value="${c.montant || 0}" min="1" style="${inputStyle}">
+            </div>
+            <div>
+              <label style="${labelStyle}">Statut</label>
+              <select name="statut" style="${inputStyle}">
+                <option value="impayee" ${c.statut === 'impayee' ? 'selected' : ''}>Impayée</option>
+                <option value="payee" ${c.statut === 'payee' ? 'selected' : ''}>Payée</option>
+                <option value="contestee" ${c.statut === 'contestee' ? 'selected' : ''}>Contestée</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Lieu</label>
-            <input type="text" name="lieu" value="${c.lieu || ''}">
+          <div style="margin-top:12px;">
+            <label style="${labelStyle}">Lieu</label>
+            <input type="text" name="lieu" value="${c.lieu || ''}" placeholder="Lieu de l'infraction" style="${inputStyle}">
           </div>
-          <div class="form-group">
-            <label>Montant (FCFA)</label>
-            <input type="number" name="montant" value="${c.montant || 0}" min="1">
+          <div style="margin-top:12px;">
+            <label style="${labelStyle}">Description</label>
+            <textarea name="description" rows="2" placeholder="Détails de la contravention..." style="${inputStyle}resize:vertical;">${c.description || ''}</textarea>
           </div>
-          <div class="form-group">
-            <label>Statut</label>
-            <select name="statut">
-              <option value="impayee" ${c.statut === 'impayee' ? 'selected' : ''}>Impay\u00e9e</option>
-              <option value="payee" ${c.statut === 'payee' ? 'selected' : ''}>Pay\u00e9e</option>
-              <option value="contestee" ${c.statut === 'contestee' ? 'selected' : ''}>Contest\u00e9e</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Description</label>
-            <textarea name="description" rows="2">${c.description || ''}</textarea>
-          </div>
-          <div class="form-group">
-            <label>Commentaire admin</label>
-            <textarea name="commentaire" rows="2">${c.commentaire || ''}</textarea>
+          <div style="margin-top:12px;">
+            <label style="${labelStyle}">Commentaire admin</label>
+            <textarea name="commentaire" rows="2" placeholder="Note interne..." style="${inputStyle}resize:vertical;">${c.commentaire || ''}</textarea>
           </div>
           ${c.motifContestation ? `
-          <div class="form-group">
-            <label>Motif de contestation (chauffeur)</label>
-            <div style="padding:0.75rem;background:rgba(245,158,11,0.08);border-radius:0.5rem;font-size:0.85rem;color:#92400e">${c.motifContestation}</div>
+          <div style="margin-top:12px;">
+            <label style="${labelStyle}">Motif de contestation (chauffeur)</label>
+            <div style="padding:10px 12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;font-size:13px;color:#92400e;">${c.motifContestation}</div>
           </div>
           ` : ''}
         </form>`,
@@ -578,6 +595,7 @@ const ContraventionsPage = {
     const fd = new FormData(form);
     const updates = {
       chauffeurId: fd.get('chauffeurId'),
+      vehiculeId: fd.get('vehiculeId') || null,
       date: fd.get('date'),
       type: fd.get('type'),
       lieu: fd.get('lieu') || '',
