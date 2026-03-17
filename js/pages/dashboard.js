@@ -1263,8 +1263,14 @@ const DashboardPage = {
       </div>`;
     }
 
+    const vehicules = Store.get('vehicules') || [];
     const vehMap = {};
-    (Store.get('vehicules') || []).forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
+    vehicules.forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
+    // Reverse map: chauffeurId → plaque (via Vehicule.chauffeurAssigne)
+    const chauffeurPlaqueMap = {};
+    vehicules.forEach(v => {
+      if (v.chauffeurAssigne) chauffeurPlaqueMap[v.chauffeurAssigne] = v.immatriculation || `${v.marque} ${v.modele}`;
+    });
 
     const statusIcons = {
       verse: '<iconify-icon icon="solar:check-circle-bold" style="font-size:14px;"></iconify-icon>',
@@ -1292,8 +1298,8 @@ const DashboardPage = {
       const avatarHtml = dr.photo
         ? `<img src="${dr.photo}" alt="${dr.initials}" class="d-hm-avatar" style="object-fit:cover;">`
         : `<div class="d-hm-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${dr.initials}</div>`;
-      const plaque = dr.vehiculeAssigne ? (vehMap[dr.vehiculeAssigne] || '') : '';
-      html += `<div class="d-hm-driver${rowClass}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">${avatarHtml}<div style="display:flex;flex-direction:column;line-height:1.2;"><span>${dr.prenom} ${dr.nom}</span>${plaque ? `<span style="font-size:9px;color:var(--text-muted);font-weight:400;">${plaque}</span>` : ''}</div></div>`;
+      const plaque = (dr.vehiculeAssigne ? (vehMap[dr.vehiculeAssigne] || '') : '') || chauffeurPlaqueMap[dr.id] || '';
+      html += `<div class="d-hm-driver${rowClass}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">${avatarHtml}<div style="display:flex;flex-direction:column;line-height:1.2;overflow:hidden;"><span>${dr.prenom} ${dr.nom}</span>${plaque ? `<span style="font-size:9px;color:var(--text-muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${plaque}</span>` : ''}</div></div>`;
       dr.cells.forEach((cell, ci) => {
         const status = cell.status;
         const heures = cell.heures;

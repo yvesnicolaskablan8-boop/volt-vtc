@@ -288,8 +288,11 @@ const PlanningPage = {
         return fullName.includes(q);
       });
     }
+    const _vehList = Store.get('vehicules') || [];
     const vehMap = {};
-    (Store.get('vehicules') || []).forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
+    _vehList.forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
+    const chPlaqueMap = {};
+    _vehList.forEach(v => { if (v.chauffeurAssigne) chPlaqueMap[v.chauffeurAssigne] = v.immatriculation || `${v.marque} ${v.modele}`; });
     const days = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(this._currentWeekStart);
@@ -382,7 +385,7 @@ const PlanningPage = {
             const isSuspendu = ch.statut === 'suspendu';
             const isRepos = ch.statut === 'repos';
             const shortName = ch.prenom + ' ' + (ch.nom||'').charAt(0) + '.';
-            const plaque1 = ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '';
+            const plaque1 = (ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '') || chPlaqueMap[ch.id] || '';
 
             let row = `<div class="pm-driver${rowClass}" title="${ch.prenom} ${ch.nom}${plaque1 ? ' — ' + plaque1 : ''}"><span class="pm-driver-name">${shortName}</span>${plaque1 ? `<span class="pm-driver-plaque">${plaque1}</span>` : ''}</div>`;
 
@@ -605,7 +608,7 @@ const PlanningPage = {
                 ? ' <span style="font-size:9px;padding:1px 5px;border-radius:6px;background:rgba(100,116,139,.1);color:#64748b;font-weight:600;">Repos</span>'
                 : '';
 
-            const plaque2 = ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '';
+            const plaque2 = (ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '') || chPlaqueMap[ch.id] || '';
             let html = `<a href="#/chauffeurs/${ch.id}" class="pg-driver${rowClass}" title="${ch.prenom} ${ch.nom}${plaque2 ? ' — ' + plaque2 : ''}" style="${isSuspendu ? 'opacity:.5;' : ''}animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">
               ${avatarHtml}<div style="display:flex;flex-direction:column;line-height:1.2;"><span>${ch.prenom} ${ch.nom}${statutBadge}</span>${plaque2 ? `<span style="font-size:9px;color:var(--text-muted);font-weight:400;">${plaque2}</span>` : ''}</div>
             </a>`;
@@ -738,8 +741,11 @@ const PlanningPage = {
         return fullName.includes(q);
       });
     }
+    const _vehList3 = Store.get('vehicules') || [];
     const vehMap = {};
-    (Store.get('vehicules') || []).forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
+    _vehList3.forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
+    const chPlaqueMap = {};
+    _vehList3.forEach(v => { if (v.chauffeurAssigne) chPlaqueMap[v.chauffeurAssigne] = v.immatriculation || `${v.marque} ${v.modele}`; });
     const year = this._currentMonth.getFullYear();
     const month = this._currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -792,7 +798,7 @@ const PlanningPage = {
                     ${Utils.getAvatarHtml(ch, '', 'width:24px;height:24px;font-size:9px;')}
                     <div style="display:flex;flex-direction:column;line-height:1.2;">
                       <span style="font-size:var(--font-size-xs);font-weight:500;">${ch.prenom} ${ch.nom.charAt(0)}.</span>
-                      ${ch.vehiculeAssigne && vehMap[ch.vehiculeAssigne] ? `<span style="font-size:8px;color:var(--text-muted);">${vehMap[ch.vehiculeAssigne]}</span>` : ''}
+                      ${(() => { const _p = (ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '') || chPlaqueMap[ch.id] || ''; return _p ? `<span style="font-size:8px;color:var(--text-muted);">${_p}</span>` : ''; })()}
                     </div>
                   </a>
                 </td>
@@ -834,8 +840,11 @@ const PlanningPage = {
 
   _renderStatsView() {
     const chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    const _vehList2 = Store.get('vehicules') || [];
     const vehMap = {};
-    (Store.get('vehicules') || []).forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
+    _vehList2.forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
+    const chPlaqueMap = {};
+    _vehList2.forEach(v => { if (v.chauffeurAssigne) chPlaqueMap[v.chauffeurAssigne] = v.immatriculation || `${v.marque} ${v.modele}`; });
     const planning = this._getPlanning();
     const absences = this._getAbsences();
     const year = this._currentMonth.getFullYear();
@@ -928,7 +937,7 @@ const PlanningPage = {
                       ${Utils.getAvatarHtml(st.chauffeur, '', 'width:28px;height:28px;font-size:10px;')}
                       <div style="display:flex;flex-direction:column;line-height:1.2;">
                         <span style="font-size:var(--font-size-sm);font-weight:500;">${st.chauffeur.prenom} ${st.chauffeur.nom}</span>
-                        ${st.chauffeur.vehiculeAssigne && vehMap[st.chauffeur.vehiculeAssigne] ? `<span style="font-size:10px;color:var(--text-muted);">${vehMap[st.chauffeur.vehiculeAssigne]}</span>` : ''}
+                        ${(() => { const _p = (st.chauffeur.vehiculeAssigne ? (vehMap[st.chauffeur.vehiculeAssigne] || '') : '') || chPlaqueMap[st.chauffeur.id] || ''; return _p ? `<span style="font-size:10px;color:var(--text-muted);">${_p}</span>` : ''; })()}
                       </div>
                     </div>
                   </td>
