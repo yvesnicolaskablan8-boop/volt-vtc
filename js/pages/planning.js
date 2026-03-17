@@ -309,13 +309,15 @@ const PlanningPage = {
 
     const allShifts = this._getPlanning();
     const weekShifts = allShifts.filter(s => s.date >= days[0].date && s.date <= days[6].date);
+    const todayStr = this._dateStr(new Date());
+    const versements = Store.get('versements') || [];
     const totalSlots = chauffeurs.length * 7;
     const filledSlots = weekShifts.length;
     const absencesWeek = this._getAbsences().filter(a => a.dateFin >= days[0].date && a.dateDebut <= days[6].date);
     const uniqueAbsDrivers = [...new Set(absencesWeek.map(a => a.chauffeurId))].length;
 
     // Same grid view for desktop and mobile (responsive CSS handles sizing)
-    return this._renderDesktopGridView(chauffeurs, days, vehMap, { filledSlots, totalSlots, uniqueAbsDrivers });
+    return this._renderDesktopGridView(chauffeurs, days, vehMap, { filledSlots, totalSlots, uniqueAbsDrivers }, todayStr, versements);
   },
 
   // =================== VUE MOBILE (grille compacte comme dashboard) ===================
@@ -406,7 +408,10 @@ const PlanningPage = {
               if (shifts.length > 0) {
                 const s = shifts[0];
                 const typeClass = { matin:'pm-shift-m', apres_midi:'pm-shift-am', journee:'pm-shift-j', nuit:'pm-shift-n' }[s.typeCreneaux] || 'pm-shift';
-                return `<div class="pm-cell ${typeClass}${rowClass}" onclick="PlanningPage._editShift('${s.id}')">${this._getShiftTimeShort(s)}</div>`;
+                const isPast = d.date < todayStr;
+                const hasVersement = isPast && versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
+                const retardIcon = isPast && !hasVersement ? '<iconify-icon icon="solar:danger-triangle-bold" style="font-size:10px;color:#ef4444;margin-left:2px;" title="Versement en retard"></iconify-icon>' : '';
+                return `<div class="pm-cell ${typeClass}${rowClass}" onclick="PlanningPage._editShift('${s.id}')">${this._getShiftTimeShort(s)}${retardIcon}</div>`;
               }
               if (isRepos) {
                 return `<div class="pm-cell pm-repos${rowClass}" ${onclick} style="cursor:pointer;"><iconify-icon icon="solar:moon-sleep-bold" style="font-size:11px;"></iconify-icon></div>`;
@@ -428,6 +433,7 @@ const PlanningPage = {
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#f97316;"><span style="width:7px;height:7px;border-radius:50%;background:#f97316;"></span>Abs</div>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#ef4444;"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;"></span>Mal</div>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#94a3b8;"><span style="width:7px;height:7px;border-radius:50%;background:#d1d5db;"></span>Repos</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#ef4444;"><iconify-icon icon="solar:danger-triangle-bold" style="font-size:10px;"></iconify-icon>Retard</div>
         </div>
       </div>
     `;
@@ -455,7 +461,7 @@ const PlanningPage = {
     return presets[shift.typeCreneaux] || '';
   },
 
-  _renderDesktopGridView(chauffeurs, days, vehMap, stats) {
+  _renderDesktopGridView(chauffeurs, days, vehMap, stats, todayStr, versements) {
     const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
 
     return `
@@ -636,8 +642,11 @@ const PlanningPage = {
                 const s = shifts[0];
                 const typeClass = { matin:'pg-shift-matin', apres_midi:'pg-shift-am', journee:'pg-shift-journee', nuit:'pg-shift-nuit' }[s.typeCreneaux] || 'pg-shift-custom';
                 const timeShort = this._getShiftTimeShort(s);
-                return `<div class="pg-cell ${typeClass}${rowClass}" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="${anim}" title="${this._getShiftTimeFull(s)} (${this._getShiftDuration(s)})" onclick="PlanningPage._editShift('${s.id}')">
-                  <span class="pg-cell-text">${timeShort}</span>
+                const isPast = d.date < todayStr;
+                const hasVersement = isPast && versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
+                const retardIcon = isPast && !hasVersement ? ' <iconify-icon icon="solar:danger-triangle-bold" style="font-size:12px;color:#ef4444;" title="Versement en retard"></iconify-icon>' : '';
+                return `<div class="pg-cell ${typeClass}${rowClass}" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="${anim}" title="${this._getShiftTimeFull(s)} (${this._getShiftDuration(s)})${isPast && !hasVersement ? ' — ⚠️ Versement en retard' : ''}" onclick="PlanningPage._editShift('${s.id}')">
+                  <span class="pg-cell-text">${timeShort}</span>${retardIcon}
                 </div>`;
               }
 
@@ -662,6 +671,7 @@ const PlanningPage = {
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#6366f1;"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;"></span> Perso.</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><iconify-icon icon="solar:danger-triangle-bold" style="font-size:10px;"></iconify-icon> En retard</div>
         </div>
       </div>
     `;
