@@ -280,7 +280,7 @@ const PlanningPage = {
   _mobileSelectedDay: 0, // index 0-6 dans la semaine
 
   _renderWeekView() {
-    let chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    let chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif' && c.statut !== 'suspendu');
     if (this._filterSearch) {
       const q = this._filterSearch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       chauffeurs = chauffeurs.filter(c => {
@@ -743,7 +743,7 @@ const PlanningPage = {
   // =================== VUE MOIS ===================
 
   _renderMonthView() {
-    let chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    let chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif' && c.statut !== 'suspendu');
     if (this._filterSearch) {
       const q = this._filterSearch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       chauffeurs = chauffeurs.filter(c => {
@@ -849,7 +849,7 @@ const PlanningPage = {
   // =================== VUE STATISTIQUES ===================
 
   _renderStatsView() {
-    const chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    const chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif' && c.statut !== 'suspendu');
     const _vehList2 = Store.get('vehicules') || [];
     const vehMap = {};
     _vehList2.forEach(v => { vehMap[v.id] = v.immatriculation || `${v.marque} ${v.modele}`; });
@@ -987,7 +987,7 @@ const PlanningPage = {
   },
 
   _loadStatsCharts() {
-    const chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    const chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif' && c.statut !== 'suspendu');
     const year = this._currentMonth.getFullYear();
     const month = this._currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -1342,7 +1342,7 @@ const PlanningPage = {
   },
 
   _addAbsence() {
-    const chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif');
+    const chauffeurs = this._getChauffeurs().filter(c => c.statut !== 'inactif' && c.statut !== 'suspendu');
     const fields = [
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, placeholder: 'Choisir un chauffeur...', options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-start' },
