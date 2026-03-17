@@ -2166,10 +2166,15 @@ const VersementsPage = {
     if (detteData.detteList.length === 0 && detteData.totalPertes === 0) return '';
 
     const rows = detteData.detteList.map(item => {
+      const nbContra = item.items.filter(v => v.source === 'contravention').length;
+      const nbRecette = item.items.length - nbContra;
+      const typeTags = [];
+      if (nbRecette > 0) typeTags.push(`${nbRecette} recette`);
+      if (nbContra > 0) typeTags.push(`<span style="color:#ef4444;">${nbContra} contravention${nbContra > 1 ? 's' : ''}</span>`);
       return `<div class="dette-row" data-nom="${(item.nom || '').toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${item.nom}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${item.count} impay\u00e9(s) \u2022 Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${typeTags.join(' \u2022 ')} \u2022 Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:var(--font-size-sm);font-weight:700;color:#f59e0b;">${Utils.formatCurrency(item.total)}</div>
@@ -2222,8 +2227,8 @@ const VersementsPage = {
     const rows = driver.items.map(v => {
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-sm);gap:6px;">
         <div style="flex:1;min-width:0;">
-          <div style="font-weight:500;">${Utils.formatDate(v.date)}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Vers\u00e9 : ${Utils.formatCurrency(v.montantVerse || 0)} sur ${Utils.formatCurrency((v.montantVerse || 0) + v.manquant)}</div>
+          <div style="font-weight:500;display:flex;align-items:center;gap:6px;">${Utils.formatDate(v.date)}${v.source === 'contravention' ? '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:700;">CONTRAVENTION</span>' : ''}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${v.source === 'contravention' ? (v.commentaire || 'Contravention') : 'Vers\u00e9 : ' + Utils.formatCurrency(v.montantVerse || 0) + ' sur ' + Utils.formatCurrency((v.montantVerse || 0) + v.manquant)}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-weight:700;color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</div>
@@ -2553,7 +2558,7 @@ const VersementsPage = {
       dateCreation: new Date().toISOString()
     };
 
-    Store.create('versements', versement);
+    Store.add('versements', versement);
     Modal.close();
     Toast.success(`Dette de ${Utils.formatCurrency(montant)} ajoutée pour ${chauffeur.prenom} ${chauffeur.nom}`);
     this.render(document.querySelector('.content'));

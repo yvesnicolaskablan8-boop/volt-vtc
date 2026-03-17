@@ -494,7 +494,7 @@ const ContraventionsPage = {
 
       // Créer une dette chauffeur pour cette contravention
       if (chauffeurId && montant > 0) {
-        Store.create('versements', {
+        Store.add('versements', {
           id: Utils.generateId('VRS'),
           chauffeurId,
           date,
