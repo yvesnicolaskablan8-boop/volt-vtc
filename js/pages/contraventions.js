@@ -159,7 +159,7 @@ const ContraventionsPage = {
         data: items,
         columns: [
           { label: 'Chauffeur', key: 'chauffeurId', render: (v) => chauffeurMap[v.chauffeurId] || v.chauffeurId },
-          { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) },
+          { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) + (v.heure ? `<br><span style="font-size:10px;color:var(--text-muted);">${v.heure}</span>` : '') },
           { label: 'Type', key: 'type', render: (v) => typeLabels[v.type] || v.type },
           { label: 'Lieu', key: 'lieu', render: (v) => v.lieu || '-' },
           { label: 'Montant', key: 'montant', render: (v) => Utils.formatCurrency(v.montant || 0) },
@@ -338,8 +338,8 @@ const ContraventionsPage = {
             <div style="font-size:12px;opacity:.8;">Renseignez le chauffeur concern\u00e9 et ajoutez une ou plusieurs infractions</div>
           </div>
 
-          <!-- Chauffeur + Date sur une ligne -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+          <!-- Chauffeur + Date + Heure + Lieu -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
               <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
                 <iconify-icon icon="solar:user-bold-duotone" style="color:#6366f1;"></iconify-icon> Chauffeur *
@@ -349,12 +349,26 @@ const ContraventionsPage = {
                 ${chauffeurs.map(c => `<option value="${c.id}" ${c.id === preselectedChauffeurId ? 'selected' : ''}>${c.prenom} ${c.nom}</option>`).join('')}
               </select>
             </div>
-            <div>
-              <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
-                <iconify-icon icon="solar:calendar-bold-duotone" style="color:#f97316;"></iconify-icon> Date *
-              </label>
-              <input type="date" name="date" required value="${new Date().toISOString().split('T')[0]}" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;box-sizing:border-box;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
+                  <iconify-icon icon="solar:calendar-bold-duotone" style="color:#f97316;"></iconify-icon> Date *
+                </label>
+                <input type="date" name="date" required value="${new Date().toISOString().split('T')[0]}" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
+                  <iconify-icon icon="solar:clock-circle-bold-duotone" style="color:#3b82f6;"></iconify-icon> Heure
+                </label>
+                <input type="time" name="heure" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;box-sizing:border-box;">
+              </div>
             </div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
+              <iconify-icon icon="solar:map-point-bold-duotone" style="color:#22c55e;"></iconify-icon> Lieu
+            </label>
+            <input type="text" name="lieu" placeholder="ex: Boulevard Latrille, Cocody" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:500;box-sizing:border-box;">
           </div>
 
           <!-- Note admin (compact) -->
@@ -410,6 +424,8 @@ const ContraventionsPage = {
     const fd = new FormData(form);
     const chauffeurId = fd.get('chauffeurId');
     const date = fd.get('date');
+    const heure = fd.get('heure') || '';
+    const lieuGlobal = fd.get('lieu') || '';
     const commentaire = fd.get('commentaire') || '';
 
     if (!chauffeurId) {
@@ -425,7 +441,7 @@ const ContraventionsPage = {
       const idx = line.dataset.idx;
       const type = fd.get(`type_${idx}`);
       const montant = parseInt(fd.get(`montant_${idx}`));
-      const lieu = fd.get(`lieu_${idx}`) || '';
+      const lieuLine = fd.get(`lieu_${idx}`) || '';
       const description = fd.get(`description_${idx}`) || '';
 
       if (!type || !montant || montant <= 0) return;
@@ -435,8 +451,9 @@ const ContraventionsPage = {
         chauffeurId,
         vehiculeId: chauffeur ? chauffeur.vehiculeAssigne : '',
         date,
+        heure,
         type,
-        lieu,
+        lieu: lieuLine || lieuGlobal,
         montant,
         description,
         commentaire,

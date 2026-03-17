@@ -5,6 +5,7 @@ const contraventionSchema = new mongoose.Schema({
   chauffeurId: { type: String, required: true },
   vehiculeId: String,
   date: String,
+  heure: String,
   type: String,
   description: String,
   lieu: String,
