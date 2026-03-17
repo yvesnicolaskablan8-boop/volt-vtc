@@ -158,7 +158,7 @@ const ContraventionsPage = {
         containerId: 'contraventions-table',
         data: items,
         columns: [
-          { label: 'Chauffeur', key: 'chauffeurId', render: (v) => chauffeurMap[v.chauffeurId] || v.chauffeurId },
+          { label: 'Chauffeur', key: 'chauffeurId', render: (v) => chauffeurMap[v.chauffeurId] || '<span style="color:var(--text-muted);font-style:italic;">Inconnu</span>' },
           { label: 'Véhicule', key: 'vehiculeId', render: (v) => {
             if (!v.vehiculeId) return '-';
             const veh = (Store.get('vehicules') || []).find(x => x.id === v.vehiculeId);
