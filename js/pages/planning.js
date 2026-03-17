@@ -456,187 +456,195 @@ const PlanningPage = {
   },
 
   _renderDesktopGridView(chauffeurs, days, vehMap, stats) {
-    // Compute weekly hours per chauffeur
-    const weeklyHours = {};
-    chauffeurs.forEach(ch => {
-      let total = 0;
-      days.forEach(d => {
-        this._getDriverShiftsForDate(ch.id, d.date).forEach(s => {
-          total += parseInt(this._getShiftDuration(s)) || 0;
-        });
-      });
-      weeklyHours[ch.id] = total;
-    });
-
-    // Shift type label for sub-line
-    const shiftLabel = (s) => {
-      if (s.typeCreneaux === 'custom' || !s.typeCreneaux) return 'Personnalisé';
-      return { matin: 'Matin', apres_midi: 'Après-midi', journee: 'Journée', nuit: 'Nuit' }[s.typeCreneaux] || s.typeCreneaux;
-    };
+    const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
 
     return `
       <style>
-        .pgt { width:100%; border-collapse:collapse; }
-        .pgt th { padding:10px 8px 8px; text-align:center; font-size:13px; font-weight:500; color:var(--text-muted); vertical-align:bottom; }
-        .pgt thead th { border-bottom:2px solid var(--border-color); }
-        .pgt thead th.pgt-today { border-bottom:3px solid #3b82f6; }
-        .pgt thead th .pgt-day { font-size:12px; color:var(--text-muted); font-weight:400; }
-        .pgt thead th .pgt-num { font-size:16px; font-weight:700; color:var(--text-secondary); }
-        .pgt thead th.pgt-today .pgt-day, .pgt thead th.pgt-today .pgt-num { color:var(--text-primary); font-weight:700; }
-        .pgt thead th .pgt-month { font-size:11px; color:var(--text-muted); font-weight:400; }
-        .pgt td { padding:5px 6px; vertical-align:middle; border-right:1px solid var(--border-color); }
-        .pgt td:last-child { border-right:none; }
-        .pgt td:first-child { border-right:1px solid var(--border-color); }
-        .pgt tbody tr { border-bottom:1px solid rgba(0,0,0,.04); }
-        [data-theme="dark"] .pgt tbody tr { border-bottom-color:rgba(255,255,255,.06); }
-        .pgt tbody tr:last-child { border-bottom:none; }
-
-        .pgt-driver { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; padding:2px 0; }
-        .pgt-driver:hover { opacity:.8; }
-        .pgt-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; flex-shrink:0; object-fit:cover; }
-        .pgt-info { min-width:0; }
-        .pgt-name { font-size:13px; font-weight:600; color:var(--text-primary); line-height:1.3; }
-        .pgt-hours { font-size:12px; color:#f59e0b; font-weight:600; }
-        .pgt-status { font-size:10px; font-weight:600; padding:1px 6px; border-radius:8px; white-space:nowrap; }
-
-        /* Shift cell — left colored border, white bg */
-        .pgt-shift {
-          display:flex; flex-direction:column; gap:1px;
-          padding:7px 10px; border-radius:6px;
-          background:var(--bg-primary); border:1px solid var(--border-color);
-          border-left:4px solid #ccc;
-          cursor:pointer; transition:box-shadow .15s;
-          min-height:44px;
+        .pg-grid { display:grid; grid-template-columns:minmax(180px,auto) repeat(7,1fr); gap:4px 5px; align-items:center; }
+        .pg-head {
+          text-align:center; font-size:11px; font-weight:700; color:#9ca3af; padding:8px 0 6px;
+          text-transform:uppercase; letter-spacing:.8px;
+          border-bottom:2px solid transparent;
         }
-        .pgt-shift:hover { box-shadow:0 2px 8px rgba(0,0,0,.1); }
-        .pgt-shift-row1 { display:flex; align-items:center; justify-content:space-between; gap:6px; }
-        .pgt-shift-time { font-size:13px; font-weight:700; color:var(--text-primary); white-space:nowrap; }
-        .pgt-shift-dur { font-size:12px; font-weight:500; color:var(--text-muted); white-space:nowrap; }
-        .pgt-shift-label { font-size:11px; color:var(--text-muted); font-weight:400; margin-top:1px; }
-
-        /* Absence cell */
-        .pgt-abs {
-          display:flex; align-items:center; gap:6px;
-          padding:7px 10px; border-radius:6px;
-          border-left:4px solid #ccc;
-          cursor:pointer; min-height:44px;
-          font-size:12px; font-weight:600;
+        .pg-head.today {
+          color:#6366f1;
+          background:linear-gradient(180deg, rgba(99,102,241,.06) 0%, rgba(99,102,241,.02) 100%);
+          border-radius:12px 12px 0 0;
+          border-bottom:3px solid #6366f1;
         }
+        .pg-head .pg-daynum { display:block; font-size:18px; font-weight:800; color:var(--text-primary); margin-top:2px; }
+        .pg-head.today .pg-daynum { color:#6366f1; }
+        [data-theme="dark"] .pg-head { color:#6b7280; }
+        [data-theme="dark"] .pg-head.today { background:rgba(99,102,241,.1); }
+        [data-theme="dark"] .pg-head .pg-daynum { color:#d1d5db; }
 
-        /* Repos cell — gray striped */
-        .pgt-repos {
-          display:flex; flex-direction:column; align-items:center; justify-content:center;
-          padding:7px 10px; border-radius:6px; min-height:44px;
-          background:repeating-linear-gradient(135deg, var(--bg-tertiary), var(--bg-tertiary) 4px, var(--bg-secondary) 4px, var(--bg-secondary) 8px);
-          border:1px solid var(--border-color); border-left:4px solid #9ca3b8;
-          font-size:11px; font-weight:600; color:var(--text-muted); cursor:pointer;
+        .pg-driver {
+          display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--text-primary);
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:4px 0;
+          text-decoration:none; cursor:pointer;
         }
+        .pg-driver:hover { opacity:.8; }
+        [data-theme="dark"] .pg-driver { color:#d1d5db; }
+        .pg-avatar {
+          width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+          font-size:10px; font-weight:700; color:#fff; flex-shrink:0;
+          box-shadow:0 2px 6px rgba(0,0,0,.15); border:2px solid rgba(255,255,255,.8);
+          object-fit:cover;
+        }
+        [data-theme="dark"] .pg-avatar { border-color:rgba(255,255,255,.15); }
+        .pg-row-even .pg-driver, .pg-row-even .pg-cell { background:rgba(0,0,0,.015); border-radius:8px; }
+        [data-theme="dark"] .pg-row-even .pg-driver, [data-theme="dark"] .pg-row-even .pg-cell { background:rgba(255,255,255,.02); }
 
-        /* Empty cell */
-        .pgt-empty { min-height:44px; cursor:pointer; border-radius:6px; }
-        .pgt-empty:hover { background:rgba(0,0,0,.02); }
-        [data-theme="dark"] .pgt-empty:hover { background:rgba(255,255,255,.03); }
+        .pg-cell {
+          height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+          font-size:12px; cursor:pointer; transition:all .2s cubic-bezier(.16,1,.3,1);
+          position:relative;
+        }
+        .pg-cell:hover { transform:scale(1.06); box-shadow:0 4px 12px rgba(0,0,0,.1); z-index:2; }
+
+        /* Shift colors — gradient like dashboard */
+        .pg-shift-matin { background:linear-gradient(135deg,rgba(34,197,94,.18),rgba(74,222,128,.1)); color:#22c55e; }
+        .pg-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.18),rgba(96,165,250,.1)); color:#3b82f6; }
+        .pg-shift-journee { background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(251,191,36,.1)); color:#f59e0b; }
+        .pg-shift-nuit { background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(167,139,250,.1)); color:#8b5cf6; }
+        .pg-shift-custom { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#6366f1; }
+
+        .pg-shift-matin:hover { background:linear-gradient(135deg,rgba(34,197,94,.28),rgba(74,222,128,.18)); }
+        .pg-shift-am:hover { background:linear-gradient(135deg,rgba(59,130,246,.28),rgba(96,165,250,.18)); }
+        .pg-shift-journee:hover { background:linear-gradient(135deg,rgba(245,158,11,.28),rgba(251,191,36,.18)); }
+        .pg-shift-nuit:hover { background:linear-gradient(135deg,rgba(139,92,246,.28),rgba(167,139,250,.18)); }
+        .pg-shift-custom:hover { background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(139,92,246,.18)); }
+
+        [data-theme="dark"] .pg-shift-matin { background:linear-gradient(135deg,rgba(34,197,94,.22),rgba(74,222,128,.15)); }
+        [data-theme="dark"] .pg-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(96,165,250,.15)); }
+        [data-theme="dark"] .pg-shift-journee { background:linear-gradient(135deg,rgba(245,158,11,.22),rgba(251,191,36,.15)); }
+        [data-theme="dark"] .pg-shift-nuit { background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(167,139,250,.15)); }
+        [data-theme="dark"] .pg-shift-custom { background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(139,92,246,.15)); }
+
+        /* Absence */
+        .pg-absence { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f97316; }
+        .pg-absence:hover { background:linear-gradient(135deg,rgba(249,115,22,.25),rgba(251,146,60,.15)); }
+        .pg-absence-maladie { background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(248,113,113,.1)); color:#ef4444; }
+        .pg-absence-maladie:hover { background:linear-gradient(135deg,rgba(239,68,68,.28),rgba(248,113,113,.2)); }
+        .pg-absence-conge { background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(96,165,250,.08)); color:#3b82f6; }
+        .pg-absence-conge:hover { background:linear-gradient(135deg,rgba(59,130,246,.25),rgba(96,165,250,.15)); }
+
+        /* Repos */
+        .pg-repos { background:rgba(0,0,0,.025); color:#d1d5db; }
+        [data-theme="dark"] .pg-repos { background:rgba(255,255,255,.03); color:#4b5563; }
+
+        /* Suspendu */
+        .pg-suspendu { background:linear-gradient(135deg,rgba(239,68,68,.1),rgba(248,113,113,.05)); color:#ef4444; }
+
+        /* Empty */
+        .pg-empty { background:rgba(0,0,0,.015); }
+        .pg-empty:hover { background:rgba(99,102,241,.06); }
+        [data-theme="dark"] .pg-empty { background:rgba(255,255,255,.02); }
+        [data-theme="dark"] .pg-empty:hover { background:rgba(99,102,241,.08); }
+
+        .pg-cell-text { font-size:11px; font-weight:700; letter-spacing:-.2px; text-align:center; line-height:1.3; }
 
         @media(max-width:1200px) {
-          .pgt-shift { padding:5px 6px; }
-          .pgt-shift-time { font-size:11px; }
-          .pgt-shift-dur { font-size:10px; }
-          .pgt-name { font-size:12px; }
+          .pg-grid { grid-template-columns:minmax(120px,auto) repeat(7,1fr); gap:3px; }
+          .pg-cell { height:36px; border-radius:8px; }
+          .pg-cell-text { font-size:10px; }
+          .pg-driver { font-size:11px; }
+          .pg-avatar { width:26px; height:26px; font-size:9px; }
         }
       </style>
 
-      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;">
-        <table class="pgt" style="min-width:900px;">
-          <thead>
-            <tr>
-              <th style="text-align:left;padding-left:16px;width:180px;border-right:1px solid var(--border-color);">
-                <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">Chauffeurs</span>
-              </th>
-              ${days.map(d => {
-                const isToday = this._isToday(d.date);
-                const monthShort = d.obj.toLocaleDateString('fr-FR', { month: 'short' });
-                return `<th class="${isToday ? 'pgt-today' : ''}" style="border-right:1px solid var(--border-color);${days.indexOf(d) === days.length - 1 ? 'border-right:none;' : ''}">
-                  <span class="pgt-day">${this._getDayName(d.dayIdx)}.</span>
-                  <span class="pgt-num"> ${d.obj.getDate()}</span>
-                  <span class="pgt-month"> ${monthShort}</span>
-                </th>`;
-              }).join('')}
-            </tr>
-          </thead>
-          <tbody>
-            ${chauffeurs.map((ch, idx) => {
-              const avatarColor = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'][idx % 10];
-              const initials = ((ch.prenom||'')[0] + (ch.nom||'')[0]).toUpperCase();
-              const avatarHtml = ch.photo
-                ? `<img src="${ch.photo}" alt="${initials}" class="pgt-avatar" style="object-fit:cover;">`
-                : `<div class="pgt-avatar" style="background:${avatarColor};">${initials}</div>`;
-              const isSuspendu = ch.statut === 'suspendu';
-              const isStatutRepos = ch.statut === 'repos';
-              const wh = weeklyHours[ch.id] || 0;
-              const statusHtml = isSuspendu
-                ? '<div class="pgt-status" style="background:rgba(239,68,68,.1);color:#ef4444;">Suspendu</div>'
-                : isStatutRepos
-                  ? '<div class="pgt-status" style="background:rgba(100,116,139,.1);color:#64748b;">Repos</div>'
-                  : '';
+      <!-- Header card -->
+      <div class="card" style="padding:24px 20px;border-radius:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
+              <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#fff;"></iconify-icon>
+            </div>
+            <div>
+              <div style="font-size:15px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px;">Planning semaine</div>
+              <div style="font-size:11px;color:#9ca3af;font-weight:500;margin-top:1px;">${chauffeurs.length} chauffeur${chauffeurs.length > 1 ? 's' : ''} actif${chauffeurs.length > 1 ? 's' : ''}</div>
+            </div>
+          </div>
+        </div>
 
-              return `<tr style="${isSuspendu ? 'opacity:.5;' : ''}">
-                <td style="padding-left:16px;">
-                  <a href="#/chauffeurs/${ch.id}" class="pgt-driver">
-                    ${avatarHtml}
-                    <div class="pgt-info">
-                      <div class="pgt-name">${ch.prenom}<br>${ch.nom}</div>
-                    </div>
-                    <div style="margin-left:auto;text-align:right;">
-                      <div class="pgt-hours">${wh}h</div>
-                      ${statusHtml}
-                    </div>
-                  </a>
-                </td>
-                ${days.map(d => {
-                  const shifts = this._getDriverShiftsForDate(ch.id, d.date);
-                  const absences = this._getDriverAbsencesForDate(ch.id, d.date);
+        <div class="pg-grid" style="animation:dSlide .5s cubic-bezier(.16,1,.3,1);">
+          <div></div>
+          ${days.map(d => `
+            <div class="pg-head ${this._isToday(d.date) ? 'today' : ''}">
+              <span>${this._getDayName(d.dayIdx).toUpperCase()}</span>
+              <span class="pg-daynum">${d.obj.getDate()}</span>
+            </div>
+          `).join('')}
 
-                  if (isSuspendu) {
-                    return `<td><div class="pgt-repos planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="background:repeating-linear-gradient(135deg,rgba(239,68,68,.06),rgba(239,68,68,.06) 4px,transparent 4px,transparent 8px);border-left-color:#ef4444;">Suspendu</div></td>`;
-                  }
+          ${chauffeurs.map((ch, idx) => {
+            const color = avatarColors[idx % avatarColors.length];
+            const rowClass = idx % 2 === 1 ? ' pg-row-even' : '';
+            const initials = ((ch.prenom||'')[0] + (ch.nom||'')[0]).toUpperCase();
+            const avatarHtml = ch.photo
+              ? `<img src="${ch.photo}" alt="${initials}" class="pg-avatar" style="object-fit:cover;">`
+              : `<div class="pg-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${initials}</div>`;
+            const isSuspendu = ch.statut === 'suspendu';
+            const isStatutRepos = ch.statut === 'repos';
+            const statutBadge = isSuspendu
+              ? ' <span style="font-size:9px;padding:1px 5px;border-radius:6px;background:rgba(239,68,68,.1);color:#ef4444;font-weight:600;">Susp.</span>'
+              : isStatutRepos
+                ? ' <span style="font-size:9px;padding:1px 5px;border-radius:6px;background:rgba(100,116,139,.1);color:#64748b;font-weight:600;">Repos</span>'
+                : '';
 
-                  if (absences.length > 0) {
-                    const a = absences[0];
-                    const c = this._absenceTypeColor(a.type);
-                    return `<td><div class="pgt-abs" style="background:${c}12;border-left-color:${c};color:${c};" onclick="PlanningPage._viewAbsence('${a.id}')">
-                      <iconify-icon icon="solar:calendar-minimalistic-bold-duotone" style="font-size:14px;"></iconify-icon>
-                      ${this._absenceTypeLabel(a.type)}
-                    </div></td>`;
-                  }
+            let html = `<a href="#/chauffeurs/${ch.id}" class="pg-driver${rowClass}" title="${ch.prenom} ${ch.nom}" style="${isSuspendu ? 'opacity:.5;' : ''}animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">
+              ${avatarHtml}<span>${ch.prenom} ${ch.nom}${statutBadge}</span>
+            </a>`;
 
-                  if (shifts.length > 0) {
-                    const s = shifts[0];
-                    const sc = this._getShiftColor(s);
-                    const timeFull = this._getShiftTimeFull(s);
-                    const dur = this._getShiftDuration(s);
-                    const label = shiftLabel(s);
-                    const overrideHtml = s.redevanceOverride ? `<span style="font-size:9px;color:var(--text-muted);">${Utils.formatCurrency(s.redevanceOverride)}</span>` : '';
-                    return `<td>
-                      <div class="pgt-shift" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="border-left-color:${sc};" onclick="PlanningPage._editShift('${s.id}')">
-                        <div class="pgt-shift-row1">
-                          <span class="pgt-shift-time">${timeFull}</span>
-                          <span class="pgt-shift-dur">${dur}</span>
-                        </div>
-                        <div class="pgt-shift-label">${label}${overrideHtml ? ' · ' + overrideHtml : ''}</div>
-                      </div>
-                    </td>`;
-                  }
+            html += days.map((d, ci) => {
+              const shifts = this._getDriverShiftsForDate(ch.id, d.date);
+              const absences = this._getDriverAbsencesForDate(ch.id, d.date);
+              const anim = `animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30 + ci * 15}ms both;`;
 
-                  if (isStatutRepos) {
-                    return `<td><div class="pgt-repos planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">Repos</div></td>`;
-                  }
+              if (isSuspendu) {
+                return `<div class="pg-cell pg-suspendu${rowClass}" style="${anim}" title="Suspendu">
+                  <iconify-icon icon="solar:forbidden-circle-bold" style="font-size:13px;"></iconify-icon>
+                </div>`;
+              }
 
-                  return `<td><div class="pgt-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')"></div></td>`;
-                }).join('')}
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
+              if (absences.length > 0) {
+                const a = absences[0];
+                const absCls = a.type === 'maladie' ? 'pg-absence-maladie' : a.type === 'conge' ? 'pg-absence-conge' : 'pg-absence';
+                return `<div class="pg-cell ${absCls}${rowClass}" style="${anim}" title="${this._absenceTypeLabel(a.type)}" onclick="PlanningPage._viewAbsence('${a.id}')">
+                  <span class="pg-cell-text">${this._absenceTypeLabel(a.type)}</span>
+                </div>`;
+              }
+
+              if (shifts.length > 0) {
+                const s = shifts[0];
+                const typeClass = { matin:'pg-shift-matin', apres_midi:'pg-shift-am', journee:'pg-shift-journee', nuit:'pg-shift-nuit' }[s.typeCreneaux] || 'pg-shift-custom';
+                const timeShort = this._getShiftTimeShort(s);
+                return `<div class="pg-cell ${typeClass}${rowClass}" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="${anim}" title="${this._getShiftTimeFull(s)} (${this._getShiftDuration(s)})" onclick="PlanningPage._editShift('${s.id}')">
+                  <span class="pg-cell-text">${timeShort}</span>
+                </div>`;
+              }
+
+              if (isStatutRepos) {
+                return `<div class="pg-cell pg-repos${rowClass} planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="${anim}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
+                  <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:13px;"></iconify-icon>
+                </div>`;
+              }
+
+              return `<div class="pg-cell pg-empty${rowClass} planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="${anim}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')"></div>`;
+            }).join('');
+            return html;
+          }).join('')}
+        </div>
+
+        <!-- Légende -->
+        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(34,197,94,.08);font-size:11px;font-weight:600;color:#22c55e;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> Matin</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(59,130,246,.08);font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> AM</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.08);font-size:11px;font-weight:600;color:#f59e0b;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Journée</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(139,92,246,.08);font-size:11px;font-weight:600;color:#8b5cf6;"><span style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;"></span> Nuit</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#6366f1;"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;"></span> Perso.</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
+        </div>
       </div>
     `;
   },
