@@ -1049,7 +1049,7 @@ const DashboardPage = {
       </div>
 
       <!-- Row 3: Mes taches + Alertes (côte à côte) -->
-      <div class="d-grid" style="grid-template-columns:1fr 1fr;align-items:stretch;">
+      <div class="d-grid d-g21" style="grid-template-columns:1fr 1fr;align-items:stretch;">
           <!-- Mes taches -->
           ${this._renderMesTaches()}
 
@@ -1164,21 +1164,21 @@ const DashboardPage = {
           </div>
           ${enRetard > 0 ? `<span style="margin-left:auto;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(239,68,68,.9);color:#fff;">${enRetard} en retard</span>` : ''}
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:${top3.length > 0 ? '10px' : '0'};">
-          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.2);">
-            <span style="width:6px;height:6px;border-radius:50%;background:#fbbf24;"></span>
-            <span style="font-size:11px;color:rgba(255,255,255,.85);">A faire</span>
-            <strong style="margin-left:auto;font-size:13px;color:#fff;">${aFaire}</strong>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${top3.length > 0 ? '10px' : '0'};">
+          <div style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.2);flex:1;min-width:0;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#fbbf24;flex-shrink:0;"></span>
+            <span style="font-size:10px;color:rgba(255,255,255,.85);white-space:nowrap;">A faire</span>
+            <strong style="margin-left:auto;font-size:12px;color:#fff;">${aFaire}</strong>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.2);">
-            <span style="width:6px;height:6px;border-radius:50%;background:#60a5fa;"></span>
-            <span style="font-size:11px;color:rgba(255,255,255,.85);">En cours</span>
-            <strong style="margin-left:auto;font-size:13px;color:#fff;">${enCours}</strong>
+          <div style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.2);flex:1;min-width:0;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#60a5fa;flex-shrink:0;"></span>
+            <span style="font-size:10px;color:rgba(255,255,255,.85);white-space:nowrap;">En cours</span>
+            <strong style="margin-left:auto;font-size:12px;color:#fff;">${enCours}</strong>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.15);">
-            <span style="width:6px;height:6px;border-radius:50%;background:#4ade80;"></span>
-            <span style="font-size:11px;color:rgba(255,255,255,.85);">Terminees</span>
-            <strong style="margin-left:auto;font-size:13px;color:#fff;">${terminees}</strong>
+          <div style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.15);flex:1;min-width:0;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#4ade80;flex-shrink:0;"></span>
+            <span style="font-size:10px;color:rgba(255,255,255,.85);white-space:nowrap;">Termin.</span>
+            <strong style="margin-left:auto;font-size:12px;color:#fff;">${terminees}</strong>
           </div>
         </div>
         ${top3.length > 0 ? `<div style="display:flex;flex-direction:column;gap:4px;">

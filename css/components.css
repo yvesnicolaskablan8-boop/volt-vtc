@@ -2803,12 +2803,23 @@ textarea.form-control {
 
 @media(max-width:900px) {
   .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
-  .d-g3 { grid-template-columns:1fr !important; }
+  .d-g3 { grid-template-columns:1fr 1fr !important; }
   .d-g21 { grid-template-columns:1fr !important; }
 }
 @media(max-width:600px) {
-  .d-g4 { grid-template-columns:1fr !important; }
+  .d-g4 { grid-template-columns:repeat(2,1fr) !important; }
+  .d-g3 { grid-template-columns:1fr 1fr 1fr !important; }
   .d-bg { margin:-16px; padding:16px 16px 24px; }
+  /* Empêcher les débordements de texte dans les cartes KPI */
+  .d-card { padding:14px 12px !important; overflow:hidden; }
+  .d-val { font-size:1.1rem !important; word-break:break-word; overflow-wrap:break-word; }
+  .d-lbl { font-size:10px !important; }
+  .d-sub { font-size:10px !important; }
+  .d-icon { width:28px !important; height:28px !important; min-width:28px !important; font-size:13px !important; }
+  .d-g3 .d-card .d-val { font-size:0.95rem !important; }
+  .d-g3 .d-card .d-lbl { font-size:9px !important; }
+  .d-g3 .d-card { padding:10px 8px !important; }
+  .d-g3 .d-card .d-icon { width:24px !important; height:24px !important; min-width:24px !important; font-size:11px !important; }
 }
 
 /* ------------------------------------------------------------------

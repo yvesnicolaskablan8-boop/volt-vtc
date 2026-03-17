@@ -252,7 +252,7 @@ const VersementsPage = {
       </div>
 
       <!-- KPIs — Row 2 : En retard + Dettes + Pertes -->
-      <div class="d-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;">
+      <div class="d-grid d-g3" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;">
         <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;box-shadow:0 4px 20px rgba(139,92,246,.25);" onclick="VersementsPage._showKpiDetail('retard')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
