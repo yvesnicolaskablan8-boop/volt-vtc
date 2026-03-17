@@ -388,8 +388,15 @@ const PlanningPage = {
             const isRepos = ch.statut === 'repos';
             const shortName = ch.prenom + ' ' + (ch.nom||'').charAt(0) + '.';
             const plaque1 = (ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '') || chPlaqueMap[ch.id] || '';
+            const hasRetardMobile = days.some(d => {
+              if (d.date >= todayStr) return false;
+              const sh = this._getDriverShiftsForDate(ch.id, d.date);
+              if (sh.length === 0) return false;
+              return !versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
+            });
+            const mNameStyle = hasRetardMobile ? 'color:#ef4444;' : '';
 
-            let row = `<div class="pm-driver${rowClass}" title="${ch.prenom} ${ch.nom}${plaque1 ? ' — ' + plaque1 : ''}"><span class="pm-driver-name">${shortName}</span>${plaque1 ? `<span class="pm-driver-plaque">${plaque1}</span>` : ''}</div>`;
+            let row = `<div class="pm-driver${rowClass}" title="${ch.prenom} ${ch.nom}${plaque1 ? ' — ' + plaque1 : ''}${hasRetardMobile ? ' — Versement(s) en retard' : ''}" style="${mNameStyle}"><span class="pm-driver-name">${shortName}</span>${plaque1 ? `<span class="pm-driver-plaque" style="${hasRetardMobile ? 'color:#ef4444;' : ''}">${plaque1}</span>` : ''}</div>`;
 
             row += days.map(d => {
               const shifts = this._getDriverShiftsForDate(ch.id, d.date);
@@ -410,8 +417,7 @@ const PlanningPage = {
                 const typeClass = { matin:'pm-shift-m', apres_midi:'pm-shift-am', journee:'pm-shift-j', nuit:'pm-shift-n' }[s.typeCreneaux] || 'pm-shift';
                 const isPast = d.date < todayStr;
                 const hasVersement = isPast && versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
-                const retardIcon = isPast && !hasVersement ? '<iconify-icon icon="solar:danger-triangle-bold" style="font-size:10px;color:#ef4444;margin-left:2px;" title="Versement en retard"></iconify-icon>' : '';
-                return `<div class="pm-cell ${typeClass}${rowClass}" onclick="PlanningPage._editShift('${s.id}')">${this._getShiftTimeShort(s)}${retardIcon}</div>`;
+                return `<div class="pm-cell ${typeClass}${rowClass}" onclick="PlanningPage._editShift('${s.id}')">${this._getShiftTimeShort(s)}</div>`;
               }
               if (isRepos) {
                 return `<div class="pm-cell pm-repos${rowClass}" ${onclick} style="cursor:pointer;"><iconify-icon icon="solar:moon-sleep-bold" style="font-size:11px;"></iconify-icon></div>`;
@@ -466,7 +472,7 @@ const PlanningPage = {
 
     return `
       <style>
-        .pg-grid { display:grid; grid-template-columns:minmax(180px,auto) repeat(7,1fr); gap:4px 5px; align-items:center; }
+        .pg-grid { display:grid; grid-template-columns:minmax(180px,auto) repeat(7,1fr); gap:2px 0; align-items:center; }
         .pg-head {
           text-align:center; font-size:11px; font-weight:700; color:#9ca3af; padding:8px 0 6px;
           text-transform:uppercase; letter-spacing:.8px;
@@ -505,7 +511,7 @@ const PlanningPage = {
         .pg-cell {
           height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center;
           font-size:12px; cursor:pointer; transition:all .2s cubic-bezier(.16,1,.3,1);
-          position:relative;
+          position:relative; margin:0 2px;
         }
         .pg-cell:hover { transform:scale(1.06); box-shadow:0 4px 12px rgba(0,0,0,.1); z-index:2; }
 
@@ -549,22 +555,21 @@ const PlanningPage = {
         [data-theme="dark"] .pg-empty { background:rgba(255,255,255,.02); }
         [data-theme="dark"] .pg-empty:hover { background:rgba(99,102,241,.08); }
 
-        /* Today column highlight — amber/gold bien visible */
-        .pg-today-col { background-color:rgba(251,191,36,.18); border-radius:8px; }
-        .pg-cell.pg-today-col { box-shadow:inset 0 0 0 2.5px rgba(245,158,11,.35); background-color:rgba(251,191,36,.12); }
-        .pg-cell.pg-today-col.pg-empty { background:rgba(251,191,36,.22); }
-        .pg-cell.pg-today-col.pg-repos { background:rgba(251,191,36,.15); }
-        .pg-hdr.pg-today-col { background:rgba(251,191,36,.22); font-weight:800; }
-        [data-theme="dark"] .pg-today-col { background-color:rgba(251,191,36,.2); }
-        [data-theme="dark"] .pg-cell.pg-today-col { box-shadow:inset 0 0 0 2.5px rgba(245,158,11,.4); background-color:rgba(251,191,36,.15); }
-        [data-theme="dark"] .pg-cell.pg-today-col.pg-empty { background:rgba(251,191,36,.25); }
-        [data-theme="dark"] .pg-cell.pg-today-col.pg-repos { background:rgba(251,191,36,.18); }
-        [data-theme="dark"] .pg-hdr.pg-today-col { background:rgba(251,191,36,.25); }
+        /* Today column highlight — bande ambre continue */
+        .pg-today-col { background-color:rgba(251,191,36,.15); }
+        .pg-cell.pg-today-col { background-color:rgba(251,191,36,.13); border-radius:0; margin:0; }
+        .pg-cell.pg-today-col.pg-empty { background:rgba(251,191,36,.18); border-radius:0; }
+        .pg-cell.pg-today-col.pg-repos { background:rgba(251,191,36,.12); border-radius:0; }
+        .pg-head.today { border-radius:12px 12px 0 0; }
+        [data-theme="dark"] .pg-today-col { background-color:rgba(251,191,36,.18); }
+        [data-theme="dark"] .pg-cell.pg-today-col { background-color:rgba(251,191,36,.15); }
+        [data-theme="dark"] .pg-cell.pg-today-col.pg-empty { background:rgba(251,191,36,.22); }
+        [data-theme="dark"] .pg-cell.pg-today-col.pg-repos { background:rgba(251,191,36,.15); }
 
         .pg-cell-text { font-size:11px; font-weight:700; letter-spacing:-.2px; text-align:center; line-height:1.3; }
 
         @media(max-width:1200px) {
-          .pg-grid { grid-template-columns:minmax(120px,auto) repeat(7,1fr); gap:3px; }
+          .pg-grid { grid-template-columns:minmax(120px,auto) repeat(7,1fr); gap:2px 0; }
           .pg-cell { height:36px; border-radius:8px; }
           .pg-cell-text { font-size:10px; }
           .pg-driver { font-size:11px; }
@@ -572,7 +577,7 @@ const PlanningPage = {
         }
         @media(max-width:768px) {
           .pg-card { padding:12px 10px !important; }
-          .pg-grid { grid-template-columns:70px repeat(7,1fr); gap:2px; min-width:420px; }
+          .pg-grid { grid-template-columns:70px repeat(7,1fr); gap:2px 0; min-width:420px; }
           .pg-head { font-size:10px; padding:6px 0 4px; letter-spacing:.3px; }
           .pg-head .pg-daynum { font-size:15px; margin-top:1px; }
           .pg-cell { height:30px; border-radius:7px; }
@@ -627,9 +632,18 @@ const PlanningPage = {
                 ? ' <span style="font-size:9px;padding:1px 5px;border-radius:6px;background:rgba(100,116,139,.1);color:#64748b;font-weight:600;">Repos</span>'
                 : '';
 
+            // Vérifier si le chauffeur a au moins un retard de versement cette semaine
+            const hasRetard = days.some(d => {
+              if (d.date >= todayStr) return false;
+              const sh = this._getDriverShiftsForDate(ch.id, d.date);
+              if (sh.length === 0) return false;
+              return !versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
+            });
+            const nameColor = hasRetard ? 'color:#ef4444;' : '';
+
             const plaque2 = (ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '') || chPlaqueMap[ch.id] || '';
-            let html = `<a href="#/chauffeurs/${ch.id}" class="pg-driver${rowClass}" title="${ch.prenom} ${ch.nom}${plaque2 ? ' — ' + plaque2 : ''}" style="${isSuspendu ? 'opacity:.5;' : ''}animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">
-              ${avatarHtml}<div style="display:flex;flex-direction:column;line-height:1.2;"><span>${ch.prenom} ${ch.nom}${statutBadge}</span>${plaque2 ? `<span style="font-size:9px;color:var(--text-muted);font-weight:400;">${plaque2}</span>` : ''}</div>
+            let html = `<a href="#/chauffeurs/${ch.id}" class="pg-driver${rowClass}" title="${ch.prenom} ${ch.nom}${plaque2 ? ' — ' + plaque2 : ''}${hasRetard ? ' — Versement(s) en retard' : ''}" style="${isSuspendu ? 'opacity:.5;' : ''}${nameColor}animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;">
+              ${avatarHtml}<div style="display:flex;flex-direction:column;line-height:1.2;"><span>${ch.prenom} ${ch.nom}${statutBadge}</span>${plaque2 ? `<span style="font-size:9px;color:${hasRetard ? '#ef4444' : 'var(--text-muted)'};font-weight:400;">${plaque2}</span>` : ''}</div>
             </a>`;
 
             html += days.map((d, ci) => {
@@ -658,9 +672,8 @@ const PlanningPage = {
                 const timeShort = this._getShiftTimeShort(s);
                 const isPast = d.date < todayStr;
                 const hasVersement = isPast && versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
-                const retardIcon = isPast && !hasVersement ? ' <iconify-icon icon="solar:danger-triangle-bold" style="font-size:12px;color:#ef4444;" title="Versement en retard"></iconify-icon>' : '';
-                return `<div class="pg-cell ${typeClass}${rowClass}${todayCol}" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="${anim}" title="${this._getShiftTimeFull(s)} (${this._getShiftDuration(s)})${isPast && !hasVersement ? ' — ⚠️ Versement en retard' : ''}" onclick="PlanningPage._editShift('${s.id}')">
-                  <span class="pg-cell-text">${timeShort}</span>${retardIcon}
+                return `<div class="pg-cell ${typeClass}${rowClass}${todayCol}" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="${anim}" title="${this._getShiftTimeFull(s)} (${this._getShiftDuration(s)})${isPast && !hasVersement ? ' — Versement en retard' : ''}" onclick="PlanningPage._editShift('${s.id}')">
+                  <span class="pg-cell-text">${timeShort}</span>
                 </div>`;
               }
 
