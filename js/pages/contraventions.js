@@ -520,71 +520,115 @@ const ContraventionsPage = {
       { value: 'autre', label: 'Autre' }
     ];
 
-    const inputStyle = 'width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-primary);color:var(--text-primary);';
-    const labelStyle = 'display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;';
+    const inputStyle = 'width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:10px;font-size:13px;background:var(--bg-primary);color:var(--text-primary);transition:border-color .2s,box-shadow .2s;outline:none;';
+    const labelStyle = 'display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;';
+    const sectionStyle = 'background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;margin-top:14px;';
+    const sectionTitleStyle = 'display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;';
+
+    const statutColor = c.statut === 'payee' ? '#10b981' : c.statut === 'contestee' ? '#f59e0b' : '#ef4444';
+    const statutLabel = c.statut === 'payee' ? 'Payée' : c.statut === 'contestee' ? 'Contestée' : 'Impayée';
 
     Modal.form(
-      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;"></iconify-icon> Modifier contravention',
+      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;font-size:20px;"></iconify-icon> Modifier contravention',
       `<form id="form-contravention-edit">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div>
-              <label style="${labelStyle}">Chauffeur <span style="color:#ef4444;">*</span></label>
-              <select name="chauffeurId" style="${inputStyle}">
-                ${chauffeurs.map(ch => `<option value="${ch.id}" ${ch.id === c.chauffeurId ? 'selected' : ''}>${ch.prenom} ${ch.nom}</option>`).join('')}
-              </select>
+          <!-- Bandeau statut -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;background:${statutColor}12;border:1px solid ${statutColor}30;margin-bottom:4px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:${statutColor};"></div>
+              <span style="font-size:13px;font-weight:600;color:${statutColor};">${statutLabel}</span>
             </div>
-            <div>
-              <label style="${labelStyle}">Véhicule</label>
-              <select name="vehiculeId" style="${inputStyle}">
-                <option value="">— Aucun —</option>
-                ${vehicules.map(v => `<option value="${v.id}" ${v.id === c.vehiculeId ? 'selected' : ''}>${v.immatriculation || ''} ${v.marque || ''} ${v.modele || ''}</option>`).join('')}
-              </select>
+            <span style="font-size:18px;font-weight:700;color:var(--text-primary);">${Utils.formatMoney ? Utils.formatMoney(c.montant || 0) : (c.montant || 0).toLocaleString()} FCFA</span>
+          </div>
+
+          <!-- Section : Assignation -->
+          <div style="${sectionStyle}">
+            <div style="${sectionTitleStyle}">
+              <iconify-icon icon="solar:user-bold-duotone" style="color:#3b82f6;font-size:15px;"></iconify-icon> Assignation
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div>
+                <label style="${labelStyle}"><iconify-icon icon="solar:user-bold" style="font-size:13px;"></iconify-icon> Chauffeur <span style="color:#ef4444;">*</span></label>
+                <select name="chauffeurId" style="${inputStyle}">
+                  ${chauffeurs.map(ch => `<option value="${ch.id}" ${ch.id === c.chauffeurId ? 'selected' : ''}>${ch.prenom} ${ch.nom}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label style="${labelStyle}"><iconify-icon icon="solar:wheel-bold" style="font-size:13px;"></iconify-icon> Véhicule</label>
+                <select name="vehiculeId" style="${inputStyle}">
+                  <option value="">— Aucun —</option>
+                  ${vehicules.map(v => `<option value="${v.id}" ${v.id === c.vehiculeId ? 'selected' : ''}>${v.immatriculation || ''} ${v.marque || ''} ${v.modele || ''}</option>`).join('')}
+                </select>
+              </div>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
-            <div>
-              <label style="${labelStyle}">Date <span style="color:#ef4444;">*</span></label>
-              <input type="date" name="date" value="${c.date || ''}" style="${inputStyle}">
+
+          <!-- Section : Infraction -->
+          <div style="${sectionStyle}">
+            <div style="${sectionTitleStyle}">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f59e0b;font-size:15px;"></iconify-icon> Infraction
             </div>
-            <div>
-              <label style="${labelStyle}">Type</label>
-              <select name="type" style="${inputStyle}">
-                ${typeOptions.map(t => `<option value="${t.value}" ${t.value === c.type ? 'selected' : ''}>${t.label}</option>`).join('')}
-              </select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div>
+                <label style="${labelStyle}">Date <span style="color:#ef4444;">*</span></label>
+                <input type="date" name="date" value="${c.date || ''}" style="${inputStyle}">
+              </div>
+              <div>
+                <label style="${labelStyle}">Type</label>
+                <select name="type" style="${inputStyle}">
+                  ${typeOptions.map(t => `<option value="${t.value}" ${t.value === c.type ? 'selected' : ''}>${t.label}</option>`).join('')}
+                </select>
+              </div>
             </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
-            <div>
-              <label style="${labelStyle}">Montant (FCFA) <span style="color:#ef4444;">*</span></label>
-              <input type="number" name="montant" value="${c.montant || 0}" min="1" style="${inputStyle}">
-            </div>
-            <div>
-              <label style="${labelStyle}">Statut</label>
-              <select name="statut" style="${inputStyle}">
-                <option value="impayee" ${c.statut === 'impayee' ? 'selected' : ''}>Impayée</option>
-                <option value="payee" ${c.statut === 'payee' ? 'selected' : ''}>Payée</option>
-                <option value="contestee" ${c.statut === 'contestee' ? 'selected' : ''}>Contestée</option>
-              </select>
+            <div style="margin-top:12px;">
+              <label style="${labelStyle}"><iconify-icon icon="solar:map-point-bold" style="font-size:13px;"></iconify-icon> Lieu</label>
+              <input type="text" name="lieu" value="${c.lieu || ''}" placeholder="Lieu de l'infraction" style="${inputStyle}">
             </div>
           </div>
-          <div style="margin-top:12px;">
-            <label style="${labelStyle}">Lieu</label>
-            <input type="text" name="lieu" value="${c.lieu || ''}" placeholder="Lieu de l'infraction" style="${inputStyle}">
+
+          <!-- Section : Financier -->
+          <div style="${sectionStyle}">
+            <div style="${sectionTitleStyle}">
+              <iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#10b981;font-size:15px;"></iconify-icon> Financier
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div>
+                <label style="${labelStyle}">Montant (FCFA) <span style="color:#ef4444;">*</span></label>
+                <input type="number" name="montant" value="${c.montant || 0}" min="1" style="${inputStyle}">
+              </div>
+              <div>
+                <label style="${labelStyle}">Statut</label>
+                <select name="statut" style="${inputStyle}" onchange="this.closest('form').querySelector('.statut-indicator').style.background=this.value==='payee'?'#10b98112':this.value==='contestee'?'#f59e0b12':'#ef444412'">
+                  <option value="impayee" ${c.statut === 'impayee' ? 'selected' : ''}>Impayée</option>
+                  <option value="payee" ${c.statut === 'payee' ? 'selected' : ''}>Payée</option>
+                  <option value="contestee" ${c.statut === 'contestee' ? 'selected' : ''}>Contestée</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div style="margin-top:12px;">
-            <label style="${labelStyle}">Description</label>
-            <textarea name="description" rows="2" placeholder="Détails de la contravention..." style="${inputStyle}resize:vertical;">${c.description || ''}</textarea>
-          </div>
-          <div style="margin-top:12px;">
-            <label style="${labelStyle}">Commentaire admin</label>
-            <textarea name="commentaire" rows="2" placeholder="Note interne..." style="${inputStyle}resize:vertical;">${c.commentaire || ''}</textarea>
+
+          <!-- Section : Notes -->
+          <div style="${sectionStyle}">
+            <div style="${sectionTitleStyle}">
+              <iconify-icon icon="solar:document-text-bold-duotone" style="color:#8b5cf6;font-size:15px;"></iconify-icon> Notes
+            </div>
+            <div>
+              <label style="${labelStyle}">Description</label>
+              <textarea name="description" rows="2" placeholder="Détails de la contravention..." style="${inputStyle}resize:vertical;">${c.description || ''}</textarea>
+            </div>
+            <div style="margin-top:12px;">
+              <label style="${labelStyle}">Commentaire admin</label>
+              <textarea name="commentaire" rows="2" placeholder="Note interne..." style="${inputStyle}resize:vertical;">${c.commentaire || ''}</textarea>
+            </div>
           </div>
           ${c.motifContestation ? `
-          <div style="margin-top:12px;">
-            <label style="${labelStyle}">Motif de contestation (chauffeur)</label>
-            <div style="padding:10px 12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;font-size:13px;color:#92400e;">${c.motifContestation}</div>
+          <div style="margin-top:14px;padding:12px 14px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:12px;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;">
+              <iconify-icon icon="solar:chat-round-warning-bold-duotone" style="font-size:15px;color:#f59e0b;"></iconify-icon> Contestation chauffeur
+            </div>
+            <div style="font-size:13px;color:#92400e;line-height:1.5;">${c.motifContestation}</div>
           </div>
           ` : ''}
+          <div class="statut-indicator" style="display:none;"></div>
         </form>`,
       () => this._saveEdit(id)
     );
