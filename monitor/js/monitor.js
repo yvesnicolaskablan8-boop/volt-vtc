@@ -424,6 +424,24 @@
         return dd.getMonth() === prevMonth && dd.getFullYear() === prevYear;
       });
       const prevDepensesMois = prevMonthDep.reduce((s, d) => s + (d.montant || 0), 0);
+
+      // Taux de recouvrement mois précédent
+      const prevTotalVerse = prevMonthVersements.reduce((s, v) => s + (v.montantVerse || 0), 0);
+      const prevUnpaid = versements.filter(v => {
+        if (!v.date || v.statut === 'supprime') return false;
+        const d = new Date(v.date);
+        return d.getMonth() === prevMonth && d.getFullYear() === prevYear && v.traitementManquant === 'dette' && v.manquant > 0;
+      }).reduce((s, v) => s + (v.manquant || 0), 0);
+      const prevTotalAttendu = prevUnpaid + prevTotalVerse;
+      const prevTauxRecouvrement = prevTotalAttendu > 0 ? Math.round((prevTotalVerse / prevTotalAttendu) * 100) : 100;
+
+      // Dettes mois précédent (versements du mois précédent marqués en dette)
+      const prevDettes = versements.filter(v => {
+        if (!v.date) return false;
+        const d = new Date(v.date);
+        return d.getMonth() === prevMonth && d.getFullYear() === prevYear && v.traitementManquant === 'dette' && v.manquant > 0;
+      }).reduce((s, v) => s + v.manquant, 0);
+
       function _evo(cur, prev) {
         if (!prev || prev === 0) return cur > 0 ? { pct: 100, dir: 'up' } : { pct: 0, dir: 'stable' };
         var p = Math.round(((cur - prev) / prev) * 100);
@@ -449,8 +467,8 @@
         totalDepensesMois, nbDepensesMois, depensesDetail,
         evoCaMois: _evo(caMois, prevCaMois),
         evoDepenses: _evo(totalDepensesMois, prevDepensesMois),
-        evoRecouv: _evo(tauxRecouvrement, 0),
-        evoDettes: _evo(totalDettes, 0)
+        evoRecouv: _evo(tauxRecouvrement, prevTauxRecouvrement),
+        evoDettes: _evo(totalDettes, prevDettes)
       };
     }
   };
@@ -544,14 +562,14 @@
 
           <div class="kpi-card ${tauxColor} clickable" onclick="window.__kpiDetail('recouvrement')">
             <div class="kpi-icon"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value">${k.tauxRecouvrement}%</div>
+            <div class="kpi-value">${k.tauxRecouvrement}%${evoHtml(k.evoRecouv, false)}</div>
             <div class="kpi-label">Recouvrement mois</div>
             <div class="kpi-sub">Verse <span class="highlight green">${fmtCurrency(k.caMois)}</span>${evoHtml(k.evoCaMois, false)}</div>
           </div>
 
           <div class="kpi-card ${detteColor} clickable" onclick="window.__kpiDetail('dette')">
             <div class="kpi-icon"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value">${fmtCurrency(k.totalDettes)}</div>
+            <div class="kpi-value">${fmtCurrency(k.totalDettes)}${evoHtml(k.evoDettes, true)}</div>
             <div class="kpi-label">Dette totale</div>
             <div class="kpi-sub">${k.nbDetteDrivers} chauffeur${k.nbDetteDrivers > 1 ? 's' : ''}</div>
           </div>

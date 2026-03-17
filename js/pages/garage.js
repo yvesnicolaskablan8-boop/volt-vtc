@@ -97,11 +97,39 @@ const GaragePage = {
     const vehicules = Store.get('vehicules').filter(v => v.statut === 'en_service');
     const chauffeurs = Store.get('chauffeurs');
     const allMaintenances = [];
+    const gpsAll = Store.get('gps') || [];
+    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    // Cache kmParJour par chauffeur
+    const kmParJourCache = {};
     vehicules.forEach(v => {
       if (!v.maintenancesPlanifiees || v.maintenancesPlanifiees.length === 0) return;
       const chauffeur = chauffeurs.find(c => c.vehiculeAssigne === v.id);
+      // Calculer kmParJour pour ce véhicule via GPS du chauffeur assigné
+      let kmParJour = 0;
+      if (chauffeur) {
+        if (kmParJourCache[chauffeur.id] !== undefined) {
+          kmParJour = kmParJourCache[chauffeur.id];
+        } else {
+          const gps30 = gpsAll.filter(g => g.chauffeurId === chauffeur.id && g.date >= thirtyDaysAgoStr);
+          let totalKm = 0, activeDays = 0;
+          gps30.forEach(g => { const d = g.evenements ? (g.evenements.distanceParcourue || 0) : 0; if (d > 0) { totalKm += d; activeDays++; } });
+          kmParJour = activeDays > 0 ? Math.round(totalKm / activeDays) : 0;
+          kmParJourCache[chauffeur.id] = kmParJour;
+        }
+      }
       v.maintenancesPlanifiees.forEach(m => {
-        allMaintenances.push({ ...m, vehiculeId: v.id, vehiculeLabel: `${v.marque} ${v.modele}`, immatriculation: v.immatriculation, kilometrage: v.kilometrage, chauffeurNom: chauffeur ? `${chauffeur.prenom} ${chauffeur.nom}` : null, chauffeurId: chauffeur ? chauffeur.id : null });
+        // Calculer prédiction
+        let prediction = null;
+        if (m.prochainKm && v.kilometrage && kmParJour > 0) {
+          const kmRestant = Math.max(0, m.prochainKm - v.kilometrage);
+          const joursEstimesKm = Math.round(kmRestant / kmParJour);
+          prediction = { joursEstimes: joursEstimesKm, kmRestant };
+        } else if (m.prochaineDate) {
+          const joursDate = Math.ceil((new Date(m.prochaineDate) - new Date()) / 86400000);
+          prediction = { joursEstimes: joursDate, kmRestant: m.prochainKm && v.kilometrage ? Math.max(0, m.prochainKm - v.kilometrage) : null };
+        }
+        allMaintenances.push({ ...m, vehiculeId: v.id, vehiculeLabel: `${v.marque} ${v.modele}`, immatriculation: v.immatriculation, kilometrage: v.kilometrage, chauffeurNom: chauffeur ? `${chauffeur.prenom} ${chauffeur.nom}` : null, chauffeurId: chauffeur ? chauffeur.id : null, prediction });
       });
     });
     const ordre = { en_retard: 0, urgent: 1, a_venir: 2, terminee: 3 };
@@ -158,6 +186,7 @@ const GaragePage = {
           { label:'V\u00e9hicule', key:'vehiculeLabel', render:(m) => `<span style="font-weight:500;">${m.vehiculeLabel}</span><br><span style="font-size:var(--font-size-xs);color:var(--text-muted);">${m.immatriculation}</span>` },
           { label:'Chauffeur', key:'chauffeurNom', render:(m) => m.chauffeurNom ? `<a href="#/chauffeurs/${m.chauffeurId}" style="color:var(--pilote-blue);text-decoration:none;">${m.chauffeurNom}</a>` : '<span style="color:var(--text-muted);font-style:italic;">-</span>' },
           { label:'\u00c9ch\u00e9ance', key:'prochaineDate', render:(m) => { let h=''; if(m.prochaineDate){ const j=Math.ceil((new Date(m.prochaineDate)-new Date())/86400000); const c=j<0?'#ef4444':j<=7?'#f59e0b':'var(--text-primary)'; h+=`<span style="color:${c};font-weight:500;">${Utils.formatDate(m.prochaineDate)}</span>`; if(j<0)h+=`<br><span style="font-size:var(--font-size-xs);color:#ef4444;font-weight:600;">${Math.abs(j)}j retard</span>`; else if(j<=7)h+=`<br><span style="font-size:var(--font-size-xs);color:#f59e0b;">dans ${j}j</span>`; } return h||'-'; } },
+          { label:'Pr\u00e9diction', key:'prediction', render:(m) => { if(!m.prediction||m.prediction.joursEstimes==null) return '<span style="color:var(--text-muted)">-</span>'; const j=m.prediction.joursEstimes; const c=j<0?'#ef4444':j<7?'#ef4444':j<30?'#f59e0b':'#22c55e'; const km=m.prediction.kmRestant?` (${m.prediction.kmRestant.toLocaleString('fr-FR')} km)`:''; return j<0?`<span style="color:#ef4444;font-weight:600;">D\u00e9pass\u00e9${km}</span>`:`<span style="color:${c};font-weight:600;">~${j}j${km}</span>`; } },
           { label:'Co\u00fbt', key:'coutEstime', render:(m) => m.coutEstime ? `${m.coutEstime.toLocaleString('fr-FR')} F` : '-', value:(m) => m.coutEstime||0 }
         ],
         onRowClick:(id) => { const m=maintenances.find(x=>x.id===id); if(m) Router.navigate(`/vehicules/${m.vehiculeId}`); },

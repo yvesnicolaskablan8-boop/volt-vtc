@@ -373,6 +373,26 @@ async function checkMaintenancesPlanifiees(chauffeurs, canal) {
           }
         }
 
+        // Escalade predictive : si a_venir mais prediction < 14 jours, passer en urgent
+        if (!isEnRetard && !isUrgent && m.prochainKm && vehicule.kilometrage && vehicule.chauffeurAssigne) {
+          if (!vehicule._kmParJour) {
+            // Calculer kmParJour une seule fois par vehicule (cache sur l'objet)
+            const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const gpsRecent = await Gps.find({ chauffeurId: vehicule.chauffeurAssigne, date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } }).lean();
+            let totalKm = 0, activeDays = 0;
+            for (const g of gpsRecent) { const dist = g.evenements ? (g.evenements.distanceParcourue || 0) : 0; if (dist > 0) { totalKm += dist; activeDays++; } }
+            vehicule._kmParJour = activeDays > 0 ? Math.round(totalKm / activeDays) : 0;
+          }
+          if (vehicule._kmParJour > 0) {
+            const kmRestant = m.prochainKm - vehicule.kilometrage;
+            const joursEstimes = kmRestant > 0 ? Math.round(kmRestant / vehicule._kmParJour) : 0;
+            if (joursEstimes < 14) {
+              isUrgent = true;
+              detail = detail ? detail + ` / prediction ~${joursEstimes}j` : `prediction ~${joursEstimes}j`;
+            }
+          }
+        }
+
         // Mettre a jour le statut
         const newStatut = isEnRetard ? 'en_retard' : isUrgent ? 'urgent' : 'a_venir';
         if (m.statut !== newStatut) {

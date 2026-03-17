@@ -368,8 +368,12 @@ const ChauffeursPage = {
                 <div>
                   <div style="font-size:var(--font-size-sm); font-weight:500;">${doc.nom}</div>
                   <div style="font-size:var(--font-size-xs); color:var(--text-muted);">Expire : ${Utils.formatDate(doc.dateExpiration)}</div>
+                  ${doc.dateUpload ? `<div style="font-size:10px;color:#22c55e;font-weight:600;margin-top:2px;display:flex;align-items:center;gap:3px"><iconify-icon icon="solar:check-circle-bold" style="font-size:11px"></iconify-icon> Fichier televerse</div>` : ''}
                 </div>
-                ${Utils.statusBadge(doc.statut)}
+                <div style="display:flex;align-items:center;gap:8px;">
+                  ${doc.dateUpload && doc.fichierData ? `<button onclick="ChauffeurPage._viewDocument('${doc.type}','${(doc.fichierType || '').replace(/'/g, '')}','${c.id}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-primary);cursor:pointer;font-size:11px;font-weight:600;color:#8b5cf6;display:flex;align-items:center;gap:4px"><iconify-icon icon="solar:eye-bold-duotone" style="font-size:13px"></iconify-icon> Voir</button>` : ''}
+                  ${Utils.statusBadge(doc.statut)}
+                </div>
               </div>
             `).join('')}
           </div>
@@ -1242,6 +1246,25 @@ const ChauffeursPage = {
         Router.navigate('/chauffeurs');
       }
     );
+  },
+
+  _viewDocument(type, mimeType, chauffeurId) {
+    const chauffeur = Store.findById('chauffeurs', chauffeurId);
+    if (!chauffeur) return;
+    const doc = (chauffeur.documents || []).find(d => d.type === type);
+    if (!doc || !doc.fichierData) { Toast.show('Fichier introuvable', 'error'); return; }
+    const byteChars = atob(doc.fichierData);
+    const byteArray = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+    const blob = new Blob([byteArray], { type: doc.fichierType || 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    if (doc.fichierType && doc.fichierType.startsWith('image/')) {
+      Modal.open(`<iconify-icon icon="solar:eye-bold-duotone" style="color:#8b5cf6"></iconify-icon> ${doc.nom}`,
+        `<div style="text-align:center"><img src="${url}" style="max-width:100%;max-height:70vh;border-radius:8px;object-fit:contain;" onload="URL.revokeObjectURL(this.src)"><div style="margin-top:8px;font-size:12px;color:var(--text-muted)">${doc.fichierNom || type} — televerse le ${Utils.formatDate(doc.dateUpload)}</div></div>`);
+    } else {
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
   },
 
   // ======== QUICK VEHICLE CREATION ========

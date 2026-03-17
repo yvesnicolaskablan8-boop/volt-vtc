@@ -50,7 +50,7 @@ const DocumentsPage = {
       <!-- All documents -->
       <div id="docs-list">
         <h3 style="font-weight:800;margin-bottom:1rem;font-size:0.95rem">Mes Documents</h3>
-        <div style="display:flex;flex-direction:column;gap:12px">
+        <div id="docs-cards" style="display:flex;flex-direction:column;gap:12px">
           ${docs.length > 0
             ? docs.map(d => this._renderDoc(d)).join('')
             : '<div style="text-align:center;padding:2rem;color:#94a3b8;font-size:0.875rem"><iconify-icon icon="solar:document-bold-duotone" style="font-size:2rem;display:block;margin-bottom:8px"></iconify-icon>Aucun document enregistre</div>'
@@ -114,7 +114,7 @@ const DocumentsPage = {
             <div style="width:32px;height:32px;border-radius:999px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#64748b">${(chauffeur.prenom || 'C')[0]}${(chauffeur.nom || 'H')[0]}</div>
             <span style="font-size:0.75rem;font-weight:500">${chauffeur.prenom || ''} ${chauffeur.nom || ''}</span>
           </div>
-          <span style="font-size:0.75rem;font-weight:700;color:#3b82f6;cursor:pointer">Renouveler</span>
+          <span style="font-size:0.75rem;font-weight:700;color:#3b82f6;cursor:pointer" onclick="DocumentsPage._uploadDoc('${doc.type}')">Renouveler</span>
         </div>
       </div>
     `;
@@ -140,7 +140,7 @@ const DocumentsPage = {
     const hasFile = !!doc.dateUpload;
 
     return `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem;border-radius:1rem;background:white;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+      <div class="doc-card" data-statut="${doc.statut}" style="display:flex;align-items:center;justify-content:space-between;padding:1rem;border-radius:1rem;background:var(--bg-secondary, white);border:1px solid var(--border-color, #e2e8f0);box-shadow:0 1px 3px rgba(0,0,0,0.04)">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="width:40px;height:40px;border-radius:12px;background:${color}15;color:${color};display:flex;align-items:center;justify-content:center">
             <iconify-icon icon="solar:document-bold-duotone" style="font-size:1.25rem"></iconify-icon>
@@ -152,6 +152,9 @@ const DocumentsPage = {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
+          ${hasFile ? `<button onclick="DocumentsPage._viewDoc('${doc.type}')" style="width:36px;height:36px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:center;justify-content:center;cursor:pointer" title="Voir le fichier">
+            <iconify-icon icon="solar:eye-bold-duotone" style="font-size:1.1rem;color:#8b5cf6"></iconify-icon>
+          </button>` : ''}
           <button onclick="DocumentsPage._uploadDoc('${doc.type}')" style="width:36px;height:36px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:center;justify-content:center;cursor:pointer" title="Televerser un fichier">
             <iconify-icon icon="solar:camera-bold-duotone" style="font-size:1.1rem;color:#3b82f6"></iconify-icon>
           </button>
@@ -207,6 +210,55 @@ const DocumentsPage = {
         btn.style.color = '#64748b';
       }
     });
+    // Filter document cards
+    document.querySelectorAll('.doc-card').forEach(card => {
+      const statut = card.dataset.statut;
+      if (filter === 'tous') {
+        card.style.display = '';
+      } else if (filter === 'critique') {
+        card.style.display = (statut === 'expire' || statut === 'a_renouveler') ? '' : 'none';
+      } else if (filter === 'valide') {
+        card.style.display = (statut === 'valide') ? '' : 'none';
+      }
+    });
+  },
+
+  async _viewDoc(type) {
+    try {
+      if (typeof DriverToast !== 'undefined') DriverToast.show('Chargement...', 'info');
+      const res = await DriverStore.getDocumentFile(type);
+      if (!res || !res.fichierData) {
+        if (typeof DriverToast !== 'undefined') DriverToast.show('Fichier introuvable', 'error');
+        return;
+      }
+      const byteChars = atob(res.fichierData);
+      const byteArray = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([byteArray], { type: res.fichierType || 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+
+      if (res.fichierType && res.fichierType.startsWith('image/')) {
+        // Show image in overlay modal
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        overlay.innerHTML = `
+          <div style="position:relative;max-width:90vw;max-height:90vh;">
+            <button onclick="this.closest('div[style*=fixed]').remove()" style="position:absolute;top:-12px;right:-12px;width:32px;height:32px;border-radius:50%;background:#ef4444;color:white;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1">&times;</button>
+            <img src="${url}" style="max-width:90vw;max-height:85vh;border-radius:12px;object-fit:contain;" onload="URL.revokeObjectURL(this.src)">
+            <div style="text-align:center;margin-top:8px;color:white;font-size:0.75rem;font-weight:600">${res.fichierNom || type}</div>
+          </div>
+        `;
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+        document.body.appendChild(overlay);
+      } else {
+        // PDF or other: open in new tab
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      }
+    } catch (err) {
+      console.error('View doc error:', err);
+      if (typeof DriverToast !== 'undefined') DriverToast.show('Erreur lors du chargement', 'error');
+    }
   },
 
   destroy() {}
