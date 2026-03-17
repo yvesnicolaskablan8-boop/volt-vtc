@@ -461,63 +461,104 @@ const PlanningPage = {
     chauffeurs.forEach(ch => {
       let total = 0;
       days.forEach(d => {
-        const shifts = this._getDriverShiftsForDate(ch.id, d.date);
-        shifts.forEach(s => {
-          const dur = this._getShiftDuration(s);
-          total += parseInt(dur) || 0;
+        this._getDriverShiftsForDate(ch.id, d.date).forEach(s => {
+          total += parseInt(this._getShiftDuration(s)) || 0;
         });
       });
       weeklyHours[ch.id] = total;
     });
 
+    // Shift type label for sub-line
+    const shiftLabel = (s) => {
+      if (s.typeCreneaux === 'custom' || !s.typeCreneaux) return 'Personnalisé';
+      return { matin: 'Matin', apres_midi: 'Après-midi', journee: 'Journée', nuit: 'Nuit' }[s.typeCreneaux] || s.typeCreneaux;
+    };
+
     return `
       <style>
-        .pgt { width:100%; border-collapse:separate; border-spacing:0; }
-        .pgt th { padding:12px 6px; text-align:center; font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; vertical-align:bottom; border-bottom:1px solid var(--border-color); }
-        .pgt th.pgt-today { color:var(--text-primary); font-weight:700; }
-        .pgt td { padding:6px 4px; vertical-align:middle; border-bottom:1px solid rgba(0,0,0,.04); }
-        [data-theme="dark"] .pgt td { border-bottom-color:rgba(255,255,255,.04); }
-        .pgt tr:last-child td { border-bottom:none; }
-        .pgt-driver { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; padding:4px 0; }
+        .pgt { width:100%; border-collapse:collapse; }
+        .pgt th { padding:10px 8px 8px; text-align:center; font-size:13px; font-weight:500; color:var(--text-muted); vertical-align:bottom; }
+        .pgt thead th { border-bottom:2px solid var(--border-color); }
+        .pgt thead th.pgt-today { border-bottom:3px solid #3b82f6; }
+        .pgt thead th .pgt-day { font-size:12px; color:var(--text-muted); font-weight:400; }
+        .pgt thead th .pgt-num { font-size:16px; font-weight:700; color:var(--text-secondary); }
+        .pgt thead th.pgt-today .pgt-day, .pgt thead th.pgt-today .pgt-num { color:var(--text-primary); font-weight:700; }
+        .pgt thead th .pgt-month { font-size:11px; color:var(--text-muted); font-weight:400; }
+        .pgt td { padding:5px 6px; vertical-align:middle; border-right:1px solid var(--border-color); }
+        .pgt td:last-child { border-right:none; }
+        .pgt td:first-child { border-right:1px solid var(--border-color); }
+        .pgt tbody tr { border-bottom:1px solid rgba(0,0,0,.04); }
+        [data-theme="dark"] .pgt tbody tr { border-bottom-color:rgba(255,255,255,.06); }
+        .pgt tbody tr:last-child { border-bottom:none; }
+
+        .pgt-driver { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; padding:2px 0; }
         .pgt-driver:hover { opacity:.8; }
         .pgt-avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; flex-shrink:0; object-fit:cover; }
-        .pgt-name { font-size:13px; font-weight:600; color:var(--text-primary); line-height:1.2; }
-        .pgt-hours { font-size:11px; color:var(--text-muted); font-weight:500; }
-        .pgt-cell { display:flex; align-items:center; justify-content:center; min-height:42px; border-radius:10px; cursor:pointer; transition:background .15s; }
-        .pgt-cell:hover { background:rgba(0,0,0,.03); }
-        [data-theme="dark"] .pgt-cell:hover { background:rgba(255,255,255,.05); }
-        .pgt-shift { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:10px; background:var(--bg-secondary); border:1px solid var(--border-color); width:100%; cursor:pointer; transition:all .15s; }
-        .pgt-shift:hover { box-shadow:0 2px 8px rgba(0,0,0,.08); transform:translateY(-1px); }
-        .pgt-shift-time { font-size:12px; font-weight:600; color:var(--text-primary); white-space:nowrap; }
-        .pgt-shift-dur { font-size:11px; font-weight:500; color:var(--text-muted); white-space:nowrap; }
-        .pgt-shift-colored { border-color:transparent; }
-        .pgt-absence-cell { display:flex; align-items:center; justify-content:center; padding:8px 6px; border-radius:10px; width:100%; font-size:11px; font-weight:600; }
-        .pgt-empty { display:flex; align-items:center; justify-content:center; min-height:42px; border-radius:10px; }
-        .pgt-empty:hover .pgt-add-icon { opacity:1; }
-        .pgt-add-icon { opacity:0; transition:opacity .2s; font-size:16px; color:var(--text-muted); }
-        .pgt-today-col { background:rgba(99,102,241,.06); }
-        [data-theme="dark"] .pgt-today-col { background:rgba(99,102,241,.1); }
+        .pgt-info { min-width:0; }
+        .pgt-name { font-size:13px; font-weight:600; color:var(--text-primary); line-height:1.3; }
+        .pgt-hours { font-size:12px; color:#f59e0b; font-weight:600; }
+        .pgt-status { font-size:10px; font-weight:600; padding:1px 6px; border-radius:8px; white-space:nowrap; }
+
+        /* Shift cell — left colored border, white bg */
+        .pgt-shift {
+          display:flex; flex-direction:column; gap:1px;
+          padding:7px 10px; border-radius:6px;
+          background:var(--bg-primary); border:1px solid var(--border-color);
+          border-left:4px solid #ccc;
+          cursor:pointer; transition:box-shadow .15s;
+          min-height:44px;
+        }
+        .pgt-shift:hover { box-shadow:0 2px 8px rgba(0,0,0,.1); }
+        .pgt-shift-row1 { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+        .pgt-shift-time { font-size:13px; font-weight:700; color:var(--text-primary); white-space:nowrap; }
+        .pgt-shift-dur { font-size:12px; font-weight:500; color:var(--text-muted); white-space:nowrap; }
+        .pgt-shift-label { font-size:11px; color:var(--text-muted); font-weight:400; margin-top:1px; }
+
+        /* Absence cell */
+        .pgt-abs {
+          display:flex; align-items:center; gap:6px;
+          padding:7px 10px; border-radius:6px;
+          border-left:4px solid #ccc;
+          cursor:pointer; min-height:44px;
+          font-size:12px; font-weight:600;
+        }
+
+        /* Repos cell — gray striped */
+        .pgt-repos {
+          display:flex; flex-direction:column; align-items:center; justify-content:center;
+          padding:7px 10px; border-radius:6px; min-height:44px;
+          background:repeating-linear-gradient(135deg, var(--bg-tertiary), var(--bg-tertiary) 4px, var(--bg-secondary) 4px, var(--bg-secondary) 8px);
+          border:1px solid var(--border-color); border-left:4px solid #9ca3b8;
+          font-size:11px; font-weight:600; color:var(--text-muted); cursor:pointer;
+        }
+
+        /* Empty cell */
+        .pgt-empty { min-height:44px; cursor:pointer; border-radius:6px; }
+        .pgt-empty:hover { background:rgba(0,0,0,.02); }
+        [data-theme="dark"] .pgt-empty:hover { background:rgba(255,255,255,.03); }
+
         @media(max-width:1200px) {
-          .pgt-shift { padding:6px 6px; gap:4px; }
+          .pgt-shift { padding:5px 6px; }
           .pgt-shift-time { font-size:11px; }
+          .pgt-shift-dur { font-size:10px; }
           .pgt-name { font-size:12px; }
         }
       </style>
 
-      <div class="card" style="padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:16px;">
-        <table class="pgt" style="min-width:800px;">
-          <colgroup>
-            <col style="width:180px;">
-            ${days.map(d => `<col class="${this._isToday(d.date) ? 'pgt-today-col' : ''}">`).join('')}
-          </colgroup>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;">
+        <table class="pgt" style="min-width:900px;">
           <thead>
             <tr>
-              <th style="text-align:left;padding-left:16px;"></th>
+              <th style="text-align:left;padding-left:16px;width:180px;border-right:1px solid var(--border-color);">
+                <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">Chauffeurs</span>
+              </th>
               ${days.map(d => {
                 const isToday = this._isToday(d.date);
-                return `<th class="${isToday ? 'pgt-today' : ''}">
-                  <div style="font-size:11px;font-weight:500;color:${isToday ? 'var(--text-primary)' : 'var(--text-muted)'};">${this._getDayName(d.dayIdx).toUpperCase()}</div>
-                  <div style="font-size:20px;font-weight:800;color:${isToday ? 'var(--text-primary)' : 'var(--text-secondary)'};margin-top:2px;">${d.obj.getDate()}</div>
+                const monthShort = d.obj.toLocaleDateString('fr-FR', { month: 'short' });
+                return `<th class="${isToday ? 'pgt-today' : ''}" style="border-right:1px solid var(--border-color);${days.indexOf(d) === days.length - 1 ? 'border-right:none;' : ''}">
+                  <span class="pgt-day">${this._getDayName(d.dayIdx)}.</span>
+                  <span class="pgt-num"> ${d.obj.getDate()}</span>
+                  <span class="pgt-month"> ${monthShort}</span>
                 </th>`;
               }).join('')}
             </tr>
@@ -530,16 +571,24 @@ const PlanningPage = {
                 ? `<img src="${ch.photo}" alt="${initials}" class="pgt-avatar" style="object-fit:cover;">`
                 : `<div class="pgt-avatar" style="background:${avatarColor};">${initials}</div>`;
               const isSuspendu = ch.statut === 'suspendu';
-              const isRepos = ch.statut === 'repos';
+              const isStatutRepos = ch.statut === 'repos';
               const wh = weeklyHours[ch.id] || 0;
+              const statusHtml = isSuspendu
+                ? '<div class="pgt-status" style="background:rgba(239,68,68,.1);color:#ef4444;">Suspendu</div>'
+                : isStatutRepos
+                  ? '<div class="pgt-status" style="background:rgba(100,116,139,.1);color:#64748b;">Repos</div>'
+                  : '';
 
-              return `<tr style="${isSuspendu ? 'opacity:.45;' : ''}">
+              return `<tr style="${isSuspendu ? 'opacity:.5;' : ''}">
                 <td style="padding-left:16px;">
                   <a href="#/chauffeurs/${ch.id}" class="pgt-driver">
                     ${avatarHtml}
-                    <div>
-                      <div class="pgt-name">${ch.prenom} ${ch.nom}${isSuspendu ? ' <span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(239,68,68,.12);color:#ef4444;">Suspendu</span>' : isRepos ? ' <span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(100,116,139,.12);color:#64748b;">Repos</span>' : ''}</div>
+                    <div class="pgt-info">
+                      <div class="pgt-name">${ch.prenom}<br>${ch.nom}</div>
+                    </div>
+                    <div style="margin-left:auto;text-align:right;">
                       <div class="pgt-hours">${wh}h</div>
+                      ${statusHtml}
                     </div>
                   </a>
                 </td>
@@ -548,13 +597,16 @@ const PlanningPage = {
                   const absences = this._getDriverAbsencesForDate(ch.id, d.date);
 
                   if (isSuspendu) {
-                    return `<td><div class="pgt-empty" style="opacity:.3;"><iconify-icon icon="solar:forbidden-circle-bold-duotone" style="font-size:14px;color:#ef4444;"></iconify-icon></div></td>`;
+                    return `<td><div class="pgt-repos planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="background:repeating-linear-gradient(135deg,rgba(239,68,68,.06),rgba(239,68,68,.06) 4px,transparent 4px,transparent 8px);border-left-color:#ef4444;">Suspendu</div></td>`;
                   }
 
                   if (absences.length > 0) {
                     const a = absences[0];
                     const c = this._absenceTypeColor(a.type);
-                    return `<td><div class="pgt-absence-cell" style="background:${c}15;color:${c};border:1px solid ${c}25;" onclick="PlanningPage._viewAbsence('${a.id}')">${this._absenceTypeLabel(a.type)}</div></td>`;
+                    return `<td><div class="pgt-abs" style="background:${c}12;border-left-color:${c};color:${c};" onclick="PlanningPage._viewAbsence('${a.id}')">
+                      <iconify-icon icon="solar:calendar-minimalistic-bold-duotone" style="font-size:14px;"></iconify-icon>
+                      ${this._absenceTypeLabel(a.type)}
+                    </div></td>`;
                   }
 
                   if (shifts.length > 0) {
@@ -562,29 +614,24 @@ const PlanningPage = {
                     const sc = this._getShiftColor(s);
                     const timeFull = this._getShiftTimeFull(s);
                     const dur = this._getShiftDuration(s);
-                    const overrideLabel = s.redevanceOverride ? ` <span style="font-size:9px;color:${sc};opacity:.7;">${Utils.formatCurrency(s.redevanceOverride)}</span>` : '';
-                    // Light colored background for shifts
+                    const label = shiftLabel(s);
+                    const overrideHtml = s.redevanceOverride ? `<span style="font-size:9px;color:var(--text-muted);">${Utils.formatCurrency(s.redevanceOverride)}</span>` : '';
                     return `<td>
-                      <div class="pgt-shift pgt-shift-colored" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="background:${sc}12;border:1px solid ${sc}25;" onclick="PlanningPage._editShift('${s.id}')">
-                        <span class="pgt-shift-time" style="color:${sc};">${timeFull}</span>
-                        <span class="pgt-shift-dur" style="color:${sc};opacity:.6;">${dur}</span>${overrideLabel}
+                      <div class="pgt-shift" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="border-left-color:${sc};" onclick="PlanningPage._editShift('${s.id}')">
+                        <div class="pgt-shift-row1">
+                          <span class="pgt-shift-time">${timeFull}</span>
+                          <span class="pgt-shift-dur">${dur}</span>
+                        </div>
+                        <div class="pgt-shift-label">${label}${overrideHtml ? ' · ' + overrideHtml : ''}</div>
                       </div>
                     </td>`;
                   }
 
-                  if (isRepos) {
-                    return `<td>
-                      <div class="pgt-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')" style="cursor:pointer;">
-                        <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:14px;color:var(--text-muted);opacity:.3;"></iconify-icon>
-                      </div>
-                    </td>`;
+                  if (isStatutRepos) {
+                    return `<td><div class="pgt-repos planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">Repos</div></td>`;
                   }
 
-                  return `<td>
-                    <div class="pgt-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')" style="cursor:pointer;">
-                      <iconify-icon class="pgt-add-icon" icon="solar:add-circle-line-duotone"></iconify-icon>
-                    </div>
-                  </td>`;
+                  return `<td><div class="pgt-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')"></div></td>`;
                 }).join('')}
               </tr>`;
             }).join('')}
