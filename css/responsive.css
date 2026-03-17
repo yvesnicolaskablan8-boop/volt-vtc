@@ -540,6 +540,8 @@
     max-width: 100%;
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     max-height: 60vh;
+    z-index: 9999;
+    background: var(--bg-secondary);
   }
 
   /* === USER DROPDOWN === */

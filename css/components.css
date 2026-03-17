@@ -870,17 +870,15 @@ textarea.form-control {
 
 /* ========== NOTIFICATION DROPDOWN ========== */
 .notif-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+  position: fixed;
+  top: calc(var(--header-height) + 4px);
+  right: 60px;
   width: 360px;
-  background: var(--glass-bg-heavy);
-  backdrop-filter: var(--blur-lg);
-  -webkit-backdrop-filter: var(--blur-lg);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-modal);
-  z-index: 200;
+  z-index: 9999;
   display: none;
 }
 
