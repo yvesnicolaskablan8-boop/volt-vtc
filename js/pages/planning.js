@@ -42,32 +42,36 @@ const PlanningPage = {
   _template() {
     return `
       <div style="max-width:100%;box-sizing:border-box;overflow:hidden;">
-        <!-- Barre compacte : date + recherche + vues + actions -->
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-          <!-- Gauche : date picker + navigation -->
-          <div style="display:flex;align-items:center;gap:8px;">
-            <button class="btn btn-sm btn-secondary" id="btn-prev" style="padding:5px 8px;"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
-            <input type="date" id="planning-date-picker" value="${this._currentWeekStart.toISOString().split('T')[0]}" style="font-size:14px;font-weight:600;padding:6px 10px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;">
-            <button class="btn btn-sm btn-secondary" id="btn-next" style="padding:5px 8px;"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
-            <button class="btn btn-sm btn-secondary" id="btn-today" style="font-size:11px;padding:5px 10px;font-weight:700;">Auj.</button>
-          </div>
-          <!-- Centre : recherche -->
-          <div style="display:flex;align-items:center;gap:4px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:4px 10px;">
-            <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--text-muted);font-size:14px;"></iconify-icon>
-            <input type="text" id="filter-planning-search" placeholder="Rechercher..." value="${this._filterSearch}" style="width:100px;font-size:13px;padding:4px;border:none;background:transparent;color:var(--text-primary);font-weight:500;outline:none;">
-          </div>
-          <!-- Droite : onglets vue + boutons actions -->
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div class="tabs" id="planning-view-tabs" style="margin:0;">
-              <div class="tab active" data-view="week" style="padding:6px 12px;font-size:12px;">Sem.</div>
-              <div class="tab" data-view="month" style="padding:6px 12px;font-size:12px;">Mois</div>
-              <div class="tab" data-view="stats" style="padding:6px 12px;font-size:12px;">Stats</div>
-            </div>
-            <button class="btn btn-sm btn-primary" id="btn-add-shift" style="padding:5px 10px;font-size:11px;"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Cr\u00e9neau</button>
-            <button class="btn btn-sm btn-secondary" id="btn-add-absence" style="padding:5px 10px;font-size:11px;"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Absence</button>
+        <div class="page-header" style="flex-wrap:wrap;">
+          <h1 style="font-size:clamp(1rem,4vw,1.5rem);"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning</h1>
+          <div class="page-actions" style="flex-wrap:wrap;gap:6px;">
+            <button class="btn btn-sm btn-primary" id="btn-add-absence"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Absence</button>
+            <button class="btn btn-sm btn-success" id="btn-add-shift"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Créneau</button>
           </div>
         </div>
-        <h3 id="planning-period-label" style="display:none;"></h3>
+
+        <!-- Navigation & Filtres -->
+        <div class="card planning-nav-card" style="margin-bottom:var(--space-lg);padding:var(--space-sm) var(--space-md);overflow:hidden;max-width:100%;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
+            <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+              <button class="btn btn-sm btn-secondary" id="btn-prev" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
+              <button class="btn btn-sm btn-secondary" id="btn-today" style="font-size:11px;padding:4px 8px;flex-shrink:0;">Auj.</button>
+              <h3 id="planning-period-label" style="margin:0;text-align:center;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;"></h3>
+              <button class="btn btn-sm btn-secondary" id="btn-next" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
+              <div style="display:flex;align-items:center;gap:4px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:2px 6px;">
+                <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:13px;flex-shrink:0;"></iconify-icon>
+                <input type="text" id="filter-planning-search" class="form-control" placeholder="Nom..." value="${this._filterSearch}" style="width:80px;font-size:11px;padding:3px 4px;border:none;background:transparent;font-weight:500;min-width:0;">
+              </div>
+              <div class="tabs" id="planning-view-tabs" style="margin:0;flex-shrink:0;">
+                <div class="tab active" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
+                <div class="tab" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
+                <div class="tab" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Contenu dynamique -->
         <div id="planning-content" style="max-width:100%;box-sizing:border-box;"></div>
@@ -85,25 +89,8 @@ const PlanningPage = {
       this._currentWeekStart.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
       this._currentWeekStart.setHours(0, 0, 0, 0);
       this._currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const dp = document.getElementById('planning-date-picker');
-      if (dp) dp.value = this._currentWeekStart.toISOString().split('T')[0];
       this._renderView();
     });
-
-    // Date picker navigation
-    const datePicker = document.getElementById('planning-date-picker');
-    if (datePicker) {
-      datePicker.addEventListener('change', (e) => {
-        const picked = new Date(e.target.value);
-        if (isNaN(picked)) return;
-        const dow = picked.getDay();
-        this._currentWeekStart = new Date(picked);
-        this._currentWeekStart.setDate(picked.getDate() - (dow === 0 ? 6 : dow - 1));
-        this._currentWeekStart.setHours(0, 0, 0, 0);
-        this._currentMonth = new Date(picked.getFullYear(), picked.getMonth(), 1);
-        this._renderView();
-      });
-    }
 
     document.querySelectorAll('#planning-view-tabs .tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -602,9 +589,9 @@ const PlanningPage = {
               const todayBg = isToday ? 'background:rgba(99,102,241,.08);border-left:2px solid rgba(99,102,241,.2);border-right:2px solid rgba(99,102,241,.2);' : '';
 
               if (isSuspendu) {
-                return `<div class="pg-cell ${rowClass}" style="${todayBg}">
-                  <div style="width:100%;padding:8px 4px;border-radius:10px;text-align:center;background:rgba(239,68,68,.15);border:1.5px solid rgba(239,68,68,.35);font-size:10px;color:#f87171;font-weight:700;">
-                    <iconify-icon icon="solar:forbidden-circle-bold-duotone" style="font-size:16px;"></iconify-icon>
+                return `<div class="pg-cell ${rowClass}" style="${todayBg}opacity:.4;">
+                  <div style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:repeating-linear-gradient(135deg,transparent,transparent 3px,rgba(239,68,68,.06) 3px,rgba(239,68,68,.06) 6px);border:1px dashed rgba(239,68,68,.25);font-size:10px;color:#ef4444;font-weight:600;">
+                    <iconify-icon icon="solar:forbidden-circle-bold-duotone" style="font-size:14px;"></iconify-icon>
                   </div>
                 </div>`;
               }
@@ -620,7 +607,7 @@ const PlanningPage = {
                   ${shifts.map(s => {
                     const sc = this._getShiftColor(s);
                     const overrideLabel = s.redevanceOverride ? `<div style="font-size:8px;opacity:.75;margin-top:1px;">${Utils.formatCurrency(s.redevanceOverride)}</div>` : '';
-                    return `<div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" class="pg-shift" style="background:${sc};color:#fff;border:none;box-shadow:0 2px 8px ${sc}40;font-weight:700;" onclick="PlanningPage._editShift('${s.id}')">
+                    return `<div draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" class="pg-shift" style="background:linear-gradient(135deg,${sc}20,${sc}10);color:${sc};border:1px solid ${sc}35;" onclick="PlanningPage._editShift('${s.id}')">
                       ${this._getShiftTimeShort(s)}${overrideLabel}
                     </div>`;
                   }).join('')}
@@ -628,14 +615,14 @@ const PlanningPage = {
               }
               if (isRepos) {
                 return `<div class="pg-cell ${rowClass}" style="${todayBg}cursor:pointer;" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
-                  <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="width:100%;padding:8px 4px;border-radius:10px;text-align:center;background:rgba(100,116,139,.15);border:1.5px solid rgba(100,116,139,.30);font-size:10px;color:#94a3b8;font-weight:700;">
-                    <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:16px;"></iconify-icon>
+                  <div class="planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="width:100%;padding:6px 4px;border-radius:10px;text-align:center;background:linear-gradient(135deg,rgba(100,116,139,.08),rgba(100,116,139,.04));border:1px dashed rgba(100,116,139,.25);font-size:10px;color:#94a3b8;font-weight:600;">
+                    <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:14px;"></iconify-icon>
                   </div>
                 </div>`;
               }
               return `<div class="pg-cell ${rowClass}" style="${todayBg}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
-                <div class="pg-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="background:rgba(99,102,241,.06);border:1.5px dashed rgba(99,102,241,.20);border-radius:10px;padding:6px 4px;">
-                  <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:14px;color:rgba(99,102,241,.4);"></iconify-icon>
+                <div class="pg-empty planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}">
+                  <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:12px;color:#d1d5db;"></iconify-icon>
                 </div>
               </div>`;
             }).join('');
