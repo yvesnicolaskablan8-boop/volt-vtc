@@ -599,7 +599,7 @@ const PlanningPage = {
               const shifts = this._getDriverShiftsForDate(ch.id, d.date);
               const absences = this._getDriverAbsencesForDate(ch.id, d.date);
               const isToday = this._isToday(d.date);
-              const todayBg = isToday ? 'background:rgba(99,102,241,.08);' : '';
+              const todayBg = isToday ? 'background:rgba(99,102,241,.08);border-left:2px solid rgba(99,102,241,.2);border-right:2px solid rgba(99,102,241,.2);' : '';
 
               if (isSuspendu) {
                 return `<div class="pg-cell ${rowClass}" style="${todayBg}">
@@ -779,7 +779,7 @@ const PlanningPage = {
 
                   if (absences.length > 0) {
                     const a = absences[0];
-                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.08);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
+                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.1);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                       <div style="width:24px;height:24px;border-radius:4px;background:${this._absenceTypeColor(a.type)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._absenceTypeLabel(a.type)}" onclick="PlanningPage._viewAbsence('${a.id}')">
                         ${a.type === 'repos' ? 'R' : a.type === 'conge' ? 'C' : a.type === 'maladie' ? 'M' : a.type === 'formation' ? 'F' : a.type === 'suspension' ? 'S' : 'P'}
                       </div>
@@ -788,14 +788,14 @@ const PlanningPage = {
 
                   if (shifts.length > 0) {
                     const s = shifts[0];
-                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.08);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
+                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.1);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                       <div style="width:24px;height:24px;border-radius:4px;background:${this._getShiftColor(s)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._getShiftTimeLabel(s)}" onclick="PlanningPage._editShift('${s.id}')">
                         ${this._shiftTypeShort(s.typeCreneaux)}
                       </div>
                     </td>`;
                   }
 
-                  return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.08);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
+                  return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.1);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                     <div style="width:24px;height:24px;border-radius:4px;border:1px dashed var(--border-color);margin:auto;opacity:0.3;"></div>
                   </td>`;
                 }).join('')}
