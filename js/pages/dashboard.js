@@ -1301,7 +1301,7 @@ const DashboardPage = {
       const plaque = (dr.vehiculeAssigne ? (vehMap[dr.vehiculeAssigne] || '') : '') || chauffeurPlaqueMap[dr.id] || '';
       const hasRetard = dr.cells.some(c => c.status === 'en_retard');
       const nameStyle = hasRetard ? 'color:#ef4444;' : '';
-      html += `<div class="d-hm-driver${rowClass}" style="${nameStyle}animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;" title="${dr.prenom} ${dr.nom}${hasRetard ? ' — Versement(s) en retard' : ''}">${avatarHtml}<div style="display:flex;flex-direction:column;line-height:1.2;overflow:hidden;"><span>${dr.prenom} ${dr.nom}</span>${plaque ? `<span style="font-size:9px;color:${hasRetard ? '#ef4444' : 'var(--text-muted)'};font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${plaque}</span>` : ''}</div></div>`;
+      html += `<div class="d-hm-driver${rowClass}" style="${nameStyle}animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;" title="${dr.prenom} ${dr.nom}${hasRetard ? ' — Versement(s) en retard' : ''}"><div style="display:flex;flex-direction:column;line-height:1.2;overflow:hidden;"><span>${dr.prenom} ${dr.nom}</span>${plaque ? `<span style="font-size:9px;color:${hasRetard ? '#ef4444' : 'var(--text-muted)'};font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${plaque}</span>` : ''}</div></div>`;
       dr.cells.forEach((cell, ci) => {
         const status = cell.status;
         const heures = cell.heures;
