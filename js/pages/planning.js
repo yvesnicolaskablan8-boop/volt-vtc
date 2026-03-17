@@ -548,6 +548,16 @@ const PlanningPage = {
         [data-theme="dark"] .pg-empty { background:rgba(255,255,255,.02); }
         [data-theme="dark"] .pg-empty:hover { background:rgba(99,102,241,.08); }
 
+        /* Today column highlight */
+        .pg-today-col { background-color:rgba(99,102,241,.045); border-radius:8px; }
+        .pg-cell.pg-today-col { box-shadow:inset 0 0 0 1.5px rgba(99,102,241,.12); }
+        .pg-cell.pg-today-col.pg-empty { background:rgba(99,102,241,.06); }
+        .pg-cell.pg-today-col.pg-repos { background:rgba(99,102,241,.04); }
+        [data-theme="dark"] .pg-today-col { background-color:rgba(99,102,241,.08); }
+        [data-theme="dark"] .pg-cell.pg-today-col { box-shadow:inset 0 0 0 1.5px rgba(99,102,241,.2); }
+        [data-theme="dark"] .pg-cell.pg-today-col.pg-empty { background:rgba(99,102,241,.1); }
+        [data-theme="dark"] .pg-cell.pg-today-col.pg-repos { background:rgba(99,102,241,.07); }
+
         .pg-cell-text { font-size:11px; font-weight:700; letter-spacing:-.2px; text-align:center; line-height:1.3; }
 
         @media(max-width:1200px) {
@@ -623,9 +633,10 @@ const PlanningPage = {
               const shifts = this._getDriverShiftsForDate(ch.id, d.date);
               const absences = this._getDriverAbsencesForDate(ch.id, d.date);
               const anim = `animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30 + ci * 15}ms both;`;
+              const todayCol = this._isToday(d.date) ? ' pg-today-col' : '';
 
               if (isSuspendu) {
-                return `<div class="pg-cell pg-suspendu${rowClass}" style="${anim}" title="Suspendu">
+                return `<div class="pg-cell pg-suspendu${rowClass}${todayCol}" style="${anim}" title="Suspendu">
                   <iconify-icon icon="solar:forbidden-circle-bold" style="font-size:13px;"></iconify-icon>
                 </div>`;
               }
@@ -633,7 +644,7 @@ const PlanningPage = {
               if (absences.length > 0) {
                 const a = absences[0];
                 const absCls = a.type === 'maladie' ? 'pg-absence-maladie' : a.type === 'conge' ? 'pg-absence-conge' : 'pg-absence';
-                return `<div class="pg-cell ${absCls}${rowClass}" style="${anim}" title="${this._absenceTypeLabel(a.type)}" onclick="PlanningPage._viewAbsence('${a.id}')">
+                return `<div class="pg-cell ${absCls}${rowClass}${todayCol}" style="${anim}" title="${this._absenceTypeLabel(a.type)}" onclick="PlanningPage._viewAbsence('${a.id}')">
                   <span class="pg-cell-text">${this._absenceTypeLabel(a.type)}</span>
                 </div>`;
               }
@@ -645,18 +656,18 @@ const PlanningPage = {
                 const isPast = d.date < todayStr;
                 const hasVersement = isPast && versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
                 const retardIcon = isPast && !hasVersement ? ' <iconify-icon icon="solar:danger-triangle-bold" style="font-size:12px;color:#ef4444;" title="Versement en retard"></iconify-icon>' : '';
-                return `<div class="pg-cell ${typeClass}${rowClass}" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="${anim}" title="${this._getShiftTimeFull(s)} (${this._getShiftDuration(s)})${isPast && !hasVersement ? ' — ⚠️ Versement en retard' : ''}" onclick="PlanningPage._editShift('${s.id}')">
+                return `<div class="pg-cell ${typeClass}${rowClass}${todayCol}" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="${anim}" title="${this._getShiftTimeFull(s)} (${this._getShiftDuration(s)})${isPast && !hasVersement ? ' — ⚠️ Versement en retard' : ''}" onclick="PlanningPage._editShift('${s.id}')">
                   <span class="pg-cell-text">${timeShort}</span>${retardIcon}
                 </div>`;
               }
 
               if (isStatutRepos) {
-                return `<div class="pg-cell pg-repos${rowClass} planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="${anim}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
+                return `<div class="pg-cell pg-repos${rowClass}${todayCol} planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="${anim}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')">
                   <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:13px;"></iconify-icon>
                 </div>`;
               }
 
-              return `<div class="pg-cell pg-empty${rowClass} planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="${anim}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')"></div>`;
+              return `<div class="pg-cell pg-empty${rowClass}${todayCol} planning-empty-cell" data-chauffeur="${ch.id}" data-date="${d.date}" style="${anim}" ondragover="PlanningPage._onDragOver(event)" ondrop="PlanningPage._onDrop(event, '${ch.id}', '${d.date}')"></div>`;
             }).join('');
             return html;
           }).join('')}
