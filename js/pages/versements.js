@@ -2228,24 +2228,24 @@ const VersementsPage = {
         </div>
 
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <button class="btn" onclick="VersementsPage._detteAction('modifier','${versementId}')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
+          <button class="btn" onclick="VersementsPage._detteAction('modifier','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
             <iconify-icon icon="solar:pen-bold-duotone" style="font-size:20px;color:#6366f1;"></iconify-icon>
-            <div><div style="font-weight:600;color:var(--text-primary);">Modifier le montant</div><div style="font-size:11px;color:var(--text-muted);">Ajuster le montant de la dette</div></div>
+            <div style="text-align:left;"><div style="font-weight:600;color:var(--text-primary);">Modifier le montant</div><div style="font-size:11px;color:var(--text-muted);">Ajuster le montant de la dette</div></div>
           </button>
 
-          <button class="btn" onclick="VersementsPage._detteAction('regler','${versementId}')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
+          <button class="btn" onclick="VersementsPage._detteAction('regler','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
             <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:20px;color:#10b981;"></iconify-icon>
-            <div><div style="font-weight:600;color:var(--text-primary);">Régler la dette</div><div style="font-size:11px;color:var(--text-muted);">Marquer comme payée (montant ramené à 0)</div></div>
+            <div style="text-align:left;"><div style="font-weight:600;color:var(--text-primary);">Régler la dette</div><div style="font-size:11px;color:var(--text-muted);">Marquer comme payée (montant ramené à 0)</div></div>
           </button>
 
-          <button class="btn" onclick="VersementsPage._detteAction('perte','${versementId}')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
+          <button class="btn" onclick="VersementsPage._detteAction('perte','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
             <iconify-icon icon="solar:bill-cross-bold-duotone" style="font-size:20px;color:#f59e0b;"></iconify-icon>
-            <div><div style="font-weight:600;color:var(--text-primary);">Passer en perte</div><div style="font-size:11px;color:var(--text-muted);">Considérer cette dette comme irrécouvrable</div></div>
+            <div style="text-align:left;"><div style="font-weight:600;color:var(--text-primary);">Passer en perte</div><div style="font-size:11px;color:var(--text-muted);">Considérer cette dette comme irrécouvrable</div></div>
           </button>
 
-          <button class="btn" onclick="VersementsPage._detteAction('supprimer','${versementId}')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
+          <button class="btn" onclick="VersementsPage._detteAction('supprimer','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
             <iconify-icon icon="solar:trash-bin-trash-bold-duotone" style="font-size:20px;color:#ef4444;"></iconify-icon>
-            <div><div style="font-weight:600;color:var(--text-primary);">Supprimer la dette</div><div style="font-size:11px;color:var(--text-muted);">Supprimer définitivement cette dette</div></div>
+            <div style="text-align:left;"><div style="font-weight:600;color:var(--text-primary);">Supprimer la dette</div><div style="font-size:11px;color:var(--text-muted);">Supprimer définitivement cette dette</div></div>
           </button>
         </div>
       `,
@@ -2293,15 +2293,35 @@ const VersementsPage = {
         () => { setTimeout(() => this._modifierDette(versementId), 200); }
       );
     } else if (action === 'regler') {
+      const manquant = v.manquant || 0;
       Modal.open({
-        title: '<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#10b981;"></iconify-icon> Régler la dette ?',
-        body: `<div style="padding:12px;border-radius:var(--radius-sm);background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);font-size:var(--font-size-sm);">
-          <div style="font-weight:600;margin-bottom:6px;">${nom}</div>
-          <div>Date : ${Utils.formatDate(v.date)}</div>
-          <div>Montant : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong></div>
-          <div style="margin-top:8px;color:var(--text-muted);font-size:var(--font-size-xs);">La dette sera marquée comme payée et le montant ramené à 0.</div>
-        </div>`,
-        footer: `<button class="btn btn-success" onclick="VersementsPage._confirmDetteAction('regler','${versementId}','${v.chauffeurId}')"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Confirmer</button><button class="btn btn-secondary" onclick="VersementsPage._modifierDette('${versementId}')">Retour</button>`,
+        title: '<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#10b981;"></iconify-icon> Régler la dette',
+        body: `
+          <div style="padding:12px;border-radius:var(--radius-sm);background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);font-size:var(--font-size-sm);margin-bottom:16px;">
+            <div style="font-weight:600;margin-bottom:6px;">${nom}</div>
+            <div>Date : ${Utils.formatDate(v.date)}</div>
+            <div>Montant de la dette : <strong style="color:#f59e0b;">${Utils.formatCurrency(manquant)}</strong></div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Montant versé (FCFA) <span style="color:#ef4444;">*</span></label>
+            <input type="number" id="dette-montant-verse" value="${manquant}" min="0" step="100" style="width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);" oninput="VersementsPage._onReglerMontantChange(${manquant})">
+          </div>
+          <div id="dette-reliquat-info" style="display:none;margin-bottom:12px;">
+            <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);font-size:var(--font-size-sm);margin-bottom:8px;">
+              Reliquat : <strong id="dette-reliquat-montant" style="color:#f59e0b;">0 FCFA</strong>
+            </div>
+            <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Que faire du reliquat ?</label>
+            <div style="display:flex;gap:8px;">
+              <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;border-radius:8px;border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.04);cursor:pointer;font-size:var(--font-size-sm);">
+                <input type="radio" name="reliquat-action" value="dette" checked> Garder en dette
+              </label>
+              <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.04);cursor:pointer;font-size:var(--font-size-sm);">
+                <input type="radio" name="reliquat-action" value="perte"> Passer en perte
+              </label>
+            </div>
+          </div>
+        `,
+        footer: `<button class="btn btn-success" onclick="VersementsPage._confirmRegler('${versementId}','${v.chauffeurId}',${manquant})"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Confirmer</button><button class="btn btn-secondary" onclick="VersementsPage._modifierDette('${versementId}')">Retour</button>`,
         size: 'small'
       });
     } else if (action === 'perte') {
@@ -2341,6 +2361,52 @@ const VersementsPage = {
     } else if (action === 'supprimer') {
       Store.remove('versements', versementId);
       Toast.success('Dette supprimée');
+    }
+    Modal.close();
+    this.render();
+    if (chauffeurId) setTimeout(() => this._showDetteDetail(chauffeurId), 300);
+  },
+
+  _onReglerMontantChange(totalDette) {
+    const input = document.getElementById('dette-montant-verse');
+    const infoDiv = document.getElementById('dette-reliquat-info');
+    const montantSpan = document.getElementById('dette-reliquat-montant');
+    if (!input || !infoDiv) return;
+    const verse = parseFloat(input.value) || 0;
+    const reliquat = totalDette - verse;
+    if (reliquat > 0 && verse >= 0) {
+      infoDiv.style.display = 'block';
+      montantSpan.textContent = Utils.formatCurrency(reliquat);
+    } else {
+      infoDiv.style.display = 'none';
+    }
+  },
+
+  _confirmRegler(versementId, chauffeurId, totalDette) {
+    const input = document.getElementById('dette-montant-verse');
+    const verse = parseFloat(input?.value) || 0;
+    if (verse < 0) { Toast.error('Le montant ne peut pas être négatif'); return; }
+    if (verse > totalDette) { Toast.error('Le montant versé ne peut pas dépasser la dette'); return; }
+
+    const reliquat = totalDette - verse;
+    const dateStr = new Date().toLocaleDateString('fr-FR');
+    const v = (Store.get('versements') || []).find(x => x.id === versementId);
+    const commentBase = v?.commentaire || '';
+
+    if (reliquat <= 0) {
+      // Paiement total
+      Store.update('versements', versementId, { manquant: 0, traitementManquant: null, statut: 'valide', montantVerse: (v?.montantVerse || 0) + verse, commentaire: commentBase + ' | Dette réglée intégralement le ' + dateStr });
+      Toast.success('Dette réglée intégralement');
+    } else {
+      // Paiement partiel
+      const reliquatAction = document.querySelector('input[name="reliquat-action"]:checked')?.value || 'dette';
+      if (reliquatAction === 'perte') {
+        Store.update('versements', versementId, { manquant: 0, traitementManquant: 'perte', statut: 'perte', montantVerse: (v?.montantVerse || 0) + verse, commentaire: commentBase + ` | Versé ${Utils.formatCurrency(verse)}, reliquat ${Utils.formatCurrency(reliquat)} passé en perte le ${dateStr}` });
+        Toast.success(`Versé ${Utils.formatCurrency(verse)}, reliquat ${Utils.formatCurrency(reliquat)} en perte`);
+      } else {
+        Store.update('versements', versementId, { manquant: reliquat, montantVerse: (v?.montantVerse || 0) + verse, commentaire: commentBase + ` | Versé ${Utils.formatCurrency(verse)}, reliquat ${Utils.formatCurrency(reliquat)} maintenu en dette le ${dateStr}` });
+        Toast.success(`Versé ${Utils.formatCurrency(verse)}, reliquat ${Utils.formatCurrency(reliquat)} en dette`);
+      }
     }
     Modal.close();
     this.render();
