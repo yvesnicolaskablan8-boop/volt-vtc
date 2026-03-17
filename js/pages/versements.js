@@ -215,7 +215,6 @@ const VersementsPage = {
             </div>
           </div>
           <button class="btn btn-secondary" onclick="VersementsPage._cleanupGhosts()" title="Supprimer les versements fantômes (0 FCFA)"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Nettoyer</button>
-          <button class="btn btn-success" onclick="VersementsPage._showRecettesRecurrentes()"><iconify-icon icon="solar:repeat-bold-duotone"></iconify-icon> Récurrents</button>
           <button class="btn btn-primary" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouveau versement</button>
         </div>
       </div>
