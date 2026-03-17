@@ -2196,9 +2196,14 @@ const VersementsPage = {
     return `<div id="dette-section" class="card" style="margin-top:var(--space-lg);border-left:4px solid #f59e0b;">
       <div class="card-header">
         <span class="card-title"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#f59e0b;"></iconify-icon> Suivi des dettes (${detteData.detteList.length} chauffeur${detteData.detteList.length > 1 ? 's' : ''})</span>
-        <div style="text-align:right;">
-          ${detteData.totalDettes > 0 ? `<div style="font-size:var(--font-size-base);font-weight:700;color:#f59e0b;">Dettes : ${Utils.formatCurrency(detteData.totalDettes)}</div>` : ''}
-          ${detteData.totalPertes > 0 ? `<div style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;">Pertes : ${Utils.formatCurrency(detteData.totalPertes)}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="btn btn-sm" style="background:#f59e0b;color:white;border:none;display:flex;align-items:center;gap:4px;" onclick="VersementsPage._ajouterDette()">
+            <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter
+          </button>
+          <div style="text-align:right;">
+            ${detteData.totalDettes > 0 ? `<div style="font-size:var(--font-size-base);font-weight:700;color:#f59e0b;">Dettes : ${Utils.formatCurrency(detteData.totalDettes)}</div>` : ''}
+            ${detteData.totalPertes > 0 ? `<div style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;">Pertes : ${Utils.formatCurrency(detteData.totalPertes)}</div>` : ''}
+          </div>
         </div>
       </div>
       ${searchBar}
@@ -2483,6 +2488,75 @@ const VersementsPage = {
     Toast.success('Dette annul\u00e9e avec succ\u00e8s');
     this.render();
     if (chauffeurId) setTimeout(() => this._showDetteDetail(chauffeurId), 300);
+  },
+
+  _ajouterDette() {
+    const chauffeurs = Store.get('chauffeurs').filter(c => c.statut === 'actif' || c.statut === 'repos');
+    const options = chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('');
+    const today = new Date().toISOString().split('T')[0];
+
+    Modal.open(
+      '<iconify-icon icon="solar:add-circle-bold" style="color:#f59e0b"></iconify-icon> Ajouter une dette',
+      `<div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <label style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;">Chauffeur *</label>
+          <select id="dette-chauffeur" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);">
+            <option value="">— Choisir un chauffeur —</option>
+            ${options}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;">Montant de la dette (FCFA) *</label>
+          <input type="number" id="dette-montant" min="1" placeholder="Ex: 15000" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);">
+        </div>
+        <div>
+          <label style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;">Date</label>
+          <input type="date" id="dette-date" value="${today}" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);">
+        </div>
+        <div>
+          <label style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;">Motif (optionnel)</label>
+          <input type="text" id="dette-motif" placeholder="Ex: Retard de versement, avance..." style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);">
+        </div>
+      </div>`,
+      {
+        footer: `<button class="btn" style="background:#f59e0b;color:white;border:none;" onclick="VersementsPage._confirmAjouterDette()"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`,
+        width: '440px'
+      }
+    );
+  },
+
+  _confirmAjouterDette() {
+    const chauffeurId = document.getElementById('dette-chauffeur')?.value;
+    const montant = parseInt(document.getElementById('dette-montant')?.value);
+    const date = document.getElementById('dette-date')?.value;
+    const motif = document.getElementById('dette-motif')?.value || '';
+
+    if (!chauffeurId) { Toast.error('Veuillez choisir un chauffeur'); return; }
+    if (!montant || montant <= 0) { Toast.error('Veuillez saisir un montant valide'); return; }
+    if (!date) { Toast.error('Veuillez saisir une date'); return; }
+
+    const chauffeur = Store.findById('chauffeurs', chauffeurId);
+    if (!chauffeur) { Toast.error('Chauffeur introuvable'); return; }
+
+    // Créer un versement de type dette manuelle
+    const versement = {
+      id: Utils.generateId(),
+      chauffeurId,
+      date,
+      montantVerse: 0,
+      montantAttendu: montant,
+      manquant: montant,
+      statut: 'manquant',
+      traitementManquant: 'dette',
+      commentaire: motif ? `Dette manuelle : ${motif}` : 'Dette ajoutée manuellement',
+      source: 'manuel',
+      dateCreation: new Date().toISOString()
+    };
+
+    Store.create('versements', versement);
+    Modal.close();
+    Toast.success(`Dette de ${Utils.formatCurrency(montant)} ajoutée pour ${chauffeur.prenom} ${chauffeur.nom}`);
+    this.render(document.querySelector('.content'));
   },
 
   _encaisserDette(chauffeurId) {

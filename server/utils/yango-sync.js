@@ -295,7 +295,7 @@ function matchDrivers(yangoDrivers, piloteChauffeurs) {
 
     if (piloteMatch && !usedPiloteIds.has(piloteMatch.id)) {
       usedPiloteIds.add(piloteMatch.id);
-      matched.push({ yango: yd, volt: piloteMatch, method: matchMethod });
+      matched.push({ yango: yd, pilote: piloteMatch, method: matchMethod });
     }
   }
 
