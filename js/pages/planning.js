@@ -311,12 +311,7 @@ const PlanningPage = {
     const absencesWeek = this._getAbsences().filter(a => a.dateFin >= days[0].date && a.dateDebut <= days[6].date);
     const uniqueAbsDrivers = [...new Set(absencesWeek.map(a => a.chauffeurId))].length;
 
-    // Mobile → daily card view
-    if (this._isMobile()) {
-      return this._renderMobileDayView(chauffeurs, days, vehMap, { filledSlots, totalSlots, uniqueAbsDrivers });
-    }
-
-    // Desktop → grid view
+    // Same grid view for desktop and mobile (responsive CSS handles sizing)
     return this._renderDesktopGridView(chauffeurs, days, vehMap, { filledSlots, totalSlots, uniqueAbsDrivers });
   },
 
@@ -551,18 +546,35 @@ const PlanningPage = {
           .pg-driver { font-size:11px; }
           .pg-avatar { width:26px; height:26px; font-size:9px; }
         }
+        @media(max-width:768px) {
+          .pg-card { padding:12px 10px !important; }
+          .pg-grid { grid-template-columns:70px repeat(7,1fr); gap:2px; min-width:420px; }
+          .pg-head { font-size:10px; padding:6px 0 4px; letter-spacing:.3px; }
+          .pg-head .pg-daynum { font-size:15px; margin-top:1px; }
+          .pg-cell { height:30px; border-radius:7px; }
+          .pg-cell-text { font-size:9px; }
+          .pg-cell:hover { transform:none; box-shadow:none; }
+          .pg-cell:active { transform:scale(1.08); }
+          .pg-driver { font-size:11px; gap:0; padding:2px 0; }
+          .pg-driver .pg-avatar { display:none; }
+          .pg-driver span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; max-width:68px; }
+          .pg-header-icon { width:30px !important; height:30px !important; border-radius:8px !important; }
+          .pg-header-icon iconify-icon { font-size:14px !important; }
+          .pg-header-title { font-size:13px !important; }
+          .pg-header-sub { font-size:10px !important; }
+        }
       </style>
 
       <!-- Header card -->
-      <div class="card" style="padding:24px 20px;border-radius:16px;">
+      <div class="card pg-card" style="padding:24px 20px;border-radius:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
+            <div class="pg-header-icon" style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
               <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#fff;"></iconify-icon>
             </div>
             <div>
-              <div style="font-size:15px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px;">Planning semaine</div>
-              <div style="font-size:11px;color:#9ca3af;font-weight:500;margin-top:1px;">${chauffeurs.length} chauffeur${chauffeurs.length > 1 ? 's' : ''} actif${chauffeurs.length > 1 ? 's' : ''}</div>
+              <div class="pg-header-title" style="font-size:15px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px;">Planning semaine</div>
+              <div class="pg-header-sub" style="font-size:11px;color:#9ca3af;font-weight:500;margin-top:1px;">${chauffeurs.length} chauffeur${chauffeurs.length > 1 ? 's' : ''} actif${chauffeurs.length > 1 ? 's' : ''}</div>
             </div>
           </div>
         </div>
