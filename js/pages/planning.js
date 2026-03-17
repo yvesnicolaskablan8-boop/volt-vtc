@@ -392,7 +392,7 @@ const PlanningPage = {
               if (d.date >= todayStr) return false;
               const sh = this._getDriverShiftsForDate(ch.id, d.date);
               if (sh.length === 0) return false;
-              return !versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
+              return !versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte'));
             });
             const mNameStyle = hasRetardMobile ? 'color:#ef4444;' : '';
 
@@ -416,7 +416,7 @@ const PlanningPage = {
                 const s = shifts[0];
                 const typeClass = { matin:'pm-shift-m', apres_midi:'pm-shift-am', journee:'pm-shift-j', nuit:'pm-shift-n' }[s.typeCreneaux] || 'pm-shift';
                 const isPast = d.date < todayStr;
-                const hasVersement = isPast && versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
+                const hasVersement = isPast && versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte'));
                 return `<div class="pm-cell ${typeClass}${rowClass}" onclick="PlanningPage._editShift('${s.id}')">${this._getShiftTimeShort(s)}</div>`;
               }
               if (isRepos) {
@@ -637,7 +637,7 @@ const PlanningPage = {
               if (d.date >= todayStr) return false;
               const sh = this._getDriverShiftsForDate(ch.id, d.date);
               if (sh.length === 0) return false;
-              return !versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
+              return !versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte'));
             });
             const nameColor = hasRetard ? 'color:#ef4444;' : '';
 
@@ -671,7 +671,7 @@ const PlanningPage = {
                 const typeClass = { matin:'pg-shift-matin', apres_midi:'pg-shift-am', journee:'pg-shift-journee', nuit:'pg-shift-nuit' }[s.typeCreneaux] || 'pg-shift-custom';
                 const timeShort = this._getShiftTimeShort(s);
                 const isPast = d.date < todayStr;
-                const hasVersement = isPast && versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime'));
+                const hasVersement = isPast && versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte'));
                 return `<div class="pg-cell ${typeClass}${rowClass}${todayCol}" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="${anim}" title="${this._getShiftTimeFull(s)} (${this._getShiftDuration(s)})${isPast && !hasVersement ? ' — Versement en retard' : ''}" onclick="PlanningPage._editShift('${s.id}')">
                   <span class="pg-cell-text">${timeShort}</span>
                 </div>`;

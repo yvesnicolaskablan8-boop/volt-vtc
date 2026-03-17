@@ -319,7 +319,7 @@ const DashboardPage = {
       const redevance = ch.redevanceQuotidienne || 0;
       if (redevance <= 0) return;
       // Vérifier si versement valide ou supprimé existe (supprimé = admin a dismissé la recette)
-      const hasValidOrDismissed = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime'));
+      const hasValidOrDismissed = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte'));
       if (!hasValidOrDismissed) {
         // Chercher un versement existant (même non validé) pour la justification
         const existing = versements.find(v => v.chauffeurId === p.chauffeurId && v.date === p.date);
@@ -435,7 +435,7 @@ const DashboardPage = {
         // Planned — check if future or today
         if (wd.date >= hmToday) return { status: 'programme', heures, shiftId };
         // Past — check versement
-        const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime'));
+        const hasVersement = versements.some(v => v.chauffeurId === c.id && v.date === wd.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte'));
         return { status: hasVersement ? 'verse' : 'en_retard', heures, shiftId };
       });
       return { id: c.id, prenom: c.prenom, nom: c.nom, photo: c.photo || '', initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), vehiculeAssigne: c.vehiculeAssigne || '', cells };
