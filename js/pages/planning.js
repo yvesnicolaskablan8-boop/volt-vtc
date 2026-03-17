@@ -548,15 +548,15 @@ const PlanningPage = {
         [data-theme="dark"] .pg-empty { background:rgba(255,255,255,.02); }
         [data-theme="dark"] .pg-empty:hover { background:rgba(99,102,241,.08); }
 
-        /* Today column highlight */
-        .pg-today-col { background-color:rgba(99,102,241,.045); border-radius:8px; }
-        .pg-cell.pg-today-col { box-shadow:inset 0 0 0 1.5px rgba(99,102,241,.12); }
-        .pg-cell.pg-today-col.pg-empty { background:rgba(99,102,241,.06); }
-        .pg-cell.pg-today-col.pg-repos { background:rgba(99,102,241,.04); }
-        [data-theme="dark"] .pg-today-col { background-color:rgba(99,102,241,.08); }
-        [data-theme="dark"] .pg-cell.pg-today-col { box-shadow:inset 0 0 0 1.5px rgba(99,102,241,.2); }
-        [data-theme="dark"] .pg-cell.pg-today-col.pg-empty { background:rgba(99,102,241,.1); }
-        [data-theme="dark"] .pg-cell.pg-today-col.pg-repos { background:rgba(99,102,241,.07); }
+        /* Today column highlight — amber/gold pour contraster avec le violet du header */
+        .pg-today-col { background-color:rgba(251,191,36,.1); border-radius:8px; }
+        .pg-cell.pg-today-col { box-shadow:inset 0 0 0 2px rgba(245,158,11,.18); }
+        .pg-cell.pg-today-col.pg-empty { background:rgba(251,191,36,.13); }
+        .pg-cell.pg-today-col.pg-repos { background:rgba(251,191,36,.08); }
+        [data-theme="dark"] .pg-today-col { background-color:rgba(251,191,36,.12); }
+        [data-theme="dark"] .pg-cell.pg-today-col { box-shadow:inset 0 0 0 2px rgba(245,158,11,.25); }
+        [data-theme="dark"] .pg-cell.pg-today-col.pg-empty { background:rgba(251,191,36,.15); }
+        [data-theme="dark"] .pg-cell.pg-today-col.pg-repos { background:rgba(251,191,36,.1); }
 
         .pg-cell-text { font-size:11px; font-weight:700; letter-spacing:-.2px; text-align:center; line-height:1.3; }
 
