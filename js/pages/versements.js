@@ -2217,51 +2217,134 @@ const VersementsPage = {
     const ch = chauffeurs.find(c => c.id === v.chauffeurId);
     const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
 
-    const fields = [
-      { type: 'heading', label: `Modifier dette \u2014 ${nom}` },
-      { type: 'html', html: `<div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:10px;font-size:var(--font-size-sm);">
-        Vers\u00e9 : <strong>${Utils.formatCurrency(v.montantVerse || 0)}</strong> \u2014 Manquant actuel : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
-      </div>` },
-      { name: 'date', label: 'Date de la dette', type: 'date', required: true, default: v.date },
-      { name: 'manquant', label: 'Nouveau montant manquant (FCFA)', type: 'number', required: true, min: 0, step: 100, default: v.manquant },
-      { name: 'commentaire', label: 'Commentaire (optionnel)', type: 'textarea', rows: 2, placeholder: 'Raison de la modification...', default: '' }
-    ];
+    Modal.open({
+      title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b;"></iconify-icon> Gérer la dette',
+      body: `
+        <div style="margin-bottom:16px;">
+          <div style="font-weight:700;font-size:var(--font-size-md);margin-bottom:4px;">${nom}</div>
+          <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);font-size:var(--font-size-sm);">
+            Date : <strong>${Utils.formatDate(v.date)}</strong> — Montant : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
+          </div>
+        </div>
 
-    Modal.form(
-      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b;"></iconify-icon> Modifier la dette',
-      FormBuilder.build(fields),
-      () => {
-        const body = document.getElementById('modal-body');
-        if (!FormBuilder.validate(body, fields)) return;
-        const values = FormBuilder.getValues(body);
-        const newManquant = parseFloat(values.manquant) || 0;
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button class="btn" onclick="VersementsPage._detteAction('modifier','${versementId}')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
+            <iconify-icon icon="solar:pen-bold-duotone" style="font-size:20px;color:#6366f1;"></iconify-icon>
+            <div><div style="font-weight:600;color:var(--text-primary);">Modifier le montant</div><div style="font-size:11px;color:var(--text-muted);">Ajuster le montant de la dette</div></div>
+          </button>
 
-        if (newManquant < 0) {
-          Toast.error('Le montant ne peut pas \u00eatre n\u00e9gatif');
-          return;
-        }
+          <button class="btn" onclick="VersementsPage._detteAction('regler','${versementId}')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
+            <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:20px;color:#10b981;"></iconify-icon>
+            <div><div style="font-weight:600;color:var(--text-primary);">Régler la dette</div><div style="font-size:11px;color:var(--text-muted);">Marquer comme payée (montant ramené à 0)</div></div>
+          </button>
 
-        const updates = { manquant: newManquant };
-        if (values.date && values.date !== v.date) {
-          updates.date = values.date;
-          updates.dateService = values.date;
-        }
-        if (newManquant === 0) {
-          updates.traitementManquant = null;
-        }
-        if (values.commentaire) {
-          updates.commentaire = (v.commentaire ? v.commentaire + ' | ' : '') + 'Modif dette: ' + values.commentaire;
-        }
+          <button class="btn" onclick="VersementsPage._detteAction('perte','${versementId}')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
+            <iconify-icon icon="solar:bill-cross-bold-duotone" style="font-size:20px;color:#f59e0b;"></iconify-icon>
+            <div><div style="font-weight:600;color:var(--text-primary);">Passer en perte</div><div style="font-size:11px;color:var(--text-muted);">Considérer cette dette comme irrécouvrable</div></div>
+          </button>
 
-        Store.update('versements', versementId, updates);
-        Modal.close();
-        Toast.success(`Dette modifi\u00e9e : ${Utils.formatCurrency(v.manquant)} \u2192 ${Utils.formatCurrency(newManquant)}`);
-        this.render();
-        setTimeout(() => this._showDetteDetail(v.chauffeurId), 300);
-      },
-      '',
-      () => { setTimeout(() => this._showDetteDetail(v.chauffeurId), 200); }
-    );
+          <button class="btn" onclick="VersementsPage._detteAction('supprimer','${versementId}')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
+            <iconify-icon icon="solar:trash-bin-trash-bold-duotone" style="font-size:20px;color:#ef4444;"></iconify-icon>
+            <div><div style="font-weight:600;color:var(--text-primary);">Supprimer la dette</div><div style="font-size:11px;color:var(--text-muted);">Supprimer définitivement cette dette</div></div>
+          </button>
+        </div>
+      `,
+      footer: `<button class="btn btn-secondary" onclick="Modal.close();VersementsPage._showDetteDetail('${v.chauffeurId}')">Retour</button>`,
+      size: 'small'
+    });
+  },
+
+  _detteAction(action, versementId) {
+    const versements = Store.get('versements') || [];
+    const v = versements.find(x => x.id === versementId);
+    if (!v) { Toast.error('Versement introuvable'); return; }
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const ch = chauffeurs.find(c => c.id === v.chauffeurId);
+    const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+
+    if (action === 'modifier') {
+      const fields = [
+        { type: 'heading', label: `Modifier montant — ${nom}` },
+        { type: 'html', html: `<div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:10px;font-size:var(--font-size-sm);">
+          Manquant actuel : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
+        </div>` },
+        { name: 'manquant', label: 'Modifier le montant de la dette (FCFA)', type: 'number', required: true, min: 0, step: 100, default: v.manquant },
+        { name: 'commentaire', label: 'Commentaire (optionnel)', type: 'textarea', rows: 2, placeholder: 'Raison de la modification...', default: '' }
+      ];
+      Modal.form(
+        '<iconify-icon icon="solar:pen-bold-duotone" style="color:#6366f1;"></iconify-icon> Modifier le montant',
+        FormBuilder.build(fields),
+        () => {
+          const body = document.getElementById('modal-body');
+          if (!FormBuilder.validate(body, fields)) return;
+          const values = FormBuilder.getValues(body);
+          const newManquant = parseFloat(values.manquant) || 0;
+          if (newManquant < 0) { Toast.error('Le montant ne peut pas être négatif'); return; }
+          const updates = { manquant: newManquant };
+          if (newManquant === 0) updates.traitementManquant = null;
+          if (values.commentaire) updates.commentaire = (v.commentaire ? v.commentaire + ' | ' : '') + 'Modif: ' + values.commentaire;
+          Store.update('versements', versementId, updates);
+          Modal.close();
+          Toast.success(`Dette modifiée : ${Utils.formatCurrency(v.manquant)} → ${Utils.formatCurrency(newManquant)}`);
+          this.render();
+          setTimeout(() => this._showDetteDetail(v.chauffeurId), 300);
+        },
+        '',
+        () => { setTimeout(() => this._modifierDette(versementId), 200); }
+      );
+    } else if (action === 'regler') {
+      Modal.open({
+        title: '<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#10b981;"></iconify-icon> Régler la dette ?',
+        body: `<div style="padding:12px;border-radius:var(--radius-sm);background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);font-size:var(--font-size-sm);">
+          <div style="font-weight:600;margin-bottom:6px;">${nom}</div>
+          <div>Date : ${Utils.formatDate(v.date)}</div>
+          <div>Montant : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong></div>
+          <div style="margin-top:8px;color:var(--text-muted);font-size:var(--font-size-xs);">La dette sera marquée comme payée et le montant ramené à 0.</div>
+        </div>`,
+        footer: `<button class="btn btn-success" onclick="VersementsPage._confirmDetteAction('regler','${versementId}','${v.chauffeurId}')"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Confirmer</button><button class="btn btn-secondary" onclick="VersementsPage._modifierDette('${versementId}')">Retour</button>`,
+        size: 'small'
+      });
+    } else if (action === 'perte') {
+      Modal.open({
+        title: '<iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#f59e0b;"></iconify-icon> Passer en perte ?',
+        body: `<div style="padding:12px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);font-size:var(--font-size-sm);">
+          <div style="font-weight:600;margin-bottom:6px;">${nom}</div>
+          <div>Date : ${Utils.formatDate(v.date)}</div>
+          <div>Montant : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong></div>
+          <div style="margin-top:8px;color:var(--text-muted);font-size:var(--font-size-xs);">La dette sera considérée comme irrécouvrable. Le chauffeur ne sera plus marqué en retard pour cette date.</div>
+        </div>`,
+        footer: `<button class="btn" style="background:#f59e0b;color:#fff;" onclick="VersementsPage._confirmDetteAction('perte','${versementId}','${v.chauffeurId}')"><iconify-icon icon="solar:bill-cross-bold-duotone"></iconify-icon> Confirmer la perte</button><button class="btn btn-secondary" onclick="VersementsPage._modifierDette('${versementId}')">Retour</button>`,
+        size: 'small'
+      });
+    } else if (action === 'supprimer') {
+      Modal.open({
+        title: '<iconify-icon icon="solar:trash-bin-trash-bold-duotone" style="color:#ef4444;"></iconify-icon> Supprimer la dette ?',
+        body: `<div style="padding:12px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);font-size:var(--font-size-sm);">
+          <div style="font-weight:600;margin-bottom:6px;">${nom}</div>
+          <div>Date : ${Utils.formatDate(v.date)}</div>
+          <div>Montant : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong></div>
+          <div style="margin-top:8px;color:#ef4444;font-size:var(--font-size-xs);font-weight:600;">⚠ Cette action est irréversible. La dette sera définitivement supprimée.</div>
+        </div>`,
+        footer: `<button class="btn btn-danger" onclick="VersementsPage._confirmDetteAction('supprimer','${versementId}','${v.chauffeurId}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer</button><button class="btn btn-secondary" onclick="VersementsPage._modifierDette('${versementId}')">Retour</button>`,
+        size: 'small'
+      });
+    }
+  },
+
+  _confirmDetteAction(action, versementId, chauffeurId) {
+    if (action === 'regler') {
+      Store.update('versements', versementId, { manquant: 0, traitementManquant: null, statut: 'valide', commentaire: (Store.get('versements').find(v => v.id === versementId)?.commentaire || '') + ' | Dette réglée le ' + new Date().toLocaleDateString('fr-FR') });
+      Toast.success('Dette réglée avec succès');
+    } else if (action === 'perte') {
+      Store.update('versements', versementId, { statut: 'perte', traitementManquant: 'perte', commentaire: (Store.get('versements').find(v => v.id === versementId)?.commentaire || '') + ' | Passée en perte le ' + new Date().toLocaleDateString('fr-FR') });
+      Toast.success('Dette passée en perte');
+    } else if (action === 'supprimer') {
+      Store.remove('versements', versementId);
+      Toast.success('Dette supprimée');
+    }
+    Modal.close();
+    this.render();
+    if (chauffeurId) setTimeout(() => this._showDetteDetail(chauffeurId), 300);
   },
 
   _annulerDette(versementId) {
