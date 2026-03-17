@@ -155,7 +155,7 @@ const ContraventionsPage = {
 
     const renderTable = (items) => {
       Table.create({
-        container: '#contraventions-table',
+        containerId: 'contraventions-table',
         data: items,
         columns: [
           { label: 'Chauffeur', key: 'chauffeurId', render: (v) => chauffeurMap[v.chauffeurId] || v.chauffeurId },
