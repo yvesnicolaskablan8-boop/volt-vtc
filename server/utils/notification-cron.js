@@ -14,6 +14,8 @@ const Chauffeur = require('../models/Chauffeur');
 const Vehicule = require('../models/Vehicule');
 const Versement = require('../models/Versement');
 const Gps = require('../models/Gps');
+const Planning = require('../models/Planning');
+const Absence = require('../models/Absence');
 const Notification = require('../models/Notification');
 const { getNextDeadline } = require('./deadline');
 const notifService = require('./notification-service');
@@ -136,6 +138,9 @@ async function runChecks() {
     if (now.getDay() === 0) {
       await checkWeeklySummary(chauffeurs, canal);
     }
+
+    // === CHECK 6 : Dettes automatiques (versements manquants) ===
+    await checkMissingPaymentDebts(chauffeurs, canal);
 
   } catch (err) {
     console.error('[NotifCron] Erreur:', err.message);
@@ -463,6 +468,129 @@ async function checkWeeklySummary(chauffeurs, canal) {
     }
   } catch (err) {
     console.error('[NotifCron] Erreur check weekly summary:', err.message);
+  }
+}
+
+// ===================== CHECK : DETTES AUTOMATIQUES =====================
+
+/**
+ * Vérifie les jours programmés passés sans versement validé.
+ * Pour chaque jour manquant, crée un versement avec dette = redevance complète.
+ * Ne vérifie que les 7 derniers jours pour éviter de remonter trop loin.
+ */
+async function checkMissingPaymentDebts(chauffeurs, canal) {
+  try {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    // Ne vérifier que les jours passés (hier et les 6 jours précédents)
+    const dates = [];
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      dates.push(d.toISOString().split('T')[0]);
+    }
+
+    if (dates.length === 0) return;
+
+    // Charger les plannings des 7 derniers jours
+    const plannings = await Planning.find({
+      date: { $in: dates }
+    }).lean();
+
+    if (plannings.length === 0) return;
+
+    // Charger les absences couvrant cette période
+    const minDate = dates[dates.length - 1];
+    const maxDate = dates[0];
+    const absences = await Absence.find({
+      $or: [
+        { dateDebut: { $lte: maxDate }, dateFin: { $gte: minDate } }
+      ]
+    }).lean();
+
+    // Charger les versements existants pour ces dates
+    const versements = await Versement.find({
+      date: { $in: dates }
+    }).lean();
+
+    // Construire un Set des versements existants (chauffeurId|date)
+    const versementKeys = new Set();
+    versements.forEach(v => {
+      versementKeys.add(`${v.chauffeurId}|${v.date}`);
+    });
+
+    // Map des chauffeurs pour lookup rapide
+    const chauffeurMap = {};
+    chauffeurs.forEach(c => { chauffeurMap[c.id] = c; });
+
+    let created = 0;
+
+    for (const p of plannings) {
+      const ch = chauffeurMap[p.chauffeurId];
+      if (!ch || ch.statut === 'inactif') continue;
+
+      // Vérifier si le chauffeur était en absence ce jour-là
+      const hasAbsence = absences.some(a =>
+        a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin
+      );
+      if (hasAbsence) continue;
+
+      // Calculer la redevance
+      const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0)
+        ? p.redevanceOverride
+        : (ch.redevanceQuotidienne || 0);
+      if (redevance <= 0) continue;
+
+      // Vérifier si un versement existe déjà pour ce chauffeur/date
+      const key = `${p.chauffeurId}|${p.date}`;
+      if (versementKeys.has(key)) continue;
+
+      // Clé anti-doublon pour le cron (ne créer qu'une fois par jour de check)
+      const cronKey = `auto_dette_${p.chauffeurId}_${p.date}`;
+      if (_sentToday.has(cronKey)) continue;
+
+      // Créer le versement-dette
+      const versementId = 'V-DETTE-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+      await Versement.create({
+        id: versementId,
+        chauffeurId: p.chauffeurId,
+        vehiculeId: ch.vehiculeAssigne || '',
+        date: p.date,
+        montantBrut: 0,
+        montantNet: 0,
+        montantVerse: 0,
+        statut: 'retard',
+        manquant: redevance,
+        traitementManquant: 'dette',
+        commentaire: `Auto: dette — aucun versement le ${p.date}`,
+        dateCreation: new Date().toISOString()
+      });
+
+      versementKeys.add(key); // Éviter les doublons si plusieurs plannings même jour
+      _sentToday.add(cronKey);
+      created++;
+
+      // Notifier le chauffeur (1 seule fois par jour manquant)
+      const notifKey = `dette_notif_${p.chauffeurId}_${p.date}`;
+      if (!_sentToday.has(notifKey)) {
+        await notifService.notify(
+          p.chauffeurId,
+          'dette_auto',
+          'Versement manquant — dette ajoutée',
+          `${ch.prenom}, aucun versement reçu pour le ${p.date}. Une dette de ${redevance.toLocaleString('fr-FR')} FCFA a été ajoutée.`,
+          canal,
+          { url: '/driver/#/versements' }
+        );
+        _sentToday.add(notifKey);
+      }
+    }
+
+    if (created > 0) {
+      console.log(`[NotifCron] ${created} dette(s) automatique(s) créée(s)`);
+    }
+  } catch (err) {
+    console.error('[NotifCron] Erreur check dettes automatiques:', err.message);
   }
 }
 
