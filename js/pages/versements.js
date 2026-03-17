@@ -126,7 +126,42 @@ const VersementsPage = {
       return { chauffeurId: v.chauffeurId, nom: ch ? ch.nom : '?', prenom: ch ? ch.prenom : '?', montant: v.montantVerse || 0, date: v.date, statut: v.statut };
     });
 
-    const tauxRecouvrement = totalAttendu > 0 ? (totalVerse / totalAttendu) * 100 : 0;
+    // Taux de recouvrement : calculé sur lundi → J-1 (jours passés uniquement)
+    // On ne compte pas le jour J car la période légale de versement n'est pas encore atteinte
+    const todayStr = now.toISOString().split('T')[0];
+    const dayOfWeek = now.getDay(); // 0=dim, 1=lun, ...
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((dayOfWeek === 0 ? 7 : dayOfWeek) - 1));
+    const mondayStr = monday.toISOString().split('T')[0];
+    // Hier = J-1
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    let tauxRecouvrement = 0;
+    if (yesterdayStr >= mondayStr) {
+      // Calculer totalAttendu et totalVersé sur lundi → hier
+      const recoPlannings = planning.filter(p => p.date >= mondayStr && p.date <= yesterdayStr);
+      const recoScheduled = new Map();
+      recoPlannings.forEach(p => {
+        const key = `${p.chauffeurId}|${p.date}`;
+        if (!recoScheduled.has(key)) recoScheduled.set(key, p);
+      });
+      let recoAttendu = 0;
+      let recoVerse = 0;
+      recoScheduled.forEach((p) => {
+        const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
+        if (hasAbsence) return;
+        const ch = chauffeurs.find(c => c.id === p.chauffeurId);
+        if (!ch || ch.statut === 'inactif') return;
+        const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+        if (redevance <= 0) return;
+        recoAttendu += redevance;
+        const versePourJour = versements.filter(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'partiel'));
+        recoVerse += versePourJour.reduce((s, v) => s + (v.montantVerse || 0), 0);
+      });
+      tauxRecouvrement = recoAttendu > 0 ? (recoVerse / recoAttendu) * 100 : 0;
+    }
 
     const periodLabel = Utils.formatDate(selectedDay);
 
