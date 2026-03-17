@@ -473,16 +473,17 @@ const PlanningPage = {
           border-bottom:2px solid transparent;
         }
         .pg-head.today {
-          color:#6366f1;
-          background:linear-gradient(180deg, rgba(99,102,241,.06) 0%, rgba(99,102,241,.02) 100%);
+          color:#b45309;
+          background:linear-gradient(180deg, rgba(251,191,36,.2) 0%, rgba(251,191,36,.08) 100%);
           border-radius:12px 12px 0 0;
-          border-bottom:3px solid #6366f1;
+          border-bottom:3px solid #f59e0b;
         }
         .pg-head .pg-daynum { display:block; font-size:18px; font-weight:800; color:var(--text-primary); margin-top:2px; }
-        .pg-head.today .pg-daynum { color:#6366f1; }
+        .pg-head.today .pg-daynum { color:#d97706; }
         [data-theme="dark"] .pg-head { color:#6b7280; }
-        [data-theme="dark"] .pg-head.today { background:rgba(99,102,241,.1); }
+        [data-theme="dark"] .pg-head.today { background:linear-gradient(180deg, rgba(251,191,36,.25) 0%, rgba(251,191,36,.1) 100%); }
         [data-theme="dark"] .pg-head .pg-daynum { color:#d1d5db; }
+        [data-theme="dark"] .pg-head.today .pg-daynum { color:#fbbf24; }
 
         .pg-driver {
           display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--text-primary);
@@ -548,15 +549,17 @@ const PlanningPage = {
         [data-theme="dark"] .pg-empty { background:rgba(255,255,255,.02); }
         [data-theme="dark"] .pg-empty:hover { background:rgba(99,102,241,.08); }
 
-        /* Today column highlight — amber/gold pour contraster avec le violet du header */
-        .pg-today-col { background-color:rgba(251,191,36,.1); border-radius:8px; }
-        .pg-cell.pg-today-col { box-shadow:inset 0 0 0 2px rgba(245,158,11,.18); }
-        .pg-cell.pg-today-col.pg-empty { background:rgba(251,191,36,.13); }
-        .pg-cell.pg-today-col.pg-repos { background:rgba(251,191,36,.08); }
-        [data-theme="dark"] .pg-today-col { background-color:rgba(251,191,36,.12); }
-        [data-theme="dark"] .pg-cell.pg-today-col { box-shadow:inset 0 0 0 2px rgba(245,158,11,.25); }
-        [data-theme="dark"] .pg-cell.pg-today-col.pg-empty { background:rgba(251,191,36,.15); }
-        [data-theme="dark"] .pg-cell.pg-today-col.pg-repos { background:rgba(251,191,36,.1); }
+        /* Today column highlight — amber/gold bien visible */
+        .pg-today-col { background-color:rgba(251,191,36,.18); border-radius:8px; }
+        .pg-cell.pg-today-col { box-shadow:inset 0 0 0 2.5px rgba(245,158,11,.35); background-color:rgba(251,191,36,.12); }
+        .pg-cell.pg-today-col.pg-empty { background:rgba(251,191,36,.22); }
+        .pg-cell.pg-today-col.pg-repos { background:rgba(251,191,36,.15); }
+        .pg-hdr.pg-today-col { background:rgba(251,191,36,.22); font-weight:800; }
+        [data-theme="dark"] .pg-today-col { background-color:rgba(251,191,36,.2); }
+        [data-theme="dark"] .pg-cell.pg-today-col { box-shadow:inset 0 0 0 2.5px rgba(245,158,11,.4); background-color:rgba(251,191,36,.15); }
+        [data-theme="dark"] .pg-cell.pg-today-col.pg-empty { background:rgba(251,191,36,.25); }
+        [data-theme="dark"] .pg-cell.pg-today-col.pg-repos { background:rgba(251,191,36,.18); }
+        [data-theme="dark"] .pg-hdr.pg-today-col { background:rgba(251,191,36,.25); }
 
         .pg-cell-text { font-size:11px; font-weight:700; letter-spacing:-.2px; text-align:center; line-height:1.3; }
 
@@ -804,7 +807,7 @@ const PlanningPage = {
               <th style="padding:8px 12px;text-align:left;font-size:var(--font-size-xs);font-weight:600;color:var(--text-secondary);width:160px;border-bottom:2px solid var(--border-color);position:sticky;left:0;background:var(--bg-tertiary);z-index:1;">Chauffeur</th>
               ${dayHeaders.map(d => `
                 <th style="padding:4px 2px;text-align:center;font-size:10px;border-bottom:2px solid var(--border-color);min-width:30px;
-                  ${d.isToday ? 'background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;font-weight:700;' : d.isWeekend ? 'background:rgba(100,116,139,0.1);color:var(--text-muted);' : 'color:var(--text-secondary);'}">
+                  ${d.isToday ? 'background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;font-weight:700;' : d.isWeekend ? 'background:rgba(100,116,139,0.1);color:var(--text-muted);' : 'color:var(--text-secondary);'}">`
                   <div style="font-weight:600;">${d.num}</div>
                   <div style="font-size:9px;">${this._getDayName(d.dow === 0 ? 6 : d.dow - 1)}</div>
                 </th>
@@ -829,7 +832,7 @@ const PlanningPage = {
 
                   if (absences.length > 0) {
                     const a = absences[0];
-                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.1);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
+                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(251,191,36,0.15);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                       <div style="width:24px;height:24px;border-radius:4px;background:${this._absenceTypeColor(a.type)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._absenceTypeLabel(a.type)}" onclick="PlanningPage._viewAbsence('${a.id}')">
                         ${a.type === 'repos' ? 'R' : a.type === 'conge' ? 'C' : a.type === 'maladie' ? 'M' : a.type === 'formation' ? 'F' : a.type === 'suspension' ? 'S' : 'P'}
                       </div>
@@ -838,14 +841,14 @@ const PlanningPage = {
 
                   if (shifts.length > 0) {
                     const s = shifts[0];
-                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.1);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
+                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(251,191,36,0.15);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                       <div style="width:24px;height:24px;border-radius:4px;background:${this._getShiftColor(s)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._getShiftTimeLabel(s)}" onclick="PlanningPage._editShift('${s.id}')">
                         ${this._shiftTypeShort(s.typeCreneaux)}
                       </div>
                     </td>`;
                   }
 
-                  return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(99,102,241,0.1);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
+                  return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(251,191,36,0.15);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
                     <div style="width:24px;height:24px;border-radius:4px;border:1px dashed var(--border-color);margin:auto;opacity:0.3;"></div>
                   </td>`;
                 }).join('')}
