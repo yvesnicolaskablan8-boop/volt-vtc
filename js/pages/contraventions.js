@@ -123,7 +123,7 @@ const ContraventionsPage = {
       </div>
 
       <!-- Table -->
-      <div class="d-card" style="overflow:visible;">
+      <div class="d-card" style="overflow-x:auto;">
         <div id="contraventions-table"></div>
       </div>
 
