@@ -521,7 +521,7 @@ const ContraventionsPage = {
     ];
 
     const inputStyle = 'width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:10px;font-size:13px;background:var(--bg-primary);color:var(--text-primary);transition:border-color .2s,box-shadow .2s;outline:none;';
-    const labelStyle = 'display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;';
+    const labelStyle = 'display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text-primary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;';
     const sectionStyle = 'background:var(--bg-primary);border:1px solid var(--border-color);border-radius:12px;padding:16px;margin-top:14px;';
     const sectionTitleStyle = 'display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;';
 
