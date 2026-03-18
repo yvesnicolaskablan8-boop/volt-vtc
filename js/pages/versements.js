@@ -158,7 +158,9 @@ const VersementsPage = {
         if (redevance <= 0) return;
         recoAttendu += redevance;
         const versePourJour = versements.filter(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'partiel'));
-        recoVerse += versePourJour.reduce((s, v) => s + (v.montantVerse || 0), 0);
+        const totalVersePourJour = versePourJour.reduce((s, v) => s + (v.montantVerse || 0), 0);
+        // Plafonner au montant attendu pour ne pas dépasser 100%
+        recoVerse += Math.min(totalVersePourJour, redevance);
       });
       tauxRecouvrement = recoAttendu > 0 ? (recoVerse / recoAttendu) * 100 : 0;
     }
