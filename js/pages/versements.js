@@ -2428,8 +2428,25 @@ const VersementsPage = {
 
   _confirmDetteAction(action, versementId, chauffeurId) {
     if (action === 'regler') {
-      Store.update('versements', versementId, { manquant: 0, traitementManquant: null, statut: 'valide', commentaire: (Store.get('versements').find(v => v.id === versementId)?.commentaire || '') + ' | Dette réglée le ' + new Date().toLocaleDateString('fr-FR') });
-      Toast.success('Dette réglée avec succès');
+      const v = (Store.get('versements') || []).find(x => x.id === versementId);
+      if (!v) { Toast.error('Versement introuvable'); return; }
+      const montant = v.manquant || 0;
+      const dateStr = new Date().toLocaleDateString('fr-FR');
+      const todayISO = new Date().toISOString().split('T')[0];
+      // Marquer la dette comme réglée
+      Store.update('versements', versementId, { manquant: 0, traitementManquant: null, statut: 'valide', commentaire: (v.commentaire || '') + ' | Dette réglée le ' + dateStr });
+      // Créer un versement à la date du jour pour tracer le paiement
+      Store.create('versements', {
+        chauffeurId: v.chauffeurId,
+        date: todayISO,
+        montantVerse: montant,
+        montantAttendu: montant,
+        manquant: 0,
+        statut: 'valide',
+        typeVersement: 'reglement_dette',
+        commentaire: `Règlement dette du ${Utils.formatDate(v.date)} (${Utils.formatCurrency(montant)})`
+      });
+      Toast.success(`Dette réglée — ${Utils.formatCurrency(montant)} ajouté aux versements du jour`);
     } else if (action === 'perte') {
       Store.update('versements', versementId, { statut: 'perte', traitementManquant: 'perte', commentaire: (Store.get('versements').find(v => v.id === versementId)?.commentaire || '') + ' | Passée en perte le ' + new Date().toLocaleDateString('fr-FR') });
       Toast.success('Dette passée en perte');
@@ -2460,26 +2477,40 @@ const VersementsPage = {
   _confirmRegler(versementId, chauffeurId, totalDette) {
     const input = document.getElementById('dette-montant-verse');
     const verse = parseFloat(input?.value) || 0;
-    if (verse < 0) { Toast.error('Le montant ne peut pas être négatif'); return; }
+    if (verse <= 0) { Toast.error('Le montant doit être supérieur à 0'); return; }
     if (verse > totalDette) { Toast.error('Le montant versé ne peut pas dépasser la dette'); return; }
 
     const reliquat = totalDette - verse;
     const dateStr = new Date().toLocaleDateString('fr-FR');
+    const todayISO = new Date().toISOString().split('T')[0];
     const v = (Store.get('versements') || []).find(x => x.id === versementId);
-    const commentBase = v?.commentaire || '';
+    if (!v) { Toast.error('Versement introuvable'); return; }
+    const commentBase = v.commentaire || '';
+
+    // Créer un versement à la date du jour pour tracer le paiement
+    Store.create('versements', {
+      chauffeurId: v.chauffeurId,
+      date: todayISO,
+      montantVerse: verse,
+      montantAttendu: verse,
+      manquant: 0,
+      statut: 'valide',
+      typeVersement: 'reglement_dette',
+      commentaire: `Règlement dette du ${Utils.formatDate(v.date)} (${Utils.formatCurrency(verse)}${reliquat > 0 ? ', partiel' : ''})`
+    });
 
     if (reliquat <= 0) {
-      // Paiement total
-      Store.update('versements', versementId, { manquant: 0, traitementManquant: null, statut: 'valide', montantVerse: (v?.montantVerse || 0) + verse, commentaire: commentBase + ' | Dette réglée intégralement le ' + dateStr });
-      Toast.success('Dette réglée intégralement');
+      // Paiement total — marquer dette comme réglée
+      Store.update('versements', versementId, { manquant: 0, traitementManquant: null, statut: 'valide', commentaire: commentBase + ' | Dette réglée intégralement le ' + dateStr });
+      Toast.success(`Dette réglée — ${Utils.formatCurrency(verse)} ajouté aux versements du jour`);
     } else {
       // Paiement partiel
       const reliquatAction = document.querySelector('input[name="reliquat-action"]:checked')?.value || 'dette';
       if (reliquatAction === 'perte') {
-        Store.update('versements', versementId, { manquant: 0, traitementManquant: 'perte', statut: 'perte', montantVerse: (v?.montantVerse || 0) + verse, commentaire: commentBase + ` | Versé ${Utils.formatCurrency(verse)}, reliquat ${Utils.formatCurrency(reliquat)} passé en perte le ${dateStr}` });
+        Store.update('versements', versementId, { manquant: 0, traitementManquant: 'perte', statut: 'perte', commentaire: commentBase + ` | Versé ${Utils.formatCurrency(verse)}, reliquat ${Utils.formatCurrency(reliquat)} passé en perte le ${dateStr}` });
         Toast.success(`Versé ${Utils.formatCurrency(verse)}, reliquat ${Utils.formatCurrency(reliquat)} en perte`);
       } else {
-        Store.update('versements', versementId, { manquant: reliquat, montantVerse: (v?.montantVerse || 0) + verse, commentaire: commentBase + ` | Versé ${Utils.formatCurrency(verse)}, reliquat ${Utils.formatCurrency(reliquat)} maintenu en dette le ${dateStr}` });
+        Store.update('versements', versementId, { manquant: reliquat, commentaire: commentBase + ` | Versé ${Utils.formatCurrency(verse)}, reliquat ${Utils.formatCurrency(reliquat)} maintenu en dette le ${dateStr}` });
         Toast.success(`Versé ${Utils.formatCurrency(verse)}, reliquat ${Utils.formatCurrency(reliquat)} en dette`);
       }
     }
