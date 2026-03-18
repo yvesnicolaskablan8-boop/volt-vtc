@@ -2148,15 +2148,58 @@ const VersementsPage = {
   _getDetteData() {
     const versements = Store.get('versements') || [];
     const chauffeurs = Store.get('chauffeurs') || [];
+    const planning = Store.get('planning') || [];
+    const absences = Store.get('absences') || [];
 
-    // Dettes actives (traitementManquant === 'dette' et manquant > 0)
+    // 1. Dettes explicites (traitementManquant === 'dette' et manquant > 0)
     const dettes = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0);
     // Pertes
     const pertes = versements.filter(v => v.traitementManquant === 'perte' && v.manquant > 0);
 
-    // Grouper dettes par chauffeur
+    // 2. Dettes implicites : chauffeurs programmés les jours passés sans versement
+    const todayStr = new Date().toISOString().split('T')[0];
+    // Scanner les 30 derniers jours max pour les impayés
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+    const pastPlannings = planning.filter(p => p.date >= thirtyDaysAgoStr && p.date < todayStr);
+    const pastScheduled = new Map();
+    pastPlannings.forEach(p => {
+      const key = `${p.chauffeurId}|${p.date}`;
+      if (!pastScheduled.has(key)) pastScheduled.set(key, p);
+    });
+
+    const implicitDettes = [];
+    pastScheduled.forEach((p) => {
+      const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
+      if (hasAbsence) return;
+      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
+      if (!ch || ch.statut === 'inactif') return;
+      const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+      if (redevance <= 0) return;
+      // Vérifier s'il y a un versement validé/supprimé/perte pour ce chauffeur ce jour
+      const hasPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte' || v.traitementManquant === 'perte'));
+      // Vérifier s'il y a déjà une dette explicite pour ce chauffeur ce jour
+      const hasExplicitDette = dettes.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date);
+      if (!hasPayment && !hasExplicitDette) {
+        implicitDettes.push({
+          id: `implicit_${p.chauffeurId}_${p.date}`,
+          chauffeurId: p.chauffeurId,
+          date: p.date,
+          manquant: redevance,
+          traitementManquant: 'dette',
+          implicit: true // marqueur pour savoir que c'est une dette implicite
+        });
+      }
+    });
+
+    // Combiner dettes explicites + implicites
+    const allDettes = [...dettes, ...implicitDettes];
+
+    // Grouper par chauffeur
     const byDriver = {};
-    dettes.forEach(v => {
+    allDettes.forEach(v => {
       if (!byDriver[v.chauffeurId]) byDriver[v.chauffeurId] = { items: [], total: 0 };
       byDriver[v.chauffeurId].items.push(v);
       byDriver[v.chauffeurId].total += v.manquant;
@@ -2246,21 +2289,22 @@ const VersementsPage = {
     }
 
     const rows = driver.items.map(v => {
+      const isImplicit = !!v.implicit;
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-sm);gap:6px;">
         <div style="flex:1;min-width:0;">
-          <div style="font-weight:500;display:flex;align-items:center;gap:6px;">${Utils.formatDate(v.date)}${v.source === 'contravention' ? '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:700;">CONTRAVENTION</span>' : ''}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${v.source === 'contravention' ? (v.commentaire || 'Contravention') : 'Vers\u00e9 : ' + Utils.formatCurrency(v.montantVerse || 0) + ' sur ' + Utils.formatCurrency((v.montantVerse || 0) + v.manquant)}</div>
+          <div style="font-weight:500;display:flex;align-items:center;gap:6px;">${Utils.formatDate(v.date)}${isImplicit ? '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(245,158,11,0.1);color:#f59e0b;font-weight:700;">IMPAYE</span>' : ''}${v.source === 'contravention' ? '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:700;">CONTRAVENTION</span>' : ''}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${isImplicit ? 'Non versé (redevance due)' : v.source === 'contravention' ? (v.commentaire || 'Contravention') : 'Versé : ' + Utils.formatCurrency(v.montantVerse || 0) + ' sur ' + Utils.formatCurrency((v.montantVerse || 0) + v.manquant)}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-weight:700;color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</div>
-          <div style="display:flex;gap:3px;margin-top:3px;">
+          ${!isImplicit ? `<div style="display:flex;gap:3px;margin-top:3px;">
             <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;" onclick="event.stopPropagation();VersementsPage._modifierDette('${v.id}')">
               <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier
             </button>
             <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;color:#ef4444;border-color:#ef4444;" onclick="event.stopPropagation();VersementsPage._annulerDette('${v.id}')">
               <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Annuler
             </button>
-          </div>
+          </div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -2682,64 +2726,108 @@ const VersementsPage = {
         const montant = parseFloat(values.montant) || 0;
 
         if (montant <= 0) {
-          Toast.error('Le montant doit \u00eatre sup\u00e9rieur \u00e0 0');
+          Toast.error('Le montant doit être supérieur à 0');
           return;
         }
 
-        // Créer un versement de recouvrement
-        Store.add('versements', {
-          id: Utils.generateId('VRS'),
-          chauffeurId,
-          date: values.dateRecette || new Date().toISOString().split('T')[0],
-          dateService: values.dateRecette || new Date().toISOString().split('T')[0],
-          periode: 'recouvrement',
-          montantVerse: montant,
-          statut: 'valide',
-          moyenPaiement: values.moyenPaiement,
-          referencePaiement: values.referencePaiement,
-          commentaire: values.commentaire || 'Recouvrement de dette',
-          dateValidation: new Date(values.dateEncaissement + 'T' + new Date().toTimeString().split(' ')[0]).toISOString(),
-          dateCreation: new Date().toISOString()
-        });
-        // Auto-create comptabilité encaissement for recouvrement
-        const chRec = chauffeurs.find(c => c.id === chauffeurId);
-        const chRecLabel = chRec ? (chRec.prenom + ' ' + chRec.nom) : chauffeurId;
-        Store.add('comptabilite', {
-          id: Utils.generateId('OP'),
-          type: 'recette',
-          date: values.dateRecette || new Date().toISOString().slice(0,10),
-          categorie: 'commissions_courses',
-          description: 'Recouvrement dette ' + chRecLabel + ' — ' + Utils.formatCurrency(montant),
-          montant: montant,
-          modePaiement: values.moyenPaiement || 'especes',
-          reference: 'REC-' + chauffeurId,
-          notes: 'Créé automatiquement depuis les versements (recouvrement)',
-          dateCreation: new Date().toISOString()
-        });
-
-        // Parcourir les dettes du plus ancien au plus récent et réduire
-        let restant = montant;
-        const sortedItems = [...driver.items].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-        let nbApures = 0;
-
-        sortedItems.forEach(v => {
-          if (restant <= 0) return;
-          if (restant >= v.manquant) {
-            restant -= v.manquant;
-            Store.update('versements', v.id, { manquant: 0, traitementManquant: null });
-            nbApures++;
-          } else {
-            Store.update('versements', v.id, { manquant: v.manquant - restant });
-            restant = 0;
-          }
-        });
-
+        // Fermer le modal IMMEDIATEMENT pour éviter les double-clics
         Modal.close();
 
-        if (restant > 0) {
-          Toast.success(`Dette sold\u00e9e ! ${Utils.formatCurrency(montant - restant)} appliqu\u00e9(s) sur ${driver.count} versement(s). Exc\u00e9dent de ${Utils.formatCurrency(restant)}.`);
-        } else {
-          Toast.success(`Recouvrement de ${Utils.formatCurrency(montant)} \u2014 ${nbApures} dette(s) sold\u00e9e(s) sur ${driver.count}.`);
+        try {
+          // Créer un versement de recouvrement
+          Store.add('versements', {
+            id: Utils.generateId('VRS'),
+            chauffeurId,
+            date: values.dateRecette || new Date().toISOString().split('T')[0],
+            dateService: values.dateRecette || new Date().toISOString().split('T')[0],
+            periode: 'recouvrement',
+            montantVerse: montant,
+            statut: 'valide',
+            moyenPaiement: values.moyenPaiement,
+            referencePaiement: values.referencePaiement,
+            commentaire: values.commentaire || 'Recouvrement de dette',
+            dateValidation: new Date(values.dateEncaissement + 'T' + new Date().toTimeString().split(' ')[0]).toISOString(),
+            dateCreation: new Date().toISOString()
+          });
+          // Auto-create comptabilité encaissement for recouvrement
+          const allChauffeurs = Store.get('chauffeurs') || [];
+          const chRec = allChauffeurs.find(c => c.id === chauffeurId);
+          const chRecLabel = chRec ? (chRec.prenom + ' ' + chRec.nom) : chauffeurId;
+          Store.add('comptabilite', {
+            id: Utils.generateId('OP'),
+            type: 'recette',
+            date: values.dateRecette || new Date().toISOString().slice(0,10),
+            categorie: 'commissions_courses',
+            description: 'Recouvrement dette ' + chRecLabel + ' — ' + Utils.formatCurrency(montant),
+            montant: montant,
+            modePaiement: values.moyenPaiement || 'especes',
+            reference: 'REC-' + chauffeurId,
+            notes: 'Créé automatiquement depuis les versements (recouvrement)',
+            dateCreation: new Date().toISOString()
+          });
+
+          // Parcourir les dettes du plus ancien au plus récent et réduire
+          let restant = montant;
+          const sortedItems = [...driver.items].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+          let nbApures = 0;
+
+          sortedItems.forEach(v => {
+            if (restant <= 0) return;
+            if (v.implicit) {
+              // Dette implicite : créer un versement réel pour marquer comme traité
+              if (restant >= v.manquant) {
+                restant -= v.manquant;
+                // Créer un versement "soldé" pour cette date
+                Store.add('versements', {
+                  id: Utils.generateId('VRS'),
+                  chauffeurId: v.chauffeurId,
+                  date: v.date,
+                  montantVerse: v.manquant,
+                  montantAttendu: v.manquant,
+                  manquant: 0,
+                  statut: 'valide',
+                  traitementManquant: null,
+                  commentaire: 'Soldé via recouvrement',
+                  dateCreation: new Date().toISOString()
+                });
+                nbApures++;
+              } else {
+                // Créer un versement partiel avec reliquat en dette
+                Store.add('versements', {
+                  id: Utils.generateId('VRS'),
+                  chauffeurId: v.chauffeurId,
+                  date: v.date,
+                  montantVerse: restant,
+                  montantAttendu: v.manquant,
+                  manquant: v.manquant - restant,
+                  statut: 'partiel',
+                  traitementManquant: 'dette',
+                  commentaire: `Recouvrement partiel (${Utils.formatCurrency(restant)} sur ${Utils.formatCurrency(v.manquant)})`,
+                  dateCreation: new Date().toISOString()
+                });
+                restant = 0;
+              }
+            } else {
+              // Dette explicite : mettre à jour le versement existant
+              if (restant >= v.manquant) {
+                restant -= v.manquant;
+                Store.update('versements', v.id, { manquant: 0, traitementManquant: null });
+                nbApures++;
+              } else {
+                Store.update('versements', v.id, { manquant: v.manquant - restant });
+                restant = 0;
+              }
+            }
+          });
+
+          if (restant > 0) {
+            Toast.success(`Dette soldée ! ${Utils.formatCurrency(montant - restant)} appliqué(s) sur ${driver.count} versement(s). Excédent de ${Utils.formatCurrency(restant)}.`);
+          } else {
+            Toast.success(`Recouvrement de ${Utils.formatCurrency(montant)} — ${nbApures} dette(s) soldée(s) sur ${driver.count}.`);
+          }
+        } catch (err) {
+          console.error('Erreur encaissement dette:', err);
+          Toast.error('Erreur lors de l\'encaissement');
         }
 
         this.render();
