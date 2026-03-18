@@ -2298,14 +2298,14 @@ const VersementsPage = {
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-weight:700;color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</div>
-          ${!isImplicit ? `<div style="display:flex;gap:3px;margin-top:3px;">
-            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;" onclick="event.stopPropagation();VersementsPage._modifierDette('${v.id}')">
+          <div style="display:flex;gap:3px;margin-top:3px;">
+            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;" onclick="event.stopPropagation();VersementsPage.${isImplicit ? `_modifierDetteImplicite('${v.chauffeurId}','${v.date}',${v.manquant})` : `_modifierDette('${v.id}')`}">
               <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier
             </button>
-            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;color:#ef4444;border-color:#ef4444;" onclick="event.stopPropagation();VersementsPage._annulerDette('${v.id}')">
+            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;color:#ef4444;border-color:#ef4444;" onclick="event.stopPropagation();VersementsPage.${isImplicit ? `_annulerDetteImplicite('${v.chauffeurId}','${v.date}')` : `_annulerDette('${v.id}')`}">
               <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Annuler
             </button>
-          </div>` : ''}
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -2620,6 +2620,95 @@ const VersementsPage = {
     Toast.success('Dette annul\u00e9e avec succ\u00e8s');
     this.render();
     if (chauffeurId) setTimeout(() => this._showDetteDetail(chauffeurId), 300);
+  },
+
+  _modifierDetteImplicite(chauffeurId, date, montant) {
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const ch = chauffeurs.find(c => c.id === chauffeurId);
+    const nom = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+
+    Modal.open({
+      title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b;"></iconify-icon> Modifier le montant',
+      body: `
+        <div style="padding:12px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);font-size:var(--font-size-sm);margin-bottom:16px;">
+          <div style="font-weight:600;">${nom}</div>
+          <div>Date : ${Utils.formatDate(date)}</div>
+          <div>Montant actuel : <strong style="color:#f59e0b;">${Utils.formatCurrency(montant)}</strong></div>
+        </div>
+        <div>
+          <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Nouveau montant (FCFA)</label>
+          <input type="number" id="implicit-new-montant" value="${montant}" min="0" step="100" style="width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);">
+        </div>
+      `,
+      footer: `<button class="btn" style="background:#f59e0b;color:white;border:none;" id="btn-save-implicit" onclick="this.disabled=true;VersementsPage._confirmModifierImplicite('${chauffeurId}','${date}',${montant})"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" onclick="Modal.close();VersementsPage._showDetteDetail('${chauffeurId}')">Retour</button>`
+    });
+  },
+
+  _confirmModifierImplicite(chauffeurId, date, ancienMontant) {
+    const newMontant = parseFloat(document.getElementById('implicit-new-montant')?.value) || 0;
+    Modal.close();
+    if (newMontant <= 0) {
+      // Montant à 0 = annuler la dette → créer versement validé
+      Store.add('versements', {
+        id: Utils.generateId('VRS'),
+        chauffeurId, date,
+        montantVerse: 0, montantAttendu: ancienMontant, manquant: 0,
+        statut: 'supprime', traitementManquant: null,
+        commentaire: 'Dette annulée (montant mis à 0)',
+        dateCreation: new Date().toISOString()
+      });
+      Toast.success('Dette annulée');
+    } else {
+      // Créer un versement avec le montant modifié comme dette
+      Store.add('versements', {
+        id: Utils.generateId('VRS'),
+        chauffeurId, date,
+        montantVerse: 0, montantAttendu: newMontant, manquant: newMontant,
+        statut: 'en_attente', traitementManquant: 'dette',
+        commentaire: `Montant dette modifié de ${Utils.formatCurrency(ancienMontant)} à ${Utils.formatCurrency(newMontant)}`,
+        dateCreation: new Date().toISOString()
+      });
+      Toast.success(`Montant modifié à ${Utils.formatCurrency(newMontant)}`);
+    }
+    this.render();
+    setTimeout(() => this._showDetteDetail(chauffeurId), 300);
+  },
+
+  _annulerDetteImplicite(chauffeurId, date) {
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const ch = chauffeurs.find(c => c.id === chauffeurId);
+    const nom = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+    const redevance = ch ? (ch.redevanceQuotidienne || 0) : 0;
+
+    Modal.open({
+      title: '<iconify-icon icon="solar:close-circle-bold-duotone" style="color:#ef4444;"></iconify-icon> Annuler cette dette ?',
+      body: `
+        <div style="padding:12px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);font-size:var(--font-size-sm);">
+          <div style="font-weight:600;">${nom}</div>
+          <div>Date : ${Utils.formatDate(date)}</div>
+          <div>Montant : <strong style="color:#f59e0b;">${Utils.formatCurrency(redevance)}</strong></div>
+          <div style="margin-top:8px;color:var(--text-muted);font-size:var(--font-size-xs);">Le chauffeur ne sera plus considéré en dette pour cette date.</div>
+        </div>
+      `,
+      footer: `<button class="btn btn-danger" id="btn-cancel-implicit" onclick="this.disabled=true;VersementsPage._confirmAnnulerImplicite('${chauffeurId}','${date}')"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Confirmer</button><button class="btn btn-secondary" onclick="Modal.close();VersementsPage._showDetteDetail('${chauffeurId}')">Retour</button>`,
+      size: 'small'
+    });
+  },
+
+  _confirmAnnulerImplicite(chauffeurId, date) {
+    Modal.close();
+    // Créer un versement "supprimé" pour que cette date ne soit plus détectée comme impayée
+    Store.add('versements', {
+      id: Utils.generateId('VRS'),
+      chauffeurId, date,
+      montantVerse: 0, montantAttendu: 0, manquant: 0,
+      statut: 'supprime', traitementManquant: null,
+      commentaire: 'Dette annulée manuellement',
+      dateCreation: new Date().toISOString()
+    });
+    Toast.success('Dette annulée');
+    this.render();
+    setTimeout(() => this._showDetteDetail(chauffeurId), 300);
   },
 
   _ajouterDette() {
