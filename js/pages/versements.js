@@ -218,10 +218,11 @@ const VersementsPage = {
     const totalUnpaid = unpaidItems.reduce((s, i) => s + i.montantDu, 0);
     const totalPenalites = unpaidItems.reduce((s, i) => s + i.penalite, 0);
 
-    // Dettes & pertes globales (tous versements, pas limité au jour)
-    const totalDettes = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0).reduce((s, v) => s + v.manquant, 0);
-    const totalPertes = versements.filter(v => v.traitementManquant === 'perte' && v.manquant > 0).reduce((s, v) => s + v.manquant, 0);
-    const nbDetteDrivers = new Set(versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0).map(v => v.chauffeurId)).size;
+    // Dettes & pertes globales (inclut dettes implicites du planning)
+    const detteData = this._getDetteData();
+    const totalDettes = detteData.totalDettes;
+    const totalPertes = detteData.totalPertes;
+    const nbDetteDrivers = detteData.detteList.length;
 
     return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay, detailProgrammes, detailRetard, detailVerse, nbChauffeursProgrammes, unpaidItems, totalUnpaid, totalPenalites, totalDettes, totalPertes, nbDetteDrivers };
   },
