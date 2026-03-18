@@ -479,6 +479,9 @@ const VersementsPage = {
       if (v.statut === 'valide') {
         actionsHtml += `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();VersementsPage._exportReceipt('${v.id}')" title="Reçu PDF"><iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon></button>`;
       }
+      if (!isDeleted) {
+        actionsHtml += `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();VersementsPage._deleteVersement('${v.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>`;
+      }
       actionsHtml += '</div>';
 
       const isDette = v.traitementManquant === 'dette';
@@ -936,6 +939,22 @@ const VersementsPage = {
       // Trigger initial display
       updateRedevanceInfo();
     }, 100);
+  },
+
+  _deleteVersement(id) {
+    const v = Store.findById('versements', id);
+    if (!v) return;
+    const ch = Store.findById('chauffeurs', v.chauffeurId);
+    const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+    Modal.confirm(
+      'Supprimer le versement',
+      `Voulez-vous supprimer le versement de <strong>${nom}</strong> du <strong>${Utils.formatDate(v.date)}</strong> (${Utils.formatCurrency(v.montantVerse || v.montantAttendu || 0)}) ?`,
+      () => {
+        Store.update('versements', id, { statut: 'supprime' });
+        Toast.success('Versement supprimé');
+        this.render(document.querySelector('.content'));
+      }
+    );
   },
 
   _validate(id) {
