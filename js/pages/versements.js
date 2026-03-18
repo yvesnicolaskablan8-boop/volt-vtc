@@ -2662,40 +2662,32 @@ const VersementsPage = {
     const newMontant = parseFloat(document.getElementById('implicit-new-montant')?.value) || 0;
     const newDate = document.getElementById('implicit-new-date')?.value || date;
     Modal.close();
-    if (newMontant <= 0) {
-      // Montant à 0 = annuler la dette → créer versement supprimé pour la date originale
-      Store.add('versements', {
-        id: Utils.generateId('VRS'),
-        chauffeurId, date,
-        montantVerse: 0, montantAttendu: ancienMontant, manquant: 0,
-        statut: 'supprime', traitementManquant: null,
-        commentaire: 'Dette annulée (montant mis à 0)',
-        dateCreation: new Date().toISOString()
-      });
-      Toast.success('Dette annulée');
-    } else {
-      // Si la date a changé, annuler l'ancienne date aussi
-      if (newDate !== date) {
-        Store.add('versements', {
-          id: Utils.generateId('VRS'),
-          chauffeurId, date,
-          montantVerse: 0, montantAttendu: 0, manquant: 0,
-          statut: 'supprime', traitementManquant: null,
-          commentaire: `Dette déplacée au ${Utils.formatDate(newDate)}`,
-          dateCreation: new Date().toISOString()
-        });
-      }
-      // Créer un versement avec le montant/date modifiés comme dette
+
+    // Toujours annuler l'ancienne date implicite (créer versement supprimé)
+    Store.add('versements', {
+      id: Utils.generateId('VRS'),
+      chauffeurId, date,
+      montantVerse: 0, montantAttendu: ancienMontant, manquant: 0,
+      statut: 'supprime', traitementManquant: null,
+      commentaire: newMontant <= 0 ? 'Dette annulée' : `Dette modifiée → ${Utils.formatCurrency(newMontant)}${newDate !== date ? ' au ' + Utils.formatDate(newDate) : ''}`,
+      dateCreation: new Date().toISOString()
+    });
+
+    if (newMontant > 0) {
+      // Créer la nouvelle dette (explicite) à la date voulue
       Store.add('versements', {
         id: Utils.generateId('VRS'),
         chauffeurId, date: newDate,
         montantVerse: 0, montantAttendu: newMontant, manquant: newMontant,
         statut: 'en_attente', traitementManquant: 'dette',
-        commentaire: `Montant dette modifié de ${Utils.formatCurrency(ancienMontant)} à ${Utils.formatCurrency(newMontant)}${newDate !== date ? ' (date changée)' : ''}`,
+        commentaire: `Dette ajustée (était ${Utils.formatCurrency(ancienMontant)} le ${Utils.formatDate(date)})`,
         dateCreation: new Date().toISOString()
       });
       Toast.success(`Dette modifiée : ${Utils.formatCurrency(newMontant)} au ${Utils.formatDate(newDate)}`);
+    } else {
+      Toast.success('Dette annulée');
     }
+
     this.render();
     setTimeout(() => this._showDetteDetail(chauffeurId), 300);
   },
