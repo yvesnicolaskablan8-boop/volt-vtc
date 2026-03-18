@@ -2500,9 +2500,9 @@ const VersementsPage = {
     const options = chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('');
     const today = new Date().toISOString().split('T')[0];
 
-    Modal.open(
-      '<iconify-icon icon="solar:add-circle-bold" style="color:#f59e0b"></iconify-icon> Ajouter une dette',
-      `<div style="display:flex;flex-direction:column;gap:16px;">
+    Modal.open({
+      title: '<iconify-icon icon="solar:add-circle-bold" style="color:#f59e0b"></iconify-icon> Ajouter une dette',
+      body: `<div style="display:flex;flex-direction:column;gap:16px;">
         <div>
           <label style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;">Chauffeur *</label>
           <select id="dette-chauffeur" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);">
@@ -2523,11 +2523,8 @@ const VersementsPage = {
           <input type="text" id="dette-motif" placeholder="Ex: Retard de versement, avance..." style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);">
         </div>
       </div>`,
-      {
-        footer: `<button class="btn" style="background:#f59e0b;color:white;border:none;" onclick="VersementsPage._confirmAjouterDette()"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`,
-        width: '440px'
-      }
-    );
+      footer: `<button class="btn" style="background:#f59e0b;color:white;border:none;" onclick="VersementsPage._confirmAjouterDette()"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`
+    });
   },
 
   _confirmAjouterDette() {
