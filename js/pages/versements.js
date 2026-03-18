@@ -2313,35 +2313,24 @@ const VersementsPage = {
     const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
 
     if (action === 'modifier') {
-      const fields = [
-        { type: 'heading', label: `Modifier montant — ${nom}` },
-        { type: 'html', html: `<div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:10px;font-size:var(--font-size-sm);">
-          Manquant actuel : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
-        </div>` },
-        { name: 'manquant', label: 'Modifier le montant de la dette (FCFA)', type: 'number', required: true, min: 0, step: 100, default: v.manquant },
-        { name: 'commentaire', label: 'Commentaire (optionnel)', type: 'textarea', rows: 2, placeholder: 'Raison de la modification...', default: '' }
-      ];
-      Modal.form(
-        '<iconify-icon icon="solar:pen-bold-duotone" style="color:#6366f1;"></iconify-icon> Modifier le montant',
-        FormBuilder.build(fields),
-        () => {
-          const body = document.getElementById('modal-body');
-          if (!FormBuilder.validate(body, fields)) return;
-          const values = FormBuilder.getValues(body);
-          const newManquant = parseFloat(values.manquant) || 0;
-          if (newManquant < 0) { Toast.error('Le montant ne peut pas être négatif'); return; }
-          const updates = { manquant: newManquant };
-          if (newManquant === 0) updates.traitementManquant = null;
-          if (values.commentaire) updates.commentaire = (v.commentaire ? v.commentaire + ' | ' : '') + 'Modif: ' + values.commentaire;
-          Store.update('versements', versementId, updates);
-          Modal.close();
-          Toast.success(`Dette modifiée : ${Utils.formatCurrency(v.manquant)} → ${Utils.formatCurrency(newManquant)}`);
-          this.render();
-          setTimeout(() => this._showDetteDetail(v.chauffeurId), 300);
-        },
-        '',
-        () => { setTimeout(() => this._modifierDette(versementId), 200); }
-      );
+      Modal.open({
+        title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#6366f1;"></iconify-icon> Modifier le montant',
+        body: `
+          <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:16px;font-size:var(--font-size-sm);">
+            <div style="font-weight:600;margin-bottom:4px;">${nom}</div>
+            Manquant actuel : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Nouveau montant (FCFA) <span style="color:#ef4444;">*</span></label>
+            <input type="number" id="dette-new-montant" value="${v.manquant}" min="0" step="100" style="width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);">
+          </div>
+          <div>
+            <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Commentaire (optionnel)</label>
+            <textarea id="dette-commentaire" rows="2" placeholder="Raison de la modification..." style="width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);resize:vertical;"></textarea>
+          </div>
+        `,
+        footer: `<button class="btn btn-primary" onclick="VersementsPage._confirmModifierMontant('${versementId}','${v.chauffeurId}',${v.manquant})"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" onclick="VersementsPage._modifierDette('${versementId}')">Retour</button>`
+      });
     } else if (action === 'regler') {
       const manquant = v.manquant || 0;
       Modal.open({
@@ -2399,6 +2388,21 @@ const VersementsPage = {
         size: 'small'
       });
     }
+  },
+
+  _confirmModifierMontant(versementId, chauffeurId, oldManquant) {
+    const newManquant = parseFloat(document.getElementById('dette-new-montant')?.value) || 0;
+    if (newManquant < 0) { Toast.error('Le montant ne peut pas être négatif'); return; }
+    const commentaire = document.getElementById('dette-commentaire')?.value || '';
+    const v = (Store.get('versements') || []).find(x => x.id === versementId);
+    const updates = { manquant: newManquant };
+    if (newManquant === 0) updates.traitementManquant = null;
+    if (commentaire) updates.commentaire = (v?.commentaire ? v.commentaire + ' | ' : '') + 'Modif: ' + commentaire;
+    Store.update('versements', versementId, updates);
+    Modal.close();
+    Toast.success(`Dette modifiée : ${Utils.formatCurrency(oldManquant)} → ${Utils.formatCurrency(newManquant)}`);
+    this.render();
+    setTimeout(() => this._showDetteDetail(chauffeurId), 300);
   },
 
   _confirmDetteAction(action, versementId, chauffeurId) {
