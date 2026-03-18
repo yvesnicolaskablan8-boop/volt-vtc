@@ -2380,15 +2380,21 @@ const VersementsPage = {
 
     if (action === 'modifier') {
       Modal.open({
-        title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#6366f1;"></iconify-icon> Modifier le montant',
+        title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#6366f1;"></iconify-icon> Modifier la dette',
         body: `
           <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:16px;font-size:var(--font-size-sm);">
             <div style="font-weight:600;margin-bottom:4px;">${nom}</div>
-            Manquant actuel : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
+            Date : <strong>${Utils.formatDate(v.date)}</strong> — Manquant : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
           </div>
-          <div style="margin-bottom:12px;">
-            <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Nouveau montant (FCFA) <span style="color:#ef4444;">*</span></label>
-            <input type="number" id="dette-new-montant" value="${v.manquant}" min="0" step="100" style="width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Montant (FCFA) <span style="color:#ef4444;">*</span></label>
+              <input type="number" id="dette-new-montant" value="${v.manquant}" min="0" step="100" style="width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);">
+            </div>
+            <div>
+              <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Date</label>
+              <input type="date" id="dette-new-date" value="${v.date}" style="width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);">
+            </div>
           </div>
           <div>
             <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Commentaire (optionnel)</label>
@@ -2470,14 +2476,16 @@ const VersementsPage = {
   _confirmModifierMontant(versementId, chauffeurId, oldManquant) {
     const newManquant = parseFloat(document.getElementById('dette-new-montant')?.value) || 0;
     if (newManquant < 0) { Toast.error('Le montant ne peut pas être négatif'); return; }
+    const newDate = document.getElementById('dette-new-date')?.value;
     const commentaire = document.getElementById('dette-commentaire')?.value || '';
     const v = (Store.get('versements') || []).find(x => x.id === versementId);
     const updates = { manquant: newManquant };
     if (newManquant === 0) updates.traitementManquant = null;
+    if (newDate && v && newDate !== v.date) updates.date = newDate;
     if (commentaire) updates.commentaire = (v?.commentaire ? v.commentaire + ' | ' : '') + 'Modif: ' + commentaire;
     Store.update('versements', versementId, updates);
     Modal.close();
-    Toast.success(`Dette modifiée : ${Utils.formatCurrency(oldManquant)} → ${Utils.formatCurrency(newManquant)}`);
+    Toast.success(`Dette modifiée : ${Utils.formatCurrency(oldManquant)} → ${Utils.formatCurrency(newManquant)}${newDate && v && newDate !== v.date ? ' (date changée)' : ''}`);
     this.render();
     setTimeout(() => this._showDetteDetail(chauffeurId), 300);
   },
