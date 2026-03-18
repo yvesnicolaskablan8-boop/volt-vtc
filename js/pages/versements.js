@@ -2635,9 +2635,15 @@ const VersementsPage = {
           <div>Date : ${Utils.formatDate(date)}</div>
           <div>Montant actuel : <strong style="color:#f59e0b;">${Utils.formatCurrency(montant)}</strong></div>
         </div>
-        <div>
-          <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Nouveau montant (FCFA)</label>
-          <input type="number" id="implicit-new-montant" value="${montant}" min="0" step="100" style="width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Nouveau montant (FCFA)</label>
+            <input type="number" id="implicit-new-montant" value="${montant}" min="0" step="100" style="width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);">
+          </div>
+          <div>
+            <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Date</label>
+            <input type="date" id="implicit-new-date" value="${date}" style="width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:var(--font-size-sm);background:var(--bg-primary);color:var(--text-primary);">
+          </div>
         </div>
       `,
       footer: `<button class="btn" style="background:#f59e0b;color:white;border:none;" id="btn-save-implicit" onclick="this.disabled=true;VersementsPage._confirmModifierImplicite('${chauffeurId}','${date}',${montant})"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" onclick="Modal.close();VersementsPage._showDetteDetail('${chauffeurId}')">Retour</button>`
@@ -2646,9 +2652,10 @@ const VersementsPage = {
 
   _confirmModifierImplicite(chauffeurId, date, ancienMontant) {
     const newMontant = parseFloat(document.getElementById('implicit-new-montant')?.value) || 0;
+    const newDate = document.getElementById('implicit-new-date')?.value || date;
     Modal.close();
     if (newMontant <= 0) {
-      // Montant à 0 = annuler la dette → créer versement validé
+      // Montant à 0 = annuler la dette → créer versement supprimé pour la date originale
       Store.add('versements', {
         id: Utils.generateId('VRS'),
         chauffeurId, date,
@@ -2659,16 +2666,27 @@ const VersementsPage = {
       });
       Toast.success('Dette annulée');
     } else {
-      // Créer un versement avec le montant modifié comme dette
+      // Si la date a changé, annuler l'ancienne date aussi
+      if (newDate !== date) {
+        Store.add('versements', {
+          id: Utils.generateId('VRS'),
+          chauffeurId, date,
+          montantVerse: 0, montantAttendu: 0, manquant: 0,
+          statut: 'supprime', traitementManquant: null,
+          commentaire: `Dette déplacée au ${Utils.formatDate(newDate)}`,
+          dateCreation: new Date().toISOString()
+        });
+      }
+      // Créer un versement avec le montant/date modifiés comme dette
       Store.add('versements', {
         id: Utils.generateId('VRS'),
-        chauffeurId, date,
+        chauffeurId, date: newDate,
         montantVerse: 0, montantAttendu: newMontant, manquant: newMontant,
         statut: 'en_attente', traitementManquant: 'dette',
-        commentaire: `Montant dette modifié de ${Utils.formatCurrency(ancienMontant)} à ${Utils.formatCurrency(newMontant)}`,
+        commentaire: `Montant dette modifié de ${Utils.formatCurrency(ancienMontant)} à ${Utils.formatCurrency(newMontant)}${newDate !== date ? ' (date changée)' : ''}`,
         dateCreation: new Date().toISOString()
       });
-      Toast.success(`Montant modifié à ${Utils.formatCurrency(newMontant)}`);
+      Toast.success(`Dette modifiée : ${Utils.formatCurrency(newMontant)} au ${Utils.formatDate(newDate)}`);
     }
     this.render();
     setTimeout(() => this._showDetteDetail(chauffeurId), 300);
