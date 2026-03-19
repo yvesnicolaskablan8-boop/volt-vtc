@@ -101,6 +101,15 @@ img { max-width: 100%; }
   font-size: 20px;
   letter-spacing: -0.02em;
 }
+.nav-logo-img {
+  height: 36px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  transition: opacity var(--transition);
+}
+.nav-logo:hover .nav-logo-img {
+  opacity: 0.8;
+}
 .nav-links {
   display: flex;
   gap: 32px;
@@ -894,6 +903,11 @@ img { max-width: 100%; }
   font-weight: 700;
   font-size: 20px;
   margin-bottom: 16px;
+}
+.footer-logo-img {
+  height: 32px;
+  width: auto;
+  filter: brightness(0) invert(1);
 }
 .footer-brand p {
   color: var(--text-muted);
