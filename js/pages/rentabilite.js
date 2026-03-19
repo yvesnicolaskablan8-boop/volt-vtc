@@ -228,31 +228,26 @@ const RentabilitePage = {
     }, 0);
     // Investissement déjà payé (leasing : uniquement les mensualités réglées)
     const investPaye = analysis.reduce((s, a) => s + a.acquisitionTotal, 0);
-    // Coûts opérationnels = tout sauf l'acquisition (maintenance, assurance, énergie, dépenses, réparations)
-    const coutOperationnel = fleetTotalCost - investPaye;
-    // Résultat cumulé = revenus - coûts opérationnels SEULEMENT (hors acquisition)
-    // Car on veut mesurer combien le profit d'exploitation "rembourse" l'investissement
-    const resultatCumule = fleetTotalRevenue - coutOperationnel;
+    // Profit = recettes - TOUTES les charges (y compris leasing payé)
+    // fleetProfit = fleetTotalRevenue - fleetTotalCost (déjà calculé plus haut)
+    // fleetTotalCost inclut acquisitionTotal (leasing payé) + chargesReelles
+    const resultatCumule = fleetProfit; // recettes - toutes charges réelles
     const rsiGlobal = investTotal > 0 ? (resultatCumule / investTotal * 100) : 0;
-    // Délai de récupération — basé sur le profit NET mensuel (revenus - TOUS les coûts y compris leasing payé)
     const avgMonthsService = analysis.length > 0 ? analysis.reduce((s, a) => s + a.monthsInService, 0) / analysis.length : 1;
-    const profitNetMensuel = avgMonthsService > 0 ? fleetProfit / avgMonthsService : 0;
-    // Mensualité leasing totale par mois (pour tous les véhicules)
+    // Marge mensuelle = profit net / mois (toutes charges incluses)
+    const margeMensuelle = avgMonthsService > 0 ? fleetProfit / avgMonthsService : 0;
+    // Mensualité leasing totale par mois (pour référence dans le détail)
     const mensualiteTotaleMensuelle = vehicules.reduce((s, v) => s + (v.typeAcquisition === 'leasing' ? (v.mensualiteLeasing || 0) : 0), 0);
-    // Marge mensuelle = profit exploitation mensuel - mensualités leasing
-    const resultatMensuelMoyen = avgMonthsService > 0 ? resultatCumule / avgMonthsService : 0;
-    const margeMensuelle = resultatMensuelMoyen - mensualiteTotaleMensuelle;
+    // Charges opérationnelles (hors acquisition) pour le détail
+    const chargesOperationnelles = fleetTotalCost - investPaye;
     // Durée max leasing (pour référence)
     const maxDureeLeasing = vehicules.reduce((m, v) => Math.max(m, v.typeAcquisition === 'leasing' ? (v.dureeLeasing || 36) : 0), 0);
     let moisRecuperation = null;
     if (margeMensuelle > 0) {
-      // Marge positive : le profit couvre le leasing + dégage du bénéfice
-      // Récupération = restant à payer / marge mensuelle
+      // Marge positive : on dégage du bénéfice chaque mois
+      // Récupération = investissement restant / marge mensuelle
       const restantAPayer = investTotal - investPaye;
       moisRecuperation = Math.ceil(restantAPayer / margeMensuelle);
-    } else if (resultatMensuelMoyen > 0 && resultatMensuelMoyen >= mensualiteTotaleMensuelle * 0.8) {
-      // Profit couvre presque le leasing → récupération à la fin du contrat
-      moisRecuperation = maxDureeLeasing > 0 ? maxDureeLeasing : null;
     }
 
     // Debug data
@@ -275,7 +270,7 @@ const RentabilitePage = {
       debugAcquisitionTotal: analysis.reduce((s, a) => s + a.acquisitionTotal, 0),
       debugPerVehicle,
       investTotal, investPaye, resultatCumule, rsiGlobal, moisRecuperation,
-      margeMensuelle: Math.round(margeMensuelle), mensualiteTotaleMensuelle, resultatMensuelMoyen: Math.round(resultatMensuelMoyen),
+      margeMensuelle: Math.round(margeMensuelle), mensualiteTotaleMensuelle, chargesOperationnelles,
       vehiculeCount: vehicules.length
     };
   },
@@ -348,12 +343,12 @@ const RentabilitePage = {
           </div>
           <div class="rent-kpi-glass">
             <div class="rent-kpi-val" style="color:${d.resultatCumule >= 0 ? '#34d399' : '#f87171'};">${Utils.formatCurrency(d.resultatCumule)}</div>
-            <div class="rent-kpi-lbl">Profit d'exploitation</div>
+            <div class="rent-kpi-lbl">Profit net cumulé</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;">Recettes − toutes charges</div>
           </div>
           <div class="rent-kpi-glass">
             <div class="rent-kpi-val" style="color:${d.margeMensuelle >= 0 ? '#34d399' : '#f87171'};">${Utils.formatCurrency(d.margeMensuelle)}</div>
             <div class="rent-kpi-lbl">Marge nette / mois</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;">${d.mensualiteTotaleMensuelle > 0 ? 'Profit ' + Utils.formatCurrency(d.resultatMensuelMoyen) + ' − Leasing ' + Utils.formatCurrency(d.mensualiteTotaleMensuelle) : ''}</div>
           </div>
         </div>
 
@@ -366,11 +361,12 @@ const RentabilitePage = {
           <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:8px;"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Détail du calcul</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
             <div style="color:rgba(255,255,255,.4);">Revenus (versements) :</div><div style="color:#34d399;font-weight:600;text-align:right;">+ ${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
-            <div style="color:rgba(255,255,255,.4);">Coûts opérationnels :</div><div style="color:#f87171;font-weight:600;text-align:right;">− ${Utils.formatCurrency(d.fleetTotalCost - d.investPaye)}</div>
+            <div style="color:rgba(255,255,255,.4);">Leasing payé :</div><div style="color:#f87171;font-weight:600;text-align:right;">− ${Utils.formatCurrency(d.investPaye)}</div>
+            <div style="color:rgba(255,255,255,.4);">Charges opérationnelles :</div><div style="color:#f87171;font-weight:600;text-align:right;">− ${Utils.formatCurrency(d.chargesOperationnelles)}</div>
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont dépenses :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.vehiculeDepenses, 0))}</div>
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont réparations :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.vehiculeReparations, 0))}</div>
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont maintenance :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.maintenanceTotal, 0))}</div>
-            <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:rgba(255,255,255,.6);font-weight:700;">= Profit d'exploitation :</div><div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:${d.resultatCumule >= 0 ? '#34d399' : '#f87171'};font-weight:700;text-align:right;">${Utils.formatCurrency(d.resultatCumule)}</div>
+            <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:rgba(255,255,255,.6);font-weight:700;">= Profit net :</div><div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:${d.resultatCumule >= 0 ? '#34d399' : '#f87171'};font-weight:700;text-align:right;">${Utils.formatCurrency(d.resultatCumule)}</div>
           </div>
         </div>
       </div>
