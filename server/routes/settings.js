@@ -48,15 +48,27 @@ router.get('/', async (req, res, next) => {
     }
     const json = settings.toJSON();
 
-    // Mask integration keys before sending to client
-    if (json.integrations) {
-      if (json.integrations.wave) {
-        json.integrations.wave.apiKey = maskKey(json.integrations.wave.apiKey);
-      }
-      if (json.integrations.yango) {
-        json.integrations.yango.apiKey = maskKey(json.integrations.yango.apiKey);
-      }
-    }
+    // Ensure integrations object exists
+    if (!json.integrations) json.integrations = {};
+    if (!json.integrations.wave) json.integrations.wave = {};
+    if (!json.integrations.yango) json.integrations.yango = {};
+
+    // Fallback to .env values if DB is empty (pre-fill for existing setups)
+    const waveKey = json.integrations.wave.apiKey || process.env.WAVE_API_KEY || '';
+    const yangoKey = json.integrations.yango.apiKey || process.env.YANGO_API_KEY || '';
+    const yangoParkId = json.integrations.yango.parkId || process.env.YANGO_PARK_ID || '';
+    const yangoClientId = json.integrations.yango.clientId || process.env.YANGO_CLIENT_ID || '';
+
+    // Mask API keys before sending to client
+    json.integrations.wave.apiKey = maskKey(waveKey);
+    json.integrations.wave.configured = !!waveKey;
+    json.integrations.wave.source = json.integrations.wave.apiKey ? 'db' : (process.env.WAVE_API_KEY ? 'env' : 'none');
+
+    json.integrations.yango.apiKey = maskKey(yangoKey);
+    json.integrations.yango.parkId = yangoParkId;
+    json.integrations.yango.clientId = yangoClientId;
+    json.integrations.yango.configured = !!(yangoKey && yangoParkId);
+    json.integrations.yango.source = json.integrations.yango.parkId ? 'db' : (process.env.YANGO_PARK_ID ? 'env' : 'none');
 
     res.json(json);
   } catch (err) {

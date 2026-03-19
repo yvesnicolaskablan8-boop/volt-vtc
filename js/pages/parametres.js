@@ -2443,8 +2443,8 @@ const ParametresPage = {
     const wave = integrations.wave || {};
     const yango = integrations.yango || {};
 
-    const waveConfigured = wave.apiKey && wave.apiKey !== '';
-    const yangoConfigured = yango.parkId && yango.apiKey && yango.parkId !== '' && yango.apiKey !== '';
+    const waveConfigured = wave.configured || (wave.apiKey && wave.apiKey !== '');
+    const yangoConfigured = yango.configured || (yango.parkId && yango.apiKey && yango.parkId !== '' && yango.apiKey !== '');
 
     return '<div class="grid-2" style="gap:var(--space-lg);">' +
 
