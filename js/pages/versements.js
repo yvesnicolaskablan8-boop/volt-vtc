@@ -3075,62 +3075,109 @@ const VersementsPage = {
     const nom = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
     const today = new Date().toISOString().split('T')[0];
     const typeLabel = source === 'contravention' ? 'contravention' : 'recette';
+    const color = source === 'contravention' ? '#ef4444' : '#f59e0b';
 
-    const fields = [
-      { type: 'heading', label: `Encaisser ${typeLabel} \u2014 ${nom}` },
-      { type: 'html', html: `<div style="padding:8px 12px;border-radius:8px;background:${source === 'contravention' ? 'rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3)'};font-size:var(--font-size-sm);">Date de service : <strong>${Utils.formatDate(date)}</strong> \u2014 Montant : <strong style="color:${source === 'contravention' ? '#ef4444' : '#f59e0b'};">${Utils.formatCurrency(montant)}</strong></div>` },
-      { name: 'montantPaye', label: 'Montant encaiss\u00e9 (FCFA)', type: 'number', required: true, min: 1, default: montant },
-      { name: 'dateEncaissement', label: 'Date d\u2019encaissement', type: 'date', required: true, default: today },
-      { name: 'moyenPaiement', label: 'Moyen de paiement', type: 'select', required: true, options: [
-        { value: 'especes', label: 'Esp\u00e8ces' },
-        { value: 'wave', label: 'Wave' },
-        { value: 'orange_money', label: 'Orange Money' },
-        { value: 'mobile_money', label: 'Mobile Money' },
-        { value: 'virement', label: 'Virement bancaire' },
-        { value: 'autre', label: 'Autre' }
-      ]},
-      { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2, placeholder: 'Notes...' }
-    ];
+    const formHtml = `
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="font-weight:700;font-size:var(--font-size-sm);text-transform:uppercase;letter-spacing:.5px;">Encaisser ${typeLabel} \u2014 ${nom}</div>
+        <div style="padding:8px 12px;border-radius:8px;background:${color}0D;border:1px solid ${color}40;font-size:var(--font-size-sm);">
+          Date de service : <strong>${Utils.formatDate(date)}</strong> \u2014 Montant : <strong style="color:${color};">${Utils.formatCurrency(montant)}</strong>
+        </div>
+        <div>
+          <label style="font-size:var(--font-size-sm);font-weight:600;display:block;margin-bottom:4px;">Montant encaiss\u00e9 (FCFA) *</label>
+          <input type="number" id="edi-montant" value="${montant}" min="1" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-size:var(--font-size-sm);font-family:var(--font-body);">
+        </div>
+        <div id="edi-reliquat" style="display:none;padding:10px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);">
+          <div style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:8px;">Reliquat : <strong id="edi-reliquat-montant" style="color:#f59e0b;">0 FCFA</strong></div>
+          <div style="display:flex;gap:8px;">
+            <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px;border-radius:6px;border:1px solid var(--border-color);cursor:pointer;font-size:var(--font-size-sm);">
+              <input type="radio" name="edi-traitement" value="dette" checked> Garder en dette
+            </label>
+            <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px;border-radius:6px;border:1px solid var(--border-color);cursor:pointer;font-size:var(--font-size-sm);">
+              <input type="radio" name="edi-traitement" value="perte"> Passer en perte
+            </label>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:var(--font-size-sm);font-weight:600;display:block;margin-bottom:4px;">Date d\u2019encaissement *</label>
+          <input type="date" id="edi-date" value="${today}" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-size:var(--font-size-sm);font-family:var(--font-body);">
+        </div>
+        <div>
+          <label style="font-size:var(--font-size-sm);font-weight:600;display:block;margin-bottom:4px;">Moyen de paiement *</label>
+          <select id="edi-moyen" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-size:var(--font-size-sm);font-family:var(--font-body);">
+            <option value="especes">Esp\u00e8ces</option><option value="wave">Wave</option><option value="orange_money">Orange Money</option><option value="mobile_money">Mobile Money</option><option value="virement">Virement bancaire</option><option value="autre">Autre</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:var(--font-size-sm);font-weight:600;display:block;margin-bottom:4px;">Commentaire</label>
+          <textarea id="edi-commentaire" rows="2" placeholder="Notes..." style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-size:var(--font-size-sm);font-family:var(--font-body);resize:vertical;"></textarea>
+        </div>
+      </div>
+    `;
 
-    Modal.form(
-      `<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#22c55e;"></iconify-icon> Encaisser`,
-      FormBuilder.build(fields),
-      () => {
-        const body = document.getElementById('modal-body');
-        if (!FormBuilder.validate(body, fields)) return;
-        const values = FormBuilder.getValues(body);
-        const paye = parseFloat(values.montantPaye) || 0;
+    Modal.open({
+      title: `<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#22c55e;"></iconify-icon> Encaisser`,
+      body: formHtml,
+      footer: `<button class="btn btn-success" id="edi-confirm-btn"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`
+    });
+
+    // Listener dynamique pour le reliquat
+    const montantInput = document.getElementById('edi-montant');
+    const reliquatDiv = document.getElementById('edi-reliquat');
+    const reliquatMontant = document.getElementById('edi-reliquat-montant');
+    if (montantInput) {
+      montantInput.addEventListener('input', () => {
+        const val = parseFloat(montantInput.value) || 0;
+        const diff = montant - val;
+        if (val > 0 && diff > 0) {
+          reliquatDiv.style.display = '';
+          reliquatMontant.textContent = Utils.formatCurrency(diff);
+        } else {
+          reliquatDiv.style.display = 'none';
+        }
+      });
+    }
+
+    // Bouton confirmer
+    const confirmBtn = document.getElementById('edi-confirm-btn');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', () => {
+        const paye = parseFloat(document.getElementById('edi-montant')?.value) || 0;
         if (paye <= 0) { Toast.error('Montant invalide'); return; }
+        const dateEnc = document.getElementById('edi-date')?.value || today;
+        const moyen = document.getElementById('edi-moyen')?.value || 'especes';
+        const commentaire = document.getElementById('edi-commentaire')?.value || '';
+        const reliquat = montant - paye;
+        const traitementReliquat = reliquat > 0 ? (document.querySelector('input[name="edi-traitement"]:checked')?.value || 'dette') : null;
 
         Modal.close();
 
         try {
-          const dateEnc = values.dateEncaissement || today;
+          const traitementManquant = reliquat > 0 ? traitementReliquat : null;
+          const statutFinal = paye >= montant ? 'valide' : 'partiel';
 
           if (isImplicit) {
-            // Dette implicite : cr\u00e9er un versement \u00e0 la date de service
             Store.add('versements', {
               id: Utils.generateId('VRS'),
               chauffeurId, date,
               montantVerse: Math.min(paye, montant),
               montantAttendu: montant,
-              manquant: Math.max(0, montant - paye),
-              statut: paye >= montant ? 'valide' : 'partiel',
-              traitementManquant: paye >= montant ? null : 'dette',
-              moyenPaiement: values.moyenPaiement,
-              commentaire: values.commentaire || `Recouvrement ${typeLabel} du ${Utils.formatDate(date)}`,
+              manquant: Math.max(0, reliquat),
+              statut: statutFinal,
+              traitementManquant,
+              source: source || null,
+              moyenPaiement: moyen,
+              commentaire: commentaire || `Recouvrement ${typeLabel} du ${Utils.formatDate(date)}`,
               dateValidation: new Date(dateEnc + 'T' + new Date().toTimeString().split(' ')[0]).toISOString(),
               dateCreation: new Date().toISOString()
             });
           } else {
-            // Dette explicite : mettre \u00e0 jour le versement existant
-            const newManquant = Math.max(0, montant - paye);
             Store.update('versements', versementId, {
-              manquant: newManquant,
-              montantVerse: paye >= montant ? (montant + (Store.findById('versements', versementId)?.montantVerse || 0)) : paye,
-              statut: newManquant <= 0 ? 'valide' : 'partiel',
-              traitementManquant: newManquant <= 0 ? null : 'dette',
-              moyenPaiement: values.moyenPaiement,
+              manquant: Math.max(0, reliquat),
+              montantVerse: Math.min(paye, montant),
+              statut: statutFinal,
+              traitementManquant,
+              moyenPaiement: moyen,
               dateValidation: new Date(dateEnc + 'T' + new Date().toTimeString().split(' ')[0]).toISOString()
             });
           }
@@ -3139,19 +3186,22 @@ const VersementsPage = {
           Store.add('comptabilite', {
             id: Utils.generateId('OP'), type: 'recette', date: dateEnc,
             categorie: source === 'contravention' ? 'autres_recettes' : 'commissions_courses',
-            description: `Recouvrement ${typeLabel} ${nom} du ${Utils.formatDate(date)} \u2014 ${Utils.formatCurrency(paye)}`,
-            montant: paye, modePaiement: values.moyenPaiement || 'especes',
-            notes: values.commentaire || '', dateCreation: new Date().toISOString()
+            description: `Recouvrement ${typeLabel} ${nom} du ${Utils.formatDate(date)} \u2014 ${Utils.formatCurrency(paye)}${reliquat > 0 ? ` (reliquat ${Utils.formatCurrency(reliquat)} en ${traitementReliquat})` : ''}`,
+            montant: paye, modePaiement: moyen,
+            notes: commentaire, dateCreation: new Date().toISOString()
           });
 
-          Toast.success(`${Utils.formatCurrency(paye)} encaiss\u00e9(s) pour le ${Utils.formatDate(date)}`);
+          const msg = reliquat > 0
+            ? `${Utils.formatCurrency(paye)} encaiss\u00e9(s). Reliquat de ${Utils.formatCurrency(reliquat)} en ${traitementReliquat}.`
+            : `${Utils.formatCurrency(paye)} encaiss\u00e9(s) pour le ${Utils.formatDate(date)}`;
+          Toast.success(msg);
         } catch (err) {
           console.error('Erreur encaissement individuel:', err);
           Toast.error('Erreur lors de l\u2019encaissement');
         }
 
         this.render();
-      }
-    );
+      });
+    }
   }
 };
