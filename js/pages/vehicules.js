@@ -90,6 +90,9 @@ const VehiculesPage = {
       // Update actions for garage tabs — all action buttons always visible
       if (actions) {
         actions.innerHTML = `
+          <button class="btn btn-outline" onclick="VehiculesPage._renderListTab('flotte')" style="display:flex;align-items:center;gap:6px;">
+            <iconify-icon icon="solar:arrow-left-bold-duotone"></iconify-icon> Flotte
+          </button>
           <button class="btn btn-sm btn-outline" onclick="GaragePage._updateKmModal()" title="Mettre a jour le kilometrage">
             <iconify-icon icon="solar:route-bold-duotone"></iconify-icon> Maj km
           </button>
