@@ -2219,7 +2219,6 @@ const VersementsPage = {
     // 1b. Contraventions impayées/contestées sans versement associé
     const contraventions = Store.get('contraventions') || [];
     const contraImpayees = contraventions.filter(c => (c.statut === 'impayee' || c.statut === 'contestee') && c.montant > 0 && c.chauffeurId);
-    console.log('[Dettes] Contraventions total:', contraventions.length, 'impayees:', contraImpayees.length, contraImpayees.map(c => ({ id: c.id, statut: c.statut, montant: c.montant, chauffeurId: c.chauffeurId })));
     contraImpayees.forEach(c => {
       // Vérifier si un versement dette existe déjà pour cette contravention
       const existingDette = dettes.find(v => v.reference === c.id);
@@ -3018,14 +3017,12 @@ const VersementsPage = {
       FormBuilder.build(fields),
       () => {
         const body = document.getElementById('modal-body');
-        const cBtn = document.querySelector('#modal-footer [data-action="confirm"]');
-        if (!FormBuilder.validate(body, fields)) { if (cBtn) { cBtn.disabled = false; cBtn.style.opacity = ''; cBtn.style.pointerEvents = ''; } return; }
+        if (!FormBuilder.validate(body, fields)) return;
         const values = FormBuilder.getValues(body);
         const montant = parseFloat(values.montant) || 0;
 
         if (montant <= 0) {
           Toast.error('Le montant doit être supérieur à 0');
-          if (cBtn) { cBtn.disabled = false; cBtn.style.opacity = ''; cBtn.style.pointerEvents = ''; }
           return;
         }
 

@@ -119,7 +119,10 @@ const DettesPage = {
     return (n || 0).toLocaleString('fr-FR') + ' F';
   },
 
+  _processing: false,
+
   async _payer(id, date, montant, isImplicit, type) {
+    if (this._processing) return;
     const dateStr = date ? new Date(date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
     const typeLabel = type === 'contravention' ? 'contravention' : 'recette';
 
@@ -127,6 +130,7 @@ const DettesPage = {
     const confirmed = confirm(`Regler la dette ${typeLabel} du ${dateStr} de ${this._fmt(montant)} ?`);
     if (!confirmed) return;
 
+    this._processing = true;
     try {
       const res = await DriverStore.createVersement({
         date,
@@ -149,14 +153,18 @@ const DettesPage = {
     } catch (err) {
       console.error('Erreur paiement dette:', err);
       if (typeof DriverToast !== 'undefined') DriverToast.show('Erreur reseau', 'error');
+    } finally {
+      this._processing = false;
     }
   },
 
   async _payerTout() {
+    if (this._processing) return;
     if (!this._data || this._data.total <= 0) return;
     const confirmed = confirm(`Regler toutes vos dettes pour un total de ${this._fmt(this._data.total)} ?`);
     if (!confirmed) return;
 
+    this._processing = true;
     try {
       const allItems = [...this._data.recettes, ...this._data.contraventions];
       let nbOk = 0;
@@ -178,6 +186,8 @@ const DettesPage = {
     } catch (err) {
       console.error('Erreur paiement global:', err);
       if (typeof DriverToast !== 'undefined') DriverToast.show('Erreur', 'error');
+    } finally {
+      this._processing = false;
     }
   },
 

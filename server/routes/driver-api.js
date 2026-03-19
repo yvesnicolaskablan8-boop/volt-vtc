@@ -15,6 +15,7 @@ const ConduiteBrute = require('../models/ConduiteBrute');
 const ChecklistVehicule = require('../models/ChecklistVehicule');
 const { getNextDeadline, calculatePenalty } = require('../utils/deadline');
 const notifService = require('../utils/notification-service');
+const Contravention = require('../models/Contravention');
 const { haversineDistance, calculateCategoryScore, generateAnalyseIA, finalizeBehaviorSession } = require('../utils/behavior-utils');
 
 // fetch: natif en Node 18+, fallback node-fetch sinon
@@ -619,7 +620,6 @@ router.get('/dettes', async (req, res, next) => {
     }
 
     // 2b. Contraventions impayees sans versement associe
-    const Contravention = require('../models/Contravention');
     const contraImpayees = await Contravention.find({
       chauffeurId,
       statut: { $in: ['impayee', 'contestee'] },

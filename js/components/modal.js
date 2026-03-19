@@ -44,15 +44,16 @@ const Modal = {
         confirmBtn.disabled = true;
         confirmBtn.style.opacity = '0.5';
         confirmBtn.style.pointerEvents = 'none';
-        if (this._onConfirm) this._onConfirm();
-        // Si le modal est toujours ouvert après le callback (validation échouée), ré-activer le bouton
-        setTimeout(() => {
-          if (this._isOpen && confirmBtn) {
+        try {
+          if (this._onConfirm) this._onConfirm();
+        } finally {
+          // Si le modal est toujours ouvert (validation échouée), ré-activer le bouton
+          if (this._isOpen) {
             confirmBtn.disabled = false;
             confirmBtn.style.opacity = '';
             confirmBtn.style.pointerEvents = '';
           }
-        }, 300);
+        }
       });
     }
 
