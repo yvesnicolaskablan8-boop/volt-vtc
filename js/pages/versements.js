@@ -2842,39 +2842,12 @@ const VersementsPage = {
         Modal.close();
 
         try {
-          // Créer un versement de recouvrement
-          Store.add('versements', {
-            id: Utils.generateId('VRS'),
-            chauffeurId,
-            date: values.dateRecette || new Date().toISOString().split('T')[0],
-            dateService: values.dateRecette || new Date().toISOString().split('T')[0],
-            periode: 'recouvrement',
-            montantVerse: montant,
-            statut: 'valide',
-            moyenPaiement: values.moyenPaiement,
-            referencePaiement: values.referencePaiement,
-            commentaire: values.commentaire || 'Recouvrement de dette',
-            dateValidation: new Date(values.dateEncaissement + 'T' + new Date().toTimeString().split(' ')[0]).toISOString(),
-            dateCreation: new Date().toISOString()
-          });
-          // Auto-create comptabilité encaissement for recouvrement
           const allChauffeurs = Store.get('chauffeurs') || [];
           const chRec = allChauffeurs.find(c => c.id === chauffeurId);
           const chRecLabel = chRec ? (chRec.prenom + ' ' + chRec.nom) : chauffeurId;
-          Store.add('comptabilite', {
-            id: Utils.generateId('OP'),
-            type: 'recette',
-            date: values.dateRecette || new Date().toISOString().slice(0,10),
-            categorie: 'commissions_courses',
-            description: 'Recouvrement dette ' + chRecLabel + ' — ' + Utils.formatCurrency(montant),
-            montant: montant,
-            modePaiement: values.moyenPaiement || 'especes',
-            reference: 'REC-' + chauffeurId,
-            notes: 'Créé automatiquement depuis les versements (recouvrement)',
-            dateCreation: new Date().toISOString()
-          });
+          const dateEncaissement = values.dateEncaissement || new Date().toISOString().split('T')[0];
 
-          // Parcourir les dettes du plus ancien au plus récent et réduire
+          // Parcourir les dettes du plus ancien au plus récent et solder
           let restant = montant;
           const sortedItems = [...driver.items].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
           let nbApures = 0;
@@ -2882,10 +2855,9 @@ const VersementsPage = {
           sortedItems.forEach(v => {
             if (restant <= 0) return;
             if (v.implicit) {
-              // Dette implicite : créer un versement réel pour marquer comme traité
+              // Dette implicite : créer un versement réel à la DATE DE SERVICE de la dette
               if (restant >= v.manquant) {
                 restant -= v.manquant;
-                // Créer un versement "soldé" pour cette date
                 Store.add('versements', {
                   id: Utils.generateId('VRS'),
                   chauffeurId: v.chauffeurId,
@@ -2895,12 +2867,14 @@ const VersementsPage = {
                   manquant: 0,
                   statut: 'valide',
                   traitementManquant: null,
-                  commentaire: 'Soldé via recouvrement',
+                  moyenPaiement: values.moyenPaiement,
+                  referencePaiement: values.referencePaiement,
+                  commentaire: values.commentaire || `Recouvrement dette du ${Utils.formatDate(v.date)}`,
+                  dateValidation: new Date(dateEncaissement + 'T' + new Date().toTimeString().split(' ')[0]).toISOString(),
                   dateCreation: new Date().toISOString()
                 });
                 nbApures++;
               } else {
-                // Créer un versement partiel avec reliquat en dette
                 Store.add('versements', {
                   id: Utils.generateId('VRS'),
                   chauffeurId: v.chauffeurId,
@@ -2910,7 +2884,9 @@ const VersementsPage = {
                   manquant: v.manquant - restant,
                   statut: 'partiel',
                   traitementManquant: 'dette',
-                  commentaire: `Recouvrement partiel (${Utils.formatCurrency(restant)} sur ${Utils.formatCurrency(v.manquant)})`,
+                  moyenPaiement: values.moyenPaiement,
+                  commentaire: `Recouvrement partiel du ${Utils.formatDate(v.date)} (${Utils.formatCurrency(restant)} sur ${Utils.formatCurrency(v.manquant)})`,
+                  dateValidation: new Date(dateEncaissement + 'T' + new Date().toTimeString().split(' ')[0]).toISOString(),
                   dateCreation: new Date().toISOString()
                 });
                 restant = 0;
@@ -2919,19 +2895,44 @@ const VersementsPage = {
               // Dette explicite : mettre à jour le versement existant
               if (restant >= v.manquant) {
                 restant -= v.manquant;
-                Store.update('versements', v.id, { manquant: 0, traitementManquant: null });
+                Store.update('versements', v.id, {
+                  manquant: 0,
+                  traitementManquant: null,
+                  montantVerse: (v.montantAttendu || v.manquant),
+                  statut: 'valide',
+                  moyenPaiement: values.moyenPaiement,
+                  dateValidation: new Date(dateEncaissement + 'T' + new Date().toTimeString().split(' ')[0]).toISOString()
+                });
                 nbApures++;
               } else {
-                Store.update('versements', v.id, { manquant: v.manquant - restant });
+                Store.update('versements', v.id, {
+                  manquant: v.manquant - restant,
+                  montantVerse: (v.montantVerse || 0) + restant,
+                  moyenPaiement: values.moyenPaiement
+                });
                 restant = 0;
               }
             }
           });
 
+          // Créer une entrée comptable unique pour le recouvrement
+          Store.add('comptabilite', {
+            id: Utils.generateId('OP'),
+            type: 'recette',
+            date: dateEncaissement,
+            categorie: 'commissions_courses',
+            description: `Recouvrement dette ${chRecLabel} — ${Utils.formatCurrency(montant)}`,
+            montant: montant,
+            modePaiement: values.moyenPaiement || 'especes',
+            reference: values.referencePaiement || ('REC-' + chauffeurId),
+            notes: values.commentaire || 'Créé automatiquement depuis les versements (recouvrement)',
+            dateCreation: new Date().toISOString()
+          });
+
           if (restant > 0) {
-            Toast.success(`Dette soldée ! ${Utils.formatCurrency(montant - restant)} appliqué(s) sur ${driver.count} versement(s). Excédent de ${Utils.formatCurrency(restant)}.`);
+            Toast.success(`Recouvrement : ${Utils.formatCurrency(montant - restant)} appliqués. Excédent de ${Utils.formatCurrency(restant)}.`);
           } else {
-            Toast.success(`Recouvrement de ${Utils.formatCurrency(montant)} — ${nbApures} dette(s) soldée(s) sur ${driver.count}.`);
+            Toast.success(`Recouvrement de ${Utils.formatCurrency(montant)} — ${nbApures} dette(s) soldée(s).`);
           }
         } catch (err) {
           console.error('Erreur encaissement dette:', err);
