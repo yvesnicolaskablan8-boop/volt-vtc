@@ -356,9 +356,32 @@ const DashboardPage = {
     // Recalculer retardCount = nombre de jours impayés pour la période sélectionnée
     retardCount = unpaidItems.length;
 
-    // Taux de recouvrement
-    const totalAttendu = unpaidItems.reduce((s, i) => s + i.montantDu, 0) + monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
-    const tauxRecouvrement = totalAttendu > 0 ? Math.round((totalVerse / totalAttendu) * 100) : 100;
+    // Taux de recouvrement — TOUJOURS calculé sur le mois entier (pas le jour)
+    const matchesMonth = (dateStr) => {
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    };
+    const allMonthVersements = versements.filter(v => matchesMonth(v.date));
+    const totalVerseMonth = allMonthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + (v.montantVerse || 0), 0);
+    // Montant attendu = versements payés + impayés du mois (plannings passés sans versement)
+    const allMonthPlanning = planning.filter(p => matchesMonth(p.date) && p.date < now.toISOString().split('T')[0]);
+    let totalAttenduMonth = 0;
+    const monthScheduled = new Map();
+    allMonthPlanning.forEach(p => {
+      const key = `${p.chauffeurId}|${p.date}`;
+      if (!monthScheduled.has(key)) monthScheduled.set(key, p);
+    });
+    monthScheduled.forEach((p) => {
+      const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
+      if (hasAbsence) return;
+      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
+      if (!ch || ch.statut === 'inactif') return;
+      const redevance = (p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+      if (redevance > 0) totalAttenduMonth += redevance;
+    });
+    const tauxRecouvrement = totalAttenduMonth > 0 ? Math.min(Math.round((totalVerseMonth / totalAttenduMonth) * 100), 100) : (totalVerseMonth > 0 ? 100 : 0);
+    const totalAttendu = totalAttenduMonth;
 
     // =================== DÉPENSES VÉHICULES ===================
     const depenses = Store.get('depenses') || [];
@@ -453,12 +476,12 @@ const DashboardPage = {
       maintenanceAlerts, unpaidItems, totalUnpaid, totalPenalites,
       depenses, monthDepenses, totalDepensesMois, depensesByType, vehicules,
       alertesTotal, alertesCritiques, alertesUrgentes,
-      tauxRecouvrement, totalAttendu,
+      tauxRecouvrement, totalAttendu, totalVerseMonth,
       serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence, programmesCount,
       heatmapWeekDays, heatmapDrivers,
       periodLabel, monthLabel, isMonthView,
       // === PRÉVISIONS CA ===
-      ...this._computeForecasts(monthlyRevenue, versements, chauffeurs, planning, absences, thisMonth, thisYear, sel, isMonthView, totalVerse)
+      ...this._computeForecasts(monthlyRevenue, versements, chauffeurs, planning, absences, thisMonth, thisYear, sel, isMonthView, totalVerseMonth)
     };
   },
 
@@ -1025,7 +1048,7 @@ const DashboardPage = {
             ${gauge(d.tauxRecouvrement, recouvrementColor, 64, 5)}
             <div class="d-gauge-txt" style="color:${recouvrementColor};font-size:14px;">${d.tauxRecouvrement}%</div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:var(--text-primary);text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-primary);text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerseMonth)}</div>
           <div class="d-sub" style="text-align:center;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
         </div>
 
