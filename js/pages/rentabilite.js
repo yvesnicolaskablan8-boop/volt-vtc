@@ -228,18 +228,21 @@ const RentabilitePage = {
     }, 0);
     // Investissement déjà payé (leasing : uniquement les mensualités réglées)
     const investPaye = analysis.reduce((s, a) => s + a.acquisitionTotal, 0);
-    // Profit = recettes - TOUTES les charges (y compris leasing payé)
-    // fleetProfit = fleetTotalRevenue - fleetTotalCost (déjà calculé plus haut)
-    // fleetTotalCost inclut acquisitionTotal (leasing payé) + chargesReelles
-    const resultatCumule = fleetProfit; // recettes - toutes charges réelles
-    const rsiGlobal = investTotal > 0 ? (resultatCumule / investTotal * 100) : 0;
     const avgMonthsService = analysis.length > 0 ? analysis.reduce((s, a) => s + a.monthsInService, 0) / analysis.length : 1;
-    // Marge mensuelle = profit net / mois (toutes charges incluses)
-    const margeMensuelle = avgMonthsService > 0 ? fleetProfit / avgMonthsService : 0;
-    // Mensualité leasing totale par mois (pour référence dans le détail)
-    const mensualiteTotaleMensuelle = vehicules.reduce((s, v) => s + (v.typeAcquisition === 'leasing' ? (v.mensualiteLeasing || 0) : 0), 0);
-    // Charges opérationnelles (hors acquisition) pour le détail
+    // Charges opérationnelles (hors acquisition)
     const chargesOperationnelles = fleetTotalCost - investPaye;
+    // Mensualité leasing totale par mois
+    const mensualiteTotaleMensuelle = vehicules.reduce((s, v) => s + (v.typeAcquisition === 'leasing' ? (v.mensualiteLeasing || 0) : 0), 0);
+
+    // === RSI : mesure le remboursement de l'investissement ===
+    // Numérateur = recettes - charges opérationnelles (HORS leasing, car leasing = l'investissement)
+    const profitExploitation = fleetTotalRevenue - chargesOperationnelles;
+    const rsiGlobal = investTotal > 0 ? (profitExploitation / investTotal * 100) : 0;
+
+    // === Profit net réel : recettes - TOUTES charges (leasing payé + opérationnel) ===
+    const profitNet = fleetProfit; // = fleetTotalRevenue - fleetTotalCost
+    // Marge nette / mois
+    const margeMensuelle = avgMonthsService > 0 ? profitNet / avgMonthsService : 0;
     // Durée max leasing (pour référence)
     const maxDureeLeasing = vehicules.reduce((m, v) => Math.max(m, v.typeAcquisition === 'leasing' ? (v.dureeLeasing || 36) : 0), 0);
     let moisRecuperation = null;
@@ -269,7 +272,7 @@ const RentabilitePage = {
       debugUnlinkedRevenue: unlinkedRevenue,
       debugAcquisitionTotal: analysis.reduce((s, a) => s + a.acquisitionTotal, 0),
       debugPerVehicle,
-      investTotal, investPaye, resultatCumule, rsiGlobal, moisRecuperation,
+      investTotal, investPaye, profitExploitation, profitNet, rsiGlobal, moisRecuperation,
       margeMensuelle: Math.round(margeMensuelle), mensualiteTotaleMensuelle, chargesOperationnelles,
       vehiculeCount: vehicules.length
     };
@@ -342,31 +345,34 @@ const RentabilitePage = {
             <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;">sur ${Utils.formatCurrency(d.investTotal)}</div>
           </div>
           <div class="rent-kpi-glass">
-            <div class="rent-kpi-val" style="color:${d.resultatCumule >= 0 ? '#34d399' : '#f87171'};">${Utils.formatCurrency(d.resultatCumule)}</div>
-            <div class="rent-kpi-lbl">Profit net cumulé</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;">Recettes − toutes charges</div>
+            <div class="rent-kpi-val" style="color:${d.profitExploitation >= 0 ? '#34d399' : '#f87171'};">${Utils.formatCurrency(d.profitExploitation)}</div>
+            <div class="rent-kpi-lbl">Profit d'exploitation</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;">Recettes − charges (hors leasing)</div>
           </div>
           <div class="rent-kpi-glass">
-            <div class="rent-kpi-val" style="color:${d.margeMensuelle >= 0 ? '#34d399' : '#f87171'};">${Utils.formatCurrency(d.margeMensuelle)}</div>
-            <div class="rent-kpi-lbl">Marge nette / mois</div>
+            <div class="rent-kpi-val" style="color:${d.profitNet >= 0 ? '#34d399' : '#f87171'};">${Utils.formatCurrency(d.profitNet)}</div>
+            <div class="rent-kpi-lbl">Profit net réel</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;">${Utils.formatCurrency(d.margeMensuelle)} / mois</div>
           </div>
         </div>
 
         <div class="rent-progress">
           <div class="rent-progress-fill" style="width:${rsiPct}%;"></div>
         </div>
-        <div style="text-align:right;margin-top:8px;font-size:12px;font-weight:700;color:${rsiBarColor};">${rsiPct.toFixed(0)}% récupéré</div>
+        <div style="text-align:right;margin-top:8px;font-size:12px;font-weight:700;color:${rsiBarColor};">${rsiPct.toFixed(0)}% de l'investissement récupéré</div>
 
         <div style="margin-top:16px;padding:14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);">
           <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:8px;"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Détail du calcul</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
-            <div style="color:rgba(255,255,255,.4);">Revenus (versements) :</div><div style="color:#34d399;font-weight:600;text-align:right;">+ ${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
-            <div style="color:rgba(255,255,255,.4);">Leasing payé :</div><div style="color:#f87171;font-weight:600;text-align:right;">− ${Utils.formatCurrency(d.investPaye)}</div>
+            <div style="color:rgba(255,255,255,.5);font-weight:600;">Revenus (versements) :</div><div style="color:#34d399;font-weight:600;text-align:right;">+ ${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
             <div style="color:rgba(255,255,255,.4);">Charges opérationnelles :</div><div style="color:#f87171;font-weight:600;text-align:right;">− ${Utils.formatCurrency(d.chargesOperationnelles)}</div>
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont dépenses :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.vehiculeDepenses, 0))}</div>
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont réparations :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.vehiculeReparations, 0))}</div>
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont maintenance :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.maintenanceTotal, 0))}</div>
-            <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:rgba(255,255,255,.6);font-weight:700;">= Profit net :</div><div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:${d.resultatCumule >= 0 ? '#34d399' : '#f87171'};font-weight:700;text-align:right;">${Utils.formatCurrency(d.resultatCumule)}</div>
+            <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:#a78bfa;font-weight:700;">= Profit d'exploitation :</div><div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:${d.profitExploitation >= 0 ? '#34d399' : '#f87171'};font-weight:700;text-align:right;">${Utils.formatCurrency(d.profitExploitation)}</div>
+            <div style="color:rgba(255,255,255,.4);">Leasing payé :</div><div style="color:#f87171;font-weight:600;text-align:right;">− ${Utils.formatCurrency(d.investPaye)}</div>
+            <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:rgba(255,255,255,.6);font-weight:700;">= Profit net réel :</div><div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:${d.profitNet >= 0 ? '#34d399' : '#f87171'};font-weight:700;text-align:right;">${Utils.formatCurrency(d.profitNet)}</div>
+            <div style="color:rgba(255,255,255,.3);font-size:10px;">RSI = Profit exploitation ÷ Investissement total (${Utils.formatCurrency(d.investTotal)})</div><div style="color:#a78bfa;font-size:10px;font-weight:600;text-align:right;">${d.rsiGlobal.toFixed(1)}%</div>
           </div>
         </div>
       </div>
