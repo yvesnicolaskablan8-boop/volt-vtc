@@ -242,10 +242,26 @@ const RentabilitePage = {
     // Car on veut mesurer combien le profit d'exploitation "rembourse" l'investissement
     const resultatCumule = fleetTotalRevenue - coutOperationnel;
     const rsiGlobal = investTotal > 0 ? (resultatCumule / investTotal * 100) : 0;
-    // Délai de récupération basé sur le profit d'exploitation mensuel moyen
+    // Délai de récupération — basé sur le profit NET mensuel (revenus - TOUS les coûts y compris leasing payé)
     const avgMonthsService = analysis.length > 0 ? analysis.reduce((s, a) => s + a.monthsInService, 0) / analysis.length : 1;
+    const profitNetMensuel = avgMonthsService > 0 ? fleetProfit / avgMonthsService : 0;
+    // Mensualité leasing totale par mois (pour tous les véhicules)
+    const mensualiteTotaleMensuelle = vehicules.reduce((s, v) => s + (v.typeAcquisition === 'leasing' ? (v.mensualiteLeasing || 0) : 0), 0);
+    // Marge mensuelle = profit exploitation mensuel - mensualités leasing
     const resultatMensuelMoyen = avgMonthsService > 0 ? resultatCumule / avgMonthsService : 0;
-    const moisRecuperation = resultatMensuelMoyen > 0 ? Math.ceil((investTotal - Math.max(0, resultatCumule)) / resultatMensuelMoyen) : null;
+    const margeMensuelle = resultatMensuelMoyen - mensualiteTotaleMensuelle;
+    // Durée max leasing (pour référence)
+    const maxDureeLeasing = vehicules.reduce((m, v) => Math.max(m, v.typeAcquisition === 'leasing' ? (v.dureeLeasing || 36) : 0), 0);
+    let moisRecuperation = null;
+    if (margeMensuelle > 0) {
+      // Marge positive : le profit couvre le leasing + dégage du bénéfice
+      // Récupération = restant à payer / marge mensuelle
+      const restantAPayer = investTotal - investPaye;
+      moisRecuperation = Math.ceil(restantAPayer / margeMensuelle);
+    } else if (resultatMensuelMoyen > 0 && resultatMensuelMoyen >= mensualiteTotaleMensuelle * 0.8) {
+      // Profit couvre presque le leasing → récupération à la fin du contrat
+      moisRecuperation = maxDureeLeasing > 0 ? maxDureeLeasing : null;
+    }
 
     // Debug data
     const debugPerVehicle = analysis.map(a =>
@@ -266,7 +282,9 @@ const RentabilitePage = {
       debugUnlinkedRevenue: unlinkedRevenue,
       debugAcquisitionTotal: analysis.reduce((s, a) => s + a.acquisitionTotal, 0),
       debugPerVehicle,
-      investTotal, investPaye, resultatCumule, rsiGlobal, moisRecuperation, vehiculeCount: vehicules.length
+      investTotal, investPaye, resultatCumule, rsiGlobal, moisRecuperation,
+      margeMensuelle: Math.round(margeMensuelle), mensualiteTotaleMensuelle, resultatMensuelMoyen: Math.round(resultatMensuelMoyen),
+      vehiculeCount: vehicules.length
     };
   },
 
@@ -341,8 +359,9 @@ const RentabilitePage = {
             <div class="rent-kpi-lbl">Profit d'exploitation</div>
           </div>
           <div class="rent-kpi-glass">
-            <div class="rent-kpi-val" style="color:${d.moisRecuperation !== null && d.moisRecuperation <= 0 ? '#34d399' : '#fbbf24'};">${d.moisRecuperation !== null ? (d.moisRecuperation <= 0 ? 'Récupéré !' : d.moisRecuperation + ' mois') : '—'}</div>
-            <div class="rent-kpi-lbl">${d.moisRecuperation !== null && d.moisRecuperation <= 0 ? 'Investissement amorti' : 'Délai de récupération'}</div>
+            <div class="rent-kpi-val" style="color:${d.margeMensuelle >= 0 ? '#34d399' : '#f87171'};">${Utils.formatCurrency(d.margeMensuelle)}</div>
+            <div class="rent-kpi-lbl">Marge nette / mois</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;">${d.mensualiteTotaleMensuelle > 0 ? 'Profit ' + Utils.formatCurrency(d.resultatMensuelMoyen) + ' − Leasing ' + Utils.formatCurrency(d.mensualiteTotaleMensuelle) : ''}</div>
           </div>
         </div>
 
