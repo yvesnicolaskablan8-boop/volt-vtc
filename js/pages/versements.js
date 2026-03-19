@@ -2160,8 +2160,11 @@ const VersementsPage = {
     const planning = Store.get('planning') || [];
     const absences = Store.get('absences') || [];
 
+    // Helper : détecter si un versement vient d'une contravention
+    const isContravention = (v) => v.source === 'contravention' || (v.reference && v.reference.startsWith('CHF')) || (v.commentaire && v.commentaire.toLowerCase().includes('contravention'));
+
     // 1. Dettes explicites (traitementManquant === 'dette' et manquant > 0)
-    const dettes = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0);
+    const dettes = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0).map(v => ({ ...v, source: isContravention(v) ? 'contravention' : (v.source || 'recette') }));
     // Pertes
     const pertes = versements.filter(v => v.traitementManquant === 'perte' && v.manquant > 0);
 
