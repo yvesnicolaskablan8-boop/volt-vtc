@@ -8,6 +8,7 @@ const RentabilitePage = {
     const container = document.getElementById('page-content');
     const data = this._getData();
     container.innerHTML = this._template(data);
+    this._renderPaiements(data.analysis);
     this._loadCharts(data);
   },
 
@@ -76,11 +77,18 @@ const RentabilitePage = {
 
       // Acquisition cost = only what has been paid so far
       let acquisitionTotal = 0;
+      let mensualitesPaid = 0;
       if (v.typeAcquisition === 'leasing') {
-        const monthsPaid = Math.min(monthsInService, v.dureeLeasing || 36);
-        acquisitionTotal = (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * monthsPaid);
+        // Si autoFillLeasing est désactivé, utiliser le nombre manuel ; sinon calculer depuis la date
+        if (v.autoFillLeasing === false && typeof v.mensualitesPaid === 'number') {
+          mensualitesPaid = Math.min(v.mensualitesPaid, v.dureeLeasing || 36);
+        } else {
+          mensualitesPaid = Math.min(monthsInService, v.dureeLeasing || 36);
+        }
+        acquisitionTotal = (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * mensualitesPaid);
       } else {
-        acquisitionTotal = v.prixAchat || 0;
+        // Cash : si montantPaye est défini, l'utiliser ; sinon prix d'achat total
+        acquisitionTotal = typeof v.montantPaye === 'number' ? v.montantPaye : (v.prixAchat || 0);
       }
 
       // Energy cost — only if kilometrage is tracked, otherwise 0
@@ -132,7 +140,8 @@ const RentabilitePage = {
         roi,
         bookValue: Math.round(bookValueCalc),
         courses: vCourses.length,
-        coutParKm: Math.round(coutParKm)
+        coutParKm: Math.round(coutParKm),
+        mensualitesPaid
       };
     });
 
@@ -337,6 +346,15 @@ const RentabilitePage = {
 
 
 
+      <!-- ===== SUIVI DES PAIEMENTS ===== -->
+      <div class="rent-card" style="margin-bottom:24px;">
+        <div class="rent-section-title">
+          <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+          <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Suivi des paiements</div>
+        </div>
+        <div id="rent-paiements-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
+
       <!-- ===== KPIs FLOTTE ===== -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;">
         <div class="rent-card">
@@ -447,6 +465,148 @@ const RentabilitePage = {
 
       </div></div>
     `;
+  },
+
+  // =================== SUIVI PAIEMENTS ===================
+
+  _renderPaiements(analysis) {
+    const container = document.getElementById('rent-paiements-list');
+    if (!container) return;
+    container.innerHTML = analysis.map(a => {
+      const v = a.vehicule;
+      const isLeasing = v.typeAcquisition === 'leasing';
+      const label = v.immatriculation ? v.marque + ' ' + v.modele + ' (' + v.immatriculation + ')' : v.marque + ' ' + v.modele;
+      if (isLeasing) {
+        const duree = v.dureeLeasing || 36;
+        const paid = a.mensualitesPaid;
+        const pct = Math.min(Math.round(paid / duree * 100), 100);
+        const montantPaye = (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * paid);
+        const montantTotal = (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * duree);
+        const autoFill = v.autoFillLeasing !== false;
+        const barColor = pct >= 100 ? '#10b981' : pct >= 50 ? '#6366f1' : '#f59e0b';
+        return '<div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);border:1px solid var(--border-color);">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">'
+          + '<div style="display:flex;align-items:center;gap:8px;">'
+          + '<span class="badge badge-info" style="font-size:10px;">Leasing</span>'
+          + '<span style="font-size:13px;font-weight:700;color:var(--text-primary);">' + label + '</span>'
+          + '</div>'
+          + '<div style="display:flex;align-items:center;gap:8px;">'
+          + '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);cursor:pointer;">'
+          + '<input type="checkbox" ' + (autoFill ? 'checked' : '') + ' onchange="RentabilitePage._toggleAutoFill(\'' + v.id + '\', this.checked)" style="accent-color:#6366f1;">'
+          + ' Auto'
+          + '</label>'
+          + '<button class="btn btn-sm btn-outline" onclick="RentabilitePage._editPaiement(\'' + v.id + '\')" style="font-size:11px;padding:4px 10px;">'
+          + '<iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>'
+          + '</div></div>'
+          + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">'
+          + '<div style="flex:1;height:8px;border-radius:8px;background:var(--bg-secondary);overflow:hidden;">'
+          + '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:8px;transition:width .5s;"></div></div>'
+          + '<span style="font-size:12px;font-weight:700;color:' + barColor + ';min-width:40px;">' + pct + '%</span></div>'
+          + '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);">'
+          + '<span><strong>' + paid + '</strong> / ' + duree + ' mensualités payées</span>'
+          + '<span>' + Utils.formatCurrency(montantPaye) + ' / ' + Utils.formatCurrency(montantTotal) + '</span></div>'
+          + '<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">' + Utils.formatCurrency(v.mensualiteLeasing || 0) + ' / mois'
+          + (v.apportInitial ? ' + apport ' + Utils.formatCurrency(v.apportInitial) : '') + '</div>'
+          + '</div>';
+      } else {
+        const prixAchat = v.prixAchat || 0;
+        const mp = typeof v.montantPaye === 'number' ? v.montantPaye : prixAchat;
+        const pct = prixAchat > 0 ? Math.min(Math.round(mp / prixAchat * 100), 100) : 100;
+        const barColor = pct >= 100 ? '#10b981' : pct >= 50 ? '#6366f1' : '#f59e0b';
+        return '<div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);border:1px solid var(--border-color);">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">'
+          + '<div style="display:flex;align-items:center;gap:8px;">'
+          + '<span class="badge badge-success" style="font-size:10px;">Cash</span>'
+          + '<span style="font-size:13px;font-weight:700;color:var(--text-primary);">' + label + '</span>'
+          + '</div>'
+          + '<button class="btn btn-sm btn-outline" onclick="RentabilitePage._editPaiementCash(\'' + v.id + '\')" style="font-size:11px;padding:4px 10px;">'
+          + '<iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>'
+          + '</div>'
+          + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">'
+          + '<div style="flex:1;height:8px;border-radius:8px;background:var(--bg-secondary);overflow:hidden;">'
+          + '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:8px;transition:width .5s;"></div></div>'
+          + '<span style="font-size:12px;font-weight:700;color:' + barColor + ';min-width:40px;">' + pct + '%</span></div>'
+          + '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);">'
+          + '<span>' + (pct >= 100 ? 'Payé intégralement' : 'Paiement en cours') + '</span>'
+          + '<span>' + Utils.formatCurrency(mp) + ' / ' + Utils.formatCurrency(prixAchat) + '</span></div>'
+          + '</div>';
+      }
+    }).join('');
+  },
+
+  _toggleAutoFill(vehiculeId, checked) {
+    Store.update('vehicules', vehiculeId, { autoFillLeasing: checked, mensualitesPaid: undefined });
+    this.render();
+  },
+
+  _editPaiement(vehiculeId) {
+    const v = Store.findById('vehicules', vehiculeId);
+    if (!v) return;
+    const duree = v.dureeLeasing || 36;
+    const autoFill = v.autoFillLeasing !== false;
+    // Calculer la valeur auto actuelle
+    const now = new Date();
+    const startDate = new Date(v.dateAcquisition || v.dateCreation);
+    const monthsAuto = Math.max(1, Math.ceil((now - startDate) / (30 * 24 * 60 * 60 * 1000)));
+    const currentPaid = autoFill ? Math.min(monthsAuto, duree) : (v.mensualitesPaid || 0);
+
+    Modal.form(
+      '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#6366f1;"></iconify-icon> Paiements leasing — ' + (v.marque || '') + ' ' + (v.modele || ''),
+      `<div class="form-group">
+        <label class="form-label">Mensualités payées</label>
+        <input type="number" name="mensualitesPaid" class="form-control" value="${currentPaid}" min="0" max="${duree}" step="1">
+        <small style="color:var(--text-muted);margin-top:4px;display:block;">Sur ${duree} mensualités au total — ${Utils.formatCurrency(v.mensualiteLeasing || 0)} / mois</small>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" name="autoFillLeasing" ${autoFill ? 'checked' : ''} style="accent-color:#6366f1;">
+          <span class="form-label" style="margin:0;">Remplissage automatique</span>
+        </label>
+        <small style="color:var(--text-muted);margin-top:4px;display:block;">Calcule automatiquement le nombre de mensualités depuis la date d'acquisition</small>
+      </div>`,
+      () => {
+        const body = document.querySelector('.modal-body');
+        const mensualitesPaid = parseInt(body.querySelector('[name=mensualitesPaid]').value) || 0;
+        const autoFillLeasing = body.querySelector('[name=autoFillLeasing]').checked;
+        Store.update('vehicules', vehiculeId, {
+          mensualitesPaid: autoFillLeasing ? undefined : mensualitesPaid,
+          autoFillLeasing
+        });
+        Modal.close();
+        this.render();
+      },
+      'md'
+    );
+  },
+
+  _editPaiementCash(vehiculeId) {
+    const v = Store.findById('vehicules', vehiculeId);
+    if (!v) return;
+    const prixAchat = v.prixAchat || 0;
+    const montantPaye = typeof v.montantPaye === 'number' ? v.montantPaye : prixAchat;
+
+    Modal.form(
+      '<iconify-icon icon="solar:money-bag-bold-duotone" style="color:#10b981;"></iconify-icon> Paiement cash — ' + (v.marque || '') + ' ' + (v.modele || ''),
+      `<div class="form-group">
+        <label class="form-label">Montant payé (FCFA)</label>
+        <input type="number" name="montantPaye" class="form-control" value="${montantPaye}" min="0" step="10000">
+        <small style="color:var(--text-muted);margin-top:4px;display:block;">Prix d'achat total : ${Utils.formatCurrency(prixAchat)}</small>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" name="payeIntegral" ${montantPaye >= prixAchat ? 'checked' : ''} onchange="this.closest('.modal-body').querySelector('[name=montantPaye]').value = this.checked ? '${prixAchat}' : '0'" style="accent-color:#10b981;">
+          <span class="form-label" style="margin:0;">Payé intégralement</span>
+        </label>
+      </div>`,
+      () => {
+        const body = document.querySelector('.modal-body');
+        const montantPaye = parseInt(body.querySelector('[name=montantPaye]').value) || 0;
+        Store.update('vehicules', vehiculeId, { montantPaye });
+        Modal.close();
+        this.render();
+      },
+      'md'
+    );
   },
 
   _chartDefaults() {
