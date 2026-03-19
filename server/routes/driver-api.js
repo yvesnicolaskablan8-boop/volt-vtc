@@ -618,6 +618,24 @@ router.get('/dettes', async (req, res, next) => {
       }
     }
 
+    // 2b. Contraventions impayees sans versement associe
+    const Contravention = require('../models/Contravention');
+    const contraImpayees = await Contravention.find({
+      chauffeurId,
+      statut: 'impayee',
+      montant: { $gt: 0 }
+    }).lean();
+    const contraFromDb = [];
+    for (const c of contraImpayees) {
+      const hasVersement = dettesExplicites.some(v => v.reference === c.id) || allVersements.some(v => v.reference === c.id && (v.statut === 'valide' || v.statut === 'supprime'));
+      if (!hasVersement) {
+        contraFromDb.push({
+          id: `contra_${c.id}`, date: c.date, manquant: c.montant, type: 'contravention', implicit: false,
+          label: `Contravention — ${c.type || 'amende'}`, reference: c.id
+        });
+      }
+    }
+
     // 3. Combiner et classer
     const recettes = [
       ...dettesExplicites.filter(v => !isContravention(v)).map(v => ({
@@ -627,10 +645,13 @@ router.get('/dettes', async (req, res, next) => {
       ...implicitDettes
     ].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
-    const contraventions = dettesExplicites.filter(v => isContravention(v)).map(v => ({
-      id: v.id, date: v.date, manquant: v.manquant, type: 'contravention', implicit: false,
-      label: v.commentaire || 'Contravention', reference: v.reference
-    })).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const contraventions = [
+      ...dettesExplicites.filter(v => isContravention(v)).map(v => ({
+        id: v.id, date: v.date, manquant: v.manquant, type: 'contravention', implicit: false,
+        label: v.commentaire || 'Contravention', reference: v.reference
+      })),
+      ...contraFromDb
+    ].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
     const totalRecettes = recettes.reduce((s, d) => s + d.manquant, 0);
     const totalContraventions = contraventions.reduce((s, d) => s + d.manquant, 0);

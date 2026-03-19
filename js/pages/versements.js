@@ -2169,6 +2169,28 @@ const VersementsPage = {
 
     // 1. Dettes explicites (traitementManquant === 'dette' et manquant > 0)
     const dettes = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0).map(v => ({ ...v, source: isContravention(v) ? 'contravention' : (v.source || 'recette') }));
+
+    // 1b. Contraventions impayées sans versement associé
+    const contraventions = Store.get('contraventions') || [];
+    const contraImpayees = contraventions.filter(c => c.statut === 'impayee' && c.montant > 0 && c.chauffeurId);
+    contraImpayees.forEach(c => {
+      // Vérifier si un versement dette existe déjà pour cette contravention
+      const hasVersement = dettes.some(v => v.reference === c.id) || versements.some(v => v.reference === c.id && (v.statut === 'valide' || v.statut === 'supprime'));
+      if (!hasVersement) {
+        dettes.push({
+          id: `contra_${c.id}`,
+          chauffeurId: c.chauffeurId,
+          date: c.date,
+          manquant: c.montant,
+          traitementManquant: 'dette',
+          source: 'contravention',
+          commentaire: `Contravention — ${c.type || 'amende'}`,
+          reference: c.id,
+          implicit: false
+        });
+      }
+    });
+
     // Pertes
     const pertes = versements.filter(v => v.traitementManquant === 'perte' && v.manquant > 0);
 
