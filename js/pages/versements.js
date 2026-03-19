@@ -407,17 +407,36 @@ const VersementsPage = {
       });
     }
 
-    // Search in dettes list
-    const detteSearch = document.getElementById('dette-search');
-    if (detteSearch) {
-      detteSearch.addEventListener('input', () => {
-        const q = detteSearch.value.toLowerCase().trim();
-        const rows = document.querySelectorAll('#dette-rows-list .dette-row');
-        rows.forEach(row => {
-          row.style.display = row.dataset.nom.includes(q) ? '' : 'none';
-        });
+    // Search + period filter in dettes sections
+    const applyDetteFilters = (targetId) => {
+      const searchInput = document.querySelector(`.dette-search-input[data-target="${targetId}"]`);
+      const periodSelect = document.querySelector(`.dette-period-filter[data-target="${targetId}"]`);
+      const q = (searchInput?.value || '').toLowerCase().trim();
+      const period = periodSelect?.value || '';
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const mondayOfWeek = new Date(now); mondayOfWeek.setDate(mondayOfWeek.getDate() - ((mondayOfWeek.getDay() + 6) % 7));
+      const mondayStr = mondayOfWeek.toISOString().split('T')[0];
+      const firstOfMonth = todayStr.substring(0, 8) + '01';
+      const rows = document.querySelectorAll(`#${targetId} .dette-row`);
+      rows.forEach(row => {
+        let show = true;
+        if (q && !row.dataset.nom.includes(q)) show = false;
+        if (show && period) {
+          const dateStr = row.dataset.date || '';
+          if (period === 'today') show = dateStr === todayStr;
+          else if (period === 'yesterday') show = dateStr === yesterdayStr;
+          else if (period === 'week') show = dateStr >= mondayStr && dateStr <= todayStr;
+          else if (period === 'month') show = dateStr >= firstOfMonth && dateStr <= todayStr;
+        }
+        row.style.display = show ? '' : 'none';
       });
-    }
+    };
+    document.querySelectorAll('.dette-search-input, .dette-period-filter').forEach(el => {
+      el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => applyDetteFilters(el.dataset.target));
+    });
 
     // Add button
     document.getElementById('btn-add-versement').addEventListener('click', () => this._add());
@@ -2350,7 +2369,7 @@ const VersementsPage = {
 
     // Section Dettes Recettes
     const recetteRows = detteData.detteListRecettes.map(item => {
-      return `<div class="dette-row" data-nom="${(item.nom || '').toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
+      return `<div class="dette-row" data-nom="${(item.nom || '').toLowerCase()}" data-date="${item.lastDate || ''}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${item.nom}</div>
           <div style="font-size:10px;color:var(--text-muted);">${item.count} recette${item.count > 1 ? 's' : ''} \u2022 Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
@@ -2367,7 +2386,7 @@ const VersementsPage = {
 
     // Section Dettes Contraventions
     const contraRows = detteData.detteListContraventions.map(item => {
-      return `<div class="dette-row" data-nom="${(item.nom || '').toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
+      return `<div class="dette-row" data-nom="${(item.nom || '').toLowerCase()}" data-date="${item.lastDate || ''}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${item.nom}</div>
           <div style="font-size:10px;color:var(--text-muted);">${item.count} contravention${item.count > 1 ? 's' : ''} \u2022 Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
@@ -2384,6 +2403,21 @@ const VersementsPage = {
 
     let html = '';
 
+    const filterBarHtml = (id, color) => `
+      <div style="display:flex;gap:var(--space-sm);margin-bottom:8px;flex-wrap:wrap;">
+        <div style="position:relative;flex:1;min-width:120px;">
+          <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
+          <input type="text" class="form-control dette-search-input" data-target="${id}" placeholder="Rechercher..." style="padding-left:30px;font-size:var(--font-size-xs);">
+        </div>
+        <select class="form-control dette-period-filter" data-target="${id}" style="width:160px;font-size:var(--font-size-xs);">
+          <option value="">Toutes p\u00e9riodes</option>
+          <option value="today">Aujourd'hui</option>
+          <option value="yesterday">Hier</option>
+          <option value="week">Cette semaine</option>
+          <option value="month">Ce mois</option>
+        </select>
+      </div>`;
+
     // Section recettes
     if (detteData.detteListRecettes.length > 0 || detteData.totalPertes > 0) {
       html += `<div id="dette-section-recettes" class="card" style="margin-top:var(--space-lg);border-left:4px solid #f59e0b;">
@@ -2399,8 +2433,8 @@ const VersementsPage = {
             </div>
           </div>
         </div>
-        ${searchBar}
-        ${detteData.detteListRecettes.length > 0 ? `<div id="dette-rows-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">${recetteRows}</div>` : '<div style="text-align:center;color:var(--text-muted);padding:12px;font-size:var(--font-size-sm);">Aucune dette recette</div>'}
+        ${detteData.detteListRecettes.length > 3 ? filterBarHtml('dette-recettes-list', '#f59e0b') : ''}
+        ${detteData.detteListRecettes.length > 0 ? `<div id="dette-recettes-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">${recetteRows}</div>` : '<div style="text-align:center;color:var(--text-muted);padding:12px;font-size:var(--font-size-sm);">Aucune dette recette</div>'}
       </div>`;
     }
 
@@ -2411,7 +2445,8 @@ const VersementsPage = {
           <span class="card-title"><iconify-icon icon="solar:shield-warning-bold-duotone" style="color:#ef4444;"></iconify-icon> Dettes contraventions (${detteData.detteListContraventions.length} chauffeur${detteData.detteListContraventions.length > 1 ? 's' : ''})</span>
           <div style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${Utils.formatCurrency(detteData.totalDettesContraventions)}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">${contraRows}</div>
+        ${detteData.detteListContraventions.length > 3 ? filterBarHtml('dette-contra-list', '#ef4444') : ''}
+        <div id="dette-contra-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">${contraRows}</div>
       </div>`;
     }
 
