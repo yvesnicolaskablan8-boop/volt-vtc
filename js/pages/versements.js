@@ -2205,127 +2205,13 @@ const VersementsPage = {
   // =================== SUIVI DES DETTES ===================
 
   _getDetteData() {
-    const versements = Store.get('versements') || [];
-    const chauffeurs = Store.get('chauffeurs') || [];
-    const planning = Store.get('planning') || [];
-    const absences = Store.get('absences') || [];
-
-    // Helper : détecter si un versement vient d'une contravention
-    const isContravention = (v) => v.source === 'contravention' || (v.reference && v.reference.startsWith('CHF')) || (v.commentaire && v.commentaire.toLowerCase().includes('contravention'));
-
-    // 1. Dettes explicites (traitementManquant === 'dette' et manquant > 0)
-    const dettes = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0).map(v => ({ ...v, source: isContravention(v) ? 'contravention' : (v.source || 'recette') }));
-
-    // 1b. Contraventions impayées/contestées sans versement associé
-    const contraventions = Store.get('contraventions') || [];
-    const contraImpayees = contraventions.filter(c => (c.statut === 'impayee' || c.statut === 'contestee') && c.montant > 0 && c.chauffeurId);
-    contraImpayees.forEach(c => {
-      // Vérifier si un versement dette existe déjà pour cette contravention
-      const existingDette = dettes.find(v => v.reference === c.id);
-      const paidVersement = versements.find(v => v.reference === c.id && (v.statut === 'valide' || v.statut === 'supprime'));
-      if (!existingDette && !paidVersement) {
-        dettes.push({
-          id: `contra_${c.id}`,
-          chauffeurId: c.chauffeurId,
-          date: c.date,
-          manquant: c.montant,
-          traitementManquant: 'dette',
-          source: 'contravention',
-          commentaire: `Contravention — ${c.type || 'amende'}`,
-          reference: c.id,
-          implicit: false
-        });
-      }
+    return Utils.computeDebts({
+      versements: Store.get('versements') || [],
+      chauffeurs: Store.get('chauffeurs') || [],
+      planning: Store.get('planning') || [],
+      absences: Store.get('absences') || [],
+      contraventions: Store.get('contraventions') || []
     });
-
-    // Pertes
-    const pertes = versements.filter(v => v.traitementManquant === 'perte' && v.manquant > 0);
-
-    // 2. Dettes implicites : chauffeurs programmés les jours passés sans versement
-    const todayStr = new Date().toISOString().split('T')[0];
-    // Scanner les 30 derniers jours max pour les impayés
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
-
-    const pastPlannings = planning.filter(p => p.date >= thirtyDaysAgoStr && p.date < todayStr);
-    const pastScheduled = new Map();
-    pastPlannings.forEach(p => {
-      const key = `${p.chauffeurId}|${p.date}`;
-      if (!pastScheduled.has(key)) pastScheduled.set(key, p);
-    });
-
-    const implicitDettes = [];
-    pastScheduled.forEach((p) => {
-      const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
-      if (hasAbsence) return;
-      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
-      if (!ch || ch.statut === 'inactif') return;
-      const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
-      if (redevance <= 0) return;
-      // Vérifier s'il y a un versement validé/supprimé/perte pour ce chauffeur ce jour
-      const hasPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte' || v.statut === 'partiel' || v.traitementManquant === 'perte'));
-      // Vérifier s'il y a déjà une dette explicite pour ce chauffeur ce jour
-      const hasExplicitDette = dettes.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date);
-      if (!hasPayment && !hasExplicitDette) {
-        implicitDettes.push({
-          id: `implicit_${p.chauffeurId}_${p.date}`,
-          chauffeurId: p.chauffeurId,
-          date: p.date,
-          manquant: redevance,
-          traitementManquant: 'dette',
-          implicit: true // marqueur pour savoir que c'est une dette implicite
-        });
-      }
-    });
-
-    // Combiner dettes explicites + implicites
-    const allDettes = [...dettes, ...implicitDettes];
-
-    // Grouper par chauffeur
-    const byDriver = {};
-    allDettes.forEach(v => {
-      if (!byDriver[v.chauffeurId]) byDriver[v.chauffeurId] = { items: [], total: 0 };
-      byDriver[v.chauffeurId].items.push(v);
-      byDriver[v.chauffeurId].total += v.manquant;
-    });
-
-    const detteList = Object.keys(byDriver).map(cId => {
-      const ch = chauffeurs.find(c => c.id === cId);
-      const d = byDriver[cId];
-      d.items.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-      return {
-        chauffeurId: cId,
-        nom: ch ? `${ch.prenom} ${ch.nom}` : cId,
-        count: d.items.length,
-        total: d.total,
-        lastDate: d.items[d.items.length - 1]?.date || '',
-        items: d.items
-      };
-    }).sort((a, b) => b.total - a.total);
-
-    const totalDettes = detteList.reduce((s, d) => s + d.total, 0);
-    const totalPertes = pertes.reduce((s, v) => s + v.manquant, 0);
-
-    // Séparer recettes et contraventions
-    const allItems = detteList.flatMap(d => d.items);
-    const totalDettesRecettes = allItems.filter(v => v.source !== 'contravention').reduce((s, v) => s + (v.manquant || 0), 0);
-    const totalDettesContraventions = allItems.filter(v => v.source === 'contravention').reduce((s, v) => s + (v.manquant || 0), 0);
-    const nbDriversRecettes = new Set(allItems.filter(v => v.source !== 'contravention').map(v => v.chauffeurId)).size;
-    const nbDriversContraventions = new Set(allItems.filter(v => v.source === 'contravention').map(v => v.chauffeurId)).size;
-    // Listes séparées par type
-    const detteListRecettes = detteList.map(d => {
-      const recItems = d.items.filter(v => v.source !== 'contravention');
-      if (recItems.length === 0) return null;
-      return { ...d, items: recItems, total: recItems.reduce((s, v) => s + (v.manquant || 0), 0), count: recItems.length, lastDate: recItems[recItems.length - 1]?.date || '' };
-    }).filter(Boolean).sort((a, b) => b.total - a.total);
-    const detteListContraventions = detteList.map(d => {
-      const conItems = d.items.filter(v => v.source === 'contravention');
-      if (conItems.length === 0) return null;
-      return { ...d, items: conItems, total: conItems.reduce((s, v) => s + (v.manquant || 0), 0), count: conItems.length, lastDate: conItems[conItems.length - 1]?.date || '' };
-    }).filter(Boolean).sort((a, b) => b.total - a.total);
-
-    return { detteList, totalDettes, totalPertes, chauffeurs, totalDettesRecettes, totalDettesContraventions, nbDriversRecettes, nbDriversContraventions, detteListRecettes, detteListContraventions };
   },
 
   _renderDetteSection(d) {

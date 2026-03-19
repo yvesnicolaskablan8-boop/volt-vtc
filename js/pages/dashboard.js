@@ -393,62 +393,14 @@ const DashboardPage = {
     });
 
     // =================== DETTES & PERTES ===================
-    // Même logique que VersementsPage._getDetteData() pour cohérence
-    const isContraventionDette = (v) => v.source === 'contravention' || (v.reference && v.reference.startsWith('CHF')) || (v.commentaire && v.commentaire.toLowerCase().includes('contravention'));
-
-    // 1. Dettes explicites
-    const dettesExplicites = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0);
-
-    // 2. Contraventions impayées sans versement associé
-    const contraventionsAll = Store.get('contraventions') || [];
-    const contraImpayees = contraventionsAll.filter(c => (c.statut === 'impayee' || c.statut === 'contestee') && c.montant > 0 && c.chauffeurId);
-    let totalDettesContra = 0;
-    const contraDriverIds = new Set();
-    contraImpayees.forEach(c => {
-      const hasVersement = dettesExplicites.some(v => v.reference === c.id) || versements.some(v => v.reference === c.id && (v.statut === 'valide' || v.statut === 'supprime'));
-      if (!hasVersement) {
-        totalDettesContra += c.montant;
-        contraDriverIds.add(c.chauffeurId);
-      }
+    // Utilise la fonction partagée Utils.computeDebts() pour cohérence avec VersementsPage
+    const debtData = Utils.computeDebts({
+      versements, chauffeurs, planning, absences,
+      contraventions: Store.get('contraventions') || []
     });
-
-    // 3. Dettes implicites (plannings passés sans versement, 30 jours)
-    const todayStr = now.toISOString().split('T')[0];
-    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
-    const pastPlannings = planning.filter(p => p.date >= thirtyDaysAgoStr && p.date < todayStr);
-    let totalDettesImplicites = 0;
-    const implicitDriverIds = new Set();
-    const pastScheduled = new Map();
-    pastPlannings.forEach(p => { const key = `${p.chauffeurId}|${p.date}`; if (!pastScheduled.has(key)) pastScheduled.set(key, p); });
-    pastScheduled.forEach((p) => {
-      const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
-      if (hasAbsence) return;
-      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
-      if (!ch || ch.statut === 'inactif') return;
-      const redevance = (p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
-      if (redevance <= 0) return;
-      const hasPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte' || v.statut === 'partiel' || v.traitementManquant === 'perte'));
-      const hasExplicitDette = dettesExplicites.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date);
-      if (!hasPayment && !hasExplicitDette) {
-        totalDettesImplicites += redevance;
-        implicitDriverIds.add(p.chauffeurId);
-      }
-    });
-
-    // Totaux alignés avec la page Versements
-    const totalDettesRecettes = dettesExplicites.filter(v => !isContraventionDette(v)).reduce((s, v) => s + v.manquant, 0) + totalDettesImplicites;
-    const totalDettesContraventions = dettesExplicites.filter(v => isContraventionDette(v)).reduce((s, v) => s + v.manquant, 0) + totalDettesContra;
-    const totalDettes = totalDettesRecettes + totalDettesContraventions;
-    const totalPertes = versements
-      .filter(v => v.traitementManquant === 'perte' && v.manquant > 0)
-      .reduce((s, v) => s + v.manquant, 0);
-    const allDetteDriverIds = new Set([
-      ...dettesExplicites.map(v => v.chauffeurId),
-      ...implicitDriverIds,
-      ...contraDriverIds
-    ]);
-    const nbDetteDrivers = allDetteDriverIds.size;
+    const totalDettes = debtData.totalDettes;
+    const totalPertes = debtData.totalPertes;
+    const nbDetteDrivers = debtData.nbDetteDrivers;
     const nbPerteDrivers = new Set(
       versements.filter(v => v.traitementManquant === 'perte' && v.manquant > 0).map(v => v.chauffeurId)
     ).size;

@@ -167,9 +167,8 @@ const DettesPage = {
     this._processing = true;
     try {
       const allItems = [...this._data.recettes, ...this._data.contraventions];
-      let nbOk = 0;
-      for (const item of allItems) {
-        const res = await DriverStore.createVersement({
+      const results = await Promise.all(allItems.map(item =>
+        DriverStore.createVersement({
           date: item.date,
           montantBrut: item.manquant,
           commentaire: `Reglement dette ${item.type} du ${item.date}`,
@@ -177,9 +176,9 @@ const DettesPage = {
           isDettePayment: true,
           detteId: item.implicit ? null : item.id,
           isImplicit: item.implicit || false
-        });
-        if (res && !res.error) nbOk++;
-      }
+        }).catch(() => null)
+      ));
+      const nbOk = results.filter(r => r && !r.error).length;
       if (typeof DriverToast !== 'undefined') DriverToast.show(`${nbOk} dette(s) reglee(s)`, 'success');
       const container = document.getElementById('app-content');
       if (container) this.render(container);

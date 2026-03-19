@@ -356,5 +356,158 @@ const Utils = {
         ctx.restore();
       }
     };
+  },
+
+  // =================== DATE HELPERS ===================
+
+  /** Get today's date as ISO string (YYYY-MM-DD) */
+  todayISO(date) {
+    const d = date || new Date();
+    return d.toISOString().split('T')[0];
+  },
+
+  /** Check if dateStr matches a given month/year */
+  matchesMonth(dateStr, month, year) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    return d.getMonth() === month && d.getFullYear() === year;
+  },
+
+  // =================== DEBT HELPERS ===================
+
+  /** Detect if a versement is linked to a contravention */
+  isContravention(v) {
+    return v.source === 'contravention' || (v.reference && v.reference.startsWith('CHF')) || (v.commentaire && v.commentaire.toLowerCase().includes('contravention'));
+  },
+
+  /**
+   * Compute all debts (explicit + implicit + contraventions).
+   * Uses indexed lookups for performance (O(n) instead of O(n²)).
+   * @param {Object} opts - { versements, chauffeurs, planning, absences, contraventions }
+   * @returns {Object} { totalDettesRecettes, totalDettesContraventions, totalDettes, nbDetteDrivers, detteList, ... }
+   */
+  computeDebts({ versements, chauffeurs, planning, absences, contraventions }) {
+    const todayStr = this.todayISO();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = this.todayISO(thirtyDaysAgo);
+
+    // Build lookup indexes for O(1) access
+    const chauffeurById = new Map(chauffeurs.map(c => [c.id, c]));
+    // Versement lookup by "chauffeurId|date" for payment checks
+    const paymentIndex = new Set();
+    versements.forEach(v => {
+      if (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte' || v.statut === 'partiel' || v.traitementManquant === 'perte') {
+        paymentIndex.add(`${v.chauffeurId}|${v.date}`);
+      }
+    });
+    // Versement references that have been paid (for contravention dedup)
+    const paidReferences = new Set();
+    versements.forEach(v => {
+      if (v.reference && (v.statut === 'valide' || v.statut === 'supprime')) {
+        paidReferences.add(v.reference);
+      }
+    });
+    // Absence lookup by chauffeurId
+    const absencesByDriver = new Map();
+    absences.forEach(a => {
+      if (!absencesByDriver.has(a.chauffeurId)) absencesByDriver.set(a.chauffeurId, []);
+      absencesByDriver.get(a.chauffeurId).push(a);
+    });
+    const hasAbsence = (chauffeurId, date) => {
+      const driverAbsences = absencesByDriver.get(chauffeurId);
+      if (!driverAbsences) return false;
+      return driverAbsences.some(a => date >= a.dateDebut && date <= a.dateFin);
+    };
+
+    // 1. Explicit debts
+    const dettesExplicites = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0)
+      .map(v => ({ ...v, source: this.isContravention(v) ? 'contravention' : (v.source || 'recette') }));
+    const explicitDebtIndex = new Set(dettesExplicites.map(v => `${v.chauffeurId}|${v.date}`));
+    const explicitRefIndex = new Set(dettesExplicites.map(v => v.reference).filter(Boolean));
+
+    // 2. Unpaid contraventions without existing versement
+    const allDettes = [...dettesExplicites];
+    const contraImpayees = (contraventions || []).filter(c => (c.statut === 'impayee' || c.statut === 'contestee') && c.montant > 0 && c.chauffeurId);
+    contraImpayees.forEach(c => {
+      if (!explicitRefIndex.has(c.id) && !paidReferences.has(c.id)) {
+        allDettes.push({
+          id: `contra_${c.id}`, chauffeurId: c.chauffeurId, date: c.date,
+          manquant: c.montant, traitementManquant: 'dette', source: 'contravention',
+          commentaire: `Contravention — ${c.type || 'amende'}`, reference: c.id, implicit: false
+        });
+      }
+    });
+
+    // 3. Implicit debts (past planning without payment)
+    const pastPlannings = planning.filter(p => p.date >= thirtyDaysAgoStr && p.date < todayStr);
+    const pastScheduled = new Map();
+    pastPlannings.forEach(p => {
+      const key = `${p.chauffeurId}|${p.date}`;
+      if (!pastScheduled.has(key)) pastScheduled.set(key, p);
+    });
+    const implicitDettes = [];
+    pastScheduled.forEach((p) => {
+      if (hasAbsence(p.chauffeurId, p.date)) return;
+      const ch = chauffeurById.get(p.chauffeurId);
+      if (!ch || ch.statut === 'inactif') return;
+      const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+      if (redevance <= 0) return;
+      if (paymentIndex.has(`${p.chauffeurId}|${p.date}`)) return;
+      if (explicitDebtIndex.has(`${p.chauffeurId}|${p.date}`)) return;
+      implicitDettes.push({
+        id: `implicit_${p.chauffeurId}_${p.date}`, chauffeurId: p.chauffeurId, date: p.date,
+        manquant: redevance, traitementManquant: 'dette', implicit: true, source: 'recette'
+      });
+    });
+
+    const combined = [...allDettes, ...implicitDettes];
+
+    // Group by driver
+    const byDriver = {};
+    combined.forEach(v => {
+      if (!byDriver[v.chauffeurId]) byDriver[v.chauffeurId] = { items: [], total: 0 };
+      byDriver[v.chauffeurId].items.push(v);
+      byDriver[v.chauffeurId].total += v.manquant;
+    });
+    const detteList = Object.keys(byDriver).map(cId => {
+      const ch = chauffeurById.get(cId);
+      const d = byDriver[cId];
+      d.items.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+      return {
+        chauffeurId: cId, nom: ch ? `${ch.prenom} ${ch.nom}` : cId,
+        count: d.items.length, total: d.total,
+        lastDate: d.items[d.items.length - 1]?.date || '', items: d.items
+      };
+    }).sort((a, b) => b.total - a.total);
+
+    // Separate by type
+    const allItems = detteList.flatMap(d => d.items);
+    const totalDettesRecettes = allItems.filter(v => v.source !== 'contravention').reduce((s, v) => s + (v.manquant || 0), 0);
+    const totalDettesContraventions = allItems.filter(v => v.source === 'contravention').reduce((s, v) => s + (v.manquant || 0), 0);
+    const totalDettes = totalDettesRecettes + totalDettesContraventions;
+    const nbDriversRecettes = new Set(allItems.filter(v => v.source !== 'contravention').map(v => v.chauffeurId)).size;
+    const nbDriversContraventions = new Set(allItems.filter(v => v.source === 'contravention').map(v => v.chauffeurId)).size;
+    const nbDetteDrivers = new Set(allItems.map(v => v.chauffeurId)).size;
+
+    const detteListRecettes = detteList.map(d => {
+      const recItems = d.items.filter(v => v.source !== 'contravention');
+      if (recItems.length === 0) return null;
+      return { ...d, items: recItems, total: recItems.reduce((s, v) => s + (v.manquant || 0), 0), count: recItems.length };
+    }).filter(Boolean).sort((a, b) => b.total - a.total);
+    const detteListContraventions = detteList.map(d => {
+      const conItems = d.items.filter(v => v.source === 'contravention');
+      if (conItems.length === 0) return null;
+      return { ...d, items: conItems, total: conItems.reduce((s, v) => s + (v.manquant || 0), 0), count: conItems.length };
+    }).filter(Boolean).sort((a, b) => b.total - a.total);
+
+    const totalPertes = versements.filter(v => v.traitementManquant === 'perte' && v.manquant > 0).reduce((s, v) => s + v.manquant, 0);
+
+    return {
+      detteList, totalDettes, totalPertes, chauffeurs,
+      totalDettesRecettes, totalDettesContraventions,
+      nbDriversRecettes, nbDriversContraventions, nbDetteDrivers,
+      detteListRecettes, detteListContraventions
+    };
   }
 };
