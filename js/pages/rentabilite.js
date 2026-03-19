@@ -210,18 +210,22 @@ const RentabilitePage = {
       }
     }
 
-    // RSI global — investissement total (coût d'acquisition complet) vs résultat cumulé
+    // RSI global — investissement total (engagement complet) vs profit d'exploitation cumulé
+    // Pour leasing : engagement = apport + mensualités × durée totale du contrat
+    // Pour cash : engagement = prix d'achat
     const investTotal = vehicules.reduce((s, v) => {
       if (v.typeAcquisition === 'leasing') return s + (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * (v.dureeLeasing || 36));
       return s + (v.prixAchat || 0);
     }, 0);
-    // Résultat = revenus réels - coûts opérationnels (hors acquisition)
-    const coutOperationnel = analysis.reduce((s, a) => s + a.maintenanceTotal + a.assuranceTotal + a.energyCost, 0);
-    const depensesTotal = (Store.get('depenses') || []).reduce((s, dep) => s + (dep.montant || 0), 0);
-    const reparationsTotal = (Store.get('reparations') || []).reduce((s, r) => s + (r.coutReel || r.coutEstime || 0), 0);
-    const resultatCumule = fleetTotalRevenue - fleetTotalCost;
+    // Investissement déjà payé (leasing : uniquement les mensualités réglées)
+    const investPaye = analysis.reduce((s, a) => s + a.acquisitionTotal, 0);
+    // Coûts opérationnels = tout sauf l'acquisition (maintenance, assurance, énergie, dépenses, réparations)
+    const coutOperationnel = fleetTotalCost - investPaye;
+    // Résultat cumulé = revenus - coûts opérationnels SEULEMENT (hors acquisition)
+    // Car on veut mesurer combien le profit d'exploitation "rembourse" l'investissement
+    const resultatCumule = fleetTotalRevenue - coutOperationnel;
     const rsiGlobal = investTotal > 0 ? (resultatCumule / investTotal * 100) : 0;
-    // Délai de récupération
+    // Délai de récupération basé sur le profit d'exploitation mensuel moyen
     const avgMonthsService = analysis.length > 0 ? analysis.reduce((s, a) => s + a.monthsInService, 0) / analysis.length : 1;
     const resultatMensuelMoyen = avgMonthsService > 0 ? resultatCumule / avgMonthsService : 0;
     const moisRecuperation = resultatMensuelMoyen > 0 ? Math.ceil((investTotal - Math.max(0, resultatCumule)) / resultatMensuelMoyen) : null;
@@ -245,7 +249,7 @@ const RentabilitePage = {
       debugUnlinkedRevenue: unlinkedRevenue,
       debugAcquisitionTotal: analysis.reduce((s, a) => s + a.acquisitionTotal, 0),
       debugPerVehicle,
-      investTotal, resultatCumule, rsiGlobal, moisRecuperation, vehiculeCount: vehicules.length
+      investTotal, investPaye, resultatCumule, rsiGlobal, moisRecuperation, vehiculeCount: vehicules.length
     };
   },
 
@@ -301,7 +305,7 @@ const RentabilitePage = {
           </div>
           <div>
             <div style="font-size:17px;font-weight:800;color:#fff;">Retour Sur Investissement (RSI)</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.5);">Basé sur ${d.vehiculeCount} véhicule${d.vehiculeCount > 1 ? 's' : ''} — investissement total : ${Utils.formatCurrency(d.investTotal)}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.5);">Basé sur ${d.vehiculeCount} véhicule${d.vehiculeCount > 1 ? 's' : ''} — engagement total : ${Utils.formatCurrency(d.investTotal)}</div>
           </div>
         </div>
 
@@ -311,12 +315,13 @@ const RentabilitePage = {
             <div class="rent-kpi-lbl">RSI global</div>
           </div>
           <div class="rent-kpi-glass">
-            <div class="rent-kpi-val" style="color:#fff;">${Utils.formatCurrency(d.investTotal)}</div>
-            <div class="rent-kpi-lbl">Investissement total</div>
+            <div class="rent-kpi-val" style="color:#fff;">${Utils.formatCurrency(d.investPaye)}</div>
+            <div class="rent-kpi-lbl">Payé à ce jour</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;">sur ${Utils.formatCurrency(d.investTotal)}</div>
           </div>
           <div class="rent-kpi-glass">
             <div class="rent-kpi-val" style="color:${d.resultatCumule >= 0 ? '#34d399' : '#f87171'};">${Utils.formatCurrency(d.resultatCumule)}</div>
-            <div class="rent-kpi-lbl">Résultat cumulé</div>
+            <div class="rent-kpi-lbl">Profit d'exploitation</div>
           </div>
           <div class="rent-kpi-glass">
             <div class="rent-kpi-val" style="color:${d.moisRecuperation !== null && d.moisRecuperation <= 0 ? '#34d399' : '#fbbf24'};">${d.moisRecuperation !== null ? (d.moisRecuperation <= 0 ? 'Récupéré !' : d.moisRecuperation + ' mois') : '—'}</div>
