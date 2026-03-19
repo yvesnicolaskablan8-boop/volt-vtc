@@ -79,10 +79,18 @@ const RentabilitePage = {
       let acquisitionTotal = 0;
       let mensualitesPaid = 0;
       if (v.typeAcquisition === 'leasing') {
-        // Si autoFillLeasing est désactivé, utiliser le nombre manuel ; sinon calculer depuis la date
-        if (v.autoFillLeasing === false && typeof v.mensualitesPaid === 'number') {
-          mensualitesPaid = Math.min(v.mensualitesPaid, v.dureeLeasing || 36);
+        if (typeof v.mensualitesPaid === 'number') {
+          // Valeur sauvée manuellement
+          mensualitesPaid = v.mensualitesPaid;
+          // Si auto est activé, ajouter les mois écoulés depuis la dernière sauvegarde
+          if (v.autoFillLeasing !== false && v.mensualitesPaidDate) {
+            const savedDate = new Date(v.mensualitesPaidDate);
+            const monthsSinceSave = Math.max(0, Math.floor((now - savedDate) / (30 * 24 * 60 * 60 * 1000)));
+            mensualitesPaid += monthsSinceSave;
+          }
+          mensualitesPaid = Math.min(mensualitesPaid, v.dureeLeasing || 36);
         } else {
+          // Pas de valeur sauvée, calculer depuis la date d'acquisition
           mensualitesPaid = Math.min(monthsInService, v.dureeLeasing || 36);
         }
         acquisitionTotal = (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * mensualitesPaid);
@@ -603,14 +611,14 @@ const RentabilitePage = {
         <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px;"><iconify-icon icon="solar:calendar-bold-duotone" style="color:#6366f1;"></iconify-icon> Suivi des mensualités</div>
         <div class="form-group">
           <label class="form-label">Mensualités payées</label>
-          <input type="number" name="mensualitesPaid" class="form-control" value="${currentPaid}" min="0" max="${duree}" step="1" ${autoFill ? 'disabled style="opacity:0.5;background:var(--bg-tertiary);"' : ''} oninput="var cb=this.closest('.modal-body').querySelector('[name=autoFillLeasing]');if(cb.checked){cb.checked=false;cb.dispatchEvent(new Event('change'));}">
+          <input type="number" name="mensualitesPaid" class="form-control" value="${currentPaid}" min="0" max="${duree}" step="1">
         </div>
         <div class="form-group" style="margin-top:8px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <input type="checkbox" name="autoFillLeasing" ${autoFill ? 'checked' : ''} style="accent-color:#6366f1;" onchange="var inp=this.closest('.modal-body').querySelector('[name=mensualitesPaid]');inp.disabled=this.checked;inp.style.opacity=this.checked?'0.5':'1';inp.style.background=this.checked?'var(--bg-tertiary)':'';">
+            <input type="checkbox" name="autoFillLeasing" ${autoFill ? 'checked' : ''} style="accent-color:#6366f1;">
             <span class="form-label" style="margin:0;">Remplissage automatique</span>
           </label>
-          <small style="color:var(--text-muted);margin-top:4px;display:block;">Calcule le nombre de mensualités depuis la date d'acquisition</small>
+          <small style="color:var(--text-muted);margin-top:4px;display:block;">Incrémente automatiquement de +1 chaque mois</small>
         </div>
       </div>
       <div id="rent-cash-fields" style="${!isLeasing ? '' : 'display:none;'}">
@@ -638,11 +646,9 @@ const RentabilitePage = {
           data.mensualiteLeasing = parseInt(body.querySelector('[name=mensualiteLeasing]').value) || 0;
           data.dureeLeasing = parseInt(body.querySelector('[name=dureeLeasing]').value) || 36;
           data.apportInitial = parseInt(body.querySelector('[name=apportInitial]').value) || 0;
-          const autoFillLeasing = body.querySelector('[name=autoFillLeasing]').checked;
-          data.autoFillLeasing = autoFillLeasing;
-          if (!autoFillLeasing) {
-            data.mensualitesPaid = parseInt(body.querySelector('[name=mensualitesPaid]').value) || 0;
-          }
+          data.autoFillLeasing = body.querySelector('[name=autoFillLeasing]').checked;
+          data.mensualitesPaid = parseInt(body.querySelector('[name=mensualitesPaid]').value) || 0;
+          data.mensualitesPaidDate = new Date().toISOString().split('T')[0];
         } else {
           data.montantPaye = parseInt(body.querySelector('[name=montantPaye]').value) || 0;
         }
