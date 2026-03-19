@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const comptabiliteSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   type: { type: String, required: true },
   categorie: { type: String, required: true },
   description: String,

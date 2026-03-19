@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const checklistVehiculeSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   chauffeurId: { type: String, required: true },
   vehiculeId: String,
   date: { type: String, required: true },

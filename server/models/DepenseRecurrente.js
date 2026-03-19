@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const depenseRecurrenteSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   nom: { type: String, required: true },
   chauffeurId: String,
   typeDepense: { type: String, required: true },

@@ -19,6 +19,7 @@ const Absence = require('../models/Absence');
 const Notification = require('../models/Notification');
 const { getNextDeadline } = require('./deadline');
 const notifService = require('./notification-service');
+const { forEachTenant } = require('./tenant-iterator');
 
 let _interval = null;
 let _enabled = true;
@@ -89,58 +90,64 @@ async function runChecks() {
       _lastDateStr = todayStr;
     }
 
-    // Charger les chauffeurs actifs (nécessaire pour tous les checks)
-    const chauffeurs = await Chauffeur.find({ statut: 'actif' }).lean();
-    if (chauffeurs.length === 0) return;
+    await forEachTenant(async (entrepriseId) => {
+      // Charger les chauffeurs actifs (nécessaire pour tous les checks)
+      const chauffeurFilter = { statut: 'actif' };
+      if (entrepriseId) chauffeurFilter.entrepriseId = entrepriseId;
+      const chauffeurs = await Chauffeur.find(chauffeurFilter).lean();
+      if (chauffeurs.length === 0) return;
 
-    // === CHECK 6 : Dettes automatiques (TOUJOURS, indépendant des settings notif) ===
-    await checkMissingPaymentDebts(chauffeurs, null);
+      // === CHECK 6 : Dettes automatiques (TOUJOURS, indépendant des settings notif) ===
+      await checkMissingPaymentDebts(chauffeurs, null, entrepriseId);
 
-    // Charger les settings pour les notifications
-    const settings = await Settings.findOne().lean();
-    if (!settings || !settings.notifications) return;
+      // Charger les settings pour les notifications
+      const settingsFilter = {};
+      if (entrepriseId) settingsFilter.entrepriseId = entrepriseId;
+      const settings = await Settings.findOne(settingsFilter).lean();
+      if (!settings || !settings.notifications) return;
 
-    const notifSettings = settings.notifications;
+      const notifSettings = settings.notifications;
 
-    // Verifier si au moins un canal est actif
-    if (!notifSettings.pushActif && !notifSettings.smsActif && !notifSettings.whatsappActif) return;
+      // Verifier si au moins un canal est actif
+      if (!notifSettings.pushActif && !notifSettings.smsActif && !notifSettings.whatsappActif) return;
 
-    // Determiner le canal optimal selon les toggles actifs
-    const canaux = [];
-    if (notifSettings.pushActif) canaux.push('push');
-    if (notifSettings.smsActif) canaux.push('sms');
-    if (notifSettings.whatsappActif) canaux.push('whatsapp');
+      // Determiner le canal optimal selon les toggles actifs
+      const canaux = [];
+      if (notifSettings.pushActif) canaux.push('push');
+      if (notifSettings.smsActif) canaux.push('sms');
+      if (notifSettings.whatsappActif) canaux.push('whatsapp');
 
-    let canal;
-    if (canaux.length === 3) canal = 'all';
-    else if (canaux.length === 2) {
-      if (canaux.includes('push') && canaux.includes('sms')) canal = 'both';
-      else if (canaux.includes('push') && canaux.includes('whatsapp')) canal = 'push+whatsapp';
-      else canal = 'sms+whatsapp';
-    } else canal = canaux[0];
+      let canal;
+      if (canaux.length === 3) canal = 'all';
+      else if (canaux.length === 2) {
+        if (canaux.includes('push') && canaux.includes('sms')) canal = 'both';
+        else if (canaux.includes('push') && canaux.includes('whatsapp')) canal = 'push+whatsapp';
+        else canal = 'sms+whatsapp';
+      } else canal = canaux[0];
 
-    // === CHECK 1 : Deadline versement ===
-    if (notifSettings.rappelDeadline24h || notifSettings.rappelDeadline1h) {
-      await checkDeadlineReminders(chauffeurs, settings, canal, now);
-    }
+      // === CHECK 1 : Deadline versement ===
+      if (notifSettings.rappelDeadline24h || notifSettings.rappelDeadline1h) {
+        await checkDeadlineReminders(chauffeurs, settings, canal, now, entrepriseId);
+      }
 
-    // === CHECK 2 : Documents expiration ===
-    if (notifSettings.alerteDocuments30j || notifSettings.alerteDocuments7j) {
-      await checkDocumentExpiration(chauffeurs, notifSettings, canal, now);
-    }
+      // === CHECK 2 : Documents expiration ===
+      if (notifSettings.alerteDocuments30j || notifSettings.alerteDocuments7j) {
+        await checkDocumentExpiration(chauffeurs, notifSettings, canal, now);
+      }
 
-    // === CHECK 3 : Score conduite ===
-    if (notifSettings.alerteScoreFaible) {
-      await checkLowScores(chauffeurs, notifSettings, canal);
-    }
+      // === CHECK 3 : Score conduite ===
+      if (notifSettings.alerteScoreFaible) {
+        await checkLowScores(chauffeurs, notifSettings, canal);
+      }
 
-    // === CHECK 4 : Maintenances planifiees ===
-    await checkMaintenancesPlanifiees(chauffeurs, canal);
+      // === CHECK 4 : Maintenances planifiees ===
+      await checkMaintenancesPlanifiees(chauffeurs, canal, entrepriseId);
 
-    // === CHECK 5 : Resume hebdomadaire (dimanche) ===
-    if (now.getDay() === 0) {
-      await checkWeeklySummary(chauffeurs, canal);
-    }
+      // === CHECK 5 : Resume hebdomadaire (dimanche) ===
+      if (now.getDay() === 0) {
+        await checkWeeklySummary(chauffeurs, canal, entrepriseId);
+      }
+    });
 
   } catch (err) {
     console.error('[NotifCron] Erreur:', err.message);
@@ -149,7 +156,7 @@ async function runChecks() {
 
 // ===================== CHECK : DEADLINE VERSEMENT =====================
 
-async function checkDeadlineReminders(chauffeurs, settings, canal, now) {
+async function checkDeadlineReminders(chauffeurs, settings, canal, now, entrepriseId) {
   const vs = settings.versements;
   if (!vs || !vs.deadlineType) return;
 
@@ -163,7 +170,7 @@ async function checkDeadlineReminders(chauffeurs, settings, canal, now) {
   if (remainingMs <= 0 || remainingH > 25) {
     // Si deadline passee, verifier les retards
     if (remainingMs <= 0) {
-      await checkLatePayments(chauffeurs, deadlineInfo, settings, canal);
+      await checkLatePayments(chauffeurs, deadlineInfo, settings, canal, entrepriseId);
     }
     return;
   }
@@ -172,10 +179,12 @@ async function checkDeadlineReminders(chauffeurs, settings, canal, now) {
 
   for (const c of chauffeurs) {
     // Verifier si le chauffeur a deja paye pour cette periode
-    const versementPeriode = await Versement.findOne({
+    const vFilter = {
       chauffeurId: c.id,
       dateCreation: { $gte: deadlineInfo.previousDeadline.toISOString() }
-    }).lean();
+    };
+    if (entrepriseId) vFilter.entrepriseId = entrepriseId;
+    const versementPeriode = await Versement.findOne(vFilter).lean();
 
     if (versementPeriode) continue; // Deja paye
 
@@ -217,14 +226,16 @@ async function checkDeadlineReminders(chauffeurs, settings, canal, now) {
 
 // ===================== CHECK : RETARDS =====================
 
-async function checkLatePayments(chauffeurs, deadlineInfo, settings, canal) {
+async function checkLatePayments(chauffeurs, deadlineInfo, settings, canal, entrepriseId) {
   const notifSettings = settings.notifications;
 
   for (const c of chauffeurs) {
-    const versementPeriode = await Versement.findOne({
+    const vFilter = {
       chauffeurId: c.id,
       dateCreation: { $gte: deadlineInfo.previousDeadline.toISOString() }
-    }).lean();
+    };
+    if (entrepriseId) vFilter.entrepriseId = entrepriseId;
+    const versementPeriode = await Versement.findOne(vFilter).lean();
 
     if (versementPeriode) continue; // A paye
 
@@ -330,9 +341,11 @@ async function checkLowScores(chauffeurs, notifSettings, canal) {
 
 // ===================== CHECK : MAINTENANCES PLANIFIEES =====================
 
-async function checkMaintenancesPlanifiees(chauffeurs, canal) {
+async function checkMaintenancesPlanifiees(chauffeurs, canal, entrepriseId) {
   try {
-    const vehicules = await Vehicule.find({ statut: 'en_service' });
+    const vehFilter = { statut: 'en_service' };
+    if (entrepriseId) vehFilter.entrepriseId = entrepriseId;
+    const vehicules = await Vehicule.find(vehFilter);
     const now = new Date();
     const MS_PAR_JOUR = 24 * 3600 * 1000;
 
@@ -378,7 +391,9 @@ async function checkMaintenancesPlanifiees(chauffeurs, canal) {
           if (!vehicule._kmParJour) {
             // Calculer kmParJour une seule fois par vehicule (cache sur l'objet)
             const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            const gpsRecent = await Gps.find({ chauffeurId: vehicule.chauffeurAssigne, date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } }).lean();
+            const gpsRecentFilter = { chauffeurId: vehicule.chauffeurAssigne, date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } };
+            if (entrepriseId) gpsRecentFilter.entrepriseId = entrepriseId;
+            const gpsRecent = await Gps.find(gpsRecentFilter).lean();
             let totalKm = 0, activeDays = 0;
             for (const g of gpsRecent) { const dist = g.evenements ? (g.evenements.distanceParcourue || 0) : 0; if (dist > 0) { totalKm += dist; activeDays++; } }
             vehicule._kmParJour = activeDays > 0 ? Math.round(totalKm / activeDays) : 0;
@@ -449,7 +464,7 @@ async function checkMaintenancesPlanifiees(chauffeurs, canal) {
 
 // ===================== CHECK : RESUME HEBDOMADAIRE =====================
 
-async function checkWeeklySummary(chauffeurs, canal) {
+async function checkWeeklySummary(chauffeurs, canal, entrepriseId) {
   try {
     const now = new Date();
     const monday = new Date(now);
@@ -462,10 +477,12 @@ async function checkWeeklySummary(chauffeurs, canal) {
       if (_sentToday.has(key)) continue;
 
       // Fetch GPS data de la semaine
-      const gpsRecords = await Gps.find({
+      const gpsWeekFilter = {
         chauffeurId: c.id,
         date: { $gte: mondayStr, $lte: todayStr }
-      }).lean();
+      };
+      if (entrepriseId) gpsWeekFilter.entrepriseId = entrepriseId;
+      const gpsRecords = await Gps.find(gpsWeekFilter).lean();
 
       if (gpsRecords.length === 0) continue;
 
@@ -498,7 +515,7 @@ async function checkWeeklySummary(chauffeurs, canal) {
  * Pour chaque jour manquant, crée un versement avec dette = redevance complète.
  * Ne vérifie que les 7 derniers jours pour éviter de remonter trop loin.
  */
-async function checkMissingPaymentDebts(chauffeurs, canal) {
+async function checkMissingPaymentDebts(chauffeurs, canal, entrepriseId) {
   try {
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
@@ -514,25 +531,27 @@ async function checkMissingPaymentDebts(chauffeurs, canal) {
     if (dates.length === 0) return;
 
     // Charger les plannings des 7 derniers jours
-    const plannings = await Planning.find({
-      date: { $in: dates }
-    }).lean();
+    const planningFilter = { date: { $in: dates } };
+    if (entrepriseId) planningFilter.entrepriseId = entrepriseId;
+    const plannings = await Planning.find(planningFilter).lean();
 
     if (plannings.length === 0) return;
 
     // Charger les absences couvrant cette période
     const minDate = dates[dates.length - 1];
     const maxDate = dates[0];
-    const absences = await Absence.find({
+    const absenceFilter = {
       $or: [
         { dateDebut: { $lte: maxDate }, dateFin: { $gte: minDate } }
       ]
-    }).lean();
+    };
+    if (entrepriseId) absenceFilter.entrepriseId = entrepriseId;
+    const absences = await Absence.find(absenceFilter).lean();
 
     // Charger les versements existants pour ces dates
-    const versements = await Versement.find({
-      date: { $in: dates }
-    }).lean();
+    const versementFilter = { date: { $in: dates } };
+    if (entrepriseId) versementFilter.entrepriseId = entrepriseId;
+    const versements = await Versement.find(versementFilter).lean();
 
     // Construire un Set des versements existants (chauffeurId|date)
     const versementKeys = new Set();
@@ -574,6 +593,7 @@ async function checkMissingPaymentDebts(chauffeurs, canal) {
       const versementId = 'V-DETTE-' + Math.random().toString(36).substr(2, 8).toUpperCase();
       await Versement.create({
         id: versementId,
+        entrepriseId: entrepriseId || undefined,
         chauffeurId: p.chauffeurId,
         vehiculeId: ch.vehiculeAssigne || '',
         date: p.date,

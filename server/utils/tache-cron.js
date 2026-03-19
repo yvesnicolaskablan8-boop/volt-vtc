@@ -7,6 +7,7 @@
  */
 
 const Tache = require('../models/Tache');
+const { forEachTenant } = require('./tenant-iterator');
 
 let _interval = null;
 
@@ -63,61 +64,67 @@ function calculerProchaineExecution(recurrence, joursSemaine, jourMois, fromDate
 
 async function genererTachesRecurrentes() {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    await forEachTenant(async (entrepriseId) => {
+      const today = new Date().toISOString().split('T')[0];
 
-    // Trouver toutes les taches recurrentes actives dont la prochaine execution est aujourd'hui ou passee
-    const tachesRecurrentes = await Tache.find({
-      recurrenceActif: true,
-      recurrence: { $ne: 'aucune' },
-      prochaineExecution: { $lte: today }
-    });
+      // Trouver toutes les taches recurrentes actives dont la prochaine execution est aujourd'hui ou passee
+      const tacheFilter = {
+        recurrenceActif: true,
+        recurrence: { $ne: 'aucune' },
+        prochaineExecution: { $lte: today }
+      };
+      if (entrepriseId) tacheFilter.entrepriseId = entrepriseId;
 
-    if (tachesRecurrentes.length === 0) return;
+      const tachesRecurrentes = await Tache.find(tacheFilter);
 
-    console.log(`[TacheCron] ${tachesRecurrentes.length} tache(s) recurrente(s) a generer`);
+      if (tachesRecurrentes.length === 0) return;
 
-    for (const tacheModele of tachesRecurrentes) {
-      try {
-        // Creer une nouvelle instance de la tache
-        const nouvelleTache = new Tache({
-          id: generateId(),
-          titre: tacheModele.titre,
-          description: tacheModele.description,
-          type: tacheModele.type,
-          priorite: tacheModele.priorite,
-          statut: 'a_faire',
-          assigneA: tacheModele.assigneA,
-          assigneANom: tacheModele.assigneANom,
-          creePar: tacheModele.creePar,
-          creeParNom: tacheModele.creeParNom,
-          dateEcheance: tacheModele.prochaineExecution,
-          dateCreation: new Date().toISOString(),
-          dateModification: new Date().toISOString(),
-          commentaire: tacheModele.commentaire,
-          recurrenceParentId: tacheModele.id
-          // Pas de recurrence sur l'instance generee
-        });
+      console.log(`[TacheCron] ${tachesRecurrentes.length} tache(s) recurrente(s) a generer (tenant ${entrepriseId || 'global'})`);
 
-        await nouvelleTache.save();
+      for (const tacheModele of tachesRecurrentes) {
+        try {
+          // Creer une nouvelle instance de la tache
+          const nouvelleTache = new Tache({
+            id: generateId(),
+            entrepriseId: entrepriseId || undefined,
+            titre: tacheModele.titre,
+            description: tacheModele.description,
+            type: tacheModele.type,
+            priorite: tacheModele.priorite,
+            statut: 'a_faire',
+            assigneA: tacheModele.assigneA,
+            assigneANom: tacheModele.assigneANom,
+            creePar: tacheModele.creePar,
+            creeParNom: tacheModele.creeParNom,
+            dateEcheance: tacheModele.prochaineExecution,
+            dateCreation: new Date().toISOString(),
+            dateModification: new Date().toISOString(),
+            commentaire: tacheModele.commentaire,
+            recurrenceParentId: tacheModele.id
+            // Pas de recurrence sur l'instance generee
+          });
 
-        // Calculer la prochaine execution
-        const prochaineDate = calculerProchaineExecution(
-          tacheModele.recurrence,
-          tacheModele.joursSemaine,
-          tacheModele.jourMois,
-          tacheModele.prochaineExecution
-        );
+          await nouvelleTache.save();
 
-        await Tache.findOneAndUpdate(
-          { id: tacheModele.id },
-          { $set: { prochaineExecution: prochaineDate, dateModification: new Date().toISOString() } }
-        );
+          // Calculer la prochaine execution
+          const prochaineDate = calculerProchaineExecution(
+            tacheModele.recurrence,
+            tacheModele.joursSemaine,
+            tacheModele.jourMois,
+            tacheModele.prochaineExecution
+          );
 
-        console.log(`[TacheCron] Tache "${tacheModele.titre}" generee → prochaine: ${prochaineDate}`);
-      } catch (err) {
-        console.error(`[TacheCron] Erreur generation tache "${tacheModele.titre}":`, err.message);
+          await Tache.findOneAndUpdate(
+            { id: tacheModele.id },
+            { $set: { prochaineExecution: prochaineDate, dateModification: new Date().toISOString() } }
+          );
+
+          console.log(`[TacheCron] Tache "${tacheModele.titre}" generee → prochaine: ${prochaineDate}`);
+        } catch (err) {
+          console.error(`[TacheCron] Erreur generation tache "${tacheModele.titre}":`, err.message);
+        }
       }
-    }
+    });
   } catch (err) {
     console.error('[TacheCron] Erreur globale:', err.message);
   }

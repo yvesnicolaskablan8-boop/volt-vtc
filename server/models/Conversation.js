@@ -16,6 +16,7 @@ const messageSchema = new mongoose.Schema({
 
 const conversationSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   chauffeurId: { type: String, required: true },
   sujet: { type: String, default: '' },
   statut: { type: String, default: 'active' },         // 'active' | 'archivee'

@@ -30,6 +30,7 @@ const gpsSampleSchema = new mongoose.Schema({
 
 const conduiteBruteSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   chauffeurId: { type: String, required: true },
   date: String,
   sessionDebut: String,

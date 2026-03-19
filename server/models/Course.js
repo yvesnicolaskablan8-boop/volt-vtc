@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const courseSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   chauffeurId: { type: String, required: true },
   vehiculeId: String,
   dateHeure: { type: String, required: true },

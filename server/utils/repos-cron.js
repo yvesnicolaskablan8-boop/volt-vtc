@@ -9,48 +9,53 @@
 
 const Chauffeur = require('../models/Chauffeur');
 const Planning = require('../models/Planning');
+const { forEachTenant } = require('./tenant-iterator');
 
 let _interval = null;
 
 async function mettreAJourRepos() {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    await forEachTenant(async (entrepriseId) => {
+      const today = new Date().toISOString().split('T')[0];
 
-    // Recuperer tous les plannings du jour
-    const planningsAujourdhui = await Planning.find({ date: today });
-    const chauffeursPlanifies = new Set(planningsAujourdhui.map(p => p.chauffeurId));
+      // Recuperer tous les plannings du jour
+      const planningFilter = { date: today };
+      if (entrepriseId) planningFilter.entrepriseId = entrepriseId;
+      const planningsAujourdhui = await Planning.find(planningFilter);
+      const chauffeursPlanifies = new Set(planningsAujourdhui.map(p => p.chauffeurId));
 
-    // Recuperer tous les chauffeurs actifs ou en repos (pas suspendu/inactif)
-    const chauffeurs = await Chauffeur.find({
-      statut: { $in: ['actif', 'repos'] }
-    });
+      // Recuperer tous les chauffeurs actifs ou en repos (pas suspendu/inactif)
+      const chauffeurFilter = { statut: { $in: ['actif', 'repos'] } };
+      if (entrepriseId) chauffeurFilter.entrepriseId = entrepriseId;
+      const chauffeurs = await Chauffeur.find(chauffeurFilter);
 
-    let misEnRepos = 0;
-    let remisActifs = 0;
+      let misEnRepos = 0;
+      let remisActifs = 0;
 
-    for (const c of chauffeurs) {
-      const estPlanifie = chauffeursPlanifies.has(c.id);
+      for (const c of chauffeurs) {
+        const estPlanifie = chauffeursPlanifies.has(c.id);
 
-      if (!estPlanifie && c.statut === 'actif') {
-        // Pas planifie aujourd'hui → repos
-        await Chauffeur.findOneAndUpdate(
-          { id: c.id },
-          { $set: { statut: 'repos' } }
-        );
-        misEnRepos++;
-      } else if (estPlanifie && c.statut === 'repos') {
-        // Planifie aujourd'hui mais etait en repos → remettre actif
-        await Chauffeur.findOneAndUpdate(
-          { id: c.id },
-          { $set: { statut: 'actif' } }
-        );
-        remisActifs++;
+        if (!estPlanifie && c.statut === 'actif') {
+          // Pas planifie aujourd'hui → repos
+          await Chauffeur.findOneAndUpdate(
+            { id: c.id },
+            { $set: { statut: 'repos' } }
+          );
+          misEnRepos++;
+        } else if (estPlanifie && c.statut === 'repos') {
+          // Planifie aujourd'hui mais etait en repos → remettre actif
+          await Chauffeur.findOneAndUpdate(
+            { id: c.id },
+            { $set: { statut: 'actif' } }
+          );
+          remisActifs++;
+        }
       }
-    }
 
-    if (misEnRepos > 0 || remisActifs > 0) {
-      console.log(`[ReposCron] ${misEnRepos} chauffeur(s) mis en repos, ${remisActifs} remis actif(s) pour ${today}`);
-    }
+      if (misEnRepos > 0 || remisActifs > 0) {
+        console.log(`[ReposCron] ${misEnRepos} chauffeur(s) mis en repos, ${remisActifs} remis actif(s) pour ${today} (tenant ${entrepriseId || 'global'})`);
+      }
+    });
   } catch (err) {
     console.error('[ReposCron] Erreur:', err.message);
   }

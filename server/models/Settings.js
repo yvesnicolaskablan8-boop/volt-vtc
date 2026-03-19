@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const settingsSchema = new mongoose.Schema({
+  entrepriseId: { type: String, index: true, default: null },
   entreprise: {
     nom: String,
     slogan: String,

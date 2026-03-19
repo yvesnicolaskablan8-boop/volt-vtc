@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const depenseSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   vehiculeId: { type: String, default: '' },
   chauffeurId: String,
   typeDepense: { type: String, required: true },

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const pushSubscriptionSchema = new mongoose.Schema({
+  entrepriseId: { type: String, index: true, default: null },
   chauffeurId: { type: String },  // Pour les chauffeurs (app driver)
   userId: { type: String },        // Pour les utilisateurs admin/operateurs (app admin)
   subscription: {

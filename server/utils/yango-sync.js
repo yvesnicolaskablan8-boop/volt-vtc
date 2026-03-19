@@ -396,15 +396,16 @@ function calculateDriverRevenue(transactions, yangoDriverId) {
  * Appelee par le CRON ou manuellement
  *
  * @param {Date} date - La date a synchroniser (defaut: hier)
+ * @param {string|null} entrepriseId - tenant ID for multi-tenant scoping
  * @returns {Object} Resultat de la sync
  */
-async function syncYangoActivity(date = null) {
+async function syncYangoActivity(date = null, entrepriseId = null) {
   const Chauffeur = require('../models/Chauffeur');
   const Gps = require('../models/Gps');
   const Settings = require('../models/Settings');
 
   // Resolve Yango credentials (DB first, env fallback)
-  _creds = await getYangoCredentials();
+  _creds = await getYangoCredentials(entrepriseId);
   if (!_creds.parkId || !_creds.apiKey || !_creds.clientId) {
     throw new Error('Yango API credentials not configured');
   }
@@ -423,13 +424,17 @@ async function syncYangoActivity(date = null) {
   console.log(`[YangoSync] Synchronisation pour le ${dateStr}...`);
 
   // Lire les settings pour l'objectif d'activite
-  const settings = await Settings.findOne().lean();
+  const settingsFilter = {};
+  if (entrepriseId) settingsFilter.entrepriseId = entrepriseId;
+  const settings = await Settings.findOne(settingsFilter).lean();
   const objectifMinutes = (settings?.bonus?.tempsActiviteMin) || 600;
 
   // 1. Recuperer les chauffeurs Yango + Pilote
+  const chauffeurFilter = { statut: 'actif' };
+  if (entrepriseId) chauffeurFilter.entrepriseId = entrepriseId;
   const [yangoDrivers, piloteChauffeurs] = await Promise.all([
     fetchYangoDrivers(),
-    Chauffeur.find({ statut: 'actif' }).lean()
+    Chauffeur.find(chauffeurFilter).lean()
   ]);
 
   console.log(`[YangoSync] ${yangoDrivers.length} chauffeurs Yango, ${piloteChauffeurs.length} chauffeurs Pilote`);
@@ -500,7 +505,9 @@ async function syncYangoActivity(date = null) {
 
       // Chercher un enregistrement GPS existant pour ce jour
       const gpsId = `yango_${pilote.id}_${dateStr}`;
-      let gpsRecord = await Gps.findOne({ id: gpsId });
+      const gpsFilter = { id: gpsId };
+      if (entrepriseId) gpsFilter.entrepriseId = entrepriseId;
+      let gpsRecord = await Gps.findOne(gpsFilter);
 
       if (gpsRecord) {
         // Mise a jour
@@ -519,6 +526,7 @@ async function syncYangoActivity(date = null) {
         // Creer un nouvel enregistrement GPS
         const newGps = {
           id: gpsId,
+          entrepriseId: entrepriseId || undefined,
           chauffeurId: pilote.id,
           vehiculeId: pilote.vehiculeAssigne || '',
           date: dayStart.toISOString(),

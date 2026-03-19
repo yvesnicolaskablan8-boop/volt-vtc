@@ -7,6 +7,7 @@ const evenementSchema = new mongoose.Schema({
 
 const pointageSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   chauffeurId: { type: String, required: true },
   date: { type: String, required: true },
   statut: { type: String, enum: ['en_service', 'pause', 'termine'], default: 'en_service' },

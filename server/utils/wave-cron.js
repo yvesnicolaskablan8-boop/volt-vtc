@@ -3,12 +3,13 @@
  *
  * Toutes les 5 minutes, verifie aupres de l'API Wave le statut
  * de tous les versements en_attente avec un waveCheckoutId.
- * Remplace le webhook Wave quand celui-ci n'est pas disponible.
+ * Multi-tenant: itere sur tous les tenants actifs.
  */
 
 const Versement = require('../models/Versement');
 const Chauffeur = require('../models/Chauffeur');
 const { getWaveApiKey } = require('./get-integration-keys');
+const { forEachTenant } = require('./tenant-iterator');
 
 let _interval = null;
 
@@ -16,10 +17,10 @@ function start() {
   console.log('[WaveCron] Demarrage — verification toutes les 5 minutes');
 
   // Premiere verification 30s apres le demarrage
-  setTimeout(() => checkPendingPayments(), 30000);
+  setTimeout(() => checkAllTenants(), 30000);
 
   // Puis toutes les 5 minutes
-  _interval = setInterval(() => checkPendingPayments(), 5 * 60 * 1000);
+  _interval = setInterval(() => checkAllTenants(), 5 * 60 * 1000);
 }
 
 function stop() {
@@ -29,23 +30,29 @@ function stop() {
   }
 }
 
-async function checkPendingPayments() {
-  try {
-    const waveApiKey = await getWaveApiKey();
-    if (!waveApiKey) {
-      console.log('[WaveCron] WAVE_API_KEY non configuree — verification ignoree');
-      return;
-    }
+async function checkAllTenants() {
+  await forEachTenant(async (entrepriseId) => {
+    await checkPendingPayments(entrepriseId);
+  });
+}
 
-    // Trouver tous les versements Wave en attente
-    const pending = await Versement.find({
+async function checkPendingPayments(entrepriseId) {
+  try {
+    const waveApiKey = await getWaveApiKey(entrepriseId);
+    if (!waveApiKey) return;
+
+    // Trouver tous les versements Wave en attente pour ce tenant
+    const filter = {
       statut: 'en_attente',
       waveCheckoutId: { $exists: true, $ne: null, $ne: '' }
-    }).lean();
+    };
+    if (entrepriseId) filter.entrepriseId = entrepriseId;
+
+    const pending = await Versement.find(filter).lean();
 
     if (pending.length === 0) return;
 
-    console.log(`[WaveCron] ${pending.length} versement(s) Wave en attente a verifier`);
+    console.log(`[WaveCron] ${entrepriseId || 'global'}: ${pending.length} versement(s) Wave en attente a verifier`);
 
     for (const v of pending) {
       try {
@@ -61,7 +68,6 @@ async function checkPendingPayments() {
         const session = await waveRes.json();
 
         if (session.payment_status === 'succeeded') {
-          // Paiement confirme — mettre a jour le versement
           const chauffeur = await Chauffeur.findOne({ id: v.chauffeurId }).lean();
           const redevance = chauffeur ? (chauffeur.redevanceQuotidienne || 0) : 0;
           const montantEffectif = v.montantNet || v.montantBrut || 0;
@@ -81,18 +87,16 @@ async function checkPendingPayments() {
           console.log(`[WaveCron] Versement ${v.id} confirme → ${newStatut} (${montantEffectif} FCFA)`);
 
         } else if (session.checkout_status === 'expired' || session.payment_status === 'cancelled') {
-          // Session expiree ou annulee — supprimer le versement fantome
           await Versement.deleteOne({ id: v.id });
           console.log(`[WaveCron] Versement ${v.id} supprime (${session.checkout_status || session.payment_status})`);
         }
-        // Sinon (pending) — on reessaiera dans 5 minutes
 
       } catch (err) {
         console.warn(`[WaveCron] Erreur verification ${v.id}:`, err.message);
       }
     }
   } catch (err) {
-    console.error('[WaveCron] Erreur globale:', err.message);
+    console.error('[WaveCron] Erreur:', err.message);
   }
 }
 

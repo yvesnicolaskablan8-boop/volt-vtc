@@ -2,6 +2,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Entreprise = require('../models/Entreprise');
+const Settings = require('../models/Settings');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
@@ -44,7 +46,7 @@ router.post('/login', async (req, res, next) => {
       return res.json({ success: false, error: 'must_change_password', user: safeUser });
     }
 
-    // Success: generate JWT
+    // Success: generate JWT with entrepriseId
     const token = jwt.sign(
       {
         userId: user.id,
@@ -52,7 +54,8 @@ router.post('/login', async (req, res, next) => {
         prenom: user.prenom,
         nom: user.nom,
         role: user.role,
-        permissions: user.permissions
+        permissions: user.permissions,
+        entrepriseId: user.entrepriseId || null
       },
       process.env.JWT_SECRET,
       { expiresIn: '90d' }
@@ -65,6 +68,113 @@ router.post('/login', async (req, res, next) => {
     const { passwordHash, _id, __v, ...safeUser } = user;
 
     res.json({ success: true, token, user: safeUser });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/auth/register - Create a new company + admin user
+router.post('/register', async (req, res, next) => {
+  try {
+    const { entrepriseNom, prenom, nom, email, password, telephone } = req.body;
+
+    if (!entrepriseNom || !prenom || !nom || !email || !password) {
+      return res.status(400).json({ success: false, error: 'missing_fields', message: 'Tous les champs sont requis' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, error: 'weak_password', message: 'Le mot de passe doit contenir au moins 6 caractères' });
+    }
+
+    // Check if email already taken
+    const existing = await User.findOne({ email: email.toLowerCase() }).lean();
+    if (existing) {
+      return res.json({ success: false, error: 'email_taken', message: 'Cet email est déjà utilisé' });
+    }
+
+    // Create the entreprise
+    const entreprise = new Entreprise({
+      nom: entrepriseNom,
+      slug: entrepriseNom.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      email: email.toLowerCase(),
+      telephone: telephone || ''
+    });
+    await entreprise.save();
+
+    // Create default settings for this entreprise
+    await Settings.create({
+      entrepriseId: entreprise.id,
+      entreprise: {
+        nom: entrepriseNom,
+        slogan: '',
+        email: email.toLowerCase(),
+        telephone: telephone || '',
+        adresse: '',
+        siteWeb: '',
+        numeroRegistre: '',
+        devise: 'FCFA'
+      },
+      preferences: {
+        themeDefaut: 'dark',
+        langue: 'fr',
+        formatDate: 'DD/MM/YYYY',
+        notifications: true,
+        alertesSonores: false,
+        sessionTimeout: 30
+      }
+    });
+
+    // Hash password
+    const salt = await bcrypt.genSalt(12);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    // All permissions enabled for the admin
+    const allPermissions = {
+      dashboard: true, chauffeurs: true, vehicules: true, planning: true,
+      versements: true, contraventions: true, depenses: true, rentabilite: true,
+      comptabilite: true, garage: true, gps_conduite: true, alertes: true,
+      rapports: true, parametres: true
+    };
+
+    // Create admin user
+    const { v4: uuidv4 } = require('uuid');
+    const user = new User({
+      id: uuidv4(),
+      entrepriseId: entreprise.id,
+      prenom,
+      nom,
+      email: email.toLowerCase(),
+      telephone: telephone || '',
+      role: 'Administrateur',
+      permissions: allPermissions,
+      statut: 'actif',
+      passwordHash
+    });
+    await user.save();
+
+    // Generate JWT
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        prenom: user.prenom,
+        nom: user.nom,
+        role: user.role,
+        permissions: user.permissions,
+        entrepriseId: entreprise.id
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '90d' }
+    );
+
+    const { passwordHash: _, _id, __v, ...safeUser } = user.toJSON();
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: safeUser,
+      entreprise: entreprise.toJSON()
+    });
   } catch (err) {
     next(err);
   }
@@ -108,7 +218,8 @@ router.post('/set-password', async (req, res, next) => {
         prenom: user.prenom,
         nom: user.nom,
         role: user.role,
-        permissions: user.permissions
+        permissions: user.permissions,
+        entrepriseId: user.entrepriseId || null
       },
       process.env.JWT_SECRET,
       { expiresIn: '90d' }

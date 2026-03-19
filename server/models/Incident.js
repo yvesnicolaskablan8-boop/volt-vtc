@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const incidentSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   type: { type: String, required: true, enum: ['accident', 'panne', 'vol', 'agression', 'contravention', 'autre'] },
   date: { type: String, required: true },
   heure: String,

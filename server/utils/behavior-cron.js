@@ -15,6 +15,7 @@
 
 const ConduiteBrute = require('../models/ConduiteBrute');
 const { finalizeBehaviorSession } = require('./behavior-utils');
+const { forEachTenant } = require('./tenant-iterator');
 
 let _lastRunDate = null;
 let _interval = null;
@@ -58,66 +59,74 @@ function start() {
 async function runFinalization() {
   const result = { found: 0, finalized: 0, skipped: 0, errors: 0 };
 
-  // Chercher les sessions non finalisees des 7 derniers jours
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+  await forEachTenant(async (entrepriseId) => {
+    // Chercher les sessions non finalisees des 7 derniers jours
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
 
-  // Aujourd'hui (on ne finalise pas le jour en cours)
-  const todayStr = new Date().toISOString().split('T')[0];
+    // Aujourd'hui (on ne finalise pas le jour en cours)
+    const todayStr = new Date().toISOString().split('T')[0];
 
-  const pendingSessions = await ConduiteBrute.find({
-    scoreCalcule: { $ne: true },
-    date: { $gte: sevenDaysAgoStr, $lt: todayStr }
-  }).lean();
+    const sessionFilter = {
+      scoreCalcule: { $ne: true },
+      date: { $gte: sevenDaysAgoStr, $lt: todayStr }
+    };
+    if (entrepriseId) sessionFilter.entrepriseId = entrepriseId;
 
-  result.found = pendingSessions.length;
+    const pendingSessions = await ConduiteBrute.find(sessionFilter).lean();
 
-  if (pendingSessions.length === 0) {
-    console.log('[BehaviorCron] Aucune session en attente de finalisation');
-    return result;
-  }
+    result.found += pendingSessions.length;
 
-  for (const session of pendingSessions) {
-    try {
-      // Extraire le chauffeurId du session.id (format: CB-{chauffeurId}-{date})
-      const parts = session.id.split('-');
-      const chauffeurId = parts.slice(1, -3).join('-'); // Tout sauf CB- et -YYYY-MM-DD
-      const date = session.date;
-
-      if (!chauffeurId || !date) {
-        console.warn(`[BehaviorCron] Session ${session.id} — impossible d'extraire chauffeurId/date`);
-        result.errors++;
-        continue;
-      }
-
-      // Verifier qu'il y a des donnees exploitables
-      const hasGpsSamples = session.gpsSamples && session.gpsSamples.length > 0;
-      const hasEvents = session.evenements && session.evenements.length > 0;
-
-      if (!hasGpsSamples && !hasEvents) {
-        // Session vide — marquer comme calculee sans score
-        await ConduiteBrute.findOneAndUpdate(
-          { id: session.id },
-          { $set: { scoreCalcule: true, sessionFin: new Date().toISOString() } }
-        );
-        result.skipped++;
-        console.log(`[BehaviorCron] Session ${session.id} — vide, marquee comme traitee`);
-        continue;
-      }
-
-      const finalResult = await finalizeBehaviorSession(chauffeurId, date);
-
-      if (finalResult && finalResult.success) {
-        result.finalized++;
-        console.log(`[BehaviorCron] Session ${session.id} finalisee — score: ${finalResult.scores.scoreGlobal}/100`);
-      } else {
-        result.skipped++;
-      }
-    } catch (err) {
-      result.errors++;
-      console.error(`[BehaviorCron] Erreur session ${session.id}:`, err.message);
+    if (pendingSessions.length === 0) {
+      return;
     }
+
+    for (const session of pendingSessions) {
+      try {
+        // Extraire le chauffeurId du session.id (format: CB-{chauffeurId}-{date})
+        const parts = session.id.split('-');
+        const chauffeurId = parts.slice(1, -3).join('-'); // Tout sauf CB- et -YYYY-MM-DD
+        const date = session.date;
+
+        if (!chauffeurId || !date) {
+          console.warn(`[BehaviorCron] Session ${session.id} — impossible d'extraire chauffeurId/date`);
+          result.errors++;
+          continue;
+        }
+
+        // Verifier qu'il y a des donnees exploitables
+        const hasGpsSamples = session.gpsSamples && session.gpsSamples.length > 0;
+        const hasEvents = session.evenements && session.evenements.length > 0;
+
+        if (!hasGpsSamples && !hasEvents) {
+          // Session vide — marquer comme calculee sans score
+          await ConduiteBrute.findOneAndUpdate(
+            { id: session.id },
+            { $set: { scoreCalcule: true, sessionFin: new Date().toISOString() } }
+          );
+          result.skipped++;
+          console.log(`[BehaviorCron] Session ${session.id} — vide, marquee comme traitee`);
+          continue;
+        }
+
+        const finalResult = await finalizeBehaviorSession(chauffeurId, date);
+
+        if (finalResult && finalResult.success) {
+          result.finalized++;
+          console.log(`[BehaviorCron] Session ${session.id} finalisee — score: ${finalResult.scores.scoreGlobal}/100`);
+        } else {
+          result.skipped++;
+        }
+      } catch (err) {
+        result.errors++;
+        console.error(`[BehaviorCron] Erreur session ${session.id}:`, err.message);
+      }
+    }
+  });
+
+  if (result.found === 0) {
+    console.log('[BehaviorCron] Aucune session en attente de finalisation');
   }
 
   return result;

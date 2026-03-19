@@ -34,7 +34,10 @@ router.get('/', async (req, res, next) => {
     const Incident = require('../models/Incident');
     const Tache = require('../models/Tache');
 
-    // Fetch all collections in parallel
+    // Tenant filter — scope all queries by entrepriseId if available
+    const ef = req.user.entrepriseId ? { entrepriseId: req.user.entrepriseId } : {};
+
+    // Fetch all collections in parallel, scoped by tenant
     const [
       chauffeurs, vehicules, courses, versements,
       gps, comptabilite, factures, budgets,
@@ -43,31 +46,31 @@ router.get('/', async (req, res, next) => {
       depenseRecurrentes, depenseCategories, versementRecurrents,
       reparations, controlesTechniques, incidents, taches
     ] = await Promise.all([
-      Chauffeur.find().lean(),
-      Vehicule.find().lean(),
-      Course.find().lean(),
-      Versement.find().lean(),
-      Gps.find().lean(),
-      Comptabilite.find().lean(),
-      Facture.find().lean(),
-      Budget.find().lean(),
-      Planning.find().lean(),
-      Absence.find().lean(),
-      User.find().lean(),
-      Settings.findOne().lean(),
-      Signalement.find().lean(),
-      Pointage.find().lean(),
-      ConduiteBrute.find().lean(),
-      ChecklistVehicule.find().lean(),
-      Contravention.find().lean(),
-      Depense.find().lean(),
-      DepenseRecurrente.find().lean(),
-      DepenseCategorie.find().lean(),
-      VersementRecurrent.find().lean(),
-      Reparation.find().lean(),
-      ControleTechnique.find().lean(),
-      Incident.find().lean(),
-      Tache.find().lean()
+      Chauffeur.find(ef).lean(),
+      Vehicule.find(ef).lean(),
+      Course.find(ef).lean(),
+      Versement.find(ef).lean(),
+      Gps.find(ef).lean(),
+      Comptabilite.find(ef).lean(),
+      Facture.find(ef).lean(),
+      Budget.find(ef).lean(),
+      Planning.find(ef).lean(),
+      Absence.find(ef).lean(),
+      User.find(ef).lean(),
+      Settings.findOne(ef).lean(),
+      Signalement.find(ef).lean(),
+      Pointage.find(ef).lean(),
+      ConduiteBrute.find(ef).lean(),
+      ChecklistVehicule.find(ef).lean(),
+      Contravention.find(ef).lean(),
+      Depense.find(ef).lean(),
+      DepenseRecurrente.find(ef).lean(),
+      DepenseCategorie.find(ef).lean(),
+      VersementRecurrent.find(ef).lean(),
+      Reparation.find(ef).lean(),
+      ControleTechnique.find(ef).lean(),
+      Incident.find(ef).lean(),
+      Tache.find(ef).lean()
     ]);
 
     // Clean MongoDB fields (_id, __v) from all documents
@@ -118,9 +121,10 @@ router.post('/fix-manquants', async (req, res, next) => {
   try {
     const Versement = require('../models/Versement');
     const Chauffeur = require('../models/Chauffeur');
+    const ef = req.user.entrepriseId ? { entrepriseId: req.user.entrepriseId } : {};
 
-    const versements = await Versement.find({}).lean();
-    const chauffeurs = await Chauffeur.find({}).lean();
+    const versements = await Versement.find(ef).lean();
+    const chauffeurs = await Chauffeur.find(ef).lean();
     const chauffeurMap = {};
     chauffeurs.forEach(c => { chauffeurMap[c.id] = c; });
 

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const activityLogSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   userId: String,
   userNom: String,
   action: { type: String, enum: ['create', 'update', 'delete', 'bulk_replace'], required: true },

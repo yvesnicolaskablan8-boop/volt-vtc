@@ -15,6 +15,7 @@ function getModel(modelName) {
 /**
  * Creates standard CRUD routes for a Mongoose model.
  * Returns an Express router with GET, POST, PUT, DELETE endpoints.
+ * All queries are automatically scoped by entrepriseId from JWT.
  */
 function createCrudRoutes(modelName) {
   const router = express.Router();
@@ -25,14 +26,16 @@ function createCrudRoutes(modelName) {
     try {
       const Model = getModel(modelName);
       const items = req.body;
+      const entrepriseId = req.user.entrepriseId;
       if (!Array.isArray(items)) {
         return res.status(400).json({ error: 'Expected an array' });
       }
-      // Delete all existing documents
-      await Model.deleteMany({});
-      // Insert all new documents
+      // Delete only this tenant's documents
+      await Model.deleteMany(entrepriseId ? { entrepriseId } : {});
+      // Insert all new documents with entrepriseId
       if (items.length > 0) {
-        await Model.insertMany(items);
+        const scoped = entrepriseId ? items.map(i => ({ ...i, entrepriseId })) : items;
+        await Model.insertMany(scoped);
       }
       logActivity('bulk_replace', modelName, null, { count: items.length }, req);
       res.json({ success: true, count: items.length });
@@ -47,16 +50,17 @@ function createCrudRoutes(modelName) {
     try {
       const Model = getModel(modelName);
       const { limit, skip, sort, order, from, to } = req.query;
+      const entrepriseId = req.user.entrepriseId;
 
       // Build query filter for date ranges
       let filter = {};
+      if (entrepriseId) filter.entrepriseId = entrepriseId;
+
       if (from || to) {
-        // Try both 'date' and 'dateHeure' fields
         const dateFilter = {};
         if (from) dateFilter.$gte = from;
         if (to) dateFilter.$lte = to;
-        // Determine which date field exists based on model
-        filter = { $or: [{ date: dateFilter }, { dateHeure: dateFilter }] };
+        filter.$or = [{ date: dateFilter }, { dateHeure: dateFilter }];
       }
 
       let query = Model.find(filter).lean();
@@ -87,7 +91,11 @@ function createCrudRoutes(modelName) {
   router.get('/:id', async (req, res, next) => {
     try {
       const Model = getModel(modelName);
-      const doc = await Model.findOne({ id: req.params.id }).lean();
+      const entrepriseId = req.user.entrepriseId;
+      const filter = { id: req.params.id };
+      if (entrepriseId) filter.entrepriseId = entrepriseId;
+
+      const doc = await Model.findOne(filter).lean();
       if (!doc) {
         return res.status(404).json({ error: 'Not found' });
       }
@@ -102,7 +110,9 @@ function createCrudRoutes(modelName) {
   router.post('/', async (req, res, next) => {
     try {
       const Model = getModel(modelName);
-      const doc = new Model(req.body);
+      const entrepriseId = req.user.entrepriseId;
+      const data = entrepriseId ? { ...req.body, entrepriseId } : req.body;
+      const doc = new Model(data);
       await doc.save();
       logActivity('create', modelName, doc.id || req.body.id, { fields: Object.keys(req.body) }, req);
       res.status(201).json(doc.toJSON());
@@ -115,8 +125,12 @@ function createCrudRoutes(modelName) {
   router.put('/:id', async (req, res, next) => {
     try {
       const Model = getModel(modelName);
+      const entrepriseId = req.user.entrepriseId;
+      const filter = { id: req.params.id };
+      if (entrepriseId) filter.entrepriseId = entrepriseId;
+
       const doc = await Model.findOneAndUpdate(
-        { id: req.params.id },
+        filter,
         { $set: req.body },
         { new: true, runValidators: true }
       );
@@ -134,7 +148,11 @@ function createCrudRoutes(modelName) {
   router.delete('/:id', async (req, res, next) => {
     try {
       const Model = getModel(modelName);
-      const doc = await Model.findOneAndDelete({ id: req.params.id });
+      const entrepriseId = req.user.entrepriseId;
+      const filter = { id: req.params.id };
+      if (entrepriseId) filter.entrepriseId = entrepriseId;
+
+      const doc = await Model.findOneAndDelete(filter);
       if (!doc) {
         return res.status(404).json({ error: 'Not found' });
       }

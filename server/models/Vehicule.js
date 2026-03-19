@@ -29,6 +29,7 @@ const maintenancePlanifieeSchema = new mongoose.Schema({
 
 const vehiculeSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   marque: { type: String, required: true },
   modele: { type: String, required: true },
   annee: Number,

@@ -69,13 +69,13 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/variables.css?v=375">
-  <link rel="stylesheet" href="css/base.css?v=375">
-  <link rel="stylesheet" href="css/layout.css?v=375">
-  <link rel="stylesheet" href="css/components.css?v=375">
-  <link rel="stylesheet" href="css/charts.css?v=375">
-  <link rel="stylesheet" href="css/animations.css?v=375">
-  <link rel="stylesheet" href="css/responsive.css?v=375">
+  <link rel="stylesheet" href="css/variables.css?v=376">
+  <link rel="stylesheet" href="css/base.css?v=376">
+  <link rel="stylesheet" href="css/layout.css?v=376">
+  <link rel="stylesheet" href="css/components.css?v=376">
+  <link rel="stylesheet" href="css/charts.css?v=376">
+  <link rel="stylesheet" href="css/animations.css?v=376">
+  <link rel="stylesheet" href="css/responsive.css?v=376">
 
   <!-- Prevent flash of login screen on refresh when already authenticated -->
   <script>
@@ -170,6 +170,57 @@
           <div class="login-footer">
             <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Connexion sécurisée
           </div>
+          <div style="text-align:center;margin-top:12px;">
+            <button type="button" class="login-back-btn" id="show-register-btn" style="display:inline;">
+              <iconify-icon icon="solar:user-plus-bold-duotone" style="margin-right:4px;"></iconify-icon> Créer un compte
+            </button>
+          </div>
+        </div>
+
+        <!-- Registration Form -->
+        <div id="register-form-section" style="display:none;">
+          <h2 class="login-title">Créer un compte</h2>
+          <p class="login-subtitle">Inscrivez-vous pour gérer votre flotte</p>
+          <div class="login-error" id="register-error" style="display:none;"></div>
+          <form id="register-form" autocomplete="off">
+            <div class="form-group">
+              <label class="form-label"><iconify-icon icon="solar:buildings-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Nom de l'entreprise</label>
+              <input type="text" class="form-control login-input" id="register-entreprise" placeholder="Mon entreprise VTC" required>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <div class="form-group" style="flex:1;">
+                <label class="form-label"><iconify-icon icon="solar:user-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Prénom</label>
+                <input type="text" class="form-control login-input" id="register-prenom" placeholder="Prénom" required>
+              </div>
+              <div class="form-group" style="flex:1;">
+                <label class="form-label"><iconify-icon icon="solar:user-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Nom</label>
+                <input type="text" class="form-control login-input" id="register-nom" placeholder="Nom" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label"><iconify-icon icon="solar:letter-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Adresse email</label>
+              <input type="email" class="form-control login-input" id="register-email" placeholder="votre@email.com" required autocomplete="username">
+            </div>
+            <div class="form-group">
+              <label class="form-label"><iconify-icon icon="solar:lock-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Mot de passe</label>
+              <div style="position:relative;">
+                <input type="password" class="form-control login-input" id="register-password" placeholder="Minimum 6 caractères" required minlength="6" autocomplete="new-password">
+                <button type="button" class="login-toggle-pwd" id="register-pwd-toggle">
+                  <iconify-icon icon="solar:eye-bold" style="font-size:18px;"></iconify-icon>
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label"><iconify-icon icon="solar:phone-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Téléphone <span style="color:var(--text-secondary);font-weight:normal;">(optionnel)</span></label>
+              <input type="tel" class="form-control login-input" id="register-telephone" placeholder="+221 77 000 00 00">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block login-submit" id="register-btn">
+              <iconify-icon icon="solar:user-plus-bold-duotone"></iconify-icon> Créer mon compte
+            </button>
+          </form>
+          <button type="button" class="login-back-btn" id="show-login-btn">
+            <iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon> Déjà un compte ? Se connecter
+          </button>
         </div>
 
         <!-- Set Password Form (first login / must change) -->
@@ -438,40 +489,40 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
 
   <!-- App JS -->
-  <script src="js/store.js?v=375"></script>
-  <script src="js/utils.js?v=375"></script>
-  <script src="js/demo-data.js?v=375"></script>
-  <script src="js/auth.js?v=375"></script>
-  <script src="js/components/toast.js?v=375"></script>
-  <script src="js/components/modal.js?v=375"></script>
-  <script src="js/components/sidebar.js?v=375"></script>
-  <script src="js/components/header.js?v=375"></script>
-  <script src="js/components/table.js?v=375"></script>
-  <script src="js/components/form-builder.js?v=375"></script>
-  <script src="js/pages/dashboard.js?v=375"></script>
-  <script src="js/pages/chauffeurs.js?v=375"></script>
-  <script src="js/pages/vehicules.js?v=375"></script>
-  <script src="js/pages/versements.js?v=375"></script>
-  <script src="js/pages/rentabilite.js?v=375"></script>
-  <script src="js/pages/gps-conduite.js?v=375"></script>
-  <script src="js/pages/rapports.js?v=375"></script>
-  <script src="js/pages/comptabilite.js?v=375"></script>
-  <script src="js/pages/planning.js?v=375"></script>
-  <script src="js/pages/alertes.js?v=375"></script>
-  <script src="js/pages/parametres.js?v=375"></script>
-  <script src="js/pages/yango.js?v=375"></script>
-  <script src="js/pages/messagerie.js?v=375"></script>
-  <script src="js/pages/garage.js?v=375"></script>
-  <script src="js/pages/incidents.js?v=375"></script>
-  <script src="js/pages/contraventions.js?v=375"></script>
-  <script src="js/pages/depenses.js?v=375"></script>
-  <script src="js/pages/activite.js?v=375"></script>
-  <script src="js/pages/notifications-admin.js?v=375"></script>
-  <script src="js/pages/taches.js?v=375"></script>
-  <script src="js/pages/mon-compte.js?v=375"></script>
-  <script src="js/pages/menu.js?v=375"></script>
-  <script src="js/components/bottom-nav.js?v=375"></script>
-  <script src="js/router.js?v=375"></script>
-  <script src="js/app.js?v=375"></script>
+  <script src="js/store.js?v=376"></script>
+  <script src="js/utils.js?v=376"></script>
+  <script src="js/demo-data.js?v=376"></script>
+  <script src="js/auth.js?v=376"></script>
+  <script src="js/components/toast.js?v=376"></script>
+  <script src="js/components/modal.js?v=376"></script>
+  <script src="js/components/sidebar.js?v=376"></script>
+  <script src="js/components/header.js?v=376"></script>
+  <script src="js/components/table.js?v=376"></script>
+  <script src="js/components/form-builder.js?v=376"></script>
+  <script src="js/pages/dashboard.js?v=376"></script>
+  <script src="js/pages/chauffeurs.js?v=376"></script>
+  <script src="js/pages/vehicules.js?v=376"></script>
+  <script src="js/pages/versements.js?v=376"></script>
+  <script src="js/pages/rentabilite.js?v=376"></script>
+  <script src="js/pages/gps-conduite.js?v=376"></script>
+  <script src="js/pages/rapports.js?v=376"></script>
+  <script src="js/pages/comptabilite.js?v=376"></script>
+  <script src="js/pages/planning.js?v=376"></script>
+  <script src="js/pages/alertes.js?v=376"></script>
+  <script src="js/pages/parametres.js?v=376"></script>
+  <script src="js/pages/yango.js?v=376"></script>
+  <script src="js/pages/messagerie.js?v=376"></script>
+  <script src="js/pages/garage.js?v=376"></script>
+  <script src="js/pages/incidents.js?v=376"></script>
+  <script src="js/pages/contraventions.js?v=376"></script>
+  <script src="js/pages/depenses.js?v=376"></script>
+  <script src="js/pages/activite.js?v=376"></script>
+  <script src="js/pages/notifications-admin.js?v=376"></script>
+  <script src="js/pages/taches.js?v=376"></script>
+  <script src="js/pages/mon-compte.js?v=376"></script>
+  <script src="js/pages/menu.js?v=376"></script>
+  <script src="js/components/bottom-nav.js?v=376"></script>
+  <script src="js/router.js?v=376"></script>
+  <script src="js/app.js?v=376"></script>
 </body>
 </html>

@@ -52,7 +52,8 @@ router.post('/login', async (req, res, next) => {
         userId: user.id,
         chauffeurId: user.chauffeurId,
         telephone: user.telephone,
-        role: 'chauffeur'
+        role: 'chauffeur',
+        entrepriseId: user.entrepriseId || null
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }  // 7 jours pour les chauffeurs (mobile)

@@ -148,6 +148,35 @@ const Auth = {
     }
   },
 
+  // =================== REGISTER (via API) ===================
+
+  async register({ entrepriseNom, prenom, nom, email, password, telephone }) {
+    const apiBase = Store._apiBase || (window.location.hostname === 'localhost'
+      ? 'http://localhost:3001/api'
+      : '/api');
+
+    try {
+      const res = await fetch(apiBase + '/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entrepriseNom, prenom, nom, email, password, telephone })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        this.setToken(data.token);
+        const session = this.createSession(data.user);
+        return { success: true, session, user: data.user };
+      }
+
+      return { success: false, error: data.error || 'unknown_error' };
+    } catch (err) {
+      console.error('Auth.register network error:', err);
+      return { success: false, error: 'network_error' };
+    }
+  },
+
   // =================== PASSWORD MANAGEMENT (via API) ===================
 
   async setPassword(userId, newPassword) {

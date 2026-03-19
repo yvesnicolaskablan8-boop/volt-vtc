@@ -12,13 +12,20 @@ function maskKey(str) {
   return '••••••••' + str.slice(-4);
 }
 
+// Helper: get tenant filter
+function tenantFilter(req) {
+  return req.user.entrepriseId ? { entrepriseId: req.user.entrepriseId } : {};
+}
+
 // GET /api/settings
 router.get('/', async (req, res, next) => {
   try {
-    let settings = await Settings.findOne();
+    const ef = tenantFilter(req);
+    let settings = await Settings.findOne(ef);
     if (!settings) {
       // Create default settings if none exist
       settings = await Settings.create({
+        ...ef,
         entreprise: {
           nom: 'Mon Entreprise',
           slogan: 'Transport de qualité',
@@ -60,7 +67,8 @@ router.get('/', async (req, res, next) => {
 // PUT /api/settings
 router.put('/', async (req, res, next) => {
   try {
-    let settings = await Settings.findOne();
+    const ef = tenantFilter(req);
+    let settings = await Settings.findOne(ef);
     if (settings) {
       // Update existing settings
       if (req.body.entreprise) settings.entreprise = req.body.entreprise;
@@ -84,10 +92,8 @@ router.put('/', async (req, res, next) => {
         if (req.body.integrations.yango) {
           if (!settings.integrations.yango) settings.integrations.yango = {};
           const yangoData = req.body.integrations.yango;
-          // parkId and clientId are not masked, always update
           if (yangoData.parkId !== undefined) settings.integrations.yango.parkId = yangoData.parkId;
           if (yangoData.clientId !== undefined) settings.integrations.yango.clientId = yangoData.clientId;
-          // apiKey is masked — only update if not masked
           if (yangoData.apiKey && !yangoData.apiKey.startsWith('••••')) {
             settings.integrations.yango.apiKey = yangoData.apiKey;
           }
@@ -97,11 +103,10 @@ router.put('/', async (req, res, next) => {
       }
 
       await settings.save();
-      // Clear integration keys cache so new values take effect immediately
       clearCache();
     } else {
       // Create new settings
-      settings = await Settings.create(req.body);
+      settings = await Settings.create({ ...req.body, ...ef });
       clearCache();
     }
 
@@ -121,7 +126,8 @@ router.put('/', async (req, res, next) => {
 // POST /api/settings/test-wave — Test Wave API connection
 router.post('/test-wave', async (req, res) => {
   try {
-    const apiKey = await getWaveApiKey();
+    const entrepriseId = req.user.entrepriseId || null;
+    const apiKey = await getWaveApiKey(entrepriseId);
     if (!apiKey) {
       return res.json({ success: false, message: 'Cle API Wave non configuree' });
     }
@@ -145,7 +151,8 @@ router.post('/test-wave', async (req, res) => {
 // POST /api/settings/test-yango — Test Yango API connection
 router.post('/test-yango', async (req, res) => {
   try {
-    const creds = await getYangoCredentials();
+    const entrepriseId = req.user.entrepriseId || null;
+    const creds = await getYangoCredentials(entrepriseId);
     if (!creds.parkId || !creds.apiKey || !creds.clientId) {
       return res.json({ success: false, message: 'Identifiants Yango incomplets' });
     }

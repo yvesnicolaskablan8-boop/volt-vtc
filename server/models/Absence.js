@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const absenceSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   chauffeurId: { type: String, required: true },
   type: { type: String, required: true },
   dateDebut: { type: String, required: true },

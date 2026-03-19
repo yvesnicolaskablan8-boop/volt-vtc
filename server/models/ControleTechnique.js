@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const controleTechniqueSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   vehiculeId: { type: String, required: true },
   date: { type: String, required: true },
   dateExpiration: { type: String, required: true },

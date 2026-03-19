@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const factureSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   typeFacture: { type: String, required: true },
   numero: String,
   client: String,

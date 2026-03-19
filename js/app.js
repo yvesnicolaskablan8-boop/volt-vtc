@@ -188,7 +188,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 375;
+      const SW_VERSION = 376;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
@@ -495,12 +495,54 @@ const App = {
     // Clear errors
     this._hideLoginError();
     this._hideSetPasswordError();
+    this._hideRegisterError();
 
-    // Show login section, hide set-password section
+    // Show login section, hide set-password and register sections
     const loginSection = document.getElementById('login-form-section');
     const setPasswordSection = document.getElementById('set-password-section');
+    const registerSection = document.getElementById('register-form-section');
     if (loginSection) loginSection.style.display = '';
     if (setPasswordSection) setPasswordSection.style.display = 'none';
+    if (registerSection) registerSection.style.display = 'none';
+
+    // Register form submit
+    const registerForm = document.getElementById('register-form');
+    if (registerForm) {
+      const newRegForm = registerForm.cloneNode(true);
+      registerForm.parentNode.replaceChild(newRegForm, registerForm);
+      newRegForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this._handleRegister();
+      });
+    }
+
+    // Toggle to register form
+    const showRegisterBtn = document.getElementById('show-register-btn');
+    if (showRegisterBtn) {
+      const newBtn = showRegisterBtn.cloneNode(true);
+      showRegisterBtn.parentNode.replaceChild(newBtn, showRegisterBtn);
+      newBtn.addEventListener('click', () => {
+        document.getElementById('login-form-section').style.display = 'none';
+        document.getElementById('register-form-section').style.display = '';
+        this._hideLoginError();
+        const entrepriseInput = document.getElementById('register-entreprise');
+        if (entrepriseInput) entrepriseInput.focus();
+      });
+    }
+
+    // Toggle back to login form
+    const showLoginBtn = document.getElementById('show-login-btn');
+    if (showLoginBtn) {
+      const newBtn = showLoginBtn.cloneNode(true);
+      showLoginBtn.parentNode.replaceChild(newBtn, showLoginBtn);
+      newBtn.addEventListener('click', () => {
+        document.getElementById('register-form-section').style.display = 'none';
+        document.getElementById('login-form-section').style.display = '';
+        this._hideRegisterError();
+        const emailInput = document.getElementById('login-email');
+        if (emailInput) emailInput.focus();
+      });
+    }
   },
 
   _initPasswordToggles() {
@@ -541,6 +583,21 @@ const App = {
       confirmPwdToggle.parentNode.replaceChild(newBtn, confirmPwdToggle);
       newBtn.addEventListener('click', () => {
         const input = document.getElementById('confirm-password');
+        if (input) {
+          input.type = input.type === 'password' ? 'text' : 'password';
+          const ico = newBtn.querySelector('iconify-icon');
+          if (ico) ico.setAttribute('icon', input.type === 'password' ? 'solar:eye-bold' : 'solar:eye-closed-bold');
+        }
+      });
+    }
+
+    // Register password toggle
+    const registerPwdToggle = document.getElementById('register-pwd-toggle');
+    if (registerPwdToggle) {
+      const newBtn = registerPwdToggle.cloneNode(true);
+      registerPwdToggle.parentNode.replaceChild(newBtn, registerPwdToggle);
+      newBtn.addEventListener('click', () => {
+        const input = document.getElementById('register-password');
         if (input) {
           input.type = input.type === 'password' ? 'text' : 'password';
           const ico = newBtn.querySelector('iconify-icon');
@@ -609,7 +666,9 @@ const App = {
     const subtitleEl = document.getElementById('set-password-subtitle');
     const userIdInput = document.getElementById('set-password-user-id');
 
+    const registerSection = document.getElementById('register-form-section');
     if (loginSection) loginSection.style.display = 'none';
+    if (registerSection) registerSection.style.display = 'none';
     if (setPasswordSection) setPasswordSection.style.display = '';
     if (titleEl) titleEl.textContent = title;
     if (subtitleEl) subtitleEl.textContent = subtitle;
@@ -715,6 +774,71 @@ const App = {
   _hideSetPasswordError() {
     const el = document.getElementById('set-password-error');
     if (el) el.style.display = 'none';
+  },
+
+  _showRegisterError(msg) {
+    const el = document.getElementById('register-error');
+    if (el) {
+      el.innerHTML = `<iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> ${msg}`;
+      el.style.display = 'flex';
+    }
+  },
+
+  _hideRegisterError() {
+    const el = document.getElementById('register-error');
+    if (el) el.style.display = 'none';
+  },
+
+  async _handleRegister() {
+    const entrepriseNom = document.getElementById('register-entreprise').value.trim();
+    const prenom = document.getElementById('register-prenom').value.trim();
+    const nom = document.getElementById('register-nom').value.trim();
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value;
+    const telephone = document.getElementById('register-telephone').value.trim();
+    const registerBtn = document.getElementById('register-btn');
+
+    if (!entrepriseNom || !prenom || !nom || !email || !password) {
+      this._showRegisterError('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    if (password.length < 6) {
+      this._showRegisterError('Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+
+    // Disable button
+    if (registerBtn) {
+      registerBtn.disabled = true;
+      registerBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Création...';
+    }
+
+    try {
+      const result = await Auth.register({ entrepriseNom, prenom, nom, email, password, telephone });
+
+      if (result.success) {
+        await Store.initialize();
+        this._showApp();
+        Toast.show('Bienvenue, ' + result.user.prenom + ' ! Votre compte a été créé.', 'success');
+      } else {
+        const messages = {
+          'email_exists': 'Un compte existe déjà avec cet email.',
+          'invalid_email': 'L\'adresse email n\'est pas valide.',
+          'weak_password': 'Le mot de passe est trop faible.',
+          'network_error': 'Impossible de contacter le serveur. Vérifiez votre connexion.',
+        };
+        this._showRegisterError(messages[result.error] || 'Erreur lors de la création du compte.');
+      }
+    } catch (err) {
+      console.error('Register error:', err);
+      this._showRegisterError('Erreur technique. Réessayez.');
+    } finally {
+      if (registerBtn) {
+        registerBtn.disabled = false;
+        registerBtn.innerHTML = '<iconify-icon icon="solar:user-plus-bold-duotone"></iconify-icon> Créer mon compte';
+      }
+    }
   },
 
   _applyMobileMode() {

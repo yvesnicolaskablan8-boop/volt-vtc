@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   chauffeurId: String,  // null = broadcast a tous
   type: {
     type: String,

@@ -6,6 +6,7 @@
  */
 
 const { syncYangoActivity } = require('./yango-sync');
+const { forEachTenant } = require('./tenant-iterator');
 
 let _lastSyncDate = null;
 let _interval = null;
@@ -33,13 +34,12 @@ function start() {
       _lastSyncDate = todayStr;
       console.log(`[YangoCron] Lancement de la sync automatique pour hier...`);
 
-      syncYangoActivity() // Par defaut sync la veille
-        .then(result => {
-          console.log(`[YangoCron] Sync OK: ${result.matched} chauffeurs, ${result.updated + result.created} GPS mis a jour`);
-        })
-        .catch(err => {
-          console.error('[YangoCron] Erreur sync:', err.message);
-        });
+      forEachTenant(async (entrepriseId) => {
+        const result = await syncYangoActivity(null, entrepriseId);
+        console.log(`[YangoCron] Sync OK (tenant ${entrepriseId || 'global'}): ${result.matched} chauffeurs, ${result.updated + result.created} GPS mis a jour`);
+      }).catch(err => {
+        console.error('[YangoCron] Erreur sync:', err.message);
+      });
     }
   }, 15 * 60 * 1000); // Toutes les 15 minutes
 }

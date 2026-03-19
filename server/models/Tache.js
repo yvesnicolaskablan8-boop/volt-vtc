@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const tacheSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  entrepriseId: { type: String, index: true, default: null },
   titre: { type: String, required: true },
   description: String,
   type: { type: String, default: 'autre' }, // maintenance, administratif, livraison, controle, autre
