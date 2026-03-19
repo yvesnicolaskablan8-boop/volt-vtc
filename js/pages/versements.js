@@ -473,6 +473,10 @@ const VersementsPage = {
         manquantHtml = `<span style="font-size:10px;font-weight:700;background:rgba(239,68,68,0.15);color:#dc2626;padding:2px 7px;border-radius:4px;"><iconify-icon icon="solar:danger-triangle-bold"></iconify-icon> Perte ${manque > 0 ? Utils.formatCurrency(manque) : ''}</span>`;
       }
 
+      // Source badge (contravention)
+      const isContra = v.source === 'contravention' || (v.reference && v.reference.startsWith('CHF')) || (v.commentaire && /contravention/i.test(v.commentaire));
+      const sourceHtml = isContra ? '<span style="font-size:10px;font-weight:700;background:rgba(239,68,68,0.12);color:#dc2626;padding:2px 7px;border-radius:4px;">CONTRAVENTION</span>' : '';
+
       // Payment method badge
       let methodHtml = '';
       if (v.moyenPaiement === 'wave') methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(34,197,94,0.1);color:#22c55e;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
@@ -503,7 +507,7 @@ const VersementsPage = {
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${name}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${dateLabel}${paidLabel ? ' • ' + paidLabel : ''}${v.periode ? ' • ' + v.periode : ''}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">${statutHtml} ${manquantHtml} ${methodHtml} ${coursesHtml}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">${statutHtml} ${sourceHtml} ${manquantHtml} ${methodHtml} ${coursesHtml}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:var(--font-size-sm);font-weight:700;color:${isDeleted ? 'var(--text-muted)' : isPerte ? '#ef4444' : isDette ? '#d97706' : v.statut === 'en_attente' ? '#f59e0b' : '#22c55e'};${isDeleted ? 'text-decoration:line-through;' : ''}">${Utils.formatCurrency((v.montantVerse || 0) > 0 ? v.montantVerse : (v.montantBrut || 0))}</div>
