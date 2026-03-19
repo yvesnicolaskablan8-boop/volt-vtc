@@ -102,6 +102,7 @@ const DriverApp = {
     DriverRouter.register('accueil', AccueilPage);
     DriverRouter.register('planning', PlanningPage);
     DriverRouter.register('versements', VersementsPage);
+    DriverRouter.register('dettes', DettesPage);
     DriverRouter.register('signalements', SignalementsPage);
     DriverRouter.register('profil', ProfilPage);
     DriverRouter.register('notifications', NotificationsPage);

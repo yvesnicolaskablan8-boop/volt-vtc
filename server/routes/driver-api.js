@@ -569,6 +569,84 @@ router.get('/versements', async (req, res, next) => {
   }
 });
 
+// GET /api/driver/dettes — Liste des dettes du chauffeur (recettes + contraventions)
+router.get('/dettes', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const chauffeur = await Chauffeur.findOne({ id: chauffeurId }).lean();
+    const redevance = chauffeur ? (chauffeur.redevanceQuotidienne || 0) : 0;
+
+    // 1. Dettes explicites
+    const dettesExplicites = await Versement.find({
+      chauffeurId,
+      traitementManquant: 'dette',
+      manquant: { $gt: 0 }
+    }).sort({ date: 1 }).lean();
+
+    const isContravention = (v) => v.source === 'contravention' || (v.reference && v.reference.startsWith('CHF')) || (v.commentaire && /contravention/i.test(v.commentaire));
+
+    // 2. Dettes implicites (planning passé sans versement)
+    const today = new Date().toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+    const plannings = await Planning.find({
+      chauffeurId,
+      date: { $gte: thirtyDaysAgoStr, $lt: today }
+    }).lean();
+
+    const absences = await Absence.find({ chauffeurId }).lean();
+    const allVersements = await Versement.find({ chauffeurId }).lean();
+
+    const implicitDettes = [];
+    for (const p of plannings) {
+      const hasAbsence = absences.some(a => p.date >= a.dateDebut && p.date <= a.dateFin);
+      if (hasAbsence) continue;
+      const rev = (p.redevanceOverride > 0) ? p.redevanceOverride : redevance;
+      if (rev <= 0) continue;
+      const hasPayment = allVersements.some(v => v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'partiel' || v.traitementManquant === 'perte'));
+      const hasExplicitDette = dettesExplicites.some(v => v.date === p.date);
+      if (!hasPayment && !hasExplicitDette) {
+        implicitDettes.push({
+          id: `implicit_${chauffeurId}_${p.date}`,
+          date: p.date,
+          manquant: rev,
+          type: 'recette',
+          implicit: true,
+          label: 'Non verse (redevance due)'
+        });
+      }
+    }
+
+    // 3. Combiner et classer
+    const recettes = [
+      ...dettesExplicites.filter(v => !isContravention(v)).map(v => ({
+        id: v.id, date: v.date, manquant: v.manquant, type: 'recette', implicit: false,
+        label: `Verse : ${v.montantVerse || 0} sur ${(v.montantVerse || 0) + v.manquant}`
+      })),
+      ...implicitDettes
+    ].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+    const contraventions = dettesExplicites.filter(v => isContravention(v)).map(v => ({
+      id: v.id, date: v.date, manquant: v.manquant, type: 'contravention', implicit: false,
+      label: v.commentaire || 'Contravention', reference: v.reference
+    })).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+    const totalRecettes = recettes.reduce((s, d) => s + d.manquant, 0);
+    const totalContraventions = contraventions.reduce((s, d) => s + d.manquant, 0);
+
+    res.json({
+      recettes,
+      contraventions,
+      totalRecettes,
+      totalContraventions,
+      total: totalRecettes + totalContraventions
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /api/driver/versements — Declarer un versement
 router.post('/versements', async (req, res, next) => {
   try {

@@ -116,6 +116,10 @@ const DriverStore = {
     return this._get('/versements');
   },
 
+  getDettes() {
+    return this._get('/dettes');
+  },
+
   createVersement(data) {
     return this._post('/versements', data);
   },
