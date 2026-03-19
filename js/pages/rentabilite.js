@@ -71,18 +71,12 @@ const RentabilitePage = {
       const startDate = new Date(v.dateAcquisition || v.dateCreation);
       const monthsInService = Math.max(1, Math.ceil((now - startDate) / (30 * 24 * 60 * 60 * 1000)));
 
-      // Costs — only real expenses
-      const maintenanceTotal = (v.coutsMaintenance || []).reduce((s, m) => s + (m.montant || 0), 0);
-      const assuranceTotal = (v.primeAnnuelle && v.primeAnnuelle > 0) ? (v.primeAnnuelle / 12) * monthsInService : 0;
-
       // Acquisition cost = only what has been paid so far
       let acquisitionTotal = 0;
       let mensualitesPaid = 0;
       if (v.typeAcquisition === 'leasing') {
         if (typeof v.mensualitesPaid === 'number') {
-          // Valeur sauvée manuellement
           mensualitesPaid = v.mensualitesPaid;
-          // Si auto est activé, ajouter les mois écoulés depuis la dernière sauvegarde
           if (v.autoFillLeasing !== false && v.mensualitesPaidDate) {
             const savedDate = new Date(v.mensualitesPaidDate);
             const monthsSinceSave = Math.max(0, Math.floor((now - savedDate) / (30 * 24 * 60 * 60 * 1000)));
@@ -90,31 +84,28 @@ const RentabilitePage = {
           }
           mensualitesPaid = Math.min(mensualitesPaid, v.dureeLeasing || 36);
         } else {
-          // Pas de valeur sauvée, calculer depuis la date d'acquisition
           mensualitesPaid = Math.min(monthsInService, v.dureeLeasing || 36);
         }
         acquisitionTotal = (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * mensualitesPaid);
       } else {
-        // Cash : si montantPaye est défini, l'utiliser ; sinon prix d'achat total
         acquisitionTotal = typeof v.montantPaye === 'number' ? v.montantPaye : (v.prixAchat || 0);
       }
 
-      // Energy cost — only if kilometrage is tracked, otherwise 0
       const isEV = v.typeEnergie === 'electrique';
-      let energyCost = 0;
-      if (v.kilometrage && v.kilometrage > 0 && v.consommation && v.coutEnergie) {
-        energyCost = (v.kilometrage * v.consommation / 100) * v.coutEnergie;
-      }
 
-      // Also count real depenses from the store for this vehicle
+      // Charges RÉELLES uniquement (pas de calculs estimés)
+      // Dépenses enregistrées pour ce véhicule
       const depenses = Store.get('depenses') || [];
       const vehiculeDepenses = depenses.filter(dep => dep.vehiculeId === v.id).reduce((s, dep) => s + (dep.montant || 0), 0);
-
-      // Also count réparations from the store
+      // Réparations enregistrées
       const reparations = Store.get('reparations') || [];
       const vehiculeReparations = reparations.filter(r => r.vehiculeId === v.id).reduce((s, r) => s + (r.coutReel || r.coutEstime || 0), 0);
+      // Maintenance enregistrée
+      const maintenanceTotal = (v.coutsMaintenance || []).reduce((s, m) => s + (m.montant || 0), 0);
 
-      const totalCost = acquisitionTotal + maintenanceTotal + assuranceTotal + energyCost + vehiculeDepenses + vehiculeReparations;
+      // Coûts = acquisition + charges réelles (dépenses + réparations + maintenance)
+      const chargesReelles = vehiculeDepenses + vehiculeReparations + maintenanceTotal;
+      const totalCost = acquisitionTotal + chargesReelles;
 
       const monthlyRevenue = totalRevenue / monthsInService;
       const monthlyCost = totalCost / monthsInService;
@@ -139,8 +130,7 @@ const RentabilitePage = {
         totalCost,
         acquisitionTotal,
         maintenanceTotal,
-        assuranceTotal: Math.round(assuranceTotal),
-        energyCost: Math.round(energyCost),
+        chargesReelles,
         monthsInService,
         monthlyRevenue: Math.round(monthlyRevenue),
         monthlyCost: Math.round(monthlyCost),
@@ -187,10 +177,10 @@ const RentabilitePage = {
     const avgThermalCoutKm = thermalVehicles.length > 0
       ? thermalVehicles.reduce((s, a) => s + a.coutParKm, 0) / thermalVehicles.length : 0;
 
-    const avgEVEnergy = evVehicles.length > 0
-      ? evVehicles.reduce((s, a) => s + a.energyCost, 0) / evVehicles.length : 0;
-    const avgThermalEnergy = thermalVehicles.length > 0
-      ? thermalVehicles.reduce((s, a) => s + a.energyCost, 0) / thermalVehicles.length : 0;
+    const avgEVCharges = evVehicles.length > 0
+      ? evVehicles.reduce((s, a) => s + a.chargesReelles, 0) / evVehicles.length : 0;
+    const avgThermalCharges = thermalVehicles.length > 0
+      ? thermalVehicles.reduce((s, a) => s + a.chargesReelles, 0) / thermalVehicles.length : 0;
 
     const avgEVMaintenance = evVehicles.length > 0
       ? evVehicles.reduce((s, a) => s + a.maintenanceTotal, 0) / evVehicles.length : 0;
@@ -202,8 +192,8 @@ const RentabilitePage = {
     const avgThermalROI = thermalVehicles.length > 0
       ? thermalVehicles.reduce((s, a) => s + a.roi, 0) / thermalVehicles.length : 0;
 
-    const energySavingsPercent = avgThermalEnergy > 0
-      ? Math.round((1 - avgEVEnergy / avgThermalEnergy) * 100) : 0;
+    const chargesSavingsPercent = avgThermalCharges > 0
+      ? Math.round((1 - avgEVCharges / avgThermalCharges) * 100) : 0;
 
     // Cumulative cost comparison over time (48 months)
     const cumulativeLeasingCost = [];
@@ -275,9 +265,9 @@ const RentabilitePage = {
       avgLeasingROI, avgCashROI, cumulativeLeasingCost, cumulativeCashCost,
       leasingCount: leasingVehicles.length, cashCount: cashVehicles.length,
       evCount: evVehicles.length, thermalCount: thermalVehicles.length,
-      avgEVCoutKm, avgThermalCoutKm, avgEVEnergy, avgThermalEnergy,
+      avgEVCoutKm, avgThermalCoutKm, avgEVCharges, avgThermalCharges,
       avgEVMaintenance, avgThermalMaintenance, avgEVROI, avgThermalROI,
-      energySavingsPercent,
+      chargesSavingsPercent,
       debugVersementsTotal: versements.length,
       debugVersementsAvecMontant: allVersementsValides.length,
       debugLinkedRevenue: linkedRevenue,
@@ -377,11 +367,9 @@ const RentabilitePage = {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
             <div style="color:rgba(255,255,255,.4);">Revenus (versements) :</div><div style="color:#34d399;font-weight:600;text-align:right;">+ ${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
             <div style="color:rgba(255,255,255,.4);">Coûts opérationnels :</div><div style="color:#f87171;font-weight:600;text-align:right;">− ${Utils.formatCurrency(d.fleetTotalCost - d.investPaye)}</div>
-            <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont énergie :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.energyCost, 0))}</div>
-            <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont assurance :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.assuranceTotal, 0))}</div>
-            <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont maintenance :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.maintenanceTotal, 0))}</div>
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont dépenses :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.vehiculeDepenses, 0))}</div>
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont réparations :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.vehiculeReparations, 0))}</div>
+            <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont maintenance :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.maintenanceTotal, 0))}</div>
             <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:rgba(255,255,255,.6);font-weight:700;">= Profit d'exploitation :</div><div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:${d.resultatCumule >= 0 ? '#34d399' : '#f87171'};font-weight:700;text-align:right;">${Utils.formatCurrency(d.resultatCumule)}</div>
           </div>
         </div>
@@ -785,10 +773,10 @@ const RentabilitePage = {
     if (costBrkCtx) {
       const totalAcq = d.analysis.reduce((s, a) => s + (a.acquisitionTotal || 0), 0);
       const totalMaint = d.analysis.reduce((s, a) => s + (a.maintenanceTotal || 0), 0);
-      const totalAssur = d.analysis.reduce((s, a) => s + (a.assuranceTotal || 0), 0);
-      const totalEnergy = d.analysis.reduce((s, a) => s + (a.energyCost || 0), 0);
-      const costData = [totalAcq, totalMaint, totalAssur, totalEnergy].map(v => Math.round(v));
-      const costLabels = ['Leasing / Achat', 'Maintenance', 'Assurance', 'Énergie'];
+      const totalDep = d.analysis.reduce((s, a) => s + (a.vehiculeDepenses || 0), 0);
+      const totalRep = d.analysis.reduce((s, a) => s + (a.vehiculeReparations || 0), 0);
+      const costData = [totalAcq, totalMaint, totalDep, totalRep].map(v => Math.round(v));
+      const costLabels = ['Leasing / Achat', 'Maintenance', 'Dépenses', 'Réparations'];
       const costColors = ['#6366f1', '#f87171', '#fbbf24', '#22d3ee'];
       const costHover = ['#818cf8', '#fca5a5', '#fcd34d', '#67e8f9'];
 
