@@ -102,13 +102,13 @@ img { max-width: 100%; }
   letter-spacing: -0.02em;
 }
 .nav-logo-img {
-  height: 36px;
+  height: 52px;
   width: auto;
-  filter: brightness(0) invert(1);
+  filter: brightness(0) invert(1) drop-shadow(0 0 8px rgba(255,255,255,0.15));
   transition: opacity var(--transition);
 }
 .nav-logo:hover .nav-logo-img {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 .nav-links {
   display: flex;
@@ -905,9 +905,9 @@ img { max-width: 100%; }
   margin-bottom: 16px;
 }
 .footer-logo-img {
-  height: 32px;
+  height: 44px;
   width: auto;
-  filter: brightness(0) invert(1);
+  filter: brightness(0) invert(1) drop-shadow(0 0 6px rgba(255,255,255,0.12));
 }
 .footer-brand p {
   color: var(--text-muted);
