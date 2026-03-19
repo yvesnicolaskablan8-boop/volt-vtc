@@ -80,6 +80,25 @@ console.log('[Server] index.html exists:', fs.existsSync(path.join(frontendPath,
 
 app.use(express.static(frontendPath));
 
+// Landing page — served at root "/" for visitors
+app.get('/', (req, res) => {
+  const landingFile = path.join(frontendPath, 'landing.html');
+  if (fs.existsSync(landingFile)) {
+    return res.sendFile(landingFile);
+  }
+  // Fallback to admin app if landing doesn't exist
+  const indexFile = path.join(frontendPath, 'index.html');
+  if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
+  res.status(503).send('App en cours de mise a jour.');
+});
+
+// Admin app — served at "/app"
+app.get('/app', (req, res) => {
+  const indexFile = path.join(frontendPath, 'index.html');
+  if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
+  res.status(503).send('Admin app not found');
+});
+
 // SPA fallback - serve index.html for non-API routes
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) return;
