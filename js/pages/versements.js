@@ -320,7 +320,7 @@ const VersementsPage = {
         <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#dc2626,#ef4444);border:none;box-shadow:0 4px 20px rgba(220,38,38,.25);" onclick="document.getElementById('dette-section-contraventions')?.scrollIntoView({behavior:'smooth'})">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Dettes amendes</div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Dettes contraventions</div>
           </div>
           <div class="d-val" style="color:#fff;">${d.detteData.totalDettesContraventions > 0 ? Utils.formatCurrency(d.detteData.totalDettesContraventions) : '0 FCFA'}</div>
           <div class="d-sub" style="color:rgba(255,255,255,.6);">${d.detteData.nbDriversContraventions > 0 ? d.detteData.nbDriversContraventions + ' chauffeur' + (d.detteData.nbDriversContraventions > 1 ? 's' : '') : 'Aucune'}</div>
