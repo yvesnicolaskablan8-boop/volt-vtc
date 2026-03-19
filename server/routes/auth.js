@@ -137,9 +137,9 @@ router.post('/register', async (req, res, next) => {
     };
 
     // Create admin user
-    const { v4: uuidv4 } = require('uuid');
+    const crypto = require('crypto');
     const user = new User({
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       entrepriseId: entreprise.id,
       prenom,
       nom,

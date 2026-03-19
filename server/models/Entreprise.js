@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 const entrepriseSchema = new mongoose.Schema({
-  id: { type: String, default: () => 'ENT-' + uuidv4().slice(0, 8).toUpperCase(), unique: true, index: true },
+  id: { type: String, default: () => 'ENT-' + crypto.randomUUID().slice(0, 8).toUpperCase(), unique: true, index: true },
   nom: { type: String, required: true },
   slug: { type: String, unique: true, sparse: true },
   email: String,
