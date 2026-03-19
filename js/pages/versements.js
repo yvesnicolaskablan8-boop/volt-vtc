@@ -2216,13 +2216,15 @@ const VersementsPage = {
     // 1. Dettes explicites (traitementManquant === 'dette' et manquant > 0)
     const dettes = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0).map(v => ({ ...v, source: isContravention(v) ? 'contravention' : (v.source || 'recette') }));
 
-    // 1b. Contraventions impayées sans versement associé
+    // 1b. Contraventions impayées/contestées sans versement associé
     const contraventions = Store.get('contraventions') || [];
-    const contraImpayees = contraventions.filter(c => c.statut === 'impayee' && c.montant > 0 && c.chauffeurId);
+    const contraImpayees = contraventions.filter(c => (c.statut === 'impayee' || c.statut === 'contestee') && c.montant > 0 && c.chauffeurId);
+    console.log('[Dettes] Contraventions total:', contraventions.length, 'impayees:', contraImpayees.length, contraImpayees.map(c => ({ id: c.id, statut: c.statut, montant: c.montant, chauffeurId: c.chauffeurId })));
     contraImpayees.forEach(c => {
       // Vérifier si un versement dette existe déjà pour cette contravention
-      const hasVersement = dettes.some(v => v.reference === c.id) || versements.some(v => v.reference === c.id && (v.statut === 'valide' || v.statut === 'supprime'));
-      if (!hasVersement) {
+      const existingDette = dettes.find(v => v.reference === c.id);
+      const paidVersement = versements.find(v => v.reference === c.id && (v.statut === 'valide' || v.statut === 'supprime'));
+      if (!existingDette && !paidVersement) {
         dettes.push({
           id: `contra_${c.id}`,
           chauffeurId: c.chauffeurId,

@@ -256,6 +256,10 @@ const Store = {
       controlesTechniques: [],
       incidents: [],
       taches: [],
+      contraventions: [],
+      depenseRecurrentes: [],
+      depenseCategories: [],
+      versementRecurrents: [],
       settings: { entreprise: {}, preferences: {} }
     };
   },
