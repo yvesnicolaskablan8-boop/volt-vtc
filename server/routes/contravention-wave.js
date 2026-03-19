@@ -1,6 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
 const Contravention = require('../models/Contravention');
+const { getWaveApiKey } = require('../utils/get-integration-keys');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -28,7 +29,7 @@ router.post('/wave/checkout', async (req, res, next) => {
       return res.status(400).json({ error: 'Montant invalide' });
     }
 
-    const waveApiKey = process.env.WAVE_API_KEY;
+    const waveApiKey = await getWaveApiKey();
     if (!waveApiKey) {
       return res.status(500).json({ error: 'Wave API non configuree' });
     }

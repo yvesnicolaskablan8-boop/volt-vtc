@@ -55,6 +55,16 @@ const settingsSchema = new mongoose.Schema({
     alerteAdminRetard: { type: Boolean, default: true },
     telephoneAdmin: String,
     telephoneAdminWhatsapp: String
+  },
+  integrations: {
+    wave: {
+      apiKey: { type: String, default: '' }
+    },
+    yango: {
+      parkId: { type: String, default: '' },
+      apiKey: { type: String, default: '' },
+      clientId: { type: String, default: '' }
+    }
   }
 }, {
   toJSON: {

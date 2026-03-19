@@ -1,6 +1,7 @@
 const express = require('express');
 const Versement = require('../models/Versement');
 const Contravention = require('../models/Contravention');
+const { getWaveApiKey } = require('../utils/get-integration-keys');
 
 const router = express.Router();
 
@@ -87,11 +88,11 @@ router.post('/webhook', async (req, res) => {
 router.post('/check-pending', async (req, res) => {
   try {
     const { checkPendingPayments } = require('../utils/wave-cron');
-    const waveApiKey = process.env.WAVE_API_KEY;
+    const waveApiKey = await getWaveApiKey();
     if (!waveApiKey) {
       return res.status(500).json({ error: 'WAVE_API_KEY non configuree' });
     }
-    await checkPendingPayments(waveApiKey);
+    await checkPendingPayments();
     res.json({ success: true, message: 'Verification terminee' });
   } catch (err) {
     res.status(500).json({ error: err.message });

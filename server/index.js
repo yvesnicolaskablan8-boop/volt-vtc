@@ -109,11 +109,18 @@ const startServer = async () => {
     console.log(`Pilote API running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 
-    // Demarrer le CRON Yango si les credentials sont configurees
-    if (process.env.YANGO_PARK_ID && process.env.YANGO_API_KEY) {
-      const yangoCron = require('./utils/yango-cron');
-      yangoCron.start();
-    }
+    // Demarrer le CRON Yango si les credentials sont configurees (DB ou env)
+    const { getYangoCredentials } = require('./utils/get-integration-keys');
+    getYangoCredentials().then(creds => {
+      if (creds.parkId && creds.apiKey) {
+        const yangoCron = require('./utils/yango-cron');
+        yangoCron.start();
+      } else {
+        console.log('[Server] Yango credentials non configurees — CRON Yango desactive');
+      }
+    }).catch(err => {
+      console.error('[Server] Erreur lecture credentials Yango:', err.message);
+    });
 
     // Demarrer le CRON Notifications + initialiser VAPID
     const notifService = require('./utils/notification-service');

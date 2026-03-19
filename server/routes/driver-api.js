@@ -17,6 +17,7 @@ const { getNextDeadline, calculatePenalty } = require('../utils/deadline');
 const notifService = require('../utils/notification-service');
 const Contravention = require('../models/Contravention');
 const { haversineDistance, calculateCategoryScore, generateAnalyseIA, finalizeBehaviorSession } = require('../utils/behavior-utils');
+const { getWaveApiKey } = require('../utils/get-integration-keys');
 
 // fetch: natif en Node 18+, fallback node-fetch sinon
 const fetch = globalThis.fetch || require('node-fetch');
@@ -1832,7 +1833,7 @@ router.post('/wave/checkout', async (req, res, next) => {
     const versementId = 'VRS-' + Math.random().toString(36).substr(2, 6).toUpperCase();
 
     // Creer la session Wave Checkout
-    const waveApiKey = process.env.WAVE_API_KEY;
+    const waveApiKey = await getWaveApiKey();
     if (!waveApiKey) {
       console.error('[Wave] WAVE_API_KEY manquante dans les variables d\'environnement');
       return res.status(500).json({ error: 'Wave API non configuree. Contactez l\'administrateur.' });
@@ -1924,7 +1925,7 @@ router.get('/wave/status/:id', async (req, res, next) => {
     }
 
     // Verifier le statut aupres de Wave
-    const waveApiKey = process.env.WAVE_API_KEY;
+    const waveApiKey = await getWaveApiKey();
     const waveResponse = await fetch(`https://api.wave.com/v1/checkout/sessions/${versement.waveCheckoutId}`, {
       headers: { 'Authorization': `Bearer ${waveApiKey}` }
     });
@@ -2043,7 +2044,7 @@ router.post('/contraventions/wave/checkout', async (req, res, next) => {
       return res.status(400).json({ error: 'Montant invalide' });
     }
 
-    const waveApiKey = process.env.WAVE_API_KEY;
+    const waveApiKey = await getWaveApiKey();
     if (!waveApiKey) {
       return res.status(500).json({ error: 'Wave API non configuree' });
     }

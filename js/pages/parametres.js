@@ -61,6 +61,7 @@ const ParametresPage = {
         <div class="tab" data-tab="versements-settings"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon> Versements</div>
         <div class="tab" data-tab="notifications-settings"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Notifications</div>
         <div class="tab" data-tab="parcs"><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Parcs</div>
+        <div class="tab" data-tab="integrations"><iconify-icon icon="solar:plug-circle-bold-duotone"></iconify-icon> Intégrations</div>
       </div>
 
       <div id="settings-content"></div>
@@ -88,6 +89,7 @@ const ParametresPage = {
       case 'versements-settings': ct.innerHTML = this._renderVersementsSettings(); this._bindVersementsSettingsEvents(); break;
       case 'notifications-settings': ct.innerHTML = this._renderNotificationsSettings(); this._bindNotificationsSettingsEvents(); break;
       case 'parcs': ct.innerHTML = this._renderParcs(); this._bindParcsEvents(); break;
+      case 'integrations': ct.innerHTML = this._renderIntegrations(); this._bindIntegrationsEvents(); break;
     }
   },
 
@@ -2431,5 +2433,224 @@ const ParametresPage = {
       Toast.success('Parc supprimé');
       this._renderTab('parcs');
     });
+  },
+
+  // ========================= ONGLET INTÉGRATIONS =========================
+
+  _renderIntegrations() {
+    const settings = Store.get('settings') || {};
+    const integrations = settings.integrations || {};
+    const wave = integrations.wave || {};
+    const yango = integrations.yango || {};
+
+    const waveConfigured = wave.apiKey && wave.apiKey !== '';
+    const yangoConfigured = yango.parkId && yango.apiKey && yango.parkId !== '' && yango.apiKey !== '';
+
+    return '<div class="grid-2" style="gap:var(--space-lg);">' +
+
+      // ---- Wave Card ----
+      '<div class="card">' +
+        '<div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">' +
+          '<span class="card-title" style="display:flex;align-items:center;gap:8px;">' +
+            '<iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:24px;color:#7c3aed;"></iconify-icon> Wave Money' +
+          '</span>' +
+          '<span class="badge ' + (waveConfigured ? 'badge-success' : 'badge-danger') + '">' +
+            (waveConfigured ? 'Connecté' : 'Non configuré') +
+          '</span>' +
+        '</div>' +
+        '<div style="padding-top:var(--space-md);display:flex;flex-direction:column;gap:var(--space-md);">' +
+          '<div class="form-group">' +
+            '<label class="form-label">Clé API Wave</label>' +
+            '<div style="position:relative;">' +
+              '<input type="password" id="wave-api-key" class="form-control" placeholder="Entrez votre clé API Wave" value="' + (wave.apiKey || '') + '" style="padding-right:40px;" />' +
+              '<button type="button" class="btn-toggle-password" onclick="ParametresPage._togglePasswordField(\'wave-api-key\')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;">' +
+                '<iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>' +
+              '</button>' +
+            '</div>' +
+            '<small style="color:var(--text-muted);">Disponible dans votre dashboard Wave Business</small>' +
+          '</div>' +
+          '<div style="display:flex;gap:var(--space-sm);">' +
+            '<button class="btn btn-primary" id="save-wave-btn" style="flex:1;">' +
+              '<iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Sauvegarder' +
+            '</button>' +
+            '<button class="btn btn-outline" id="test-wave-btn">' +
+              '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tester' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // ---- Yango Card ----
+      '<div class="card">' +
+        '<div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">' +
+          '<span class="card-title" style="display:flex;align-items:center;gap:8px;">' +
+            '<iconify-icon icon="solar:taxi-bold-duotone" style="font-size:24px;color:#f59e0b;"></iconify-icon> Yango Fleet' +
+          '</span>' +
+          '<span class="badge ' + (yangoConfigured ? 'badge-success' : 'badge-danger') + '">' +
+            (yangoConfigured ? 'Connecté' : 'Non configuré') +
+          '</span>' +
+        '</div>' +
+        '<div style="padding-top:var(--space-md);display:flex;flex-direction:column;gap:var(--space-md);">' +
+          '<div class="form-group">' +
+            '<label class="form-label">Park ID</label>' +
+            '<input type="text" id="yango-park-id" class="form-control" placeholder="ID du parc Yango" value="' + (yango.parkId || '') + '" />' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label class="form-label">Clé API</label>' +
+            '<div style="position:relative;">' +
+              '<input type="password" id="yango-api-key" class="form-control" placeholder="Clé API Yango" value="' + (yango.apiKey || '') + '" style="padding-right:40px;" />' +
+              '<button type="button" onclick="ParametresPage._togglePasswordField(\'yango-api-key\')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;">' +
+                '<iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label class="form-label">Client ID</label>' +
+            '<input type="text" id="yango-client-id" class="form-control" placeholder="taxi/park/VOTRE_PARK_ID" value="' + (yango.clientId || '') + '" />' +
+          '</div>' +
+          '<div style="display:flex;gap:var(--space-sm);">' +
+            '<button class="btn btn-primary" id="save-yango-btn" style="flex:1;">' +
+              '<iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Sauvegarder' +
+            '</button>' +
+            '<button class="btn btn-outline" id="test-yango-btn">' +
+              '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tester' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+    '</div>' +
+
+    // ---- Info note ----
+    '<div class="card" style="margin-top:var(--space-lg);border-left:4px solid var(--primary);">' +
+      '<div style="display:flex;align-items:flex-start;gap:var(--space-md);">' +
+        '<iconify-icon icon="solar:info-circle-bold-duotone" style="font-size:24px;color:var(--primary);flex-shrink:0;margin-top:2px;"></iconify-icon>' +
+        '<div>' +
+          '<div style="font-weight:600;margin-bottom:4px;">Comment ça marche ?</div>' +
+          '<p style="color:var(--text-muted);margin:0;font-size:var(--font-size-sm);line-height:1.6;">' +
+            'Les clés API configurées ici sont stockées de manière sécurisée en base de données. ' +
+            'Elles sont prioritaires sur les variables d\'environnement du serveur. ' +
+            'Les modifications prennent effet immédiatement, sans redémarrage.' +
+          '</p>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  },
+
+  _bindIntegrationsEvents() {
+    // Save Wave
+    const saveWaveBtn = document.getElementById('save-wave-btn');
+    if (saveWaveBtn) {
+      saveWaveBtn.addEventListener('click', async () => {
+        const apiKey = document.getElementById('wave-api-key').value.trim();
+        try {
+          const token = localStorage.getItem('pilote_token');
+          const resp = await fetch('/api/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ integrations: { wave: { apiKey } } })
+          });
+          if (resp.ok) {
+            const updated = await resp.json();
+            Store.set('settings', updated);
+            Toast.success('Configuration Wave sauvegardée');
+            this._renderTab('integrations');
+          } else {
+            Toast.error('Erreur lors de la sauvegarde');
+          }
+        } catch (err) {
+          Toast.error('Erreur: ' + err.message);
+        }
+      });
+    }
+
+    // Save Yango
+    const saveYangoBtn = document.getElementById('save-yango-btn');
+    if (saveYangoBtn) {
+      saveYangoBtn.addEventListener('click', async () => {
+        const parkId = document.getElementById('yango-park-id').value.trim();
+        const apiKey = document.getElementById('yango-api-key').value.trim();
+        const clientId = document.getElementById('yango-client-id').value.trim();
+        try {
+          const token = localStorage.getItem('pilote_token');
+          const resp = await fetch('/api/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ integrations: { yango: { parkId, apiKey, clientId } } })
+          });
+          if (resp.ok) {
+            const updated = await resp.json();
+            Store.set('settings', updated);
+            Toast.success('Configuration Yango sauvegardée');
+            this._renderTab('integrations');
+          } else {
+            Toast.error('Erreur lors de la sauvegarde');
+          }
+        } catch (err) {
+          Toast.error('Erreur: ' + err.message);
+        }
+      });
+    }
+
+    // Test Wave
+    const testWaveBtn = document.getElementById('test-wave-btn');
+    if (testWaveBtn) {
+      testWaveBtn.addEventListener('click', async () => {
+        testWaveBtn.disabled = true;
+        testWaveBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone" class="spin"></iconify-icon> Test...';
+        try {
+          const token = localStorage.getItem('pilote_token');
+          const resp = await fetch('/api/settings/test-wave', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const result = await resp.json();
+          if (result.success) {
+            Toast.success(result.message);
+          } else {
+            Toast.error(result.message);
+          }
+        } catch (err) {
+          Toast.error('Erreur: ' + err.message);
+        }
+        testWaveBtn.disabled = false;
+        testWaveBtn.innerHTML = '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tester';
+      });
+    }
+
+    // Test Yango
+    const testYangoBtn = document.getElementById('test-yango-btn');
+    if (testYangoBtn) {
+      testYangoBtn.addEventListener('click', async () => {
+        testYangoBtn.disabled = true;
+        testYangoBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone" class="spin"></iconify-icon> Test...';
+        try {
+          const token = localStorage.getItem('pilote_token');
+          const resp = await fetch('/api/settings/test-yango', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const result = await resp.json();
+          if (result.success) {
+            Toast.success(result.message);
+          } else {
+            Toast.error(result.message);
+          }
+        } catch (err) {
+          Toast.error('Erreur: ' + err.message);
+        }
+        testYangoBtn.disabled = false;
+        testYangoBtn.innerHTML = '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tester';
+      });
+    }
+  },
+
+  _togglePasswordField(fieldId) {
+    const input = document.getElementById(fieldId);
+    if (!input) return;
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    const btn = input.parentElement.querySelector('button iconify-icon');
+    if (btn) btn.setAttribute('icon', isPassword ? 'solar:eye-closed-bold-duotone' : 'solar:eye-bold-duotone');
   }
 };

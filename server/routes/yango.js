@@ -8,19 +8,31 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
+const { getYangoCredentials } = require('../utils/get-integration-keys');
 
 const Chauffeur = require('../models/Chauffeur');
 
 // All Yango routes require authentication
 router.use(authMiddleware);
 
+// Resolve Yango credentials once per request (DB first, env fallback)
+router.use(async (req, res, next) => {
+  try {
+    req.yangoCreds = await getYangoCredentials();
+    next();
+  } catch (err) {
+    console.error('[Yango] Erreur lecture credentials:', err.message);
+    res.status(500).json({ error: 'Erreur lecture credentials Yango' });
+  }
+});
+
 const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
 
 // Helper: make Yango POST API call with detailed error logging
-async function yangoFetch(endpoint, body = {}, maxRetries = 3) {
-  const parkId = process.env.YANGO_PARK_ID;
-  const apiKey = process.env.YANGO_API_KEY;
-  const clientId = process.env.YANGO_CLIENT_ID;
+async function yangoFetch(endpoint, body = {}, maxRetries = 3, creds = null) {
+  const parkId = creds?.parkId;
+  const apiKey = creds?.apiKey;
+  const clientId = creds?.clientId;
 
   if (!parkId || !apiKey || !clientId) {
     throw new Error('Yango API credentials not configured');
@@ -78,10 +90,10 @@ async function yangoFetch(endpoint, body = {}, maxRetries = 3) {
 }
 
 // Helper: make Yango GET API call (for work-rules etc.)
-async function yangoGet(endpoint, params = {}) {
-  const parkId = process.env.YANGO_PARK_ID;
-  const apiKey = process.env.YANGO_API_KEY;
-  const clientId = process.env.YANGO_CLIENT_ID;
+async function yangoGet(endpoint, params = {}, creds = null) {
+  const parkId = creds?.parkId;
+  const apiKey = creds?.apiKey;
+  const clientId = creds?.clientId;
 
   if (!parkId || !apiKey || !clientId) {
     throw new Error('Yango API credentials not configured');
@@ -127,7 +139,7 @@ let _ordersCacheTime = 0;
 let _ordersCacheKey = ''; // from+to key
 const ORDERS_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
-async function getCachedOrders(from, to) {
+async function getCachedOrders(from, to, creds = null) {
   // Use date-only key so "today" requests share cache regardless of exact timestamp
   const cacheKey = `${from.substring(0, 10)}|${to.substring(0, 10)}`;
   const now = Date.now();
@@ -139,11 +151,11 @@ async function getCachedOrders(from, to) {
     limit: 500,
     query: {
       park: {
-        id: process.env.YANGO_PARK_ID,
+        id: creds?.parkId,
         order: { booked_at: { from, to } }
       }
     }
-  });
+  }, 3, creds);
   _ordersCache = data;
   _ordersCacheTime = now;
   _ordersCacheKey = cacheKey;
@@ -170,7 +182,7 @@ const WORK_RULES_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
  *   - platform_ride_vat: TVA sur commission
  *   - partner_ride_fee: commission partenaire (3%)
  */
-async function fetchAllTransactions(from, to, driverIds = null) {
+async function fetchAllTransactions(from, to, driverIds = null, creds = null) {
   const allTransactions = [];
   let cursor = '';
   let pageCount = 0;
@@ -184,7 +196,7 @@ async function fetchAllTransactions(from, to, driverIds = null) {
     const body = {
       query: {
         park: {
-          id: process.env.YANGO_PARK_ID,
+          id: creds?.parkId,
           transaction: transactionQuery
         }
       },
@@ -192,7 +204,7 @@ async function fetchAllTransactions(from, to, driverIds = null) {
     };
     if (cursor) body.cursor = cursor;
 
-    const data = await yangoFetch('/v2/parks/transactions/list', body);
+    const data = await yangoFetch('/v2/parks/transactions/list', body, 3, creds);
     const txns = data.transactions || [];
     allTransactions.push(...txns);
     cursor = data.cursor || '';
@@ -308,15 +320,15 @@ function aggregateTransactions(transactions) {
   };
 }
 
-async function getWorkRules() {
+async function getWorkRules(creds = null) {
   const now = Date.now();
   if (_workRulesCache && (now - _workRulesCacheTime) < WORK_RULES_CACHE_TTL) {
     return _workRulesCache;
   }
   try {
     const data = await yangoGet('/v1/parks/driver-work-rules', {
-      park_id: process.env.YANGO_PARK_ID
-    });
+      park_id: creds?.parkId
+    }, creds);
     _workRulesCache = data;
     _workRulesCacheTime = now;
     return data;
@@ -335,7 +347,7 @@ async function getWorkRules() {
  */
 router.get('/work-rules', async (req, res) => {
   try {
-    const data = await getWorkRules();
+    const data = await getWorkRules(req.yangoCreds);
     // Yango API returns "rules" (not "work_rules")
     const rawRules = data.rules || data.work_rules || [];
     const rules = rawRules
@@ -379,11 +391,11 @@ router.get('/drivers/all', async (req, res) => {
         offset,
         query: {
           park: {
-            id: process.env.YANGO_PARK_ID
+            id: req.yangoCreds.parkId
             // Pas de filtre → TOUS les chauffeurs
           }
         }
-      });
+      }, 3, req.yangoCreds);
 
       const profiles = data.driver_profiles || [];
       for (const dp of profiles) {
@@ -447,19 +459,19 @@ router.get('/drivers', async (req, res) => {
       offset: 0,
       query: {
         park: {
-          id: process.env.YANGO_PARK_ID,
+          id: req.yangoCreds.parkId,
           driver_profile: driverFilter
         }
       },
       sort_order: [
         { direction: 'asc', field: 'driver_profile.last_name' }
       ]
-    });
+    }, 3, req.yangoCreds);
 
     // Resolve work rule names (Yango API returns "rules" key)
     let workRulesMap = {};
     try {
-      const rulesData = await getWorkRules();
+      const rulesData = await getWorkRules(req.yangoCreds);
       const rawRules = rulesData.rules || rulesData.work_rules || [];
       rawRules.forEach(r => {
         workRulesMap[r.id] = r.name || r.id;
@@ -520,7 +532,7 @@ router.get('/orders', async (req, res) => {
       limit: 100,
       query: {
         park: {
-          id: process.env.YANGO_PARK_ID,
+          id: req.yangoCreds.parkId,
           order: {
             booked_at: {
               from: from,
@@ -529,7 +541,7 @@ router.get('/orders', async (req, res) => {
           }
         }
       }
-    });
+    }, 3, req.yangoCreds);
 
     const orders = (data.orders || []).map(o => {
       // Calculate duration in minutes
@@ -583,10 +595,10 @@ router.get('/vehicles', async (req, res) => {
       offset: 0,
       query: {
         park: {
-          id: process.env.YANGO_PARK_ID
+          id: req.yangoCreds.parkId
         }
       }
-    });
+    }, 3, req.yangoCreds);
 
     const vehicles = (data.cars || []).map(car => ({
       id: car.id || '',
@@ -666,12 +678,12 @@ router.get('/stats', async (req, res) => {
         offset: 0,
         query: {
           park: {
-            id: process.env.YANGO_PARK_ID,
+            id: req.yangoCreds.parkId,
             driver_profile: driverFilter
           }
         },
         sort_order: [{ direction: 'asc', field: 'driver_profile.last_name' }]
-      });
+      }, 3, req.yangoCreds);
     } catch (e) {
       console.error('Yango stats - drivers fetch failed:', e.message);
       driversData = { driver_profiles: [], total: 0 };
@@ -684,11 +696,11 @@ router.get('/stats', async (req, res) => {
         limit: 100,
         query: {
           park: {
-            id: process.env.YANGO_PARK_ID,
+            id: req.yangoCreds.parkId,
             order: { booked_at: { from: todayStart, to: todayEnd } }
           }
         }
-      });
+      }, 3, req.yangoCreds);
     } catch (e) {
       console.error('Yango stats - period orders failed:', e.message);
       ordersToday = { orders: [], total: 0 };
@@ -705,11 +717,11 @@ router.get('/stats', async (req, res) => {
           limit: 100,
           query: {
             park: {
-              id: process.env.YANGO_PARK_ID,
+              id: req.yangoCreds.parkId,
               order: { booked_at: { from: monthStart, to: monthEnd } }
             }
           }
-        });
+        }, 3, req.yangoCreds);
       } catch (e) {
         console.error('Yango stats - month orders failed:', e.message);
         ordersMonth = { orders: [], total: 0 };
@@ -736,7 +748,8 @@ router.get('/stats', async (req, res) => {
     try {
       todayTxns = await fetchAllTransactions(
         todayStart, todayEnd,
-        hasWorkRuleFilter ? driverIds : null
+        hasWorkRuleFilter ? driverIds : null,
+        req.yangoCreds
       );
     } catch (e) {
       console.error('Yango stats - transactions fetch failed:', e.message);
@@ -749,7 +762,8 @@ router.get('/stats', async (req, res) => {
       try {
         monthTxns = await fetchAllTransactions(
           monthStart, monthEnd,
-          hasWorkRuleFilter ? driverIds : null
+          hasWorkRuleFilter ? driverIds : null,
+          req.yangoCreds
         );
       } catch (e) {
         console.error('Yango stats - month transactions failed:', e.message);
@@ -969,10 +983,10 @@ router.get('/fleet-status', async (req, res) => {
       offset: 0,
       query: {
         park: {
-          id: process.env.YANGO_PARK_ID
+          id: req.yangoCreds.parkId
         }
       }
-    });
+    }, 3, req.yangoCreds);
 
     const profiles = data.driver_profiles || [];
     const counts = { free: 0, busy: 0, in_order: 0, offline: 0, total: profiles.length };
@@ -1097,7 +1111,7 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
       );
 
       const transactionsData = await Promise.race([
-        fetchAllTransactions(from, to, driverIds),
+        fetchAllTransactions(from, to, driverIds, req.yangoCreds),
         txnTimeout
       ]);
 
@@ -1121,7 +1135,7 @@ router.get('/driver-stats/:yangoDriverId', async (req, res) => {
     // Always fetch orders for activity time + fallback CA
     if (!sent) {
       try {
-        const ordersData = await getCachedOrders(from, to);
+        const ordersData = await getCachedOrders(from, to, req.yangoCreds);
         if (ordersData) {
           const allOrders = ordersData.orders || [];
           const driverOrders = allOrders.filter(o => o.driver && o.driver.id === yangoDriverId);
@@ -1199,8 +1213,8 @@ router.get('/vehicles/all', async (req, res) => {
       const data = await yangoFetch('/v1/parks/cars/list', {
         limit: LIMIT,
         offset,
-        query: { park: { id: process.env.YANGO_PARK_ID } }
-      });
+        query: { park: { id: req.yangoCreds.parkId } }
+      }, 3, req.yangoCreds);
 
       const cars = data.cars || [];
       for (const car of cars) {
@@ -1254,9 +1268,7 @@ router.post('/recharge', async (req, res) => {
       return res.status(400).json({ error: 'Ce chauffeur n\'est pas lié à un profil Yango' });
     }
 
-    const parkId = process.env.YANGO_PARK_ID;
-    const apiKey = process.env.YANGO_API_KEY;
-    const clientId = process.env.YANGO_CLIENT_ID;
+    const { parkId, apiKey, clientId } = req.yangoCreds;
 
     if (!parkId || !apiKey || !clientId) {
       return res.status(500).json({ error: 'Yango API credentials not configured' });
@@ -1341,8 +1353,6 @@ router.get('/balance/:chauffeurId', async (req, res) => {
       return res.status(400).json({ error: 'Ce chauffeur n\'est pas lié à un profil Yango' });
     }
 
-    const parkId = process.env.YANGO_PARK_ID;
-
     const data = await yangoFetch('/v1/parks/driver-profiles/list', {
       fields: {
         account: ['balance'],
@@ -1352,13 +1362,13 @@ router.get('/balance/:chauffeurId', async (req, res) => {
       offset: 0,
       query: {
         park: {
-          id: parkId,
+          id: req.yangoCreds.parkId,
           driver_profile: {
             id: [chauffeur.yangoDriverId]
           }
         }
       }
-    });
+    }, 3, req.yangoCreds);
 
     const profile = (data.driver_profiles || [])[0];
     if (!profile) {

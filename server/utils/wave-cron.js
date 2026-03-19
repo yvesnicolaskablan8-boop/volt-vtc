@@ -8,23 +8,18 @@
 
 const Versement = require('../models/Versement');
 const Chauffeur = require('../models/Chauffeur');
+const { getWaveApiKey } = require('./get-integration-keys');
 
 let _interval = null;
 
 function start() {
-  const waveApiKey = process.env.WAVE_API_KEY;
-  if (!waveApiKey) {
-    console.log('[WaveCron] WAVE_API_KEY non configuree — cron desactive');
-    return;
-  }
-
   console.log('[WaveCron] Demarrage — verification toutes les 5 minutes');
 
   // Premiere verification 30s apres le demarrage
-  setTimeout(() => checkPendingPayments(waveApiKey), 30000);
+  setTimeout(() => checkPendingPayments(), 30000);
 
   // Puis toutes les 5 minutes
-  _interval = setInterval(() => checkPendingPayments(waveApiKey), 5 * 60 * 1000);
+  _interval = setInterval(() => checkPendingPayments(), 5 * 60 * 1000);
 }
 
 function stop() {
@@ -34,8 +29,14 @@ function stop() {
   }
 }
 
-async function checkPendingPayments(waveApiKey) {
+async function checkPendingPayments() {
   try {
+    const waveApiKey = await getWaveApiKey();
+    if (!waveApiKey) {
+      console.log('[WaveCron] WAVE_API_KEY non configuree — verification ignoree');
+      return;
+    }
+
     // Trouver tous les versements Wave en attente
     const pending = await Versement.find({
       statut: 'en_attente',

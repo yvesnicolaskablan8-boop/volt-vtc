@@ -12,15 +12,20 @@
  * - Recalcul du scoreGlobal avec le critere activite
  */
 
+const { getYangoCredentials } = require('./get-integration-keys');
+
 const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
+
+// Module-level credentials, resolved at start of each sync
+let _creds = null;
 
 /**
  * Appel API Yango (POST)
  */
 async function yangoFetch(endpoint, body = {}) {
-  const parkId = process.env.YANGO_PARK_ID;
-  const apiKey = process.env.YANGO_API_KEY;
-  const clientId = process.env.YANGO_CLIENT_ID;
+  const parkId = _creds?.parkId;
+  const apiKey = _creds?.apiKey;
+  const clientId = _creds?.clientId;
 
   if (!parkId || !apiKey || !clientId) {
     throw new Error('Yango API credentials not configured');
@@ -66,7 +71,7 @@ async function fetchYangoDrivers() {
       offset,
       query: {
         park: {
-          id: process.env.YANGO_PARK_ID
+          id: _creds.parkId
           // PAS de filtre work_status → recupere TOUS les chauffeurs
         }
       }
@@ -106,7 +111,7 @@ async function fetchYangoOrders(from, to) {
     limit: 500,
     query: {
       park: {
-        id: process.env.YANGO_PARK_ID,
+        id: _creds.parkId,
         order: { booked_at: { from, to } }
       }
     }
@@ -129,7 +134,7 @@ async function fetchAllTransactions(from, to) {
     const body = {
       query: {
         park: {
-          id: process.env.YANGO_PARK_ID,
+          id: _creds.parkId,
           transaction: { event_at: { from, to } }
         }
       },
@@ -397,6 +402,12 @@ async function syncYangoActivity(date = null) {
   const Chauffeur = require('../models/Chauffeur');
   const Gps = require('../models/Gps');
   const Settings = require('../models/Settings');
+
+  // Resolve Yango credentials (DB first, env fallback)
+  _creds = await getYangoCredentials();
+  if (!_creds.parkId || !_creds.apiKey || !_creds.clientId) {
+    throw new Error('Yango API credentials not configured');
+  }
 
   // Date a synchroniser (defaut: hier pour le CRON de nuit)
   const syncDate = date || (() => {

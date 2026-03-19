@@ -1,9 +1,16 @@
 const express = require('express');
 const Settings = require('../models/Settings');
 const authMiddleware = require('../middleware/auth');
+const { getWaveApiKey, getYangoCredentials, clearCache } = require('../utils/get-integration-keys');
 
 const router = express.Router();
 router.use(authMiddleware);
+
+// Helper: mask API keys for safe display (show last 4 chars)
+function maskKey(str) {
+  if (!str || str.length <= 4) return str ? '••••' : '';
+  return '••••••••' + str.slice(-4);
+}
 
 // GET /api/settings
 router.get('/', async (req, res, next) => {
@@ -32,7 +39,19 @@ router.get('/', async (req, res, next) => {
         }
       });
     }
-    res.json(settings.toJSON());
+    const json = settings.toJSON();
+
+    // Mask integration keys before sending to client
+    if (json.integrations) {
+      if (json.integrations.wave) {
+        json.integrations.wave.apiKey = maskKey(json.integrations.wave.apiKey);
+      }
+      if (json.integrations.yango) {
+        json.integrations.yango.apiKey = maskKey(json.integrations.yango.apiKey);
+      }
+    }
+
+    res.json(json);
   } catch (err) {
     next(err);
   }
@@ -49,14 +68,112 @@ router.put('/', async (req, res, next) => {
       if (req.body.versements) settings.versements = req.body.versements;
       if (req.body.bonus) settings.bonus = req.body.bonus;
       if (req.body.notifications) settings.notifications = req.body.notifications;
+
+      // Handle integrations — skip masked values (user didn't change them)
+      if (req.body.integrations) {
+        if (!settings.integrations) settings.integrations = {};
+
+        if (req.body.integrations.wave) {
+          if (!settings.integrations.wave) settings.integrations.wave = {};
+          const waveData = req.body.integrations.wave;
+          if (waveData.apiKey && !waveData.apiKey.startsWith('••••')) {
+            settings.integrations.wave.apiKey = waveData.apiKey;
+          }
+        }
+
+        if (req.body.integrations.yango) {
+          if (!settings.integrations.yango) settings.integrations.yango = {};
+          const yangoData = req.body.integrations.yango;
+          // parkId and clientId are not masked, always update
+          if (yangoData.parkId !== undefined) settings.integrations.yango.parkId = yangoData.parkId;
+          if (yangoData.clientId !== undefined) settings.integrations.yango.clientId = yangoData.clientId;
+          // apiKey is masked — only update if not masked
+          if (yangoData.apiKey && !yangoData.apiKey.startsWith('••••')) {
+            settings.integrations.yango.apiKey = yangoData.apiKey;
+          }
+        }
+
+        settings.markModified('integrations');
+      }
+
       await settings.save();
+      // Clear integration keys cache so new values take effect immediately
+      clearCache();
     } else {
       // Create new settings
       settings = await Settings.create(req.body);
+      clearCache();
     }
-    res.json(settings.toJSON());
+
+    const json = settings.toJSON();
+    // Mask keys in response
+    if (json.integrations) {
+      if (json.integrations.wave) json.integrations.wave.apiKey = maskKey(json.integrations.wave.apiKey);
+      if (json.integrations.yango) json.integrations.yango.apiKey = maskKey(json.integrations.yango.apiKey);
+    }
+
+    res.json(json);
   } catch (err) {
     next(err);
+  }
+});
+
+// POST /api/settings/test-wave — Test Wave API connection
+router.post('/test-wave', async (req, res) => {
+  try {
+    const apiKey = await getWaveApiKey();
+    if (!apiKey) {
+      return res.json({ success: false, message: 'Cle API Wave non configuree' });
+    }
+
+    const response = await fetch('https://api.wave.com/v1/balance', {
+      headers: { 'Authorization': 'Bearer ' + apiKey }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      res.json({ success: true, message: 'Connexion reussie', data: { currency: data.currency, amount: data.amount } });
+    } else {
+      const text = await response.text();
+      res.json({ success: false, message: 'Erreur Wave: ' + response.status + ' - ' + text });
+    }
+  } catch (err) {
+    res.json({ success: false, message: 'Erreur: ' + err.message });
+  }
+});
+
+// POST /api/settings/test-yango — Test Yango API connection
+router.post('/test-yango', async (req, res) => {
+  try {
+    const creds = await getYangoCredentials();
+    if (!creds.parkId || !creds.apiKey || !creds.clientId) {
+      return res.json({ success: false, message: 'Identifiants Yango incomplets' });
+    }
+
+    const response = await fetch('https://fleet-api.taxi.yandex.net/v1/parks/driver-profiles/list', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Client-ID': creds.clientId,
+        'X-API-Key': creds.apiKey
+      },
+      body: JSON.stringify({
+        query: { park: { id: creds.parkId } },
+        limit: 1,
+        offset: 0
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const count = data.total || data.driver_profiles?.length || 0;
+      res.json({ success: true, message: 'Connexion reussie — ' + count + ' chauffeur(s) trouves' });
+    } else {
+      const text = await response.text();
+      res.json({ success: false, message: 'Erreur Yango: ' + response.status + ' - ' + text });
+    }
+  } catch (err) {
+    res.json({ success: false, message: 'Erreur: ' + err.message });
   }
 });
 
