@@ -67,6 +67,24 @@ const VehiculesPage = {
       return;
     }
 
+    // Delegate to IncidentsPage for incidents tab
+    if (tab === 'incidents') {
+      if (actions) {
+        actions.innerHTML = `
+          <button class="btn btn-outline" onclick="VehiculesPage._renderListTab('flotte')" style="display:flex;align-items:center;gap:6px;">
+            <iconify-icon icon="solar:arrow-left-bold-duotone"></iconify-icon> Flotte
+          </button>
+          <button class="btn btn-primary" onclick="IncidentsPage._addIncident()">
+            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Déclarer un incident
+          </button>
+        `;
+      }
+      content.innerHTML = IncidentsPage._bodyTemplate();
+      IncidentsPage._renderTab(IncidentsPage._activeTab);
+      IncidentsPage._bindTabEvents();
+      return;
+    }
+
     // Delegate to GaragePage for garage tabs
     if (typeof GaragePage !== 'undefined') {
       // Update actions for garage tabs — all action buttons always visible
@@ -107,6 +125,7 @@ const VehiculesPage = {
         <h1><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Véhicules & Garage</h1>
         <div class="page-actions" id="vehicules-page-actions">
           <button class="btn btn-warning" onclick="VehiculesPage._renderListTab('maintenance')" style="display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Garage</button>
+          <button class="btn btn-outline" onclick="VehiculesPage._renderListTab('incidents')" style="display:flex;align-items:center;gap:6px;color:#f97316;border-color:#f97316;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Incidents</button>
           <button class="btn btn-primary" id="btn-add-vehicule"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter</button>
         </div>
       </div>

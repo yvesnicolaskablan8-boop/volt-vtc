@@ -19,21 +19,12 @@ const IncidentsPage = {
 
   // =================== TEMPLATES ===================
 
-  _pageTemplate() {
+  _bodyTemplate() {
     const incidents = Store.get('incidents') || [];
     const ouverts = incidents.filter(i => i.statut === 'ouvert' || i.statut === 'en_cours');
     const coutTotal = incidents.reduce((s, i) => s + (i.coutReel || i.coutEstime || 0), 0);
 
     return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f97316;"></iconify-icon> Incidents & Sinistres</h1>
-        <div class="page-actions">
-          <button class="btn btn-primary" onclick="IncidentsPage._addIncident()">
-            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Déclarer un incident
-          </button>
-        </div>
-      </div>
-
       <!-- Stats header -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:var(--space-lg);">
         <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-secondary);border-left:4px solid #f97316;">
@@ -79,6 +70,20 @@ const IncidentsPage = {
         .incident-gravite.grave { background:rgba(249,115,22,0.12);color:#f97316; }
         .incident-gravite.critique { background:rgba(239,68,68,0.12);color:#ef4444; }
       </style>
+    `;
+  },
+
+  _pageTemplate() {
+    return `
+      <div class="page-header">
+        <h1><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f97316;"></iconify-icon> Incidents & Sinistres</h1>
+        <div class="page-actions">
+          <button class="btn btn-primary" onclick="IncidentsPage._addIncident()">
+            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Déclarer un incident
+          </button>
+        </div>
+      </div>
+      ${this._bodyTemplate()}
     `;
   },
 
