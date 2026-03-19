@@ -2232,14 +2232,17 @@ const VersementsPage = {
 
     const rows = detteData.detteList.map(item => {
       const nbContra = item.items.filter(v => v.source === 'contravention').length;
-      const nbRecette = item.items.length - nbContra;
-      const typeTags = [];
-      if (nbRecette > 0) typeTags.push(`${nbRecette} recette`);
-      if (nbContra > 0) typeTags.push(`<span style="color:#ef4444;">${nbContra} contravention${nbContra > 1 ? 's' : ''}</span>`);
+      const totalContra = item.items.filter(v => v.source === 'contravention').reduce((s, v) => s + (v.manquant || 0), 0);
+      const nbRecette = item.items.filter(v => v.source !== 'contravention').length;
+      const totalRecette = item.total - totalContra;
+      const typeBadges = [];
+      if (nbRecette > 0) typeBadges.push(`<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(245,158,11,0.1);color:#f59e0b;font-weight:700;">${nbRecette} recette${nbRecette > 1 ? 's' : ''} \u2022 ${Utils.formatCurrency(totalRecette)}</span>`);
+      if (nbContra > 0) typeBadges.push(`<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:700;">${nbContra} contravention${nbContra > 1 ? 's' : ''} \u2022 ${Utils.formatCurrency(totalContra)}</span>`);
       return `<div class="dette-row" data-nom="${(item.nom || '').toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${item.nom}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${typeTags.join(' \u2022 ')} \u2022 Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;">${typeBadges.join('')}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:var(--font-size-sm);font-weight:700;color:#f59e0b;">${Utils.formatCurrency(item.total)}</div>
