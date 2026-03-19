@@ -279,8 +279,8 @@ const RentabilitePage = {
   },
 
   _template(d) {
-    const rsiColor = d.rsiGlobal >= 50 ? '#10b981' : d.rsiGlobal >= 0 ? '#f59e0b' : '#ef4444';
-    const rsiBarColor = d.rsiGlobal >= 100 ? '#10b981' : d.rsiGlobal >= 50 ? '#3b82f6' : d.rsiGlobal >= 0 ? '#f59e0b' : '#ef4444';
+    const rsiColor = d.rsiGlobal >= 50 ? '#34d399' : d.rsiGlobal >= 0 ? '#fde68a' : '#fca5a5';
+    const rsiBarColor = d.rsiGlobal >= 100 ? '#34d399' : d.rsiGlobal >= 50 ? '#60a5fa' : d.rsiGlobal >= 0 ? '#fde68a' : '#fca5a5';
     const rsiPct = Math.min(Math.max(d.rsiGlobal, 0), 100);
 
     return `
