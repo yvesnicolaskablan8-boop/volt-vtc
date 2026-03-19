@@ -622,7 +622,7 @@ router.get('/dettes', async (req, res, next) => {
     const Contravention = require('../models/Contravention');
     const contraImpayees = await Contravention.find({
       chauffeurId,
-      statut: 'impayee',
+      statut: { $in: ['impayee', 'contestee'] },
       montant: { $gt: 0 }
     }).lean();
     const contraFromDb = [];

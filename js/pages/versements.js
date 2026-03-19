@@ -3018,12 +3018,14 @@ const VersementsPage = {
       FormBuilder.build(fields),
       () => {
         const body = document.getElementById('modal-body');
-        if (!FormBuilder.validate(body, fields)) return;
+        const cBtn = document.querySelector('#modal-footer [data-action="confirm"]');
+        if (!FormBuilder.validate(body, fields)) { if (cBtn) { cBtn.disabled = false; cBtn.style.opacity = ''; cBtn.style.pointerEvents = ''; } return; }
         const values = FormBuilder.getValues(body);
         const montant = parseFloat(values.montant) || 0;
 
         if (montant <= 0) {
           Toast.error('Le montant doit être supérieur à 0');
+          if (cBtn) { cBtn.disabled = false; cBtn.style.opacity = ''; cBtn.style.pointerEvents = ''; }
           return;
         }
 
@@ -3202,12 +3204,18 @@ const VersementsPage = {
       });
     }
 
-    // Bouton confirmer
+    // Bouton confirmer — protection anti-double-clic
     const confirmBtn = document.getElementById('edi-confirm-btn');
     if (confirmBtn) {
       confirmBtn.addEventListener('click', () => {
+        // Anti-double-clic : désactiver immédiatement
+        if (confirmBtn.disabled) return;
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = '0.5';
+        confirmBtn.style.pointerEvents = 'none';
+
         const paye = parseFloat(document.getElementById('edi-montant')?.value) || 0;
-        if (paye <= 0) { Toast.error('Montant invalide'); return; }
+        if (paye <= 0) { Toast.error('Montant invalide'); confirmBtn.disabled = false; confirmBtn.style.opacity = ''; confirmBtn.style.pointerEvents = ''; return; }
         const dateEnc = document.getElementById('edi-date')?.value || today;
         const moyen = document.getElementById('edi-moyen')?.value || 'especes';
         const commentaire = document.getElementById('edi-commentaire')?.value || '';

@@ -36,11 +36,23 @@ const Modal = {
 
     document.getElementById('modal-overlay').classList.add('active');
 
-    // Bind footer buttons
+    // Bind footer buttons — anti-double-clic protection
     const confirmBtn = document.querySelector('#modal-footer [data-action="confirm"]');
     if (confirmBtn) {
       confirmBtn.addEventListener('click', () => {
+        if (confirmBtn.disabled) return;
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = '0.5';
+        confirmBtn.style.pointerEvents = 'none';
         if (this._onConfirm) this._onConfirm();
+        // Si le modal est toujours ouvert après le callback (validation échouée), ré-activer le bouton
+        setTimeout(() => {
+          if (this._isOpen && confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.style.opacity = '';
+            confirmBtn.style.pointerEvents = '';
+          }
+        }, 300);
       });
     }
 
