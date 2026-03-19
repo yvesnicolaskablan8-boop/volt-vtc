@@ -476,6 +476,18 @@ const RentabilitePage = {
       const v = a.vehicule;
       const isLeasing = v.typeAcquisition === 'leasing';
       const label = v.immatriculation ? v.marque + ' ' + v.modele + ' (' + v.immatriculation + ')' : v.marque + ' ' + v.modele;
+      // Véhicule non configuré
+      if (!v.typeAcquisition || (isLeasing && !v.mensualiteLeasing) || (!isLeasing && !v.prixAchat)) {
+        return '<div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);border:1px dashed var(--border-color);">'
+          + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">'
+          + '<div style="display:flex;align-items:center;gap:8px;">'
+          + '<span class="badge badge-neutral" style="font-size:10px;">Non configuré</span>'
+          + '<span style="font-size:13px;font-weight:700;color:var(--text-primary);">' + label + '</span>'
+          + '</div>'
+          + '<button class="btn btn-sm btn-primary" onclick="RentabilitePage._editPaiement(\'' + v.id + '\')" style="font-size:11px;padding:4px 12px;">'
+          + '<iconify-icon icon="solar:settings-bold-duotone"></iconify-icon> Configurer</button>'
+          + '</div></div>';
+      }
       if (isLeasing) {
         const duree = v.dureeLeasing || 36;
         const paid = a.mensualitesPaid;
@@ -542,71 +554,116 @@ const RentabilitePage = {
   _editPaiement(vehiculeId) {
     const v = Store.findById('vehicules', vehiculeId);
     if (!v) return;
-    const duree = v.dureeLeasing || 36;
+    const isLeasing = v.typeAcquisition === 'leasing';
     const autoFill = v.autoFillLeasing !== false;
-    // Calculer la valeur auto actuelle
     const now = new Date();
     const startDate = new Date(v.dateAcquisition || v.dateCreation);
     const monthsAuto = Math.max(1, Math.ceil((now - startDate) / (30 * 24 * 60 * 60 * 1000)));
+    const duree = v.dureeLeasing || 36;
     const currentPaid = autoFill ? Math.min(monthsAuto, duree) : (v.mensualitesPaid || 0);
+    const prixAchat = v.prixAchat || 0;
+    const montantPaye = typeof v.montantPaye === 'number' ? v.montantPaye : prixAchat;
+    const vLabel = (v.marque || '') + ' ' + (v.modele || '');
 
     Modal.form(
-      '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#6366f1;"></iconify-icon> Paiements leasing — ' + (v.marque || '') + ' ' + (v.modele || ''),
-      `<div class="form-group">
-        <label class="form-label">Mensualités payées</label>
-        <input type="number" name="mensualitesPaid" class="form-control" value="${currentPaid}" min="0" max="${duree}" step="1">
-        <small style="color:var(--text-muted);margin-top:4px;display:block;">Sur ${duree} mensualités au total — ${Utils.formatCurrency(v.mensualiteLeasing || 0)} / mois</small>
+      '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#6366f1;"></iconify-icon> Acquisition & Paiements — ' + vLabel,
+      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Type d'acquisition</label>
+          <select name="typeAcquisition" class="form-control" onchange="RentabilitePage._onTypeChange(this.value)">
+            <option value="leasing" ${isLeasing ? 'selected' : ''}>Leasing</option>
+            <option value="cash" ${!isLeasing ? 'selected' : ''}>Cash</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date d'acquisition</label>
+          <input type="date" name="dateAcquisition" class="form-control" value="${v.dateAcquisition || ''}">
+        </div>
       </div>
-      <div class="form-group" style="margin-top:12px;">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-          <input type="checkbox" name="autoFillLeasing" ${autoFill ? 'checked' : ''} style="accent-color:#6366f1;">
-          <span class="form-label" style="margin:0;">Remplissage automatique</span>
-        </label>
-        <small style="color:var(--text-muted);margin-top:4px;display:block;">Calcule automatiquement le nombre de mensualités depuis la date d'acquisition</small>
+      <div class="form-group">
+        <label class="form-label">Prix d'achat / Valeur véhicule (FCFA)</label>
+        <input type="number" name="prixAchat" class="form-control" value="${prixAchat}" min="0" step="100000">
+      </div>
+      <div id="rent-leasing-fields" style="${isLeasing ? '' : 'display:none;'}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Mensualité leasing (FCFA)</label>
+            <input type="number" name="mensualiteLeasing" class="form-control" value="${v.mensualiteLeasing || ''}" min="0" step="10000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Durée leasing (mois)</label>
+            <input type="number" name="dureeLeasing" class="form-control" value="${duree}" min="1" step="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Apport initial (FCFA)</label>
+          <input type="number" name="apportInitial" class="form-control" value="${v.apportInitial || 0}" min="0" step="10000">
+        </div>
+        <hr style="border-color:var(--border-color);margin:16px 0;">
+        <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px;"><iconify-icon icon="solar:calendar-bold-duotone" style="color:#6366f1;"></iconify-icon> Suivi des mensualités</div>
+        <div class="form-group">
+          <label class="form-label">Mensualités payées</label>
+          <input type="number" name="mensualitesPaid" class="form-control" value="${currentPaid}" min="0" max="${duree}" step="1">
+        </div>
+        <div class="form-group" style="margin-top:8px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" name="autoFillLeasing" ${autoFill ? 'checked' : ''} style="accent-color:#6366f1;">
+            <span class="form-label" style="margin:0;">Remplissage automatique</span>
+          </label>
+          <small style="color:var(--text-muted);margin-top:4px;display:block;">Calcule le nombre de mensualités depuis la date d'acquisition</small>
+        </div>
+      </div>
+      <div id="rent-cash-fields" style="${!isLeasing ? '' : 'display:none;'}">
+        <hr style="border-color:var(--border-color);margin:16px 0;">
+        <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px;"><iconify-icon icon="solar:money-bag-bold-duotone" style="color:#10b981;"></iconify-icon> Suivi du paiement</div>
+        <div class="form-group">
+          <label class="form-label">Montant payé (FCFA)</label>
+          <input type="number" name="montantPaye" class="form-control" value="${montantPaye}" min="0" step="10000">
+        </div>
+        <div class="form-group" style="margin-top:8px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" name="payeIntegral" ${montantPaye >= prixAchat ? 'checked' : ''} onchange="this.closest('.modal-body').querySelector('[name=montantPaye]').value = this.checked ? this.closest('.modal-body').querySelector('[name=prixAchat]').value : '0'" style="accent-color:#10b981;">
+            <span class="form-label" style="margin:0;">Payé intégralement</span>
+          </label>
+        </div>
       </div>`,
       () => {
         const body = document.querySelector('.modal-body');
-        const mensualitesPaid = parseInt(body.querySelector('[name=mensualitesPaid]').value) || 0;
-        const autoFillLeasing = body.querySelector('[name=autoFillLeasing]').checked;
-        Store.update('vehicules', vehiculeId, {
-          mensualitesPaid: autoFillLeasing ? undefined : mensualitesPaid,
-          autoFillLeasing
-        });
+        const data = {
+          typeAcquisition: body.querySelector('[name=typeAcquisition]').value,
+          dateAcquisition: body.querySelector('[name=dateAcquisition]').value || undefined,
+          prixAchat: parseInt(body.querySelector('[name=prixAchat]').value) || 0
+        };
+        if (data.typeAcquisition === 'leasing') {
+          data.mensualiteLeasing = parseInt(body.querySelector('[name=mensualiteLeasing]').value) || 0;
+          data.dureeLeasing = parseInt(body.querySelector('[name=dureeLeasing]').value) || 36;
+          data.apportInitial = parseInt(body.querySelector('[name=apportInitial]').value) || 0;
+          const autoFillLeasing = body.querySelector('[name=autoFillLeasing]').checked;
+          data.autoFillLeasing = autoFillLeasing;
+          if (!autoFillLeasing) {
+            data.mensualitesPaid = parseInt(body.querySelector('[name=mensualitesPaid]').value) || 0;
+          }
+        } else {
+          data.montantPaye = parseInt(body.querySelector('[name=montantPaye]').value) || 0;
+        }
+        Store.update('vehicules', vehiculeId, data);
         Modal.close();
         this.render();
       },
-      'md'
+      'lg'
     );
   },
 
   _editPaiementCash(vehiculeId) {
-    const v = Store.findById('vehicules', vehiculeId);
-    if (!v) return;
-    const prixAchat = v.prixAchat || 0;
-    const montantPaye = typeof v.montantPaye === 'number' ? v.montantPaye : prixAchat;
+    // Redirige vers le même modal unifié
+    this._editPaiement(vehiculeId);
+  },
 
-    Modal.form(
-      '<iconify-icon icon="solar:money-bag-bold-duotone" style="color:#10b981;"></iconify-icon> Paiement cash — ' + (v.marque || '') + ' ' + (v.modele || ''),
-      `<div class="form-group">
-        <label class="form-label">Montant payé (FCFA)</label>
-        <input type="number" name="montantPaye" class="form-control" value="${montantPaye}" min="0" step="10000">
-        <small style="color:var(--text-muted);margin-top:4px;display:block;">Prix d'achat total : ${Utils.formatCurrency(prixAchat)}</small>
-      </div>
-      <div class="form-group" style="margin-top:12px;">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-          <input type="checkbox" name="payeIntegral" ${montantPaye >= prixAchat ? 'checked' : ''} onchange="this.closest('.modal-body').querySelector('[name=montantPaye]').value = this.checked ? '${prixAchat}' : '0'" style="accent-color:#10b981;">
-          <span class="form-label" style="margin:0;">Payé intégralement</span>
-        </label>
-      </div>`,
-      () => {
-        const body = document.querySelector('.modal-body');
-        const montantPaye = parseInt(body.querySelector('[name=montantPaye]').value) || 0;
-        Store.update('vehicules', vehiculeId, { montantPaye });
-        Modal.close();
-        this.render();
-      },
-      'md'
-    );
+  _onTypeChange(type) {
+    const leasingFields = document.getElementById('rent-leasing-fields');
+    const cashFields = document.getElementById('rent-cash-fields');
+    if (leasingFields) leasingFields.style.display = type === 'leasing' ? '' : 'none';
+    if (cashFields) cashFields.style.display = type === 'cash' ? '' : 'none';
   },
 
   _chartDefaults() {
