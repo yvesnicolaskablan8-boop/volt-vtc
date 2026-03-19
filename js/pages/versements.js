@@ -2179,8 +2179,8 @@ const VersementsPage = {
       if (!ch || ch.statut === 'inactif') return;
       const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
       if (redevance <= 0) return;
-      // Vérifier s'il y a un versement validé/supprimé/perte pour ce chauffeur ce jour
-      const hasPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte' || v.traitementManquant === 'perte'));
+      // Vérifier s'il y a un versement validé ou perte pour ce chauffeur ce jour (PAS supprimé)
+      const hasPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && v.statut !== 'supprime' && (v.statut === 'valide' || v.statut === 'partiel' || v.traitementManquant === 'perte'));
       // Vérifier s'il y a déjà une dette explicite pour ce chauffeur ce jour
       const hasExplicitDette = dettes.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date);
       if (!hasPayment && !hasExplicitDette) {
