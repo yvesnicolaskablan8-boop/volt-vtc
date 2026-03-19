@@ -147,6 +147,8 @@ const RentabilitePage = {
         monthlyProfit: Math.round(monthlyProfit),
         roi,
         bookValue: Math.round(bookValueCalc),
+        vehiculeDepenses,
+        vehiculeReparations,
         courses: vCourses.length,
         coutParKm: Math.round(coutParKm),
         mensualitesPaid
@@ -369,6 +371,20 @@ const RentabilitePage = {
           <div class="rent-progress-fill" style="width:${rsiPct}%;"></div>
         </div>
         <div style="text-align:right;margin-top:8px;font-size:12px;font-weight:700;color:${rsiBarColor};">${rsiPct.toFixed(0)}% récupéré</div>
+
+        <div style="margin-top:16px;padding:14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);">
+          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:8px;"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Détail du calcul</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
+            <div style="color:rgba(255,255,255,.4);">Revenus (versements) :</div><div style="color:#34d399;font-weight:600;text-align:right;">+ ${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
+            <div style="color:rgba(255,255,255,.4);">Coûts opérationnels :</div><div style="color:#f87171;font-weight:600;text-align:right;">− ${Utils.formatCurrency(d.fleetTotalCost - d.investPaye)}</div>
+            <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont énergie :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.energyCost, 0))}</div>
+            <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont assurance :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.assuranceTotal, 0))}</div>
+            <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont maintenance :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.maintenanceTotal, 0))}</div>
+            <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont dépenses :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.vehiculeDepenses, 0))}</div>
+            <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont réparations :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.vehiculeReparations, 0))}</div>
+            <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:rgba(255,255,255,.6);font-weight:700;">= Profit d'exploitation :</div><div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:${d.resultatCumule >= 0 ? '#34d399' : '#f87171'};font-weight:700;text-align:right;">${Utils.formatCurrency(d.resultatCumule)}</div>
+          </div>
+        </div>
       </div>
 
 
