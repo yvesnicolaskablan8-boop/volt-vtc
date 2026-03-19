@@ -78,15 +78,12 @@ console.log('[Server] __dirname:', __dirname);
 console.log('[Server] Frontend path:', frontendPath);
 console.log('[Server] index.html exists:', fs.existsSync(path.join(frontendPath, 'index.html')));
 
-app.use(express.static(frontendPath));
-
-// Landing page — served at root "/" for visitors
+// Landing page — served at root "/" for visitors (BEFORE static middleware)
 app.get('/', (req, res) => {
   const landingFile = path.join(frontendPath, 'landing.html');
   if (fs.existsSync(landingFile)) {
     return res.sendFile(landingFile);
   }
-  // Fallback to admin app if landing doesn't exist
   const indexFile = path.join(frontendPath, 'index.html');
   if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
   res.status(503).send('App en cours de mise a jour.');
@@ -98,6 +95,9 @@ app.get('/app', (req, res) => {
   if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
   res.status(503).send('Admin app not found');
 });
+
+// Static files (CSS, JS, images, etc.) — after explicit routes
+app.use(express.static(frontendPath, { index: false }));
 
 // SPA fallback - serve index.html for non-API routes
 app.get('*', (req, res) => {
