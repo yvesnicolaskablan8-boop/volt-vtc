@@ -364,22 +364,12 @@ const VersementsPage = {
         let filtered = [...versements];
         if (filterChauffeur.value) filtered = filtered.filter(v => v.chauffeurId === filterChauffeur.value);
         if (filterStatut.value) filtered = filtered.filter(v => v.statut === filterStatut.value);
-        // Filtre par date de paiement
+        // Filtre par date de paiement (calendrier)
         if (filterDatePaiement && filterDatePaiement.value) {
-          const now = new Date();
-          const todayStr = now.toISOString().split('T')[0];
-          const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
-          const mondayOfWeek = new Date(now); mondayOfWeek.setDate(mondayOfWeek.getDate() - ((mondayOfWeek.getDay() + 6) % 7));
-          const mondayStr = mondayOfWeek.toISOString().split('T')[0];
-          const firstOfMonth = todayStr.substring(0, 8) + '01';
+          const selectedDate = filterDatePaiement.value;
           filtered = filtered.filter(v => {
             const payDate = v.dateCreation ? v.dateCreation.split('T')[0] : (v.dateValidation ? v.dateValidation.split('T')[0] : v.date);
-            if (filterDatePaiement.value === 'today') return payDate === todayStr;
-            if (filterDatePaiement.value === 'yesterday') return payDate === yesterdayStr;
-            if (filterDatePaiement.value === 'week') return payDate >= mondayStr && payDate <= todayStr;
-            if (filterDatePaiement.value === 'month') return payDate >= firstOfMonth && payDate <= todayStr;
-            return true;
+            return payDate === selectedDate;
           });
         }
         const container = document.getElementById('versements-list');
@@ -467,13 +457,7 @@ const VersementsPage = {
           <option value="retard">En retard</option>
           <option value="partiel">Partiel</option>
         </select>
-        <select class="form-control" id="filter-date-paiement" style="width:180px;font-size:var(--font-size-xs);">
-          <option value="">Toutes p\u00e9riodes</option>
-          <option value="today">Pay\u00e9s aujourd'hui</option>
-          <option value="yesterday">Pay\u00e9s hier</option>
-          <option value="week">Cette semaine</option>
-          <option value="month">Ce mois</option>
-        </select>
+        <input type="date" class="form-control" id="filter-date-paiement" style="width:160px;font-size:var(--font-size-xs);" title="Filtrer par date de paiement">
       </div>
       <div id="versements-list" style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto;">
         ${rows}
