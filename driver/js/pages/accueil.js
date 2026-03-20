@@ -92,11 +92,6 @@ const AccueilPage = {
       upcomingDays.push({ date: d, dateStr: dStr, planning: planningMap[dStr] || null });
     }
 
-    // === Service card ===
-    const serviceJour = data.serviceJour || null;
-    this._objectifTempsEnLigne = data.objectifTempsEnLigne || 630;
-    const serviceCardHTML = this._buildServiceCard(creneau, serviceJour, this._objectifTempsEnLigne);
-
     // === Today's shift card ===
     let todayShiftHTML = '';
     if (creneau) {
@@ -159,9 +154,6 @@ const AccueilPage = {
 
       <!-- Countdown deadline versement -->
       ${countdownHTML}
-
-      <!-- Service / Pointage -->
-      ${serviceCardHTML}
 
       <!-- Activite Yango -->
       <div class="card" id="yango-activity-card" style="display:none;">
