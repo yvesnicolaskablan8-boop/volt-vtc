@@ -628,15 +628,31 @@ router.get('/dettes', async (req, res, next) => {
     }).lean();
 
     // Collect contravention IDs already covered by explicit debt versements
+    // Check both exact match and partial match (CHF_xxx vs xxx, or reference containing the ID)
     const coveredContraIds = new Set();
+    const coveredContraDates = new Map(); // date+montant as fallback dedup
     for (const v of dettesExplicites) {
-      if (isContravention(v) && v.reference) coveredContraIds.add(v.reference);
+      if (isContravention(v)) {
+        if (v.reference) {
+          coveredContraIds.add(v.reference);
+          // Also add without CHF prefix if present
+          if (v.reference.startsWith('CHF')) {
+            coveredContraIds.add(v.reference.replace(/^CHF[_-]?/, ''));
+          }
+        }
+        // Fallback: track date+montant to catch mismatched references
+        const key = `${v.date}_${v.manquant}`;
+        coveredContraDates.set(key, true);
+      }
     }
 
     const contraFromDb = [];
     for (const c of contraImpayees) {
-      // Skip if already represented by an explicit dette versement (by reference or by date+montant match)
+      // Skip if already represented by an explicit dette versement
       if (coveredContraIds.has(c.id)) continue;
+      // Fallback dedup by date+montant
+      const dateKey = `${c.date}_${c.montant}`;
+      if (coveredContraDates.has(dateKey)) continue;
       const hasVersement = allVersements.some(v => v.reference === c.id && (v.statut === 'valide' || v.statut === 'supprime'));
       if (!hasVersement) {
         contraFromDb.push({
