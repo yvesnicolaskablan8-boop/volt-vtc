@@ -407,35 +407,25 @@ const VersementsPage = {
       });
     }
 
-    // Search + period filter in dettes sections
+    // Search + date filter in dettes sections
     const applyDetteFilters = (targetId) => {
       const searchInput = document.querySelector(`.dette-search-input[data-target="${targetId}"]`);
-      const periodSelect = document.querySelector(`.dette-period-filter[data-target="${targetId}"]`);
+      const dateInput = document.querySelector(`.dette-date-filter[data-target="${targetId}"]`);
       const q = (searchInput?.value || '').toLowerCase().trim();
-      const period = periodSelect?.value || '';
-      const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-      const mondayOfWeek = new Date(now); mondayOfWeek.setDate(mondayOfWeek.getDate() - ((mondayOfWeek.getDay() + 6) % 7));
-      const mondayStr = mondayOfWeek.toISOString().split('T')[0];
-      const firstOfMonth = todayStr.substring(0, 8) + '01';
+      const selectedDate = dateInput?.value || '';
       const rows = document.querySelectorAll(`#${targetId} .dette-row`);
       rows.forEach(row => {
         let show = true;
         if (q && !row.dataset.nom.includes(q)) show = false;
-        if (show && period) {
+        if (show && selectedDate) {
           const dateStr = row.dataset.date || '';
-          if (period === 'today') show = dateStr === todayStr;
-          else if (period === 'yesterday') show = dateStr === yesterdayStr;
-          else if (period === 'week') show = dateStr >= mondayStr && dateStr <= todayStr;
-          else if (period === 'month') show = dateStr >= firstOfMonth && dateStr <= todayStr;
+          show = dateStr === selectedDate;
         }
         row.style.display = show ? '' : 'none';
       });
     };
-    document.querySelectorAll('.dette-search-input, .dette-period-filter').forEach(el => {
-      el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => applyDetteFilters(el.dataset.target));
+    document.querySelectorAll('.dette-search-input, .dette-date-filter').forEach(el => {
+      el.addEventListener(el.tagName === 'INPUT' && el.type === 'date' ? 'change' : 'input', () => applyDetteFilters(el.dataset.target));
     });
 
     // Add button
@@ -2296,13 +2286,7 @@ const VersementsPage = {
           <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
           <input type="text" class="form-control dette-search-input" data-target="${id}" placeholder="Rechercher..." style="padding-left:30px;font-size:var(--font-size-xs);">
         </div>
-        <select class="form-control dette-period-filter" data-target="${id}" style="width:160px;font-size:var(--font-size-xs);">
-          <option value="">Toutes p\u00e9riodes</option>
-          <option value="today">Aujourd'hui</option>
-          <option value="yesterday">Hier</option>
-          <option value="week">Cette semaine</option>
-          <option value="month">Ce mois</option>
-        </select>
+        <input type="date" class="form-control dette-date-filter" data-target="${id}" style="width:160px;font-size:var(--font-size-xs);" placeholder="Choisir un jour">
       </div>`;
 
     // Section recettes
