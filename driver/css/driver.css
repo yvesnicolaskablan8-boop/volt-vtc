@@ -1174,47 +1174,225 @@ body {
   color: var(--text-primary);
 }
 
-/* ========== DAY CARD (Planning) ========== */
-.day-card {
-  background: white;
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 8px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  border: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* ========== PLANNING GRID CALENDAR ========== */
+.planning-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 8px;
 }
 
-.day-card.today {
-  border-color: #3b82f6;
-  background: #eff6ff;
-}
-
-.day-info {
+.planning-col {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
-.day-name {
-  font-size: 0.85rem;
+.planning-col-header {
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+.planning-day-abbr {
+  font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text-primary);
-  text-transform: capitalize;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.day-date {
-  font-size: 0.75rem;
+.planning-day-num {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.planning-col.today .planning-day-num {
+  color: #22c55e;
+}
+
+.planning-col.today .planning-day-abbr {
+  color: #22c55e;
+}
+
+.planning-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  padding: 0 2px;
+}
+
+.planning-slot {
+  height: 38px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+
+.planning-slot.active {
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.planning-slot.active .slot-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #22c55e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.65rem;
+}
+
+.planning-slot.empty {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.planning-slot.absence {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.planning-slot.absence .slot-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f87171;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.6rem;
+}
+
+.planning-slot.repos {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.planning-slot.repos .slot-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.6rem;
+}
+
+/* Planning legend */
+.planning-legend {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.planning-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
   color: var(--text-muted);
 }
 
-.day-notes {
-  font-size: 0.72rem;
+.planning-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.planning-legend-dot.green { background: #22c55e; }
+.planning-legend-dot.gray { background: #94a3b8; }
+.planning-legend-dot.red { background: #f87171; }
+
+/* Planning detail popover */
+.planning-detail {
+  background: var(--glass-bg, rgba(255,255,255,0.85));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.3));
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 12px;
+  box-shadow: var(--shadow-elevated, 0 8px 32px rgba(0,0,0,0.08));
+}
+
+.planning-detail-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.planning-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 0.82rem;
   color: var(--text-secondary);
-  font-style: italic;
-  margin-top: 2px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.planning-detail-row:last-child {
+  border-bottom: none;
+}
+
+/* FAB for absence request */
+.planning-fab {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: white;
+  border: none;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+  cursor: pointer;
+  z-index: 50;
+  transition: transform 0.15s;
+}
+
+.planning-fab:active {
+  transform: scale(0.93);
+}
+
+/* Dark mode planning */
+[data-theme="dark"] .planning-slot.active {
+  background: rgba(34, 197, 94, 0.15);
+}
+
+[data-theme="dark"] .planning-slot.empty {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .planning-slot.absence {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+[data-theme="dark"] .planning-slot.repos {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+[data-theme="dark"] .planning-detail {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* ========== STATS SUMMARY ========== */
