@@ -12,9 +12,13 @@ function maskKey(str) {
   return '••••••••' + str.slice(-4);
 }
 
-// Helper: get tenant filter
+// Helper: get tenant filter — returns null if no entrepriseId (legacy user)
 function tenantFilter(req) {
-  return req.user.entrepriseId ? { entrepriseId: req.user.entrepriseId } : {};
+  // Backward compat: allow null entrepriseId for pre-migration users
+  // After migration, this should reject
+  if (req.user.entrepriseId) return { entrepriseId: req.user.entrepriseId };
+  // Legacy fallback: no tenant scoping for unmigrated users
+  return {};
 }
 
 // GET /api/settings
@@ -65,8 +69,8 @@ router.get('/', async (req, res, next) => {
     json.integrations.wave.source = json.integrations.wave.apiKey ? 'db' : (process.env.WAVE_API_KEY ? 'env' : 'none');
 
     json.integrations.yango.apiKey = maskKey(yangoKey);
-    json.integrations.yango.parkId = yangoParkId;
-    json.integrations.yango.clientId = yangoClientId;
+    json.integrations.yango.parkId = maskKey(yangoParkId);
+    json.integrations.yango.clientId = maskKey(yangoClientId);
     json.integrations.yango.configured = !!(yangoKey && yangoParkId);
     json.integrations.yango.source = json.integrations.yango.parkId ? 'db' : (process.env.YANGO_PARK_ID ? 'env' : 'none');
 
@@ -104,8 +108,8 @@ router.put('/', async (req, res, next) => {
         if (req.body.integrations.yango) {
           if (!settings.integrations.yango) settings.integrations.yango = {};
           const yangoData = req.body.integrations.yango;
-          if (yangoData.parkId !== undefined) settings.integrations.yango.parkId = yangoData.parkId;
-          if (yangoData.clientId !== undefined) settings.integrations.yango.clientId = yangoData.clientId;
+          if (yangoData.parkId !== undefined && !yangoData.parkId.startsWith('••••')) settings.integrations.yango.parkId = yangoData.parkId;
+          if (yangoData.clientId !== undefined && !yangoData.clientId.startsWith('••••')) settings.integrations.yango.clientId = yangoData.clientId;
           if (yangoData.apiKey && !yangoData.apiKey.startsWith('••••')) {
             settings.integrations.yango.apiKey = yangoData.apiKey;
           }

@@ -83,7 +83,23 @@ async function genererTachesRecurrentes() {
 
       for (const tacheModele of tachesRecurrentes) {
         try {
-          // Creer une nouvelle instance de la tache
+          // Atomically claim this recurring task by advancing prochaineExecution
+          const prochaineDate = calculerProchaineExecution(
+            tacheModele.recurrence,
+            tacheModele.joursSemaine,
+            tacheModele.jourMois,
+            tacheModele.prochaineExecution
+          );
+
+          const claimed = await Tache.findOneAndUpdate(
+            { id: tacheModele.id, prochaineExecution: { $lte: today } },
+            { $set: { prochaineExecution: prochaineDate, dateModification: new Date().toISOString() } }
+          );
+
+          // If null, another run already claimed it — skip
+          if (!claimed) continue;
+
+          // Create the child task instance
           const nouvelleTache = new Tache({
             id: generateId(),
             entrepriseId: entrepriseId || undefined,
@@ -101,23 +117,9 @@ async function genererTachesRecurrentes() {
             dateModification: new Date().toISOString(),
             commentaire: tacheModele.commentaire,
             recurrenceParentId: tacheModele.id
-            // Pas de recurrence sur l'instance generee
           });
 
           await nouvelleTache.save();
-
-          // Calculer la prochaine execution
-          const prochaineDate = calculerProchaineExecution(
-            tacheModele.recurrence,
-            tacheModele.joursSemaine,
-            tacheModele.jourMois,
-            tacheModele.prochaineExecution
-          );
-
-          await Tache.findOneAndUpdate(
-            { id: tacheModele.id },
-            { $set: { prochaineExecution: prochaineDate, dateModification: new Date().toISOString() } }
-          );
 
           console.log(`[TacheCron] Tache "${tacheModele.titre}" generee → prochaine: ${prochaineDate}`);
         } catch (err) {

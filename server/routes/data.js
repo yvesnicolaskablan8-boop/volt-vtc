@@ -145,7 +145,7 @@ router.post('/fix-manquants', async (req, res, next) => {
 
       // Ne mettre a jour que si les valeurs ont change
       if (v.manquant !== manquant || v.traitementManquant !== traitementManquant || (v.statut !== newStatut && v.statut !== 'supprime')) {
-        await Versement.updateOne({ id: v.id }, {
+        await Versement.updateOne({ id: v.id, ...(v.entrepriseId ? { entrepriseId: v.entrepriseId } : {}) }, {
           manquant,
           traitementManquant,
           statut: newStatut

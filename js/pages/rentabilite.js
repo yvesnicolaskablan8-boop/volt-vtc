@@ -117,7 +117,7 @@ const RentabilitePage = {
 
       // Depreciation rate: EVs retain value better (15%/year vs 20%/year)
       const depreciationRate = isEV ? 0.85 : 0.80;
-      const bookValueCalc = v.prixAchat * Math.pow(depreciationRate, yearsInService);
+      const bookValueCalc = (v.prixAchat || 0) * Math.pow(depreciationRate, yearsInService);
 
       // Cost per km
       const coutParKm = v.kilometrage > 0 ? totalCost / v.kilometrage : 0;

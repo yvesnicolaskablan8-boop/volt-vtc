@@ -101,7 +101,7 @@ app.use(express.static(frontendPath, { index: false }));
 
 // SPA fallback - serve index.html for non-API routes
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) return;
+  if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Route not found' });
   const indexFile = path.join(frontendPath, 'index.html');
   if (req.path.startsWith('/driver')) {
     const f = path.join(frontendPath, 'driver', 'index.html');

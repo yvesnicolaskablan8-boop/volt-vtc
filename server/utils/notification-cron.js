@@ -97,19 +97,12 @@ async function runChecks() {
       const chauffeurs = await Chauffeur.find(chauffeurFilter).lean();
       if (chauffeurs.length === 0) return;
 
-      // === CHECK 6 : Dettes automatiques (TOUJOURS, indépendant des settings notif) ===
-      await checkMissingPaymentDebts(chauffeurs, null, entrepriseId);
-
       // Charger les settings pour les notifications
       const settingsFilter = {};
       if (entrepriseId) settingsFilter.entrepriseId = entrepriseId;
       const settings = await Settings.findOne(settingsFilter).lean();
-      if (!settings || !settings.notifications) return;
 
-      const notifSettings = settings.notifications;
-
-      // Verifier si au moins un canal est actif
-      if (!notifSettings.pushActif && !notifSettings.smsActif && !notifSettings.whatsappActif) return;
+      const notifSettings = (settings && settings.notifications) ? settings.notifications : {};
 
       // Determiner le canal optimal selon les toggles actifs
       const canaux = [];
@@ -117,13 +110,19 @@ async function runChecks() {
       if (notifSettings.smsActif) canaux.push('sms');
       if (notifSettings.whatsappActif) canaux.push('whatsapp');
 
-      let canal;
+      let canal = null;
       if (canaux.length === 3) canal = 'all';
       else if (canaux.length === 2) {
         if (canaux.includes('push') && canaux.includes('sms')) canal = 'both';
         else if (canaux.includes('push') && canaux.includes('whatsapp')) canal = 'push+whatsapp';
         else canal = 'sms+whatsapp';
-      } else canal = canaux[0];
+      } else if (canaux.length === 1) canal = canaux[0];
+
+      // === CHECK 6 : Dettes automatiques (TOUJOURS, indépendant des settings notif) ===
+      await checkMissingPaymentDebts(chauffeurs, canal, entrepriseId);
+
+      // Si pas de settings notif ou pas de canal actif, on s'arrete la
+      if (!settings || !settings.notifications || canaux.length === 0) return;
 
       // === CHECK 1 : Deadline versement ===
       if (notifSettings.rappelDeadline24h || notifSettings.rappelDeadline1h) {
@@ -190,7 +189,7 @@ async function checkDeadlineReminders(chauffeurs, settings, canal, now, entrepri
 
     // Rappel 24h
     if (notifSettings.rappelDeadline24h && remainingH <= 24 && remainingH > 1) {
-      const key = `deadline_24h_${c.id}_${deadlineInfo.deadlineDate.toISOString().split('T')[0]}`;
+      const key = `deadline_24h_${entrepriseId || 'g'}_${c.id}_${deadlineInfo.deadlineDate.toISOString().split('T')[0]}`;
       if (!_sentToday.has(key)) {
         const heures = Math.floor(remainingH);
         await notifService.notify(
@@ -207,7 +206,7 @@ async function checkDeadlineReminders(chauffeurs, settings, canal, now, entrepri
 
     // Rappel 1h
     if (notifSettings.rappelDeadline1h && remainingH <= 1 && remainingH > 0) {
-      const key = `deadline_1h_${c.id}_${deadlineInfo.deadlineDate.toISOString().split('T')[0]}`;
+      const key = `deadline_1h_${entrepriseId || 'g'}_${c.id}_${deadlineInfo.deadlineDate.toISOString().split('T')[0]}`;
       if (!_sentToday.has(key)) {
         const minutes = Math.floor(remainingH * 60);
         await notifService.notify(
@@ -239,7 +238,7 @@ async function checkLatePayments(chauffeurs, deadlineInfo, settings, canal, entr
 
     if (versementPeriode) continue; // A paye
 
-    const key = `deadline_retard_${c.id}_${deadlineInfo.deadlineDate.toISOString().split('T')[0]}`;
+    const key = `deadline_retard_${entrepriseId || 'g'}_${c.id}_${deadlineInfo.deadlineDate.toISOString().split('T')[0]}`;
     if (_sentToday.has(key)) continue;
 
     // Notifier le chauffeur
@@ -255,7 +254,7 @@ async function checkLatePayments(chauffeurs, deadlineInfo, settings, canal, entr
 
     // Notifier l'admin si active
     if (notifSettings.alerteAdminRetard) {
-      const adminKey = `admin_retard_${c.id}_${deadlineInfo.deadlineDate.toISOString().split('T')[0]}`;
+      const adminKey = `admin_retard_${entrepriseId || 'g'}_${c.id}_${deadlineInfo.deadlineDate.toISOString().split('T')[0]}`;
       if (!_sentToday.has(adminKey)) {
         await notifService.notifyAdmin(
           'Retard de versement',
@@ -586,50 +585,65 @@ async function checkMissingPaymentDebts(chauffeurs, canal, entrepriseId) {
       if (versementKeys.has(key)) continue;
 
       // Clé anti-doublon pour le cron (ne créer qu'une fois par jour de check)
-      const cronKey = `auto_dette_${p.chauffeurId}_${p.date}`;
+      const cronKey = `auto_dette_${entrepriseId || 'g'}_${p.chauffeurId}_${p.date}`;
       if (_sentToday.has(cronKey)) continue;
 
-      // Créer le versement-dette
+      // Créer le versement-dette (atomique avec upsert pour éviter les doublons)
       const versementId = 'V-DETTE-' + Math.random().toString(36).substr(2, 8).toUpperCase();
-      await Versement.create({
-        id: versementId,
-        entrepriseId: entrepriseId || undefined,
-        chauffeurId: p.chauffeurId,
-        vehiculeId: ch.vehiculeAssigne || '',
-        date: p.date,
-        montantBrut: 0,
-        montantNet: 0,
-        montantVerse: 0,
-        statut: 'retard',
-        manquant: redevance,
-        traitementManquant: 'dette',
-        commentaire: `Auto: dette — aucun versement le ${p.date}`,
-        dateCreation: new Date().toISOString()
-      });
+      const upsertResult = await Versement.findOneAndUpdate(
+        {
+          chauffeurId: p.chauffeurId,
+          date: p.date,
+          traitementManquant: 'dette',
+          commentaire: { $regex: /^Auto: dette/ },
+          ...(entrepriseId ? { entrepriseId } : {})
+        },
+        {
+          $setOnInsert: {
+            id: versementId,
+            entrepriseId: entrepriseId || undefined,
+            chauffeurId: p.chauffeurId,
+            vehiculeId: ch.vehiculeAssigne || '',
+            date: p.date,
+            montantBrut: 0,
+            montantNet: 0,
+            montantVerse: 0,
+            statut: 'retard',
+            manquant: redevance,
+            traitementManquant: 'dette',
+            commentaire: `Auto: dette — aucun versement le ${p.date}`,
+            dateCreation: new Date().toISOString()
+          }
+        },
+        { upsert: true, new: true, rawResult: true }
+      );
+      // Only count as created if actually inserted (not already existing)
+      if (!upsertResult.lastErrorObject?.updatedExisting) {
+        created++;
+
+        // Notifier le chauffeur (1 seule fois par jour manquant, seulement si canal dispo)
+        if (canal) {
+          const notifKey = `dette_notif_${entrepriseId || 'g'}_${p.chauffeurId}_${p.date}`;
+          if (!_sentToday.has(notifKey)) {
+            try {
+              await notifService.notify(
+                p.chauffeurId,
+                'dette_auto',
+                'Versement manquant — dette ajoutée',
+                `${ch.prenom}, aucun versement reçu pour le ${p.date}. Une dette de ${redevance.toLocaleString('fr-FR')} FCFA a été ajoutée.`,
+                canal,
+                { url: '/driver/#/versements' }
+              );
+            } catch (notifErr) {
+              console.warn(`[NotifCron] Notif dette échouée pour ${ch.prenom}:`, notifErr.message);
+            }
+            _sentToday.add(notifKey);
+          }
+        }
+      }
 
       versementKeys.add(key); // Éviter les doublons si plusieurs plannings même jour
       _sentToday.add(cronKey);
-      created++;
-
-      // Notifier le chauffeur (1 seule fois par jour manquant, seulement si canal dispo)
-      if (canal) {
-        const notifKey = `dette_notif_${p.chauffeurId}_${p.date}`;
-        if (!_sentToday.has(notifKey)) {
-          try {
-            await notifService.notify(
-              p.chauffeurId,
-              'dette_auto',
-              'Versement manquant — dette ajoutée',
-              `${ch.prenom}, aucun versement reçu pour le ${p.date}. Une dette de ${redevance.toLocaleString('fr-FR')} FCFA a été ajoutée.`,
-              canal,
-              { url: '/driver/#/versements' }
-            );
-          } catch (notifErr) {
-            console.warn(`[NotifCron] Notif dette échouée pour ${ch.prenom}:`, notifErr.message);
-          }
-          _sentToday.add(notifKey);
-        }
-      }
     }
 
     if (created > 0) {

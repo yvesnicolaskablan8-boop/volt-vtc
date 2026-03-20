@@ -10,20 +10,21 @@ const DashboardPage = {
 
   render() {
     const container = document.getElementById('page-content');
-    this._autoGenerateVersements();
     const data = this._getData();
     this._lastData = data;
-    container.innerHTML = this._template(data);
+    container.innerHTML = this._template(data); // template uses escaped/static content
     this._loadCharts(data);
     this._bindPeriodSelector();
     if (this._isToday()) this._startAutoRefresh(); else this._stopAutoRefresh();
+    // Fire-and-forget: auto-generate then re-render if new data
+    this._autoGenerateVersements();
   },
 
   // Auto-générer les versements du jour (1x/jour max)
   async _autoGenerateVersements() {
     const today = new Date().toISOString().split('T')[0];
     const lastGen = localStorage.getItem('pilote_autogen_date');
-    if (lastGen === today) return; // Déjà fait aujourd'hui
+    if (lastGen === today) return;
     localStorage.setItem('pilote_autogen_date', today);
     try {
       const res = await fetch(Store._apiBase + '/versements/auto-generate', {
@@ -35,7 +36,6 @@ const DashboardPage = {
         const result = await res.json();
         if (result.created > 0) {
           console.log(`[Auto-versements] ${result.created} versement(s) créé(s) pour ${today}`);
-          // Recharger les données pour afficher les nouveaux versements
           await Store.initialize();
           this.destroy();
           this.render();
@@ -43,6 +43,7 @@ const DashboardPage = {
       }
     } catch (e) {
       console.warn('[Auto-versements] Erreur:', e.message);
+      localStorage.removeItem('pilote_autogen_date');
     }
   },
 
@@ -147,7 +148,7 @@ const DashboardPage = {
 
     // Versements — relatif à la période sélectionnée (jour ou mois)
     const monthVersements = versements.filter(v => matchesPeriod(v.date));
-    const totalVerse = monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0);
+    const totalVerse = monthVersements.filter(v => v.statut !== 'supprime').reduce((s, v) => s + (v.montantVerse || 0), 0);
 
     // CA = recettes réellement encaissées (versements payés)
     const caThisMonth = totalVerse;
@@ -161,7 +162,7 @@ const DashboardPage = {
       const prevDayStr = prevDay.toISOString().split('T')[0];
       caPrevPeriod = versements
         .filter(v => v.date && v.date.startsWith(prevDayStr) && v.statut !== 'supprime')
-        .reduce((s, v) => s + v.montantVerse, 0);
+        .reduce((s, v) => s + (v.montantVerse || 0), 0);
     } else {
       // Vue mois → comparer avec le mois précédent
       const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
@@ -172,7 +173,7 @@ const DashboardPage = {
           const d = new Date(v.date);
           return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
         })
-        .reduce((s, v) => s + v.montantVerse, 0);
+        .reduce((s, v) => s + (v.montantVerse || 0), 0);
     }
     let caTrend = 0;
     if (caPrevPeriod > 0) {
@@ -212,7 +213,7 @@ const DashboardPage = {
           const d = new Date(v.date);
           return d.getMonth() === monthNum && d.getFullYear() === yearNum;
         })
-        .reduce((s, v) => s + v.montantVerse, 0);
+        .reduce((s, v) => s + (v.montantVerse || 0), 0);
       monthlyRevenue.push({ month: Utils.getMonthShort(monthNum), revenue: Math.round(rev) });
     }
 
@@ -231,7 +232,7 @@ const DashboardPage = {
 
       weeklyPayments.push({
         label: `S${Utils.getWeekNumber(weekStart)}`,
-        verse: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.montantVerse, 0),
+        verse: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + (v.montantVerse || 0), 0),
         attendu: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.commission, 0)
       });
     }

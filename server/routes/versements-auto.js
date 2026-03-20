@@ -18,9 +18,10 @@ router.post('/auto-generate', async (req, res, next) => {
     const Absence = require('../models/Absence');
 
     const date = req.body.date || new Date().toISOString().split('T')[0];
+    const ef = req.user.entrepriseId ? { entrepriseId: req.user.entrepriseId } : {};
 
-    // 1. Trouver tous les chauffeurs planifiés ce jour
-    const plannings = await Planning.find({ date }).lean();
+    // 1. Trouver tous les chauffeurs planifiés ce jour (scoped by tenant)
+    const plannings = await Planning.find({ ...ef, date }).lean();
     if (plannings.length === 0) {
       return res.json({ created: 0, skipped: 0, message: 'Aucun chauffeur planifié ce jour' });
     }
@@ -28,22 +29,25 @@ router.post('/auto-generate', async (req, res, next) => {
     // 2. Dédupliquer par chauffeurId (un seul versement par chauffeur/jour)
     const chauffeurIds = [...new Set(plannings.map(p => p.chauffeurId))];
 
-    // 3. Récupérer les chauffeurs actifs avec redevance
+    // 3. Récupérer les chauffeurs actifs avec redevance (scoped by tenant)
     const chauffeurs = await Chauffeur.find({
+      ...ef,
       id: { $in: chauffeurIds },
       statut: { $ne: 'inactif' }
     }).lean();
 
-    // 4. Vérifier les absences
+    // 4. Vérifier les absences (scoped by tenant)
     const absences = await Absence.find({
+      ...ef,
       chauffeurId: { $in: chauffeurIds },
       dateDebut: { $lte: date },
       dateFin: { $gte: date }
     }).lean();
     const absentIds = new Set(absences.map(a => a.chauffeurId));
 
-    // 5. Vérifier les versements existants pour cette date
+    // 5. Vérifier les versements existants pour cette date (scoped by tenant)
     const existingVersements = await Versement.find({
+      ...ef,
       chauffeurId: { $in: chauffeurIds },
       date
     }).lean();
@@ -66,6 +70,7 @@ router.post('/auto-generate', async (req, res, next) => {
       const id = 'VRS-' + Math.random().toString(36).substr(2, 6).toUpperCase();
       newVersements.push({
         id,
+        ...(req.user.entrepriseId ? { entrepriseId: req.user.entrepriseId } : {}),
         chauffeurId: ch.id,
         vehiculeId: ch.vehiculeAssigne || '',
         date,
@@ -110,15 +115,18 @@ router.post('/auto-generate', async (req, res, next) => {
 router.post('/cleanup-ghosts', async (req, res, next) => {
   try {
     const Versement = require('../models/Versement');
+    const ef = req.user.entrepriseId ? { entrepriseId: req.user.entrepriseId } : {};
 
-    // 1. Versements "validés" à 0 FCFA
+    // 1. Versements "validés" à 0 FCFA (scoped by tenant)
     const result1 = await Versement.deleteMany({
+      ...ef,
       montantVerse: 0,
       statut: { $in: ['valide', 'partiel', 'retard'] }
     });
 
-    // 2. Versements en_attente sans Wave (pas de paiement en cours)
+    // 2. Versements en_attente sans Wave (pas de paiement en cours) (scoped by tenant)
     const result2 = await Versement.deleteMany({
+      ...ef,
       statut: 'en_attente',
       montantVerse: 0,
       $or: [
@@ -128,9 +136,9 @@ router.post('/cleanup-ghosts', async (req, res, next) => {
       ]
     });
 
-    // 3. Versements auto-générés SANS moyen de paiement
-    //    (commentaire commence par "Auto:" OU "Auto-" et pas de moyenPaiement)
+    // 3. Versements auto-générés SANS moyen de paiement (scoped by tenant)
     const result3 = await Versement.deleteMany({
+      ...ef,
       commentaire: { $regex: /^Auto[:\-]/ },
       $or: [
         { moyenPaiement: { $exists: false } },

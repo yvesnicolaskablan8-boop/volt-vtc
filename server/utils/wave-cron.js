@@ -44,7 +44,7 @@ async function checkPendingPayments(entrepriseId) {
     // Trouver tous les versements Wave en attente pour ce tenant
     const filter = {
       statut: 'en_attente',
-      waveCheckoutId: { $exists: true, $ne: null, $ne: '' }
+      waveCheckoutId: { $exists: true, $nin: [null, ''] }
     };
     if (entrepriseId) filter.entrepriseId = entrepriseId;
 

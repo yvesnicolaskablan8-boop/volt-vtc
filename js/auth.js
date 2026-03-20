@@ -138,6 +138,10 @@ const Auth = {
 
       // Handle special cases (first_login, must_change_password)
       if (data.error === 'first_login' || data.error === 'must_change_password') {
+        // Store setupToken for the set-password flow
+        if (data.setupToken) {
+          sessionStorage.setItem('pilote_setup_token', data.setupToken);
+        }
         return { success: false, error: data.error, user: data.user };
       }
 
@@ -185,10 +189,13 @@ const Auth = {
     const token = this.getToken();
     if (token) headers['Authorization'] = 'Bearer ' + token;
 
+    // Include setupToken if available (first-login / must-change-password flow)
+    const setupToken = sessionStorage.getItem('pilote_setup_token') || undefined;
+
     const res = await fetch(apiBase + '/auth/set-password', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ userId, password: newPassword, temporary: false })
+      body: JSON.stringify({ userId, password: newPassword, temporary: false, setupToken })
     });
     const data = await res.json();
 
@@ -196,6 +203,9 @@ const Auth = {
     if (data.token) {
       this.setToken(data.token);
     }
+
+    // Clean up setupToken
+    sessionStorage.removeItem('pilote_setup_token');
 
     // Update user in local cache
     Store.update('users', userId, { mustChangePassword: false });

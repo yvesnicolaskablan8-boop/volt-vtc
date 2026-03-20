@@ -34,7 +34,7 @@ function start() {
     if (!_enabled) return;
 
     const now = new Date();
-    const hour = now.getHours();
+    const hour = now.getUTCHours();
     const todayStr = now.toISOString().split('T')[0];
 
     // Executer a 3h du matin, une seule fois par jour

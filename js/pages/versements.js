@@ -746,10 +746,10 @@ const VersementsPage = {
         const ch = chId ? chauffeurs.find(c => c.id === chId) : null;
         if (ch && ch.redevanceQuotidienne > 0) {
           infoDiv.style.display = '';
-          infoDiv.innerHTML = `<strong>${ch.prenom} ${ch.nom}</strong> — Redevance quotidienne : <strong style="color:var(--primary)">${Utils.formatCurrency(ch.redevanceQuotidienne)}</strong>`;
+          infoDiv.innerHTML = `<strong>${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}</strong> — Redevance quotidienne : <strong style="color:var(--primary)">${Utils.formatCurrency(ch.redevanceQuotidienne)}</strong>`;
         } else if (ch) {
           infoDiv.style.display = '';
-          infoDiv.innerHTML = `<strong>${ch.prenom} ${ch.nom}</strong> — <span style="color:#ef4444">⚠ Aucune redevance configurée</span>`;
+          infoDiv.innerHTML = `<strong>${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}</strong> — <span style="color:#ef4444">⚠ Aucune redevance configurée</span>`;
         } else {
           infoDiv.style.display = 'none';
         }
@@ -790,8 +790,8 @@ const VersementsPage = {
               const detteExistante = allVers.filter(v => v.chauffeurId === chId && v.traitementManquant === 'dette' && v.manquant > 0).reduce((s, v) => s + (v.manquant || 0), 0);
               if (manquantDetail) {
                 manquantDetail.innerHTML = detteExistante > 0
-                  ? `Dette existante de ${ch.prenom} ${ch.nom} : <strong style="color:#ef4444">${Utils.formatCurrency(detteExistante)}</strong> — Nouveau total si reporté : <strong>${Utils.formatCurrency(detteExistante + Math.abs(diff))}</strong>`
-                  : `Aucune dette existante pour ${ch.prenom} ${ch.nom}`;
+                  ? `Dette existante de ${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)} : <strong style="color:#ef4444">${Utils.formatCurrency(detteExistante)}</strong> — Nouveau total si reporté : <strong>${Utils.formatCurrency(detteExistante + Math.abs(diff))}</strong>`
+                  : `Aucune dette existante pour ${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}`;
               }
             }
           }
@@ -945,10 +945,10 @@ const VersementsPage = {
         const ch = chId ? chauffeurs.find(c => c.id === chId) : null;
         if (ch && ch.redevanceQuotidienne > 0) {
           infoDiv.style.display = '';
-          infoDiv.innerHTML = `<strong>${ch.prenom} ${ch.nom}</strong> — Redevance quotidienne : <strong style="color:var(--primary)">${Utils.formatCurrency(ch.redevanceQuotidienne)}</strong>`;
+          infoDiv.innerHTML = `<strong>${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}</strong> — Redevance quotidienne : <strong style="color:var(--primary)">${Utils.formatCurrency(ch.redevanceQuotidienne)}</strong>`;
         } else if (ch) {
           infoDiv.style.display = '';
-          infoDiv.innerHTML = `<strong>${ch.prenom} ${ch.nom}</strong> — <span style="color:#ef4444">⚠ Aucune redevance configurée</span>`;
+          infoDiv.innerHTML = `<strong>${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}</strong> — <span style="color:#ef4444">⚠ Aucune redevance configurée</span>`;
         } else {
           infoDiv.style.display = 'none';
         }
@@ -984,8 +984,8 @@ const VersementsPage = {
               const detteExistante = allVers.filter(v => v.chauffeurId === chId && v.id !== id && v.traitementManquant === 'dette' && v.manquant > 0).reduce((s, v) => s + (v.manquant || 0), 0);
               if (manquantDetail) {
                 manquantDetail.innerHTML = detteExistante > 0
-                  ? `Dette existante de ${ch.prenom} ${ch.nom} : <strong style="color:#ef4444">${Utils.formatCurrency(detteExistante)}</strong> — Nouveau total si reporté : <strong>${Utils.formatCurrency(detteExistante + Math.abs(diff))}</strong>`
-                  : `Aucune dette existante pour ${ch.prenom} ${ch.nom}`;
+                  ? `Dette existante de ${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)} : <strong style="color:#ef4444">${Utils.formatCurrency(detteExistante)}</strong> — Nouveau total si reporté : <strong>${Utils.formatCurrency(detteExistante + Math.abs(diff))}</strong>`
+                  : `Aucune dette existante pour ${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}`;
               }
             }
           }
@@ -1006,7 +1006,7 @@ const VersementsPage = {
     const v = Store.findById('versements', id);
     if (!v) return;
     const ch = Store.findById('chauffeurs', v.chauffeurId);
-    const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+    const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : v.chauffeurId;
     Modal.confirm(
       'Supprimer le versement',
       `Voulez-vous supprimer le versement de <strong>${nom}</strong> du <strong>${Utils.formatDate(v.date)}</strong> (${Utils.formatCurrency(v.montantVerse || v.montantAttendu || 0)}) ?`,
@@ -1278,7 +1278,7 @@ const VersementsPage = {
     const rows = versements.slice(0, 50).map(v => {
       const ch = chauffeurs.find(c => c.id === v.chauffeurId);
       return [
-        ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId,
+        ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : v.chauffeurId,
         Utils.formatDate(v.date),
         Utils.formatCurrency(v.montantVerse),
         v.statut
@@ -1304,7 +1304,7 @@ const VersementsPage = {
     let csv = 'Chauffeur,Date,Montant,Statut,Commentaire\n';
     versements.forEach(v => {
       const ch = chauffeurs.find(c => c.id === v.chauffeurId);
-      const name = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+      const name = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : v.chauffeurId;
       csv += `"${name}","${v.date}","${v.montantVerse}","${v.statut}","${(v.commentaire || '').replace(/"/g, '""')}"\n`;
     });
 
@@ -1573,7 +1573,7 @@ const VersementsPage = {
           const ch = chMap[s.chauffeurId];
           const montant = getMontant(m, ch);
           if (m.useRedevance && montant <= 0) return; // skip drivers with no redevance
-          grid.push({ date: s.date, chauffeurId: s.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : s.chauffeurId,
+          grid.push({ date: s.date, chauffeurId: s.chauffeurId, chauffeurNom: ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : s.chauffeurId,
             vehiculeId: ch ? ch.vehiculeAssigne : null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
         });
       } else if (m.recurrence === 'quotidien') {
@@ -1581,7 +1581,7 @@ const VersementsPage = {
           if (m.chauffeurId) {
             const ch = chMap[m.chauffeurId];
             const montant = getMontant(m, ch);
-            grid.push({ date, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
+            grid.push({ date, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : m.chauffeurId,
               vehiculeId: ch ? ch.vehiculeAssigne : null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
           } else {
             const dayShifts = weekShifts.filter(s => s.date === date);
@@ -1592,7 +1592,7 @@ const VersementsPage = {
               const ch = chMap[s.chauffeurId];
               const montant = getMontant(m, ch);
               if (m.useRedevance && montant <= 0) return;
-              grid.push({ date, chauffeurId: s.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : s.chauffeurId,
+              grid.push({ date, chauffeurId: s.chauffeurId, chauffeurNom: ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : s.chauffeurId,
                 vehiculeId: ch ? ch.vehiculeAssigne : null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
             });
           }
@@ -1603,7 +1603,7 @@ const VersementsPage = {
           if (m.chauffeurId) {
             const ch = chMap[m.chauffeurId];
             const montant = getMontant(m, ch);
-            grid.push({ date: targetDay, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
+            grid.push({ date: targetDay, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : m.chauffeurId,
               vehiculeId: ch ? ch.vehiculeAssigne : null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
           } else {
             chauffeurs.filter(c => c.statut === 'actif').forEach(c => {
@@ -1620,7 +1620,7 @@ const VersementsPage = {
           if (m.chauffeurId) {
             const ch = chMap[m.chauffeurId];
             const montant = getMontant(m, ch);
-            grid.push({ date: targetDate, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${ch.prenom} ${ch.nom}` : m.chauffeurId,
+            grid.push({ date: targetDate, chauffeurId: m.chauffeurId, chauffeurNom: ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : m.chauffeurId,
               vehiculeId: ch ? ch.vehiculeAssigne : null, montant, statut: m.statut || 'en_attente', modeleNom: m.nom });
           } else {
             chauffeurs.filter(c => c.statut === 'actif').forEach(c => {
@@ -1740,7 +1740,7 @@ const VersementsPage = {
 
     const rows = d.unpaidItems.map(item => {
       const ch = d.chauffeurs.find(c => c.id === item.chauffeurId);
-      const name = ch ? `${ch.prenom} ${ch.nom}` : item.chauffeurId;
+      const name = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : item.chauffeurId;
       const hasJustif = !!item.justification;
       return `<div data-name="${name.toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);">
         <div style="min-width:0;flex:1;">
@@ -1795,7 +1795,7 @@ const VersementsPage = {
     const chauffeurIds = [...new Set(data.unpaidItems.map(i => i.chauffeurId))];
     const chauffeurOptions = chauffeurIds.map(id => {
       const ch = data.chauffeurs.find(c => c.id === id);
-      return ch ? `<option value="${id}">${ch.prenom} ${ch.nom}</option>` : '';
+      return ch ? `<option value="${id}">${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}</option>` : '';
     }).join('');
 
     const filtersHtml = `
@@ -1843,7 +1843,7 @@ const VersementsPage = {
     const isAdmin = session && session.role === 'Administrateur';
     return items.map(item => {
       const ch = chauffeurs.find(c => c.id === item.chauffeurId);
-      const name = ch ? `${ch.prenom} ${ch.nom}` : item.chauffeurId;
+      const name = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : item.chauffeurId;
       const hasJustif = !!item.justification;
       const creneauLabel = item.heureDebut && item.heureFin ? `${item.heureDebut} \u00e0 ${item.heureFin}` : (item.typeCreneaux || '');
       const penaliteHtml = item.penalite > 0 ? `<div style="font-size:10px;color:#f59e0b;font-weight:600;">+ ${Utils.formatCurrency(item.penalite)} (${Math.round(item.tauxPenalite*100)}%)</div>` : '';
@@ -1923,7 +1923,7 @@ const VersementsPage = {
     const rows = items.map(i => {
       const ch = data.chauffeurs.find(c => c.id === i.chauffeurId);
       return [
-        ch ? `${ch.prenom} ${ch.nom}` : i.chauffeurId,
+        ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : i.chauffeurId,
         i.date,
         i.heureDebut && i.heureFin ? `${i.heureDebut}-${i.heureFin}` : i.typeCreneaux || '',
         i.montantDu, i.joursRetard, `${Math.round(i.tauxPenalite * 100)}%`,
@@ -1980,7 +1980,7 @@ const VersementsPage = {
     const existing = versementId && versementId !== 'null' ? versements.find(v => v.id === versementId) : versements.find(v => v.chauffeurId === chauffeurId && v.date === date);
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === chauffeurId);
-    const name = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+    const name = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : chauffeurId;
 
     const redevance = montantDu || 0;
     const fields = [
@@ -2170,7 +2170,7 @@ const VersementsPage = {
 
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === chauffeurId);
-    const name = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+    const name = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : chauffeurId;
 
     Modal.confirm(
       'Supprimer cette recette ?',
@@ -2400,7 +2400,7 @@ const VersementsPage = {
 
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === v.chauffeurId);
-    const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+    const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : v.chauffeurId;
 
     Modal.open({
       title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b;"></iconify-icon> Gérer la dette',
@@ -2445,7 +2445,7 @@ const VersementsPage = {
     if (!v) { Toast.error('Versement introuvable'); return; }
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === v.chauffeurId);
-    const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+    const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : v.chauffeurId;
 
     if (action === 'modifier') {
       Modal.open({
@@ -2674,7 +2674,7 @@ const VersementsPage = {
 
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === v.chauffeurId);
-    const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+    const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : v.chauffeurId;
 
     Modal.open({
       title: `<iconify-icon icon="solar:close-circle-bold-duotone" style="color:#ef4444;"></iconify-icon> Annuler cette dette ?`,
@@ -2702,7 +2702,7 @@ const VersementsPage = {
   _modifierDetteImplicite(chauffeurId, date, montant) {
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === chauffeurId);
-    const nom = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+    const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : chauffeurId;
 
     Modal.open({
       title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b;"></iconify-icon> Modifier le montant',
@@ -2764,7 +2764,7 @@ const VersementsPage = {
   _annulerDetteImplicite(chauffeurId, date) {
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === chauffeurId);
-    const nom = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+    const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : chauffeurId;
     const redevance = ch ? (ch.redevanceQuotidienne || 0) : 0;
 
     Modal.open({
@@ -3021,7 +3021,7 @@ const VersementsPage = {
   _encaisserDetteIndividuelle(chauffeurId, date, montant, isImplicit, versementId, source) {
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === chauffeurId);
-    const nom = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+    const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : chauffeurId;
     const today = new Date().toISOString().split('T')[0];
     const typeLabel = source === 'contravention' ? 'contravention' : 'recette';
     const color = source === 'contravention' ? '#ef4444' : '#f59e0b';

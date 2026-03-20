@@ -113,9 +113,9 @@ const ParametresPage = {
                 ${Utils.getInitials(user.prenom, user.nom)}
               </div>
               <div>
-                <div style="font-size:var(--font-size-lg);font-weight:700;">${user.prenom} ${user.nom}</div>
-                <div style="font-size:var(--font-size-sm);color:var(--text-muted);">${user.email}</div>
-                <span class="badge badge-info" style="margin-top:6px;">${user.role}</span>
+                <div style="font-size:var(--font-size-lg);font-weight:700;">${Utils.escHtml(user.prenom)} ${Utils.escHtml(user.nom)}</div>
+                <div style="font-size:var(--font-size-sm);color:var(--text-muted);">${Utils.escHtml(user.email)}</div>
+                <span class="badge badge-info" style="margin-top:6px;">${Utils.escHtml(user.role)}</span>
               </div>
             </div>
 
@@ -289,7 +289,7 @@ const ParametresPage = {
         return;
       }
 
-      Store.update('users', session.id, { prenom, nom, email, telephone });
+      Store.update('users', session.userId, { prenom, nom, email, telephone });
       Auth.refreshSession();
       Toast.success('Profil mis à jour');
       this._renderTab('account');
@@ -321,7 +321,7 @@ const ParametresPage = {
       try {
         // Verify current password by attempting login
         const apiBase = Store._apiBase || '/api';
-        const user = Store.findById('users', session.id);
+        const user = Store.findById('users', session.userId);
         const verifyRes = await fetch(apiBase + '/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -335,7 +335,7 @@ const ParametresPage = {
         }
 
         // Set new password (not temporary — user chose it themselves)
-        const result = await Auth.setPassword(session.id, newPwd);
+        const result = await Auth.setPassword(session.userId, newPwd);
         if (result.success) {
           Toast.success('Mot de passe modifié avec succès');
           document.getElementById('pwd-current').value = '';
@@ -1019,7 +1019,7 @@ const ParametresPage = {
       // If editing the current user, refresh session
       if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
         const session = Auth.getSession();
-        if (session && session.id === id) {
+        if (session && session.userId === id) {
           Auth.refreshSession();
         }
       }
@@ -2545,7 +2545,7 @@ const ParametresPage = {
         const apiKey = document.getElementById('wave-api-key').value.trim();
         try {
           const token = localStorage.getItem('pilote_token');
-          const resp = await fetch('/api/settings', {
+          const resp = await fetch((Store._apiBase || '/api') + '/settings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({ integrations: { wave: { apiKey } } })
@@ -2573,7 +2573,7 @@ const ParametresPage = {
         const clientId = document.getElementById('yango-client-id').value.trim();
         try {
           const token = localStorage.getItem('pilote_token');
-          const resp = await fetch('/api/settings', {
+          const resp = await fetch((Store._apiBase || '/api') + '/settings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({ integrations: { yango: { parkId, apiKey, clientId } } })
@@ -2600,7 +2600,7 @@ const ParametresPage = {
         testWaveBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone" class="spin"></iconify-icon> Test...';
         try {
           const token = localStorage.getItem('pilote_token');
-          const resp = await fetch('/api/settings/test-wave', {
+          const resp = await fetch((Store._apiBase || '/api') + '/settings/test-wave', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token }
           });
@@ -2626,7 +2626,7 @@ const ParametresPage = {
         testYangoBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone" class="spin"></iconify-icon> Test...';
         try {
           const token = localStorage.getItem('pilote_token');
-          const resp = await fetch('/api/settings/test-yango', {
+          const resp = await fetch((Store._apiBase || '/api') + '/settings/test-yango', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token }
           });

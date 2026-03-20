@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 
 const authMiddleware = (req, res, next) => {
-  // Skip auth for login and set-password routes
-  if (req.path === '/api/auth/login' || req.path === '/api/auth/set-password') {
+  // Skip auth for login route only
+  if (req.path === '/api/auth/login') {
     return next();
   }
 

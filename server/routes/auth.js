@@ -31,7 +31,13 @@ router.post('/login', async (req, res, next) => {
     // First login: no password set yet
     if (!user.passwordHash) {
       const { passwordHash, _id, __v, ...safeUser } = user;
-      return res.json({ success: false, error: 'first_login', user: safeUser });
+      // Generate a short-lived token for the set-password flow (15 min)
+      const setupToken = jwt.sign(
+        { userId: user.id, purpose: 'set-password' },
+        process.env.JWT_SECRET,
+        { expiresIn: '15m' }
+      );
+      return res.json({ success: false, error: 'first_login', user: safeUser, setupToken });
     }
 
     // Verify password
@@ -43,7 +49,12 @@ router.post('/login', async (req, res, next) => {
     // Must change password
     if (user.mustChangePassword) {
       const { passwordHash, _id, __v, ...safeUser } = user;
-      return res.json({ success: false, error: 'must_change_password', user: safeUser });
+      const setupToken = jwt.sign(
+        { userId: user.id, purpose: 'set-password' },
+        process.env.JWT_SECRET,
+        { expiresIn: '15m' }
+      );
+      return res.json({ success: false, error: 'must_change_password', user: safeUser, setupToken });
     }
 
     // Success: generate JWT with entrepriseId
@@ -92,10 +103,16 @@ router.post('/register', async (req, res, next) => {
       return res.json({ success: false, error: 'email_taken', message: 'Cet email est déjà utilisé' });
     }
 
-    // Create the entreprise
+    // Create the entreprise with unique slug
+    let slug = entrepriseNom.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    // Ensure slug uniqueness
+    const existingSlug = await Entreprise.findOne({ slug }).lean();
+    if (existingSlug) {
+      slug = slug + '-' + Date.now().toString(36);
+    }
     const entreprise = new Entreprise({
       nom: entrepriseNom,
-      slug: entrepriseNom.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      slug,
       email: email.toLowerCase(),
       telephone: telephone || ''
     });
@@ -181,12 +198,42 @@ router.post('/register', async (req, res, next) => {
 });
 
 // POST /api/auth/set-password
+// Requires either: a valid JWT (logged-in user) or a short-lived setupToken from first_login flow
 router.post('/set-password', async (req, res, next) => {
   try {
-    const { userId, password, temporary } = req.body;
+    const { userId, password, temporary, setupToken } = req.body;
 
     if (!userId || !password) {
       return res.status(400).json({ error: 'Missing userId or password' });
+    }
+
+    // Auth check: either valid JWT or valid setupToken
+    const authHeader = req.headers.authorization;
+    let authenticated = false;
+
+    // Option 1: Valid JWT (logged-in user changing password)
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+        // User can only change their own password (or admin can change any)
+        if (decoded.userId === userId || decoded.role === 'Administrateur') {
+          authenticated = true;
+        }
+      } catch (e) { /* token invalid, try setupToken */ }
+    }
+
+    // Option 2: Valid setupToken (first-login or must-change-password flow)
+    if (!authenticated && setupToken) {
+      try {
+        const decoded = jwt.verify(setupToken, process.env.JWT_SECRET);
+        if (decoded.purpose === 'set-password' && decoded.userId === userId) {
+          authenticated = true;
+        }
+      } catch (e) { /* invalid setup token */ }
+    }
+
+    if (!authenticated) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     if (password.length < 6) {

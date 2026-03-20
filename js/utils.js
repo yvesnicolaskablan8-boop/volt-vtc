@@ -2,6 +2,11 @@
  * Utils - Formatting, ID generation, helpers
  */
 const Utils = {
+  // Escape HTML to prevent XSS when inserting user content into innerHTML
+  escHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  },
+
   // Format currency in FCFA
   formatCurrency(amount, decimals = 0) {
     const formatted = new Intl.NumberFormat('fr-FR', {
