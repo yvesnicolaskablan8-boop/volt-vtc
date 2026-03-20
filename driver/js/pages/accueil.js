@@ -179,26 +179,6 @@ const AccueilPage = {
         </div>
       </div>
 
-      <!-- Widget statut sante (compact, en bas) -->
-      ${this._renderStatusWidget(data)}
-
-      <!-- Countdown deadline versement -->
-      ${countdownHTML}
-
-      <!-- Activite Yango -->
-      <div class="glass-card" id="yango-activity-card" style="display:none;">
-        <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:taxi-bold-duotone" style="color:#FC4C02;font-size:1.1rem;vertical-align:middle"></iconify-icon> Mon activite Yango</span>
-          <span class="badge" id="yango-activity-badge" style="background:#FC4C02;color:#fff;">--</span>
-        </div>
-        <div id="yango-activity-content">
-          <div class="loading" style="padding:0.5rem"><i class="fas fa-spinner fa-spin"></i></div>
-        </div>
-      </div>
-
-      <!-- Alertes maintenance vehicule -->
-      <div id="maintenance-alerts"></div>
-
       <!-- Raccourcis secondaires -->
       <div style="margin-bottom:1rem">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -229,6 +209,26 @@ const AccueilPage = {
           </button>
         </div>
       </div>
+
+      <!-- Widget statut sante -->
+      ${this._renderStatusWidget(data)}
+
+      <!-- Countdown deadline versement -->
+      ${countdownHTML}
+
+      <!-- Activite Yango -->
+      <div class="glass-card" id="yango-activity-card" style="display:none;">
+        <div class="card-header">
+          <span class="card-title"><iconify-icon icon="solar:taxi-bold-duotone" style="color:#FC4C02;font-size:1.1rem;vertical-align:middle"></iconify-icon> Mon activite Yango</span>
+          <span class="badge" id="yango-activity-badge" style="background:#FC4C02;color:#fff;">--</span>
+        </div>
+        <div id="yango-activity-content">
+          <div class="loading" style="padding:0.5rem"><i class="fas fa-spinner fa-spin"></i></div>
+        </div>
+      </div>
+
+      <!-- Alertes maintenance vehicule -->
+      <div id="maintenance-alerts"></div>
 
       <!-- Resume hebdomadaire (dimanche) -->
       <div id="weekly-summary-card"></div>
