@@ -164,17 +164,17 @@ const AccueilPage = {
       <div style="margin-bottom:1rem">
         <div class="section-label">Actions rapides</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:2rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(124,58,237,0.2);font-family:inherit;position:relative;overflow:hidden">
-            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:2.2rem"></iconify-icon>
-            <span style="font-size:0.85rem;font-weight:700">Payer</span>
+          <button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:2.8rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(124,58,237,0.2);font-family:inherit;position:relative;overflow:hidden">
+            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:2.5rem"></iconify-icon>
+            <span style="font-size:0.9rem;font-weight:700">Payer</span>
           </button>
-          <button onclick="DriverRouter.navigate('planning')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:2rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(59,130,246,0.2);font-family:inherit;position:relative;overflow:hidden">
-            <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:2.2rem"></iconify-icon>
-            <span style="font-size:0.85rem;font-weight:700">Planning</span>
+          <button onclick="DriverRouter.navigate('planning')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:2.8rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(59,130,246,0.2);font-family:inherit;position:relative;overflow:hidden">
+            <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:2.5rem"></iconify-icon>
+            <span style="font-size:0.9rem;font-weight:700">Planning</span>
           </button>
-          <button onclick="DriverRouter.navigate('dettes')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:2rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#f97316,#ea580c);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(249,115,22,0.2);font-family:inherit;position:relative;overflow:hidden">
-            <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:2.2rem"></iconify-icon>
-            <span style="font-size:0.85rem;font-weight:700">Mes dettes</span>
+          <button onclick="DriverRouter.navigate('dettes')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:2.8rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#f97316,#ea580c);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(249,115,22,0.2);font-family:inherit;position:relative;overflow:hidden">
+            <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:2.5rem"></iconify-icon>
+            <span style="font-size:0.9rem;font-weight:700">Mes dettes</span>
           </button>
         </div>
       </div>
