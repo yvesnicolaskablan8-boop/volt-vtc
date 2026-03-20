@@ -164,7 +164,7 @@ const AccueilPage = {
       <div style="margin-bottom:1rem">
         <div class="section-label">Actions rapides</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:3.5rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(124,58,237,0.2);font-family:inherit;position:relative;overflow:hidden">
+          <button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:3.5rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(34,197,94,0.25);font-family:inherit;position:relative;overflow:hidden">
             <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:2.5rem"></iconify-icon>
             <span style="font-size:0.9rem;font-weight:700">Payer</span>
           </button>
@@ -268,7 +268,7 @@ const AccueilPage = {
     const sante = data.statutSante;
     if (!sante) return '';
     const configs = {
-      green: { bg: 'linear-gradient(135deg, #22c55e, #16a34a)', icon: 'solar:check-circle-bold-duotone', title: 'Tout est en ordre', sub: 'Continuez comme ca !' },
+      green: { bg: 'linear-gradient(135deg, #7c3aed, #6d28d9)', icon: 'solar:check-circle-bold-duotone', title: 'Tout est en ordre', sub: 'Continuez comme ca !' },
       orange: { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', icon: 'solar:bell-bing-bold-duotone', title: 'Attention requise', sub: '' },
       red: { bg: 'linear-gradient(135deg, #ef4444, #dc2626)', icon: 'solar:danger-triangle-bold-duotone', title: 'Action urgente', sub: '' }
     };
