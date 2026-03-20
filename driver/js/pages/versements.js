@@ -239,14 +239,24 @@ const VersementsPage = {
 
   // ===== Paiement Wave =====
 
-  _payerWave() {
+  async _payerWave() {
     const now = new Date();
     const hier = new Date(now); hier.setDate(hier.getDate() - 1);
     const oneJan = new Date(now.getFullYear(), 0, 1);
     const weekNum = Math.ceil(((now - oneJan) / 86400000 + oneJan.getDay() + 1) / 7);
 
+    // Charger les dettes pour les afficher dans le formulaire
+    let dettesHTML = '';
+    try {
+      const dettes = await DriverStore.getDettes();
+      if (dettes && dettes.total > 0) {
+        dettesHTML = this._buildDettesSection(dettes);
+      }
+    } catch (e) { /* silent */ }
+
     const formHTML = `
       <form class="driver-form" onsubmit="return false">
+        ${dettesHTML}
         <div style="display:flex;align-items:center;gap:12px;padding:1rem;border-radius:1rem;background:rgba(13,110,253,0.06);border:1.5px solid rgba(13,110,253,0.12);margin-bottom:1rem">
           <iconify-icon icon="solar:wallet-money-bold" style="font-size:2rem;color:#0D6EFD"></iconify-icon>
           <div>
@@ -434,14 +444,24 @@ const VersementsPage = {
 
   // ===== Versement classique (declaration manuelle) =====
 
-  _nouveauVersement() {
+  async _nouveauVersement() {
     const now = new Date();
     const hier = new Date(now); hier.setDate(hier.getDate() - 1);
     const oneJan = new Date(now.getFullYear(), 0, 1);
     const weekNum = Math.ceil(((now - oneJan) / 86400000 + oneJan.getDay() + 1) / 7);
 
+    // Charger les dettes pour les afficher dans le formulaire
+    let dettesHTML = '';
+    try {
+      const dettes = await DriverStore.getDettes();
+      if (dettes && dettes.total > 0) {
+        dettesHTML = this._buildDettesSection(dettes);
+      }
+    } catch (e) { /* silent */ }
+
     const formHTML = `
       <form class="driver-form" onsubmit="return false">
+        ${dettesHTML}
         <div class="form-group">
           <label>Periode</label>
           <input type="text" name="periode" placeholder="ex: Semaine ${weekNum}" value="Semaine ${weekNum}">
@@ -495,6 +515,46 @@ const VersementsPage = {
     } else {
       DriverToast.show(result?.error || 'Erreur', 'error');
     }
+  },
+
+  _buildDettesSection(dettes) {
+    const items = [...(dettes.recettes || []), ...(dettes.contraventions || [])].slice(0, 5);
+    const rows = items.map(d => {
+      const dateStr = d.date ? new Date(d.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
+      const color = d.type === 'contravention' ? '#ef4444' : '#f97316';
+      const icon = d.type === 'contravention' ? 'solar:shield-warning-bold-duotone' : 'solar:wallet-money-bold-duotone';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,0.02);">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+          <iconify-icon icon="${icon}" style="color:${color};font-size:0.9rem;flex-shrink:0;"></iconify-icon>
+          <div style="min-width:0;">
+            <div style="font-size:0.72rem;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dateStr}</div>
+            <div style="font-size:0.6rem;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.label || d.type}</div>
+          </div>
+        </div>
+        <span style="font-size:0.78rem;font-weight:800;color:${color};flex-shrink:0;margin-left:8px;">${(d.manquant || 0).toLocaleString('fr-FR')} F</span>
+      </div>`;
+    }).join('');
+
+    const more = (dettes.recettes.length + dettes.contraventions.length) - items.length;
+
+    return `
+      <div style="padding:14px;border-radius:1rem;background:rgba(239,68,68,0.04);border:1.5px solid rgba(239,68,68,0.12);margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#ef4444;font-size:1.1rem;"></iconify-icon>
+            <span style="font-size:0.8rem;font-weight:800;color:#ef4444;">Dettes en cours</span>
+          </div>
+          <span style="font-size:0.9rem;font-weight:900;color:#ef4444;">${(dettes.total || 0).toLocaleString('fr-FR')} F</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          ${rows}
+        </div>
+        ${more > 0 ? `<div style="text-align:center;font-size:0.65rem;color:#94a3b8;margin-top:6px;">+ ${more} autre${more > 1 ? 's' : ''} dette${more > 1 ? 's' : ''}</div>` : ''}
+        <div style="text-align:center;margin-top:8px;">
+          <a href="#" onclick="DriverModal.close();setTimeout(()=>DriverRouter.navigate('dettes'),100);return false;" style="font-size:0.72rem;font-weight:700;color:#6366f1;text-decoration:none;">Voir toutes mes dettes →</a>
+        </div>
+      </div>
+    `;
   },
 
   _formatCurrency(amount) {

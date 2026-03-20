@@ -163,9 +163,6 @@ const AccueilPage = {
       <!-- Service / Pointage -->
       ${serviceCardHTML}
 
-      <!-- Stats rapides -->
-      ${this._renderQuickStats(data)}
-
       <!-- Activite Yango -->
       <div class="card" id="yango-activity-card" style="display:none;">
         <div class="card-header">
@@ -176,9 +173,6 @@ const AccueilPage = {
           <div class="loading" style="padding:0.5rem"><i class="fas fa-spinner fa-spin"></i></div>
         </div>
       </div>
-
-      <!-- Objectifs & Gamification -->
-      <div id="objectifs-widget"></div>
 
       <!-- Alertes maintenance vehicule -->
       <div id="maintenance-alerts"></div>
@@ -242,9 +236,6 @@ const AccueilPage = {
 
     // Charger le resume hebdomadaire (dimanche ou toujours pour info)
     this._loadWeeklySummary();
-
-    // Charger les objectifs & gamification
-    this._loadObjectifs();
 
   },
 

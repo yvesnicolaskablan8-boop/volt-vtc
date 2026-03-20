@@ -626,9 +626,18 @@ router.get('/dettes', async (req, res, next) => {
       statut: { $in: ['impayee', 'contestee'] },
       montant: { $gt: 0 }
     }).lean();
+
+    // Collect contravention IDs already covered by explicit debt versements
+    const coveredContraIds = new Set();
+    for (const v of dettesExplicites) {
+      if (isContravention(v) && v.reference) coveredContraIds.add(v.reference);
+    }
+
     const contraFromDb = [];
     for (const c of contraImpayees) {
-      const hasVersement = dettesExplicites.some(v => v.reference === c.id) || allVersements.some(v => v.reference === c.id && (v.statut === 'valide' || v.statut === 'supprime'));
+      // Skip if already represented by an explicit dette versement (by reference or by date+montant match)
+      if (coveredContraIds.has(c.id)) continue;
+      const hasVersement = allVersements.some(v => v.reference === c.id && (v.statut === 'valide' || v.statut === 'supprime'));
       if (!hasVersement) {
         contraFromDb.push({
           id: `contra_${c.id}`, date: c.date, manquant: c.montant, type: 'contravention', implicit: false,
