@@ -3,7 +3,7 @@
  */
 const SignalementsPage = {
   async render(container) {
-    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+    container.innerHTML = '<div style="padding:8px 0"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card" style="height:80px"></div><div class="skeleton skeleton-card" style="height:60px"></div></div>';
 
     const signalements = await DriverStore.getSignalements();
     if (!signalements) {

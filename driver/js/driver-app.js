@@ -276,10 +276,35 @@ const DriverApp = {
     }
   },
 
-  // =================== LOCATION TRACKING ===================
+  // =================== LOCATION TRACKING (ADAPTATIF) ===================
 
   _watchId: null,
   _lastSendTime: 0,
+  _lastLat: null,
+  _lastLng: null,
+  _lastSpeed: 0,
+  _immobileSince: 0,
+  _heartbeatTimer: null,
+  _GPS_BUFFER_KEY: 'pilote_gps_buffer',
+  _GPS_BUFFER_MAX: 200,
+
+  // Frequence adaptative selon la vitesse (km/h)
+  _getSendInterval(speedKmh) {
+    if (speedKmh == null || speedKmh < 3) return 120000;   // Immobile: 2min
+    if (speedKmh < 30) return 15000;                        // Lent: 15s
+    if (speedKmh <= 80) return 10000;                       // Normal: 10s
+    return 5000;                                             // Rapide: 5s
+  },
+
+  // Distance Haversine en metres
+  _haversine(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const toRad = d => d * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  },
 
   async _startLocationTracking() {
     if (!('geolocation' in navigator)) {
@@ -293,7 +318,6 @@ const DriverApp = {
       try {
         const perm = await navigator.permissions.query({ name: 'geolocation' });
         permissionState = perm.state;
-        // Ecouter les changements de permission
         perm.addEventListener('change', () => {
           if (perm.state === 'granted' && !this._watchId) {
             this._startWatch();
@@ -301,21 +325,17 @@ const DriverApp = {
             this._stopLocationTracking();
           }
         });
-      } catch (e) {
-        // Certains navigateurs ne supportent pas permissions.query pour geolocation
-      }
+      } catch (e) { /* certains navigateurs ne supportent pas */ }
     }
 
     if (permissionState === 'granted') {
-      // Permission deja accordee — demarrer silencieusement
-      console.log('[Geo] Permission deja accordee, tracking demarre');
+      console.log('[Geo] Permission deja accordee, tracking adaptatif demarre');
       this._startWatch();
     } else if (permissionState === 'prompt') {
-      // Premiere fois — demander la permission via un premier appel
       console.log('[Geo] Demande de permission geolocation...');
       navigator.geolocation.getCurrentPosition(
         () => {
-          console.log('[Geo] Permission accordee, tracking demarre');
+          console.log('[Geo] Permission accordee, tracking adaptatif demarre');
           this._startWatch();
         },
         (err) => console.warn('[Geo] Permission refusee ou erreur:', err.message),
@@ -324,10 +344,24 @@ const DriverApp = {
     } else {
       console.log('[Geo] Permission refusee, tracking desactive');
     }
+
+    // Gestion visibilite — envoyer position quand l'app perd le focus
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && this._lastLat != null) {
+        this._sendNow(this._lastLat, this._lastLng, this._lastSpeed, null, null);
+      }
+    });
+
+    // Flush buffer GPS au beforeunload
+    window.addEventListener('beforeunload', () => {
+      if (this._lastLat != null) {
+        this._bufferPoint(this._lastLat, this._lastLng, this._lastSpeed, null, null);
+      }
+    });
   },
 
   _startWatch() {
-    if (this._watchId) return; // Deja actif
+    if (this._watchId) return;
 
     this._watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -342,17 +376,97 @@ const DriverApp = {
           DriverBehavior.updatePosition(lat, lng, speed, heading);
         }
 
-        // Envoyer au serveur toutes les 30 secondes max
+        // Notifier le trip tracker s'il est actif
+        if (typeof DriverTripTracker !== 'undefined') {
+          DriverTripTracker.onPosition(lat, lng, speed, heading, accuracy);
+        }
+
+        // Detection deplacement > 50m → envoi immediat
+        const movedFar = this._lastLat != null && this._haversine(this._lastLat, this._lastLng, lat, lng) > 50;
+
+        // Frequence adaptative
         const now = Date.now();
-        if (now - this._lastSendTime >= 30000) {
+        const interval = this._getSendInterval(speed);
+
+        if (movedFar || (now - this._lastSendTime >= interval)) {
           this._lastSendTime = now;
-          DriverStore.sendLocation(lat, lng, speed, heading, accuracy);
+          this._sendNow(lat, lng, speed, heading, accuracy);
+        }
+
+        this._lastLat = lat;
+        this._lastLng = lng;
+        this._lastSpeed = speed || 0;
+
+        // Baisser precision quand immobile
+        if (speed != null && speed < 3) {
+          if (!this._immobileSince) this._immobileSince = now;
+        } else {
+          this._immobileSince = 0;
         }
       },
       (err) => console.warn('[Geo] Erreur watchPosition:', err.message),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
     );
-    console.log('[Geo] watchPosition actif (id:', this._watchId, ')');
+    console.log('[Geo] watchPosition adaptatif actif (id:', this._watchId, ')');
+
+    // Heartbeat fallback — getCurrentPosition toutes les 60s si watchPosition silencieux
+    this._heartbeatTimer = setInterval(() => {
+      const silentFor = Date.now() - this._lastSendTime;
+      if (silentFor > 60000 && this._watchId) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const speed = pos.coords.speed != null ? Math.round(pos.coords.speed * 3.6) : null;
+            this._sendNow(lat, lng, speed, pos.coords.heading, null);
+            this._lastLat = lat;
+            this._lastLng = lng;
+          },
+          () => {},
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 30000 }
+        );
+      }
+    }, 60000);
+
+    // Drain du buffer offline au demarrage
+    this._drainOfflineBuffer();
+  },
+
+  async _sendNow(lat, lng, speed, heading, accuracy) {
+    try {
+      await DriverStore.sendLocation(lat, lng, speed, heading, accuracy);
+      // Succes — drainer le buffer offline aussi
+      this._drainOfflineBuffer();
+    } catch (e) {
+      // Echec reseau — stocker en buffer offline
+      this._bufferPoint(lat, lng, speed, heading, accuracy);
+    }
+  },
+
+  _bufferPoint(lat, lng, speed, heading, accuracy) {
+    try {
+      const raw = localStorage.getItem(this._GPS_BUFFER_KEY);
+      const buffer = raw ? JSON.parse(raw) : [];
+      buffer.push({ lat, lng, speed, heading, accuracy, t: Date.now() });
+      // Limiter a 200 points
+      if (buffer.length > this._GPS_BUFFER_MAX) buffer.splice(0, buffer.length - this._GPS_BUFFER_MAX);
+      localStorage.setItem(this._GPS_BUFFER_KEY, JSON.stringify(buffer));
+    } catch (e) { /* localStorage plein ou indisponible */ }
+  },
+
+  async _drainOfflineBuffer() {
+    try {
+      const raw = localStorage.getItem(this._GPS_BUFFER_KEY);
+      if (!raw) return;
+      const buffer = JSON.parse(raw);
+      if (!buffer.length) return;
+      // Envoyer en batch
+      await DriverStore.sendLocationBatch(buffer);
+      localStorage.removeItem(this._GPS_BUFFER_KEY);
+      console.log('[Geo] Buffer offline draine:', buffer.length, 'points');
+    } catch (e) {
+      // Le batch endpoint n'existe peut-etre pas encore ou reseau ko
+    }
   },
 
   _stopLocationTracking() {
@@ -360,6 +474,10 @@ const DriverApp = {
       navigator.geolocation.clearWatch(this._watchId);
       this._watchId = null;
       this._lastSendTime = 0;
+    }
+    if (this._heartbeatTimer) {
+      clearInterval(this._heartbeatTimer);
+      this._heartbeatTimer = null;
     }
   },
 

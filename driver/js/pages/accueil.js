@@ -3,7 +3,8 @@
  */
 const AccueilPage = {
   async render(container) {
-    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+    // Skeleton loading moderne
+    container.innerHTML = '<div style="padding:8px 0"><div class="skeleton skeleton-line w-50" style="height:24px;margin-bottom:16px"></div><div class="skeleton skeleton-line w-75" style="height:14px;margin-bottom:20px"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card" style="height:80px"></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px"><div class="skeleton" style="height:100px;border-radius:1.25rem"></div><div class="skeleton" style="height:100px;border-radius:1.25rem"></div><div class="skeleton" style="height:100px;border-radius:1.25rem"></div></div></div>';
 
     // Fetch dashboard + planning en parallele
     const today = new Date();
@@ -139,26 +140,36 @@ const AccueilPage = {
       nbContraventionsImpayees = contraventionsData.filter(c => c.statut === 'impayee').length;
     }
 
+    // Redevance du jour
+    const redevanceJour = chauffeur.redevanceQuotidienne || 0;
+    const redevanceStr = redevanceJour > 0 ? redevanceJour.toLocaleString('fr-FR') + ' FCFA' : '';
+
     container.innerHTML = `
-      <!-- Greeting -->
-      <div style="margin-bottom:1.25rem">
-        <h2 style="font-size:1.65rem;font-weight:800;color:var(--text-primary,#0f172a)">${greeting}, ${prenom} !</h2>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:0.875rem;font-weight:500;color:var(--text-muted,#64748b)">
-          <iconify-icon icon="solar:calendar-date-bold-duotone" style="color:#3b82f6;font-size:1.1rem"></iconify-icon>
-          ${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
+      <!-- Hero Card — Greeting + Montant a verser -->
+      <div style="border-radius:var(--radius-2xl);background:linear-gradient(135deg,#7c3aed 0%,#a855f7 40%,#c084fc 100%);padding:1.5rem 1.25rem;color:white;margin-bottom:1.25rem;box-shadow:0 8px 32px rgba(124,58,237,0.25);position:relative;overflow:hidden">
+        <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.08)"></div>
+        <div style="position:absolute;bottom:-20px;left:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.06)"></div>
+        <div style="position:relative;z-index:1">
+          <div style="font-size:1rem;font-weight:600;opacity:0.9;margin-bottom:6px">${greeting}, ${prenom}</div>
+          ${redevanceJour > 0 ? `
+            <div style="font-size:2.2rem;font-weight:900;letter-spacing:-0.02em;margin-bottom:4px">${redevanceStr}</div>
+            <div style="font-size:0.8rem;font-weight:500;opacity:0.75">A verser aujourd'hui</div>
+          ` : `
+            <div style="font-size:0.85rem;font-weight:500;opacity:0.8;margin-top:4px">${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</div>
+          `}
         </div>
       </div>
 
-      <!-- Widget Meteo du jour -->
+      <!-- Widget statut sante -->
       ${this._renderStatusWidget(data)}
 
       <!-- Countdown deadline versement -->
       ${countdownHTML}
 
       <!-- Activite Yango -->
-      <div class="card" id="yango-activity-card" style="display:none;">
+      <div class="glass-card" id="yango-activity-card" style="display:none;">
         <div class="card-header">
-          <span class="card-title"><i class="fas fa-taxi" style="color:#FC4C02"></i> Mon activite Yango</span>
+          <span class="card-title"><iconify-icon icon="solar:taxi-bold-duotone" style="color:#FC4C02;font-size:1.1rem;vertical-align:middle"></iconify-icon> Mon activite Yango</span>
           <span class="badge" id="yango-activity-badge" style="background:#FC4C02;color:#fff;">--</span>
         </div>
         <div id="yango-activity-content">
@@ -171,32 +182,50 @@ const AccueilPage = {
 
       <!-- Actions rapides -->
       <div style="margin-bottom:1rem">
-        <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:1rem">Actions rapides</h3>
+        <div class="section-label">Actions rapides</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <button onclick="DriverRouter.navigate('versements')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:1.2rem 0.5rem;border-radius:1.5rem;border:none;background:rgba(34,197,94,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(34,197,94,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
-            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:1.5rem"></iconify-icon>
-            <span style="font-size:0.65rem;font-weight:700;line-height:1.3;text-align:center">Faire un<br>versement</span>
+          <button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:1.2rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(124,58,237,0.2);font-family:inherit;position:relative;overflow:hidden">
+            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:1.6rem"></iconify-icon>
+            <span style="font-size:0.7rem;font-weight:700">Payer</span>
           </button>
-          <button onclick="DriverRouter.navigate('dettes')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:1.2rem 0.5rem;border-radius:1.5rem;border:none;background:rgba(249,115,22,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(249,115,22,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
-            <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:1.5rem"></iconify-icon>
-            <span style="font-size:0.65rem;font-weight:700;line-height:1.3;text-align:center">Mes<br>dettes</span>
+          <button onclick="DriverRouter.navigate('planning')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:1.2rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(59,130,246,0.2);font-family:inherit;position:relative;overflow:hidden">
+            <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:1.6rem"></iconify-icon>
+            <span style="font-size:0.7rem;font-weight:700">Planning</span>
           </button>
-          <button onclick="DriverRouter.navigate('etat-lieux')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:1.2rem 0.5rem;border-radius:1.5rem;border:none;background:#f59e0b;color:white;cursor:pointer;box-shadow:0 4px 12px rgba(245,158,11,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
-            <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:1.5rem"></iconify-icon>
-            <span style="font-size:0.65rem;font-weight:700;line-height:1.3;text-align:center">Etat des<br>lieux</span>
+          <button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:1.2rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#059669,#047857);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(5,150,105,0.2);font-family:inherit;position:relative;overflow:hidden">
+            <iconify-icon icon="solar:history-bold-duotone" style="font-size:1.6rem"></iconify-icon>
+            <span style="font-size:0.7rem;font-weight:700">Historique</span>
           </button>
-          <button onclick="DriverRouter.navigate('planning')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:1.2rem 0.5rem;border-radius:1.5rem;border:none;background:rgba(6,182,212,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(6,182,212,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
-            <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:1.5rem"></iconify-icon>
-            <span style="font-size:0.65rem;font-weight:700;line-height:1.3;text-align:center">Voir mon<br>planning</span>
+        </div>
+      </div>
+
+      <!-- Raccourcis secondaires -->
+      <div style="margin-bottom:1rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button onclick="DriverRouter.navigate('dettes')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
+            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#f97316,#ea580c);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            </div>
+            <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary)">Mes dettes</div>
           </button>
-          <button onclick="DriverRouter.navigate('contraventions')" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:1.2rem 0.5rem;border-radius:1.5rem;border:none;background:rgba(239,68,68,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(239,68,68,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
-            ${nbContraventionsImpayees > 0 ? `<span style="position:absolute;top:8px;right:8px;min-width:22px;height:22px;border-radius:11px;background:#fff;color:#ef4444;font-size:0.7rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 2px 6px rgba(0,0,0,0.15)">${nbContraventionsImpayees}</span>` : ''}
-            <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.75rem"></iconify-icon>
-            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Mes<br>contraventions</span>
+          <button onclick="DriverRouter.navigate('etat-lieux')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
+            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            </div>
+            <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary)">Etat des lieux</div>
           </button>
-          <button onclick="DriverRouter.navigate('support')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:1.5rem 1rem;border-radius:1.5rem;border:none;background:rgba(107,114,128,0.9);color:white;cursor:pointer;box-shadow:0 4px 12px rgba(107,114,128,0.15);transition:transform 0.15s;font-family:inherit" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform=''">
-            <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.75rem"></iconify-icon>
-            <span style="font-size:0.75rem;font-weight:700;line-height:1.3;text-align:center">Signaler un<br>problème</span>
+          <button onclick="DriverRouter.navigate('contraventions')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0;position:relative">
+            ${nbContraventionsImpayees > 0 ? `<span style="position:absolute;top:8px;right:8px;min-width:20px;height:20px;border-radius:10px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 5px">${nbContraventionsImpayees}</span>` : ''}
+            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            </div>
+            <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary)">Contraventions</div>
+          </button>
+          <button onclick="DriverRouter.navigate('support')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
+            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#6b7280,#4b5563);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            </div>
+            <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary)">Support</div>
           </button>
         </div>
       </div>

@@ -715,6 +715,19 @@ img { max-width: 100%; }
   padding: 12px;
   box-shadow: 0 40px 100px -30px rgba(0,0,0,0.5);
 }
+.phone-frame--real {
+  background: none;
+  border: none;
+  padding: 0;
+  width: 280px;
+}
+.phone-screenshot {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 32px;
+  box-shadow: 0 40px 100px -30px rgba(0,0,0,0.5);
+}
 .phone-notch {
   width: 90px;
   height: 22px;

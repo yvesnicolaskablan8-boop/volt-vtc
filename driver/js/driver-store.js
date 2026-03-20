@@ -206,6 +206,10 @@ const DriverStore = {
     return this._post('/location', { lat, lng, speed, heading, accuracy });
   },
 
+  sendLocationBatch(points) {
+    return this._post('/location/batch', { points });
+  },
+
   // ===== BEHAVIOR / ANALYSE CONDUITE =====
 
   sendBehaviorEvents(batch) {

@@ -5,7 +5,7 @@ const DettesPage = {
   _data: null,
 
   async render(container) {
-    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+    container.innerHTML = '<div style="padding:8px 0"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card" style="height:80px"></div><div class="skeleton skeleton-card" style="height:60px"></div><div class="skeleton skeleton-card" style="height:60px"></div></div>';
 
     try {
       this._data = await DriverStore.getDettes();
@@ -97,7 +97,7 @@ const DettesPage = {
         : '';
 
     return `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:12px;background:var(--bg-secondary, white);border:1px solid var(--border-color, #e2e8f0);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:12px;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);">
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:6px;">
             <span style="font-size:0.8rem;font-weight:600;">${dateStr}</span>

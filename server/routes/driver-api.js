@@ -963,6 +963,11 @@ router.post('/location', async (req, res, next) => {
       return res.status(400).json({ error: 'Coordonnees invalides' });
     }
 
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const heureStr = now.toTimeString().slice(0, 8);
+
+    // Mettre a jour position live du chauffeur
     await Chauffeur.findOneAndUpdate(
       { id: chauffeurId },
       {
@@ -972,12 +977,77 @@ router.post('/location', async (req, res, next) => {
           'location.speed': speed || null,
           'location.heading': heading || null,
           'location.accuracy': accuracy || null,
-          'location.updatedAt': new Date().toISOString()
+          'location.updatedAt': now.toISOString()
         }
       }
     );
 
+    // Stocker echantillon GPS dans ConduiteBrute du jour
+    await ConduiteBrute.findOneAndUpdate(
+      { chauffeurId, date: dateStr },
+      { $push: { gpsSamples: { lat, lng, speed: speed || 0, heading: heading || 0, heure: heureStr } } },
+      { upsert: true }
+    );
+
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/driver/location/batch — Envoyer plusieurs points GPS d'un coup (drain offline)
+router.post('/location/batch', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const { points } = req.body;
+
+    if (!Array.isArray(points) || points.length === 0) {
+      return res.status(400).json({ error: 'points requis (array)' });
+    }
+
+    // Limiter a 200 points par requete
+    const batch = points.slice(0, 200);
+
+    // Grouper par date
+    const byDate = {};
+    for (const p of batch) {
+      if (p.lat == null || p.lng == null) continue;
+      if (p.lat < -90 || p.lat > 90 || p.lng < -180 || p.lng > 180) continue;
+      const d = p.t ? new Date(p.t) : new Date();
+      const dateStr = d.toISOString().split('T')[0];
+      const heureStr = d.toTimeString().slice(0, 8);
+      if (!byDate[dateStr]) byDate[dateStr] = [];
+      byDate[dateStr].push({ lat: p.lat, lng: p.lng, speed: p.speed || 0, heading: p.heading || 0, heure: heureStr });
+    }
+
+    // Inserer par date dans ConduiteBrute
+    const ops = Object.entries(byDate).map(([dateStr, samples]) =>
+      ConduiteBrute.findOneAndUpdate(
+        { chauffeurId, date: dateStr },
+        { $push: { gpsSamples: { $each: samples } } },
+        { upsert: true }
+      )
+    );
+    await Promise.all(ops);
+
+    // Mettre a jour position live avec le dernier point
+    const last = batch[batch.length - 1];
+    if (last) {
+      await Chauffeur.findOneAndUpdate(
+        { id: chauffeurId },
+        {
+          $set: {
+            'location.lat': last.lat,
+            'location.lng': last.lng,
+            'location.speed': last.speed || null,
+            'location.heading': last.heading || null,
+            'location.updatedAt': new Date().toISOString()
+          }
+        }
+      );
+    }
+
+    res.json({ success: true, count: batch.length });
   } catch (err) {
     next(err);
   }

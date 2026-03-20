@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-chauffeur-v29';
+const CACHE_NAME = 'pilote-chauffeur-v30';
 
 const STATIC_ASSETS = [
   '/driver/',
@@ -13,6 +13,7 @@ const STATIC_ASSETS = [
   '/driver/js/components/driver-modal.js',
   '/driver/js/components/driver-nav.js',
   '/driver/js/components/driver-countdown.js',
+  '/driver/js/components/driver-trip-tracker.js',
   '/driver/js/pages/accueil.js',
   '/driver/js/pages/planning.js',
   '/driver/js/pages/versements.js',

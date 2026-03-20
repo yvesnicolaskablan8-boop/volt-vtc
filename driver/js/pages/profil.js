@@ -3,7 +3,7 @@
  */
 const ProfilPage = {
   async render(container) {
-    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+    container.innerHTML = '<div style="padding:8px 0"><div class="skeleton skeleton-circle" style="width:96px;height:96px;margin:2rem auto 1rem"></div><div class="skeleton skeleton-line w-50" style="height:20px;margin:0 auto 8px"></div><div class="skeleton skeleton-line w-30" style="height:14px;margin:0 auto 16px"></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px"><div class="skeleton" style="height:90px;border-radius:1.25rem"></div><div class="skeleton" style="height:90px;border-radius:1.25rem"></div><div class="skeleton" style="height:90px;border-radius:1.25rem"></div></div></div>';
 
     // Tenter de charger le profil (avec retry automatique)
     let profil = null, vehicule = null, gpsData = null;
@@ -62,8 +62,8 @@ const ProfilPage = {
     container.innerHTML = `
       <!-- Profile Header Card -->
       <div style="display:flex;flex-direction:column;align-items:center;padding:2rem 0 1.5rem">
-        <div style="width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:white;margin-bottom:1rem;box-shadow:0 8px 24px rgba(59,130,246,0.3)">${initials.toUpperCase()}</div>
-        <h2 style="font-size:1.5rem;font-weight:900;color:#0f172a;margin-bottom:4px">${profil.prenom} ${profil.nom}</h2>
+        <div style="width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7,#3b82f6);background-size:200% 200%;animation:gradientShift 3s ease infinite;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:white;margin-bottom:1rem;box-shadow:0 8px 24px rgba(59,130,246,0.3)">${initials.toUpperCase()}</div>
+        <h2 style="font-size:1.5rem;font-weight:900;color:var(--text-primary);margin-bottom:4px">${profil.prenom} ${profil.nom}</h2>
         <div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:#64748b;margin-bottom:8px">
           <iconify-icon icon="solar:phone-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>
           ${profil.telephone || '--'}
@@ -76,21 +76,21 @@ const ProfilPage = {
 
       <!-- Stats Grid -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.5rem">
-        <div style="text-align:center;padding:1rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03)">
+        <div style="text-align:center;padding:1rem;border-radius:1.25rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);box-shadow:var(--shadow-elevated)">
           <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(59,130,246,0.08);color:#3b82f6;display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
             <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:1.25rem"></iconify-icon>
           </div>
           <div style="font-size:1.25rem;font-weight:800;color:${scoreGlobal >= 70 ? '#22c55e' : scoreGlobal >= 50 ? '#f59e0b' : '#ef4444'}">${scoreGlobal}</div>
           <div style="font-size:0.65rem;color:#94a3b8;font-weight:600;text-transform:uppercase">Score</div>
         </div>
-        <div style="text-align:center;padding:1rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03)">
+        <div style="text-align:center;padding:1rem;border-radius:1.25rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);box-shadow:var(--shadow-elevated)">
           <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(139,92,246,0.08);color:#8b5cf6;display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
             <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:1.25rem"></iconify-icon>
           </div>
           <div style="font-size:1.25rem;font-weight:800;color:#0f172a">${anciennete}</div>
           <div style="font-size:0.65rem;color:#94a3b8;font-weight:600;text-transform:uppercase">Anciennete</div>
         </div>
-        <div style="text-align:center;padding:1rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03)">
+        <div style="text-align:center;padding:1rem;border-radius:1.25rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);box-shadow:var(--shadow-elevated)">
           <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(249,115,22,0.08);color:#f97316;display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
             <iconify-icon icon="solar:wheel-bold-duotone" style="font-size:1.25rem"></iconify-icon>
           </div>
@@ -100,7 +100,7 @@ const ProfilPage = {
       </div>
 
       <!-- Score de conduite -->
-      <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+      <div style="border-radius:1.5rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);padding:1.25rem;margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
           <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(34,197,94,0.08);color:#22c55e;display:flex;align-items:center;justify-content:center">
             <iconify-icon icon="solar:chart-2-bold-duotone" style="font-size:1.2rem"></iconify-icon>
@@ -140,7 +140,7 @@ const ProfilPage = {
       <div id="profil-badges-section"></div>
 
       <!-- Informations personnelles -->
-      <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+      <div style="border-radius:1.5rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);padding:1.25rem;margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
           <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(59,130,246,0.08);color:#3b82f6;display:flex;align-items:center;justify-content:center">
             <iconify-icon icon="solar:user-id-bold-duotone" style="font-size:1.2rem"></iconify-icon>
@@ -174,7 +174,7 @@ const ProfilPage = {
       </div>
 
       <!-- Vehicule assigne -->
-      <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+      <div style="border-radius:1.5rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);padding:1.25rem;margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
           <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(6,182,212,0.08);color:#06b6d4;display:flex;align-items:center;justify-content:center">
             <iconify-icon icon="solar:wheel-bold-duotone" style="font-size:1.2rem"></iconify-icon>
@@ -220,7 +220,7 @@ const ProfilPage = {
 
       <!-- Documents -->
       ${profil.documents && profil.documents.length > 0 ? `
-      <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+      <div style="border-radius:1.5rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);padding:1.25rem;margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
           <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(245,158,11,0.08);color:#f59e0b;display:flex;align-items:center;justify-content:center">
             <iconify-icon icon="solar:document-bold-duotone" style="font-size:1.2rem"></iconify-icon>
@@ -247,7 +247,7 @@ const ProfilPage = {
       ` : ''}
 
       <!-- Preferences -->
-      <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+      <div style="border-radius:1.5rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);padding:1.25rem;margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
           <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(99,102,241,0.08);color:#6366f1;display:flex;align-items:center;justify-content:center">
             <iconify-icon icon="solar:settings-bold-duotone" style="font-size:1.2rem"></iconify-icon>
@@ -267,28 +267,28 @@ const ProfilPage = {
       <div style="margin-bottom:1.5rem">
         <h3 style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:1rem">Actions</h3>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <button onclick="DriverRouter.navigate('classement')" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
+          <button onclick="DriverRouter.navigate('classement')" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);box-shadow:var(--shadow-elevated);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
             <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(245,158,11,0.08);color:#f59e0b;display:flex;align-items:center;justify-content:center">
               <iconify-icon icon="solar:cup-star-bold-duotone" style="font-size:1.25rem"></iconify-icon>
             </div>
             <span style="font-size:0.9rem;font-weight:700;color:#0f172a">Voir le classement</span>
           </button>
 
-          <button onclick="ProfilPage._changerPin()" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
+          <button onclick="ProfilPage._changerPin()" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);box-shadow:var(--shadow-elevated);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
             <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(59,130,246,0.08);color:#3b82f6;display:flex;align-items:center;justify-content:center">
               <iconify-icon icon="solar:key-bold-duotone" style="font-size:1.25rem"></iconify-icon>
             </div>
             <span style="font-size:0.9rem;font-weight:700;color:#0f172a">Changer mon PIN</span>
           </button>
 
-          <button onclick="DriverRouter.navigate('contrat')" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
+          <button onclick="DriverRouter.navigate('contrat')" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);box-shadow:var(--shadow-elevated);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
             <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(249,115,22,0.08);color:#f97316;display:flex;align-items:center;justify-content:center">
               <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.25rem"></iconify-icon>
             </div>
             <span style="font-size:0.9rem;font-weight:700;color:#0f172a">Mon contrat</span>
           </button>
 
-          <button onclick="DriverRouter.navigate('documents')" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 4px rgba(0,0,0,0.03);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
+          <button onclick="DriverRouter.navigate('documents')" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);box-shadow:var(--shadow-elevated);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
             <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(245,158,11,0.08);color:#f59e0b;display:flex;align-items:center;justify-content:center">
               <iconify-icon icon="solar:document-bold-duotone" style="font-size:1.25rem"></iconify-icon>
             </div>
@@ -343,7 +343,7 @@ const ProfilPage = {
       }).join('');
 
       container.innerHTML = `
-        <div style="border-radius:1.5rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+        <div style="border-radius:1.5rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);padding:1.25rem;margin-bottom:1rem">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
             <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(245,158,11,0.08);color:#f59e0b;display:flex;align-items:center;justify-content:center">
               <iconify-icon icon="solar:medal-ribbons-star-bold-duotone" style="font-size:1.2rem"></iconify-icon>

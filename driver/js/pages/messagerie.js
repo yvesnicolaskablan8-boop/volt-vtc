@@ -14,7 +14,7 @@ const MessageriePage = {
     this._view = 'list';
     this._currentConvId = null;
     this._currentConv = null;
-    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+    container.innerHTML = '<div style="padding:8px 0"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card" style="height:80px"></div><div class="skeleton skeleton-card" style="height:60px"></div></div>';
     this._container = container;
     this._loadConversations();
     this._startPolling();
