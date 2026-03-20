@@ -947,7 +947,7 @@ const DashboardPage = {
             <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Versements</div>
           </div>
           <div class="d-val xl" style="color:#fff;">${d.nbVersementsPeriode}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.65);">${Utils.formatCurrency(d.caMoyenJour)} / jour</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.65);">${Utils.formatCurrency(d.caMoyenJour)} / jour en moy.</div>
           <div style="margin-top:10px;">
             <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);font-size:11px;font-weight:700;color:#fff;">${d.retardCount} en retard</span>
           </div>
