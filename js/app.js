@@ -188,7 +188,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 380;
+      const SW_VERSION = 381;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
@@ -336,6 +336,18 @@ const App = {
       Router.init();
       BottomNav.init();
       this._initialized = true;
+
+      // Écouter les mises à jour temps réel (SSE) pour re-render la page active
+      document.addEventListener('pilote:remote-update', () => {
+        if (this._sseDebounce) clearTimeout(this._sseDebounce);
+        this._sseDebounce = setTimeout(() => {
+          if (typeof Router !== 'undefined' && Router._currentPage) {
+            if (typeof Router._currentPage.destroy === 'function') Router._currentPage.destroy();
+            Router._currentPage.render();
+            if (Router._refreshIcons) Router._refreshIcons();
+          }
+        }, 300); // Debounce 300ms pour éviter les renders multiples
+      });
     } else {
       // Refresh sidebar permissions and header user info
       Sidebar.init();

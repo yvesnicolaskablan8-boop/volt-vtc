@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors());
+app.use(cors({ exposedHeaders: ['X-Client-Id'], allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-Id'] }));
 app.use(express.json({ limit: '10mb' }));
 
 // API Routes — Admin
@@ -50,6 +50,10 @@ app.use('/api/controlesTechniques', require('./routes/crud')('ControleTechnique'
 app.use('/api/yango', require('./routes/yango'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));
+
+// SSE — Temps réel (notifications push aux clients connectés)
+const sse = require('./utils/sse');
+app.get('/api/events', (req, res) => sse.handleConnection(req, res));
 
 // API Routes — Webhooks externes (pas d'auth)
 app.use('/api/wave', require('./routes/wave-webhook'));

@@ -1,6 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
 const { logActivity } = require('../middleware/activityLogger');
+const { broadcast } = require('../utils/sse');
 
 // Model name to Mongoose model mapping
 const models = {};
@@ -21,6 +22,9 @@ function createCrudRoutes(modelName) {
   const router = express.Router();
   router.use(authMiddleware);
 
+  // Extraire le nom de collection depuis l'URL (ex: /api/versements → versements)
+  const getCollectionName = (req) => req.baseUrl.replace('/api/', '');
+
   // PUT / - Bulk replace all documents (used for budgets)
   router.put('/', async (req, res, next) => {
     try {
@@ -38,6 +42,7 @@ function createCrudRoutes(modelName) {
         await Model.insertMany(scoped);
       }
       logActivity('bulk_replace', modelName, null, { count: items.length }, req);
+      broadcast(entrepriseId, getCollectionName(req), 'bulk_replace', items, req.headers['x-client-id']);
       res.json({ success: true, count: items.length });
     } catch (err) {
       next(err);
@@ -115,6 +120,8 @@ function createCrudRoutes(modelName) {
       const doc = new Model(data);
       await doc.save();
       logActivity('create', modelName, doc.id || req.body.id, { fields: Object.keys(req.body) }, req);
+      const { _id, __v, ...cleanDoc } = doc.toJSON();
+      broadcast(entrepriseId, getCollectionName(req), 'add', cleanDoc, req.headers['x-client-id']);
       res.status(201).json(doc.toJSON());
     } catch (err) {
       next(err);
@@ -138,6 +145,8 @@ function createCrudRoutes(modelName) {
         return res.status(404).json({ error: 'Not found' });
       }
       logActivity('update', modelName, req.params.id, { fields: Object.keys(req.body) }, req);
+      const { _id: _id2, __v: __v2, ...cleanUpdated } = doc.toJSON();
+      broadcast(entrepriseId, getCollectionName(req), 'update', cleanUpdated, req.headers['x-client-id']);
       res.json(doc.toJSON());
     } catch (err) {
       next(err);
@@ -157,6 +166,7 @@ function createCrudRoutes(modelName) {
         return res.status(404).json({ error: 'Not found' });
       }
       logActivity('delete', modelName, req.params.id, {}, req);
+      broadcast(entrepriseId, getCollectionName(req), 'delete', { id: req.params.id }, req.headers['x-client-id']);
       res.json({ success: true, id: req.params.id });
     } catch (err) {
       next(err);

@@ -27,6 +27,7 @@ const Store = {
       if (res.ok) {
         this._cache = await res.json();
         this._backupToLocalStorage();
+        this.connectSSE();
         console.log('Store: Data loaded from API');
       } else if (res.status === 401) {
         // Token invalid — will redirect to login
@@ -128,6 +129,95 @@ const Store = {
     }
   },
 
+  // =================== TEMPS RÉEL (SSE) ===================
+
+  _eventSource: null,
+  _clientId: Math.random().toString(36).substring(2, 10),
+
+  /**
+   * Connecte le client au flux SSE pour recevoir les mises à jour en temps réel.
+   * Appelé automatiquement après initialize().
+   */
+  connectSSE() {
+    if (this._eventSource) {
+      this._eventSource.close();
+      this._eventSource = null;
+    }
+
+    const token = localStorage.getItem('pilote_token');
+    if (!token) return;
+
+    const url = this._apiBase + '/events?token=' + encodeURIComponent(token) + '&clientId=' + this._clientId;
+
+    try {
+      this._eventSource = new EventSource(url);
+
+      this._eventSource.onmessage = (event) => {
+        try {
+          const { collection, action, data } = JSON.parse(event.data);
+          this._applyRemoteChange(collection, action, data);
+        } catch (e) {
+          console.warn('Store SSE: erreur parsing:', e);
+        }
+      };
+
+      this._eventSource.onerror = () => {
+        // EventSource reconnecte automatiquement
+        console.warn('Store SSE: connexion perdue, reconnexion auto...');
+      };
+
+      console.log('Store SSE: connecté');
+    } catch (e) {
+      console.warn('Store SSE: impossible de se connecter:', e.message);
+    }
+  },
+
+  /**
+   * Applique un changement reçu via SSE au cache local.
+   */
+  _applyRemoteChange(collection, action, data) {
+    if (!this._cache) return;
+
+    if (action === 'add') {
+      if (!this._cache[collection]) this._cache[collection] = [];
+      // Éviter les doublons (si l'item existe déjà)
+      const existing = this._cache[collection].findIndex(i => i.id === data.id);
+      if (existing === -1) {
+        this._cache[collection].push(data);
+      } else {
+        this._cache[collection][existing] = { ...this._cache[collection][existing], ...data };
+      }
+    } else if (action === 'update') {
+      if (!this._cache[collection]) return;
+      const items = this._cache[collection];
+      if (!Array.isArray(items)) return;
+      const index = items.findIndex(i => i.id === data.id);
+      if (index !== -1) {
+        items[index] = { ...items[index], ...data };
+      } else {
+        // Item pas encore dans le cache — l'ajouter
+        items.push(data);
+      }
+    } else if (action === 'delete') {
+      if (!this._cache[collection]) return;
+      this._cache[collection] = this._cache[collection].filter(i => i.id !== data.id);
+    } else if (action === 'bulk_replace') {
+      this._cache[collection] = Array.isArray(data) ? data : [];
+    }
+
+    this._backupToLocalStorage();
+    this._notifyRemote();
+    console.log(`Store SSE: ${collection}:${action} appliqué`);
+  },
+
+  disconnectSSE() {
+    if (this._eventSource) {
+      this._eventSource.close();
+      this._eventSource = null;
+      console.log('Store SSE: déconnecté');
+    }
+  },
+
   // =================== UTILITY ===================
 
   isInitialized() {
@@ -135,6 +225,7 @@ const Store = {
   },
 
   reset() {
+    this.disconnectSSE();
     this._cache = this._emptyData();
     localStorage.removeItem(this._KEY);
     this._notify();
@@ -156,6 +247,7 @@ const Store = {
     const token = localStorage.getItem('pilote_token');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
+    headers['X-Client-Id'] = this._clientId;
     return headers;
   },
 
@@ -232,6 +324,10 @@ const Store = {
 
   _notify() {
     document.dispatchEvent(new CustomEvent('pilote:data-changed'));
+  },
+
+  _notifyRemote() {
+    document.dispatchEvent(new CustomEvent('pilote:remote-update'));
   },
 
   _emptyData() {
