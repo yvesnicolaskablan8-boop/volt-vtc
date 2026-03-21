@@ -243,14 +243,26 @@ router.get('/dashboard', async (req, res, next) => {
       statutSante: await (async () => {
         const flags = [];
         let level = 'green';
-        // 1. Versements en retard
-        const allPlan = await Planning.find({ chauffeurId, date: { $lt: today } }).lean();
-        const allVers = await Versement.find({ chauffeurId, statut: { $ne: 'supprime' } }).lean();
-        const versDates = new Set(allVers.filter(vv => vv.montantVerse > 0).map(vv => vv.date));
-        const unpaidDays = allPlan.filter(p => !versDates.has(p.date) && p.date !== today);
-        // Ne compter que les 30 derniers jours
+        // 1. Versements en retard (aligné avec /dettes)
         const thirtyAgo = new Date(); thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-        const recentUnpaid = unpaidDays.filter(p => new Date(p.date) >= thirtyAgo);
+        const thirtyAgoStr = thirtyAgo.toISOString().split('T')[0];
+        const allPlan = await Planning.find({ chauffeurId, date: { $gte: thirtyAgoStr, $lt: today } }).lean();
+        const allVers = await Versement.find({ chauffeurId }).lean();
+        const absencesAll = await Absence.find({ chauffeurId }).lean();
+        const rev = chauffeur ? (chauffeur.redevanceQuotidienne || 0) : 0;
+        const recentUnpaid = allPlan.filter(p => {
+          // Skip if absence covers this day
+          const hasAbsence = absencesAll.some(a => p.date >= a.dateDebut && p.date <= a.dateFin);
+          if (hasAbsence) return false;
+          // Skip if redevance is 0
+          const dayRev = (p.redevanceOverride > 0) ? p.redevanceOverride : rev;
+          if (dayRev <= 0) return false;
+          // Check for any valid payment (valide, supprime, partiel, or perte)
+          const hasPayment = allVers.some(vv => vv.date === p.date && (vv.statut === 'valide' || vv.statut === 'supprime' || vv.statut === 'partiel' || vv.traitementManquant === 'perte'));
+          // Check for explicit dette
+          const hasExplicitDette = allVers.some(vv => vv.date === p.date && vv.traitementManquant === 'dette' && vv.manquant > 0);
+          return !hasPayment && !hasExplicitDette;
+        });
         if (recentUnpaid.length > 0) {
           level = 'red';
           flags.push({ type: 'versement_retard', message: recentUnpaid.length + ' versement(s) en retard', level: 'red' });
