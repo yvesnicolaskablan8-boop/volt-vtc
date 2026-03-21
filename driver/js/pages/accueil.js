@@ -182,30 +182,30 @@ const AccueilPage = {
       <!-- Raccourcis secondaires -->
       <div style="margin-bottom:1rem">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <button onclick="DriverRouter.navigate('versements')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
-            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#059669,#047857);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:history-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+          <button onclick="DriverRouter.navigate('versements')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:18px 18px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
+            <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#059669,#047857);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:history-bold-duotone" style="font-size:1.4rem"></iconify-icon>
             </div>
-            <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary)">Historique</div>
+            <div style="font-size:0.88rem;font-weight:700;color:var(--text-primary)">Historique</div>
           </button>
-          <button onclick="DriverRouter.navigate('etat-lieux')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
-            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+          <button onclick="DriverRouter.navigate('etat-lieux')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:18px 18px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
+            <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:1.4rem"></iconify-icon>
             </div>
-            <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary)">Etat des lieux</div>
+            <div style="font-size:0.88rem;font-weight:700;color:var(--text-primary)">Etat des lieux</div>
           </button>
-          <button onclick="DriverRouter.navigate('contraventions')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0;position:relative">
+          <button onclick="DriverRouter.navigate('contraventions')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:18px 18px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0;position:relative">
             ${nbContraventionsImpayees > 0 ? `<span style="position:absolute;top:8px;right:8px;min-width:20px;height:20px;border-radius:10px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 5px">${nbContraventionsImpayees}</span>` : ''}
-            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.4rem"></iconify-icon>
             </div>
-            <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary)">Contraventions</div>
+            <div style="font-size:0.88rem;font-weight:700;color:var(--text-primary)">Contraventions</div>
           </button>
-          <button onclick="DriverRouter.navigate('support')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
-            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#6b7280,#4b5563);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+          <button onclick="DriverRouter.navigate('support')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:18px 18px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
+            <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#6b7280,#4b5563);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.4rem"></iconify-icon>
             </div>
-            <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary)">Support</div>
+            <div style="font-size:0.88rem;font-weight:700;color:var(--text-primary)">Support</div>
           </button>
         </div>
       </div>
