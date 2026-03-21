@@ -2770,65 +2770,146 @@ const VersementsPage = {
     const chauffeurs = Store.get('chauffeurs').filter(c => c.statut === 'actif' || c.statut === 'repos');
     const options = chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('');
     const today = new Date().toISOString().split('T')[0];
+    const inputStyle = 'width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);';
+    const labelStyle = 'font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;';
 
     Modal.open({
-      title: '<iconify-icon icon="solar:add-circle-bold" style="color:#f59e0b"></iconify-icon> Ajouter une dette',
+      title: '<iconify-icon icon="solar:add-circle-bold" style="color:#f59e0b"></iconify-icon> Ajouter des dettes',
+      size: 'lg',
       body: `<div style="display:flex;flex-direction:column;gap:16px;">
         <div>
-          <label style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;">Chauffeur *</label>
-          <select id="dette-chauffeur" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);">
+          <label style="${labelStyle}">Chauffeur *</label>
+          <select id="dette-chauffeur" style="${inputStyle}">
             <option value="">— Choisir un chauffeur —</option>
             ${options}
           </select>
         </div>
         <div>
-          <label style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;">Montant de la dette (FCFA) *</label>
-          <input type="number" id="dette-montant" min="1" placeholder="Ex: 15000" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);">
+          <label style="${labelStyle}">Motif (optionnel)</label>
+          <input type="text" id="dette-motif" placeholder="Ex: Retard de versement, avance..." style="${inputStyle}">
         </div>
-        <div>
-          <label style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;">Date</label>
-          <input type="date" id="dette-date" value="${today}" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);">
-        </div>
-        <div>
-          <label style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;">Motif (optionnel)</label>
-          <input type="text" id="dette-motif" placeholder="Ex: Retard de versement, avance..." style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);">
+        <div style="border-top:1px solid var(--border-color);padding-top:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label style="${labelStyle}margin-bottom:0;">Lignes de dette *</label>
+            <button type="button" class="btn btn-sm" style="background:#f59e0b;color:white;border:none;display:flex;align-items:center;gap:4px;padding:4px 10px;font-size:var(--font-size-xs);border-radius:var(--radius-sm);" onclick="VersementsPage._ajouterLigneDette()">
+              <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter une ligne
+            </button>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:4px;padding:0 2px;">
+            <span style="flex:1;font-size:11px;color:var(--text-muted);font-weight:600;">Date</span>
+            <span style="flex:1;font-size:11px;color:var(--text-muted);font-weight:600;">Montant (FCFA)</span>
+          </div>
+          <div id="dette-lignes" style="display:flex;flex-direction:column;gap:8px;">
+            <div class="dette-ligne" style="display:flex;gap:8px;align-items:center;">
+              <input type="date" class="dette-ligne-date" value="${today}" style="flex:1;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);" onchange="VersementsPage._updateDetteTotal()">
+              <input type="number" class="dette-ligne-montant" min="1" placeholder="Montant" style="flex:1;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);" oninput="VersementsPage._updateDetteTotal()">
+            </div>
+          </div>
+          <div id="dette-total" style="margin-top:10px;padding:8px 12px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);font-size:var(--font-size-sm);display:none;">
+            Total : <strong id="dette-total-montant" style="color:#f59e0b;">0 FCFA</strong> — <span id="dette-total-lignes">0</span> ligne(s)
+          </div>
         </div>
       </div>`,
       footer: `<button class="btn" style="background:#f59e0b;color:white;border:none;" onclick="VersementsPage._confirmAjouterDette()"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`
     });
   },
 
+  _ajouterLigneDette() {
+    const container = document.getElementById('dette-lignes');
+    if (!container) return;
+    const today = new Date().toISOString().split('T')[0];
+    const row = document.createElement('div');
+    row.className = 'dette-ligne';
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;';
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.className = 'dette-ligne-date';
+    dateInput.value = today;
+    dateInput.style.cssText = 'flex:1;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);';
+    dateInput.addEventListener('change', () => VersementsPage._updateDetteTotal());
+    const montantInput = document.createElement('input');
+    montantInput.type = 'number';
+    montantInput.className = 'dette-ligne-montant';
+    montantInput.min = '1';
+    montantInput.placeholder = 'Montant';
+    montantInput.style.cssText = 'flex:1;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-family:var(--font-body);font-size:var(--font-size-sm);';
+    montantInput.addEventListener('input', () => VersementsPage._updateDetteTotal());
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.style.cssText = 'background:none;border:none;color:#ef4444;cursor:pointer;padding:4px;font-size:18px;display:flex;';
+    deleteBtn.innerHTML = '<iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>';
+    deleteBtn.addEventListener('click', () => { row.remove(); VersementsPage._updateDetteTotal(); });
+    row.appendChild(dateInput);
+    row.appendChild(montantInput);
+    row.appendChild(deleteBtn);
+    container.appendChild(row);
+    montantInput.focus();
+    this._updateDetteTotal();
+  },
+
+  _updateDetteTotal() {
+    const lignes = document.querySelectorAll('.dette-ligne');
+    let total = 0;
+    let count = 0;
+    lignes.forEach(l => {
+      const m = parseInt(l.querySelector('.dette-ligne-montant')?.value) || 0;
+      if (m > 0) { total += m; count++; }
+    });
+    const totalEl = document.getElementById('dette-total');
+    if (totalEl) {
+      totalEl.style.display = count > 0 ? 'block' : 'none';
+      const montantEl = document.getElementById('dette-total-montant');
+      const lignesEl = document.getElementById('dette-total-lignes');
+      if (montantEl) montantEl.textContent = Utils.formatCurrency(total);
+      if (lignesEl) lignesEl.textContent = count;
+    }
+  },
+
   _confirmAjouterDette() {
     const chauffeurId = document.getElementById('dette-chauffeur')?.value;
-    const montant = parseInt(document.getElementById('dette-montant')?.value);
-    const date = document.getElementById('dette-date')?.value;
     const motif = document.getElementById('dette-motif')?.value || '';
 
     if (!chauffeurId) { Toast.error('Veuillez choisir un chauffeur'); return; }
-    if (!montant || montant <= 0) { Toast.error('Veuillez saisir un montant valide'); return; }
-    if (!date) { Toast.error('Veuillez saisir une date'); return; }
 
     const chauffeur = Store.findById('chauffeurs', chauffeurId);
     if (!chauffeur) { Toast.error('Chauffeur introuvable'); return; }
 
-    // Créer un versement de type dette manuelle
-    const versement = {
-      id: Utils.generateId(),
-      chauffeurId,
-      date,
-      montantVerse: 0,
-      montantAttendu: montant,
-      manquant: montant,
-      statut: 'manquant',
-      traitementManquant: 'dette',
-      commentaire: motif ? `Dette manuelle : ${motif}` : 'Dette ajoutée manuellement',
-      source: 'manuel',
-      dateCreation: new Date().toISOString()
-    };
+    // Collecter toutes les lignes
+    const lignes = document.querySelectorAll('.dette-ligne');
+    const dettes = [];
+    let hasError = false;
+    lignes.forEach((l, i) => {
+      const date = l.querySelector('.dette-ligne-date')?.value;
+      const montant = parseInt(l.querySelector('.dette-ligne-montant')?.value);
+      if (!date) { Toast.error(`Ligne ${i + 1} : date manquante`); hasError = true; return; }
+      if (!montant || montant <= 0) { Toast.error(`Ligne ${i + 1} : montant invalide`); hasError = true; return; }
+      dettes.push({ date, montant });
+    });
+    if (hasError || dettes.length === 0) {
+      if (!hasError) Toast.error('Ajoutez au moins une ligne avec un montant');
+      return;
+    }
 
-    Store.add('versements', versement);
+    // Créer les versements
+    dettes.forEach(d => {
+      Store.add('versements', {
+        id: Utils.generateId(),
+        chauffeurId,
+        date: d.date,
+        montantVerse: 0,
+        montantAttendu: d.montant,
+        manquant: d.montant,
+        statut: 'manquant',
+        traitementManquant: 'dette',
+        commentaire: motif ? `Dette manuelle : ${motif}` : 'Dette ajoutée manuellement',
+        source: 'manuel',
+        dateCreation: new Date().toISOString()
+      });
+    });
+
+    const totalMontant = dettes.reduce((s, d) => s + d.montant, 0);
     Modal.close();
-    Toast.success(`Dette de ${Utils.formatCurrency(montant)} ajoutée pour ${chauffeur.prenom} ${chauffeur.nom}`);
+    Toast.success(`${dettes.length} dette(s) ajoutée(s) pour ${chauffeur.prenom} ${chauffeur.nom} — Total : ${Utils.formatCurrency(totalMontant)}`);
     this.render(document.querySelector('.content'));
   },
 
