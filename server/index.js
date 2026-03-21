@@ -62,6 +62,9 @@ app.use('/api/wave', require('./routes/wave-webhook'));
 app.use('/api/driver/auth', require('./routes/driver-auth'));
 app.use('/api/driver', require('./middleware/driverAuth'), require('./routes/driver-api'));
 
+// Serve .well-known for TWA / Digital Asset Links
+app.use('/.well-known', express.static(path.join(__dirname, '..', '.well-known')));
+
 // Serve driver PWA static files
 app.use('/driver', express.static(path.join(__dirname, '..', 'driver')));
 
