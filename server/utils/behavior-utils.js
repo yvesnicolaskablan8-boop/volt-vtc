@@ -7,6 +7,41 @@
 const Chauffeur = require('../models/Chauffeur');
 const Gps = require('../models/Gps');
 const ConduiteBrute = require('../models/ConduiteBrute');
+const Settings = require('../models/Settings');
+
+/**
+ * Charge la config score conduite depuis Settings (avec fallback defaults)
+ */
+async function getScoreConduiteConfig() {
+  const defaults = {
+    poidsVitesse: 25, poidsFreinage: 25, poidsAcceleration: 20, poidsVirage: 20, poidsRegularite: 10,
+    penaliteVitesse: { faible: -3, modere: -5, severe: -8 },
+    penaliteFreinage: { faible: -2, modere: -3, severe: -5 },
+    penaliteAcceleration: { faible: -1, modere: -2, severe: -3 },
+    penaliteVirage: { faible: -2, modere: -3, severe: -4 },
+    moyenneMobileAncien: 70, moyenneMobileNouveau: 30
+  };
+  try {
+    const settings = await Settings.findOne({});
+    if (settings && settings.scoreConduite) {
+      const sc = settings.scoreConduite;
+      return {
+        poidsVitesse: sc.poidsVitesse ?? defaults.poidsVitesse,
+        poidsFreinage: sc.poidsFreinage ?? defaults.poidsFreinage,
+        poidsAcceleration: sc.poidsAcceleration ?? defaults.poidsAcceleration,
+        poidsVirage: sc.poidsVirage ?? defaults.poidsVirage,
+        poidsRegularite: sc.poidsRegularite ?? defaults.poidsRegularite,
+        penaliteVitesse: { faible: sc.penaliteVitesse?.faible ?? defaults.penaliteVitesse.faible, modere: sc.penaliteVitesse?.modere ?? defaults.penaliteVitesse.modere, severe: sc.penaliteVitesse?.severe ?? defaults.penaliteVitesse.severe },
+        penaliteFreinage: { faible: sc.penaliteFreinage?.faible ?? defaults.penaliteFreinage.faible, modere: sc.penaliteFreinage?.modere ?? defaults.penaliteFreinage.modere, severe: sc.penaliteFreinage?.severe ?? defaults.penaliteFreinage.severe },
+        penaliteAcceleration: { faible: sc.penaliteAcceleration?.faible ?? defaults.penaliteAcceleration.faible, modere: sc.penaliteAcceleration?.modere ?? defaults.penaliteAcceleration.modere, severe: sc.penaliteAcceleration?.severe ?? defaults.penaliteAcceleration.severe },
+        penaliteVirage: { faible: sc.penaliteVirage?.faible ?? defaults.penaliteVirage.faible, modere: sc.penaliteVirage?.modere ?? defaults.penaliteVirage.modere, severe: sc.penaliteVirage?.severe ?? defaults.penaliteVirage.severe },
+        moyenneMobileAncien: sc.moyenneMobileAncien ?? defaults.moyenneMobileAncien,
+        moyenneMobileNouveau: sc.moyenneMobileNouveau ?? defaults.moyenneMobileNouveau
+      };
+    }
+  } catch (e) { /* fallback to defaults */ }
+  return defaults;
+}
 
 /**
  * Distance haversine entre 2 points GPS (en km)
@@ -113,14 +148,17 @@ async function finalizeBehaviorSession(chauffeurId, date) {
   conduiteBrute.scoreCalcule = true;
   await conduiteBrute.save();
 
+  // Charger la config score conduite
+  const cfg = await getScoreConduiteConfig();
+
   // Calcul des scores par categorie
   const evts = conduiteBrute.evenements || [];
   const c = conduiteBrute.compteurs;
 
-  const scoreFreinage = calculateCategoryScore(evts, 'freinage', { faible: -2, modere: -3, severe: -5 });
-  const scoreAcceleration = calculateCategoryScore(evts, 'acceleration', { faible: -1, modere: -2, severe: -3 });
-  const scoreVirage = calculateCategoryScore(evts, 'virage', { faible: -2, modere: -3, severe: -4 });
-  const scoreVitesse = calculateCategoryScore(evts, 'exces_vitesse', { faible: -3, modere: -5, severe: -8 });
+  const scoreFreinage = calculateCategoryScore(evts, 'freinage', cfg.penaliteFreinage);
+  const scoreAcceleration = calculateCategoryScore(evts, 'acceleration', cfg.penaliteAcceleration);
+  const scoreVirage = calculateCategoryScore(evts, 'virage', cfg.penaliteVirage);
+  const scoreVitesse = calculateCategoryScore(evts, 'exces_vitesse', cfg.penaliteVitesse);
 
   // Bonus regularite
   const totalEvents = (c.freinagesBrusques || 0) + (c.accelerationsBrusques || 0) +
@@ -128,13 +166,13 @@ async function finalizeBehaviorSession(chauffeurId, date) {
   const regulariteBonus = totalEvents <= 2 ? 5 : totalEvents <= 5 ? 3 : 0;
   const scoreRegularite = Math.min(100, 80 + regulariteBonus * 4);
 
-  // Score global pondere
+  // Score global pondere (poids en %, divise par 100)
   const scoreGlobal = Math.max(0, Math.min(100, Math.round(
-    scoreVitesse * 0.25 +
-    scoreFreinage * 0.25 +
-    scoreAcceleration * 0.20 +
-    scoreVirage * 0.20 +
-    scoreRegularite * 0.10
+    scoreVitesse * (cfg.poidsVitesse / 100) +
+    scoreFreinage * (cfg.poidsFreinage / 100) +
+    scoreAcceleration * (cfg.poidsAcceleration / 100) +
+    scoreVirage * (cfg.poidsVirage / 100) +
+    scoreRegularite * (cfg.poidsRegularite / 100)
   )));
 
   // Mettre a jour le record Gps
@@ -162,11 +200,13 @@ async function finalizeBehaviorSession(chauffeurId, date) {
     { upsert: true }
   );
 
-  // Mettre a jour le scoreConduite du chauffeur (70% ancien + 30% aujourd'hui)
+  // Mettre a jour le scoreConduite du chauffeur (configurable ancien/nouveau)
   const chauffeur = await Chauffeur.findOne({ id: chauffeurId });
   if (chauffeur) {
     const oldScore = chauffeur.scoreConduite || 80;
-    chauffeur.scoreConduite = Math.round(oldScore * 0.7 + scoreGlobal * 0.3);
+    const pctAncien = cfg.moyenneMobileAncien / 100;
+    const pctNouveau = cfg.moyenneMobileNouveau / 100;
+    chauffeur.scoreConduite = Math.round(oldScore * pctAncien + scoreGlobal * pctNouveau);
     await chauffeur.save();
   }
 
@@ -181,5 +221,6 @@ module.exports = {
   haversineDistance,
   calculateCategoryScore,
   generateAnalyseIA,
-  finalizeBehaviorSession
+  finalizeBehaviorSession,
+  getScoreConduiteConfig
 };

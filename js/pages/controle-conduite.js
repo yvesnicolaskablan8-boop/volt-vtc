@@ -57,6 +57,9 @@ const ControleConduitePage = {
         <button class="cc-tab ${this._activeTab === 'contraventions' ? 'active' : ''}" data-tab="contraventions">
           <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> Contraventions
         </button>
+        <button class="cc-tab ${this._activeTab === 'parametres' ? 'active' : ''}" data-tab="parametres">
+          <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon> Param\u00e8tres
+        </button>
       </div>
 
       <div id="cc-tab-content"></div>
@@ -158,6 +161,7 @@ const ControleConduitePage = {
     else if (tab === 'zones') this._renderZones(content);
     else if (tab === 'statistiques') this._renderStats(content);
     else if (tab === 'contraventions') this._renderContraventions(content);
+    else if (tab === 'parametres') this._renderParametres(content);
   },
 
   // ======================== HELPERS ========================
@@ -1548,5 +1552,219 @@ const ControleConduitePage = {
       console.error('Wave checkout error:', err);
       Toast.show('Erreur de connexion', 'error');
     }
+  },
+
+  // ======================== PARAMETRES ========================
+
+  async _renderParametres(container) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>';
+
+    // Charger les settings actuels
+    let cfg = {
+      poidsVitesse: 25, poidsFreinage: 25, poidsAcceleration: 20, poidsVirage: 20, poidsRegularite: 10,
+      penaliteVitesse: { faible: -3, modere: -5, severe: -8 },
+      penaliteFreinage: { faible: -2, modere: -3, severe: -5 },
+      penaliteAcceleration: { faible: -1, modere: -2, severe: -3 },
+      penaliteVirage: { faible: -2, modere: -3, severe: -4 },
+      moyenneMobileAncien: 70, moyenneMobileNouveau: 30
+    };
+    try {
+      const res = await fetch('/api/settings', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('pilote_token') } });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.scoreConduite) cfg = { ...cfg, ...data.scoreConduite };
+      }
+    } catch (e) { /* use defaults */ }
+
+    const esc = this._escapeHtml.bind(this);
+
+    container.innerHTML = `
+      <div style="max-width:900px;">
+
+        <!-- Poids des criteres -->
+        <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <iconify-icon icon="solar:tuning-2-bold-duotone" style="font-size:22px;color:#6366f1;"></iconify-icon>
+            <div style="font-size:18px;font-weight:700;color:var(--text-primary);">Poids des crit\u00e8res</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Ajustez l'importance de chaque crit\u00e8re dans le score global (total doit faire 100%)</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Vitesse (%)</label>
+              <input type="number" id="cfg-poids-vitesse" value="${cfg.poidsVitesse}" min="0" max="100" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--input-bg);color:var(--text-primary);font-size:16px;font-weight:700;text-align:center;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Freinage (%)</label>
+              <input type="number" id="cfg-poids-freinage" value="${cfg.poidsFreinage}" min="0" max="100" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--input-bg);color:var(--text-primary);font-size:16px;font-weight:700;text-align:center;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Acc\u00e9l\u00e9ration (%)</label>
+              <input type="number" id="cfg-poids-acceleration" value="${cfg.poidsAcceleration}" min="0" max="100" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--input-bg);color:var(--text-primary);font-size:16px;font-weight:700;text-align:center;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Virages (%)</label>
+              <input type="number" id="cfg-poids-virage" value="${cfg.poidsVirage}" min="0" max="100" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--input-bg);color:var(--text-primary);font-size:16px;font-weight:700;text-align:center;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">R\u00e9gularit\u00e9 (%)</label>
+              <input type="number" id="cfg-poids-regularite" value="${cfg.poidsRegularite}" min="0" max="100" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--input-bg);color:var(--text-primary);font-size:16px;font-weight:700;text-align:center;">
+            </div>
+          </div>
+          <div id="cfg-poids-total" style="text-align:right;margin-top:8px;font-size:13px;font-weight:600;color:#22c55e;">Total : 100%</div>
+        </div>
+
+        <!-- Penalites par categorie -->
+        <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <iconify-icon icon="solar:shield-warning-bold-duotone" style="font-size:22px;color:#ef4444;"></iconify-icon>
+            <div style="font-size:18px;font-weight:700;color:var(--text-primary);">P\u00e9nalit\u00e9s par cat\u00e9gorie</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Points retir\u00e9s par \u00e9v\u00e9nement d\u00e9tect\u00e9 (valeurs n\u00e9gatives)</div>
+
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="border-bottom:2px solid var(--border-color);">
+                <th style="text-align:left;padding:8px 12px;font-size:13px;color:var(--text-muted);font-weight:600;">Cat\u00e9gorie</th>
+                <th style="text-align:center;padding:8px 12px;font-size:13px;color:#f59e0b;font-weight:600;">Faible</th>
+                <th style="text-align:center;padding:8px 12px;font-size:13px;color:#f97316;font-weight:600;">Mod\u00e9r\u00e9</th>
+                <th style="text-align:center;padding:8px 12px;font-size:13px;color:#ef4444;font-weight:600;">S\u00e9v\u00e8re</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border-color);">
+                <td style="padding:10px 12px;font-weight:600;color:var(--text-primary);">Exc\u00e8s de vitesse</td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-vitesse-faible" value="${cfg.penaliteVitesse.faible}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-vitesse-modere" value="${cfg.penaliteVitesse.modere}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-vitesse-severe" value="${cfg.penaliteVitesse.severe}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-color);">
+                <td style="padding:10px 12px;font-weight:600;color:var(--text-primary);">Freinage brusque</td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-freinage-faible" value="${cfg.penaliteFreinage.faible}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-freinage-modere" value="${cfg.penaliteFreinage.modere}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-freinage-severe" value="${cfg.penaliteFreinage.severe}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border-color);">
+                <td style="padding:10px 12px;font-weight:600;color:var(--text-primary);">Acc\u00e9l\u00e9ration brusque</td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-acceleration-faible" value="${cfg.penaliteAcceleration.faible}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-acceleration-modere" value="${cfg.penaliteAcceleration.modere}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-acceleration-severe" value="${cfg.penaliteAcceleration.severe}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+              </tr>
+              <tr>
+                <td style="padding:10px 12px;font-weight:600;color:var(--text-primary);">Virage agressif</td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-virage-faible" value="${cfg.penaliteVirage.faible}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-virage-modere" value="${cfg.penaliteVirage.modere}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+                <td style="text-align:center;"><input type="number" id="cfg-pen-virage-severe" value="${cfg.penaliteVirage.severe}" max="0" style="width:60px;padding:6px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--text-primary);text-align:center;"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Moyenne mobile -->
+        <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:22px;color:#22c55e;"></iconify-icon>
+            <div style="font-size:18px;font-weight:700;color:var(--text-primary);">Moyenne mobile</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Comment le score du jour impacte le score global du chauffeur (total doit faire 100%)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Score pr\u00e9c\u00e9dent (%)</label>
+              <input type="number" id="cfg-mm-ancien" value="${cfg.moyenneMobileAncien}" min="0" max="100" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--input-bg);color:var(--text-primary);font-size:16px;font-weight:700;text-align:center;">
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Plus \u00e9lev\u00e9 = score plus stable</div>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Score du jour (%)</label>
+              <input type="number" id="cfg-mm-nouveau" value="${cfg.moyenneMobileNouveau}" min="0" max="100" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--input-bg);color:var(--text-primary);font-size:16px;font-weight:700;text-align:center;">
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Plus \u00e9lev\u00e9 = score plus r\u00e9actif</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:right;">
+          <button id="btn-save-score-config" style="padding:12px 28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;border-radius:var(--radius-md);font-weight:700;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+            <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Enregistrer
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Validation total poids en temps reel
+    const poidsInputs = ['vitesse', 'freinage', 'acceleration', 'virage', 'regularite'].map(k => document.getElementById('cfg-poids-' + k));
+    const totalDiv = document.getElementById('cfg-poids-total');
+    poidsInputs.forEach(inp => {
+      if (inp) inp.addEventListener('input', () => {
+        const total = poidsInputs.reduce((s, i) => s + (parseInt(i.value) || 0), 0);
+        totalDiv.textContent = 'Total : ' + total + '%';
+        totalDiv.style.color = total === 100 ? '#22c55e' : '#ef4444';
+      });
+    });
+
+    // Sauvegarder
+    const btnSave = document.getElementById('btn-save-score-config');
+    if (btnSave) btnSave.addEventListener('click', async () => {
+      const total = poidsInputs.reduce((s, i) => s + (parseInt(i.value) || 0), 0);
+      if (total !== 100) {
+        Toast.show('Le total des poids doit faire 100%', 'error');
+        return;
+      }
+      const mmAncien = parseInt(document.getElementById('cfg-mm-ancien').value) || 70;
+      const mmNouveau = parseInt(document.getElementById('cfg-mm-nouveau').value) || 30;
+      if (mmAncien + mmNouveau !== 100) {
+        Toast.show('La moyenne mobile doit totaliser 100%', 'error');
+        return;
+      }
+
+      const payload = {
+        scoreConduite: {
+          poidsVitesse: parseInt(document.getElementById('cfg-poids-vitesse').value) || 25,
+          poidsFreinage: parseInt(document.getElementById('cfg-poids-freinage').value) || 25,
+          poidsAcceleration: parseInt(document.getElementById('cfg-poids-acceleration').value) || 20,
+          poidsVirage: parseInt(document.getElementById('cfg-poids-virage').value) || 20,
+          poidsRegularite: parseInt(document.getElementById('cfg-poids-regularite').value) || 10,
+          penaliteVitesse: {
+            faible: parseInt(document.getElementById('cfg-pen-vitesse-faible').value) || -3,
+            modere: parseInt(document.getElementById('cfg-pen-vitesse-modere').value) || -5,
+            severe: parseInt(document.getElementById('cfg-pen-vitesse-severe').value) || -8
+          },
+          penaliteFreinage: {
+            faible: parseInt(document.getElementById('cfg-pen-freinage-faible').value) || -2,
+            modere: parseInt(document.getElementById('cfg-pen-freinage-modere').value) || -3,
+            severe: parseInt(document.getElementById('cfg-pen-freinage-severe').value) || -5
+          },
+          penaliteAcceleration: {
+            faible: parseInt(document.getElementById('cfg-pen-acceleration-faible').value) || -1,
+            modere: parseInt(document.getElementById('cfg-pen-acceleration-modere').value) || -2,
+            severe: parseInt(document.getElementById('cfg-pen-acceleration-severe').value) || -3
+          },
+          penaliteVirage: {
+            faible: parseInt(document.getElementById('cfg-pen-virage-faible').value) || -2,
+            modere: parseInt(document.getElementById('cfg-pen-virage-modere').value) || -3,
+            severe: parseInt(document.getElementById('cfg-pen-virage-severe').value) || -4
+          },
+          moyenneMobileAncien: mmAncien,
+          moyenneMobileNouveau: mmNouveau
+        }
+      };
+
+      try {
+        btnSave.disabled = true;
+        btnSave.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone" class="spin"></iconify-icon> Enregistrement...';
+        const res = await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pilote_token') },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          Toast.show('Param\u00e8tres du score de conduite enregistr\u00e9s', 'success');
+        } else {
+          Toast.show('Erreur lors de la sauvegarde', 'error');
+        }
+      } catch (e) {
+        Toast.show('Erreur de connexion', 'error');
+      } finally {
+        btnSave.disabled = false;
+        btnSave.innerHTML = '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Enregistrer';
+      }
+    });
   }
 };

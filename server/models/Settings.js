@@ -43,6 +43,19 @@ const settingsSchema = new mongoose.Schema({
     bonusValeur: { type: Number, default: 5000 },
     bonusPeriode: { type: String, enum: ['hebdomadaire', 'mensuel'], default: 'mensuel' }
   },
+  scoreConduite: {
+    poidsVitesse: { type: Number, default: 25 },
+    poidsFreinage: { type: Number, default: 25 },
+    poidsAcceleration: { type: Number, default: 20 },
+    poidsVirage: { type: Number, default: 20 },
+    poidsRegularite: { type: Number, default: 10 },
+    penaliteVitesse: { faible: { type: Number, default: -3 }, modere: { type: Number, default: -5 }, severe: { type: Number, default: -8 } },
+    penaliteFreinage: { faible: { type: Number, default: -2 }, modere: { type: Number, default: -3 }, severe: { type: Number, default: -5 } },
+    penaliteAcceleration: { faible: { type: Number, default: -1 }, modere: { type: Number, default: -2 }, severe: { type: Number, default: -3 } },
+    penaliteVirage: { faible: { type: Number, default: -2 }, modere: { type: Number, default: -3 }, severe: { type: Number, default: -4 } },
+    moyenneMobileAncien: { type: Number, default: 70 },
+    moyenneMobileNouveau: { type: Number, default: 30 }
+  },
   classement: {
     poidsRecettes: { type: Number, default: 40 },
     poidsConduite: { type: Number, default: 25 },
