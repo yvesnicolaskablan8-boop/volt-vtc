@@ -21,6 +21,7 @@ const Router = {
       '/rentabilite': { page: RentabilitePage, title: 'Rentabilité' },
       '/gps-conduite': { page: GpsConduitePage, title: 'GPS & Conduite' },
       '/controle-conduite': { page: ControleConduitePage, title: 'Controle de conduite' },
+      '/classement': { page: ClassementPage, title: 'Classement' },
 
       '/rapports': { page: RapportsPage, title: 'Rapports' },
       '/comptabilite': { page: ComptabilitePage, title: 'Comptabilité' },

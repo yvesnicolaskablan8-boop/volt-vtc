@@ -69,13 +69,13 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/variables.css?v=384">
-  <link rel="stylesheet" href="css/base.css?v=384">
-  <link rel="stylesheet" href="css/layout.css?v=384">
-  <link rel="stylesheet" href="css/components.css?v=384">
-  <link rel="stylesheet" href="css/charts.css?v=384">
-  <link rel="stylesheet" href="css/animations.css?v=384">
-  <link rel="stylesheet" href="css/responsive.css?v=384">
+  <link rel="stylesheet" href="css/variables.css?v=385">
+  <link rel="stylesheet" href="css/base.css?v=385">
+  <link rel="stylesheet" href="css/layout.css?v=385">
+  <link rel="stylesheet" href="css/components.css?v=385">
+  <link rel="stylesheet" href="css/charts.css?v=385">
+  <link rel="stylesheet" href="css/animations.css?v=385">
+  <link rel="stylesheet" href="css/responsive.css?v=385">
 
   <!-- Prevent flash of login screen on refresh when already authenticated -->
   <script>
@@ -331,6 +331,10 @@
           <iconify-icon icon="solar:shield-check-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Contr&ocirc;le conduite</span>
         </a>
+        <a class="nav-item" href="#/classement" data-route="/classement">
+          <iconify-icon icon="solar:cup-star-bold-duotone" class="nav-icon"></iconify-icon>
+          <span>Classement</span>
+        </a>
         <a class="nav-item" href="#/alertes" data-route="/alertes">
           <iconify-icon icon="solar:bell-bing-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Alertes</span>
@@ -489,41 +493,42 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
 
   <!-- App JS -->
-  <script src="js/store.js?v=384"></script>
-  <script src="js/utils.js?v=384"></script>
-  <script src="js/demo-data.js?v=384"></script>
-  <script src="js/auth.js?v=384"></script>
-  <script src="js/components/toast.js?v=384"></script>
-  <script src="js/components/modal.js?v=384"></script>
-  <script src="js/components/sidebar.js?v=384"></script>
-  <script src="js/components/header.js?v=384"></script>
-  <script src="js/components/table.js?v=384"></script>
-  <script src="js/components/form-builder.js?v=384"></script>
-  <script src="js/pages/dashboard.js?v=384"></script>
-  <script src="js/pages/chauffeurs.js?v=384"></script>
-  <script src="js/pages/vehicules.js?v=384"></script>
-  <script src="js/pages/versements.js?v=384"></script>
-  <script src="js/pages/rentabilite.js?v=384"></script>
-  <script src="js/pages/gps-conduite.js?v=384"></script>
-  <script src="js/pages/controle-conduite.js?v=384"></script>
-  <script src="js/pages/rapports.js?v=384"></script>
-  <script src="js/pages/comptabilite.js?v=384"></script>
-  <script src="js/pages/planning.js?v=384"></script>
-  <script src="js/pages/alertes.js?v=384"></script>
-  <script src="js/pages/parametres.js?v=384"></script>
-  <script src="js/pages/yango.js?v=384"></script>
-  <script src="js/pages/messagerie.js?v=384"></script>
-  <script src="js/pages/garage.js?v=384"></script>
-  <script src="js/pages/incidents.js?v=384"></script>
-  <script src="js/pages/contraventions.js?v=384"></script>
-  <script src="js/pages/depenses.js?v=384"></script>
-  <script src="js/pages/activite.js?v=384"></script>
-  <script src="js/pages/notifications-admin.js?v=384"></script>
-  <script src="js/pages/taches.js?v=384"></script>
-  <script src="js/pages/mon-compte.js?v=384"></script>
-  <script src="js/pages/menu.js?v=384"></script>
-  <script src="js/components/bottom-nav.js?v=384"></script>
-  <script src="js/router.js?v=384"></script>
-  <script src="js/app.js?v=384"></script>
+  <script src="js/store.js?v=385"></script>
+  <script src="js/utils.js?v=385"></script>
+  <script src="js/demo-data.js?v=385"></script>
+  <script src="js/auth.js?v=385"></script>
+  <script src="js/components/toast.js?v=385"></script>
+  <script src="js/components/modal.js?v=385"></script>
+  <script src="js/components/sidebar.js?v=385"></script>
+  <script src="js/components/header.js?v=385"></script>
+  <script src="js/components/table.js?v=385"></script>
+  <script src="js/components/form-builder.js?v=385"></script>
+  <script src="js/pages/dashboard.js?v=385"></script>
+  <script src="js/pages/chauffeurs.js?v=385"></script>
+  <script src="js/pages/vehicules.js?v=385"></script>
+  <script src="js/pages/versements.js?v=385"></script>
+  <script src="js/pages/rentabilite.js?v=385"></script>
+  <script src="js/pages/gps-conduite.js?v=385"></script>
+  <script src="js/pages/controle-conduite.js?v=385"></script>
+  <script src="js/pages/rapports.js?v=385"></script>
+  <script src="js/pages/comptabilite.js?v=385"></script>
+  <script src="js/pages/planning.js?v=385"></script>
+  <script src="js/pages/alertes.js?v=385"></script>
+  <script src="js/pages/parametres.js?v=385"></script>
+  <script src="js/pages/yango.js?v=385"></script>
+  <script src="js/pages/messagerie.js?v=385"></script>
+  <script src="js/pages/garage.js?v=385"></script>
+  <script src="js/pages/incidents.js?v=385"></script>
+  <script src="js/pages/contraventions.js?v=385"></script>
+  <script src="js/pages/depenses.js?v=385"></script>
+  <script src="js/pages/activite.js?v=385"></script>
+  <script src="js/pages/notifications-admin.js?v=385"></script>
+  <script src="js/pages/taches.js?v=385"></script>
+  <script src="js/pages/mon-compte.js?v=385"></script>
+  <script src="js/pages/classement.js?v=385"></script>
+  <script src="js/pages/menu.js?v=385"></script>
+  <script src="js/components/bottom-nav.js?v=385"></script>
+  <script src="js/router.js?v=385"></script>
+  <script src="js/app.js?v=385"></script>
 </body>
 </html>

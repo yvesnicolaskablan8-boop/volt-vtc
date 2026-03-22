@@ -1480,10 +1480,11 @@ const DashboardPage = {
         <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
           <iconify-icon icon="solar:cup-star-bold-duotone"></iconify-icon>
         </div>
-        <div>
+        <div style="flex:1;">
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 chauffeurs</div>
           <div style="font-size:11px;color:#9ca3af;">Score global (${d.monthLabel})</div>
         </div>
+        <a href="#/classement" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout &rarr;</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
     </div>`;
