@@ -577,8 +577,8 @@ const ControleConduitePage = {
           // Detection zone (single circle, no glow for perf)
           L.circle([lat, lng], {
             radius: rayon,
-            color: isActive ? 'rgba(167,139,250,0.6)' : 'rgba(107,114,128,0.4)',
-            fillColor: isActive ? 'rgba(167,139,250,0.12)' : 'rgba(107,114,128,0.08)',
+            color: isActive ? 'rgba(220,38,38,0.6)' : 'rgba(107,114,128,0.4)',
+            fillColor: isActive ? 'rgba(220,38,38,0.12)' : 'rgba(107,114,128,0.08)',
             fillOpacity: 1,
             weight: 1.5,
             dashArray: isActive ? null : '6,4'
@@ -599,7 +599,7 @@ const ControleConduitePage = {
           // Center dot marker
           const radarIcon = L.divIcon({
             className: '',
-            html: '<div style="width:14px;height:14px;border-radius:50%;background:' + (isActive ? 'linear-gradient(135deg,#7c3aed,#a78bfa)' : '#6b7280') + ';border:2px solid rgba(255,255,255,0.8);box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 12px ' + (isActive ? 'rgba(124,58,237,0.5)' : 'rgba(0,0,0,0.2)') + ';"></div>',
+            html: '<div style="width:14px;height:14px;border-radius:50%;background:' + (isActive ? 'linear-gradient(135deg,#dc2626,#ef4444)' : '#6b7280') + ';border:2px solid rgba(255,255,255,0.8);box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 12px ' + (isActive ? 'rgba(220,38,38,0.5)' : 'rgba(0,0,0,0.2)') + ';"></div>',
             iconSize: [14, 14],
             iconAnchor: [7, 7]
           });
