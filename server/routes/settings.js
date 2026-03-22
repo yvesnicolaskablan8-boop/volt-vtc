@@ -92,6 +92,11 @@ router.put('/', async (req, res, next) => {
       if (req.body.versements) settings.versements = req.body.versements;
       if (req.body.bonus) settings.bonus = req.body.bonus;
       if (req.body.notifications) settings.notifications = req.body.notifications;
+      if (req.body.objectifs) settings.objectifs = req.body.objectifs;
+      if (req.body.contrat) {
+        settings.contrat = req.body.contrat;
+        settings.markModified('contrat');
+      }
 
       // Handle integrations — skip masked values (user didn't change them)
       if (req.body.integrations) {
@@ -134,6 +139,21 @@ router.put('/', async (req, res, next) => {
     }
 
     res.json(json);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/settings/reset-contrat-acceptance — Reset all chauffeurs' contratAccepte
+router.post('/reset-contrat-acceptance', async (req, res, next) => {
+  try {
+    const Chauffeur = require('../models/Chauffeur');
+    const ef = tenantFilter(req);
+    const filter = ef.entrepriseId ? { entrepriseId: ef.entrepriseId } : {};
+    const result = await Chauffeur.updateMany(filter, {
+      $set: { contratAccepte: false, contratAccepteLe: null, contratAccepteIP: null }
+    });
+    res.json({ success: true, modifiedCount: result.modifiedCount });
   } catch (err) {
     next(err);
   }

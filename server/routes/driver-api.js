@@ -907,16 +907,53 @@ router.get('/profil', async (req, res, next) => {
 
 // =================== CONTRAT ===================
 
+// GET /api/driver/contrat — Retourne le contrat depuis les settings + statut acceptation du chauffeur
+router.get('/contrat', async (req, res, next) => {
+  try {
+    const [settings, chauffeur] = await Promise.all([
+      Settings.findOne({}).lean(),
+      Chauffeur.findOne({ id: req.user.chauffeurId }).lean()
+    ]);
+    if (!chauffeur) {
+      return res.status(404).json({ error: 'Chauffeur introuvable' });
+    }
+    const contrat = (settings && settings.contrat) || {};
+    const entreprise = (settings && settings.entreprise) || {};
+    res.json({
+      contrat,
+      entreprise,
+      chauffeur: {
+        nom: chauffeur.nom,
+        prenom: chauffeur.prenom,
+        telephone: chauffeur.telephone,
+        email: chauffeur.email,
+        dateDebutContrat: chauffeur.dateDebutContrat,
+        dateFinContrat: chauffeur.dateFinContrat,
+        contratAccepte: chauffeur.contratAccepte,
+        contratAccepteLe: chauffeur.contratAccepteLe,
+        contratVersion: chauffeur.contratVersion || 0
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /api/driver/contrat/accepter — Le chauffeur accepte son contrat
 router.post('/contrat/accepter', async (req, res, next) => {
   try {
+    // Lire la version actuelle du contrat dans les settings
+    const settings = await Settings.findOne({}).lean();
+    const contratVersion = (settings && settings.contrat && settings.contrat.version) || 1;
+
     const result = await Chauffeur.findOneAndUpdate(
       { id: req.user.chauffeurId },
       {
         $set: {
           contratAccepte: true,
           contratAccepteLe: new Date(),
-          contratAccepteIP: req.ip || req.headers['x-forwarded-for'] || ''
+          contratAccepteIP: req.ip || req.headers['x-forwarded-for'] || '',
+          contratVersion: contratVersion
         }
       },
       { new: true }
@@ -924,7 +961,7 @@ router.post('/contrat/accepter', async (req, res, next) => {
     if (!result) {
       return res.status(404).json({ error: 'Chauffeur introuvable' });
     }
-    res.json({ success: true, accepteLe: result.contratAccepteLe });
+    res.json({ success: true, accepteLe: result.contratAccepteLe, contratVersion });
   } catch (err) {
     next(err);
   }

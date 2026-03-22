@@ -61,6 +61,7 @@ const ParametresPage = {
         <div class="tab" data-tab="versements-settings"><iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon> Versements</div>
         <div class="tab" data-tab="notifications-settings"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Notifications</div>
         <div class="tab" data-tab="parcs"><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Parcs</div>
+        <div class="tab" data-tab="contrat"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> Contrat</div>
         <div class="tab" data-tab="integrations"><iconify-icon icon="solar:plug-circle-bold-duotone"></iconify-icon> Intégrations</div>
       </div>
 
@@ -89,6 +90,7 @@ const ParametresPage = {
       case 'versements-settings': ct.innerHTML = this._renderVersementsSettings(); this._bindVersementsSettingsEvents(); break;
       case 'notifications-settings': ct.innerHTML = this._renderNotificationsSettings(); this._bindNotificationsSettingsEvents(); break;
       case 'parcs': ct.innerHTML = this._renderParcs(); this._bindParcsEvents(); break;
+      case 'contrat': ct.innerHTML = this._renderContrat(); this._bindContratEvents(); break;
       case 'integrations': ct.innerHTML = this._renderIntegrations(); this._bindIntegrationsEvents(); break;
     }
   },
@@ -2643,6 +2645,336 @@ const ParametresPage = {
         testYangoBtn.innerHTML = '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tester';
       });
     }
+  },
+
+  // ========================= ONGLET CONTRAT =========================
+
+  _renderContrat() {
+    const settings = Store.get('settings') || {};
+    const c = settings.contrat || {};
+    const amendements = c.amendements || [];
+    const version = c.version || 1;
+    const derniereMaj = c.derniereMaj ? Utils.formatDate(c.derniereMaj) : '-';
+
+    const escVal = (v) => Utils.escHtml(v || '');
+    const escTextarea = (v) => (v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    return `
+      <div style="display:flex;flex-direction:column;gap:var(--space-lg);">
+        <!-- En-tête version -->
+        <div class="card" style="border-left:4px solid var(--primary);">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-md);">
+            <div style="display:flex;align-items:center;gap:var(--space-md);">
+              <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:28px;color:var(--primary);"></iconify-icon>
+              <div>
+                <div style="font-weight:700;font-size:var(--font-size-lg);">Modèle de contrat chauffeur</div>
+                <div style="font-size:var(--font-size-sm);color:var(--text-muted);">Version ${version} — Dernière mise à jour : ${derniereMaj}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:var(--space-sm);">
+              <button class="btn btn-sm btn-primary" id="btn-save-contrat"><iconify-icon icon="solar:diskette-bold-duotone"></iconify-icon> Sauvegarder</button>
+              <button class="btn btn-sm btn-danger" id="btn-publier-contrat"><iconify-icon icon="solar:upload-bold-duotone"></iconify-icon> Publier les modifications</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulaire principal -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Informations du contrat</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+            <div class="grid-2" style="gap:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Employeur</label>
+                <input type="text" class="form-control" id="contrat-employeur" value="${escVal(c.employeur)}" placeholder="Nom de l'employeur">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Type de contrat</label>
+                <select class="form-control" id="contrat-type">
+                  <option value="CDI" ${c.typeContrat === 'CDI' ? 'selected' : ''}>CDI</option>
+                  <option value="CDD" ${c.typeContrat === 'CDD' ? 'selected' : ''}>CDD</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid-2" style="gap:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Poste</label>
+                <input type="text" class="form-control" id="contrat-poste" value="${escVal(c.poste)}" placeholder="Ex: Chauffeur VTC">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Période d'essai</label>
+                <input type="text" class="form-control" id="contrat-periode-essai" value="${escVal(c.periodeEssai)}" placeholder="Ex: 3 mois, renouvelable une fois">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Lieu de travail</label>
+              <input type="text" class="form-control" id="contrat-lieu" value="${escVal(c.lieuTravail)}" placeholder="Ex: Abidjan et environs">
+            </div>
+            <div class="grid-2" style="gap:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Organisation du travail</label>
+                <textarea class="form-control" id="contrat-organisation" rows="3" placeholder="Décrivez l'organisation du travail...">${escTextarea(c.organisation)}</textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Horaires</label>
+                <textarea class="form-control" id="contrat-horaires" rows="3" placeholder="Décrivez les horaires de travail...">${escTextarea(c.horaires)}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rémunération -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon> Rémunération</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+            <div class="grid-2" style="gap:var(--space-md);">
+              <div class="form-group">
+                <label class="form-label">Salaire journalier (FCFA)</label>
+                <input type="number" class="form-control" id="contrat-salaire" value="${c.salaireJournalier || ''}" placeholder="0" min="0" step="500">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Objectif minimum journalier (FCFA)</label>
+                <input type="number" class="form-control" id="contrat-objectif" value="${c.objectifMinimum || ''}" placeholder="0" min="0" step="500">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bonus performance</label>
+              <textarea class="form-control" id="contrat-bonus" rows="3" placeholder="Décrivez la structure de bonus...">${escTextarea(c.bonusPerformance)}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clauses -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Clauses et obligations</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+            <div class="form-group">
+              <label class="form-label">Obligations du chauffeur</label>
+              <textarea class="form-control" id="contrat-obligations" rows="4" placeholder="Listez les obligations du chauffeur...">${escTextarea(c.obligations)}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Responsabilités et sanctions</label>
+              <textarea class="form-control" id="contrat-responsabilites" rows="4" placeholder="Décrivez les responsabilités et sanctions...">${escTextarea(c.responsabilites)}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Protection sociale</label>
+              <textarea class="form-control" id="contrat-protection" rows="3" placeholder="Décrivez la couverture sociale...">${escTextarea(c.protectionSociale)}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Clause de résiliation</label>
+              <textarea class="form-control" id="contrat-resiliation" rows="3" placeholder="Conditions de résiliation du contrat...">${escTextarea(c.clauseResiliation)}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Clauses particulières</label>
+              <textarea class="form-control" id="contrat-clauses-particulieres" rows="3" placeholder="Clauses additionnelles...">${escTextarea(c.clausesParticulieres)}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Amendements -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon> Amendements</span>
+            <button class="btn btn-sm btn-secondary" id="btn-add-amendement"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter un amendement</button>
+          </div>
+          <div style="padding-top:var(--space-md);">
+            ${amendements.length === 0 ? `
+              <div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);">
+                <iconify-icon icon="solar:clipboard-list-bold-duotone" style="font-size:32px;opacity:0.5;"></iconify-icon>
+                <p style="margin-top:var(--space-sm);font-size:var(--font-size-sm);">Aucun amendement pour le moment</p>
+              </div>
+            ` : `
+              <div style="display:flex;flex-direction:column;gap:var(--space-sm);">
+                ${amendements.map((a, i) => `
+                  <div style="display:flex;align-items:flex-start;gap:var(--space-md);padding:var(--space-md);background:var(--bg-secondary);border-radius:var(--radius-sm);border-left:3px solid var(--primary);">
+                    <div style="flex:1;">
+                      <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">
+                        <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:12px;"></iconify-icon>
+                        ${Utils.formatDate(a.date)}${a.auteur ? ' — ' + Utils.escHtml(a.auteur) : ''}
+                      </div>
+                      <div style="font-size:var(--font-size-sm);">${Utils.escHtml(a.description)}</div>
+                    </div>
+                    <button class="btn btn-sm btn-ghost btn-delete-amendement" data-index="${i}" title="Supprimer">
+                      <iconify-icon icon="solar:trash-bin-trash-bold-duotone" style="color:var(--danger);"></iconify-icon>
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  _getContratFormValues() {
+    return {
+      employeur: document.getElementById('contrat-employeur').value.trim(),
+      typeContrat: document.getElementById('contrat-type').value,
+      poste: document.getElementById('contrat-poste').value.trim(),
+      periodeEssai: document.getElementById('contrat-periode-essai').value.trim(),
+      lieuTravail: document.getElementById('contrat-lieu').value.trim(),
+      organisation: document.getElementById('contrat-organisation').value.trim(),
+      horaires: document.getElementById('contrat-horaires').value.trim(),
+      salaireJournalier: parseInt(document.getElementById('contrat-salaire').value) || 0,
+      bonusPerformance: document.getElementById('contrat-bonus').value.trim(),
+      objectifMinimum: parseInt(document.getElementById('contrat-objectif').value) || 0,
+      obligations: document.getElementById('contrat-obligations').value.trim(),
+      responsabilites: document.getElementById('contrat-responsabilites').value.trim(),
+      protectionSociale: document.getElementById('contrat-protection').value.trim(),
+      clauseResiliation: document.getElementById('contrat-resiliation').value.trim(),
+      clausesParticulieres: document.getElementById('contrat-clauses-particulieres').value.trim()
+    };
+  },
+
+  _bindContratEvents() {
+    // Sauvegarder (sans publier)
+    document.getElementById('btn-save-contrat').addEventListener('click', () => {
+      const settings = Store.get('settings') || {};
+      const existing = settings.contrat || {};
+      const values = this._getContratFormValues();
+
+      settings.contrat = {
+        ...existing,
+        ...values
+      };
+
+      Store.set('settings', settings);
+      Toast.success('Modèle de contrat sauvegardé');
+    });
+
+    // Publier les modifications
+    document.getElementById('btn-publier-contrat').addEventListener('click', () => {
+      const chauffeurs = Store.get('chauffeurs') || [];
+      const nbActifs = chauffeurs.filter(c => c.statut === 'actif').length;
+
+      Modal.confirm(
+        'Publier les modifications du contrat',
+        `<div style="display:flex;flex-direction:column;gap:var(--space-md);">
+          <p><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:var(--warning);"></iconify-icon> Cette action va :</p>
+          <ul style="margin:0;padding-left:var(--space-lg);display:flex;flex-direction:column;gap:var(--space-xs);">
+            <li>Incrémenter la version du contrat</li>
+            <li>Enregistrer la date de mise à jour</li>
+            <li>Réinitialiser l'acceptation du contrat pour <strong>${nbActifs} chauffeur(s) actif(s)</strong></li>
+          </ul>
+          <p style="font-size:var(--font-size-sm);color:var(--text-muted);">Chaque chauffeur devra re-valider le contrat depuis son application.</p>
+        </div>`,
+        async () => {
+          try {
+            const settings = Store.get('settings') || {};
+            const existing = settings.contrat || {};
+            const values = this._getContratFormValues();
+
+            settings.contrat = {
+              ...existing,
+              ...values,
+              version: (existing.version || 1) + 1,
+              derniereMaj: new Date().toISOString()
+            };
+
+            Store.set('settings', settings);
+
+            // Reset contrat acceptance for all chauffeurs via API
+            const token = localStorage.getItem('pilote_token');
+            const resp = await fetch('/api/settings/reset-contrat-acceptance', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const result = await resp.json();
+
+            if (result.success) {
+              // Update local cache too
+              const chauffeurs = Store.get('chauffeurs') || [];
+              chauffeurs.forEach(c => {
+                c.contratAccepte = false;
+                c.contratAccepteLe = null;
+                c.contratAccepteIP = null;
+              });
+              Store.set('chauffeurs', chauffeurs);
+              Toast.success(`Contrat v${settings.contrat.version} publié — ${result.modifiedCount} chauffeur(s) doivent re-valider`);
+            } else {
+              Toast.error('Erreur lors de la réinitialisation des acceptations');
+            }
+
+            this._renderTab('contrat');
+          } catch (err) {
+            Toast.error('Erreur: ' + err.message);
+          }
+        }
+      );
+    });
+
+    // Ajouter un amendement
+    document.getElementById('btn-add-amendement').addEventListener('click', () => {
+      Modal.form(
+        'Ajouter un amendement',
+        `<div class="form-group">
+          <label class="form-label">Description de l'amendement</label>
+          <textarea class="form-control" id="amendement-description" rows="4" placeholder="Décrivez la modification apportée au contrat..."></textarea>
+        </div>`,
+        () => {
+          const description = document.getElementById('amendement-description').value.trim();
+          if (!description) {
+            Toast.error('La description est obligatoire');
+            return;
+          }
+
+          const settings = Store.get('settings') || {};
+          const existing = settings.contrat || {};
+          const amendements = existing.amendements || [];
+          const session = Auth.getSession();
+
+          amendements.push({
+            date: new Date().toISOString(),
+            description,
+            auteur: session ? `${session.prenom || ''} ${session.nom || ''}`.trim() : ''
+          });
+
+          settings.contrat = {
+            ...existing,
+            amendements,
+            version: (existing.version || 1) + 1
+          };
+
+          Store.set('settings', settings);
+          Toast.success('Amendement ajouté — version incrémentée à ' + settings.contrat.version);
+          Modal.close();
+          this._renderTab('contrat');
+        },
+        'md'
+      );
+    });
+
+    // Supprimer un amendement
+    document.querySelectorAll('.btn-delete-amendement').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const index = parseInt(btn.dataset.index);
+        Modal.confirm(
+          'Supprimer l\'amendement',
+          'Êtes-vous sûr de vouloir supprimer cet amendement ?',
+          () => {
+            const settings = Store.get('settings') || {};
+            const existing = settings.contrat || {};
+            const amendements = [...(existing.amendements || [])];
+            amendements.splice(index, 1);
+
+            settings.contrat = {
+              ...existing,
+              amendements
+            };
+
+            Store.set('settings', settings);
+            Toast.success('Amendement supprimé');
+            this._renderTab('contrat');
+          }
+        );
+      });
+    });
   },
 
   _togglePasswordField(fieldId) {

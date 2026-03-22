@@ -57,6 +57,30 @@ const settingsSchema = new mongoose.Schema({
     telephoneAdmin: String,
     telephoneAdminWhatsapp: String
   },
+  contrat: {
+    version: { type: Number, default: 1 },
+    derniereMaj: { type: String, default: '' },
+    employeur: { type: String, default: '' },
+    typeContrat: { type: String, default: 'CDI' },
+    poste: { type: String, default: 'Chauffeur VTC' },
+    periodeEssai: { type: String, default: '3 mois, renouvelable une fois' },
+    lieuTravail: { type: String, default: '' },
+    organisation: { type: String, default: '' },
+    horaires: { type: String, default: '' },
+    salaireJournalier: { type: Number, default: 0 },
+    bonusPerformance: { type: String, default: '' },
+    objectifMinimum: { type: Number, default: 0 },
+    obligations: { type: String, default: '' },
+    responsabilites: { type: String, default: '' },
+    protectionSociale: { type: String, default: '' },
+    clauseResiliation: { type: String, default: '' },
+    clausesParticulieres: { type: String, default: '' },
+    amendements: [{
+      date: String,
+      description: String,
+      auteur: String
+    }]
+  },
   integrations: {
     wave: {
       apiKey: { type: String, default: '' }

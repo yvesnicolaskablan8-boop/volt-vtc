@@ -200,6 +200,10 @@ const DriverStore = {
     return this._get('/profil');
   },
 
+  getContrat() {
+    return this._get('/contrat');
+  },
+
   accepterContrat() {
     return this._post('/contrat/accepter', {});
   },
