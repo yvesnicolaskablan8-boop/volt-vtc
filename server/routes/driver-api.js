@@ -1707,7 +1707,7 @@ router.get('/classement', async (req, res, next) => {
 
     // Calculer le classement de la semaine en cours
     const chauffeur = await Chauffeur.findOne({ id: chauffeurId }).select('entrepriseId').lean();
-    const entrepriseId = chauffeur ? chauffeur.entrepriseId : null;
+    const entrepriseId = (chauffeur && chauffeur.entrepriseId) ? chauffeur.entrepriseId : null;
     const ranking = await computeWeeklyRanking(semaineDebut, semaineFin, entrepriseId);
 
     // Construire la reponse anonymisee
