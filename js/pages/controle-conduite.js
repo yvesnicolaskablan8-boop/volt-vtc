@@ -6,6 +6,11 @@ const ControleConduitePage = {
   _charts: [],
   _map: null,
 
+  _escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  },
+
   render() {
     const container = document.getElementById('page-content');
     container.innerHTML = this._template();
@@ -557,6 +562,8 @@ const ControleConduitePage = {
       }).addTo(this._map);
 
       const bounds = [];
+      const radarGroup = L.layerGroup().addTo(this._map);
+
       zones.forEach(z => {
         const coord = z.coordinates || {};
         const lat = parseFloat(coord.lat || z.lat);
@@ -564,20 +571,10 @@ const ControleConduitePage = {
         const rayon = coord.rayon || z.rayon || 200;
         if (lat && lng) {
           const isActive = z.actif !== false;
-          const color = isActive ? '#a78bfa' : '#6b7280';
-          const pulseColor = isActive ? 'rgba(167,139,250,0.15)' : 'rgba(107,114,128,0.1)';
+          const safeName = this._escapeHtml(z.nom || 'Zone');
+          const safeType = this._escapeHtml(z.type || 'radar');
 
-          // Pulse ring (outer glow)
-          L.circle([lat, lng], {
-            radius: rayon * 1.5,
-            color: 'transparent',
-            fillColor: pulseColor,
-            fillOpacity: 1,
-            weight: 0,
-            interactive: false
-          }).addTo(this._map);
-
-          // Detection zone
+          // Detection zone (single circle, no glow for perf)
           L.circle([lat, lng], {
             radius: rayon,
             color: isActive ? 'rgba(167,139,250,0.6)' : 'rgba(107,114,128,0.4)',
@@ -585,13 +582,13 @@ const ControleConduitePage = {
             fillOpacity: 1,
             weight: 1.5,
             dashArray: isActive ? null : '6,4'
-          }).addTo(this._map).bindPopup(
+          }).addTo(radarGroup).bindPopup(
             '<div style="font-family:system-ui;padding:6px 2px;min-width:180px;">' +
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
             '<div style="width:32px;height:32px;border-radius:8px;background:' + (isActive ? 'linear-gradient(135deg,#7c3aed,#a78bfa)' : '#6b7280') + ';display:flex;align-items:center;justify-content:center;">' +
             '<span style="font-size:16px;">📡</span></div>' +
-            '<div><div style="font-weight:700;font-size:13px;">' + (z.nom || 'Zone') + '</div>' +
-            '<div style="font-size:11px;color:#9ca3af;">' + (z.type || 'radar') + '</div></div></div>' +
+            '<div><div style="font-weight:700;font-size:13px;">' + safeName + '</div>' +
+            '<div style="font-size:11px;color:#9ca3af;">' + safeType + '</div></div></div>' +
             '<div style="display:flex;gap:12px;padding:6px 0;border-top:1px solid rgba(0,0,0,.08);">' +
             '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:' + (isActive ? '#7c3aed' : '#6b7280') + ';">' + (z.vitesseMax || 0) + '</div><div style="font-size:10px;color:#9ca3af;">km/h max</div></div>' +
             '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:' + (isActive ? '#22c55e' : '#ef4444') + ';">' + (isActive ? '●' : '○') + '</div><div style="font-size:10px;color:#9ca3af;">' + (isActive ? 'Actif' : 'Off') + '</div></div>' +
@@ -606,7 +603,7 @@ const ControleConduitePage = {
             iconSize: [14, 14],
             iconAnchor: [7, 7]
           });
-          L.marker([lat, lng], { icon: radarIcon }).addTo(this._map);
+          L.marker([lat, lng], { icon: radarIcon }).addTo(radarGroup);
 
           bounds.push([lat, lng]);
         }
