@@ -14,10 +14,11 @@ const AccueilPage = {
     endDate.setDate(endDate.getDate() + 5);
     const endStr = endDate.toISOString().split('T')[0];
 
-    const [data, planningData, contraventionsData] = await Promise.all([
+    const [data, planningData, contraventionsData, gpsScores] = await Promise.all([
       DriverStore.getDashboard(),
       DriverStore.getPlanning(todayStr, endStr),
-      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null)
+      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null),
+      typeof DriverStore.getGpsScores === 'function' ? DriverStore.getGpsScores().catch(() => []) : Promise.resolve([])
     ]);
 
     if (!data) {
@@ -160,11 +161,14 @@ const AccueilPage = {
         </div>
       </div>
 
+      <!-- Widget Score Conduite -->
+      ${this._renderScoreWidget(chauffeur, gpsScores)}
+
       <!-- Actions rapides -->
       <div style="margin-bottom:1rem">
         <div class="section-label">Actions rapides</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:3.5rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(34,197,94,0.25);font-family:inherit;position:relative;overflow:hidden">
+          <button id="btn-payer-accueil" onclick="DriverRouter.navigate('versements')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:3.5rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(34,197,94,0.25);font-family:inherit;position:relative;overflow:hidden">
             <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:2.5rem"></iconify-icon>
             <span style="font-size:0.9rem;font-weight:700">Payer</span>
           </button>
@@ -182,30 +186,30 @@ const AccueilPage = {
       <!-- Raccourcis secondaires -->
       <div style="margin-bottom:1rem">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <button onclick="DriverRouter.navigate('versements')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:18px 18px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
-            <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#059669,#047857);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:history-bold-duotone" style="font-size:1.4rem"></iconify-icon>
+          <button onclick="DriverRouter.navigate('versements')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:14px;padding:22px 20px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
+            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#059669,#047857);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:history-bold-duotone" style="font-size:1.6rem"></iconify-icon>
             </div>
-            <div style="font-size:0.88rem;font-weight:700;color:var(--text-primary)">Historique</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--text-primary)">Historique</div>
           </button>
-          <button onclick="DriverRouter.navigate('etat-lieux')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:18px 18px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
-            <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:1.4rem"></iconify-icon>
+          <button onclick="DriverRouter.navigate('etat-lieux')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:14px;padding:22px 20px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
+            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:1.6rem"></iconify-icon>
             </div>
-            <div style="font-size:0.88rem;font-weight:700;color:var(--text-primary)">Etat des lieux</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--text-primary)">Etat des lieux</div>
           </button>
-          <button onclick="DriverRouter.navigate('contraventions')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:18px 18px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0;position:relative">
+          <button onclick="DriverRouter.navigate('contraventions')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:14px;padding:22px 20px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0;position:relative">
             ${nbContraventionsImpayees > 0 ? `<span style="position:absolute;top:8px;right:8px;min-width:20px;height:20px;border-radius:10px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 5px">${nbContraventionsImpayees}</span>` : ''}
-            <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.4rem"></iconify-icon>
+            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.6rem"></iconify-icon>
             </div>
-            <div style="font-size:0.88rem;font-weight:700;color:var(--text-primary)">Contraventions</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--text-primary)">Contraventions</div>
           </button>
-          <button onclick="DriverRouter.navigate('support')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:12px;padding:18px 18px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
-            <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#6b7280,#4b5563);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.4rem"></iconify-icon>
+          <button onclick="DriverRouter.navigate('support')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:14px;padding:22px 20px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
+            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#6b7280,#4b5563);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.6rem"></iconify-icon>
             </div>
-            <div style="font-size:0.88rem;font-weight:700;color:var(--text-primary)">Support</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--text-primary)">Support</div>
           </button>
         </div>
       </div>
@@ -258,6 +262,44 @@ const AccueilPage = {
     // Charger le resume hebdomadaire (dimanche ou toujours pour info)
     this._loadWeeklySummary();
 
+    // Gestion du bouton Payer en mode hors-ligne
+    this._setupOfflinePayerButton();
+
+  },
+
+  _payerOfflineHandler: null,
+  _payerOnlineHandler: null,
+
+  _setupOfflinePayerButton() {
+    const btn = document.getElementById('btn-payer-accueil');
+    if (!btn) return;
+
+    const updateBtn = () => {
+      const labelEl = btn.querySelector('span');
+      if (!navigator.onLine) {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+        if (labelEl) labelEl.textContent = 'Connexion requise';
+      } else {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        if (labelEl) labelEl.textContent = 'Payer';
+      }
+    };
+
+    updateBtn();
+
+    // Nettoyer les anciens listeners
+    if (this._payerOfflineHandler) {
+      window.removeEventListener('offline', this._payerOfflineHandler);
+      window.removeEventListener('online', this._payerOnlineHandler);
+    }
+    this._payerOfflineHandler = updateBtn;
+    this._payerOnlineHandler = updateBtn;
+    window.addEventListener('offline', updateBtn);
+    window.addEventListener('online', updateBtn);
   },
 
   _formatCurrency(amount) {
@@ -1373,6 +1415,70 @@ const AccueilPage = {
       clearInterval(this._serviceTimerInterval);
       this._serviceTimerInterval = null;
     }
+  },
+
+  _renderScoreWidget(chauffeur, gpsScores) {
+    const score = chauffeur.scoreConduite || 0;
+    const scoreColor = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444';
+    const scoreLabel = score >= 80 ? 'Excellent' : score >= 60 ? 'Correct' : 'A ameliorer';
+
+    // SVG circular gauge
+    const radius = 38;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (score / 100) * circumference;
+
+    // Sous-scores from latest GPS record
+    const latest = gpsScores && gpsScores.length > 0 ? gpsScores[0] : null;
+    const subScores = latest ? [
+      { label: 'Vitesse', value: latest.scoreVitesse || 0, icon: 'solar:speedometer-bold-duotone' },
+      { label: 'Freinage', value: latest.scoreFreinage || 0, icon: 'solar:stop-bold-duotone' },
+      { label: 'Accel.', value: latest.scoreAcceleration || 0, icon: 'solar:rocket-bold-duotone' },
+      { label: 'Virages', value: latest.scoreVirage || 0, icon: 'solar:round-transfer-horizontal-bold-duotone' }
+    ] : [];
+
+    // Mini sparkline from last 7 days
+    const last7 = gpsScores ? gpsScores.slice(0, 7).reverse() : [];
+    let sparklineSvg = '';
+    if (last7.length >= 2) {
+      const points = last7.map((g, i) => {
+        const x = (i / (last7.length - 1)) * 100;
+        const y = 30 - ((g.scoreGlobal || 0) / 100) * 28;
+        return `${x},${y}`;
+      }).join(' ');
+      sparklineSvg = `<svg viewBox="0 0 100 32" style="width:100%;height:32px;margin-top:8px" preserveAspectRatio="none">
+        <polyline fill="none" stroke="${scoreColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${points}"/>
+      </svg>`;
+    }
+
+    const subScoresHtml = subScores.map(s => {
+      const c = s.value >= 80 ? '#22c55e' : s.value >= 60 ? '#f59e0b' : '#ef4444';
+      return `<div style="text-align:center">
+        <iconify-icon icon="${s.icon}" style="font-size:1.1rem;color:${c}"></iconify-icon>
+        <div style="font-size:1rem;font-weight:800;color:${c}">${Math.round(s.value)}</div>
+        <div style="font-size:0.65rem;color:var(--text-muted)">${s.label}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="glass-card tap-scale" onclick="DriverRouter.navigate('profil')" style="padding:16px;margin-bottom:1rem;cursor:pointer;border:1px solid var(--glass-border)">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="position:relative;flex-shrink:0">
+          <svg width="90" height="90" viewBox="0 0 90 90">
+            <circle cx="45" cy="45" r="${radius}" fill="none" stroke="var(--glass-border)" stroke-width="6"/>
+            <circle cx="45" cy="45" r="${radius}" fill="none" stroke="${scoreColor}" stroke-width="6" stroke-linecap="round"
+              stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+              transform="rotate(-90 45 45)" style="transition:stroke-dashoffset 1s ease"/>
+            <text x="45" y="42" text-anchor="middle" fill="${scoreColor}" font-size="22" font-weight="900">${Math.round(score)}</text>
+            <text x="45" y="56" text-anchor="middle" fill="var(--text-muted)" font-size="8" font-weight="600">/100</text>
+          </svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:2px">Score de conduite</div>
+          <div style="font-size:0.78rem;font-weight:600;color:${scoreColor};margin-bottom:6px">${scoreLabel}</div>
+          ${subScores.length > 0 ? `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px">${subScoresHtml}</div>` : ''}
+          ${sparklineSvg}
+        </div>
+      </div>
+    </div>`;
   },
 
   destroy() {

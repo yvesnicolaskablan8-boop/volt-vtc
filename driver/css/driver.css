@@ -2465,6 +2465,35 @@ body {
   transform: translateX(24px);
 }
 
+/* ========== OFFLINE BANNER ========== */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #1a1a1a;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* Decaler le contenu quand la banniere est visible */
+.has-offline-banner .app-header,
+.has-offline-banner .header {
+  top: 32px !important;
+}
+.has-offline-banner .app-content {
+  padding-top: 32px;
+}
+
 /* ========== RESPONSIVE ========== */
 @media (min-width: 768px) {
   .app-content {

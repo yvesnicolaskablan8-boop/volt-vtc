@@ -50,6 +50,7 @@ app.use('/api/controlesTechniques', require('./routes/crud')('ControleTechnique'
 app.use('/api/yango', require('./routes/yango'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));
+app.use('/api/rapports', require('./routes/rapports'));
 
 // SSE — Temps réel (notifications push aux clients connectés)
 const sse = require('./utils/sse');

@@ -494,7 +494,7 @@ const VersementsPage = {
       }
 
       // Source badge (contravention)
-      const isContra = v.source === 'contravention' || (v.reference && v.reference.startsWith('CHF')) || (v.commentaire && /contravention/i.test(v.commentaire));
+      const isContra = v.source === 'contravention' || (v.reference && v.reference.startsWith('CTR')) || (v.commentaire && /contravention/i.test(v.commentaire));
       const sourceHtml = isContra ? '<span style="font-size:10px;font-weight:700;background:rgba(239,68,68,0.12);color:#dc2626;padding:2px 7px;border-radius:4px;">CONTRAVENTION</span>' : '';
 
       // Payment method badge

@@ -117,12 +117,59 @@ const DriverApp = {
     if (typeof ContraventionsDriverPage !== 'undefined') DriverRouter.register('contraventions', ContraventionsDriverPage);
     if (typeof ContratPage !== 'undefined') DriverRouter.register('contrat', ContratPage);
 
+    // Ecouter les evenements online/offline
+    this._setupOfflineDetection();
+
     // Check auth
     if (DriverAuth.isLoggedIn()) {
       this.showApp();
     } else {
       this.showLogin();
     }
+  },
+
+  // =================== OFFLINE DETECTION ===================
+
+  _setupOfflineDetection() {
+    // Creer la banniere (cachee par defaut)
+    const banner = document.createElement('div');
+    banner.id = 'offline-banner';
+    banner.className = 'offline-banner';
+    const icon = document.createElement('iconify-icon');
+    icon.setAttribute('icon', 'solar:cloud-cross-bold');
+    icon.style.fontSize = '1rem';
+    banner.appendChild(icon);
+    banner.appendChild(document.createTextNode(' Mode hors-ligne \u2014 Donn\u00e9es en cache'));
+    banner.style.display = 'none';
+    document.body.prepend(banner);
+
+    // Etat initial
+    if (!navigator.onLine) {
+      this._showOfflineBanner();
+    }
+
+    window.addEventListener('offline', () => {
+      this._showOfflineBanner();
+    });
+
+    window.addEventListener('online', () => {
+      this._hideOfflineBanner();
+      if (typeof DriverToast !== 'undefined') {
+        DriverToast.show('Connexion r\u00e9tablie', 'success');
+      }
+    });
+  },
+
+  _showOfflineBanner() {
+    const banner = document.getElementById('offline-banner');
+    if (banner) banner.style.display = 'flex';
+    document.body.classList.add('has-offline-banner');
+  },
+
+  _hideOfflineBanner() {
+    const banner = document.getElementById('offline-banner');
+    if (banner) banner.style.display = 'none';
+    document.body.classList.remove('has-offline-banner');
   },
 
   showLogin() {

@@ -382,7 +382,7 @@ const Utils = {
 
   /** Detect if a versement is linked to a contravention */
   isContravention(v) {
-    return v.source === 'contravention' || (v.reference && v.reference.startsWith('CHF')) || (v.commentaire && v.commentaire.toLowerCase().includes('contravention'));
+    return v.source === 'contravention' || (v.reference && v.reference.startsWith('CTR')) || (v.commentaire && v.commentaire.toLowerCase().includes('contravention'));
   },
 
   /**

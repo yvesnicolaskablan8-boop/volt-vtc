@@ -29,6 +29,7 @@ const signalementSchema = new mongoose.Schema({
     lng: Number
   },
   dateSignalement: { type: String, default: () => new Date().toISOString() },
+  photos: [{ type: String }],
   dateResolution: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {

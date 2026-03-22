@@ -21,6 +21,7 @@ const EtatLieuxPage = {
       proprete: false,
       niveau_batterie: null
     };
+    this._photos = [];
 
     container.innerHTML = `
       <div style="margin-bottom:1.5rem">
@@ -55,6 +56,17 @@ const EtatLieuxPage = {
             </div>
           </div>
 
+          <!-- Photos -->
+          <div style="margin-top:1.5rem">
+            <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:8px">Photos (optionnel, max 4)</label>
+            <div id="edl-photos-grid" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px"></div>
+            <input type="file" id="edl-photo-input" accept="image/*" capture="environment" style="display:none">
+            <button id="edl-photo-btn" type="button" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border:2px dashed #cbd5e1;border-radius:1rem;background:#f8fafc;color:#64748b;font-size:0.875rem;font-weight:600;font-family:inherit;cursor:pointer;transition:border-color 0.15s">
+              <iconify-icon icon="solar:camera-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+              Prendre une photo
+            </button>
+          </div>
+
           <!-- Notes -->
           <div style="margin-top:1.5rem">
             <label style="display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:8px">Observations (optionnel)</label>
@@ -77,6 +89,26 @@ const EtatLieuxPage = {
         this._checks[key] = e.target.checked;
       });
     });
+
+    // Bind photo capture
+    const photoInput = document.getElementById('edl-photo-input');
+    const photoBtn = document.getElementById('edl-photo-btn');
+
+    photoBtn.addEventListener('click', () => {
+      if (this._photos.length >= 4) {
+        DriverToast.show('Maximum 4 photos atteint', 'warning');
+        return;
+      }
+      photoInput.click();
+    });
+
+    photoInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      this._processPhoto(file);
+      // Reset input so the same file can be re-selected
+      photoInput.value = '';
+    });
   },
 
   _renderCheckItem(key, icon, label, desc) {
@@ -94,6 +126,82 @@ const EtatLieuxPage = {
     `;
   },
 
+  /**
+   * Resize image to max 800px width and convert to base64 JPEG
+   */
+  _processPhoto(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_W = 800;
+        let w = img.width;
+        let h = img.height;
+        if (w > MAX_W) {
+          h = Math.round(h * (MAX_W / w));
+          w = MAX_W;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const base64 = canvas.toDataURL('image/jpeg', 0.7);
+        this._photos.push(base64);
+        this._renderPhotoPreviews();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  },
+
+  _renderPhotoPreviews() {
+    const grid = document.getElementById('edl-photos-grid');
+    if (!grid) return;
+
+    // Clear existing previews using DOM API
+    while (grid.firstChild) {
+      grid.removeChild(grid.firstChild);
+    }
+
+    this._photos.forEach((dataUrl, idx) => {
+      // Wrapper
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:relative;width:72px;height:72px;border-radius:12px;overflow:hidden;border:2px solid #e2e8f0;flex-shrink:0';
+
+      // Thumbnail image
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.alt = 'Photo ' + (idx + 1);
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      wrapper.appendChild(img);
+
+      // Delete button
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.style.cssText = 'position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,0.55);color:white;font-size:14px;line-height:22px;text-align:center;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center';
+
+      const delIcon = document.createElement('iconify-icon');
+      delIcon.setAttribute('icon', 'solar:close-circle-bold');
+      delIcon.style.fontSize = '16px';
+      delBtn.appendChild(delIcon);
+
+      delBtn.addEventListener('click', () => {
+        this._photos.splice(idx, 1);
+        this._renderPhotoPreviews();
+      });
+      wrapper.appendChild(delBtn);
+
+      grid.appendChild(wrapper);
+    });
+
+    // Update button visibility
+    const photoBtn = document.getElementById('edl-photo-btn');
+    if (photoBtn) {
+      photoBtn.style.display = this._photos.length >= 4 ? 'none' : 'flex';
+    }
+  },
+
   async _submit() {
     const notes = document.getElementById('etat-lieux-notes')?.value || '';
     const checkedCount = Object.values(this._checks).filter(v => v === true).length;
@@ -105,12 +213,18 @@ const EtatLieuxPage = {
 
     // Submit to API
     try {
-      const result = await DriverStore.createSignalement({
+      const payload = {
         type: 'autre',
         titre: 'Etat des lieux - Debut de service',
         description: `Points verifies: ${checkedCount}/5. ${notes ? 'Notes: ' + notes : ''}`,
         urgence: 'normale'
-      });
+      };
+
+      if (this._photos.length > 0) {
+        payload.photos = this._photos;
+      }
+
+      const result = await DriverStore.createSignalement(payload);
 
       if (result && !result.error) {
         DriverToast.show('Etat des lieux enregistre !', 'success');
@@ -124,5 +238,7 @@ const EtatLieuxPage = {
     }
   },
 
-  destroy() {}
+  destroy() {
+    this._photos = [];
+  }
 };

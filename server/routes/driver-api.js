@@ -597,7 +597,7 @@ router.get('/dettes', async (req, res, next) => {
       manquant: { $gt: 0 }
     }).sort({ date: 1 }).lean();
 
-    const isContravention = (v) => v.source === 'contravention' || (v.reference && v.reference.startsWith('CHF')) || (v.commentaire && /contravention/i.test(v.commentaire));
+    const isContravention = (v) => v.source === 'contravention' || (v.reference && v.reference.startsWith('CTR')) || (v.commentaire && /contravention/i.test(v.commentaire));
 
     // 2. Dettes implicites (planning passé sans versement)
     const today = new Date().toISOString().split('T')[0];
@@ -640,16 +640,15 @@ router.get('/dettes', async (req, res, next) => {
     }).lean();
 
     // Collect contravention IDs already covered by explicit debt versements
-    // Check both exact match and partial match (CHF_xxx vs xxx, or reference containing the ID)
     const coveredContraIds = new Set();
     const coveredContraDates = new Map(); // date+montant as fallback dedup
     for (const v of dettesExplicites) {
       if (isContravention(v)) {
         if (v.reference) {
           coveredContraIds.add(v.reference);
-          // Also add without CHF prefix if present
-          if (v.reference.startsWith('CHF')) {
-            coveredContraIds.add(v.reference.replace(/^CHF[_-]?/, ''));
+          // Also add without CTR prefix if present
+          if (v.reference.startsWith('CTR')) {
+            coveredContraIds.add(v.reference.replace(/^CTR[_-]?/, ''));
           }
         }
         // Fallback: track date+montant to catch mismatched references
@@ -847,7 +846,7 @@ router.get('/signalements', async (req, res, next) => {
 // POST /api/driver/signalements — Creer un signalement
 router.post('/signalements', async (req, res, next) => {
   try {
-    const { type, titre, description, urgence, localisation, position } = req.body;
+    const { type, titre, description, urgence, localisation, position, photos } = req.body;
 
     if (!type || !titre) {
       return res.status(400).json({ error: 'Type et titre requis' });
@@ -877,6 +876,9 @@ router.post('/signalements', async (req, res, next) => {
     };
     if (position && position.lat && position.lng) {
       sigData.position = { lat: position.lat, lng: position.lng };
+    }
+    if (Array.isArray(photos) && photos.length > 0) {
+      sigData.photos = photos.slice(0, 4);
     }
 
     const signalement = new Signalement(sigData);
@@ -2309,6 +2311,24 @@ router.get('/documents/:docType/file', async (req, res, next) => {
     const doc = (chauffeur.documents || []).find(d => d.type === req.params.docType);
     if (!doc || !doc.fichierData) return res.status(404).json({ error: 'Aucun fichier' });
     res.json({ fichierData: doc.fichierData, fichierType: doc.fichierType, fichierNom: doc.fichierNom });
+  } catch (err) { next(err); }
+});
+
+// =================== RAPPORT MENSUEL PDF ===================
+
+// GET /api/driver/rapport/:mois — Genere un releve mensuel PDF
+router.get('/rapport/:mois', async (req, res, next) => {
+  try {
+    const chauffeurId = req.user.chauffeurId;
+    const mois = req.params.mois;
+    if (!/^\d{4}-\d{2}$/.test(mois)) {
+      return res.status(400).json({ error: 'Format mois invalide. Attendu : YYYY-MM' });
+    }
+    const { generateMonthlyReport } = require('../utils/pdf-generator');
+    const buffer = await generateMonthlyReport(chauffeurId, mois);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="releve-${mois}.pdf"`);
+    res.send(buffer);
   } catch (err) { next(err); }
 });
 

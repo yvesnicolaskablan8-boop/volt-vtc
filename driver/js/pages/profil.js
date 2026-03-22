@@ -218,27 +218,50 @@ const ProfilPage = {
         `}
       </div>
 
-      <!-- Documents -->
+      <!-- Mes documents -->
       ${profil.documents && profil.documents.length > 0 ? `
       <div style="border-radius:1.5rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);padding:1.25rem;margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
           <div style="width:36px;height:36px;border-radius:0.75rem;background:rgba(245,158,11,0.08);color:#f59e0b;display:flex;align-items:center;justify-content:center">
             <iconify-icon icon="solar:document-bold-duotone" style="font-size:1.2rem"></iconify-icon>
           </div>
-          <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Documents</div>
+          <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Mes documents</div>
+          ${(() => {
+            const now = new Date();
+            const alertCount = profil.documents.filter(d => {
+              if (!d.dateExpiration) return false;
+              const jours = Math.floor((new Date(d.dateExpiration) - now) / 86400000);
+              return jours <= 30;
+            }).length;
+            return alertCount > 0 ? `<span style="margin-left:auto;padding:2px 8px;border-radius:2rem;background:rgba(239,68,68,0.1);color:#ef4444;font-size:0.7rem;font-weight:700">${alertCount} alerte${alertCount > 1 ? 's' : ''}</span>` : '';
+          })()}
         </div>
         <div style="display:flex;flex-direction:column;gap:10px">
           ${profil.documents.map(doc => {
-            const expired = doc.dateExpiration && new Date(doc.dateExpiration) < new Date();
-            const statusColor = expired ? '#ef4444' : doc.statut === 'valide' ? '#22c55e' : '#f59e0b';
-            const statusBg = expired ? 'rgba(239,68,68,0.08)' : doc.statut === 'valide' ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)';
+            const now = new Date();
+            const expDate = doc.dateExpiration ? new Date(doc.dateExpiration) : null;
+            const joursRestants = expDate ? Math.floor((expDate - now) / 86400000) : null;
+            const isExpired = joursRestants !== null && joursRestants < 0;
+            const isUrgent = joursRestants !== null && joursRestants >= 0 && joursRestants <= 7;
+            const isWarning = joursRestants !== null && joursRestants > 7 && joursRestants <= 30;
+            const isOk = joursRestants === null || joursRestants > 30;
+
+            const statusColor = isExpired ? '#ef4444' : isUrgent ? '#ef4444' : isWarning ? '#f59e0b' : '#22c55e';
+            const statusBg = isExpired ? 'rgba(239,68,68,0.08)' : isUrgent ? 'rgba(239,68,68,0.08)' : isWarning ? 'rgba(245,158,11,0.08)' : 'rgba(34,197,94,0.08)';
+            const statusIcon = isExpired ? 'solar:danger-triangle-bold-duotone' : isUrgent ? 'solar:alarm-bold-duotone' : isWarning ? 'solar:clock-circle-bold-duotone' : 'solar:check-circle-bold-duotone';
+            const statusLabel = isExpired ? 'Expire' : isUrgent ? `${joursRestants}j restant${joursRestants > 1 ? 's' : ''}` : isWarning ? `${joursRestants}j restants` : doc.statut || 'Valide';
+            const borderLeft = isExpired || isUrgent ? '3px solid #ef4444' : isWarning ? '3px solid #f59e0b' : '3px solid #22c55e';
+
             return `
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:1rem;background:#f8fafc">
-                <div>
-                  <div style="font-size:0.85rem;font-weight:700;color:#0f172a">${doc.nom || doc.type || 'Document'}</div>
-                  ${doc.dateExpiration ? `<div style="font-size:0.7rem;color:#94a3b8;margin-top:2px">Expire: ${new Date(doc.dateExpiration).toLocaleDateString('fr-FR')}</div>` : ''}
+              <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:1rem;background:#f8fafc;border-left:${borderLeft}">
+                <div style="width:32px;height:32px;border-radius:0.5rem;background:${statusBg};color:${statusColor};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <iconify-icon icon="${statusIcon}" style="font-size:1.1rem"></iconify-icon>
                 </div>
-                <span style="padding:4px 12px;border-radius:2rem;background:${statusBg};color:${statusColor};font-size:0.7rem;font-weight:700">${expired ? 'Expire' : doc.statut || 'Valide'}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:0.85rem;font-weight:700;color:var(--text-primary)">${doc.nom || doc.type || 'Document'}</div>
+                  ${expDate ? `<div style="font-size:0.7rem;color:#94a3b8;margin-top:2px">Expire le ${expDate.toLocaleDateString('fr-FR')}</div>` : '<div style="font-size:0.7rem;color:#94a3b8;margin-top:2px">Pas de date d\'expiration</div>'}
+                </div>
+                <span style="padding:4px 10px;border-radius:2rem;background:${statusBg};color:${statusColor};font-size:0.68rem;font-weight:700;white-space:nowrap">${statusLabel}</span>
               </div>
             `;
           }).join('')}
@@ -293,6 +316,13 @@ const ProfilPage = {
               <iconify-icon icon="solar:document-bold-duotone" style="font-size:1.25rem"></iconify-icon>
             </div>
             <span style="font-size:0.9rem;font-weight:700;color:#0f172a">Mes documents</span>
+          </button>
+
+          <button onclick="ProfilPage._telechargerReleve()" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);box-shadow:var(--shadow-elevated);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
+            <div style="width:40px;height:40px;border-radius:0.75rem;background:rgba(34,197,94,0.08);color:#22c55e;display:flex;align-items:center;justify-content:center">
+              <iconify-icon icon="solar:document-add-bold-duotone" style="font-size:1.25rem"></iconify-icon>
+            </div>
+            <span style="font-size:0.9rem;font-weight:700;color:#0f172a">Telecharger mon releve</span>
           </button>
 
           <button onclick="ProfilPage._deconnexion()" style="display:flex;align-items:center;gap:14px;padding:1rem 1.25rem;border-radius:1.25rem;background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.1);cursor:pointer;font-family:inherit;width:100%;transition:transform 0.15s" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform=''">
@@ -431,6 +461,34 @@ const ProfilPage = {
       }
     } catch (e) {
       DriverToast.show('Erreur reseau', 'error');
+    }
+  },
+
+  async _telechargerReleve() {
+    const now = new Date();
+    const mois = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const baseUrl = window.location.hostname === 'localhost'
+      ? 'http://localhost:3001'
+      : 'https://volt-vtc-production.up.railway.app';
+    try {
+      DriverToast.show('Generation du releve en cours...', 'info');
+      const resp = await fetch(`${baseUrl}/api/driver/rapport/${mois}`, {
+        headers: { 'Authorization': 'Bearer ' + DriverAuth.getToken() }
+      });
+      if (!resp.ok) throw new Error('Erreur serveur');
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `releve-${mois}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      DriverToast.show('Releve telecharge', 'success');
+    } catch (e) {
+      console.error('Erreur telechargement releve:', e);
+      DriverToast.show('Impossible de telecharger le releve', 'error');
     }
   },
 

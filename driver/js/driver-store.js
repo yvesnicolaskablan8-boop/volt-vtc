@@ -7,6 +7,15 @@ const DriverStore = {
     ? 'http://localhost:3001/api/driver'
     : 'https://volt-vtc-production.up.railway.app/api/driver',
 
+  // Endpoints a mettre en cache pour le mode hors-ligne
+  _CACHEABLE: {
+    '/dashboard': 'pilote_cache_dashboard',
+    '/planning': 'pilote_cache_planning',
+    '/dettes': 'pilote_cache_dettes'
+  },
+
+  _CACHE_MAX_AGE: 24 * 60 * 60 * 1000, // 24h
+
   _headers() {
     const token = localStorage.getItem('pilote_driver_token');
     const headers = { 'Content-Type': 'application/json' };
@@ -14,7 +23,45 @@ const DriverStore = {
     return headers;
   },
 
+  /** Lire une entree du cache hors-ligne */
+  _readCache(path) {
+    const key = this._CACHEABLE[path];
+    if (!key) return null;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const entry = JSON.parse(raw);
+      return entry; // { data, ts }
+    } catch (e) {
+      return null;
+    }
+  },
+
+  /** Ecrire une entree dans le cache hors-ligne */
+  _writeCache(path, data) {
+    const key = this._CACHEABLE[path];
+    if (!key) return;
+    try {
+      localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+    } catch (e) { /* localStorage plein */ }
+  },
+
+  /** Verifier si le cache est perime (> 24h) */
+  isCacheStale(path) {
+    const entry = this._readCache(path);
+    if (!entry || !entry.ts) return true;
+    return (Date.now() - entry.ts) > this._CACHE_MAX_AGE;
+  },
+
+  /** Obtenir le timestamp du cache pour un endpoint */
+  getCacheTimestamp(path) {
+    const entry = this._readCache(path);
+    return entry ? entry.ts : null;
+  },
+
   async _get(path) {
+    // Extraire le chemin de base (sans query string) pour le cache
+    const basePath = path.split('?')[0];
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
@@ -28,9 +75,22 @@ const DriverStore = {
         return null;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      const data = await res.json();
+      // Mettre en cache si endpoint cacheable (uniquement sans query string)
+      if (basePath === path && this._CACHEABLE[basePath]) {
+        this._writeCache(basePath, data);
+      }
+      return data;
     } catch (e) {
       console.warn('DriverStore GET ' + path + ' failed:', e.message);
+      // Fallback: lire le cache hors-ligne
+      if (this._CACHEABLE[basePath]) {
+        const cached = this._readCache(basePath);
+        if (cached && cached.data) {
+          console.log('[Offline] Donnees en cache pour ' + basePath);
+          return cached.data;
+        }
+      }
       return null;
     }
   },
@@ -149,6 +209,10 @@ const DriverStore = {
   },
 
   getGps() {
+    return this._get('/gps');
+  },
+
+  getGpsScores() {
     return this._get('/gps');
   },
 
