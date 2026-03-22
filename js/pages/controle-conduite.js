@@ -44,7 +44,7 @@ const ControleConduitePage = {
           <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Infractions
         </button>
         <button class="cc-tab ${this._activeTab === 'zones' ? 'active' : ''}" data-tab="zones">
-          <iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon> Zones de vitesse
+          <iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon> Zones de radars
         </button>
         <button class="cc-tab ${this._activeTab === 'statistiques' ? 'active' : ''}" data-tab="statistiques">
           <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon> Statistiques
@@ -545,15 +545,14 @@ const ControleConduitePage = {
       // Zoom control en bas à droite
       L.control.zoom({ position: 'bottomright' }).addTo(this._map);
 
-      // Dark modern tile layer
+      // Modern dark tile layer with Stadia Alidade Smooth Dark
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || document.body.classList.contains('dark-mode');
       const tileUrl = isDark
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+        ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
+        : 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png';
       L.tileLayer(tileUrl, {
-        attribution: '\u00a9 OpenStreetMap \u00a9 CARTO',
-        maxZoom: 19,
-        subdomains: 'abcd'
+        attribution: '\u00a9 OpenStreetMap \u00a9 Stadia Maps',
+        maxZoom: 20
       }).addTo(this._map);
 
       const bounds = [];
@@ -564,45 +563,49 @@ const ControleConduitePage = {
         const rayon = coord.rayon || z.rayon || 200;
         if (lat && lng) {
           const isActive = z.actif !== false;
-          const color = isActive ? '#818cf8' : '#6b7280';
-          const glowColor = isActive ? 'rgba(129,140,248,0.3)' : 'rgba(107,114,128,0.2)';
+          const color = isActive ? '#a78bfa' : '#6b7280';
+          const pulseColor = isActive ? 'rgba(167,139,250,0.15)' : 'rgba(107,114,128,0.1)';
 
-          // Outer glow circle
+          // Pulse ring (outer glow)
           L.circle([lat, lng], {
-            radius: rayon * 1.3,
+            radius: rayon * 1.5,
             color: 'transparent',
-            fillColor: glowColor,
-            fillOpacity: 0.4,
+            fillColor: pulseColor,
+            fillOpacity: 1,
             weight: 0,
             interactive: false
           }).addTo(this._map);
 
-          // Main circle with gradient-like effect
+          // Detection zone
           L.circle([lat, lng], {
             radius: rayon,
-            color: color,
-            fillColor: color,
-            fillOpacity: 0.2,
-            weight: 2,
-            dashArray: isActive ? null : '5,5'
+            color: isActive ? 'rgba(167,139,250,0.6)' : 'rgba(107,114,128,0.4)',
+            fillColor: isActive ? 'rgba(167,139,250,0.12)' : 'rgba(107,114,128,0.08)',
+            fillOpacity: 1,
+            weight: 1.5,
+            dashArray: isActive ? null : '6,4'
           }).addTo(this._map).bindPopup(
-            '<div style="font-family:system-ui;padding:4px;">' +
-            '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + (z.nom || 'Zone') + '</div>' +
-            '<div style="display:flex;align-items:center;gap:6px;">' +
-            '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + (isActive ? '#22c55e' : '#ef4444') + ';"></span>' +
-            '<span style="font-size:12px;color:#666;">' + (isActive ? 'Actif' : 'Inactif') + '</span></div>' +
-            '<div style="font-size:16px;font-weight:600;margin-top:6px;color:#6366f1;">' + (z.vitesseMax || 0) + ' km/h</div>' +
-            '</div>'
+            '<div style="font-family:system-ui;padding:6px 2px;min-width:180px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+            '<div style="width:32px;height:32px;border-radius:8px;background:' + (isActive ? 'linear-gradient(135deg,#7c3aed,#a78bfa)' : '#6b7280') + ';display:flex;align-items:center;justify-content:center;">' +
+            '<span style="font-size:16px;">📡</span></div>' +
+            '<div><div style="font-weight:700;font-size:13px;">' + (z.nom || 'Zone') + '</div>' +
+            '<div style="font-size:11px;color:#9ca3af;">' + (z.type || 'radar') + '</div></div></div>' +
+            '<div style="display:flex;gap:12px;padding:6px 0;border-top:1px solid rgba(0,0,0,.08);">' +
+            '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:' + (isActive ? '#7c3aed' : '#6b7280') + ';">' + (z.vitesseMax || 0) + '</div><div style="font-size:10px;color:#9ca3af;">km/h max</div></div>' +
+            '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:' + (isActive ? '#22c55e' : '#ef4444') + ';">' + (isActive ? '●' : '○') + '</div><div style="font-size:10px;color:#9ca3af;">' + (isActive ? 'Actif' : 'Off') + '</div></div>' +
+            '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:#f59e0b;">' + (rayon) + '</div><div style="font-size:10px;color:#9ca3af;">m rayon</div></div>' +
+            '</div></div>'
           );
 
-          // Center dot marker
-          L.circleMarker([lat, lng], {
-            radius: 4,
-            color: '#fff',
-            fillColor: color,
-            fillOpacity: 1,
-            weight: 2
-          }).addTo(this._map);
+          // Center radar icon (custom div icon)
+          const radarIcon = L.divIcon({
+            className: '',
+            html: '<div style="width:14px;height:14px;border-radius:50%;background:' + (isActive ? 'linear-gradient(135deg,#7c3aed,#a78bfa)' : '#6b7280') + ';border:2px solid rgba(255,255,255,0.8);box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 12px ' + (isActive ? 'rgba(124,58,237,0.5)' : 'rgba(0,0,0,0.2)') + ';"></div>',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+          });
+          L.marker([lat, lng], { icon: radarIcon }).addTo(this._map);
 
           bounds.push([lat, lng]);
         }
