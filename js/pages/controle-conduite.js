@@ -498,8 +498,28 @@ const ControleConduitePage = {
         </button>
       </div>
 
-      <!-- Map -->
-      <div id="cc-zones-map"></div>
+      <!-- Map legend + controls -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);">
+            <span style="width:10px;height:10px;border-radius:50%;background:#818cf8;display:inline-block;"></span> Radar actif
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);">
+            <span style="width:10px;height:10px;border-radius:50%;background:#6b7280;display:inline-block;"></span> Radar inactif
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);">
+            <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span> Nouveau (cliquez sur la carte)
+          </div>
+        </div>
+        <button class="btn btn-sm" id="cc-map-add-mode" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;">
+          <iconify-icon icon="solar:map-point-add-bold"></iconify-icon> Placer un radar
+        </button>
+      </div>
+      <div id="cc-zones-map" style="position:relative;">
+        <div id="cc-map-hint" style="display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:1000;background:rgba(245,158,11,0.95);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3);">
+          Cliquez sur la carte pour placer le radar
+        </div>
+      </div>
 
       <!-- Zone cards -->
       <div class="cc-zone-cards" id="cc-zone-cards">
@@ -592,6 +612,61 @@ const ControleConduitePage = {
         this._map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
       }
 
+      // Click to add radar mode
+      this._addMode = false;
+      this._tempMarker = null;
+
+      const addBtn = document.getElementById('cc-map-add-mode');
+      const hint = document.getElementById('cc-map-hint');
+
+      if (addBtn) {
+        addBtn.addEventListener('click', () => {
+          this._addMode = !this._addMode;
+          if (this._addMode) {
+            addBtn.style.background = 'linear-gradient(135deg,#ef4444,#dc2626)';
+            addBtn.textContent = 'Annuler';
+            hint.style.display = 'block';
+            this._map.getContainer().style.cursor = 'crosshair';
+          } else {
+            addBtn.style.background = 'linear-gradient(135deg,#f59e0b,#d97706)';
+            addBtn.innerHTML = '<iconify-icon icon="solar:map-point-add-bold"></iconify-icon> Placer un radar';
+            hint.style.display = 'none';
+            this._map.getContainer().style.cursor = '';
+            if (this._tempMarker) { this._map.removeLayer(this._tempMarker); this._tempMarker = null; }
+          }
+        });
+      }
+
+      this._map.on('click', (e) => {
+        if (!this._addMode) return;
+
+        // Remove previous temp marker
+        if (this._tempMarker) this._map.removeLayer(this._tempMarker);
+
+        // Add pulsing marker at clicked location
+        this._tempMarker = L.circleMarker([e.latlng.lat, e.latlng.lng], {
+          radius: 8,
+          color: '#f59e0b',
+          fillColor: '#f59e0b',
+          fillOpacity: 0.6,
+          weight: 3
+        }).addTo(this._map);
+
+        // Exit add mode
+        this._addMode = false;
+        const addBtn2 = document.getElementById('cc-map-add-mode');
+        const hint2 = document.getElementById('cc-map-hint');
+        if (addBtn2) {
+          addBtn2.style.background = 'linear-gradient(135deg,#f59e0b,#d97706)';
+          addBtn2.innerHTML = '<iconify-icon icon="solar:map-point-add-bold"></iconify-icon> Placer un radar';
+        }
+        if (hint2) hint2.style.display = 'none';
+        this._map.getContainer().style.cursor = '';
+
+        // Open form pre-filled with coordinates
+        this._openZoneForm(null, e.latlng.lat.toFixed(6), e.latlng.lng.toFixed(6));
+      });
+
       // Fix Leaflet rendering in dynamic containers
       setTimeout(() => this._map.invalidateSize(), 300);
     } catch (e) {
@@ -599,9 +674,11 @@ const ControleConduitePage = {
     }
   },
 
-  _openZoneForm(zone) {
+  _openZoneForm(zone, prefillLat, prefillLng) {
     const isEdit = !!zone;
     const title = isEdit ? 'Modifier la zone' : 'Ajouter une zone';
+    const defaultLat = prefillLat || (zone ? ((zone.coordinates && zone.coordinates.lat) || zone.lat || '') : '');
+    const defaultLng = prefillLng || (zone ? ((zone.coordinates && zone.coordinates.lng) || zone.lng || '') : '');
 
     const formHtml = '<div style="display:flex;flex-direction:column;gap:14px;">'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Nom *</label>'
@@ -613,9 +690,9 @@ const ControleConduitePage = {
       + '<input type="number" id="cc-zone-tolerance" class="form-control" value="' + (zone ? (zone.tolerance || '') : '5') + '" placeholder="5" /></div></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Latitude</label>'
-      + '<input type="number" step="any" id="cc-zone-lat" class="form-control" value="' + (zone ? ((zone.coordinates && zone.coordinates.lat) || zone.lat || '') : '') + '" placeholder="5.3600" /></div>'
+      + '<input type="number" step="any" id="cc-zone-lat" class="form-control" value="' + defaultLat + '" placeholder="5.3600" /></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Longitude</label>'
-      + '<input type="number" step="any" id="cc-zone-lng" class="form-control" value="' + (zone ? ((zone.coordinates && zone.coordinates.lng) || zone.lng || '') : '') + '" placeholder="-4.0083" /></div>'
+      + '<input type="number" step="any" id="cc-zone-lng" class="form-control" value="' + defaultLng + '" placeholder="-4.0083" /></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Rayon (m)</label>'
       + '<input type="number" id="cc-zone-rayon" class="form-control" value="' + (zone ? ((zone.coordinates && zone.coordinates.rayon) || zone.rayon || '') : '200') + '" placeholder="200" /></div></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Type</label>'
