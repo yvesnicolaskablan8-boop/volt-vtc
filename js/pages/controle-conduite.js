@@ -545,14 +545,15 @@ const ControleConduitePage = {
       // Zoom control en bas à droite
       L.control.zoom({ position: 'bottomright' }).addTo(this._map);
 
-      // Modern dark tile layer with Stadia Alidade Smooth Dark
+      // Modern dark tile layer
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || document.body.classList.contains('dark-mode');
       const tileUrl = isDark
-        ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
-        : 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png';
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
       L.tileLayer(tileUrl, {
-        attribution: '\u00a9 OpenStreetMap \u00a9 Stadia Maps',
-        maxZoom: 20
+        attribution: '\u00a9 OpenStreetMap \u00a9 CARTO',
+        maxZoom: 19,
+        subdomains: 'abcd'
       }).addTo(this._map);
 
       const bounds = [];
