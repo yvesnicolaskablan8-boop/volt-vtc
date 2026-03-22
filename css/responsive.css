@@ -1198,3 +1198,88 @@ body.pilote-native-app.pilote-has-bottomnav .header-toggle {
     border: 1px solid #ddd;
   }
 }
+
+/* ========== ADMIN TABLE RESPONSIVE ========== */
+@media (max-width: 900px) {
+  /* Wrap table in scrollable container */
+  .table-container,
+  [id*="-table"],
+  [id*="_table"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* KPI grids: 2 columns on tablet, 1 on small mobile */
+  .cc-kpi-grid,
+  [style*="grid-template-columns: 1fr 1fr 1fr 1fr"],
+  [style*="grid-template-columns:1fr 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Controle conduite tabs: scroll horizontally */
+  .cc-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+
+  .cc-tabs .cc-tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Filter bar: wrap */
+  .cc-filters,
+  [style*="display:flex"][style*="gap"] > select,
+  [style*="display:flex"][style*="gap"] > input[type="date"] {
+    min-width: 120px;
+  }
+
+  /* Zone cards: single column */
+  .cc-zone-cards {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Page header responsive */
+  .page-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start !important;
+  }
+
+  .page-header h1 {
+    font-size: 1.3rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* KPI: single column on very small screens */
+  .cc-kpi-grid,
+  [style*="grid-template-columns: 1fr 1fr 1fr 1fr"],
+  [style*="grid-template-columns:1fr 1fr 1fr 1fr"],
+  [style*="grid-template-columns:1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Classement config panel: stack */
+  #classement-config-panel [style*="grid-template-columns:1fr 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Table actions: smaller icons */
+  .btn-icon {
+    padding: 4px !important;
+    font-size: 14px !important;
+  }
+
+  /* Controle conduite: compact filter row */
+  .cc-filter-row {
+    flex-wrap: wrap;
+  }
+
+  .cc-filter-row select,
+  .cc-filter-row input {
+    flex: 1 1 45%;
+    min-width: 0;
+  }
+}
