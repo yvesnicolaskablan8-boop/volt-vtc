@@ -920,33 +920,32 @@ const ControleConduitePage = {
         containerId: 'cc-contraventions-table',
         data: items,
         columns: [
-          { label: 'Chauffeur', key: 'chauffeurId', render: (v) => chauffeurMap[v.chauffeurId] || '<span style="color:var(--text-muted);font-style:italic;">Inconnu</span>' },
-          { label: 'V\u00e9hicule', key: 'vehiculeId', render: (v) => {
-            if (!v.vehiculeId) return '-';
-            const veh = (Store.get('vehicules') || []).find(x => x.id === v.vehiculeId);
-            return veh ? veh.immatriculation : v.vehiculeId;
+          { label: 'Chauffeur', key: 'chauffeurId', render: (v) => {
+            const nom = chauffeurMap[v.chauffeurId] || 'Inconnu';
+            const veh = v.vehiculeId ? ((Store.get('vehicules') || []).find(x => x.id === v.vehiculeId) || {}).immatriculation : '';
+            return '<div style="font-weight:600;">' + nom + '</div>' + (veh ? '<div style="font-size:10px;color:var(--text-muted);">' + veh + '</div>' : '');
           }},
           { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) + (v.heure ? '<br><span style="font-size:10px;color:var(--text-muted);">' + v.heure + '</span>' : '') },
-          { label: 'Type', key: 'type', render: (v) => typeLabels[v.type] || v.type },
-          { label: 'Lieu', key: 'lieu', render: (v) => v.lieu || '-' },
-          { label: 'Montant', key: 'montant', render: (v) => Utils.formatCurrency(v.montant || 0) },
-          { label: 'Statut', key: 'statut', render: (v) => {
-            let html = statusBadge(v.statut);
+          { label: 'Type / Lieu', key: 'type', render: (v) => {
+            return '<div>' + (typeLabels[v.type] || v.type) + '</div>' + (v.lieu ? '<div style="font-size:10px;color:var(--text-muted);">' + v.lieu + '</div>' : '');
+          }},
+          { label: 'Montant', key: 'montant', render: (v) => {
+            let html = '<div style="font-weight:700;">' + Utils.formatCurrency(v.montant || 0) + '</div>';
+            html += statusBadge(v.statut);
             if (v.moyenPaiement === 'wave') {
-              html += ' <span class="badge" style="font-size:0.65rem;background:rgba(13,110,253,0.1);color:#0D6EFD;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
-            }
-            if (v.motifContestation) {
-              html += ' <span title="' + v.motifContestation + '" style="cursor:help;font-size:0.7rem;color:#94a3b8"><iconify-icon icon="solar:chat-round-dots-bold"></iconify-icon></span>';
+              html += ' <span style="font-size:0.6rem;color:#0D6EFD;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></span>';
             }
             return html;
           }},
-          { label: 'Actions', key: 'actions', render: (v) => {
-            let btns = '<button class="btn-icon" title="Modifier" onclick="ControleConduitePage._editContravention(\'' + v.id + '\')"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>';
+          { label: 'Actions', key: 'actions', sortable: false, render: (v) => {
+            let btns = '<div style="display:flex;gap:2px;flex-wrap:nowrap;">';
+            btns += '<button class="btn-icon" title="Modifier" onclick="event.stopPropagation();ControleConduitePage._editContravention(\'' + v.id + '\')"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>';
             if (v.statut === 'impayee' || v.statut === 'contestee') {
-              btns += ' <button class="btn-icon btn-success" title="Marquer pay\u00e9e" onclick="ControleConduitePage._markContraventionPaid(\'' + v.id + '\')"><iconify-icon icon="solar:check-circle-bold"></iconify-icon></button>';
-              btns += ' <button class="btn-icon" title="Payer via Wave" onclick="ControleConduitePage._payContraventionWave(\'' + v.id + '\')" style="color:#0D6EFD"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></button>';
+              btns += '<button class="btn-icon btn-success" title="Payee" onclick="event.stopPropagation();ControleConduitePage._markContraventionPaid(\'' + v.id + '\')"><iconify-icon icon="solar:check-circle-bold"></iconify-icon></button>';
+              btns += '<button class="btn-icon" title="Wave" onclick="event.stopPropagation();ControleConduitePage._payContraventionWave(\'' + v.id + '\')" style="color:#0D6EFD"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></button>';
             }
-            btns += ' <button class="btn-icon btn-danger" title="Supprimer" onclick="ControleConduitePage._deleteContravention(\'' + v.id + '\')"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>';
+            btns += '<button class="btn-icon btn-danger" title="Supprimer" onclick="event.stopPropagation();ControleConduitePage._deleteContravention(\'' + v.id + '\')"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>';
+            btns += '</div>';
             return btns;
           }}
         ],
