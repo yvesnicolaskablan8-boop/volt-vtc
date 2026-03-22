@@ -22,6 +22,10 @@ const ParametresPage = {
     { key: 'comptabilite', label: 'Comptabilité', icon: 'solar:calculator-bold-duotone' },
     { key: 'garage', label: 'Garage', icon: 'solar:garage-bold-duotone' },
     { key: 'gps_conduite', label: 'GPS & Conduite', icon: 'solar:satellite-bold-duotone' },
+    { key: 'controle_conduite', label: 'Contrôle conduite', icon: 'solar:shield-check-bold-duotone' },
+    { key: 'classement', label: 'Classement', icon: 'solar:cup-star-bold-duotone' },
+    { key: 'taches', label: 'Tâches', icon: 'solar:checklist-bold-duotone' },
+    { key: 'messagerie', label: 'Messagerie', icon: 'solar:chat-round-dots-bold-duotone' },
     { key: 'alertes', label: 'Alertes', icon: 'solar:bell-bing-bold-duotone' },
     { key: 'rapports', label: 'Rapports', icon: 'solar:file-bold-duotone' },
     { key: 'parametres', label: 'Paramètres', icon: 'solar:settings-bold-duotone' }
