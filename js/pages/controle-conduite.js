@@ -1248,9 +1248,11 @@ const ControleConduitePage = {
         + '</select></div></div></div>'
         + '<div style="' + sectionBase + sectionColors.infraction + '">'
         + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f59e0b;font-size:15px;"></iconify-icon> Infraction</div>'
-        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">'
         + '<div><label style="' + labelStyle + '">Date <span style="color:#ef4444;">*</span></label>'
         + '<input type="date" name="date" value="' + (c.date || '') + '" style="' + inputStyle + '"></div>'
+        + '<div><label style="' + labelStyle + '">Heure</label>'
+        + '<input type="time" name="heure" value="' + (c.heure || '') + '" style="' + inputStyle + '"></div>'
         + '<div><label style="' + labelStyle + '">Type</label>'
         + '<select name="type" style="' + inputStyle + '">'
         + typeOptions.map(t => '<option value="' + t.value + '" ' + (t.value === c.type ? 'selected' : '') + '>' + t.label + '</option>').join('') + '</select></div></div>'
@@ -1290,6 +1292,7 @@ const ControleConduitePage = {
       chauffeurId: fd.get('chauffeurId'),
       vehiculeId: fd.get('vehiculeId') || null,
       date: fd.get('date'),
+      heure: fd.get('heure') || '',
       type: fd.get('type'),
       lieu: fd.get('lieu') || '',
       montant: parseInt(fd.get('montant')) || 0,
