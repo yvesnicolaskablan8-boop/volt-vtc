@@ -1151,16 +1151,16 @@ const DashboardPage = {
         ${this._renderPlanningHeatmap(d)}
       </div>
 
-      <!-- Row 4: Maintenance -->
-      <div class="d-grid" style="grid-template-columns:1fr;">
-        ${this._renderMaintenancePanel(d)}
-      </div>
-
-      <!-- Row 5: Top chauffeurs + Documents expiring -->
+      <!-- Row 4: Top chauffeurs + Documents expiring -->
       <div class="d-grid d-g3" style="grid-template-columns:1fr 1fr 1fr;">
         ${this._renderTopDriversRevenue(d)}
         ${this._renderTopDriversDettes(d)}
         ${this._renderExpiringDocs(d)}
+      </div>
+
+      <!-- Row 5: Maintenance -->
+      <div class="d-grid" style="grid-template-columns:1fr;">
+        ${this._renderMaintenancePanel(d)}
       </div>
 
       </div>
