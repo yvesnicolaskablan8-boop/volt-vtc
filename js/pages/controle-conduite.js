@@ -495,7 +495,7 @@ const ControleConduitePage = {
 
       <!-- Zone cards -->
       <div class="cc-zone-cards" id="cc-zone-cards">
-        ${zones.length === 0 ? '<div class="empty-state" style="padding:40px;grid-column:1/-1;"><iconify-icon icon="solar:map-point-bold-duotone" style="font-size:3rem;color:var(--text-muted);"></iconify-icon><h3>Aucune zone</h3><p style="color:var(--text-muted);">Ajoutez des zones de vitesse pour le suivi automatique.</p></div>' : zones.map(z => '<div class="cc-zone-card"><div class="cc-zone-header"><div><div class="cc-zone-name">' + (z.nom || 'Zone sans nom') + '</div><span class="cc-type-badge cc-type-' + (z.type || 'personnalisee') + '">' + (typeLabels[z.type] || z.type || 'Personnalis\u00e9e') + '</span></div><button class="cc-toggle ' + (z.actif !== false ? 'active' : '') + '" title="' + (z.actif !== false ? 'Active' : 'Inactive') + '" onclick="ControleConduitePage._toggleZone(\'' + z.id + '\',' + (z.actif === false) + ')"></button></div><div class="cc-zone-meta"><div class="cc-zone-meta-item"><iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon> ' + (z.vitesseMax || 0) + ' km/h</div><div class="cc-zone-meta-item"><iconify-icon icon="solar:shield-bold-duotone"></iconify-icon> Tol\u00e9rance : ' + (z.tolerance || 0) + ' km/h</div><div class="cc-zone-meta-item"><iconify-icon icon="solar:ruler-bold-duotone"></iconify-icon> Rayon : ' + (z.rayon || 0) + ' m</div>' + (z.lat && z.lng ? '<div class="cc-zone-meta-item"><iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon> ' + parseFloat(z.lat).toFixed(4) + ', ' + parseFloat(z.lng).toFixed(4) + '</div>' : '') + '</div><div class="cc-zone-actions"><button class="btn btn-sm btn-secondary" onclick="ControleConduitePage._editZone(\'' + z.id + '\')"><iconify-icon icon="solar:pen-bold"></iconify-icon> Modifier</button><button class="btn btn-sm btn-danger" onclick="ControleConduitePage._deleteZone(\'' + z.id + '\')"><iconify-icon icon="solar:trash-bin-minimalistic-bold"></iconify-icon> Supprimer</button></div></div>').join('')}
+        ${zones.length === 0 ? '<div class="empty-state" style="padding:40px;grid-column:1/-1;"><iconify-icon icon="solar:map-point-bold-duotone" style="font-size:3rem;color:var(--text-muted);"></iconify-icon><h3>Aucune zone</h3><p style="color:var(--text-muted);">Ajoutez des zones de vitesse pour le suivi automatique.</p></div>' : zones.map(z => '<div class="cc-zone-card"><div class="cc-zone-header"><div><div class="cc-zone-name">' + (z.nom || 'Zone sans nom') + '</div><span class="cc-type-badge cc-type-' + (z.type || 'personnalisee') + '">' + (typeLabels[z.type] || z.type || 'Personnalis\u00e9e') + '</span></div><button class="cc-toggle ' + (z.actif !== false ? 'active' : '') + '" title="' + (z.actif !== false ? 'Active' : 'Inactive') + '" onclick="ControleConduitePage._toggleZone(\'' + z.id + '\',' + (z.actif === false) + ')"></button></div><div class="cc-zone-meta"><div class="cc-zone-meta-item"><iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon> ' + (z.vitesseMax || 0) + ' km/h</div><div class="cc-zone-meta-item"><iconify-icon icon="solar:shield-bold-duotone"></iconify-icon> Tol\u00e9rance : ' + (z.tolerance || 0) + ' km/h</div><div class="cc-zone-meta-item"><iconify-icon icon="solar:ruler-bold-duotone"></iconify-icon> Rayon : ' + ((z.coordinates && z.coordinates.rayon) || z.rayon || 0) + ' m</div>' + ((z.coordinates && z.coordinates.lat && z.coordinates.lng) || (z.lat && z.lng) ? '<div class="cc-zone-meta-item"><iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon> ' + parseFloat((z.coordinates && z.coordinates.lat) || z.lat).toFixed(4) + ', ' + parseFloat((z.coordinates && z.coordinates.lng) || z.lng).toFixed(4) + '</div>' : '') + '</div><div class="cc-zone-actions"><button class="btn btn-sm btn-secondary" onclick="ControleConduitePage._editZone(\'' + z.id + '\')"><iconify-icon icon="solar:pen-bold"></iconify-icon> Modifier</button><button class="btn btn-sm btn-danger" onclick="ControleConduitePage._deleteZone(\'' + z.id + '\')"><iconify-icon icon="solar:trash-bin-minimalistic-bold"></iconify-icon> Supprimer</button></div></div>').join('')}
       </div>
     `;
 
@@ -510,21 +510,23 @@ const ControleConduitePage = {
     if (typeof L === 'undefined') return;
 
     try {
-      // Default center: Dakar
-      const defaultCenter = [14.6928, -17.4467];
+      // Default center: Abidjan
+      const defaultCenter = [5.3600, -4.0083];
       this._map = L.map('cc-zones-map').setView(defaultCenter, 12);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '\u00a9 OpenStreetMap',
-        maxZoom: 18
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '\u00a9 OpenStreetMap \u00a9 CARTO',
+        maxZoom: 19,
+        subdomains: 'abcd'
       }).addTo(this._map);
 
       const bounds = [];
       zones.forEach(z => {
-        if (z.lat && z.lng) {
-          const lat = parseFloat(z.lat);
-          const lng = parseFloat(z.lng);
-          const rayon = z.rayon || 200;
+        const coord = z.coordinates || {};
+        const lat = parseFloat(coord.lat || z.lat);
+        const lng = parseFloat(coord.lng || z.lng);
+        const rayon = coord.rayon || z.rayon || 200;
+        if (lat && lng) {
           const color = z.actif !== false ? '#6366f1' : '#9ca3af';
 
           L.circle([lat, lng], {
@@ -564,11 +566,11 @@ const ControleConduitePage = {
       + '<input type="number" id="cc-zone-tolerance" class="form-control" value="' + (zone ? (zone.tolerance || '') : '5') + '" placeholder="5" /></div></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Latitude</label>'
-      + '<input type="number" step="any" id="cc-zone-lat" class="form-control" value="' + (zone ? (zone.lat || '') : '') + '" placeholder="14.6928" /></div>'
+      + '<input type="number" step="any" id="cc-zone-lat" class="form-control" value="' + (zone ? ((zone.coordinates && zone.coordinates.lat) || zone.lat || '') : '') + '" placeholder="5.3600" /></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Longitude</label>'
-      + '<input type="number" step="any" id="cc-zone-lng" class="form-control" value="' + (zone ? (zone.lng || '') : '') + '" placeholder="-17.4467" /></div>'
+      + '<input type="number" step="any" id="cc-zone-lng" class="form-control" value="' + (zone ? ((zone.coordinates && zone.coordinates.lng) || zone.lng || '') : '') + '" placeholder="-4.0083" /></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Rayon (m)</label>'
-      + '<input type="number" id="cc-zone-rayon" class="form-control" value="' + (zone ? (zone.rayon || '') : '200') + '" placeholder="200" /></div></div>'
+      + '<input type="number" id="cc-zone-rayon" class="form-control" value="' + (zone ? ((zone.coordinates && zone.coordinates.rayon) || zone.rayon || '') : '200') + '" placeholder="200" /></div></div>'
       + '<div><label style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Type</label>'
       + '<select id="cc-zone-type" class="form-control">'
       + '<option value="ville"' + (zone && zone.type === 'ville' ? ' selected' : '') + '>Ville</option>'
@@ -594,9 +596,11 @@ const ControleConduitePage = {
         nom,
         vitesseMax,
         tolerance,
-        lat: lat ? parseFloat(lat) : null,
-        lng: lng ? parseFloat(lng) : null,
-        rayon,
+        coordinates: {
+          lat: lat ? parseFloat(lat) : null,
+          lng: lng ? parseFloat(lng) : null,
+          rayon
+        },
         type,
         actif: zone ? zone.actif !== false : true
       };
