@@ -14,8 +14,7 @@ const ClassementPage = {
       regularite: cl.poidsRegularite ?? 20,
       infractions: cl.poidsInfractions ?? 15,
       bonusHebdo: cl.bonusHebdo ?? 25000,
-      penaliteContravention: cl.penaliteContravention ?? 15,
-      penaliteInfraction: cl.penaliteInfraction ?? 5
+      penaliteInfraction: cl.penaliteInfraction ?? 10
     };
   },
 
@@ -107,7 +106,7 @@ const ClassementPage = {
       const w = this._getWeights();
       const nbContras = contras.filter(c => c.chauffeurId === cId && this._matchesRange(c.date)).length;
       const nbInfractions = infractions.filter(inf => inf.chauffeurId === cId && this._matchesRange(inf.date)).length;
-      const penalite = (nbContras * w.penaliteContravention) + (nbInfractions * w.penaliteInfraction);
+      const penalite = (nbContras + nbInfractions) * w.penaliteInfraction;
       const scoreContra = Math.max(100 - penalite, 0);
 
       // Score global pondéré (poids configurables)
@@ -447,10 +446,6 @@ const ClassementPage = {
           <input type="number" id="cfg-bonus-hebdo" value="${w.bonusHebdo}" min="0" step="1000" style="${inputStyle}">
         </div>
         <div>
-          <label style="${labelStyle}">Penalite / contravention (pts)</label>
-          <input type="number" id="cfg-penalite-contra" value="${w.penaliteContravention}" min="0" max="50" style="${inputStyle}">
-        </div>
-        <div>
           <label style="${labelStyle}">Penalite / infraction (pts)</label>
           <input type="number" id="cfg-penalite-infraction" value="${w.penaliteInfraction}" min="0" max="50" style="${inputStyle}">
         </div>
@@ -509,8 +504,7 @@ const ClassementPage = {
       return;
     }
     const bonusHebdo = parseInt(document.getElementById('cfg-bonus-hebdo')?.value) || 25000;
-    const penaliteContra = parseInt(document.getElementById('cfg-penalite-contra')?.value) || 15;
-    const penaliteInfraction = parseInt(document.getElementById('cfg-penalite-infraction')?.value) || 5;
+    const penaliteInfraction = parseInt(document.getElementById('cfg-penalite-infraction')?.value) || 10;
 
     const settings = Store.get('settings') || {};
     settings.classement = {
@@ -519,7 +513,6 @@ const ClassementPage = {
       poidsRegularite: g,
       poidsInfractions: i,
       bonusHebdo,
-      penaliteContravention: penaliteContra,
       penaliteInfraction
     };
     Store.set('settings', settings);
