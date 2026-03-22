@@ -349,8 +349,16 @@ const ControleConduitePage = {
           return dateStr + (i.heure ? '<br><span style="font-size:10px;color:var(--text-muted);">' + i.heure + '</span>' : '');
         }},
         { label: 'Chauffeur', key: 'chauffeurId', primary: true, render: (i) => '<strong>' + ControleConduitePage._getChauffeurName(i.chauffeurId) + '</strong>' },
-        { label: 'Zone', key: 'zoneNom', render: (i) => i.zoneNom || '-' },
-        { label: 'Vitesse / Limite', key: 'vitesse', render: (i) => '<span style="font-weight:700;color:#ef4444;">' + (i.vitesse || 0) + '</span> / <span style="color:var(--text-muted);">' + (i.vitesseMax || 0) + ' km/h</span>' },
+        { label: 'Zone / Lieu', key: 'zoneNom', render: (i) => {
+          let html = '<div style="font-weight:600;">' + (i.zoneNom || '-') + '</div>';
+          if (i.position && i.position.lat && i.position.lng) {
+            html += '<a href="https://www.google.com/maps?q=' + i.position.lat + ',' + i.position.lng + '" target="_blank" style="font-size:10px;color:#3b82f6;text-decoration:none;" onclick="event.stopPropagation();">'
+              + '<iconify-icon icon="solar:map-point-bold" style="font-size:10px;"></iconify-icon> '
+              + parseFloat(i.position.lat).toFixed(4) + ', ' + parseFloat(i.position.lng).toFixed(4) + '</a>';
+          }
+          return html;
+        }},
+        { label: 'Vitesse / Limite', key: 'vitesse', render: (i) => '<span style="font-weight:700;color:#ef4444;">' + (i.vitesse || i.vitesseEnregistree || 0) + '</span> / <span style="color:var(--text-muted);">' + (i.vitesseMax || i.vitesseLimite || 0) + ' km/h</span>' },
         { label: 'D\u00e9passement', key: 'depassement', render: (i) => {
           const dep = (i.vitesse || 0) - (i.vitesseMax || 0);
           return '<span style="font-weight:700;color:#ef4444;">+' + (dep > 0 ? dep : 0) + ' km/h</span>';
