@@ -465,6 +465,9 @@ const ClassementPage = {
       btn.addEventListener('click', () => {
         this._showConfig = !this._showConfig;
         panel.style.display = this._showConfig ? 'block' : 'none';
+        if (this._showConfig) {
+          setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        }
       });
     }
 
