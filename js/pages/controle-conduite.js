@@ -922,31 +922,25 @@ const ControleConduitePage = {
         columns: [
           { label: 'Chauffeur', key: 'chauffeurId', render: (v) => {
             const nom = chauffeurMap[v.chauffeurId] || 'Inconnu';
-            const veh = v.vehiculeId ? ((Store.get('vehicules') || []).find(x => x.id === v.vehiculeId) || {}).immatriculation : '';
-            return '<div style="font-weight:600;">' + nom + '</div>' + (veh ? '<div style="font-size:10px;color:var(--text-muted);">' + veh + '</div>' : '');
+            return '<div style="font-weight:600;font-size:12px;">' + nom + '</div>'
+              + '<div style="font-size:10px;color:var(--text-muted);">' + Utils.formatDate(v.date) + (v.heure ? ' ' + v.heure : '') + '</div>'
+              + (v.lieu ? '<div style="font-size:10px;color:var(--text-muted);">' + v.lieu + '</div>' : '');
           }},
-          { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) + (v.heure ? '<br><span style="font-size:10px;color:var(--text-muted);">' + v.heure + '</span>' : '') },
-          { label: 'Type / Lieu', key: 'type', render: (v) => {
-            return '<div>' + (typeLabels[v.type] || v.type) + '</div>' + (v.lieu ? '<div style="font-size:10px;color:var(--text-muted);">' + v.lieu + '</div>' : '');
-          }},
+          { label: 'Type', key: 'type', render: (v) => '<span style="font-size:12px;">' + (typeLabels[v.type] || v.type) + '</span>' },
           { label: 'Montant', key: 'montant', render: (v) => {
-            let html = '<div style="font-weight:700;">' + Utils.formatCurrency(v.montant || 0) + '</div>';
-            html += statusBadge(v.statut);
-            if (v.moyenPaiement === 'wave') {
-              html += ' <span style="font-size:0.6rem;color:#0D6EFD;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></span>';
-            }
-            return html;
+            return '<div style="font-weight:700;font-size:12px;">' + Utils.formatCurrency(v.montant || 0) + '</div>' + statusBadge(v.statut);
           }},
-          { label: 'Actions', key: 'actions', sortable: false, render: (v) => {
-            let btns = '<div style="display:flex;gap:2px;flex-wrap:nowrap;">';
-            btns += '<button class="btn-icon" title="Modifier" onclick="event.stopPropagation();ControleConduitePage._editContravention(\'' + v.id + '\')"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>';
-            if (v.statut === 'impayee' || v.statut === 'contestee') {
-              btns += '<button class="btn-icon btn-success" title="Payee" onclick="event.stopPropagation();ControleConduitePage._markContraventionPaid(\'' + v.id + '\')"><iconify-icon icon="solar:check-circle-bold"></iconify-icon></button>';
-              btns += '<button class="btn-icon" title="Wave" onclick="event.stopPropagation();ControleConduitePage._payContraventionWave(\'' + v.id + '\')" style="color:#0D6EFD"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></button>';
-            }
-            btns += '<button class="btn-icon btn-danger" title="Supprimer" onclick="event.stopPropagation();ControleConduitePage._deleteContravention(\'' + v.id + '\')"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>';
-            btns += '</div>';
-            return btns;
+          { label: '', key: 'actions', sortable: false, render: (v) => {
+            return '<div style="position:relative;display:inline-block;">'
+              + '<button class="btn-icon" onclick="event.stopPropagation();ControleConduitePage._toggleActionMenu(\'' + v.id + '\')" style="font-size:18px;"><iconify-icon icon="solar:menu-dots-bold"></iconify-icon></button>'
+              + '<div id="action-menu-' + v.id + '" style="display:none;position:absolute;right:0;top:100%;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:100;min-width:160px;padding:4px 0;">'
+              + '<button onclick="event.stopPropagation();ControleConduitePage._editContravention(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:var(--text-primary);font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:pen-bold" style="color:#3b82f6;"></iconify-icon> Modifier</button>'
+              + (v.statut === 'impayee' || v.statut === 'contestee' ? ''
+                + '<button onclick="event.stopPropagation();ControleConduitePage._markContraventionPaid(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:var(--text-primary);font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:check-circle-bold" style="color:#22c55e;"></iconify-icon> Marquer payee</button>'
+                + '<button onclick="event.stopPropagation();ControleConduitePage._payContraventionWave(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:var(--text-primary);font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#0D6EFD;"></iconify-icon> Payer via Wave</button>'
+              : '')
+              + '<button onclick="event.stopPropagation();ControleConduitePage._deleteContravention(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:#ef4444;font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon> Supprimer</button>'
+              + '</div></div>';
           }}
         ],
         sortKey: 'date',
@@ -1361,6 +1355,25 @@ const ControleConduitePage = {
     Store.delete('contraventions', id);
     Toast.show('Contravention supprim\u00e9e', 'success');
     this._renderTab('contraventions');
+  },
+
+  _toggleActionMenu(id) {
+    // Fermer tous les autres menus
+    document.querySelectorAll('[id^="action-menu-"]').forEach(el => {
+      if (el.id !== 'action-menu-' + id) el.style.display = 'none';
+    });
+    const menu = document.getElementById('action-menu-' + id);
+    if (menu) {
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+    // Fermer au clic ailleurs
+    const close = (e) => {
+      if (!e.target.closest('[id^="action-menu-"]') && !e.target.closest('.btn-icon')) {
+        document.querySelectorAll('[id^="action-menu-"]').forEach(el => el.style.display = 'none');
+        document.removeEventListener('click', close);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', close), 10);
   },
 
   async _payContraventionWave(id) {
