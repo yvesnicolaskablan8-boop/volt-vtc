@@ -596,22 +596,40 @@ const ControleConduitePage = {
             '</div></div>'
           );
 
-          // Radar camera icon
-          const radarSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="28" height="28">'
-            + '<defs><filter id="glow' + (isActive ? 'A' : 'I') + '"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="' + (isActive ? '#7c3aed' : '#6b7280') + '" flood-opacity="0.6"/></filter></defs>'
-            + '<rect x="2" y="6" width="28" height="20" rx="4" fill="' + (isActive ? '#7c3aed' : '#6b7280') + '" filter="url(#glow' + (isActive ? 'A' : 'I') + ')"/>'
-            + '<rect x="4" y="8" width="24" height="16" rx="3" fill="' + (isActive ? '#1e1b4b' : '#374151') + '"/>'
-            + '<circle cx="16" cy="16" r="6" fill="none" stroke="' + (isActive ? '#a78bfa' : '#9ca3af') + '" stroke-width="1.5"/>'
-            + '<circle cx="16" cy="16" r="3" fill="' + (isActive ? '#a78bfa' : '#9ca3af') + '"/>'
-            + '<circle cx="16" cy="16" r="1" fill="' + (isActive ? '#fff' : '#d1d5db') + '"/>'
-            + '<rect x="13" y="3" width="6" height="4" rx="1" fill="' + (isActive ? '#f59e0b' : '#9ca3af') + '"/>'
-            + (isActive ? '<circle cx="16" cy="16" r="8" fill="none" stroke="rgba(167,139,250,0.3)" stroke-width="1" stroke-dasharray="2,2"/>' : '')
+          // Speed camera on tripod icon
+          const mainColor = isActive ? '#7c3aed' : '#6b7280';
+          const lensColor = isActive ? '#a78bfa' : '#9ca3af';
+          const flashColor = isActive ? '#f59e0b' : '#9ca3af';
+          const legColor = isActive ? '#5b21b6' : '#4b5563';
+          const radarSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 44" width="30" height="38">'
+            + '<defs><filter id="ds"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.4)"/></filter></defs>'
+            // Tripod legs
+            + '<line x1="18" y1="24" x2="6" y2="42" stroke="' + legColor + '" stroke-width="2.5" stroke-linecap="round"/>'
+            + '<line x1="18" y1="24" x2="30" y2="42" stroke="' + legColor + '" stroke-width="2.5" stroke-linecap="round"/>'
+            + '<line x1="18" y1="24" x2="18" y2="43" stroke="' + legColor + '" stroke-width="2.5" stroke-linecap="round"/>'
+            // Tripod mount
+            + '<circle cx="18" cy="23" r="2.5" fill="' + mainColor + '"/>'
+            // Camera body
+            + '<rect x="6" y="6" width="24" height="16" rx="3.5" fill="' + mainColor + '" filter="url(#ds)"/>'
+            // Camera inner
+            + '<rect x="8" y="8" width="20" height="12" rx="2" fill="' + (isActive ? '#1e1b4b' : '#374151') + '"/>'
+            // Lens outer ring
+            + '<circle cx="18" cy="14" r="5" fill="none" stroke="' + lensColor + '" stroke-width="1.5"/>'
+            // Lens middle
+            + '<circle cx="18" cy="14" r="3" fill="' + lensColor + '" opacity="0.7"/>'
+            // Lens center (bright)
+            + '<circle cx="18" cy="14" r="1.2" fill="#fff"/>'
+            // Flash on top
+            + '<rect x="14" y="2" width="8" height="5" rx="1.5" fill="' + flashColor + '"/>'
+            + (isActive ? '<circle cx="18" cy="4.5" r="1" fill="#fff" opacity="0.8"/>' : '')
+            // Active indicator
+            + (isActive ? '<circle cx="18" cy="14" r="7" fill="none" stroke="rgba(167,139,250,0.35)" stroke-width="1" stroke-dasharray="2,2"><animateTransform attributeName="transform" type="rotate" from="0 18 14" to="360 18 14" dur="8s" repeatCount="indefinite"/></circle>' : '')
             + '</svg>';
           const radarIcon = L.divIcon({
             className: '',
             html: radarSvg,
-            iconSize: [28, 28],
-            iconAnchor: [14, 14]
+            iconSize: [30, 38],
+            iconAnchor: [15, 38]
           });
           L.marker([lat, lng], { icon: radarIcon }).addTo(radarGroup);
 
