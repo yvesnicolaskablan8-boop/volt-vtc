@@ -624,41 +624,67 @@ const AccueilPage = {
       var pct = leaderScore > 0 ? Math.round((score / leaderScore) * 100) : 0;
       var scoreColor = score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
 
-      var html = '<div class="glass-card tap-scale" onclick="DriverRouter.navigate(\'classement\')" style="padding:16px;margin-bottom:1rem;cursor:pointer;border:1px solid var(--glass-border)">'
-        + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">'
-        + '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-        + '<iconify-icon icon="solar:cup-star-bold-duotone" style="font-size:1.3rem"></iconify-icon>'
-        + '</div>'
-        + '<div style="flex:1">'
-        + '<div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted)">Classement</div>'
-        + '<div style="display:flex;align-items:baseline;gap:6px">'
-        + '<span style="font-size:1.4rem;font-weight:900;color:' + (rang === 1 ? '#f59e0b' : 'var(--text-primary)') + '">#' + (rang || '-') + '</span>'
-        + '<span style="font-size:0.8rem;font-weight:600;color:var(--text-muted)">/ ' + total + ' chauffeurs</span>'
-        + '</div>'
-        + '</div>'
-        + '<div style="text-align:right">'
-        + '<div style="font-size:1.2rem;font-weight:900;color:' + scoreColor + '">' + (score || 0) + '</div>'
-        + '<div style="font-size:0.65rem;color:var(--text-muted)">pts</div>'
-        + '</div>'
-        + '</div>';
+      // Position label
+      var posLabel = rang === 1 ? '1er' : rang + 'e';
+      var progressPct = total > 1 ? Math.round(((total - rang) / (total - 1)) * 100) : 100;
+      var barColor = rang === 1 ? '#f59e0b' : rang <= 3 ? '#22c55e' : rang <= Math.ceil(total / 2) ? '#3b82f6' : '#ef4444';
+      var emoji = rang === 1 ? '🥇' : rang === 2 ? '🥈' : rang === 3 ? '🥉' : '🏁';
+      var message = rang === 1
+        ? 'Felicitations ! Vous etes en tete du classement !'
+        : rang <= 3
+        ? 'Excellent ! Vous etes sur le podium, continuez !'
+        : rang <= Math.ceil(total / 2)
+        ? 'Vous etes dans la premiere moitie, progressez pour le bonus !'
+        : 'Accelerez vos efforts pour remonter au classement !';
 
-      // Mini progress bar
-      if (rang && rang > 1) {
-        html += '<div style="margin-bottom:6px">'
-          + '<div style="height:6px;border-radius:3px;background:var(--bg-tertiary);overflow:hidden">'
-          + '<div style="height:100%;width:' + pct + '%;border-radius:3px;background:linear-gradient(90deg,#3b82f6,#8b5cf6);transition:width 0.5s ease"></div>'
-          + '</div>'
-          + '<div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-muted);margin-top:3px">'
-          + '<span>' + (leaderScore - score) + ' pts d\'ecart</span>'
-          + '<span>Bonus : ' + bonus.toLocaleString('fr-FR') + ' FCFA</span>'
-          + '</div>'
+      var html = '<div class="glass-card tap-scale" onclick="DriverRouter.navigate(\'classement\')" style="padding:18px;margin-bottom:1rem;cursor:pointer;border:1px solid var(--glass-border);background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(139,92,246,0.08))">'
+        // Header
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+        + '<div style="display:flex;align-items:center;gap:8px">'
+        + '<span style="font-size:1.5rem">' + emoji + '</span>'
+        + '<span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted)">Classement du mois</span>'
+        + '</div>'
+        + '<div style="font-size:0.7rem;font-weight:600;color:' + scoreColor + ';background:' + scoreColor + '15;padding:3px 10px;border-radius:20px">' + (score || 0) + ' pts</div>'
+        + '</div>'
+
+        // Big rank display
+        + '<div style="text-align:center;margin-bottom:14px">'
+        + '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px">Vous etes actuellement</div>'
+        + '<div style="display:flex;align-items:baseline;justify-content:center;gap:4px">'
+        + '<span style="font-size:2.8rem;font-weight:900;color:' + barColor + ';line-height:1">' + posLabel + '</span>'
+        + '<span style="font-size:1.1rem;font-weight:600;color:var(--text-muted)"> / ' + total + ' chauffeurs</span>'
+        + '</div>'
+        + '</div>'
+
+        // Progress bar
+        + '<div style="margin-bottom:10px">'
+        + '<div style="height:10px;border-radius:5px;background:var(--bg-tertiary);overflow:hidden;position:relative">'
+        + '<div style="height:100%;width:' + progressPct + '%;border-radius:5px;background:linear-gradient(90deg,' + barColor + ',' + barColor + 'aa);transition:width 0.8s ease"></div>'
+        + '</div>'
+        + '</div>'
+
+        // Message
+        + '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;margin-bottom:8px">' + message + '</div>';
+
+      // Bonus info
+      if (rang === 1) {
+        html += '<div style="text-align:center;padding:8px 12px;background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.05));border-radius:10px;border:1px solid rgba(245,158,11,0.2)">'
+          + '<div style="font-size:0.8rem;font-weight:800;color:#f59e0b">🎉 Bonus de ' + bonus.toLocaleString('fr-FR') + ' FCFA garanti !</div>'
+          + '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">Maintenez votre position jusqu\'a la fin de la semaine</div>'
           + '</div>';
-      } else if (rang === 1) {
-        html += '<div style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#f59e0b;font-weight:700">'
-          + '<iconify-icon icon="solar:medal-star-bold-duotone" style="font-size:0.9rem"></iconify-icon>'
-          + 'En tete ! Bonus ' + bonus.toLocaleString('fr-FR') + ' FCFA a la cle'
+      } else if (rang <= 3) {
+        html += '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted)">'
+          + 'Plus que <strong style="color:' + barColor + '">' + (leaderScore - score) + ' pts</strong> pour la 1ere place et le bonus de <strong style="color:#f59e0b">' + bonus.toLocaleString('fr-FR') + ' FCFA</strong>'
+          + '</div>';
+      } else {
+        html += '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted)">'
+          + 'Le 1er gagne <strong style="color:#f59e0b">' + bonus.toLocaleString('fr-FR') + ' FCFA</strong> de bonus &bull; '
+          + '<span style="color:' + barColor + ';font-weight:600">Ecart : ' + (leaderScore - score) + ' pts</span>'
           + '</div>';
       }
+
+      // CTA
+      html += '<div style="text-align:center;margin-top:10px;font-size:0.72rem;font-weight:600;color:#818cf8">Voir le classement complet →</div>';
 
       html += '</div>';
       slot.innerHTML = html;
