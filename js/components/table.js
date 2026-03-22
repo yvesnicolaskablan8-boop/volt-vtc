@@ -49,7 +49,7 @@ const Table = {
       container.innerHTML = `
         <div class="table-container" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
           ${toolbar ? `<div class="table-toolbar">${toolbar}</div>` : ''}
-          <table class="data-table" style="min-width:700px;">
+          <table class="data-table">
             <thead>
               <tr>
                 ${columns.map((col, i) => `

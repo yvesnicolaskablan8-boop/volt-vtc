@@ -358,6 +358,27 @@
   width: 100%;
 }
 
+@media (max-width: 768px) {
+  .data-table {
+    font-size: 12px;
+  }
+  .data-table thead th {
+    padding: 6px 8px;
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+  .data-table tbody td {
+    padding: 8px 8px;
+    font-size: 12px;
+  }
+  .btn-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    padding: 2px;
+  }
+}
+
 .data-table thead th {
   background: var(--bg-tertiary);
   padding: var(--space-sm) var(--space-md);
