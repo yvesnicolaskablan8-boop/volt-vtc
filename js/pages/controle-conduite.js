@@ -1281,6 +1281,9 @@ const ControleConduitePage = {
           + '<iconify-icon icon="solar:chat-round-warning-bold-duotone" style="font-size:15px;color:#f59e0b;"></iconify-icon> Contestation chauffeur</div>'
           + '<div style="font-size:13px;color:#92400e;line-height:1.5;">' + c.motifContestation + '</div></div>' : '')
         + '<div class="statut-indicator" style="display:none;"></div>'
+        + '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;">'
+        + '<button type="button" onclick="event.preventDefault();Modal.close();ControleConduitePage._deleteContravention(\'' + id + '\')" style="display:flex;align-items:center;gap:6px;background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">'
+        + '<iconify-icon icon="solar:trash-bin-trash-bold" style="font-size:15px;"></iconify-icon> Supprimer cette contravention</button></div>'
         + '</form>',
       () => this._saveEditContravention(id)
     );
