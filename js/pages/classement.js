@@ -157,14 +157,14 @@ const ClassementPage = {
           <h1><iconify-icon icon="solar:cup-star-bold-duotone" style="color:#f59e0b;"></iconify-icon> Classement des chauffeurs</h1>
           <p class="classement-subtitle">${Utils.escHtml(periodLabel)} &bull; ${activeCount} chauffeur${activeCount !== 1 ? 's' : ''} actif${activeCount !== 1 ? 's' : ''}</p>
         </div>
-        <div class="classement-header-right" style="display:flex;gap:10px;align-items:center;">
-          <select id="classement-period" class="form-control" style="max-width:200px;">
+        <div class="classement-header-right" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <select id="classement-period" class="form-control" style="min-width:150px;">
             <option value="current" ${this._selectedPeriod === 'current' ? 'selected' : ''}>Ce mois</option>
             <option value="last" ${this._selectedPeriod === 'last' ? 'selected' : ''}>Mois dernier</option>
             <option value="3months" ${this._selectedPeriod === '3months' ? 'selected' : ''}>3 derniers mois</option>
           </select>
-          <button id="classement-config-btn" class="btn btn-sm" style="display:flex;align-items:center;gap:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;">
-            <iconify-icon icon="solar:settings-bold-duotone" style="font-size:16px;"></iconify-icon> Parametres
+          <button id="classement-config-btn" class="btn btn-sm" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(99,102,241,.25);">
+            <iconify-icon icon="solar:ruler-bold-duotone" style="font-size:15px;"></iconify-icon> Regles
           </button>
         </div>
       </div>
