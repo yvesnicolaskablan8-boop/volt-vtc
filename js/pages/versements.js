@@ -2660,9 +2660,9 @@ const VersementsPage = {
   },
 
   _confirmAnnulerDette(versementId, chauffeurId) {
-    Store.update('versements', versementId, { manquant: 0, traitementManquant: null });
+    Store.update('versements', versementId, { manquant: 0, traitementManquant: null, statut: 'supprime', dateSuppression: new Date().toISOString() });
     Modal.close();
-    Toast.success('Dette annul\u00e9e avec succ\u00e8s');
+    Toast.success('Recette annul\u00e9e avec succ\u00e8s');
     this.render();
     if (chauffeurId) setTimeout(() => this._showDetteDetail(chauffeurId), 300);
   },
