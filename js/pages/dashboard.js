@@ -464,16 +464,60 @@ const DashboardPage = {
       return { id: c.id, prenom: c.prenom, nom: c.nom, photo: c.photo || '', initials: ((c.prenom||'')[0] + (c.nom||'')[0]).toUpperCase(), vehiculeAssigne: c.vehiculeAssigne || '', cells };
     });
 
-    // =================== TOP CHAUFFEURS PAR CA ===================
+    // =================== TOP CHAUFFEURS — SCORE COMPOSITE ===================
+    // Score = 40% recettes + 25% score conduite + 20% regularite versements + 15% contraventions
+    const contras = Store.get('contraventions') || [];
+    const infractions = Store.get('infractionsVitesse') || [];
+    const activeChauffeurs = chauffeurs.filter(c => c.statut === 'actif' || c.statut === 'repos');
+
+    // Calcul du CA max du mois pour normaliser
     const revenueByDriver = {};
     versements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0 && matchesMonth(v.date)).forEach(v => {
       revenueByDriver[v.chauffeurId] = (revenueByDriver[v.chauffeurId] || 0) + v.montantVerse;
     });
-    const topDriversRevenue = Object.entries(revenueByDriver)
-      .map(([cId, total]) => {
-        const ch = chauffeurs.find(c => c.id === cId);
-        return { chauffeurId: cId, nom: ch ? `${ch.prenom} ${ch.nom}` : cId, total };
-      })
+    const maxCA = Math.max(...Object.values(revenueByDriver), 1);
+
+    const topDriversRevenue = activeChauffeurs.map(ch => {
+      const cId = ch.id;
+
+      // 1. Score recettes (40%) — normalisé par rapport au meilleur CA
+      const ca = revenueByDriver[cId] || 0;
+      const scoreRecettes = Math.min((ca / maxCA) * 100, 100);
+
+      // 2. Score conduite (25%) — directement le scoreConduite du chauffeur
+      const scoreConduite = ch.scoreConduite || 0;
+
+      // 3. Regularite versements (20%) — % de jours planifiés avec versement ce mois
+      const planningMois = planning.filter(p => p.chauffeurId === cId && matchesMonth(p.date));
+      const versementsMois = versements.filter(v => v.chauffeurId === cId && matchesMonth(v.date) && (v.statut === 'valide' || v.statut === 'supprime'));
+      const nbPlanifie = planningMois.length || 1;
+      const nbVerse = Math.min(versementsMois.length, nbPlanifie);
+      const scoreRegularite = (nbVerse / nbPlanifie) * 100;
+
+      // 4. Contraventions/Infractions (15%) — penalite par infraction
+      const nbContras = contras.filter(c => c.chauffeurId === cId && matchesMonth(c.date)).length;
+      const nbInfractions = infractions.filter(inf => inf.chauffeurId === cId && matchesMonth(inf.date)).length;
+      const penalite = (nbContras * 15) + (nbInfractions * 5);
+      const scoreContra = Math.max(100 - penalite, 0);
+
+      // Score global pondere
+      const scoreGlobal = Math.round(
+        (scoreRecettes * 0.40) +
+        (scoreConduite * 0.25) +
+        (scoreRegularite * 0.20) +
+        (scoreContra * 0.15)
+      );
+
+      return {
+        chauffeurId: cId,
+        nom: `${ch.prenom} ${ch.nom}`,
+        total: scoreGlobal,
+        ca,
+        scoreConduite: Math.round(scoreConduite),
+        regularite: Math.round(scoreRegularite),
+        nbContras: nbContras + nbInfractions
+      };
+    })
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
@@ -1413,15 +1457,23 @@ const DashboardPage = {
       const pct = maxVal > 0 ? Math.round((dr.total / maxVal) * 100) : 0;
       const medals = ['#f59e0b', '#9ca3af', '#cd7f32'];
       const medalColor = i < 3 ? medals[i] : '';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);cursor:pointer;" onclick="Router.navigate('/chauffeurs/${dr.chauffeurId}')">
-        <div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;${medalColor ? 'background:' + medalColor + '20;color:' + medalColor : 'background:rgba(0,0,0,.04);color:#9ca3af;'}">${i + 1}</div>
+      const scoreColor = dr.total >= 75 ? '#22c55e' : dr.total >= 50 ? '#f59e0b' : '#ef4444';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);cursor:pointer;" onclick="Router.navigate('/chauffeurs/${dr.chauffeurId}')">
+        <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;${medalColor ? 'background:' + medalColor + '20;color:' + medalColor : 'background:rgba(0,0,0,.04);color:#9ca3af;'}">${i + 1}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dr.nom}</div>
-          <div style="height:4px;border-radius:2px;background:rgba(0,0,0,.06);margin-top:4px;"><div style="height:100%;border-radius:2px;background:linear-gradient(90deg,#6366f1,#818cf8);width:${pct}%;transition:width .6s ease;"></div></div>
+          <div style="display:flex;gap:6px;margin-top:4px;font-size:9px;color:var(--text-muted);">
+            <span title="Recettes">${Utils.formatCurrency(dr.ca)}</span>
+            <span>•</span>
+            <span title="Conduite">${dr.scoreConduite}/100</span>
+            <span>•</span>
+            <span title="Regularite">${dr.regularite}%</span>
+            ${dr.nbContras > 0 ? '<span>•</span><span style="color:#ef4444;" title="Infractions">' + dr.nbContras + ' inf.</span>' : ''}
+          </div>
         </div>
-        <div style="font-size:12px;font-weight:700;color:#6366f1;white-space:nowrap;">${Utils.formatCurrency(dr.total)}</div>
+        <div style="font-size:14px;font-weight:800;color:${scoreColor};white-space:nowrap;">${dr.total}<span style="font-size:9px;font-weight:600;opacity:.7">/100</span></div>
       </div>`;
-    }).join('') : '<div style="font-size:12px;color:#9ca3af;text-align:center;padding:20px 0;">Aucun versement ce mois</div>';
+    }).join('') : '<div style="font-size:12px;color:#9ca3af;text-align:center;padding:20px 0;">Aucun chauffeur actif</div>';
 
     return `<div class="d-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
@@ -1430,7 +1482,7 @@ const DashboardPage = {
         </div>
         <div>
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 chauffeurs</div>
-          <div style="font-size:11px;color:#9ca3af;">Par chiffre d'affaires (${d.monthLabel})</div>
+          <div style="font-size:11px;color:#9ca3af;">Score global (${d.monthLabel})</div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
