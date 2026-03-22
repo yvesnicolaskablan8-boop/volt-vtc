@@ -18,6 +18,7 @@ const notifService = require('../utils/notification-service');
 const Contravention = require('../models/Contravention');
 const { haversineDistance, calculateCategoryScore, generateAnalyseIA, finalizeBehaviorSession } = require('../utils/behavior-utils');
 const { getWaveApiKey } = require('../utils/get-integration-keys');
+const { checkSpeedViolation } = require('../utils/speed-check');
 
 // fetch: natif en Node 18+, fallback node-fetch sinon
 const fetch = globalThis.fetch || require('node-fetch');
@@ -1055,6 +1056,16 @@ router.post('/location', async (req, res, next) => {
       { $push: { gpsSamples: { lat, lng, speed: speed || 0, heading: heading || 0, heure: heureStr } } },
       { upsert: true }
     );
+
+    // Detection asynchrone des exces de vitesse (non bloquant)
+    if (speed && speed > 0) {
+      Chauffeur.findOne({ id: chauffeurId }).lean().then(ch => {
+        const eid = ch ? ch.entrepriseId || null : null;
+        return checkSpeedViolation(chauffeurId, lat, lng, speed, eid);
+      }).catch(err => {
+        console.error('[SpeedCheck] Erreur detection vitesse:', err.message);
+      });
+    }
 
     res.json({ success: true });
   } catch (err) {

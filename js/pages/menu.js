@@ -16,6 +16,7 @@ const MenuPage = {
       { route: '/comptabilite', icon: 'solar:calculator-bold-duotone', label: 'Comptabilité', color: '#3b82f6' },
       { route: '/messagerie', icon: 'solar:chat-round-dots-bold-duotone', label: 'Messagerie', color: '#06b6d4' },
       { route: '/gps-conduite', icon: 'solar:map-arrow-right-bold-duotone', label: 'GPS & Conduite', color: '#14b8a6' },
+      { route: '/controle-conduite', icon: 'solar:shield-check-bold-duotone', label: 'Contr\u00f4le conduite', color: '#6366f1' },
 
       { route: '/alertes', icon: 'solar:bell-bing-bold-duotone', label: 'Alertes', color: '#eab308' },
       { route: '/rapports', icon: 'solar:file-download-bold-duotone', label: 'Rapports', color: '#6366f1' },

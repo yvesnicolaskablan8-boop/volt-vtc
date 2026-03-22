@@ -47,6 +47,8 @@ app.use('/api/activityLogs', require('./routes/crud')('ActivityLog'));
 app.use('/api/taches', require('./routes/tache-hooks'));
 app.use('/api/taches', require('./routes/crud')('Tache'));
 app.use('/api/controlesTechniques', require('./routes/crud')('ControleTechnique'));
+app.use('/api/zonesVitesse', require('./routes/crud')('ZoneVitesse'));
+app.use('/api/infractionsVitesse', require('./routes/crud')('InfractionVitesse'));
 app.use('/api/yango', require('./routes/yango'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/messages', require('./routes/messages'));
@@ -132,6 +134,15 @@ app.use(errorHandler);
 // Start server
 const startServer = async () => {
   await connectDB();
+
+  // Charger les modeles ZoneVitesse et InfractionVitesse
+  require('./models/ZoneVitesse');
+  require('./models/InfractionVitesse');
+
+  // Seeder les zones de vitesse par defaut (Abidjan)
+  const { seedDefaultZones } = require('./utils/seed-zones');
+  seedDefaultZones(null).catch(err => console.error('[Server] Erreur seed zones:', err.message));
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Pilote API running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);

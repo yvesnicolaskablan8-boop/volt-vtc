@@ -33,6 +33,8 @@ router.get('/', async (req, res, next) => {
     const ControleTechnique = require('../models/ControleTechnique');
     const Incident = require('../models/Incident');
     const Tache = require('../models/Tache');
+    const ZoneVitesse = require('../models/ZoneVitesse');
+    const InfractionVitesse = require('../models/InfractionVitesse');
 
     // Tenant filter — scope all queries by entrepriseId if available
     const ef = req.user.entrepriseId ? { entrepriseId: req.user.entrepriseId } : {};
@@ -44,7 +46,8 @@ router.get('/', async (req, res, next) => {
       planning, absences, users, settingsDoc, signalements,
       pointages, conduiteBrute, checklistVehicules, contraventions, depenses,
       depenseRecurrentes, depenseCategories, versementRecurrents,
-      reparations, controlesTechniques, incidents, taches
+      reparations, controlesTechniques, incidents, taches,
+      zonesVitesse, infractionsVitesse
     ] = await Promise.all([
       Chauffeur.find(ef).lean(),
       Vehicule.find(ef).lean(),
@@ -70,7 +73,9 @@ router.get('/', async (req, res, next) => {
       Reparation.find(ef).lean(),
       ControleTechnique.find(ef).lean(),
       Incident.find(ef).lean(),
-      Tache.find(ef).lean()
+      Tache.find(ef).lean(),
+      ZoneVitesse.find(ef).lean(),
+      InfractionVitesse.find(ef).lean()
     ]);
 
     // Clean MongoDB fields (_id, __v) from all documents
@@ -109,6 +114,8 @@ router.get('/', async (req, res, next) => {
       controlesTechniques: clean(controlesTechniques),
       incidents: clean(incidents),
       taches: clean(taches),
+      zonesVitesse: clean(zonesVitesse),
+      infractionsVitesse: clean(infractionsVitesse),
       settings
     });
   } catch (err) {
