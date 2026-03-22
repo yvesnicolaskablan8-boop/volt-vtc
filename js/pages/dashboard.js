@@ -1458,7 +1458,7 @@ const DashboardPage = {
       const medals = ['#f59e0b', '#9ca3af', '#cd7f32'];
       const medalColor = i < 3 ? medals[i] : '';
       const scoreColor = dr.total >= 75 ? '#22c55e' : dr.total >= 50 ? '#f59e0b' : '#ef4444';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);cursor:pointer;" onclick="Router.navigate('/classement')">
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);cursor:pointer;" onclick="Router.navigate('/chauffeurs/${dr.chauffeurId}')">
         <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;${medalColor ? 'background:' + medalColor + '20;color:' + medalColor : 'background:rgba(0,0,0,.04);color:#9ca3af;'}">${i + 1}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dr.nom}</div>
@@ -1495,7 +1495,7 @@ const DashboardPage = {
     const maxVal = drivers.length > 0 ? drivers[0].total : 1;
     const rows = drivers.length > 0 ? drivers.map((dr, i) => {
       const pct = maxVal > 0 ? Math.round((dr.total / maxVal) * 100) : 0;
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);cursor:pointer;" onclick="Router.navigate('/versements?tab=dettes')">
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);cursor:pointer;" onclick="Router.navigate('/chauffeurs/${dr.chauffeurId}')">
         <div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:rgba(239,68,68,.1);color:#ef4444;">${i + 1}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dr.nom}</div>
