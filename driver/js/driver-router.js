@@ -38,6 +38,7 @@ const DriverRouter = {
       'etat-lieux': 'Etat des Lieux',
       documents: 'Documents & Alertes',
       support: 'Signaler un problème',
+      classement: 'Classement',
       contraventions: 'Mes Contraventions',
       contrat: 'Mon Contrat'
     };

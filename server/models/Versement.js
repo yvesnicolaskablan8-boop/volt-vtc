@@ -24,6 +24,7 @@ const versementSchema = new mongoose.Schema({
   justificationDate: String,
   moyenPaiement: String,
   referencePaiement: String,
+  source: String,
   waveCheckoutId: String,
   waveTransactionId: String,
   manquant: { type: Number, default: 0 },

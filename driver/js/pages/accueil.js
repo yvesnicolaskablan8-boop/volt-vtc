@@ -164,6 +164,9 @@ const AccueilPage = {
       <!-- Widget Score Conduite -->
       ${this._renderScoreWidget(chauffeur, gpsScores)}
 
+      <!-- Widget Classement -->
+      <div id="classement-widget-slot"></div>
+
       <!-- Actions rapides -->
       <div style="margin-bottom:1rem">
         <div class="section-label">Actions rapides</div>
@@ -252,6 +255,9 @@ const AccueilPage = {
         this._startPauseTimer(serviceJour.evenements);
       }
     }
+
+    // Charger le widget classement en arriere plan
+    this._loadClassementWidget();
 
     // Charger l'activite Yango en arriere plan
     this._loadYangoActivity();
@@ -605,6 +611,64 @@ const AccueilPage = {
       { label: 'Voir mon profil', class: 'btn btn-outline', onclick: "DriverModal.close(); DriverRouter.navigate('profil')" },
       { label: 'Compris', class: 'btn btn-primary', onclick: 'DriverModal.close()' }
     ]);
+  },
+
+  async _loadClassementWidget() {
+    var slot = document.getElementById('classement-widget-slot');
+    if (!slot) return;
+    try {
+      var data = await DriverStore.getClassement();
+      if (!data || !data.classement || data.classement.length === 0) return;
+
+      var rang = data.currentUserRang;
+      var score = data.currentUserScore;
+      var total = data.totalParticipants;
+      var leaderScore = data.classement.length > 0 ? data.classement[0].score : 100;
+      var bonus = data.bonus || 25000;
+      var pct = leaderScore > 0 ? Math.round((score / leaderScore) * 100) : 0;
+      var scoreColor = score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
+
+      var html = '<div class="glass-card tap-scale" onclick="DriverRouter.navigate(\'classement\')" style="padding:16px;margin-bottom:1rem;cursor:pointer;border:1px solid var(--glass-border)">'
+        + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">'
+        + '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        + '<iconify-icon icon="solar:cup-star-bold-duotone" style="font-size:1.3rem"></iconify-icon>'
+        + '</div>'
+        + '<div style="flex:1">'
+        + '<div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted)">Classement</div>'
+        + '<div style="display:flex;align-items:baseline;gap:6px">'
+        + '<span style="font-size:1.4rem;font-weight:900;color:' + (rang === 1 ? '#f59e0b' : 'var(--text-primary)') + '">#' + (rang || '-') + '</span>'
+        + '<span style="font-size:0.8rem;font-weight:600;color:var(--text-muted)">/ ' + total + ' chauffeurs</span>'
+        + '</div>'
+        + '</div>'
+        + '<div style="text-align:right">'
+        + '<div style="font-size:1.2rem;font-weight:900;color:' + scoreColor + '">' + (score || 0) + '</div>'
+        + '<div style="font-size:0.65rem;color:var(--text-muted)">pts</div>'
+        + '</div>'
+        + '</div>';
+
+      // Mini progress bar
+      if (rang && rang > 1) {
+        html += '<div style="margin-bottom:6px">'
+          + '<div style="height:6px;border-radius:3px;background:var(--bg-tertiary);overflow:hidden">'
+          + '<div style="height:100%;width:' + pct + '%;border-radius:3px;background:linear-gradient(90deg,#3b82f6,#8b5cf6);transition:width 0.5s ease"></div>'
+          + '</div>'
+          + '<div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-muted);margin-top:3px">'
+          + '<span>' + (leaderScore - score) + ' pts d\'ecart</span>'
+          + '<span>Bonus : ' + bonus.toLocaleString('fr-FR') + ' FCFA</span>'
+          + '</div>'
+          + '</div>';
+      } else if (rang === 1) {
+        html += '<div style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#f59e0b;font-weight:700">'
+          + '<iconify-icon icon="solar:medal-star-bold-duotone" style="font-size:0.9rem"></iconify-icon>'
+          + 'En tete ! Bonus ' + bonus.toLocaleString('fr-FR') + ' FCFA a la cle'
+          + '</div>';
+      }
+
+      html += '</div>';
+      slot.innerHTML = html;
+    } catch (e) {
+      console.warn('[Accueil] Classement widget error:', e.message);
+    }
   },
 
   async _loadYangoActivity() {

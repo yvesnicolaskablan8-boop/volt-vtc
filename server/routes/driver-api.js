@@ -19,6 +19,8 @@ const Contravention = require('../models/Contravention');
 const { haversineDistance, calculateCategoryScore, generateAnalyseIA, finalizeBehaviorSession } = require('../utils/behavior-utils');
 const { getWaveApiKey } = require('../utils/get-integration-keys');
 const { checkSpeedViolation } = require('../utils/speed-check');
+const InfractionVitesse = require('../models/InfractionVitesse');
+const { computeWeeklyRanking, getPreviousWeekRange, BONUS_AMOUNT } = require('../utils/bonus-cron');
 
 // fetch: natif en Node 18+, fallback node-fetch sinon
 const fetch = globalThis.fetch || require('node-fetch');
@@ -1685,24 +1687,70 @@ router.post('/checklist', async (req, res, next) => {
 
 // =================== CLASSEMENT ===================
 
-// GET /api/driver/classement — Classement anonymise des chauffeurs
+// GET /api/driver/classement — Classement composite hebdomadaire avec bonus
 router.get('/classement', async (req, res, next) => {
   try {
     const chauffeurId = req.user.chauffeurId;
 
-    const chauffeurs = await Chauffeur.find({ statut: 'actif' })
-      .select('id prenom scoreConduite')
-      .sort({ scoreConduite: -1 })
-      .lean();
+    // Calculer les bornes de la semaine en cours (lundi → dimanche)
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=dim, 1=lun
+    const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - daysSinceMonday);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
 
-    const classement = chauffeurs.map((c, i) => ({
-      rang: i + 1,
-      prenom: c.id === chauffeurId ? c.prenom : (c.prenom ? c.prenom.charAt(0) + '***' : '***'),
-      score: c.scoreConduite || 80,
-      estMoi: c.id === chauffeurId
+    const semaineDebut = monday.toISOString().split('T')[0];
+    const semaineFin = sunday.toISOString().split('T')[0];
+
+    // Calculer le classement de la semaine en cours
+    const ranking = await computeWeeklyRanking(semaineDebut, semaineFin, null);
+
+    // Construire la reponse anonymisee
+    const classement = ranking.map(r => ({
+      rang: r.rang,
+      chauffeurId: r.chauffeurId === chauffeurId ? r.chauffeurId : undefined,
+      prenom: r.chauffeurId === chauffeurId ? r.prenom : r.prenom,
+      nom: r.chauffeurId === chauffeurId ? r.nom : (r.nom ? r.nom.charAt(0) + '.' : ''),
+      score: r.scoreGlobal,
+      isCurrentUser: r.chauffeurId === chauffeurId,
+      ca: r.chauffeurId === chauffeurId ? r.ca : undefined,
+      scoreConduite: r.chauffeurId === chauffeurId ? r.scoreConduite : undefined,
+      regularite: r.chauffeurId === chauffeurId ? r.regularite : undefined
     }));
 
-    res.json(classement);
+    // Trouver l'utilisateur courant
+    const currentUser = classement.find(c => c.isCurrentUser);
+
+    // Dernier gagnant du bonus
+    let dernierGagnant = null;
+    try {
+      const lastBonus = await Versement.findOne({ source: 'bonus' }).sort({ date: -1 }).lean();
+      if (lastBonus) {
+        const gagnant = await Chauffeur.findOne({ id: lastBonus.chauffeurId }).select('prenom nom').lean();
+        if (gagnant) {
+          dernierGagnant = {
+            prenom: gagnant.prenom || '',
+            nom: gagnant.nom ? gagnant.nom.charAt(0) + '.' : '',
+            semaine: lastBonus.commentaire || '',
+            date: lastBonus.date
+          };
+        }
+      }
+    } catch (e) { /* ignore */ }
+
+    res.json({
+      classement,
+      currentUserRang: currentUser ? currentUser.rang : null,
+      currentUserScore: currentUser ? currentUser.score : null,
+      totalParticipants: classement.length,
+      bonus: BONUS_AMOUNT,
+      semaineDebut,
+      semaineFin,
+      dernierGagnant
+    });
   } catch (err) {
     next(err);
   }

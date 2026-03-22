@@ -183,6 +183,10 @@ const startServer = async () => {
     const reposCron = require('./utils/repos-cron');
     reposCron.start();
 
+    // Demarrer le CRON Bonus hebdomadaire (chaque lundi 1h)
+    const bonusCron = require('./utils/bonus-cron');
+    bonusCron.start();
+
   });
 };
 
