@@ -46,7 +46,7 @@ const DriverRouter = {
     if (titleEl) titleEl.textContent = titles[route] || 'Pilote Chauffeur';
 
     // Show/hide back button (hidden on main tab pages)
-    const mainTabs = ['accueil', 'versements', 'messagerie', 'profil'];
+    const mainTabs = ['accueil', 'versements', 'classement', 'profil'];
     const backBtn = document.getElementById('btn-back');
     if (backBtn) {
       backBtn.style.display = mainTabs.includes(route) ? 'none' : 'flex';
