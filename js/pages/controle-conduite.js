@@ -49,6 +49,9 @@ const ControleConduitePage = {
         <button class="cc-tab ${this._activeTab === 'statistiques' ? 'active' : ''}" data-tab="statistiques">
           <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon> Statistiques
         </button>
+        <button class="cc-tab ${this._activeTab === 'contraventions' ? 'active' : ''}" data-tab="contraventions">
+          <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> Contraventions
+        </button>
       </div>
 
       <div id="cc-tab-content"></div>
@@ -149,6 +152,7 @@ const ControleConduitePage = {
     if (tab === 'infractions') this._renderInfractions(content);
     else if (tab === 'zones') this._renderZones(content);
     else if (tab === 'statistiques') this._renderStats(content);
+    else if (tab === 'contraventions') this._renderContraventions(content);
   },
 
   // ======================== HELPERS ========================
@@ -776,5 +780,626 @@ const ControleConduitePage = {
     el.innerHTML = sorted.map(([name, count], idx) =>
       '<li><div style="display:flex;align-items:center;"><span class="cc-top-rank">' + (idx + 1) + '</span><span class="cc-top-name">' + name + '</span></div><span class="cc-top-count">' + count + ' infraction' + (count > 1 ? 's' : '') + '</span></li>'
     ).join('');
+  },
+
+  // ======================== TAB 4: CONTRAVENTIONS ========================
+
+  _getContraventionsData() {
+    const contraventions = Store.get('contraventions') || [];
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+
+    const monthContra = contraventions.filter(c => {
+      const d = new Date(c.date);
+      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+    });
+
+    const impayees = contraventions.filter(c => c.statut === 'impayee');
+    const payees = monthContra.filter(c => c.statut === 'payee');
+    const contestees = contraventions.filter(c => c.statut === 'contestee');
+    const totalImpaye = impayees.reduce((s, c) => s + (c.montant || 0), 0);
+
+    return {
+      contraventions,
+      chauffeurs,
+      totalImpaye,
+      nbMois: monthContra.length,
+      nbPayees: payees.length,
+      nbImpayees: impayees.length,
+      nbContestees: contestees.length
+    };
+  },
+
+  _renderContraventions(content) {
+    const data = this._getContraventionsData();
+
+    content.innerHTML = `
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:600;color:var(--text-muted);">${data.contraventions.length} contravention${data.contraventions.length !== 1 ? 's' : ''}</div>
+        <button class="btn btn-primary" id="cc-btn-add-contravention">
+          <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter
+        </button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="cc-kpi-grid">
+        <div class="cc-kpi" id="cc-kpi-total-impaye" style="cursor:pointer;${data.totalImpaye > 0 ? 'border-color:rgba(239,68,68,.2);' : ''}">
+          <div class="cc-kpi-top">
+            <div class="cc-kpi-icon" style="background:rgba(239,68,68,.1);color:#ef4444;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
+            <div class="cc-kpi-label" style="color:#ef4444;">Total impay\u00e9</div>
+          </div>
+          <div class="cc-kpi-val" style="color:#ef4444;">${Utils.formatCurrency(data.totalImpaye)}</div>
+        </div>
+        <div class="cc-kpi">
+          <div class="cc-kpi-top">
+            <div class="cc-kpi-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
+            <div class="cc-kpi-label">Ce mois</div>
+          </div>
+          <div class="cc-kpi-val">${data.nbMois}</div>
+        </div>
+        <div class="cc-kpi">
+          <div class="cc-kpi-top">
+            <div class="cc-kpi-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
+            <div class="cc-kpi-label">Pay\u00e9es (mois)</div>
+          </div>
+          <div class="cc-kpi-val" style="color:#10b981;">${data.nbPayees}</div>
+        </div>
+        <div class="cc-kpi">
+          <div class="cc-kpi-top">
+            <div class="cc-kpi-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:chat-round-dots-bold-duotone"></iconify-icon></div>
+            <div class="cc-kpi-label">Contest\u00e9es</div>
+          </div>
+          <div class="cc-kpi-val" style="color:#f59e0b;">${data.nbContestees}</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="d-card" style="padding:12px 16px;margin-bottom:16px;">
+        <div class="cc-filter-row">
+          <select id="cc-ctr-filter-chauffeur" class="cc-filter-select">
+            <option value="">Tous les chauffeurs</option>
+            ${data.chauffeurs.map(c => '<option value="' + c.id + '">' + c.prenom + ' ' + c.nom + '</option>').join('')}
+          </select>
+          <select id="cc-ctr-filter-statut" class="cc-filter-select">
+            <option value="">Tous les statuts</option>
+            <option value="impayee">Impay\u00e9e</option>
+            <option value="payee">Pay\u00e9e</option>
+            <option value="contestee">Contest\u00e9e</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="d-card" style="overflow-x:auto;">
+        <div id="cc-contraventions-table"></div>
+      </div>
+    `;
+
+    this._bindContraventionsEvents(data);
+  },
+
+  _bindContraventionsEvents(data) {
+    const chauffeurMap = {};
+    data.chauffeurs.forEach(c => chauffeurMap[c.id] = c.prenom + ' ' + c.nom);
+
+    const typeLabels = {
+      exces_vitesse: 'Exc\u00e8s de vitesse',
+      stationnement: 'Stationnement',
+      feu_rouge: 'Feu rouge',
+      documents: 'Documents',
+      telephone: 'T\u00e9l\u00e9phone',
+      autre: 'Autre'
+    };
+
+    const statusBadge = (statut) => {
+      const map = {
+        impayee: '<span class="badge badge-danger">Impay\u00e9e</span>',
+        payee: '<span class="badge badge-success">Pay\u00e9e</span>',
+        contestee: '<span class="badge badge-warning">Contest\u00e9e</span>'
+      };
+      return map[statut] || statut;
+    };
+
+    const renderTable = (items) => {
+      Table.create({
+        containerId: 'cc-contraventions-table',
+        data: items,
+        columns: [
+          { label: 'Chauffeur', key: 'chauffeurId', render: (v) => chauffeurMap[v.chauffeurId] || '<span style="color:var(--text-muted);font-style:italic;">Inconnu</span>' },
+          { label: 'V\u00e9hicule', key: 'vehiculeId', render: (v) => {
+            if (!v.vehiculeId) return '-';
+            const veh = (Store.get('vehicules') || []).find(x => x.id === v.vehiculeId);
+            return veh ? veh.immatriculation : v.vehiculeId;
+          }},
+          { label: 'Date', key: 'date', render: (v) => Utils.formatDate(v.date) + (v.heure ? '<br><span style="font-size:10px;color:var(--text-muted);">' + v.heure + '</span>' : '') },
+          { label: 'Type', key: 'type', render: (v) => typeLabels[v.type] || v.type },
+          { label: 'Lieu', key: 'lieu', render: (v) => v.lieu || '-' },
+          { label: 'Montant', key: 'montant', render: (v) => Utils.formatCurrency(v.montant || 0) },
+          { label: 'Statut', key: 'statut', render: (v) => {
+            let html = statusBadge(v.statut);
+            if (v.moyenPaiement === 'wave') {
+              html += ' <span class="badge" style="font-size:0.65rem;background:rgba(13,110,253,0.1);color:#0D6EFD;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
+            }
+            if (v.motifContestation) {
+              html += ' <span title="' + v.motifContestation + '" style="cursor:help;font-size:0.7rem;color:#94a3b8"><iconify-icon icon="solar:chat-round-dots-bold"></iconify-icon></span>';
+            }
+            return html;
+          }},
+          { label: 'Actions', key: 'actions', render: (v) => {
+            let btns = '<button class="btn-icon" title="Modifier" onclick="ControleConduitePage._editContravention(\'' + v.id + '\')"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>';
+            if (v.statut === 'impayee' || v.statut === 'contestee') {
+              btns += ' <button class="btn-icon btn-success" title="Marquer pay\u00e9e" onclick="ControleConduitePage._markContraventionPaid(\'' + v.id + '\')"><iconify-icon icon="solar:check-circle-bold"></iconify-icon></button>';
+              btns += ' <button class="btn-icon" title="Payer via Wave" onclick="ControleConduitePage._payContraventionWave(\'' + v.id + '\')" style="color:#0D6EFD"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></button>';
+            }
+            btns += ' <button class="btn-icon btn-danger" title="Supprimer" onclick="ControleConduitePage._deleteContravention(\'' + v.id + '\')"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>';
+            return btns;
+          }}
+        ],
+        sortKey: 'date',
+        sortDir: 'desc',
+        pageSize: 15,
+        emptyMessage: 'Aucune contravention',
+        onRowClick: (id) => ControleConduitePage._editContravention(id)
+      });
+    };
+
+    renderTable(data.contraventions);
+
+    // Filters
+    const applyFilters = () => {
+      const chauffeur = document.getElementById('cc-ctr-filter-chauffeur').value;
+      const statut = document.getElementById('cc-ctr-filter-statut').value;
+      let filtered = data.contraventions;
+      if (chauffeur) filtered = filtered.filter(c => c.chauffeurId === chauffeur);
+      if (statut) filtered = filtered.filter(c => c.statut === statut);
+      renderTable(filtered);
+    };
+
+    const fc = document.getElementById('cc-ctr-filter-chauffeur');
+    const fs = document.getElementById('cc-ctr-filter-statut');
+    if (fc) fc.addEventListener('change', applyFilters);
+    if (fs) fs.addEventListener('change', applyFilters);
+
+    // KPI click
+    const kpiEl = document.getElementById('cc-kpi-total-impaye');
+    if (kpiEl) {
+      kpiEl.addEventListener('click', () => {
+        this._showContraventionsImpayeesDetail(data, chauffeurMap, typeLabels);
+      });
+    }
+
+    // Add button
+    const addBtn = document.getElementById('cc-btn-add-contravention');
+    if (addBtn) addBtn.addEventListener('click', () => this._addContravention(data.chauffeurs));
+  },
+
+  _showContraventionsImpayeesDetail(data, chauffeurMap, typeLabels) {
+    const impayees = data.contraventions.filter(c => c.statut === 'impayee');
+    const total = impayees.reduce((s, c) => s + (c.montant || 0), 0);
+
+    const byChauffeur = {};
+    impayees.forEach(c => {
+      const name = chauffeurMap[c.chauffeurId] || c.chauffeurId;
+      if (!byChauffeur[name]) byChauffeur[name] = { items: [], total: 0 };
+      byChauffeur[name].items.push(c);
+      byChauffeur[name].total += (c.montant || 0);
+    });
+
+    let html = '<div style="margin-bottom:1rem;padding:1rem;border-radius:0.75rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center">'
+      + '<span style="font-weight:700;color:#ef4444">' + impayees.length + ' contravention' + (impayees.length > 1 ? 's' : '') + ' impay\u00e9e' + (impayees.length > 1 ? 's' : '') + '</span>'
+      + '<span style="font-weight:900;font-size:1.1rem;color:#ef4444">' + Utils.formatCurrency(total) + '</span>'
+      + '</div></div>';
+
+    Object.entries(byChauffeur).sort((a, b) => b[1].total - a[1].total).forEach(([name, group]) => {
+      html += '<div style="margin-bottom:1rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;padding-bottom:0.25rem;border-bottom:1px solid #e2e8f0">'
+        + '<span style="font-weight:800;font-size:0.9rem">' + name + '</span>'
+        + '<span style="font-weight:700;color:#ef4444;font-size:0.85rem">' + Utils.formatCurrency(group.total) + '</span></div>'
+        + group.items.map(c => '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.5rem;font-size:0.82rem;border-radius:0.5rem;margin-bottom:2px;background:#f8fafc">'
+          + '<span style="color:#64748b">' + Utils.formatDate(c.date) + ' \u00b7 ' + (typeLabels[c.type] || c.type) + (c.lieu ? ' \u00b7 ' + c.lieu : '') + '</span>'
+          + '<span style="font-weight:700">' + Utils.formatCurrency(c.montant || 0) + '</span></div>').join('')
+        + '</div>';
+    });
+
+    if (impayees.length === 0) {
+      html = '<div style="text-align:center;padding:2rem;color:#94a3b8">Aucune contravention impay\u00e9e</div>';
+    }
+
+    Modal.form(
+      '<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#ef4444"></iconify-icon> D\u00e9tail des contraventions impay\u00e9es',
+      '<div style="max-height:60vh;overflow-y:auto">' + html + '</div>',
+      null
+    );
+  },
+
+  _contraventionTypeOptions: [
+    { value: 'exces_vitesse', label: 'Exc\u00e8s de vitesse' },
+    { value: 'stationnement', label: 'Stationnement' },
+    { value: 'feu_rouge', label: 'Feu rouge' },
+    { value: 'documents', label: 'Documents' },
+    { value: 'telephone', label: 'T\u00e9l\u00e9phone au volant' },
+    { value: 'autre', label: 'Autre' }
+  ],
+
+  _contraLineHtml(idx) {
+    const colors = ['#ef4444', '#f97316', '#8b5cf6', '#3b82f6', '#06b6d4', '#22c55e'];
+    const c = colors[idx % colors.length];
+    return '<div class="contra-line" data-idx="' + idx + '" style="border-left:3px solid ' + c + ';background:linear-gradient(135deg,' + c + '08,transparent);border-radius:0 14px 14px 0;padding:16px 16px 16px 20px;margin-bottom:12px;position:relative;transition:all .2s;">'
+      + (idx > 0 ? '<button type="button" onclick="this.closest(\'.contra-line\').remove();ControleConduitePage._updateContraLineCount()" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;" onmouseenter="this.style.background=\'#ef4444\';this.style.color=\'#fff\'" onmouseleave="this.style.background=\'rgba(239,68,68,.1)\';this.style.color=\'#ef4444\'"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>' : '')
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">'
+      + '<div style="width:28px;height:28px;border-radius:8px;background:' + c + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;">'
+      + '<iconify-icon icon="solar:document-text-bold"></iconify-icon></div>'
+      + '<span style="font-size:13px;font-weight:700;color:' + c + ';">Infraction #' + (idx + 1) + '</span></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+      + '<div><label style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Type d\'infraction *</label>'
+      + '<select name="type_' + idx + '" required style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);font-weight:500;appearance:auto;">'
+      + this._contraventionTypeOptions.map(t => '<option value="' + t.value + '">' + t.label + '</option>').join('') + '</select></div>'
+      + '<div><label style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Montant (FCFA) *</label>'
+      + '<input type="number" name="montant_' + idx + '" required min="1" placeholder="25 000" style="width:100%;font-size:14px;font-weight:700;padding:10px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;"></div>'
+      + '<div><label style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Lieu</label>'
+      + '<input type="text" name="lieu_' + idx + '" placeholder="ex: Boulevard Latrille, Cocody" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;"></div>'
+      + '<div><label style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;display:block;">Description</label>'
+      + '<input type="text" name="description_' + idx + '" placeholder="D\u00e9tails de l\'infraction..." style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);box-sizing:border-box;"></div>'
+      + '</div></div>';
+  },
+
+  _updateContraLineCount() {
+    const container = document.getElementById('cc-contra-lines-container');
+    if (!container) return;
+    const count = container.querySelectorAll('.contra-line').length;
+    const badge = document.getElementById('cc-contra-count-badge');
+    if (badge) badge.textContent = count;
+  },
+
+  _addContravention(chauffeurs, preselectedChauffeurId) {
+    Modal.form(
+      '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#ef4444;"></iconify-icon> D\u00e9claration de contraventions',
+      '<form id="cc-form-contravention" class="modal-form" style="padding:0;">'
+        + '<div style="background:linear-gradient(135deg,#ef4444,#f97316);border-radius:14px;padding:20px;margin-bottom:20px;color:#fff;">'
+        + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">'
+        + '<iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size:24px;"></iconify-icon>'
+        + '<span style="font-size:16px;font-weight:800;">Nouvelle d\u00e9claration</span></div>'
+        + '<div style="font-size:12px;opacity:.8;">Renseignez le chauffeur concern\u00e9 et ajoutez une ou plusieurs infractions</div></div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">'
+        + '<div><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
+        + '<iconify-icon icon="solar:user-bold-duotone" style="color:#6366f1;"></iconify-icon> Chauffeur *</label>'
+        + '<select name="chauffeurId" id="cc-contra-chauffeur-select" required style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;">'
+        + '<option value="">S\u00e9lectionner un chauffeur...</option>'
+        + chauffeurs.map(c => '<option value="' + c.id + '" data-vehicule="' + (c.vehiculeAssigne || '') + '" ' + (c.id === preselectedChauffeurId ? 'selected' : '') + '>' + c.prenom + ' ' + c.nom + '</option>').join('')
+        + '</select></div>'
+        + '<div><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
+        + '<iconify-icon icon="solar:bus-bold-duotone" style="color:#14b8a6;"></iconify-icon> V\u00e9hicule</label>'
+        + '<select name="vehiculeId" id="cc-contra-vehicule-select" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;">'
+        + '<option value="">Aucun</option>'
+        + (Store.get('vehicules') || []).map(v => '<option value="' + v.id + '">' + v.immatriculation + (v.marque ? ' \u2014 ' + v.marque + ' ' + (v.modele || '') : '') + '</option>').join('')
+        + '</select></div></div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">'
+        + '<div><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
+        + '<iconify-icon icon="solar:calendar-bold-duotone" style="color:#f97316;"></iconify-icon> Date *</label>'
+        + '<input type="date" name="date" required value="' + new Date().toISOString().split('T')[0] + '" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;box-sizing:border-box;"></div>'
+        + '<div><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
+        + '<iconify-icon icon="solar:clock-circle-bold-duotone" style="color:#3b82f6;"></iconify-icon> Heure</label>'
+        + '<input type="time" name="heure" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;box-sizing:border-box;"></div></div>'
+        + '<div style="margin-bottom:16px;"><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
+        + '<iconify-icon icon="solar:map-point-bold-duotone" style="color:#22c55e;"></iconify-icon> Lieu</label>'
+        + '<input type="text" name="lieu" placeholder="ex: Boulevard Latrille, Cocody" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:500;box-sizing:border-box;"></div>'
+        + '<div style="margin-bottom:20px;"><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
+        + '<iconify-icon icon="solar:chat-round-dots-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Note interne (optionnel)</label>'
+        + '<textarea name="commentaire" rows="2" placeholder="Commentaire pour l\'\u00e9quipe..." style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);resize:vertical;box-sizing:border-box;"></textarea></div>'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--border-color);">'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+        + '<div style="width:32px;height:32px;border-radius:10px;background:#ef4444;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;">'
+        + '<iconify-icon icon="solar:list-bold"></iconify-icon></div>'
+        + '<div><div style="font-size:14px;font-weight:800;color:var(--text-primary);">Infractions</div>'
+        + '<div style="font-size:11px;color:var(--text-muted);"><span id="cc-contra-count-badge">1</span> infraction(s)</div></div></div>'
+        + '<button type="button" id="cc-btn-add-contra-line" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(99,102,241,.3);transition:all .2s;" onmouseenter="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 4px 16px rgba(99,102,241,.4)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(99,102,241,.3)\'">'
+        + '<iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter</button></div>'
+        + '<div id="cc-contra-lines-container">' + this._contraLineHtml(0) + '</div>'
+        + '</form>',
+      () => this._saveNewContravention(),
+      'modal-lg'
+    );
+
+    setTimeout(() => {
+      const chSelect = document.getElementById('cc-contra-chauffeur-select');
+      const vhSelect = document.getElementById('cc-contra-vehicule-select');
+      if (chSelect && vhSelect) {
+        const sel = chSelect.options[chSelect.selectedIndex];
+        if (sel && sel.dataset.vehicule) vhSelect.value = sel.dataset.vehicule;
+        chSelect.addEventListener('change', () => {
+          const opt = chSelect.options[chSelect.selectedIndex];
+          if (opt && opt.dataset.vehicule) vhSelect.value = opt.dataset.vehicule;
+        });
+      }
+
+      const btn = document.getElementById('cc-btn-add-contra-line');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const container = document.getElementById('cc-contra-lines-container');
+          const idx = container.querySelectorAll('.contra-line').length;
+          container.insertAdjacentHTML('beforeend', ControleConduitePage._contraLineHtml(idx));
+          ControleConduitePage._updateContraLineCount();
+          const newLine = container.lastElementChild;
+          if (newLine) newLine.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+      }
+    }, 100);
+  },
+
+  async _saveNewContravention() {
+    const form = document.getElementById('cc-form-contravention');
+    const fd = new FormData(form);
+    const chauffeurId = fd.get('chauffeurId');
+    const vehiculeId = fd.get('vehiculeId') || '';
+    const date = fd.get('date');
+    const heure = fd.get('heure') || '';
+    const lieuGlobal = fd.get('lieu') || '';
+    const commentaire = fd.get('commentaire') || '';
+
+    if (!chauffeurId) {
+      Toast.show('Chauffeur requis', 'error');
+      return;
+    }
+    const lines = document.querySelectorAll('#cc-contra-lines-container .contra-line');
+    let count = 0;
+
+    lines.forEach((line) => {
+      const idx = line.dataset.idx;
+      const type = fd.get('type_' + idx);
+      const montant = parseInt(fd.get('montant_' + idx));
+      const lieuLine = fd.get('lieu_' + idx) || '';
+      const description = fd.get('description_' + idx) || '';
+
+      if (!type || !montant || montant <= 0) return;
+
+      const contravention = {
+        id: 'CTR-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+        chauffeurId,
+        vehiculeId,
+        date,
+        heure,
+        type,
+        lieu: lieuLine || lieuGlobal,
+        montant,
+        description,
+        commentaire,
+        statut: 'impayee',
+        dateCreation: new Date().toISOString()
+      };
+
+      Store.add('contraventions', contravention);
+
+      if (chauffeurId && montant > 0) {
+        Store.add('versements', {
+          id: Utils.generateId('VRS'),
+          chauffeurId,
+          date,
+          montantVerse: 0,
+          montantAttendu: montant,
+          manquant: montant,
+          statut: 'manquant',
+          traitementManquant: 'dette',
+          reference: contravention.id,
+          commentaire: 'Contravention \u2014 ' + (type || 'amende'),
+          source: 'contravention',
+          dateCreation: new Date().toISOString()
+        });
+      }
+
+      count++;
+    });
+
+    if (count === 0) {
+      Toast.show('Au moins une infraction avec montant requis', 'error');
+      return;
+    }
+
+    Modal.close();
+    Toast.show(count + ' contravention' + (count > 1 ? 's' : '') + ' ajout\u00e9e' + (count > 1 ? 's' : ''), 'success');
+    this._renderTab('contraventions');
+  },
+
+  _editContravention(id) {
+    const contraventions = Store.get('contraventions') || [];
+    const c = contraventions.find(x => x.id === id);
+    if (!c) return;
+
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const vehicules = Store.get('vehicules') || [];
+    const typeOptions = this._contraventionTypeOptions;
+
+    const inputStyle = 'width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:10px;font-size:13px;background:var(--bg-primary);color:var(--text-primary);transition:border-color .2s,box-shadow .2s;outline:none;';
+    const labelStyle = 'display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text-primary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;';
+    const sectionBase = 'border-radius:12px;padding:16px;margin-top:14px;border:none;';
+    const sectionColors = {
+      assignation: 'background:rgba(59,130,246,0.06);',
+      infraction: 'background:rgba(245,158,11,0.06);',
+      financier: 'background:rgba(16,185,129,0.06);',
+      notes: 'background:rgba(139,92,246,0.06);'
+    };
+    const sectionTitleStyle = 'display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;';
+
+    const statutColor = c.statut === 'payee' ? '#10b981' : c.statut === 'contestee' ? '#f59e0b' : '#ef4444';
+    const statutLabel = c.statut === 'payee' ? 'Pay\u00e9e' : c.statut === 'contestee' ? 'Contest\u00e9e' : 'Impay\u00e9e';
+
+    Modal.form(
+      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;font-size:20px;"></iconify-icon> Modifier contravention',
+      '<form id="cc-form-contravention-edit">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;background:' + statutColor + '12;border:1px solid ' + statutColor + '30;margin-bottom:4px;">'
+        + '<div style="display:flex;align-items:center;gap:8px;"><div style="width:8px;height:8px;border-radius:50%;background:' + statutColor + ';"></div>'
+        + '<span style="font-size:13px;font-weight:600;color:' + statutColor + ';">' + statutLabel + '</span></div>'
+        + '<span style="font-size:18px;font-weight:700;color:var(--text-primary);">' + (Utils.formatMoney ? Utils.formatMoney(c.montant || 0) : (c.montant || 0).toLocaleString()) + ' FCFA</span></div>'
+        + '<div style="' + sectionBase + sectionColors.assignation + '">'
+        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:user-bold-duotone" style="color:#3b82f6;font-size:15px;"></iconify-icon> Assignation</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+        + '<div><label style="' + labelStyle + '"><iconify-icon icon="solar:user-bold" style="font-size:13px;"></iconify-icon> Chauffeur <span style="color:#ef4444;">*</span></label>'
+        + '<select name="chauffeurId" style="' + inputStyle + '">'
+        + chauffeurs.map(ch => '<option value="' + ch.id + '" ' + (ch.id === c.chauffeurId ? 'selected' : '') + '>' + ch.prenom + ' ' + ch.nom + '</option>').join('') + '</select></div>'
+        + '<div><label style="' + labelStyle + '"><iconify-icon icon="solar:wheel-bold" style="font-size:13px;"></iconify-icon> V\u00e9hicule</label>'
+        + '<select name="vehiculeId" style="' + inputStyle + '"><option value="">\u2014 Aucun \u2014</option>'
+        + vehicules.map(v => '<option value="' + v.id + '" ' + (v.id === c.vehiculeId ? 'selected' : '') + '>' + (v.immatriculation || '') + ' ' + (v.marque || '') + ' ' + (v.modele || '') + '</option>').join('')
+        + '</select></div></div></div>'
+        + '<div style="' + sectionBase + sectionColors.infraction + '">'
+        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f59e0b;font-size:15px;"></iconify-icon> Infraction</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+        + '<div><label style="' + labelStyle + '">Date <span style="color:#ef4444;">*</span></label>'
+        + '<input type="date" name="date" value="' + (c.date || '') + '" style="' + inputStyle + '"></div>'
+        + '<div><label style="' + labelStyle + '">Type</label>'
+        + '<select name="type" style="' + inputStyle + '">'
+        + typeOptions.map(t => '<option value="' + t.value + '" ' + (t.value === c.type ? 'selected' : '') + '>' + t.label + '</option>').join('') + '</select></div></div>'
+        + '<div style="margin-top:12px;"><label style="' + labelStyle + '"><iconify-icon icon="solar:map-point-bold" style="font-size:13px;"></iconify-icon> Lieu</label>'
+        + '<input type="text" name="lieu" value="' + (c.lieu || '') + '" placeholder="Lieu de l\'infraction" style="' + inputStyle + '"></div></div>'
+        + '<div style="' + sectionBase + sectionColors.financier + '">'
+        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#10b981;font-size:15px;"></iconify-icon> Financier</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+        + '<div><label style="' + labelStyle + '">Montant (FCFA) <span style="color:#ef4444;">*</span></label>'
+        + '<input type="number" name="montant" value="' + (c.montant || 0) + '" min="1" style="' + inputStyle + '"></div>'
+        + '<div><label style="' + labelStyle + '">Statut</label>'
+        + '<select name="statut" style="' + inputStyle + '">'
+        + '<option value="impayee" ' + (c.statut === 'impayee' ? 'selected' : '') + '>Impay\u00e9e</option>'
+        + '<option value="payee" ' + (c.statut === 'payee' ? 'selected' : '') + '>Pay\u00e9e</option>'
+        + '<option value="contestee" ' + (c.statut === 'contestee' ? 'selected' : '') + '>Contest\u00e9e</option>'
+        + '</select></div></div></div>'
+        + '<div style="' + sectionBase + sectionColors.notes + '">'
+        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:document-text-bold-duotone" style="color:#8b5cf6;font-size:15px;"></iconify-icon> Notes</div>'
+        + '<div><label style="' + labelStyle + '">Description</label>'
+        + '<textarea name="description" rows="2" placeholder="D\u00e9tails de la contravention..." style="' + inputStyle + 'resize:vertical;">' + (c.description || '') + '</textarea></div>'
+        + '<div style="margin-top:12px;"><label style="' + labelStyle + '">Commentaire admin</label>'
+        + '<textarea name="commentaire" rows="2" placeholder="Note interne..." style="' + inputStyle + 'resize:vertical;">' + (c.commentaire || '') + '</textarea></div></div>'
+        + (c.motifContestation ? '<div style="margin-top:14px;padding:12px 14px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:12px;">'
+          + '<div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;">'
+          + '<iconify-icon icon="solar:chat-round-warning-bold-duotone" style="font-size:15px;color:#f59e0b;"></iconify-icon> Contestation chauffeur</div>'
+          + '<div style="font-size:13px;color:#92400e;line-height:1.5;">' + c.motifContestation + '</div></div>' : '')
+        + '<div class="statut-indicator" style="display:none;"></div>'
+        + '</form>',
+      () => this._saveEditContravention(id)
+    );
+  },
+
+  _saveEditContravention(id) {
+    const form = document.getElementById('cc-form-contravention-edit');
+    const fd = new FormData(form);
+    const updates = {
+      chauffeurId: fd.get('chauffeurId'),
+      vehiculeId: fd.get('vehiculeId') || null,
+      date: fd.get('date'),
+      type: fd.get('type'),
+      lieu: fd.get('lieu') || '',
+      montant: parseInt(fd.get('montant')) || 0,
+      statut: fd.get('statut'),
+      description: fd.get('description') || '',
+      commentaire: fd.get('commentaire') || ''
+    };
+
+    if (updates.statut === 'payee') {
+      updates.datePaiement = new Date().toISOString();
+    }
+
+    Store.update('contraventions', id, updates);
+
+    if (updates.statut === 'payee') {
+      const versements = Store.get('versements') || [];
+      const dette = versements.find(v => v.reference === id && v.traitementManquant === 'dette');
+      if (dette) {
+        Store.update('versements', dette.id, {
+          montantVerse: dette.montantAttendu || dette.manquant,
+          manquant: 0,
+          statut: 'valide',
+          traitementManquant: null,
+          commentaire: (dette.commentaire || '') + ' \u2014 R\u00e9gl\u00e9e'
+        });
+      }
+    }
+
+    Modal.close();
+    Toast.show('Contravention mise \u00e0 jour', 'success');
+    this._renderTab('contraventions');
+  },
+
+  _markContraventionPaid(id) {
+    if (!confirm('Marquer cette contravention comme pay\u00e9e ?')) return;
+    Store.update('contraventions', id, {
+      statut: 'payee',
+      datePaiement: new Date().toISOString()
+    });
+
+    const versements = Store.get('versements') || [];
+    const dette = versements.find(v => v.reference === id && v.traitementManquant === 'dette');
+    if (dette) {
+      Store.update('versements', dette.id, {
+        montantVerse: dette.montantAttendu || dette.manquant,
+        manquant: 0,
+        statut: 'valide',
+        traitementManquant: null,
+        commentaire: (dette.commentaire || '') + ' \u2014 R\u00e9gl\u00e9e'
+      });
+    }
+
+    Toast.show('Contravention marqu\u00e9e comme pay\u00e9e', 'success');
+    this._renderTab('contraventions');
+  },
+
+  _deleteContravention(id) {
+    if (!confirm('Supprimer cette contravention ?')) return;
+    Store.delete('contraventions', id);
+    Toast.show('Contravention supprim\u00e9e', 'success');
+    this._renderTab('contraventions');
+  },
+
+  async _payContraventionWave(id) {
+    const contraventions = Store.get('contraventions') || [];
+    const c = contraventions.find(x => x.id === id);
+    if (!c) return;
+
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const ch = chauffeurs.find(x => x.id === c.chauffeurId);
+    const name = ch ? (ch.prenom + ' ' + ch.nom) : c.chauffeurId;
+
+    if (!confirm('Payer la contravention de ' + name + ' (' + Utils.formatCurrency(c.montant) + ') via Wave ?')) return;
+
+    Toast.show('Redirection vers Wave...', 'info');
+
+    try {
+      const apiBase = Store._apiBase || '/api';
+      const res = await fetch(apiBase + '/contraventions/wave/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (localStorage.getItem('pilote_token') || '')
+        },
+        body: JSON.stringify({ contraventionId: id })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        Toast.show(data.error || 'Erreur Wave', 'error');
+        return;
+      }
+
+      if (data.waveLaunchUrl) {
+        window.open(data.waveLaunchUrl, '_blank');
+
+        const versements = Store.get('versements') || [];
+        const dette = versements.find(v => v.reference === id && v.traitementManquant === 'dette');
+        if (dette) {
+          Store.update('versements', dette.id, {
+            montantVerse: dette.montantAttendu || dette.manquant,
+            manquant: 0,
+            statut: 'valide',
+            traitementManquant: null,
+            commentaire: (dette.commentaire || '') + ' \u2014 R\u00e9gl\u00e9e (Wave)'
+          });
+        }
+      } else {
+        Toast.show('URL de paiement non disponible', 'error');
+      }
+    } catch (err) {
+      console.error('Wave checkout error:', err);
+      Toast.show('Erreur de connexion', 'error');
+    }
   }
 };

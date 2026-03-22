@@ -11,7 +11,6 @@ const MenuPage = {
       { route: '/yango', icon: 'solar:bus-bold-duotone', label: 'Yango Fleet', color: '#facc15' },
       { route: '/taches', icon: 'solar:checklist-bold-duotone', label: 'Taches', color: '#6366f1' },
       { route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements', color: '#22c55e' },
-      { route: '/contraventions', icon: 'solar:document-text-bold-duotone', label: 'Contraventions', color: '#ef4444' },
       { route: '/rentabilite', icon: 'solar:pie-chart-2-bold-duotone', label: 'Rentabilité', color: '#8b5cf6' },
       { route: '/comptabilite', icon: 'solar:calculator-bold-duotone', label: 'Comptabilité', color: '#3b82f6' },
       { route: '/messagerie', icon: 'solar:chat-round-dots-bold-duotone', label: 'Messagerie', color: '#06b6d4' },

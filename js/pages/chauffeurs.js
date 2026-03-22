@@ -1903,7 +1903,7 @@ const ChauffeursPage = {
         btn.addEventListener('click', () => {
           Modal.close();
           const chauffeurs = Store.get('chauffeurs') || [];
-          ContraventionsPage._add(chauffeurs, chauffeurId);
+          ControleConduitePage._addContravention(chauffeurs, chauffeurId);
         });
       }
     }, 100);
