@@ -43,6 +43,15 @@ const settingsSchema = new mongoose.Schema({
     bonusValeur: { type: Number, default: 5000 },
     bonusPeriode: { type: String, enum: ['hebdomadaire', 'mensuel'], default: 'mensuel' }
   },
+  classement: {
+    poidsRecettes: { type: Number, default: 40 },
+    poidsConduite: { type: Number, default: 25 },
+    poidsRegularite: { type: Number, default: 20 },
+    poidsInfractions: { type: Number, default: 15 },
+    bonusHebdo: { type: Number, default: 25000 },
+    penaliteContravention: { type: Number, default: 15 },
+    penaliteInfraction: { type: Number, default: 5 }
+  },
   notifications: {
     smsActif: { type: Boolean, default: false },
     whatsappActif: { type: Boolean, default: false },

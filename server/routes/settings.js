@@ -97,6 +97,10 @@ router.put('/', async (req, res, next) => {
         settings.contrat = req.body.contrat;
         settings.markModified('contrat');
       }
+      if (req.body.classement) {
+        settings.classement = req.body.classement;
+        settings.markModified('classement');
+      }
 
       // Handle integrations — skip masked values (user didn't change them)
       if (req.body.integrations) {

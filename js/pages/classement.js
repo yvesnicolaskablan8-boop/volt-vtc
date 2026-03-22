@@ -3,6 +3,21 @@
  */
 const ClassementPage = {
   _selectedPeriod: 'current', // 'current' | 'last' | '3months'
+  _showConfig: false,
+
+  _getWeights() {
+    const settings = Store.get('settings') || {};
+    const cl = settings.classement || {};
+    return {
+      recettes: cl.poidsRecettes ?? 40,
+      conduite: cl.poidsConduite ?? 25,
+      regularite: cl.poidsRegularite ?? 20,
+      infractions: cl.poidsInfractions ?? 15,
+      bonusHebdo: cl.bonusHebdo ?? 25000,
+      penaliteContravention: cl.penaliteContravention ?? 15,
+      penaliteInfraction: cl.penaliteInfraction ?? 5
+    };
+  },
 
   render() {
     const container = document.getElementById('page-content');
@@ -88,18 +103,20 @@ const ClassementPage = {
       const nbVerse = Math.min(versementsMois.length, nbPlanifie);
       const scoreRegularite = (nbVerse / nbPlanifie) * 100;
 
-      // 4. Contraventions/Infractions (15%)
+      // 4. Contraventions/Infractions
+      const w = this._getWeights();
       const nbContras = contras.filter(c => c.chauffeurId === cId && this._matchesRange(c.date)).length;
       const nbInfractions = infractions.filter(inf => inf.chauffeurId === cId && this._matchesRange(inf.date)).length;
-      const penalite = (nbContras * 15) + (nbInfractions * 5);
+      const penalite = (nbContras * w.penaliteContravention) + (nbInfractions * w.penaliteInfraction);
       const scoreContra = Math.max(100 - penalite, 0);
 
-      // Score global pondéré
+      // Score global pondéré (poids configurables)
+      const totalPoids = w.recettes + w.conduite + w.regularite + w.infractions;
       const scoreGlobal = Math.round(
-        (scoreRecettes * 0.40) +
-        (scoreConduite * 0.25) +
-        (scoreRegularite * 0.20) +
-        (scoreContra * 0.15)
+        (scoreRecettes * (w.recettes / totalPoids)) +
+        (scoreConduite * (w.conduite / totalPoids)) +
+        (scoreRegularite * (w.regularite / totalPoids)) +
+        (scoreContra * (w.infractions / totalPoids))
       );
 
       const initials = ((ch.prenom || '')[0] + (ch.nom || '')[0]).toUpperCase();
@@ -140,12 +157,15 @@ const ClassementPage = {
           <h1><iconify-icon icon="solar:cup-star-bold-duotone" style="color:#f59e0b;"></iconify-icon> Classement des chauffeurs</h1>
           <p class="classement-subtitle">${Utils.escHtml(periodLabel)} &bull; ${activeCount} chauffeur${activeCount !== 1 ? 's' : ''} actif${activeCount !== 1 ? 's' : ''}</p>
         </div>
-        <div class="classement-header-right">
+        <div class="classement-header-right" style="display:flex;gap:10px;align-items:center;">
           <select id="classement-period" class="form-control" style="max-width:200px;">
             <option value="current" ${this._selectedPeriod === 'current' ? 'selected' : ''}>Ce mois</option>
             <option value="last" ${this._selectedPeriod === 'last' ? 'selected' : ''}>Mois dernier</option>
             <option value="3months" ${this._selectedPeriod === '3months' ? 'selected' : ''}>3 derniers mois</option>
           </select>
+          <button id="classement-config-btn" class="btn btn-sm" style="display:flex;align-items:center;gap:6px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;">
+            <iconify-icon icon="solar:settings-bold-duotone" style="font-size:16px;"></iconify-icon> Parametres
+          </button>
         </div>
       </div>
 
@@ -154,20 +174,25 @@ const ClassementPage = {
       <div class="classement-legend">
         <div class="classement-legend-item">
           <iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#3b82f6;"></iconify-icon>
-          <span>Recettes <strong>40%</strong></span>
+          <span>Recettes <strong>${this._getWeights().recettes}%</strong></span>
         </div>
         <div class="classement-legend-item">
           <iconify-icon icon="solar:steering-wheel-bold-duotone" style="color:#8b5cf6;"></iconify-icon>
-          <span>Conduite <strong>25%</strong></span>
+          <span>Conduite <strong>${this._getWeights().conduite}%</strong></span>
         </div>
         <div class="classement-legend-item">
           <iconify-icon icon="solar:calendar-check-bold-duotone" style="color:#22c55e;"></iconify-icon>
-          <span>R&eacute;gularit&eacute; <strong>20%</strong></span>
+          <span>R&eacute;gularit&eacute; <strong>${this._getWeights().regularite}%</strong></span>
         </div>
         <div class="classement-legend-item">
           <iconify-icon icon="solar:shield-warning-bold-duotone" style="color:#ef4444;"></iconify-icon>
-          <span>Infractions <strong>15%</strong></span>
+          <span>Infractions <strong>${this._getWeights().infractions}%</strong></span>
         </div>
+      </div>
+
+      <!-- Panneau parametres -->
+      <div id="classement-config-panel" style="display:none;margin-bottom:20px;">
+        ${this._renderConfigPanel()}
       </div>
 
       <div class="d-card" style="margin-top:20px;">
@@ -304,6 +329,7 @@ const ClassementPage = {
       });
     }
     this._renderTable();
+    this._bindConfigEvents();
   },
 
   _renderTable() {
@@ -380,5 +406,125 @@ const ClassementPage = {
       pageSize: 20,
       onRowClick: (row) => Router.navigate('/chauffeurs/' + row.id)
     });
+  },
+
+  _renderConfigPanel() {
+    const w = this._getWeights();
+    const inputStyle = 'width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);font-size:13px;text-align:center;font-weight:700;';
+    const labelStyle = 'font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:0.3px;';
+    return `<div class="d-card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <iconify-icon icon="solar:settings-bold-duotone" style="font-size:20px;color:#6366f1;"></iconify-icon>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Criteres de classement</div>
+            <div style="font-size:11px;color:var(--text-muted);">Ajustez les poids de chaque critere (total doit faire 100%)</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
+        <div>
+          <label style="${labelStyle}"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#3b82f6;font-size:13px;vertical-align:middle;"></iconify-icon> Recettes (%)</label>
+          <input type="number" id="cfg-poids-recettes" value="${w.recettes}" min="0" max="100" style="${inputStyle}">
+        </div>
+        <div>
+          <label style="${labelStyle}"><iconify-icon icon="solar:steering-wheel-bold-duotone" style="color:#8b5cf6;font-size:13px;vertical-align:middle;"></iconify-icon> Conduite (%)</label>
+          <input type="number" id="cfg-poids-conduite" value="${w.conduite}" min="0" max="100" style="${inputStyle}">
+        </div>
+        <div>
+          <label style="${labelStyle}"><iconify-icon icon="solar:calendar-check-bold-duotone" style="color:#22c55e;font-size:13px;vertical-align:middle;"></iconify-icon> Regularite (%)</label>
+          <input type="number" id="cfg-poids-regularite" value="${w.regularite}" min="0" max="100" style="${inputStyle}">
+        </div>
+        <div>
+          <label style="${labelStyle}"><iconify-icon icon="solar:shield-warning-bold-duotone" style="color:#ef4444;font-size:13px;vertical-align:middle;"></iconify-icon> Infractions (%)</label>
+          <input type="number" id="cfg-poids-infractions" value="${w.infractions}" min="0" max="100" style="${inputStyle}">
+        </div>
+      </div>
+      <div id="cfg-total-indicator" style="font-size:12px;font-weight:600;margin-bottom:14px;padding:8px 12px;border-radius:8px;background:rgba(34,197,94,0.08);color:#22c55e;text-align:center;">Total : 100%</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
+        <div>
+          <label style="${labelStyle}">Bonus hebdo (FCFA)</label>
+          <input type="number" id="cfg-bonus-hebdo" value="${w.bonusHebdo}" min="0" step="1000" style="${inputStyle}">
+        </div>
+        <div>
+          <label style="${labelStyle}">Penalite / contravention (pts)</label>
+          <input type="number" id="cfg-penalite-contra" value="${w.penaliteContravention}" min="0" max="50" style="${inputStyle}">
+        </div>
+        <div>
+          <label style="${labelStyle}">Penalite / infraction (pts)</label>
+          <input type="number" id="cfg-penalite-infraction" value="${w.penaliteInfraction}" min="0" max="50" style="${inputStyle}">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button id="cfg-save-btn" class="btn" style="background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-weight:700;font-size:13px;cursor:pointer;">
+          <iconify-icon icon="solar:check-circle-bold" style="margin-right:4px;"></iconify-icon> Enregistrer
+        </button>
+      </div>
+    </div>`;
+  },
+
+  _bindConfigEvents() {
+    const btn = document.getElementById('classement-config-btn');
+    const panel = document.getElementById('classement-config-panel');
+    if (btn && panel) {
+      btn.addEventListener('click', () => {
+        this._showConfig = !this._showConfig;
+        panel.style.display = this._showConfig ? 'block' : 'none';
+      });
+    }
+
+    // Live total indicator
+    ['cfg-poids-recettes', 'cfg-poids-conduite', 'cfg-poids-regularite', 'cfg-poids-infractions'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', () => this._updateTotalIndicator());
+    });
+
+    const saveBtn = document.getElementById('cfg-save-btn');
+    if (saveBtn) saveBtn.addEventListener('click', () => this._saveConfig());
+  },
+
+  _updateTotalIndicator() {
+    const r = parseInt(document.getElementById('cfg-poids-recettes')?.value) || 0;
+    const c = parseInt(document.getElementById('cfg-poids-conduite')?.value) || 0;
+    const g = parseInt(document.getElementById('cfg-poids-regularite')?.value) || 0;
+    const i = parseInt(document.getElementById('cfg-poids-infractions')?.value) || 0;
+    const total = r + c + g + i;
+    const el = document.getElementById('cfg-total-indicator');
+    if (el) {
+      const ok = total === 100;
+      el.style.background = ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
+      el.style.color = ok ? '#22c55e' : '#ef4444';
+      el.textContent = 'Total : ' + total + '%' + (ok ? '' : ' (doit faire 100%)');
+    }
+  },
+
+  _saveConfig() {
+    const r = parseInt(document.getElementById('cfg-poids-recettes')?.value) || 0;
+    const c = parseInt(document.getElementById('cfg-poids-conduite')?.value) || 0;
+    const g = parseInt(document.getElementById('cfg-poids-regularite')?.value) || 0;
+    const i = parseInt(document.getElementById('cfg-poids-infractions')?.value) || 0;
+    const total = r + c + g + i;
+    if (total !== 100) {
+      Toast.error('Le total des poids doit faire exactement 100%');
+      return;
+    }
+    const bonusHebdo = parseInt(document.getElementById('cfg-bonus-hebdo')?.value) || 25000;
+    const penaliteContra = parseInt(document.getElementById('cfg-penalite-contra')?.value) || 15;
+    const penaliteInfraction = parseInt(document.getElementById('cfg-penalite-infraction')?.value) || 5;
+
+    const settings = Store.get('settings') || {};
+    settings.classement = {
+      poidsRecettes: r,
+      poidsConduite: c,
+      poidsRegularite: g,
+      poidsInfractions: i,
+      bonusHebdo,
+      penaliteContravention: penaliteContra,
+      penaliteInfraction
+    };
+    Store.set('settings', settings);
+    Toast.success('Criteres de classement mis a jour');
+    this._showConfig = false;
+    this.render();
   }
 };
