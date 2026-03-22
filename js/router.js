@@ -20,7 +20,7 @@ const Router = {
       '/depenses': { redirect: '/comptabilite' },
       '/rentabilite': { page: RentabilitePage, title: 'Rentabilité' },
       '/gps-conduite': { page: GpsConduitePage, title: 'GPS & Conduite' },
-      '/carte-trajets': { page: CarteTrajetsPage, title: 'Carte GPS' },
+
       '/rapports': { page: RapportsPage, title: 'Rapports' },
       '/comptabilite': { page: ComptabilitePage, title: 'Comptabilité' },
       '/planning': { page: PlanningPage, title: 'Planning' },
