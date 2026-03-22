@@ -106,7 +106,7 @@ const ControleConduitePage = {
         .cc-toggle::after { content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2); }
         .cc-toggle.active::after { transform:translateX(18px); }
 
-        #cc-zones-map { height:350px;border-radius:14px;border:1px solid var(--border-color);margin-bottom:20px; }
+        #cc-zones-map { height:420px;border-radius:16px;border:none;margin-bottom:20px;box-shadow:0 4px 24px rgba(0,0,0,.15),0 0 0 1px rgba(99,102,241,.1);overflow:hidden; }
 
         .cc-stats-grid { display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px; }
         @media(max-width:768px) { .cc-stats-grid { grid-template-columns:1fr; } }
@@ -520,9 +520,17 @@ const ControleConduitePage = {
     try {
       // Default center: Abidjan
       const defaultCenter = [5.3600, -4.0083];
-      this._map = L.map('cc-zones-map').setView(defaultCenter, 12);
+      this._map = L.map('cc-zones-map', { zoomControl: false }).setView(defaultCenter, 12);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      // Zoom control en bas à droite
+      L.control.zoom({ position: 'bottomright' }).addTo(this._map);
+
+      // Dark modern tile layer
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || document.body.classList.contains('dark-mode');
+      const tileUrl = isDark
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/voyager/{z}/{x}/{y}{r}.png';
+      L.tileLayer(tileUrl, {
         attribution: '\u00a9 OpenStreetMap \u00a9 CARTO',
         maxZoom: 19,
         subdomains: 'abcd'
@@ -535,15 +543,46 @@ const ControleConduitePage = {
         const lng = parseFloat(coord.lng || z.lng);
         const rayon = coord.rayon || z.rayon || 200;
         if (lat && lng) {
-          const color = z.actif !== false ? '#6366f1' : '#9ca3af';
+          const isActive = z.actif !== false;
+          const color = isActive ? '#818cf8' : '#6b7280';
+          const glowColor = isActive ? 'rgba(129,140,248,0.3)' : 'rgba(107,114,128,0.2)';
 
+          // Outer glow circle
+          L.circle([lat, lng], {
+            radius: rayon * 1.3,
+            color: 'transparent',
+            fillColor: glowColor,
+            fillOpacity: 0.4,
+            weight: 0,
+            interactive: false
+          }).addTo(this._map);
+
+          // Main circle with gradient-like effect
           L.circle([lat, lng], {
             radius: rayon,
             color: color,
             fillColor: color,
-            fillOpacity: 0.15,
+            fillOpacity: 0.2,
+            weight: 2,
+            dashArray: isActive ? null : '5,5'
+          }).addTo(this._map).bindPopup(
+            '<div style="font-family:system-ui;padding:4px;">' +
+            '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">' + (z.nom || 'Zone') + '</div>' +
+            '<div style="display:flex;align-items:center;gap:6px;">' +
+            '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + (isActive ? '#22c55e' : '#ef4444') + ';"></span>' +
+            '<span style="font-size:12px;color:#666;">' + (isActive ? 'Actif' : 'Inactif') + '</span></div>' +
+            '<div style="font-size:16px;font-weight:600;margin-top:6px;color:#6366f1;">' + (z.vitesseMax || 0) + ' km/h</div>' +
+            '</div>'
+          );
+
+          // Center dot marker
+          L.circleMarker([lat, lng], {
+            radius: 4,
+            color: '#fff',
+            fillColor: color,
+            fillOpacity: 1,
             weight: 2
-          }).addTo(this._map).bindPopup('<strong>' + (z.nom || 'Zone') + '</strong><br>' + (z.vitesseMax || 0) + ' km/h max');
+          }).addTo(this._map);
 
           bounds.push([lat, lng]);
         }
