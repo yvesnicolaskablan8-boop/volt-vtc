@@ -52,6 +52,11 @@ const Router = {
   _handleRoute() {
     const hash = window.location.hash.slice(1) || '/dashboard'; // Remove #
 
+    // Scroll to top on navigation
+    window.scrollTo(0, 0);
+    const pageContent = document.getElementById('page-content');
+    if (pageContent) pageContent.scrollTop = 0;
+
     // Destroy current page
     if (this._currentPage && typeof this._currentPage.destroy === 'function') {
       this._currentPage.destroy();
