@@ -14,11 +14,10 @@ const AccueilPage = {
     endDate.setDate(endDate.getDate() + 5);
     const endStr = endDate.toISOString().split('T')[0];
 
-    const [data, planningData, contraventionsData, gpsScores] = await Promise.all([
+    const [data, planningData, contraventionsData] = await Promise.all([
       DriverStore.getDashboard(),
       DriverStore.getPlanning(todayStr, endStr),
-      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null),
-      typeof DriverStore.getGpsScores === 'function' ? DriverStore.getGpsScores().catch(() => []) : Promise.resolve([])
+      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null)
     ]);
 
     if (!data) {
@@ -161,10 +160,7 @@ const AccueilPage = {
         </div>
       </div>
 
-      <!-- Widget Score Conduite -->
-      ${this._renderScoreWidget(chauffeur, gpsScores)}
-
-      <!-- Widget Classement -->
+      <!-- Widget Classement & Score -->
       <div id="classement-widget-slot"></div>
 
       <!-- Actions rapides -->
