@@ -1201,6 +1201,12 @@ body.pilote-native-app.pilote-has-bottomnav .header-toggle {
 
 /* ========== ADMIN TABLE RESPONSIVE ========== */
 @media (max-width: 900px) {
+  /* Allow horizontal scroll on page content for tables */
+  #page-content {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Wrap table in scrollable container */
   .table-container,
   [id*="-table"],

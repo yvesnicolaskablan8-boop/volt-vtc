@@ -308,7 +308,7 @@ const ControleConduitePage = {
 
       <!-- Table -->
       <div class="d-card" style="overflow-x:auto;">
-        <div id="cc-infractions-table"></div>
+        <div id="cc-infractions-table" style="overflow-x:auto;-webkit-overflow-scrolling:touch;"></div>
       </div>
     `;
 
@@ -886,7 +886,7 @@ const ControleConduitePage = {
 
       <!-- Table -->
       <div class="d-card" style="overflow-x:auto;">
-        <div id="cc-contraventions-table"></div>
+        <div id="cc-contraventions-table" style="overflow-x:auto;-webkit-overflow-scrolling:touch;"></div>
       </div>
     `;
 
