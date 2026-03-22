@@ -596,12 +596,22 @@ const ControleConduitePage = {
             '</div></div>'
           );
 
-          // Center radar icon (custom div icon)
+          // Radar camera icon
+          const radarSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="28" height="28">'
+            + '<defs><filter id="glow' + (isActive ? 'A' : 'I') + '"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="' + (isActive ? '#7c3aed' : '#6b7280') + '" flood-opacity="0.6"/></filter></defs>'
+            + '<rect x="2" y="6" width="28" height="20" rx="4" fill="' + (isActive ? '#7c3aed' : '#6b7280') + '" filter="url(#glow' + (isActive ? 'A' : 'I') + ')"/>'
+            + '<rect x="4" y="8" width="24" height="16" rx="3" fill="' + (isActive ? '#1e1b4b' : '#374151') + '"/>'
+            + '<circle cx="16" cy="16" r="6" fill="none" stroke="' + (isActive ? '#a78bfa' : '#9ca3af') + '" stroke-width="1.5"/>'
+            + '<circle cx="16" cy="16" r="3" fill="' + (isActive ? '#a78bfa' : '#9ca3af') + '"/>'
+            + '<circle cx="16" cy="16" r="1" fill="' + (isActive ? '#fff' : '#d1d5db') + '"/>'
+            + '<rect x="13" y="3" width="6" height="4" rx="1" fill="' + (isActive ? '#f59e0b' : '#9ca3af') + '"/>'
+            + (isActive ? '<circle cx="16" cy="16" r="8" fill="none" stroke="rgba(167,139,250,0.3)" stroke-width="1" stroke-dasharray="2,2"/>' : '')
+            + '</svg>';
           const radarIcon = L.divIcon({
             className: '',
-            html: '<div style="width:14px;height:14px;border-radius:50%;background:' + (isActive ? 'linear-gradient(135deg,#7c3aed,#a78bfa)' : '#6b7280') + ';border:2px solid rgba(255,255,255,0.8);box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 12px ' + (isActive ? 'rgba(124,58,237,0.5)' : 'rgba(0,0,0,0.2)') + ';"></div>',
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
+            html: radarSvg,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
           });
           L.marker([lat, lng], { icon: radarIcon }).addTo(radarGroup);
 
