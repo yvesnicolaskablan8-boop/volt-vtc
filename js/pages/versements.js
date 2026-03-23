@@ -2363,8 +2363,26 @@ const VersementsPage = {
 
   _modifierDette(versementId) {
     const versements = Store.get('versements') || [];
-    const v = versements.find(x => x.id === versementId);
-    if (!v) { Toast.error('Versement introuvable'); return; }
+    let v = versements.find(x => x.id === versementId);
+    // Si pas trouvé dans versements, chercher dans contraventions
+    if (!v) {
+      const contravs = Store.get('contraventions') || [];
+      const c = contravs.find(x => x.id === versementId);
+      if (c) {
+        // Ouvrir le modal de modification contravention à la place
+        if (typeof ControleConduitePage !== 'undefined' && ControleConduitePage._editContravention) {
+          Modal.close();
+          ControleConduitePage._editContravention(versementId);
+        } else {
+          // Fallback: naviguer vers contrôle conduite onglet contraventions
+          Modal.close();
+          Router.navigate('/controle-conduite?tab=contraventions');
+        }
+        return;
+      }
+      Toast.error('Versement introuvable');
+      return;
+    }
 
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === v.chauffeurId);
