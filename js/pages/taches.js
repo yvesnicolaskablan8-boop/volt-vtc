@@ -194,8 +194,8 @@ const TachesPage = {
   _buildTabButtons(container) {
     const tabs = [
       { id: 'dashboard', icon: 'solar:chart-square-bold-duotone', label: 'Dashboard' },
-      { id: 'kanban', icon: 'solar:widget-4-bold-duotone', label: 'Kanban' },
-      { id: 'eisenhower', icon: 'solar:target-bold-duotone', label: 'Eisenhower' },
+      { id: 'kanban', icon: 'solar:widget-4-bold-duotone', label: 'Tableau' },
+      { id: 'eisenhower', icon: 'solar:target-bold-duotone', label: 'Priorités' },
       { id: 'reunions', icon: 'solar:users-group-rounded-bold-duotone', label: 'Réunions' },
       { id: 'liste', icon: 'solar:list-bold-duotone', label: 'Liste' }
     ];
