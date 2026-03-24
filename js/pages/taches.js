@@ -1715,13 +1715,14 @@ const TachesPage = {
 
     body += '</div>';
 
-    let statusBtns = '';
+    let statusSelect = '<div style="display:flex;align-items:center;gap:8px;">'
+      + '<span style="font-size:12px;color:var(--text-muted);font-weight:500;">Statut :</span>'
+      + '<select onchange="TachesPage._changeStatus(\'' + t.id + '\',this.value)" style="padding:6px 12px;border-radius:8px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:' + sCfg.color + ';font-size:12px;font-weight:600;cursor:pointer;">';
     ['a_faire', 'en_cours', 'terminee', 'annulee'].forEach(s => {
-      if (s === t.statut) return;
       const sc = this._statutConfig[s];
-      statusBtns += '<button class="btn btn-sm" style="color:' + sc.color + ';" onclick="TachesPage._changeStatus(\'' + t.id + '\',\'' + s + '\')">'
-        + '<iconify-icon icon="' + sc.icon + '"></iconify-icon> ' + sc.label + '</button>';
+      statusSelect += '<option value="' + s + '"' + (s === t.statut ? ' selected' : '') + '>' + sc.label + '</option>';
     });
+    statusSelect += '</select></div>';
 
     // Bouton Déléguer visible par l'assigné (pas l'admin créateur)
     const session = Auth.getSession();
@@ -1746,7 +1747,7 @@ const TachesPage = {
         + '<iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer</button>';
     }
 
-    const footer = '<div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;">' + statusBtns + delegateBtn + adminDelegBtn + '</div>'
+    const footer = '<div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;align-items:center;">' + statusSelect + delegateBtn + adminDelegBtn + '</div>'
       + deleteBtn
       + '<button class="btn" onclick="TachesPage._openTaskForm(null, \'' + t.id + '\')">'
       + '<iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>'
