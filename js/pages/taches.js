@@ -391,9 +391,9 @@ const TachesPage = {
     this._currentMemberFilter = name;
     this._switchTab('liste');
     setTimeout(() => {
-      const search = document.querySelector('.tl-search-input');
+      const search = document.getElementById('liste-search-input');
       if (search) { search.value = name; search.dispatchEvent(new Event('input')); }
-    }, 150);
+    }, 200);
   },
 
   _kpiNav(tab, statut) {
