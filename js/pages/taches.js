@@ -1306,16 +1306,6 @@ const TachesPage = {
       + '<option value="mensuel"' + (t.recurrence === 'mensuel' ? ' selected' : '') + '>Mensuel</option>'
       + '</select></div>'
       + '</div>'
-      + '<div style="margin-top:14px;padding:12px;border-radius:10px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);">'
-      + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;margin-bottom:8px;">'
-      + '<input type="checkbox" id="tf-deleguer"' + (t.delegation ? ' checked' : '') + ' onchange="document.getElementById(\'tf-delegue-a-wrap\').style.display=this.checked?\'block\':\'none\'">'
-      + '<iconify-icon icon="solar:hand-shake-bold-duotone" style="color:#8b5cf6;"></iconify-icon>'
-      + '<span style="color:#8b5cf6;font-weight:600;">Déléguer cette tâche</span></label>'
-      + '<div id="tf-delegue-a-wrap" style="display:' + (t.delegation ? 'block' : 'none') + ';">'
-      + '<label class="form-label" style="font-size:12px;">Déléguer à</label>'
-      + '<select id="tf-delegue-a" class="form-control"><option value="">Choisir un membre</option>' + userOpts.replace(t.assigneA ? 'selected' : '___', '') + '</select>'
-      + '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;"><iconify-icon icon="solar:info-circle-line-duotone"></iconify-icon> Le membre recevra une notification et devra accepter ou refuser la délégation.</div>'
-      + '</div></div>'
       + '<div style="margin-top:14px;display:flex;gap:20px;align-items:center;">'
       + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">'
       + '<input type="checkbox" id="tf-urgent"' + (t.urgent ? ' checked' : '') + '>'
@@ -1417,23 +1407,6 @@ const TachesPage = {
       dateModification: new Date().toISOString()
     };
 
-    // Delegation
-    const isDelegation = document.getElementById('tf-deleguer')?.checked || false;
-    const delegueA = document.getElementById('tf-delegue-a')?.value || '';
-    if (isDelegation && delegueA) {
-      const delegueUser = this._getUsers().find(u => u.id === delegueA);
-      const delegueNom = delegueUser ? ([delegueUser.prenom, delegueUser.nom].filter(Boolean).join(' ') || delegueUser.login) : '';
-      data.delegation = {
-        delegueA: delegueA,
-        delegueANom: delegueNom,
-        deleguePar: session?.userId || '',
-        delegueParNom: this._currentUserName(),
-        statut: 'en_attente',
-        dateDelegation: new Date().toISOString()
-      };
-    } else if (!isDelegation) {
-      data.delegation = null;
-    }
 
     if (editId) {
       Store.update('taches', editId, data);
@@ -1558,12 +1531,89 @@ const TachesPage = {
         + '<iconify-icon icon="' + sc.icon + '"></iconify-icon> ' + sc.label + '</button>';
     });
 
-    const footer = '<div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;">' + statusBtns + '</div>'
+    // Bouton Déléguer visible par l'assigné (pas l'admin créateur)
+    const session = Auth.getSession();
+    const isAssignee = session && t.assigneA && session.userId === t.assigneA;
+    const isAdmin = session && (session.role === 'Administrateur' || session.role === 'admin');
+    const canDelegate = isAssignee && !isAdmin && (t.statut === 'a_faire' || t.statut === 'en_cours') && (!t.delegation || t.delegation.statut === 'refusee');
+    let delegateBtn = '';
+    if (canDelegate) {
+      delegateBtn = '<button class="btn btn-sm" style="color:#8b5cf6;" onclick="TachesPage._openDelegateForm(\'' + t.id + '\')">'
+        + '<iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Déléguer</button>';
+    }
+    // Admin peut annuler une délégation en attente
+    let adminDelegBtn = '';
+    if (isAdmin && t.delegation && t.delegation.statut === 'en_attente') {
+      adminDelegBtn = '<button class="btn btn-sm" style="color:#ef4444;" onclick="TachesPage._respondDelegation(\'' + t.id + '\',\'refusee\')">'
+        + '<iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Annuler délégation</button>';
+    }
+
+    const footer = '<div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;">' + statusBtns + delegateBtn + adminDelegBtn + '</div>'
       + '<button class="btn" onclick="TachesPage._openTaskForm(null, \'' + t.id + '\')">'
       + '<iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>'
       + '<button class="btn" onclick="Modal.close()">Fermer</button>';
 
     Modal.open({ title: t.titre, body: body, footer: footer, size: 'lg' });
+  },
+
+  _openDelegateForm(taskId) {
+    const t = this._getTaches().find(x => x.id === taskId);
+    if (!t) return;
+
+    const users = this._getUsers();
+    const session = Auth.getSession();
+    let userOpts = '';
+    users.forEach(u => {
+      if (u.id === session?.userId || u.id === t.assigneA) return;
+      const name = [u.prenom, u.nom].filter(Boolean).join(' ') || u.login;
+      userOpts += '<option value="' + u.id + '">' + Utils.escHtml(name) + '</option>';
+    });
+
+    Modal.open({
+      title: '<iconify-icon icon="solar:hand-shake-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Déléguer la tâche',
+      body: '<div style="padding:4px;">'
+        + '<div style="padding:10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:14px;font-size:13px;">'
+        + '<strong>' + Utils.escHtml(t.titre) + '</strong></div>'
+        + '<label class="form-label">Déléguer à *</label>'
+        + '<select id="deleg-target" class="form-control"><option value="">Choisir un membre...</option>' + userOpts + '</select>'
+        + '<label class="form-label" style="margin-top:12px;">Motif (optionnel)</label>'
+        + '<textarea id="deleg-motif" class="form-control" rows="2" placeholder="Raison de la délégation..." style="font-size:13px;"></textarea>'
+        + '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;padding:8px;border-radius:6px;background:rgba(139,92,246,.05);">'
+        + '<iconify-icon icon="solar:info-circle-line-duotone" style="color:#8b5cf6;"></iconify-icon> '
+        + 'Le membre choisi recevra une notification et devra accepter ou refuser. L\'administrateur peut aussi annuler la délégation.</div>'
+        + '</div>',
+      footer: '<button class="btn" style="background:#8b5cf6;color:white;border:none;" onclick="TachesPage._confirmDelegate(\'' + taskId + '\')"><iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Déléguer</button>'
+        + '<button class="btn btn-secondary" onclick="Modal.close();TachesPage._viewTask(\'' + taskId + '\')">Annuler</button>',
+      size: 'small'
+    });
+  },
+
+  _confirmDelegate(taskId) {
+    const target = document.getElementById('deleg-target')?.value;
+    if (!target) { Toast.error('Veuillez choisir un membre'); return; }
+    const motif = document.getElementById('deleg-motif')?.value || '';
+
+    const session = Auth.getSession();
+    const users = this._getUsers();
+    const delegueUser = users.find(u => u.id === target);
+    const delegueNom = delegueUser ? ([delegueUser.prenom, delegueUser.nom].filter(Boolean).join(' ') || delegueUser.login) : '';
+
+    Store.update('taches', taskId, {
+      delegation: {
+        delegueA: target,
+        delegueANom: delegueNom,
+        deleguePar: session?.userId || '',
+        delegueParNom: this._currentUserName(),
+        statut: 'en_attente',
+        motif: motif,
+        dateDelegation: new Date().toISOString()
+      },
+      dateModification: new Date().toISOString()
+    });
+
+    Modal.close();
+    Toast.success('Demande de délégation envoyée à ' + delegueNom);
+    this._renderActiveView();
   },
 
   _respondDelegation(taskId, response) {
