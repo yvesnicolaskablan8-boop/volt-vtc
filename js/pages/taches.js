@@ -485,14 +485,11 @@ const TachesPage = {
     if (isLate) {
       html += '<span class="kanban-late-badge"><iconify-icon icon="solar:alarm-bold-duotone" style="font-size:12px;"></iconify-icon> Retard</span>';
     }
-    if (t.delegation && t.delegation.statut === 'en_attente') {
-      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(139,92,246,.12);color:#8b5cf6;"><iconify-icon icon="solar:hand-shake-bold-duotone" style="font-size:12px;"></iconify-icon> Délégation</span>';
+    if (t.delegation && t.delegation.statut === 'transferee') {
+      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(139,92,246,.12);color:#8b5cf6;"><iconify-icon icon="solar:hand-shake-bold-duotone" style="font-size:12px;"></iconify-icon> Déléguée par ' + Utils.escHtml(t.delegation.delegueParNom || '') + '</span>';
     }
-    if (t.delegation && t.delegation.statut === 'acceptee') {
-      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(34,197,94,.12);color:#22c55e;"><iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:12px;"></iconify-icon> Déléguée</span>';
-    }
-    if (t.delegation && t.delegation.statut === 'refusee') {
-      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(239,68,68,.12);color:#ef4444;"><iconify-icon icon="solar:close-circle-bold-duotone" style="font-size:12px;"></iconify-icon> Refusée</span>';
+    if (t.delegation && t.delegation.statut === 'annulee_admin') {
+      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(239,68,68,.12);color:#ef4444;"><iconify-icon icon="solar:close-circle-bold-duotone" style="font-size:12px;"></iconify-icon> Délég. annulée</span>';
     }
 
     html += '</div>'
@@ -1493,18 +1490,15 @@ const TachesPage = {
       const d = t.delegation;
       const session = Auth.getSession();
       const isDelegate = session && session.userId === d.delegueA;
-      const statusColors = { en_attente: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#8b5cf6', label: 'En attente', icon: 'solar:clock-circle-bold-duotone' }, acceptee: { bg: 'rgba(34,197,94,.08)', border: 'rgba(34,197,94,.2)', color: '#22c55e', label: 'Acceptée', icon: 'solar:check-circle-bold-duotone' }, refusee: { bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.2)', color: '#ef4444', label: 'Refusée', icon: 'solar:close-circle-bold-duotone' } };
+      const statusColors = { transferee: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#8b5cf6', label: 'Transférée', icon: 'solar:check-circle-bold-duotone' }, annulee_admin: { bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.2)', color: '#ef4444', label: 'Annulée par admin', icon: 'solar:close-circle-bold-duotone' }, en_attente: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#8b5cf6', label: 'En attente', icon: 'solar:clock-circle-bold-duotone' } };
       const ds = statusColors[d.statut] || statusColors.en_attente;
       body += '<div style="margin-bottom:16px;padding:12px;border-radius:10px;background:' + ds.bg + ';border:1px solid ' + ds.border + ';">'
         + '<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:' + ds.color + ';margin-bottom:6px;">'
         + '<iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Délégation — <iconify-icon icon="' + ds.icon + '"></iconify-icon> ' + ds.label + '</div>'
         + '<div style="font-size:12px;color:var(--text-primary);">De : <strong>' + Utils.escHtml(d.delegueParNom || '') + '</strong> → À : <strong>' + Utils.escHtml(d.delegueANom || '') + '</strong></div>'
         + '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">' + (d.dateDelegation ? Utils.formatDate(d.dateDelegation) : '') + '</div>';
-      if (isDelegate && d.statut === 'en_attente') {
-        body += '<div style="display:flex;gap:8px;margin-top:8px;">'
-          + '<button class="btn btn-sm" style="background:#22c55e;color:white;border:none;" onclick="TachesPage._respondDelegation(\'' + t.id + '\',\'acceptee\')"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Accepter</button>'
-          + '<button class="btn btn-sm" style="background:#ef4444;color:white;border:none;" onclick="TachesPage._respondDelegation(\'' + t.id + '\',\'refusee\')"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Refuser</button>'
-          + '</div>';
+      if (d.motif) {
+        body += '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Motif : ' + Utils.escHtml(d.motif) + '</div>';
       }
       body += '</div>';
     }
@@ -1541,10 +1535,10 @@ const TachesPage = {
       delegateBtn = '<button class="btn btn-sm" style="color:#8b5cf6;" onclick="TachesPage._openDelegateForm(\'' + t.id + '\')">'
         + '<iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Déléguer</button>';
     }
-    // Admin peut annuler une délégation en attente
+    // Admin peut annuler une délégation transférée
     let adminDelegBtn = '';
-    if (isAdmin && t.delegation && t.delegation.statut === 'en_attente') {
-      adminDelegBtn = '<button class="btn btn-sm" style="color:#ef4444;" onclick="TachesPage._respondDelegation(\'' + t.id + '\',\'refusee\')">'
+    if (isAdmin && t.delegation && t.delegation.statut === 'transferee') {
+      adminDelegBtn = '<button class="btn btn-sm" style="color:#ef4444;" onclick="TachesPage._annulerDelegation(\'' + t.id + '\')">'
         + '<iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Annuler délégation</button>';
     }
 
@@ -1598,13 +1592,22 @@ const TachesPage = {
     const delegueUser = users.find(u => u.id === target);
     const delegueNom = delegueUser ? ([delegueUser.prenom, delegueUser.nom].filter(Boolean).join(' ') || delegueUser.login) : '';
 
+    const taches = Store.get('taches') || [];
+    const t = taches.find(x => x.id === taskId);
+    const ancienAssigne = t ? t.assigneA : '';
+    const ancienAssigneNom = t ? t.assigneANom : '';
+
     Store.update('taches', taskId, {
+      assigneA: target,
+      assigneANom: delegueNom,
       delegation: {
         delegueA: target,
         delegueANom: delegueNom,
         deleguePar: session?.userId || '',
         delegueParNom: this._currentUserName(),
-        statut: 'en_attente',
+        ancienAssigne: ancienAssigne,
+        ancienAssigneNom: ancienAssigneNom,
+        statut: 'transferee',
         motif: motif,
         dateDelegation: new Date().toISOString()
       },
@@ -1612,30 +1615,26 @@ const TachesPage = {
     });
 
     Modal.close();
-    Toast.success('Demande de délégation envoyée à ' + delegueNom);
+    Toast.success('Tâche transférée à ' + delegueNom);
     this._renderActiveView();
   },
 
-  _respondDelegation(taskId, response) {
+  // Admin annule la délégation → retour à l'assigné original
+  _annulerDelegation(taskId) {
     const taches = Store.get('taches') || [];
     const t = taches.find(x => x.id === taskId);
     if (!t || !t.delegation) return;
 
-    const update = {
-      delegation: { ...t.delegation, statut: response, dateReponse: new Date().toISOString() },
+    const d = t.delegation;
+    Store.update('taches', taskId, {
+      assigneA: d.ancienAssigne || d.deleguePar || '',
+      assigneANom: d.ancienAssigneNom || d.delegueParNom || '',
+      delegation: { ...d, statut: 'annulee_admin', dateAnnulation: new Date().toISOString() },
       dateModification: new Date().toISOString()
-    };
+    });
 
-    if (response === 'acceptee') {
-      update.assigneA = t.delegation.delegueA;
-      update.assigneANom = t.delegation.delegueANom;
-      Toast.success('Délégation acceptée — la tâche vous est maintenant assignée');
-    } else {
-      Toast.info('Délégation refusée');
-    }
-
-    Store.update('taches', taskId, update);
     Modal.close();
+    Toast.success('Délégation annulée — tâche réassignée à ' + (d.ancienAssigneNom || d.delegueParNom || 'l\'assigné original'));
     this._renderActiveView();
   },
 
