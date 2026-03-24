@@ -231,7 +231,7 @@ const TachesPage = {
       case 'dashboard': ct.innerHTML = this._renderDashboard(); this._bindDashboardClicks(ct); break;
       case 'kanban': ct.innerHTML = this._renderKanban(); this._bindKanbanDragDrop(); break;
       case 'eisenhower': ct.innerHTML = this._renderEisenhower(); this._bindEisenhowerDragDrop(); break;
-      case 'gantt': ct.innerHTML = this._renderGantt(); break;
+      case 'gantt': ct.innerHTML = this._renderGantt(); this._scrollGanttToToday(); break;
       case 'reunions': ct.innerHTML = this._renderReunions(); break;
       case 'liste': ct.innerHTML = this._renderListe(); this._bindListeEvents(); break;
     }
@@ -678,22 +678,23 @@ const TachesPage = {
     const today = new Date();
     const todayStr = this._today();
 
-    // Determine date range
+    // Determine date range — center around today
     let minDate, maxDate;
     if (this._ganttViewMode === 'week') {
-      const weekStart = new Date(today);
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
-      minDate = new Date(weekStart);
-      maxDate = new Date(weekStart);
-      maxDate.setDate(maxDate.getDate() + 13); // 2 weeks
+      minDate = new Date(today);
+      minDate.setDate(minDate.getDate() - 3); // 3 days before today
+      maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + 10); // 10 days after
     } else {
-      minDate = new Date(today.getFullYear(), today.getMonth(), 1);
-      maxDate = new Date(today.getFullYear(), today.getMonth() + 2, 0); // 2 months
+      minDate = new Date(today);
+      minDate.setDate(minDate.getDate() - 7); // 1 week before
+      maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + 38); // ~5 weeks after
     }
 
     const totalDays = Math.ceil((maxDate - minDate) / 86400000) + 1;
-    const dayWidth = this._ganttViewMode === 'week' ? 50 : 28;
-    const rowHeight = 44;
+    const dayWidth = this._ganttViewMode === 'week' ? 60 : 36;
+    const rowHeight = 48;
 
     // Build date headers
     const months = [];
@@ -745,15 +746,23 @@ const TachesPage = {
     // Build task rows
     const rowsHtml = sorted.map((t, idx) => {
       const pCfg = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
-      const startDate = t.dateCreation ? new Date(t.dateCreation) : new Date();
-      const endDate = t.dateEcheance ? new Date(t.dateEcheance) : new Date(startDate.getTime() + 3 * 86400000);
-      const isLate = t.dateEcheance && t.dateEcheance < todayStr;
+      // Use dateEcheance as the anchor date, fall back to dateCreation
+      const echeance = t.dateEcheance || t.date || (t.dateCreation ? t.dateCreation.split('T')[0] : todayStr);
+      const startDate = t.dateCreation ? new Date(t.dateCreation.split('T')[0]) : new Date(echeance);
+      const endDate = new Date(echeance);
+      // Ensure minimum 2-day bar width for visibility
+      if (endDate <= startDate) endDate.setDate(startDate.getDate() + 1);
+      const isLate = echeance < todayStr;
 
       // Calculate bar position
-      const startOffset = Math.max(0, Math.ceil((startDate - minDate) / 86400000));
-      const duration = Math.max(1, Math.ceil((endDate - startDate) / 86400000) + 1);
-      const barLeft = startOffset * dayWidth;
-      const barWidth = Math.min(duration * dayWidth, (totalDays - startOffset) * dayWidth);
+      const startOffset = Math.ceil((startDate - minDate) / 86400000);
+      const endOffset = Math.ceil((endDate - minDate) / 86400000);
+      const visibleStart = Math.max(0, startOffset);
+      const visibleEnd = Math.min(totalDays, endOffset + 1);
+      if (visibleEnd <= visibleStart) return ''; // completely out of range
+      const duration = visibleEnd - visibleStart;
+      const barLeft = visibleStart * dayWidth;
+      const barWidth = duration * dayWidth;
 
       // Progress based on subtasks
       const subs = t.sousTaches || [];
@@ -773,9 +782,9 @@ const TachesPage = {
         + '<div class="gantt-row-bg" style="width:' + (totalDays * dayWidth) + 'px;">'
         + days.map(d => '<div class="gantt-cell' + (d.isWeekend ? ' gantt-weekend' : '') + (d.isToday ? ' gantt-today-col' : '') + '" style="min-width:' + dayWidth + 'px;"></div>').join('')
         + '</div>'
-        + '<div class="gantt-bar" onclick="TachesPage._viewTask(\'' + t.id + '\')" style="left:' + barLeft + 'px;width:' + Math.max(barWidth, dayWidth) + 'px;background:' + barColor + '30;border:1px solid ' + barColor + '60;" title="' + Utils.escHtml(t.titre) + '">'
+        + '<div class="gantt-bar" onclick="TachesPage._viewTask(\'' + t.id + '\')" style="left:' + barLeft + 'px;width:' + Math.max(barWidth, dayWidth * 2) + 'px;background:' + barColor + '25;border:1px solid ' + barColor + '50;border-left:3px solid ' + barColor + ';" title="' + Utils.escHtml(t.titre) + '">'
         + '<div class="gantt-bar-fill" style="width:' + progress + '%;background:' + barColor + ';"></div>'
-        + '<span class="gantt-bar-label">' + Utils.escHtml(t.titre.length > 20 ? t.titre.slice(0, 20) + '...' : t.titre) + '</span>'
+        + '<span class="gantt-bar-label">' + Utils.escHtml(t.titre.length > 30 ? t.titre.slice(0, 30) + '...' : t.titre) + '</span>'
         + '</div>'
         + '</div>';
     }).join('');
@@ -833,6 +842,17 @@ const TachesPage = {
   _ganttSetView(mode) {
     this._ganttViewMode = mode;
     this._renderActiveView();
+  },
+
+  _scrollGanttToToday() {
+    setTimeout(() => {
+      const line = document.querySelector('.gantt-today-line');
+      const scroll = document.getElementById('gantt-chart-scroll');
+      if (line && scroll) {
+        const lineLeft = parseInt(line.style.left) || 0;
+        scroll.scrollLeft = Math.max(0, lineLeft - scroll.clientWidth / 3);
+      }
+    }, 50);
   },
 
   // =====================================================================
@@ -2125,7 +2145,7 @@ const TachesPage = {
       .gantt-cell.gantt-today-col { background:rgba(99,102,241,0.04); }
 
       .gantt-bar {
-        position:absolute; top:8px; height:28px; border-radius:8px;
+        position:absolute; top:8px; height:32px; border-radius:8px;
         display:flex; align-items:center; cursor:pointer; overflow:hidden;
         transition:transform .12s, box-shadow .12s; z-index:1;
       }
