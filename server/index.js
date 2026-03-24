@@ -46,6 +46,7 @@ app.use('/api/incidents', require('./routes/crud')('Incident'));
 app.use('/api/activityLogs', require('./routes/crud')('ActivityLog'));
 app.use('/api/taches', require('./routes/tache-hooks'));
 app.use('/api/taches', require('./routes/crud')('Tache'));
+app.use('/api/comptesRendus', require('./routes/crud')('CompteRendu'));
 app.use('/api/controlesTechniques', require('./routes/crud')('ControleTechnique'));
 app.use('/api/zonesVitesse', require('./routes/crud')('ZoneVitesse'));
 app.use('/api/infractionsVitesse', require('./routes/crud')('InfractionVitesse'));

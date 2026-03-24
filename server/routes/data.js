@@ -33,6 +33,7 @@ router.get('/', async (req, res, next) => {
     const ControleTechnique = require('../models/ControleTechnique');
     const Incident = require('../models/Incident');
     const Tache = require('../models/Tache');
+    const CompteRendu = require('../models/CompteRendu');
     const ZoneVitesse = require('../models/ZoneVitesse');
     const InfractionVitesse = require('../models/InfractionVitesse');
 
@@ -46,7 +47,7 @@ router.get('/', async (req, res, next) => {
       planning, absences, users, settingsDoc, signalements,
       pointages, conduiteBrute, checklistVehicules, contraventions, depenses,
       depenseRecurrentes, depenseCategories, versementRecurrents,
-      reparations, controlesTechniques, incidents, taches,
+      reparations, controlesTechniques, incidents, taches, comptesRendus,
       zonesVitesse, infractionsVitesse
     ] = await Promise.all([
       Chauffeur.find(ef).lean(),
@@ -74,6 +75,7 @@ router.get('/', async (req, res, next) => {
       ControleTechnique.find(ef).lean(),
       Incident.find(ef).lean(),
       Tache.find(ef).lean(),
+      CompteRendu.find(ef).lean(),
       ZoneVitesse.find(ef).lean(),
       InfractionVitesse.find(ef).lean()
     ]);
@@ -114,6 +116,7 @@ router.get('/', async (req, res, next) => {
       controlesTechniques: clean(controlesTechniques),
       incidents: clean(incidents),
       taches: clean(taches),
+      comptesRendus: clean(comptesRendus),
       zonesVitesse: clean(zonesVitesse),
       infractionsVitesse: clean(infractionsVitesse),
       settings
