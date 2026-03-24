@@ -686,13 +686,18 @@ const TachesPage = {
         grouped[key] = {
           id: t.id, titre: t.titre, assigneA: t.assigneA, assigneANom: t.assigneANom,
           priorite: t.priorite, sousTaches: t.sousTaches || [],
-          dates: [], ids: [], statut: t.statut
+          dates: [], echeances: [], ids: [], statut: t.statut, hasLate: false
         };
       }
       const d = t.dateEcheance || t.date || (t.dateCreation ? t.dateCreation.split('T')[0] : todayStr);
       grouped[key].dates.push(d);
+      if (t.dateEcheance) grouped[key].echeances.push(t.dateEcheance);
       grouped[key].ids.push(t.id);
       if (t.statut === 'en_cours') grouped[key].statut = 'en_cours';
+      // Check if any occurrence is late
+      if ((t.statut === 'a_faire' || t.statut === 'en_cours') && t.dateEcheance && t.dateEcheance < todayStr) {
+        grouped[key].hasLate = true;
+      }
     });
 
     const tasks = Object.values(grouped).map(g => {
@@ -705,6 +710,9 @@ const TachesPage = {
         ed.setDate(ed.getDate() + 1);
         g.endDate = ed.toISOString().split('T')[0];
       }
+      // Earliest echeance for late detection
+      g.echeances.sort();
+      g.earliestEcheance = g.echeances.length > 0 ? g.echeances[0] : null;
       g.count = g.dates.length;
       return g;
     });
@@ -762,7 +770,7 @@ const TachesPage = {
       const vStart = Math.max(0, startOff), vEnd = Math.min(totalDays, endOff + 1);
       if (vEnd <= vStart) return '<div class="gantt-row" style="height:' + rowHeight + 'px;"><div class="gantt-row-bg" style="width:' + (totalDays * dayWidth) + 'px;">' + gridBg + '</div></div>';
 
-      const isLate = t.endDate < todayStr && t.statut !== 'terminee';
+      const isLate = t.hasLate || (t.earliestEcheance && t.earliestEcheance < todayStr && t.statut !== 'terminee');
       const barColor = isLate ? '#ef4444' : (statutColors[t.statut] || '#f59e0b');
       const barLeft = vStart * dayWidth;
       const barW = Math.max((vEnd - vStart) * dayWidth, dayWidth * 3);
@@ -779,7 +787,7 @@ const TachesPage = {
 
     // Sidebar with status icon
     const sidebarHtml = tasks.map(t => {
-      const isLate = t.endDate < todayStr && t.statut !== 'terminee';
+      const isLate = t.hasLate || (t.earliestEcheance && t.earliestEcheance < todayStr && t.statut !== 'terminee');
       const dotColor = isLate ? '#ef4444' : (statutColors[t.statut] || '#f59e0b');
       const statusLabel = isLate ? 'En retard' : (statutLabels[t.statut] || 'À faire');
       return '<div class="gantt-task-label" style="height:' + rowHeight + 'px;" onclick="TachesPage._viewTask(\'' + t.id + '\')">'
