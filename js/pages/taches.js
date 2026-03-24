@@ -376,6 +376,14 @@ const TachesPage = {
       + '</div>';
   },
 
+  _switchTab(tabId) {
+    this._activeView = tabId;
+    document.querySelectorAll('.taches-tab').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === tabId);
+    });
+    this._renderActiveView();
+  },
+
   _bindDashboardClicks(ct) {
     ct.querySelectorAll('.dash-member-click').forEach(el => {
       el.addEventListener('click', () => {
