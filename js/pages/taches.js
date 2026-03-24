@@ -674,139 +674,122 @@ const TachesPage = {
   _ganttViewMode: 'month', // 'week' or 'month'
 
   _renderGantt() {
-    const taches = this._getTaches().filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
+    const allTaches = this._getTaches().filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
     const today = new Date();
     const todayStr = this._today();
 
-    // Determine date range — center around today
+    // Group recurring tasks by title+assignee → merge into one bar spanning all dates
+    const grouped = {};
+    allTaches.forEach(t => {
+      const key = (t.titre || '').trim() + '||' + (t.assigneA || '');
+      if (!grouped[key]) {
+        grouped[key] = {
+          id: t.id, titre: t.titre, assigneA: t.assigneA, assigneANom: t.assigneANom,
+          priorite: t.priorite, sousTaches: t.sousTaches || [],
+          dates: [], ids: [], statut: t.statut
+        };
+      }
+      const d = t.dateEcheance || t.date || (t.dateCreation ? t.dateCreation.split('T')[0] : todayStr);
+      grouped[key].dates.push(d);
+      grouped[key].ids.push(t.id);
+      if (t.statut === 'en_cours') grouped[key].statut = 'en_cours';
+    });
+
+    const tasks = Object.values(grouped).map(g => {
+      g.dates.sort();
+      g.startDate = g.dates[0];
+      g.endDate = g.dates[g.dates.length - 1];
+      // If start == end (single day), extend to show a visible bar
+      if (g.startDate === g.endDate) {
+        const ed = new Date(g.endDate);
+        ed.setDate(ed.getDate() + 1);
+        g.endDate = ed.toISOString().split('T')[0];
+      }
+      g.count = g.dates.length;
+      return g;
+    });
+
+    // Sort by start date
+    tasks.sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+    // Date range — center around today
     let minDate, maxDate;
     if (this._ganttViewMode === 'week') {
-      minDate = new Date(today);
-      minDate.setDate(minDate.getDate() - 3); // 3 days before today
-      maxDate = new Date(today);
-      maxDate.setDate(maxDate.getDate() + 10); // 10 days after
+      minDate = new Date(today); minDate.setDate(minDate.getDate() - 3);
+      maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + 10);
     } else {
-      minDate = new Date(today);
-      minDate.setDate(minDate.getDate() - 7); // 1 week before
-      maxDate = new Date(today);
-      maxDate.setDate(maxDate.getDate() + 38); // ~5 weeks after
+      minDate = new Date(today); minDate.setDate(minDate.getDate() - 7);
+      maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + 38);
     }
 
     const totalDays = Math.ceil((maxDate - minDate) / 86400000) + 1;
     const dayWidth = this._ganttViewMode === 'week' ? 60 : 36;
     const rowHeight = 48;
 
-    // Build date headers
-    const months = [];
-    const days = [];
-    let currentMonth = -1;
-    let monthStart = 0;
+    // Date headers
+    const months = []; const days = [];
+    let currentMonth = -1, monthStart = 0;
     for (let i = 0; i < totalDays; i++) {
-      const d = new Date(minDate);
-      d.setDate(d.getDate() + i);
+      const d = new Date(minDate); d.setDate(d.getDate() + i);
       const m = d.getMonth();
       if (m !== currentMonth) {
         if (currentMonth !== -1) months[months.length - 1].span = i - monthStart;
         months.push({ label: d.toLocaleString('fr-FR', { month: 'long', year: 'numeric' }), start: i });
-        monthStart = i;
-        currentMonth = m;
+        monthStart = i; currentMonth = m;
       }
-      const isToday = d.toISOString().split('T')[0] === todayStr;
-      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-      days.push({ label: d.getDate(), dayName: d.toLocaleString('fr-FR', { weekday: 'short' }).slice(0, 2), isToday, isWeekend, date: d });
+      const dateStr = d.toISOString().split('T')[0];
+      days.push({ label: d.getDate(), dayName: d.toLocaleString('fr-FR', { weekday: 'short' }).slice(0, 2), isToday: dateStr === todayStr, isWeekend: d.getDay() === 0 || d.getDay() === 6 });
     }
     if (months.length > 0) months[months.length - 1].span = totalDays - months[months.length - 1].start;
 
-    // Sort tasks by date
-    const sorted = [...taches].sort((a, b) => {
-      const da = a.dateEcheance || a.dateCreation || '9999';
-      const db = b.dateEcheance || b.dateCreation || '9999';
-      return da.localeCompare(db);
-    });
+    const monthHeaderHtml = months.map(m => '<div class="gantt-month" style="min-width:' + (m.span * dayWidth) + 'px;">' + Utils.escHtml(m.label) + '</div>').join('');
+    const dayHeaderHtml = days.map(d => '<div class="gantt-day' + (d.isToday ? ' gantt-today-col' : '') + (d.isWeekend ? ' gantt-weekend' : '') + '" style="min-width:' + dayWidth + 'px;"><div class="gantt-day-name">' + d.dayName + '</div><div class="gantt-day-num">' + d.label + '</div></div>').join('');
+    const gridBg = days.map(d => '<div class="gantt-cell' + (d.isWeekend ? ' gantt-weekend' : '') + (d.isToday ? ' gantt-today-col' : '') + '" style="min-width:' + dayWidth + 'px;"></div>').join('');
 
-    // Build month header HTML
-    const monthHeaderHtml = months.map(m =>
-      '<div class="gantt-month" style="min-width:' + (m.span * dayWidth) + 'px;">' + Utils.escHtml(m.label) + '</div>'
-    ).join('');
-
-    // Build day header HTML
-    const dayHeaderHtml = days.map(d =>
-      '<div class="gantt-day' + (d.isToday ? ' gantt-today-col' : '') + (d.isWeekend ? ' gantt-weekend' : '') + '" style="min-width:' + dayWidth + 'px;">'
-      + '<div class="gantt-day-name">' + d.dayName + '</div>'
-      + '<div class="gantt-day-num">' + d.label + '</div>'
-      + '</div>'
-    ).join('');
-
-    // Today indicator position
     const todayIdx = days.findIndex(d => d.isToday);
-    const todayLineHtml = todayIdx >= 0
-      ? '<div class="gantt-today-line" style="left:' + (todayIdx * dayWidth + dayWidth / 2) + 'px;height:' + Math.max(sorted.length * rowHeight, 200) + 'px;"></div>'
-      : '';
+    const todayLineHtml = todayIdx >= 0 ? '<div class="gantt-today-line" style="left:' + (todayIdx * dayWidth + dayWidth / 2) + 'px;height:' + Math.max(tasks.length * rowHeight, 200) + 'px;"></div>' : '';
 
-    // Build task rows
-    const rowsHtml = sorted.map((t, idx) => {
+    // Task rows
+    const rowsHtml = tasks.map(t => {
       const pCfg = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
-      // Use dateEcheance as the anchor date, fall back to dateCreation
-      const echeance = t.dateEcheance || t.date || (t.dateCreation ? t.dateCreation.split('T')[0] : todayStr);
-      const startDate = t.dateCreation ? new Date(t.dateCreation.split('T')[0]) : new Date(echeance);
-      const endDate = new Date(echeance);
-      // Ensure minimum 2-day bar width for visibility
-      if (endDate <= startDate) endDate.setDate(startDate.getDate() + 1);
-      const isLate = echeance < todayStr;
+      const sD = new Date(t.startDate), eD = new Date(t.endDate);
+      const startOff = Math.ceil((sD - minDate) / 86400000);
+      const endOff = Math.ceil((eD - minDate) / 86400000);
+      const vStart = Math.max(0, startOff), vEnd = Math.min(totalDays, endOff + 1);
+      if (vEnd <= vStart) return '<div class="gantt-row" style="height:' + rowHeight + 'px;"><div class="gantt-row-bg" style="width:' + (totalDays * dayWidth) + 'px;">' + gridBg + '</div></div>';
 
-      // Calculate bar position
-      const startOffset = Math.ceil((startDate - minDate) / 86400000);
-      const endOffset = Math.ceil((endDate - minDate) / 86400000);
-      const visibleStart = Math.max(0, startOffset);
-      const visibleEnd = Math.min(totalDays, endOffset + 1);
-      if (visibleEnd <= visibleStart) return ''; // completely out of range
-      const duration = visibleEnd - visibleStart;
-      const barLeft = visibleStart * dayWidth;
-      const barWidth = duration * dayWidth;
-
-      // Progress based on subtasks
+      const isLate = t.endDate < todayStr;
+      const barColor = isLate ? '#ef4444' : (t.statut === 'en_cours' ? '#3b82f6' : pCfg.color);
+      const barLeft = vStart * dayWidth;
+      const barW = Math.max((vEnd - vStart) * dayWidth, dayWidth * 3);
       const subs = t.sousTaches || [];
-      const progress = subs.length > 0 ? Math.round(subs.filter(s => s.termine).length / subs.length * 100) : 0;
-
-      // Only render bars that are at least partially visible
-      if (startOffset >= totalDays || startOffset + duration < 0) {
-        return '<div class="gantt-row" style="height:' + rowHeight + 'px;">'
-          + '<div class="gantt-row-bg" style="width:' + (totalDays * dayWidth) + 'px;">'
-          + days.map(d => '<div class="gantt-cell' + (d.isWeekend ? ' gantt-weekend' : '') + (d.isToday ? ' gantt-today-col' : '') + '" style="min-width:' + dayWidth + 'px;"></div>').join('')
-          + '</div></div>';
-      }
-
-      const barColor = isLate ? '#ef4444' : pCfg.color;
+      const progress = subs.length > 0 ? Math.round(subs.filter(s => s.termine).length / subs.length * 100) : (t.statut === 'en_cours' ? 50 : 0);
 
       return '<div class="gantt-row" style="height:' + rowHeight + 'px;">'
-        + '<div class="gantt-row-bg" style="width:' + (totalDays * dayWidth) + 'px;">'
-        + days.map(d => '<div class="gantt-cell' + (d.isWeekend ? ' gantt-weekend' : '') + (d.isToday ? ' gantt-today-col' : '') + '" style="min-width:' + dayWidth + 'px;"></div>').join('')
-        + '</div>'
-        + '<div class="gantt-bar" onclick="TachesPage._viewTask(\'' + t.id + '\')" style="left:' + barLeft + 'px;width:' + Math.max(barWidth, dayWidth * 2) + 'px;background:' + barColor + '25;border:1px solid ' + barColor + '50;border-left:3px solid ' + barColor + ';" title="' + Utils.escHtml(t.titre) + '">'
+        + '<div class="gantt-row-bg" style="width:' + (totalDays * dayWidth) + 'px;">' + gridBg + '</div>'
+        + '<div class="gantt-bar" onclick="TachesPage._viewTask(\'' + t.id + '\')" style="left:' + barLeft + 'px;width:' + barW + 'px;background:' + barColor + '20;border:1px solid ' + barColor + '40;border-left:3px solid ' + barColor + ';" title="' + Utils.escHtml(t.titre) + (t.count > 1 ? ' (' + t.count + ' occurrences)' : '') + '">'
         + '<div class="gantt-bar-fill" style="width:' + progress + '%;background:' + barColor + ';"></div>'
-        + '<span class="gantt-bar-label">' + Utils.escHtml(t.titre.length > 30 ? t.titre.slice(0, 30) + '...' : t.titre) + '</span>'
-        + '</div>'
-        + '</div>';
+        + '<span class="gantt-bar-label">' + Utils.escHtml(t.titre) + (t.count > 1 ? ' <span style="opacity:.6;">×' + t.count + '</span>' : '') + '</span>'
+        + '</div></div>';
     }).join('');
 
-    // Task names sidebar
-    const sidebarHtml = sorted.map(t => {
+    // Sidebar
+    const sidebarHtml = tasks.map(t => {
       const pCfg = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
-      const isLate = t.dateEcheance && t.dateEcheance < todayStr;
-      const assignee = t.assigneANom || '';
+      const isLate = t.endDate < todayStr;
       return '<div class="gantt-task-label" style="height:' + rowHeight + 'px;" onclick="TachesPage._viewTask(\'' + t.id + '\')">'
         + '<div class="gantt-task-dot" style="background:' + (isLate ? '#ef4444' : pCfg.color) + ';"></div>'
         + '<div class="gantt-task-info">'
-        + '<div class="gantt-task-name">' + Utils.escHtml(t.titre.length > 25 ? t.titre.slice(0, 25) + '...' : t.titre) + '</div>'
-        + (assignee ? '<div class="gantt-task-assignee">' + Utils.escHtml(assignee) + '</div>' : '')
-        + '</div>'
-        + '</div>';
+        + '<div class="gantt-task-name">' + Utils.escHtml(t.titre) + '</div>'
+        + '<div class="gantt-task-assignee">' + Utils.escHtml(t.assigneANom || '') + (t.count > 1 ? ' · ' + t.count + ' occ.' : '') + '</div>'
+        + '</div></div>';
     }).join('');
 
     return `
       <div class="gantt-toolbar">
         <div class="gantt-toolbar-left">
-          <span style="font-size:13px;font-weight:600;color:var(--text-primary);">${sorted.length} tâches</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary);">${tasks.length} tâches</span>
+          <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">(${allTaches.length} occurrences)</span>
         </div>
         <div class="gantt-toolbar-right">
           <button class="gantt-view-btn ${this._ganttViewMode === 'week' ? 'active' : ''}" onclick="TachesPage._ganttSetView('week')">
@@ -818,11 +801,11 @@ const TachesPage = {
         </div>
       </div>
       <div class="gantt-container">
-        <div class="gantt-sidebar">
+        <div class="gantt-sidebar" id="gantt-sidebar-scroll">
           <div class="gantt-sidebar-header" style="height:52px;">
             <span style="font-size:12px;font-weight:600;color:var(--text-muted);">TÂCHE</span>
           </div>
-          ${sidebarHtml}
+          <div class="gantt-sidebar-body">${sidebarHtml}</div>
         </div>
         <div class="gantt-chart" id="gantt-chart-scroll">
           <div class="gantt-header" style="width:${totalDays * dayWidth}px;">
@@ -835,7 +818,7 @@ const TachesPage = {
           </div>
         </div>
       </div>
-      ${sorted.length === 0 ? '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);"><iconify-icon icon="solar:chart-2-bold-duotone" style="font-size:3rem;opacity:.4;display:block;margin-bottom:12px;"></iconify-icon>Aucune tâche active à afficher<br><span style="font-size:12px;">Créez des tâches avec des dates pour voir le diagramme de Gantt</span></div>' : ''}
+      ${tasks.length === 0 ? '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);"><iconify-icon icon="solar:chart-2-bold-duotone" style="font-size:3rem;opacity:.4;display:block;margin-bottom:12px;"></iconify-icon>Aucune tâche active à afficher</div>' : ''}
     `;
   },
 
@@ -847,10 +830,17 @@ const TachesPage = {
   _scrollGanttToToday() {
     setTimeout(() => {
       const line = document.querySelector('.gantt-today-line');
-      const scroll = document.getElementById('gantt-chart-scroll');
-      if (line && scroll) {
+      const chart = document.getElementById('gantt-chart-scroll');
+      const sidebar = document.querySelector('.gantt-sidebar-body');
+      if (line && chart) {
         const lineLeft = parseInt(line.style.left) || 0;
-        scroll.scrollLeft = Math.max(0, lineLeft - scroll.clientWidth / 3);
+        chart.scrollLeft = Math.max(0, lineLeft - chart.clientWidth / 3);
+      }
+      // Sync vertical scroll between chart and sidebar
+      if (chart && sidebar) {
+        chart.addEventListener('scroll', function() {
+          sidebar.scrollTop = chart.scrollTop;
+        });
       }
     }, 50);
   },
@@ -2112,8 +2102,10 @@ const TachesPage = {
       .gantt-task-name { font-size:12px; font-weight:500; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
       .gantt-task-assignee { font-size:10px; color:var(--text-muted); }
 
+      .gantt-sidebar { display:flex; flex-direction:column; }
+      .gantt-sidebar-body { flex:1; overflow-y:hidden; }
       .gantt-chart { flex:1; overflow-x:auto; overflow-y:auto; max-height:600px; }
-      .gantt-header { position:sticky; top:0; z-index:2; }
+      .gantt-header { position:sticky; top:0; z-index:2; background:var(--bg-primary); }
       .gantt-months {
         display:flex; background:rgba(99,102,241,0.08);
         border-bottom:1px solid rgba(255,255,255,0.04);
