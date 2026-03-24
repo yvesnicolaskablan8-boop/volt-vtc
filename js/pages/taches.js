@@ -196,6 +196,7 @@ const TachesPage = {
       { id: 'dashboard', icon: 'solar:chart-square-bold-duotone', label: 'Dashboard' },
       { id: 'kanban', icon: 'solar:widget-4-bold-duotone', label: 'Tableau' },
       { id: 'eisenhower', icon: 'solar:target-bold-duotone', label: 'Priorités' },
+      { id: 'gantt', icon: 'solar:chart-2-bold-duotone', label: 'Gantt' },
       { id: 'reunions', icon: 'solar:users-group-rounded-bold-duotone', label: 'Réunions' },
       { id: 'liste', icon: 'solar:list-bold-duotone', label: 'Liste' }
     ];
@@ -230,6 +231,7 @@ const TachesPage = {
       case 'dashboard': ct.innerHTML = this._renderDashboard(); this._bindDashboardClicks(ct); break;
       case 'kanban': ct.innerHTML = this._renderKanban(); this._bindKanbanDragDrop(); break;
       case 'eisenhower': ct.innerHTML = this._renderEisenhower(); this._bindEisenhowerDragDrop(); break;
+      case 'gantt': ct.innerHTML = this._renderGantt(); break;
       case 'reunions': ct.innerHTML = this._renderReunions(); break;
       case 'liste': ct.innerHTML = this._renderListe(); this._bindListeEvents(); break;
     }
@@ -662,6 +664,174 @@ const TachesPage = {
       dateModification: new Date().toISOString()
     });
     Toast.success('Classification Eisenhower mise à jour');
+    this._renderActiveView();
+  },
+
+  // =====================================================================
+  //  GANTT
+  // =====================================================================
+
+  _ganttViewMode: 'month', // 'week' or 'month'
+
+  _renderGantt() {
+    const taches = this._getTaches().filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
+    const today = new Date();
+    const todayStr = this._today();
+
+    // Determine date range
+    let minDate, maxDate;
+    if (this._ganttViewMode === 'week') {
+      const weekStart = new Date(today);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+      minDate = new Date(weekStart);
+      maxDate = new Date(weekStart);
+      maxDate.setDate(maxDate.getDate() + 13); // 2 weeks
+    } else {
+      minDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      maxDate = new Date(today.getFullYear(), today.getMonth() + 2, 0); // 2 months
+    }
+
+    const totalDays = Math.ceil((maxDate - minDate) / 86400000) + 1;
+    const dayWidth = this._ganttViewMode === 'week' ? 50 : 28;
+    const rowHeight = 44;
+
+    // Build date headers
+    const months = [];
+    const days = [];
+    let currentMonth = -1;
+    let monthStart = 0;
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(minDate);
+      d.setDate(d.getDate() + i);
+      const m = d.getMonth();
+      if (m !== currentMonth) {
+        if (currentMonth !== -1) months[months.length - 1].span = i - monthStart;
+        months.push({ label: d.toLocaleString('fr-FR', { month: 'long', year: 'numeric' }), start: i });
+        monthStart = i;
+        currentMonth = m;
+      }
+      const isToday = d.toISOString().split('T')[0] === todayStr;
+      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+      days.push({ label: d.getDate(), dayName: d.toLocaleString('fr-FR', { weekday: 'short' }).slice(0, 2), isToday, isWeekend, date: d });
+    }
+    if (months.length > 0) months[months.length - 1].span = totalDays - months[months.length - 1].start;
+
+    // Sort tasks by date
+    const sorted = [...taches].sort((a, b) => {
+      const da = a.dateEcheance || a.dateCreation || '9999';
+      const db = b.dateEcheance || b.dateCreation || '9999';
+      return da.localeCompare(db);
+    });
+
+    // Build month header HTML
+    const monthHeaderHtml = months.map(m =>
+      '<div class="gantt-month" style="min-width:' + (m.span * dayWidth) + 'px;">' + Utils.escHtml(m.label) + '</div>'
+    ).join('');
+
+    // Build day header HTML
+    const dayHeaderHtml = days.map(d =>
+      '<div class="gantt-day' + (d.isToday ? ' gantt-today-col' : '') + (d.isWeekend ? ' gantt-weekend' : '') + '" style="min-width:' + dayWidth + 'px;">'
+      + '<div class="gantt-day-name">' + d.dayName + '</div>'
+      + '<div class="gantt-day-num">' + d.label + '</div>'
+      + '</div>'
+    ).join('');
+
+    // Today indicator position
+    const todayIdx = days.findIndex(d => d.isToday);
+    const todayLineHtml = todayIdx >= 0
+      ? '<div class="gantt-today-line" style="left:' + (todayIdx * dayWidth + dayWidth / 2) + 'px;height:' + Math.max(sorted.length * rowHeight, 200) + 'px;"></div>'
+      : '';
+
+    // Build task rows
+    const rowsHtml = sorted.map((t, idx) => {
+      const pCfg = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
+      const startDate = t.dateCreation ? new Date(t.dateCreation) : new Date();
+      const endDate = t.dateEcheance ? new Date(t.dateEcheance) : new Date(startDate.getTime() + 3 * 86400000);
+      const isLate = t.dateEcheance && t.dateEcheance < todayStr;
+
+      // Calculate bar position
+      const startOffset = Math.max(0, Math.ceil((startDate - minDate) / 86400000));
+      const duration = Math.max(1, Math.ceil((endDate - startDate) / 86400000) + 1);
+      const barLeft = startOffset * dayWidth;
+      const barWidth = Math.min(duration * dayWidth, (totalDays - startOffset) * dayWidth);
+
+      // Progress based on subtasks
+      const subs = t.sousTaches || [];
+      const progress = subs.length > 0 ? Math.round(subs.filter(s => s.termine).length / subs.length * 100) : 0;
+
+      // Only render bars that are at least partially visible
+      if (startOffset >= totalDays || startOffset + duration < 0) {
+        return '<div class="gantt-row" style="height:' + rowHeight + 'px;">'
+          + '<div class="gantt-row-bg" style="width:' + (totalDays * dayWidth) + 'px;">'
+          + days.map(d => '<div class="gantt-cell' + (d.isWeekend ? ' gantt-weekend' : '') + (d.isToday ? ' gantt-today-col' : '') + '" style="min-width:' + dayWidth + 'px;"></div>').join('')
+          + '</div></div>';
+      }
+
+      const barColor = isLate ? '#ef4444' : pCfg.color;
+
+      return '<div class="gantt-row" style="height:' + rowHeight + 'px;">'
+        + '<div class="gantt-row-bg" style="width:' + (totalDays * dayWidth) + 'px;">'
+        + days.map(d => '<div class="gantt-cell' + (d.isWeekend ? ' gantt-weekend' : '') + (d.isToday ? ' gantt-today-col' : '') + '" style="min-width:' + dayWidth + 'px;"></div>').join('')
+        + '</div>'
+        + '<div class="gantt-bar" onclick="TachesPage._viewTask(\'' + t.id + '\')" style="left:' + barLeft + 'px;width:' + Math.max(barWidth, dayWidth) + 'px;background:' + barColor + '30;border:1px solid ' + barColor + '60;" title="' + Utils.escHtml(t.titre) + '">'
+        + '<div class="gantt-bar-fill" style="width:' + progress + '%;background:' + barColor + ';"></div>'
+        + '<span class="gantt-bar-label">' + Utils.escHtml(t.titre.length > 20 ? t.titre.slice(0, 20) + '...' : t.titre) + '</span>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    // Task names sidebar
+    const sidebarHtml = sorted.map(t => {
+      const pCfg = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
+      const isLate = t.dateEcheance && t.dateEcheance < todayStr;
+      const assignee = t.assigneANom || '';
+      return '<div class="gantt-task-label" style="height:' + rowHeight + 'px;" onclick="TachesPage._viewTask(\'' + t.id + '\')">'
+        + '<div class="gantt-task-dot" style="background:' + (isLate ? '#ef4444' : pCfg.color) + ';"></div>'
+        + '<div class="gantt-task-info">'
+        + '<div class="gantt-task-name">' + Utils.escHtml(t.titre.length > 25 ? t.titre.slice(0, 25) + '...' : t.titre) + '</div>'
+        + (assignee ? '<div class="gantt-task-assignee">' + Utils.escHtml(assignee) + '</div>' : '')
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    return `
+      <div class="gantt-toolbar">
+        <div class="gantt-toolbar-left">
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary);">${sorted.length} tâches</span>
+        </div>
+        <div class="gantt-toolbar-right">
+          <button class="gantt-view-btn ${this._ganttViewMode === 'week' ? 'active' : ''}" onclick="TachesPage._ganttSetView('week')">
+            <iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Semaine
+          </button>
+          <button class="gantt-view-btn ${this._ganttViewMode === 'month' ? 'active' : ''}" onclick="TachesPage._ganttSetView('month')">
+            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois
+          </button>
+        </div>
+      </div>
+      <div class="gantt-container">
+        <div class="gantt-sidebar">
+          <div class="gantt-sidebar-header" style="height:52px;">
+            <span style="font-size:12px;font-weight:600;color:var(--text-muted);">TÂCHE</span>
+          </div>
+          ${sidebarHtml}
+        </div>
+        <div class="gantt-chart" id="gantt-chart-scroll">
+          <div class="gantt-header" style="width:${totalDays * dayWidth}px;">
+            <div class="gantt-months">${monthHeaderHtml}</div>
+            <div class="gantt-days">${dayHeaderHtml}</div>
+          </div>
+          <div class="gantt-body" style="width:${totalDays * dayWidth}px;position:relative;">
+            ${todayLineHtml}
+            ${rowsHtml}
+          </div>
+        </div>
+      </div>
+      ${sorted.length === 0 ? '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);"><iconify-icon icon="solar:chart-2-bold-duotone" style="font-size:3rem;opacity:.4;display:block;margin-bottom:12px;"></iconify-icon>Aucune tâche active à afficher<br><span style="font-size:12px;">Créez des tâches avec des dates pour voir le diagramme de Gantt</span></div>' : ''}
+    `;
+  },
+
+  _ganttSetView(mode) {
+    this._ganttViewMode = mode;
     this._renderActiveView();
   },
 
@@ -1886,6 +2056,99 @@ const TachesPage = {
       .eisen-card:hover { transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.12); }
       .eisen-card-title { font-size:12px; font-weight:500; color:var(--text-primary); margin-bottom:4px; }
       .eisen-card-meta { display:flex; align-items:center; gap:6px; }
+
+      /* ── Gantt ── */
+      .gantt-toolbar {
+        display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;
+      }
+      .gantt-toolbar-right { display:flex; gap:4px; }
+      .gantt-view-btn {
+        display:flex; align-items:center; gap:4px; padding:6px 14px; border:1px solid rgba(255,255,255,0.08);
+        border-radius:8px; background:rgba(255,255,255,0.03); color:var(--text-muted);
+        cursor:pointer; font-size:12px; font-weight:500; transition:all .15s;
+      }
+      .gantt-view-btn:hover { background:rgba(255,255,255,0.06); color:var(--text-primary); }
+      .gantt-view-btn.active { background:rgba(99,102,241,.15); color:#818cf8; border-color:rgba(99,102,241,.3); font-weight:600; }
+
+      .gantt-container {
+        display:flex; border:1px solid rgba(255,255,255,0.06); border-radius:14px;
+        overflow:hidden; background:rgba(255,255,255,0.02); backdrop-filter:blur(4px);
+      }
+      .gantt-sidebar {
+        min-width:220px; max-width:260px; border-right:1px solid rgba(255,255,255,0.06);
+        flex-shrink:0; overflow-y:auto;
+      }
+      .gantt-sidebar-header {
+        display:flex; align-items:center; padding:0 14px;
+        border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02);
+      }
+      .gantt-task-label {
+        display:flex; align-items:center; gap:8px; padding:0 14px; cursor:pointer;
+        border-bottom:1px solid rgba(255,255,255,0.02); transition:background .1s;
+      }
+      .gantt-task-label:hover { background:rgba(255,255,255,0.03); }
+      .gantt-task-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+      .gantt-task-info { min-width:0; }
+      .gantt-task-name { font-size:12px; font-weight:500; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .gantt-task-assignee { font-size:10px; color:var(--text-muted); }
+
+      .gantt-chart { flex:1; overflow-x:auto; overflow-y:auto; max-height:600px; }
+      .gantt-header { position:sticky; top:0; z-index:2; }
+      .gantt-months {
+        display:flex; background:rgba(99,102,241,0.08);
+        border-bottom:1px solid rgba(255,255,255,0.04);
+      }
+      .gantt-month {
+        padding:6px 10px; font-size:12px; font-weight:600; color:#818cf8;
+        text-transform:capitalize; border-right:1px solid rgba(255,255,255,0.04);
+        text-align:center;
+      }
+      .gantt-days {
+        display:flex; background:rgba(255,255,255,0.02);
+        border-bottom:1px solid rgba(255,255,255,0.06);
+      }
+      .gantt-day {
+        text-align:center; padding:4px 0; border-right:1px solid rgba(255,255,255,0.02);
+      }
+      .gantt-day-name { font-size:9px; color:var(--text-muted); text-transform:uppercase; }
+      .gantt-day-num { font-size:11px; font-weight:600; color:var(--text-primary); }
+      .gantt-day.gantt-today-col { background:rgba(99,102,241,0.08); }
+      .gantt-day.gantt-today-col .gantt-day-num { color:#818cf8; }
+      .gantt-day.gantt-weekend { background:rgba(255,255,255,0.01); }
+      .gantt-day.gantt-weekend .gantt-day-num { color:var(--text-muted); opacity:.6; }
+
+      .gantt-body { position:relative; }
+      .gantt-row { position:relative; border-bottom:1px solid rgba(255,255,255,0.02); }
+      .gantt-row-bg { display:flex; position:absolute; top:0; left:0; height:100%; }
+      .gantt-cell { border-right:1px solid rgba(255,255,255,0.02); }
+      .gantt-cell.gantt-weekend { background:rgba(255,255,255,0.01); }
+      .gantt-cell.gantt-today-col { background:rgba(99,102,241,0.04); }
+
+      .gantt-bar {
+        position:absolute; top:8px; height:28px; border-radius:8px;
+        display:flex; align-items:center; cursor:pointer; overflow:hidden;
+        transition:transform .12s, box-shadow .12s; z-index:1;
+      }
+      .gantt-bar:hover { transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.2); z-index:2; }
+      .gantt-bar-fill { position:absolute; top:0; left:0; height:100%; border-radius:8px; opacity:.6; transition:width .3s; }
+      .gantt-bar-label {
+        position:relative; z-index:1; padding:0 8px; font-size:11px; font-weight:500;
+        color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      }
+
+      .gantt-today-line {
+        position:absolute; top:0; width:2px; background:#818cf8;
+        z-index:3; pointer-events:none; opacity:.7;
+      }
+      .gantt-today-line::before {
+        content:''; position:absolute; top:-4px; left:-4px;
+        width:10px; height:10px; border-radius:50%; background:#818cf8;
+      }
+
+      @media(max-width:768px) {
+        .gantt-sidebar { min-width:150px; max-width:180px; }
+        .gantt-task-name { font-size:11px; }
+      }
 
       /* ── Reunions ── */
       .reunion-list { display:flex; flex-direction:column; gap:10px; }
