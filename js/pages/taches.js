@@ -297,7 +297,7 @@ const TachesPage = {
           <div class="dash-card-body">
             ${userLoadArr.length === 0 ? '<div style="color:var(--text-muted);text-align:center;padding:20px;">Aucune tâche assignée</div>' :
               userLoadArr.map(([name, count]) => `
-                <div class="dash-bar-row">
+                <div class="dash-bar-row" style="cursor:pointer;border-radius:8px;padding:6px 8px;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background=''" onclick="TachesPage._filterByMember('${Utils.escHtml(name)}')">
                   <div class="dash-bar-label">${this._avatarBubble(name)} ${Utils.escHtml(name)}</div>
                   <div class="dash-bar-track">
                     <div class="dash-bar-fill" style="width:${Math.round((count / maxLoad) * 100)}%;"></div>
@@ -374,6 +374,15 @@ const TachesPage = {
       + '<div class="dash-kpi-value" style="color:' + color + ';">' + value + '</div>'
       + '<div class="dash-kpi-label">' + Utils.escHtml(label) + '</div>'
       + '</div>';
+  },
+
+  _filterByMember(name) {
+    this._currentMemberFilter = name;
+    this._switchTab('liste');
+    setTimeout(() => {
+      const search = document.querySelector('.tl-search-input');
+      if (search) { search.value = name; search.dispatchEvent(new Event('input')); }
+    }, 150);
   },
 
   _kpiNav(tab, statut) {
