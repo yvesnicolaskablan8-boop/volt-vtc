@@ -279,12 +279,12 @@ const TachesPage = {
     return `
       <div class="dash-section">
         <div class="dash-kpi-row">
-          ${this._kpiCard('solar:clipboard-list-bold-duotone', '#6366f1', 'Tâches actives', active.length, "TachesPage._switchTab(&#39;liste&#39;)")}
-          ${this._kpiCard('solar:calendar-bold-duotone', '#f59e0b', "À faire aujourd'hui", aFaireAujourdhui.length, "TachesPage._switchTab(&#39;liste&#39;);setTimeout(function(){var s=document.querySelector(&#39;.tl-filter-statut&#39;);if(s){s.value=&#39;a_faire&#39;;s.dispatchEvent(new Event(&#39;change&#39;))}},100)")}
-          ${this._kpiCard('solar:alarm-bold-duotone', '#ef4444', 'En retard', enRetard.length, "TachesPage._switchTab(&#39;liste&#39;);setTimeout(function(){var s=document.querySelector(&#39;.tl-filter-statut&#39;);if(s){s.value=&#39;a_faire&#39;;s.dispatchEvent(new Event(&#39;change&#39;))}},100)")}
-          ${this._kpiCard('solar:play-bold-duotone', '#3b82f6', 'En cours', enCours.length, "TachesPage._switchTab(&#39;liste&#39;);setTimeout(function(){var s=document.querySelector(&#39;.tl-filter-statut&#39;);if(s){s.value=&#39;en_cours&#39;;s.dispatchEvent(new Event(&#39;change&#39;))}},100)")}
-          ${this._kpiCard('solar:check-circle-bold-duotone', '#22c55e', 'Terminées (semaine)', termineesSemaine.length, "TachesPage._switchTab(&#39;liste&#39;);setTimeout(function(){var s=document.querySelector(&#39;.tl-filter-statut&#39;);if(s){s.value=&#39;terminee&#39;;s.dispatchEvent(new Event(&#39;change&#39;))}},100)")}
-          ${this._kpiCard('solar:chart-bold-duotone', '#8b5cf6', 'Taux complétion', tauxCompletion + '%', "TachesPage._switchTab(&#39;kanban&#39;)")}
+          ${this._kpiCard('solar:clipboard-list-bold-duotone', '#6366f1', 'Tâches actives', active.length, "TachesPage._kpiNav('liste')")}
+          ${this._kpiCard('solar:calendar-bold-duotone', '#f59e0b', "À faire aujourd'hui", aFaireAujourdhui.length, "TachesPage._kpiNav('liste','a_faire')")}
+          ${this._kpiCard('solar:alarm-bold-duotone', '#ef4444', 'En retard', enRetard.length, "TachesPage._kpiNav('liste','a_faire')")}
+          ${this._kpiCard('solar:play-bold-duotone', '#3b82f6', 'En cours', enCours.length, "TachesPage._kpiNav('liste','en_cours')")}
+          ${this._kpiCard('solar:check-circle-bold-duotone', '#22c55e', 'Terminées (semaine)', termineesSemaine.length, "TachesPage._kpiNav('liste','terminee')")}
+          ${this._kpiCard('solar:chart-bold-duotone', '#8b5cf6', 'Taux complétion', tauxCompletion + '%', "TachesPage._kpiNav('kanban')")
         </div>
       </div>
 
@@ -374,6 +374,16 @@ const TachesPage = {
       + '<div class="dash-kpi-value" style="color:' + color + ';">' + value + '</div>'
       + '<div class="dash-kpi-label">' + Utils.escHtml(label) + '</div>'
       + '</div>';
+  },
+
+  _kpiNav(tab, statut) {
+    this._switchTab(tab);
+    if (statut) {
+      setTimeout(() => {
+        const s = document.querySelector('.tl-filter-statut');
+        if (s) { s.value = statut; s.dispatchEvent(new Event('change')); }
+      }, 150);
+    }
   },
 
   _avatarBubble(name) {
