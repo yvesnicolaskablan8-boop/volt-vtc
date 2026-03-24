@@ -749,41 +749,58 @@ const TachesPage = {
     const todayIdx = days.findIndex(d => d.isToday);
     const todayLineHtml = todayIdx >= 0 ? '<div class="gantt-today-line" style="left:' + (todayIdx * dayWidth + dayWidth / 2) + 'px;height:' + Math.max(tasks.length * rowHeight, 200) + 'px;"></div>' : '';
 
+    // Status color map
+    const statutColors = { a_faire: '#f59e0b', en_cours: '#3b82f6', terminee: '#22c55e', annulee: '#6b7280' };
+    const statutIcons = { a_faire: 'solar:clipboard-list-bold', en_cours: 'solar:play-bold', terminee: 'solar:check-circle-bold', annulee: 'solar:close-circle-bold' };
+    const statutLabels = { a_faire: 'À faire', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
+
     // Task rows
     const rowsHtml = tasks.map(t => {
-      const pCfg = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
       const sD = new Date(t.startDate), eD = new Date(t.endDate);
       const startOff = Math.ceil((sD - minDate) / 86400000);
       const endOff = Math.ceil((eD - minDate) / 86400000);
       const vStart = Math.max(0, startOff), vEnd = Math.min(totalDays, endOff + 1);
       if (vEnd <= vStart) return '<div class="gantt-row" style="height:' + rowHeight + 'px;"><div class="gantt-row-bg" style="width:' + (totalDays * dayWidth) + 'px;">' + gridBg + '</div></div>';
 
-      const isLate = t.endDate < todayStr;
-      const barColor = isLate ? '#ef4444' : (t.statut === 'en_cours' ? '#3b82f6' : pCfg.color);
+      const isLate = t.endDate < todayStr && t.statut !== 'terminee';
+      const barColor = isLate ? '#ef4444' : (statutColors[t.statut] || '#f59e0b');
       const barLeft = vStart * dayWidth;
       const barW = Math.max((vEnd - vStart) * dayWidth, dayWidth * 3);
       const subs = t.sousTaches || [];
-      const progress = subs.length > 0 ? Math.round(subs.filter(s => s.termine).length / subs.length * 100) : (t.statut === 'en_cours' ? 50 : 0);
+      const progress = subs.length > 0 ? Math.round(subs.filter(s => s.termine).length / subs.length * 100) : (t.statut === 'en_cours' ? 50 : t.statut === 'terminee' ? 100 : 0);
 
       return '<div class="gantt-row" style="height:' + rowHeight + 'px;">'
         + '<div class="gantt-row-bg" style="width:' + (totalDays * dayWidth) + 'px;">' + gridBg + '</div>'
-        + '<div class="gantt-bar" onclick="TachesPage._viewTask(\'' + t.id + '\')" style="left:' + barLeft + 'px;width:' + barW + 'px;background:' + barColor + '20;border:1px solid ' + barColor + '40;border-left:3px solid ' + barColor + ';" title="' + Utils.escHtml(t.titre) + (t.count > 1 ? ' (' + t.count + ' occurrences)' : '') + '">'
+        + '<div class="gantt-bar" onclick="TachesPage._viewTask(\'' + t.id + '\')" style="left:' + barLeft + 'px;width:' + barW + 'px;background:' + barColor + '20;border:1px solid ' + barColor + '40;border-left:3px solid ' + barColor + ';" title="' + Utils.escHtml(t.titre) + ' — ' + (statutLabels[t.statut] || 'À faire') + (t.count > 1 ? ' (' + t.count + ' occurrences)' : '') + '">'
         + '<div class="gantt-bar-fill" style="width:' + progress + '%;background:' + barColor + ';"></div>'
         + '<span class="gantt-bar-label">' + Utils.escHtml(t.titre) + (t.count > 1 ? ' <span style="opacity:.6;">×' + t.count + '</span>' : '') + '</span>'
         + '</div></div>';
     }).join('');
 
-    // Sidebar
+    // Sidebar with status icon
     const sidebarHtml = tasks.map(t => {
-      const pCfg = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
-      const isLate = t.endDate < todayStr;
+      const isLate = t.endDate < todayStr && t.statut !== 'terminee';
+      const dotColor = isLate ? '#ef4444' : (statutColors[t.statut] || '#f59e0b');
+      const statusLabel = isLate ? 'En retard' : (statutLabels[t.statut] || 'À faire');
       return '<div class="gantt-task-label" style="height:' + rowHeight + 'px;" onclick="TachesPage._viewTask(\'' + t.id + '\')">'
-        + '<div class="gantt-task-dot" style="background:' + (isLate ? '#ef4444' : pCfg.color) + ';"></div>'
+        + '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;">'
+        + '<div class="gantt-task-dot" style="background:' + dotColor + ';"></div>'
+        + '<span style="font-size:8px;color:' + dotColor + ';font-weight:600;">' + statusLabel + '</span>'
+        + '</div>'
         + '<div class="gantt-task-info">'
         + '<div class="gantt-task-name">' + Utils.escHtml(t.titre) + '</div>'
         + '<div class="gantt-task-assignee">' + Utils.escHtml(t.assigneANom || '') + (t.count > 1 ? ' · ' + t.count + ' occ.' : '') + '</div>'
         + '</div></div>';
     }).join('');
+
+    // Legend
+    const legendHtml = '<div class="gantt-legend">'
+      + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#f59e0b;"></span>À faire</span>'
+      + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#3b82f6;"></span>En cours</span>'
+      + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#22c55e;"></span>Terminée</span>'
+      + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#ef4444;"></span>En retard</span>'
+      + '<span class="gantt-legend-item"><span style="width:10px;height:2px;background:#818cf8;border-radius:1px;"></span>Aujourd\'hui</span>'
+      + '</div>';
 
     return `
       <div class="gantt-toolbar">
@@ -818,6 +835,7 @@ const TachesPage = {
           </div>
         </div>
       </div>
+      ${legendHtml}
       ${tasks.length === 0 ? '<div style="text-align:center;padding:60px 20px;color:var(--text-muted);"><iconify-icon icon="solar:chart-2-bold-duotone" style="font-size:3rem;opacity:.4;display:block;margin-bottom:12px;"></iconify-icon>Aucune tâche active à afficher</div>' : ''}
     `;
   },
@@ -1722,7 +1740,14 @@ const TachesPage = {
         + '<iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Annuler délégation</button>';
     }
 
+    let deleteBtn = '';
+    if (isAdmin) {
+      deleteBtn = '<button class="btn btn-sm" style="color:#ef4444;border:1px solid rgba(239,68,68,.3);" onclick="TachesPage._confirmDeleteTask(\'' + t.id + '\')">'
+        + '<iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer</button>';
+    }
+
     const footer = '<div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;">' + statusBtns + delegateBtn + adminDelegBtn + '</div>'
+      + deleteBtn
       + '<button class="btn" onclick="TachesPage._openTaskForm(null, \'' + t.id + '\')">'
       + '<iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>'
       + '<button class="btn" onclick="Modal.close()">Fermer</button>';
@@ -1816,6 +1841,21 @@ const TachesPage = {
     Modal.close();
     Toast.success('Délégation annulée — tâche réassignée à ' + (d.ancienAssigneNom || d.delegueParNom || 'l\'assigné original'));
     this._renderActiveView();
+  },
+
+  _confirmDeleteTask(taskId) {
+    const t = this._getTaches().find(x => x.id === taskId);
+    if (!t) return;
+    Modal.confirm(
+      'Supprimer cette tâche ?',
+      'Voulez-vous supprimer la tâche <strong>' + Utils.escHtml(t.titre) + '</strong> ? Cette action est irréversible.',
+      () => {
+        Store.remove('taches', taskId);
+        Toast.success('Tâche supprimée');
+        Modal.close();
+        this._renderActiveView();
+      }
+    );
   },
 
   _changeStatus(taskId, newStatut) {
@@ -2156,6 +2196,16 @@ const TachesPage = {
         content:''; position:absolute; top:-4px; left:-4px;
         width:10px; height:10px; border-radius:50%; background:#818cf8;
       }
+
+      .gantt-legend {
+        display:flex; align-items:center; gap:16px; padding:12px 16px; margin-top:12px;
+        background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+        border-radius:10px; flex-wrap:wrap;
+      }
+      .gantt-legend-item {
+        display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); font-weight:500;
+      }
+      .gantt-legend-dot { width:10px; height:10px; border-radius:50%; }
 
       @media(max-width:768px) {
         .gantt-sidebar { min-width:150px; max-width:180px; }
