@@ -485,6 +485,15 @@ const TachesPage = {
     if (isLate) {
       html += '<span class="kanban-late-badge"><iconify-icon icon="solar:alarm-bold-duotone" style="font-size:12px;"></iconify-icon> Retard</span>';
     }
+    if (t.delegation && t.delegation.statut === 'en_attente') {
+      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(139,92,246,.12);color:#8b5cf6;"><iconify-icon icon="solar:hand-shake-bold-duotone" style="font-size:12px;"></iconify-icon> Délégation</span>';
+    }
+    if (t.delegation && t.delegation.statut === 'acceptee') {
+      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(34,197,94,.12);color:#22c55e;"><iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:12px;"></iconify-icon> Déléguée</span>';
+    }
+    if (t.delegation && t.delegation.statut === 'refusee') {
+      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(239,68,68,.12);color:#ef4444;"><iconify-icon icon="solar:close-circle-bold-duotone" style="font-size:12px;"></iconify-icon> Refusée</span>';
+    }
 
     html += '</div>'
       + '<div class="kanban-card-title">' + Utils.escHtml(t.titre) + '</div>';
@@ -1297,6 +1306,16 @@ const TachesPage = {
       + '<option value="mensuel"' + (t.recurrence === 'mensuel' ? ' selected' : '') + '>Mensuel</option>'
       + '</select></div>'
       + '</div>'
+      + '<div style="margin-top:14px;padding:12px;border-radius:10px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);">'
+      + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;margin-bottom:8px;">'
+      + '<input type="checkbox" id="tf-deleguer"' + (t.delegation ? ' checked' : '') + ' onchange="document.getElementById(\'tf-delegue-a-wrap\').style.display=this.checked?\'block\':\'none\'">'
+      + '<iconify-icon icon="solar:hand-shake-bold-duotone" style="color:#8b5cf6;"></iconify-icon>'
+      + '<span style="color:#8b5cf6;font-weight:600;">Déléguer cette tâche</span></label>'
+      + '<div id="tf-delegue-a-wrap" style="display:' + (t.delegation ? 'block' : 'none') + ';">'
+      + '<label class="form-label" style="font-size:12px;">Déléguer à</label>'
+      + '<select id="tf-delegue-a" class="form-control"><option value="">Choisir un membre</option>' + userOpts.replace(t.assigneA ? 'selected' : '___', '') + '</select>'
+      + '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;"><iconify-icon icon="solar:info-circle-line-duotone"></iconify-icon> Le membre recevra une notification et devra accepter ou refuser la délégation.</div>'
+      + '</div></div>'
       + '<div style="margin-top:14px;display:flex;gap:20px;align-items:center;">'
       + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">'
       + '<input type="checkbox" id="tf-urgent"' + (t.urgent ? ' checked' : '') + '>'
@@ -1398,6 +1417,24 @@ const TachesPage = {
       dateModification: new Date().toISOString()
     };
 
+    // Delegation
+    const isDelegation = document.getElementById('tf-deleguer')?.checked || false;
+    const delegueA = document.getElementById('tf-delegue-a')?.value || '';
+    if (isDelegation && delegueA) {
+      const delegueUser = this._getUsers().find(u => u.id === delegueA);
+      const delegueNom = delegueUser ? ([delegueUser.prenom, delegueUser.nom].filter(Boolean).join(' ') || delegueUser.login) : '';
+      data.delegation = {
+        delegueA: delegueA,
+        delegueANom: delegueNom,
+        deleguePar: session?.userId || '',
+        delegueParNom: this._currentUserName(),
+        statut: 'en_attente',
+        dateDelegation: new Date().toISOString()
+      };
+    } else if (!isDelegation) {
+      data.delegation = null;
+    }
+
     if (editId) {
       Store.update('taches', editId, data);
       Toast.success('Tâche mise à jour');
@@ -1478,6 +1515,27 @@ const TachesPage = {
       body += '</div></div>';
     }
 
+    // Delegation section
+    if (t.delegation) {
+      const d = t.delegation;
+      const session = Auth.getSession();
+      const isDelegate = session && session.userId === d.delegueA;
+      const statusColors = { en_attente: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#8b5cf6', label: 'En attente', icon: 'solar:clock-circle-bold-duotone' }, acceptee: { bg: 'rgba(34,197,94,.08)', border: 'rgba(34,197,94,.2)', color: '#22c55e', label: 'Acceptée', icon: 'solar:check-circle-bold-duotone' }, refusee: { bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.2)', color: '#ef4444', label: 'Refusée', icon: 'solar:close-circle-bold-duotone' } };
+      const ds = statusColors[d.statut] || statusColors.en_attente;
+      body += '<div style="margin-bottom:16px;padding:12px;border-radius:10px;background:' + ds.bg + ';border:1px solid ' + ds.border + ';">'
+        + '<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:' + ds.color + ';margin-bottom:6px;">'
+        + '<iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Délégation — <iconify-icon icon="' + ds.icon + '"></iconify-icon> ' + ds.label + '</div>'
+        + '<div style="font-size:12px;color:var(--text-primary);">De : <strong>' + Utils.escHtml(d.delegueParNom || '') + '</strong> → À : <strong>' + Utils.escHtml(d.delegueANom || '') + '</strong></div>'
+        + '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">' + (d.dateDelegation ? Utils.formatDate(d.dateDelegation) : '') + '</div>';
+      if (isDelegate && d.statut === 'en_attente') {
+        body += '<div style="display:flex;gap:8px;margin-top:8px;">'
+          + '<button class="btn btn-sm" style="background:#22c55e;color:white;border:none;" onclick="TachesPage._respondDelegation(\'' + t.id + '\',\'acceptee\')"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Accepter</button>'
+          + '<button class="btn btn-sm" style="background:#ef4444;color:white;border:none;" onclick="TachesPage._respondDelegation(\'' + t.id + '\',\'refusee\')"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Refuser</button>'
+          + '</div>';
+      }
+      body += '</div>';
+    }
+
     if (subTotal > 0) {
       body += '<div style="margin-bottom:16px;"><div style="font-weight:600;font-size:12px;color:var(--text-muted);margin-bottom:6px;">Sous-tâches (' + subDone + '/' + subTotal + ')</div>'
         + '<div style="width:100%;height:6px;border-radius:3px;background:var(--bg-tertiary);margin-bottom:8px;">'
@@ -1506,6 +1564,29 @@ const TachesPage = {
       + '<button class="btn" onclick="Modal.close()">Fermer</button>';
 
     Modal.open({ title: t.titre, body: body, footer: footer, size: 'lg' });
+  },
+
+  _respondDelegation(taskId, response) {
+    const taches = Store.get('taches') || [];
+    const t = taches.find(x => x.id === taskId);
+    if (!t || !t.delegation) return;
+
+    const update = {
+      delegation: { ...t.delegation, statut: response, dateReponse: new Date().toISOString() },
+      dateModification: new Date().toISOString()
+    };
+
+    if (response === 'acceptee') {
+      update.assigneA = t.delegation.delegueA;
+      update.assigneANom = t.delegation.delegueANom;
+      Toast.success('Délégation acceptée — la tâche vous est maintenant assignée');
+    } else {
+      Toast.info('Délégation refusée');
+    }
+
+    Store.update('taches', taskId, update);
+    Modal.close();
+    this._renderActiveView();
   },
 
   _changeStatus(taskId, newStatut) {
