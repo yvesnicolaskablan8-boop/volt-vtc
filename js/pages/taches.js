@@ -284,7 +284,7 @@ const TachesPage = {
           ${this._kpiCard('solar:alarm-bold-duotone', '#ef4444', 'En retard', enRetard.length, "TachesPage._kpiNav('liste','a_faire')")}
           ${this._kpiCard('solar:play-bold-duotone', '#3b82f6', 'En cours', enCours.length, "TachesPage._kpiNav('liste','en_cours')")}
           ${this._kpiCard('solar:check-circle-bold-duotone', '#22c55e', 'Terminées (semaine)', termineesSemaine.length, "TachesPage._kpiNav('liste','terminee')")}
-          ${this._kpiCard('solar:chart-bold-duotone', '#8b5cf6', 'Taux complétion', tauxCompletion + '%', "TachesPage._kpiNav('kanban')")
+          ${this._kpiCard('solar:chart-bold-duotone', '#8b5cf6', 'Taux complétion', tauxCompletion + '%', "TachesPage._kpiNav('kanban')")}
         </div>
       </div>
 
