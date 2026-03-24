@@ -366,12 +366,12 @@ const TachesPage = {
   },
 
   _kpiCard(icon, color, label, value, onclick) {
-    const clickAttr = onclick ? ' onclick="' + onclick + '" style="cursor:pointer;"' : '';
-    return '<div class="dash-kpi-card"' + clickAttr + '>'
+    const clickAttr = onclick ? ' onclick="' + onclick + '"' : '';
+    return '<div class="dash-kpi-card" style="--kpi-accent:' + color + ';"' + clickAttr + '>'
       + '<div class="dash-kpi-icon" style="background:' + color + '20;color:' + color + ';">'
-      + '<iconify-icon icon="' + icon + '" style="font-size:1.3rem;"></iconify-icon>'
+      + '<iconify-icon icon="' + icon + '" style="font-size:1.4rem;"></iconify-icon>'
       + '</div>'
-      + '<div class="dash-kpi-value">' + value + '</div>'
+      + '<div class="dash-kpi-value" style="color:' + color + ';">' + value + '</div>'
       + '<div class="dash-kpi-label">' + Utils.escHtml(label) + '</div>'
       + '</div>';
   },
@@ -1506,29 +1506,31 @@ const TachesPage = {
 
       /* Tabs */
       .taches-tabs {
-        display:flex; gap:4px; background:var(--bg-secondary); border-radius:10px; padding:3px;
-        border:1px solid var(--border-color);
+        display:flex; gap:3px; background:rgba(255,255,255,0.03); border-radius:12px; padding:4px;
+        border:1px solid rgba(255,255,255,0.06); backdrop-filter:blur(8px);
       }
       .taches-tab {
-        display:flex; align-items:center; gap:5px; padding:7px 14px; border:none; border-radius:8px;
+        display:flex; align-items:center; gap:6px; padding:8px 16px; border:none; border-radius:9px;
         background:transparent; color:var(--text-muted); cursor:pointer; font-size:13px; font-weight:500;
-        transition:all .2s ease; white-space:nowrap;
+        transition:all .2s cubic-bezier(.4,0,.2,1); white-space:nowrap; position:relative;
       }
-      .taches-tab:hover { color:var(--text-primary); background:var(--bg-tertiary); }
+      .taches-tab:hover { color:var(--text-primary); background:rgba(255,255,255,0.05); }
       .taches-tab.active {
-        background:rgba(99,102,241,.15); color:#6366f1; font-weight:600;
-        box-shadow:0 1px 3px rgba(0,0,0,.1);
+        background:linear-gradient(135deg, rgba(99,102,241,.2), rgba(139,92,246,.15));
+        color:#818cf8; font-weight:600;
+        box-shadow:0 2px 8px rgba(99,102,241,.2), inset 0 1px 0 rgba(255,255,255,0.05);
       }
       .taches-tab iconify-icon { font-size:1.1rem; }
 
       /* FAB */
       .taches-fab {
-        position:fixed; bottom:28px; right:28px; width:52px; height:52px; border-radius:50%;
+        position:fixed; bottom:28px; right:28px; width:56px; height:56px; border-radius:16px;
         background:linear-gradient(135deg, #6366f1, #8b5cf6); color:#fff; border:none;
         cursor:pointer; display:flex; align-items:center; justify-content:center;
-        box-shadow:0 4px 15px rgba(99,102,241,.4); transition:all .2s ease; z-index:100;
+        box-shadow:0 4px 15px rgba(99,102,241,.4), 0 0 30px rgba(99,102,241,.15); transition:all .25s cubic-bezier(.4,0,.2,1); z-index:100;
       }
-      .taches-fab:hover { transform:scale(1.1); box-shadow:0 6px 20px rgba(99,102,241,.5); }
+      .taches-fab:hover { transform:scale(1.08) rotate(90deg); box-shadow:0 8px 25px rgba(99,102,241,.5); }
+      .taches-fab:active { transform:scale(0.95); }
 
       /* View content */
       .taches-view-content { animation: tachesFadeIn .2s ease; }
@@ -1541,30 +1543,40 @@ const TachesPage = {
       }
       .dash-kpi-card {
         background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
-        border-radius:12px; padding:16px; text-align:center;
-        transition:transform .15s ease, box-shadow .15s ease;
+        border-radius:16px; padding:20px 16px; text-align:center;
+        transition:all .2s cubic-bezier(.4,0,.2,1); cursor:pointer; position:relative; overflow:hidden;
       }
-      .dash-kpi-card:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.15); }
+      .dash-kpi-card::before {
+        content:''; position:absolute; top:0; left:0; right:0; height:3px;
+        background:var(--kpi-accent, #6366f1); opacity:0; transition:opacity .2s;
+      }
+      .dash-kpi-card:hover { transform:translateY(-4px); box-shadow:0 8px 25px rgba(0,0,0,.2); background:rgba(255,255,255,0.05); }
+      .dash-kpi-card:hover::before { opacity:1; }
+      .dash-kpi-card:active { transform:translateY(-1px); }
       .dash-kpi-icon {
-        width:40px; height:40px; border-radius:10px; display:inline-flex; align-items:center;
-        justify-content:center; margin-bottom:8px;
+        width:48px; height:48px; border-radius:14px; display:inline-flex; align-items:center;
+        justify-content:center; margin-bottom:10px; transition:transform .2s;
       }
-      .dash-kpi-value { font-size:1.5rem; font-weight:700; color:var(--text-primary); line-height:1.2; }
-      .dash-kpi-label { font-size:11px; color:var(--text-muted); margin-top:4px; }
+      .dash-kpi-card:hover .dash-kpi-icon { transform:scale(1.1); }
+      .dash-kpi-value { font-size:1.8rem; font-weight:800; color:var(--text-primary); line-height:1.2; letter-spacing:-0.5px; }
+      .dash-kpi-label { font-size:11px; color:var(--text-muted); margin-top:6px; font-weight:500; }
 
       .dash-grid-2col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
       @media(max-width:768px) { .dash-grid-2col { grid-template-columns:1fr; } }
 
       .dash-card {
         background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
-        border-radius:12px; overflow:hidden;
+        border-radius:16px; overflow:hidden; backdrop-filter:blur(8px);
+        transition:box-shadow .2s;
       }
+      .dash-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.12); }
       .dash-card-header {
-        display:flex; align-items:center; gap:8px; padding:14px 16px;
+        display:flex; align-items:center; gap:8px; padding:16px 18px;
         font-size:13px; font-weight:600; color:var(--text-primary);
         border-bottom:1px solid rgba(255,255,255,0.04);
+        background:rgba(255,255,255,0.01);
       }
-      .dash-card-body { padding:12px 16px; }
+      .dash-card-body { padding:14px 18px; }
 
       /* Bars */
       .dash-bar-row { display:flex; align-items:center; gap:10px; padding:6px 0; }
@@ -1609,11 +1621,12 @@ const TachesPage = {
 
       .kanban-column {
         background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05);
-        border-radius:12px; display:flex; flex-direction:column; min-height:300px;
+        border-radius:16px; display:flex; flex-direction:column; min-height:300px;
+        backdrop-filter:blur(4px);
       }
       .kanban-col-header {
-        padding:12px 14px; border-radius:12px 12px 0 0;
-        background:rgba(255,255,255,0.02);
+        padding:14px 16px; border-radius:16px 16px 0 0;
+        background:rgba(255,255,255,0.03);
       }
       .kanban-col-title {
         display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--text-primary);
@@ -1637,10 +1650,11 @@ const TachesPage = {
       /* Kanban cards */
       .kanban-card {
         background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);
-        border-radius:10px; padding:10px 12px; margin-bottom:8px; cursor:pointer;
-        transition:transform .12s ease, box-shadow .12s ease;
+        border-radius:12px; padding:12px 14px; margin-bottom:8px; cursor:pointer;
+        transition:all .15s cubic-bezier(.4,0,.2,1); position:relative;
       }
-      .kanban-card:hover { transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.15); }
+      .kanban-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.2); background:rgba(255,255,255,0.06); }
+      .kanban-card:active { transform:scale(0.98); }
       .kanban-card-top { display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
       .kanban-prio-badge {
         display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:6px;
@@ -1708,11 +1722,11 @@ const TachesPage = {
       /* ── Reunions ── */
       .reunion-list { display:flex; flex-direction:column; gap:10px; }
       .reunion-card {
-        display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:12px;
+        display:flex; align-items:center; gap:14px; padding:16px 18px; border-radius:16px;
         background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
-        cursor:pointer; transition:transform .12s, box-shadow .12s;
+        cursor:pointer; transition:all .2s cubic-bezier(.4,0,.2,1); backdrop-filter:blur(4px);
       }
-      .reunion-card:hover { transform:translateY(-1px); box-shadow:0 3px 12px rgba(0,0,0,.15); }
+      .reunion-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.18); background:rgba(255,255,255,0.05); }
       .reunion-card-left { flex-shrink:0; }
       .reunion-date-block {
         width:50px; height:50px; border-radius:10px; background:rgba(139,92,246,.12);
