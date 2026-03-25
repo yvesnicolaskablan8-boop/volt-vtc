@@ -406,7 +406,12 @@ const Utils = {
         paymentIndex.add(`${v.chauffeurId}|${v.date}`);
       }
     });
-    // Versement references that have been paid (for contravention dedup)
+    // ALL versement references (for contravention dedup — any versement linking to a contravention prevents double-counting)
+    const allVersementReferences = new Set();
+    versements.forEach(v => {
+      if (v.reference) allVersementReferences.add(v.reference);
+    });
+    // Paid references specifically (for marking as paid)
     const paidReferences = new Set();
     versements.forEach(v => {
       if (v.reference && (v.statut === 'valide' || v.statut === 'supprime')) {
@@ -435,6 +440,8 @@ const Utils = {
     const allDettes = [...dettesExplicites];
     const contraImpayees = (contraventions || []).filter(c => (c.statut === 'impayee' || c.statut === 'contestee') && c.montant > 0 && c.chauffeurId);
     contraImpayees.forEach(c => {
+      // Skip if ANY versement already references this contravention (prevents double-counting)
+      if (allVersementReferences.has(c.id)) return;
       if (!explicitRefIndex.has(c.id) && !paidReferences.has(c.id)) {
         allDettes.push({
           id: `contra_${c.id}`, chauffeurId: c.chauffeurId, date: c.date,
