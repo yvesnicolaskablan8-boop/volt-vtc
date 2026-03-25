@@ -24,11 +24,14 @@ const versementSchema = new mongoose.Schema({
   justificationDate: String,
   moyenPaiement: String,
   referencePaiement: String,
+  reference: String,
+  montantAttendu: Number,
   source: String,
   waveCheckoutId: String,
   waveTransactionId: String,
   manquant: { type: Number, default: 0 },
   traitementManquant: { type: String, enum: ['dette', 'perte', null], default: null },
+  dateSuppression: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {
   toJSON: {

@@ -2678,9 +2678,15 @@ const VersementsPage = {
   },
 
   _confirmAnnulerDette(versementId, chauffeurId) {
+    const versements = Store.get('versements') || [];
+    const v = versements.find(x => x.id === versementId);
     Store.update('versements', versementId, { manquant: 0, traitementManquant: null, statut: 'supprime', dateSuppression: new Date().toISOString() });
+    // Annuler aussi la contravention liée si applicable
+    if (v && v.source === 'contravention' && v.reference) {
+      Store.update('contraventions', v.reference, { statut: 'annulee', dateAnnulation: new Date().toISOString() });
+    }
     Modal.close();
-    Toast.success('Recette annul\u00e9e avec succ\u00e8s');
+    Toast.success('Dette annulée avec succès');
     this.render();
     if (chauffeurId) setTimeout(() => this._showDetteDetail(chauffeurId), 300);
   },
@@ -3044,6 +3050,10 @@ const VersementsPage = {
                   moyenPaiement: values.moyenPaiement,
                   dateValidation: new Date(dateEncaissement + 'T' + new Date().toTimeString().split(' ')[0]).toISOString()
                 });
+                // Marquer la contravention comme payée si c'est une dette contravention
+                if (v.source === 'contravention' && v.reference) {
+                  Store.update('contraventions', v.reference, { statut: 'payee', datePaiement: new Date().toISOString() });
+                }
                 nbApures++;
               } else {
                 Store.update('versements', v.id, {
@@ -3202,6 +3212,13 @@ const VersementsPage = {
               moyenPaiement: moyen,
               dateValidation: new Date(dateEnc + 'T' + new Date().toTimeString().split(' ')[0]).toISOString()
             });
+            // Marquer la contravention comme payée si totalement soldée
+            if (source === 'contravention' && statutFinal === 'valide') {
+              const vers = (Store.get('versements') || []).find(v => v.id === versementId);
+              if (vers && vers.reference) {
+                Store.update('contraventions', vers.reference, { statut: 'payee', datePaiement: new Date().toISOString() });
+              }
+            }
           }
 
           // Entr\u00e9e comptable
