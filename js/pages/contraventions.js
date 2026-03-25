@@ -726,8 +726,14 @@ const ContraventionsPage = {
 
   _delete(id) {
     if (!confirm('Supprimer cette contravention ?')) return;
+    // Supprimer aussi la dette versement liée
+    const versements = Store.get('versements') || [];
+    const dette = versements.find(v => v.reference === id && v.traitementManquant === 'dette');
+    if (dette) {
+      Store.update('versements', dette.id, { manquant: 0, traitementManquant: null, statut: 'supprime' });
+    }
     Store.delete('contraventions', id);
-    Toast.show('Contravention supprim\u00e9e', 'success');
+    Toast.show('Contravention supprimée', 'success');
     this.render();
   },
 

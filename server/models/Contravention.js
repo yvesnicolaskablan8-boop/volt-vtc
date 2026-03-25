@@ -18,6 +18,7 @@ const contraventionSchema = new mongoose.Schema({
   waveTransactionId: String,
   motifContestation: String,
   commentaire: String,
+  dateAnnulation: String,
   dateCreation: { type: String, default: () => new Date().toISOString() }
 }, {
   toJSON: {
