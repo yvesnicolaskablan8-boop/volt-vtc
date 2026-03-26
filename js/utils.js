@@ -433,22 +433,29 @@ const Utils = {
     // 1. Explicit debts
     const dettesExplicites = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0)
       .map(v => ({ ...v, source: this.isContravention(v) ? 'contravention' : (v.source || 'recette') }));
-    const explicitDebtIndex = new Set(dettesExplicites.map(v => `${v.chauffeurId}|${v.date}`));
     const explicitRefIndex = new Set(dettesExplicites.map(v => v.reference).filter(Boolean));
+    // Index of existing contravention-source debts by chauffeurId|date|montant for dedup
+    const contraDebtIndex = new Set();
+    dettesExplicites.forEach(v => {
+      if (v.source === 'contravention') {
+        contraDebtIndex.add(`${v.chauffeurId}|${v.date}|${v.manquant}`);
+      }
+    });
 
     // 2. Unpaid contraventions without existing versement
     const allDettes = [...dettesExplicites];
     const contraImpayees = (contraventions || []).filter(c => (c.statut === 'impayee' || c.statut === 'contestee') && c.montant > 0 && c.chauffeurId);
     contraImpayees.forEach(c => {
-      // Skip if ANY versement already references this contravention (prevents double-counting)
+      // Skip if ANY versement already references this contravention
       if (allVersementReferences.has(c.id)) return;
-      if (!explicitRefIndex.has(c.id) && !paidReferences.has(c.id)) {
-        allDettes.push({
-          id: `contra_${c.id}`, chauffeurId: c.chauffeurId, date: c.date,
-          manquant: c.montant, traitementManquant: 'dette', source: 'contravention',
-          commentaire: `Contravention — ${c.type || 'amende'}`, reference: c.id, implicit: false
-        });
-      }
+      if (explicitRefIndex.has(c.id) || paidReferences.has(c.id)) return;
+      // Skip if a versement with same chauffeur+date+montant+source=contravention already exists (dedup without reference)
+      if (contraDebtIndex.has(`${c.chauffeurId}|${c.date}|${c.montant}`)) return;
+      allDettes.push({
+        id: `contra_${c.id}`, chauffeurId: c.chauffeurId, date: c.date,
+        manquant: c.montant, traitementManquant: 'dette', source: 'contravention',
+        commentaire: `Contravention — ${c.type || 'amende'}`, reference: c.id, implicit: false
+      });
     });
 
     // 3. Implicit debts (past planning without payment)
