@@ -433,6 +433,7 @@ const Utils = {
     // 1. Explicit debts
     const dettesExplicites = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0)
       .map(v => ({ ...v, source: this.isContravention(v) ? 'contravention' : (v.source || 'recette') }));
+    const explicitDebtIndex = new Set(dettesExplicites.map(v => `${v.chauffeurId}|${v.date}`));
     const explicitRefIndex = new Set(dettesExplicites.map(v => v.reference).filter(Boolean));
     // Index of existing contravention-source debts by chauffeurId|date|montant for dedup
     const contraDebtIndex = new Set();
