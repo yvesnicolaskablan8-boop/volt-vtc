@@ -2,7 +2,7 @@
  * ClassementPage - Classement des chauffeurs par score composite
  */
 const ClassementPage = {
-  _selectedPeriod: 'current', // 'current' | 'last' | '3months'
+  _selectedPeriod: 'week_current', // 'week_current' | 'week_-1' | 'week_-2' | ... | 'month_current' | 'month_last' | '3months'
   _showConfig: false,
 
   _getWeights() {
@@ -27,45 +27,81 @@ const ClassementPage = {
 
   destroy() {},
 
-  _getMonthRange() {
+  // Returns { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } for the selected period
+  _getDateRange() {
     const now = new Date();
     const period = this._selectedPeriod;
-    if (period === 'last') {
+    const fmt = (d) => d.toISOString().split('T')[0];
+
+    if (period.startsWith('week_')) {
+      // Week-based: week_current, week_-1, week_-2, etc.
+      const offset = period === 'week_current' ? 0 : parseInt(period.split('_')[1]);
+      const monday = new Date(now);
+      const day = monday.getDay();
+      monday.setDate(monday.getDate() - (day === 0 ? 6 : day - 1) + (offset * 7));
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      return { start: fmt(monday), end: fmt(sunday) };
+    }
+    if (period === 'month_last') {
       const m = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
       const y = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-      return [{ month: m, year: y }];
+      return { start: `${y}-${String(m + 1).padStart(2, '0')}-01`, end: `${y}-${String(m + 1).padStart(2, '0')}-${new Date(y, m + 1, 0).getDate()}` };
     }
     if (period === '3months') {
-      const ranges = [];
-      for (let i = 0; i < 3; i++) {
-        let m = now.getMonth() - i;
-        let y = now.getFullYear();
-        if (m < 0) { m += 12; y--; }
-        ranges.push({ month: m, year: y });
-      }
-      return ranges;
+      const threeAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { start: fmt(threeAgo), end: fmt(endOfMonth) };
     }
-    // current
-    return [{ month: now.getMonth(), year: now.getFullYear() }];
+    // month_current (default)
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { start: fmt(start), end: fmt(end) };
   },
 
   _getPeriodLabel() {
-    const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-    const ranges = this._getMonthRange();
-    if (ranges.length === 1) {
-      return monthNames[ranges[0].month] + ' ' + ranges[0].year;
+    const period = this._selectedPeriod;
+    const range = this._getDateRange();
+    const monthNames = ['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'];
+
+    if (period.startsWith('week_')) {
+      const s = new Date(range.start);
+      const e = new Date(range.end);
+      const fmtShort = (d) => d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0');
+      if (period === 'week_current') return 'Semaine en cours (' + fmtShort(s) + ' - ' + fmtShort(e) + ')';
+      return 'Sem. ' + fmtShort(s) + ' - ' + fmtShort(e);
     }
-    const last = ranges[ranges.length - 1];
-    const first = ranges[0];
-    return monthNames[last.month] + ' - ' + monthNames[first.month] + ' ' + first.year;
+    if (period === 'month_last') {
+      const d = new Date(range.start);
+      return monthNames[d.getMonth()] + ' ' + d.getFullYear();
+    }
+    if (period === '3months') return '3 derniers mois';
+    const d = new Date(range.start);
+    return monthNames[d.getMonth()] + ' ' + d.getFullYear();
   },
 
   _matchesRange(dateStr) {
     if (!dateStr) return false;
-    const d = new Date(dateStr);
-    const m = d.getMonth();
-    const y = d.getFullYear();
-    return this._getMonthRange().some(r => r.month === m && r.year === y);
+    const d = dateStr.split('T')[0];
+    const range = this._getDateRange();
+    return d >= range.start && d <= range.end;
+  },
+
+  _buildWeekOptions() {
+    const now = new Date();
+    const fmtShort = (d) => d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    let html = '';
+    for (let i = 0; i >= -7; i--) {
+      const val = i === 0 ? 'week_current' : 'week_' + i;
+      const monday = new Date(now);
+      const day = monday.getDay();
+      monday.setDate(monday.getDate() - (day === 0 ? 6 : day - 1) + (i * 7));
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const label = i === 0 ? 'Cette semaine' : i === -1 ? 'Semaine derniere' : 'Sem. ' + fmtShort(monday) + ' - ' + fmtShort(sunday);
+      html += '<option value="' + val + '"' + (this._selectedPeriod === val ? ' selected' : '') + '>' + label + '</option>';
+    }
+    return html;
   },
 
   _computeRankings() {
@@ -157,10 +193,15 @@ const ClassementPage = {
           <p class="classement-subtitle">${Utils.escHtml(periodLabel)} &bull; ${activeCount} chauffeur${activeCount !== 1 ? 's' : ''} actif${activeCount !== 1 ? 's' : ''}</p>
         </div>
         <div class="classement-header-right" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <select id="classement-period" class="form-control" style="min-width:150px;">
-            <option value="current" ${this._selectedPeriod === 'current' ? 'selected' : ''}>Ce mois</option>
-            <option value="last" ${this._selectedPeriod === 'last' ? 'selected' : ''}>Mois dernier</option>
-            <option value="3months" ${this._selectedPeriod === '3months' ? 'selected' : ''}>3 derniers mois</option>
+          <select id="classement-period" class="form-control" style="min-width:200px;">
+            <optgroup label="Par semaine">
+              ${this._buildWeekOptions()}
+            </optgroup>
+            <optgroup label="Par mois">
+              <option value="month_current" ${this._selectedPeriod === 'month_current' ? 'selected' : ''}>Ce mois</option>
+              <option value="month_last" ${this._selectedPeriod === 'month_last' ? 'selected' : ''}>Mois dernier</option>
+              <option value="3months" ${this._selectedPeriod === '3months' ? 'selected' : ''}>3 derniers mois</option>
+            </optgroup>
           </select>
           <button id="classement-config-btn" class="btn btn-sm" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(99,102,241,.25);">
             <iconify-icon icon="solar:ruler-bold-duotone" style="font-size:15px;"></iconify-icon> Regles
