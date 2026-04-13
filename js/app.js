@@ -545,6 +545,43 @@ const App = {
         if (emailInput) emailInput.focus();
       });
     }
+
+    // Forgot password
+    const forgotBtn = document.getElementById('forgot-password-btn');
+    if (forgotBtn) {
+      const newBtn = forgotBtn.cloneNode(true);
+      forgotBtn.parentNode.replaceChild(newBtn, forgotBtn);
+      newBtn.addEventListener('click', () => this._handleForgotPassword());
+    }
+  },
+
+  async _handleForgotPassword() {
+    const emailInput = document.getElementById('login-email');
+    const email = emailInput ? emailInput.value.trim() : '';
+    if (!email) {
+      this._showLoginError('Entrez votre adresse email, puis cliquez sur "Mot de passe oublié".');
+      if (emailInput) emailInput.focus();
+      return;
+    }
+
+    const btn = document.getElementById('forgot-password-btn');
+    if (btn) btn.disabled = true;
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/app'
+      });
+      if (error) {
+        this._showLoginError('Erreur : ' + error.message);
+      } else {
+        this._hideLoginError();
+        Toast.show('Un email de réinitialisation a été envoyé à ' + email, 'success');
+      }
+    } catch (e) {
+      this._showLoginError('Erreur réseau. Réessayez.');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   },
 
   _initPasswordToggles() {
