@@ -499,7 +499,9 @@
 
   /* === LOGIN — Plein ecran mobile === */
   .login-overlay {
-    align-items: stretch;
+    align-items: flex-start;
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-xl);
   }
 
   .login-container {
@@ -513,6 +515,7 @@
     padding: var(--space-lg) var(--space-md);
     width: 100%;
     max-width: 100%;
+    margin-bottom: var(--space-xl);
   }
 
   .login-card h2 {
