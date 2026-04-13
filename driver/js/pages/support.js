@@ -109,12 +109,8 @@ const SupportPage = {
     };
 
     try {
-      const token = DriverAuth.getToken();
-      await fetch('/api/data/signalements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify(signalement)
-      });
+      const { error } = await supabase.from('fleet_signalements').insert(objToSnake(signalement));
+      if (error) console.warn('[Support] Envoi signalement échoué:', error.message);
     } catch (e) {
       console.warn('[Support] Envoi signalement échoué:', e.message);
     }

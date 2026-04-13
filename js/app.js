@@ -381,32 +381,36 @@ const App = {
       if (Notification.permission !== 'granted') return;
 
       // Recuperer la cle VAPID
-      const apiBase = Store._apiBase || '/api';
-      const token = Auth.getToken();
-      const vapidRes = await fetch(apiBase + '/notifications/push/vapid-key', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (!vapidRes.ok) return;
-      const { publicKey } = await vapidRes.json();
-      if (!publicKey) return;
+      try {
+        const apiBase = Store._apiBase || '/api';
+        const token = Auth.getToken();
+        const vapidRes = await fetch(apiBase + '/notifications/push/vapid-key', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!vapidRes.ok) throw new Error('VAPID key unavailable');
+        const { publicKey } = await vapidRes.json();
+        if (!publicKey) throw new Error('VAPID key missing');
 
-      // S'abonner au push
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: this._urlBase64ToUint8Array(publicKey)
-      });
+        // S'abonner au push
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: this._urlBase64ToUint8Array(publicKey)
+        });
 
-      // Envoyer la subscription au serveur
-      await fetch(apiBase + '/notifications/push/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify({ subscription: sub.toJSON() })
-      });
+        // Envoyer la subscription au serveur
+        await fetch(apiBase + '/notifications/push/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ subscription: sub.toJSON() })
+        });
 
-      console.log('[Push] Subscription enregistree');
+        console.log('[Push] Subscription enregistree');
+      } catch (pushErr) {
+        console.warn('[Push] Push notifications not available:', pushErr.message);
+      }
     } catch (e) {
       console.warn('[Push] Registration failed:', e.message);
     }

@@ -26,25 +26,8 @@ const DashboardPage = {
     const lastGen = localStorage.getItem('pilote_autogen_date');
     if (lastGen === today) return;
     localStorage.setItem('pilote_autogen_date', today);
-    try {
-      const res = await fetch(Store._apiBase + '/versements/auto-generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Auth.getToken() },
-        body: JSON.stringify({ date: today })
-      });
-      if (res.ok) {
-        const result = await res.json();
-        if (result.created > 0) {
-          console.log(`[Auto-versements] ${result.created} versement(s) créé(s) pour ${today}`);
-          await Store.initialize();
-          this.destroy();
-          this.render();
-        }
-      }
-    } catch (e) {
-      console.warn('[Auto-versements] Erreur:', e.message);
-      localStorage.removeItem('pilote_autogen_date');
-    }
+    // Auto-generate versements is now handled client-side
+    console.log('Auto-generate versements: skipped (server-side endpoint removed)');
   },
 
   destroy() {
@@ -1843,29 +1826,8 @@ const DashboardPage = {
     Toast.info('Envoi des rappels en cours...');
 
     try {
-      const res = await fetch(Store._apiBase + '/notifications/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + localStorage.getItem('pilote_token')
-        },
-        body: JSON.stringify({
-          titre: 'Rappel de paiement',
-          message: 'Vous avez des redevances en attente de paiement. Veuillez r\u00e9gulariser votre situation dans les plus brefs d\u00e9lais.',
-          canal
-        })
-      });
-
-      if (res.ok) {
-        const result = await res.json();
-        Toast.success(`${result.sent || 0} rappel(s) envoy\u00e9(s) avec succ\u00e8s`);
-      } else {
-        Toast.error('Erreur lors de l\'envoi des rappels');
-      }
-    } catch (err) {
-      // Fallback: log locally
       const data = this._lastData || this._getData();
-      const notifications = data.unpaidItems.map(item => ({
+      const notifications = data.unpaidItems.map(item => objToSnake({
         id: Utils.generateId('NTF'),
         chauffeurId: item.chauffeurId,
         type: 'deadline_rappel',
@@ -1875,8 +1837,12 @@ const DashboardPage = {
         statut: 'envoyee',
         dateCreation: new Date().toISOString()
       }));
-      notifications.forEach(n => Store.add('notifications', n));
-      Toast.success(`${notifications.length} rappel(s) enregistr\u00e9(s)`);
+      const { error } = await supabase.from('fleet_notifications').insert(notifications);
+      if (error) { console.error('Notification error:', error); throw error; }
+      Toast.success(`${notifications.length} rappel(s) envoy\u00e9(s) avec succ\u00e8s`);
+    } catch (err) {
+      console.error('[Notifications] Erreur:', err);
+      Toast.error('Erreur lors de l\'envoi des rappels');
     }
   },
 
@@ -1903,23 +1869,21 @@ const DashboardPage = {
         Toast.info('Envoi en cours...');
 
         try {
-          const res = await fetch(Store._apiBase + '/notifications/send', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + localStorage.getItem('pilote_token')
-            },
-            body: JSON.stringify(values)
-          });
-
-          if (res.ok) {
-            const result = await res.json();
-            Toast.success(`Annonce envoy\u00e9e \u00e0 ${result.sent || 0} chauffeur(s)`);
-          } else {
-            Toast.error('Erreur lors de l\'envoi');
-          }
+          const chauffeurs = Store.get('chauffeurs').filter(c => c.statut === 'actif');
+          const rows = chauffeurs.map(c => objToSnake({
+            chauffeurId: c.id,
+            type: 'annonce',
+            titre: values.titre,
+            message: values.message,
+            canal: values.canal || 'push',
+            statut: 'envoyee'
+          }));
+          const { error } = await supabase.from('fleet_notifications').insert(rows);
+          if (error) { console.error('Notification error:', error); throw error; }
+          Toast.success(`Annonce envoy\u00e9e \u00e0 ${rows.length} chauffeur(s)`);
         } catch (err) {
-          Toast.error('API indisponible \u2014 annonce non envoy\u00e9e');
+          console.error('[Annonce] Erreur:', err);
+          Toast.error('Erreur lors de l\'envoi de l\'annonce');
         }
       }
     );

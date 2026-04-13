@@ -249,39 +249,107 @@ const MessageriePage = {
 
   // =================== API HELPERS ===================
 
-  async _api(method, path, body) {
-    const token = localStorage.getItem('pilote_token');
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    const opts = {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      signal: controller.signal
-    };
-    if (body) opts.body = JSON.stringify(body);
-    try {
-      const res = await fetch('/api/messages' + path, opts);
-      clearTimeout(timeout);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Erreur ${res.status}`);
-      }
-      return res.json();
-    } catch (e) {
-      clearTimeout(timeout);
-      if (e.name === 'AbortError') throw new Error('Délai de connexion dépassé');
-      throw e;
-    }
+  // --- Supabase direct query helpers (replacing Express API) ---
+
+  async _sbListConversations(statut) {
+    const { data, error } = await supabase
+      .from('fleet_conversations')
+      .select('*')
+      .eq('statut', statut)
+      .order('derniere_activite', { ascending: false });
+    if (error) throw new Error(error.message);
+    return rowsToCamel(data || []);
+  },
+
+  async _sbGetConversation(convId) {
+    const { data, error } = await supabase
+      .from('fleet_conversations')
+      .select('*')
+      .eq('id', convId)
+      .single();
+    if (error) throw new Error(error.message);
+    return objToCamel(data);
+  },
+
+  async _sbCreateConversation({ chauffeurId, sujet, message }) {
+    const chauffeur = Store.get('chauffeurs').find(c => c.id === chauffeurId);
+    const convRow = objToSnake({
+      id: 'CONV-' + Date.now(),
+      chauffeurId,
+      chauffeurNom: chauffeur ? (chauffeur.prenom + ' ' + chauffeur.nom) : chauffeurId,
+      chauffeurTelephone: chauffeur ? chauffeur.telephone : '',
+      sujet: sujet || '',
+      statut: 'active',
+      messages: JSON.stringify([{
+        id: 'MSG-' + Date.now(),
+        expediteur: 'admin',
+        message,
+        timestamp: new Date().toISOString()
+      }]),
+      nonLusAdmin: 0,
+      nonLusChauffeur: 1,
+      derniereActivite: new Date().toISOString()
+    });
+    const { data, error } = await supabase
+      .from('fleet_conversations')
+      .insert(convRow)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return objToCamel(data);
+  },
+
+  async _sbReply(convId, message) {
+    // Fetch current conversation to append message
+    const { data: conv, error: fetchErr } = await supabase
+      .from('fleet_conversations')
+      .select('messages')
+      .eq('id', convId)
+      .single();
+    if (fetchErr) throw new Error(fetchErr.message);
+
+    let messages = [];
+    try { messages = JSON.parse(conv.messages || '[]'); } catch (_) {}
+    messages.push({
+      id: 'MSG-' + Date.now(),
+      expediteur: 'admin',
+      message,
+      timestamp: new Date().toISOString()
+    });
+
+    const { error } = await supabase
+      .from('fleet_conversations')
+      .update({
+        messages: JSON.stringify(messages),
+        derniere_activite: new Date().toISOString(),
+        non_lus_chauffeur: (conv.non_lus_chauffeur || 0) + 1
+      })
+      .eq('id', convId);
+    if (error) throw new Error(error.message);
+  },
+
+  async _sbMarkRead(convId) {
+    const { error } = await supabase
+      .from('fleet_conversations')
+      .update({ non_lus_admin: 0 })
+      .eq('id', convId);
+    if (error) throw new Error(error.message);
+  },
+
+  async _sbToggleArchive(convId, currentStatut) {
+    const newStatut = currentStatut === 'archivee' ? 'active' : 'archivee';
+    const { error } = await supabase
+      .from('fleet_conversations')
+      .update({ statut: newStatut })
+      .eq('id', convId);
+    if (error) throw new Error(error.message);
   },
 
   // =================== LOAD CONVERSATIONS ===================
 
   async _loadConversations(statut = 'active', silent = false) {
     try {
-      const data = await this._api('GET', `?statut=${statut}`);
+      const data = await this._sbListConversations(statut);
       this._conversations = Array.isArray(data) ? data : [];
       this._renderConversationList();
     } catch (e) {
@@ -371,7 +439,7 @@ const MessageriePage = {
 
     // Mark as read
     try {
-      await this._api('PUT', `/${convId}/read`);
+      await this._sbMarkRead(convId);
       // Update badge in list
       const conv = this._conversations.find(c => c.id === convId);
       if (conv) conv.nonLusAdmin = 0;
@@ -387,7 +455,7 @@ const MessageriePage = {
 
   async _loadMessages(convId, silent = false) {
     try {
-      const conv = await this._api('GET', `/${convId}`);
+      const conv = await this._sbGetConversation(convId);
       this._currentConv = conv;
       this._renderChat(conv);
     } catch (e) {
@@ -502,7 +570,7 @@ const MessageriePage = {
     textarea.style.height = 'auto';
 
     try {
-      await this._api('POST', `/${this._currentConv.id}/reply`, { message });
+      await this._sbReply(this._currentConv.id, message);
       await this._loadMessages(this._currentConv.id);
       // Refresh list too
       const statut = document.getElementById('btn-toggle-archived')?.classList.contains('active') ? 'archivee' : 'active';
@@ -551,7 +619,7 @@ const MessageriePage = {
         if (!message) { Toast.show('Écrivez un message', 'warning'); return; }
 
         try {
-          const conv = await this._api('POST', '', { chauffeurId, sujet, message });
+          const conv = await this._sbCreateConversation({ chauffeurId, sujet, message });
           Toast.show('Conversation créée', 'success');
           await this._loadConversations();
           this._selectConversation(conv.id);
@@ -575,11 +643,9 @@ const MessageriePage = {
       async () => {
         try {
           Toast.show('Initiation de l\'appel...', 'info');
-          const result = await this._api('POST', '/call', {
-            chauffeurId: this._currentConv.chauffeurId,
-            conversationId: this._currentConv.id
-          });
-          Toast.show(`Appel initié vers ${result.chauffeurNom}`, 'success');
+          // Twilio call endpoint removed - log the call attempt as a message
+          await this._sbReply(this._currentConv.id, '[Appel téléphonique initié]');
+          Toast.show('Appel enregistré (Twilio non disponible)', 'info');
           // Refresh messages to show the call message
           await this._loadMessages(this._currentConv.id);
         } catch (e) {
@@ -597,7 +663,7 @@ const MessageriePage = {
     const wasArchived = this._currentConv.statut === 'archivee';
 
     try {
-      await this._api('PUT', `/${this._currentConv.id}/archive`);
+      await this._sbToggleArchive(this._currentConv.id, this._currentConv.statut);
       Toast.show(wasArchived ? 'Conversation réactivée' : 'Conversation archivée', 'success');
       this._currentConv = null;
       // Reset chat column

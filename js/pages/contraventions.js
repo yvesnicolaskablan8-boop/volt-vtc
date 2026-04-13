@@ -748,28 +748,11 @@ const ContraventionsPage = {
 
     if (!confirm(`Payer la contravention de ${name} (${Utils.formatCurrency(c.montant)}) via Wave ?`)) return;
 
-    Toast.show('Redirection vers Wave...', 'info');
+    Toast.show('Fonctionnalite Wave temporairement indisponible — migration en cours', 'warning');
+    return;
 
-    try {
-      const apiBase = Store._apiBase || '/api';
-      const res = await fetch(apiBase + '/contraventions/wave/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + (localStorage.getItem('pilote_token') || '')
-        },
-        body: JSON.stringify({ contraventionId: id })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        Toast.show(data.error || 'Erreur Wave', 'error');
-        return;
-      }
-
-      if (data.waveLaunchUrl) {
-        window.open(data.waveLaunchUrl, '_blank');
+    // TODO: Migrate Wave checkout to Vercel API route
+    if (false) {
 
         // Solder la dette liée à cette contravention (paiement Wave)
         const versements = Store.get('versements') || [];

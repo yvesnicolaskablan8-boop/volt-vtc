@@ -435,29 +435,15 @@ const ProfilPage = {
     }
 
     try {
-      const user = DriverAuth.getUser();
-      const apiBase = window.location.hostname === 'localhost'
-        ? 'http://localhost:3001/api/driver/auth'
-        : 'https://volt-vtc-production.up.railway.app/api/driver/auth';
-
-      const res = await fetch(apiBase + '/set-pin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + DriverAuth.getToken()
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          pin: values.newPin
-        })
-      });
-
-      const data = await res.json();
-      if (data.success) {
+      const chauffeur = DriverAuth.getChauffeur();
+      if (!chauffeur) { DriverToast.show('Erreur: chauffeur non trouve', 'error'); return; }
+      // Update PIN hash in Supabase
+      const { error } = await supabase.from('fleet_chauffeurs').update({ pin_hash: values.newPin }).eq('id', chauffeur.id);
+      if (!error) {
         DriverModal.close();
         DriverToast.show('PIN modifie avec succes', 'success');
       } else {
-        DriverToast.show(data.error || 'Erreur', 'error');
+        DriverToast.show(error.message || 'Erreur', 'error');
       }
     } catch (e) {
       DriverToast.show('Erreur reseau', 'error');
@@ -467,25 +453,9 @@ const ProfilPage = {
   async _telechargerReleve() {
     const now = new Date();
     const mois = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-    const baseUrl = window.location.hostname === 'localhost'
-      ? 'http://localhost:3001'
-      : 'https://volt-vtc-production.up.railway.app';
     try {
-      DriverToast.show('Generation du releve en cours...', 'info');
-      const resp = await fetch(`${baseUrl}/api/driver/rapport/${mois}`, {
-        headers: { 'Authorization': 'Bearer ' + DriverAuth.getToken() }
-      });
-      if (!resp.ok) throw new Error('Erreur serveur');
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `releve-${mois}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      DriverToast.show('Releve telecharge', 'success');
+      DriverToast.show('Fonctionnalite temporairement indisponible — migration en cours', 'warning');
+      // TODO: Implement client-side PDF generation or Vercel API route
     } catch (e) {
       console.error('Erreur telechargement releve:', e);
       DriverToast.show('Impossible de telecharger le releve', 'error');

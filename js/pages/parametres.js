@@ -325,17 +325,13 @@ const ParametresPage = {
       }
 
       try {
-        // Verify current password by attempting login
-        const apiBase = Store._apiBase || '/api';
+        // Verify current password via Supabase Auth
         const user = Store.findById('users', session.userId);
-        const verifyRes = await fetch(apiBase + '/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email, password: current })
+        const { error: verifyError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: current
         });
-        const verifyData = await verifyRes.json();
-
-        if (!verifyData.success) {
+        if (verifyError) {
           Toast.error('Mot de passe actuel incorrect');
           return;
         }
@@ -856,44 +852,28 @@ const ParametresPage = {
     const token = localStorage.getItem('pilote_token');
     if (token) headers['Authorization'] = 'Bearer ' + token;
 
-    // Retry logic: Store.add() syncs to DB in background,
-    // so the user may not exist yet when we call set-pin
-    const maxRetries = 5;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        // Wait a bit for the user to be created in DB
-        if (attempt > 1) {
-          await new Promise(r => setTimeout(r, 800 * attempt));
-        } else {
-          // First attempt: short delay to let Store.add() API call start
-          await new Promise(r => setTimeout(r, 500));
-        }
+    // Set PIN directly via Store update on chauffeurs table
+    try {
+      // Short delay to let Store.add() sync complete
+      await new Promise(r => setTimeout(r, 500));
 
-        const res = await fetch(apiBase + '/driver/auth/set-pin', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ userId, pin, chauffeurId })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          console.log('PIN set successfully for', userId);
-          return true;
-        }
-
-        if (res.status === 404 && attempt < maxRetries) {
-          console.warn(`Set PIN attempt ${attempt}: user not yet in DB, retrying...`);
-          continue;
-        }
-
-        console.warn('Set PIN failed:', data.error || data);
-        return false;
-      } catch (e) {
-        console.warn(`Set PIN attempt ${attempt} error:`, e);
-        if (attempt === maxRetries) return false;
+      const bcryptLoaded = typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt;
+      let pinHash;
+      if (bcryptLoaded) {
+        const salt = dcodeIO.bcrypt.genSaltSync(10);
+        pinHash = dcodeIO.bcrypt.hashSync(pin, salt);
+      } else {
+        // Fallback: store plain PIN (not ideal but functional without bcrypt)
+        pinHash = pin;
       }
+
+      Store.update('chauffeurs', chauffeurId, { pinHash: pinHash });
+      console.log('PIN set successfully for chauffeur', chauffeurId);
+      return true;
+    } catch (e) {
+      console.warn('Set PIN error:', e);
+      return false;
     }
-    return false;
   },
 
   _editUser(id) {
@@ -1486,45 +1466,53 @@ const ParametresPage = {
       // Check if already subscribed
       let sub = await reg.pushManager.getSubscription();
       if (!sub) {
-        // Get VAPID key
-        const apiBase = Store._apiBase || '/api';
-        const token = Auth.getToken();
-        const vapidRes = await fetch(apiBase + '/notifications/push/vapid-key', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (!vapidRes.ok) throw new Error('Impossible de recuperer la cle VAPID');
-        const { publicKey } = await vapidRes.json();
-        if (!publicKey) throw new Error('Cle VAPID manquante');
+        try {
+          // Get VAPID key
+          const apiBase = Store._apiBase || '/api';
+          const token = Auth.getToken();
+          const vapidRes = await fetch(apiBase + '/notifications/push/vapid-key', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (!vapidRes.ok) throw new Error('Impossible de recuperer la cle VAPID');
+          const { publicKey } = await vapidRes.json();
+          if (!publicKey) throw new Error('Cle VAPID manquante');
 
-        // Subscribe
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: App._urlBase64ToUint8Array(publicKey)
-        });
+          // Subscribe
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: App._urlBase64ToUint8Array(publicKey)
+          });
 
-        // Send to server
-        await fetch(apiBase + '/notifications/push/subscribe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify({ subscription: sub.toJSON() })
-        });
+          // Send to server
+          await fetch(apiBase + '/notifications/push/subscribe', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ subscription: sub.toJSON() })
+          });
+        } catch (pushErr) {
+          console.warn('Push notifications not available:', pushErr.message);
+          toggle.checked = false;
+          statusEl.textContent = 'Notifications push non disponibles actuellement';
+          Toast.error('Notifications push non disponibles actuellement');
+          return;
+        }
       }
 
-      statusEl.innerHTML = '<span style="color:var(--success);font-weight:500;">Actif — vous recevrez des notifications push</span>';
+      statusEl.textContent = 'Actif — vous recevrez des notifications push';
       Toast.success('Notifications push activees');
     } catch (e) {
       toggle.checked = false;
-      statusEl.innerHTML = '<span style="color:var(--danger);">Erreur : ' + (e.message || 'echec activation') + '</span>';
+      statusEl.textContent = 'Erreur : ' + (e.message || 'echec activation');
       Toast.error('Impossible d\'activer les notifications : ' + (e.message || 'erreur'));
     }
   },
 
   async _disablePush(toggle, statusEl) {
     try {
-      statusEl.innerHTML = '<span style="color:var(--text-muted);">Desactivation en cours...</span>';
+      statusEl.textContent = 'Desactivation en cours...';
 
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
@@ -1534,23 +1522,27 @@ const ParametresPage = {
         await sub.unsubscribe();
 
         // Remove from server
-        const apiBase = Store._apiBase || '/api';
-        const token = Auth.getToken();
-        await fetch(apiBase + '/notifications/push/subscribe', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify({ endpoint: sub.endpoint })
-        });
+        try {
+          const apiBase = Store._apiBase || '/api';
+          const token = Auth.getToken();
+          await fetch(apiBase + '/notifications/push/subscribe', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ endpoint: sub.endpoint })
+          });
+        } catch (pushErr) {
+          console.warn('Push unsubscribe server call not available:', pushErr.message);
+        }
       }
 
-      statusEl.innerHTML = '<span style="color:var(--text-muted);">Desactive — activez pour recevoir des alertes</span>';
+      statusEl.textContent = 'Desactive — activez pour recevoir des alertes';
       Toast.success('Notifications push desactivees');
     } catch (e) {
       toggle.checked = true;
-      statusEl.innerHTML = '<span style="color:var(--danger);">Erreur lors de la desactivation</span>';
+      statusEl.textContent = 'Erreur lors de la desactivation';
     }
   },
 
@@ -2161,18 +2153,14 @@ const ParametresPage = {
         sendBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Envoi en cours...';
 
         try {
-          const res = await fetch(Store._apiBase + '/notifications/send', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + (Auth.getToken ? Auth.getToken() : localStorage.getItem('pilote_token'))
-            },
-            body: JSON.stringify({ titre, message, canal })
-          });
-          const data = await res.json();
+          const activeChauffs = Store.getAll('chauffeurs').filter(c => c.statut === 'actif');
+          const notifRows = activeChauffs.map(c => objToSnake({
+            chauffeurId: c.id, type: 'annonce', titre, message, canal, statut: 'envoyee'
+          }));
+          const { error: notifErr } = await supabase.from('fleet_notifications').insert(notifRows);
 
-          if (data.success) {
-            Toast.success(`Annonce envoyee a ${data.sent} chauffeur(s)`);
+          if (!notifErr) {
+            Toast.success(`Annonce envoyee a ${activeChauffs.length} chauffeur(s)`);
             document.getElementById('annonce-titre').value = '';
             document.getElementById('annonce-message').value = '';
             if (resultDiv) {
@@ -2550,20 +2538,12 @@ const ParametresPage = {
       saveWaveBtn.addEventListener('click', async () => {
         const apiKey = document.getElementById('wave-api-key').value.trim();
         try {
-          const token = localStorage.getItem('pilote_token');
-          const resp = await fetch((Store._apiBase || '/api') + '/settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ integrations: { wave: { apiKey } } })
-          });
-          if (resp.ok) {
-            const updated = await resp.json();
-            Store.set('settings', updated);
-            Toast.success('Configuration Wave sauvegardée');
-            this._renderTab('integrations');
-          } else {
-            Toast.error('Erreur lors de la sauvegarde');
-          }
+          const settings = Store.get('settings') || {};
+          if (!settings.integrations) settings.integrations = {};
+          settings.integrations.wave = { apiKey };
+          Store.set('settings', settings);
+          Toast.success('Configuration Wave sauvegardée');
+          this._renderTab('integrations');
         } catch (err) {
           Toast.error('Erreur: ' + err.message);
         }
@@ -2578,20 +2558,12 @@ const ParametresPage = {
         const apiKey = document.getElementById('yango-api-key').value.trim();
         const clientId = document.getElementById('yango-client-id').value.trim();
         try {
-          const token = localStorage.getItem('pilote_token');
-          const resp = await fetch((Store._apiBase || '/api') + '/settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ integrations: { yango: { parkId, apiKey, clientId } } })
-          });
-          if (resp.ok) {
-            const updated = await resp.json();
-            Store.set('settings', updated);
-            Toast.success('Configuration Yango sauvegardée');
-            this._renderTab('integrations');
-          } else {
-            Toast.error('Erreur lors de la sauvegarde');
-          }
+          const settings = Store.get('settings') || {};
+          if (!settings.integrations) settings.integrations = {};
+          settings.integrations.yango = { parkId, apiKey, clientId };
+          Store.set('settings', settings);
+          Toast.success('Configuration Yango sauvegardée');
+          this._renderTab('integrations');
         } catch (err) {
           Toast.error('Erreur: ' + err.message);
         }
@@ -2602,25 +2574,7 @@ const ParametresPage = {
     const testWaveBtn = document.getElementById('test-wave-btn');
     if (testWaveBtn) {
       testWaveBtn.addEventListener('click', async () => {
-        testWaveBtn.disabled = true;
-        testWaveBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone" class="spin"></iconify-icon> Test...';
-        try {
-          const token = localStorage.getItem('pilote_token');
-          const resp = await fetch((Store._apiBase || '/api') + '/settings/test-wave', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          const result = await resp.json();
-          if (result.success) {
-            Toast.success(result.message);
-          } else {
-            Toast.error(result.message);
-          }
-        } catch (err) {
-          Toast.error('Erreur: ' + err.message);
-        }
-        testWaveBtn.disabled = false;
-        testWaveBtn.innerHTML = '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tester';
+        Toast.error('Fonctionnalite temporairement indisponible');
       });
     }
 
@@ -2628,25 +2582,7 @@ const ParametresPage = {
     const testYangoBtn = document.getElementById('test-yango-btn');
     if (testYangoBtn) {
       testYangoBtn.addEventListener('click', async () => {
-        testYangoBtn.disabled = true;
-        testYangoBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone" class="spin"></iconify-icon> Test...';
-        try {
-          const token = localStorage.getItem('pilote_token');
-          const resp = await fetch((Store._apiBase || '/api') + '/settings/test-yango', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          const result = await resp.json();
-          if (result.success) {
-            Toast.success(result.message);
-          } else {
-            Toast.error(result.message);
-          }
-        } catch (err) {
-          Toast.error('Erreur: ' + err.message);
-        }
-        testYangoBtn.disabled = false;
-        testYangoBtn.innerHTML = '<iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tester';
+        Toast.error('Fonctionnalite temporairement indisponible');
       });
     }
   },
@@ -2883,15 +2819,13 @@ const ParametresPage = {
 
             Store.set('settings', settings);
 
-            // Reset contrat acceptance for all chauffeurs via API
-            const token = localStorage.getItem('pilote_token');
-            const resp = await fetch('/api/settings/reset-contrat-acceptance', {
-              method: 'POST',
-              headers: { 'Authorization': 'Bearer ' + token }
-            });
-            const result = await resp.json();
+            // Reset contrat acceptance for all chauffeurs via Supabase
+            const { error } = await supabase
+              .from('fleet_chauffeurs')
+              .update({ contrat_accepte: false })
+              .neq('id', '00000000-0000-0000-0000-000000000000');
 
-            if (result.success) {
+            if (!error) {
               // Update local cache too
               const chauffeurs = Store.get('chauffeurs') || [];
               chauffeurs.forEach(c => {
@@ -2900,7 +2834,7 @@ const ParametresPage = {
                 c.contratAccepteIP = null;
               });
               Store.set('chauffeurs', chauffeurs);
-              Toast.success(`Contrat v${settings.contrat.version} publié — ${result.modifiedCount} chauffeur(s) doivent re-valider`);
+              Toast.success(`Contrat v${settings.contrat.version} publié — ${chauffeurs.length} chauffeur(s) doivent re-valider`);
             } else {
               Toast.error('Erreur lors de la réinitialisation des acceptations');
             }

@@ -69,14 +69,29 @@ const NotificationsAdminPage = {
 
   async _loadStats() {
     try {
-      const token = localStorage.getItem('pilote_token');
-      const apiBase = Store._apiBase || '/api';
-      const res = await fetch(apiBase + '/notifications/stats', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (res.ok) {
-        this._stats = await res.json();
-      }
+      const { data: notifs, error } = await supabase
+        .from('fleet_notifications')
+        .select('id, statut, canal, created_at');
+      if (error) throw error;
+
+      const now = new Date();
+      const moisDebut = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const aujourdHuiDebut = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+      const moisNotifs = (notifs || []).filter(n => n.created_at >= moisDebut);
+      const todayNotifs = (notifs || []).filter(n => n.created_at >= aujourdHuiDebut);
+
+      this._stats = {
+        mois: {
+          total: moisNotifs.length,
+          sms: moisNotifs.filter(n => n.canal === 'sms').length,
+          whatsapp: moisNotifs.filter(n => n.canal === 'whatsapp').length,
+          echecs: moisNotifs.filter(n => n.statut === 'echec').length,
+          coutEstimeSMS: moisNotifs.filter(n => n.canal === 'sms').length * 0.07,
+          coutEstimeWhatsApp: moisNotifs.filter(n => n.canal === 'whatsapp').length * 0.05
+        },
+        aujourd_hui: todayNotifs.length
+      };
     } catch (e) {
       console.warn('[NotificationsAdmin] Stats error:', e.message);
     }
@@ -85,17 +100,15 @@ const NotificationsAdminPage = {
 
   async _loadHistory() {
     try {
-      const token = localStorage.getItem('pilote_token');
-      const apiBase = Store._apiBase || '/api';
       const offset = (this._currentPage - 1) * this._perPage;
-      const res = await fetch(apiBase + '/notifications?limit=' + this._perPage + '&offset=' + offset, {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        this._history = data.notifications || [];
-        this._historyTotal = data.total || 0;
-      }
+      const { data: notifs, count, error } = await supabase
+        .from('fleet_notifications')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + this._perPage - 1);
+      if (error) throw error;
+      this._history = notifs || [];
+      this._historyTotal = count || 0;
     } catch (e) {
       console.warn('[NotificationsAdmin] History error:', e.message);
     }
@@ -319,32 +332,30 @@ const NotificationsAdminPage = {
     }
 
     try {
-      const token = localStorage.getItem('pilote_token');
-      const apiBase = Store._apiBase || '/api';
-      const body = { titre, message, canal };
-      if (chauffeurId) body.chauffeurId = chauffeurId;
+      const session = Auth.getSession ? Auth.getSession() : {};
+      const notifData = {
+        titre,
+        message,
+        canal,
+        statut: 'envoyee',
+        type: 'annonce',
+        created_at: new Date().toISOString(),
+        expediteur_id: session.id || null
+      };
+      if (chauffeurId) notifData.chauffeur_id = chauffeurId;
 
-      const res = await fetch(apiBase + '/notifications/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
+      const { error } = await supabase
+        .from('fleet_notifications')
+        .insert([notifData]);
 
-      if (res.ok) {
-        const data = await res.json();
-        Modal.close();
-        Toast.success('Annonce envoyee : ' + (data.sent || 0) + ' envoyee(s), ' + (data.failed || 0) + ' echec(s)');
-        this._loadData();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        Toast.show(err.error || 'Erreur lors de l\'envoi', 'error');
-      }
+      if (error) throw error;
+
+      Modal.close();
+      Toast.success('Annonce envoyee avec succes');
+      this._loadData();
     } catch (e) {
       console.error('[NotificationsAdmin] Send error:', e);
-      Toast.show('Erreur technique', 'error');
+      Toast.show(e.message || 'Erreur technique', 'error');
     }
   }
 };

@@ -122,17 +122,16 @@ const AlertesPage = {
     if (!banner) return;
 
     try {
-      const token = Auth.getToken ? Auth.getToken() : localStorage.getItem('pilote_token');
-      const res = await fetch((Store._apiBase || '/api') + '/notifications/stats', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const stats = await res.json();
+      const notifs = Store.getAll('notifications') || [];
+      const now = new Date();
+      const moisDebut = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const aujourdHuiDebut = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const moisNotifs = notifs.filter(n => n.created_at >= moisDebut);
 
-      const total = stats.mois?.total || 0;
-      const sms = stats.mois?.sms || 0;
-      const echecs = stats.mois?.echecs || 0;
-      const aujourd_hui = stats.aujourd_hui || 0;
+      const total = moisNotifs.length;
+      const sms = moisNotifs.filter(n => n.canal === 'sms').length;
+      const echecs = moisNotifs.filter(n => n.statut === 'echec').length;
+      const aujourd_hui = notifs.filter(n => n.created_at >= aujourdHuiDebut).length;
 
       if (total === 0 && aujourd_hui === 0) {
         banner.style.display = 'none';

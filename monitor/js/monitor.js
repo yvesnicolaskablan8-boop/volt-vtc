@@ -42,18 +42,14 @@
 
     async login(email, password) {
       try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (data.success || data.token) {
-          this.setToken(data.token);
-          if (data.user) this.setSession(data.user);
-          return { success: true };
-        }
-        return { success: false, error: data.message || data.error || 'Identifiants incorrects' };
+        const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) return { success: false, error: error.message || 'Identifiants incorrects' };
+        this.setToken(authData.session.access_token);
+        // Fetch user profile from fleet_users
+        const { data: users } = await supabase.from('fleet_users').select('*').eq('auth_id', authData.user.id).limit(1);
+        const user = users && users[0] ? rowsToCamel(users)[0] : { prenom: '', nom: '', role: 'Operateur' };
+        this.setSession(user);
+        return { success: true };
       } catch (e) {
         return { success: false, error: 'Erreur de connexion au serveur' };
       }
@@ -68,16 +64,15 @@
 
     async fetch() {
       try {
-        const res = await fetch('/api/data', {
-          headers: { 'Authorization': 'Bearer ' + Auth.getToken() }
-        });
-        if (res.status === 401) {
-          Auth.logout();
-          UI.showLogin();
-          return null;
-        }
-        if (!res.ok) return null;
-        this._raw = await res.json();
+        // Load all collections from Supabase
+        const collections = ['chauffeurs', 'vehicules', 'courses', 'versements', 'gps', 'planning', 'pointages', 'signalements'];
+        const tableMap = { chauffeurs: 'fleet_chauffeurs', vehicules: 'fleet_vehicules', courses: 'fleet_courses', versements: 'fleet_versements', gps: 'fleet_gps', planning: 'fleet_planning', pointages: 'fleet_pointages', signalements: 'fleet_signalements' };
+        const raw = {};
+        await Promise.all(collections.map(async col => {
+          const { data, error } = await supabase.from(tableMap[col]).select('*');
+          raw[col] = error ? [] : (typeof rowsToCamel === 'function' ? rowsToCamel(data) : data);
+        }));
+        this._raw = raw;
         this._kpis = this.computeKPIs(this._raw, getSelectedDate());
         return this._kpis;
       } catch (e) {

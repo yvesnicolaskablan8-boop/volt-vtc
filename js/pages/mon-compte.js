@@ -239,35 +239,46 @@ const MonComptePage = {
       let sub = await reg.pushManager.getSubscription();
 
       if (!sub) {
-        const apiBase = Store._apiBase || '/api';
-        const token = Auth.getToken();
-        const vapidRes = await fetch(apiBase + '/notifications/push/vapid-key', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (!vapidRes.ok) throw new Error('Impossible de recuperer la cle VAPID');
-        const { publicKey } = await vapidRes.json();
-        if (!publicKey) throw new Error('Cle VAPID manquante');
+        try {
+          const apiBase = Store._apiBase || '/api';
+          const token = Auth.getToken();
+          const vapidRes = await fetch(apiBase + '/notifications/push/vapid-key', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (!vapidRes.ok) throw new Error('Impossible de recuperer la cle VAPID');
+          const { publicKey } = await vapidRes.json();
+          if (!publicKey) throw new Error('Cle VAPID manquante');
 
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: App._urlBase64ToUint8Array(publicKey)
-        });
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: App._urlBase64ToUint8Array(publicKey)
+          });
 
-        await fetch(apiBase + '/notifications/push/subscribe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify({ subscription: sub.toJSON() })
-        });
+          await fetch(apiBase + '/notifications/push/subscribe', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ subscription: sub.toJSON() })
+          });
+        } catch (pushErr) {
+          console.warn('Push notifications not available:', pushErr.message);
+          toggle.checked = false;
+          statusEl.textContent = 'Notifications push non disponibles';
+          Toast.error('Notifications push non disponibles actuellement');
+          return;
+        }
       }
 
-      statusEl.innerHTML = '<span style="color:#10b981;font-weight:500;">Actif — vous recevrez des notifications</span>';
+      statusEl.textContent = 'Actif — vous recevrez des notifications';
+      statusEl.style.color = '#10b981';
+      statusEl.style.fontWeight = '500';
       Toast.success('Notifications push activees');
     } catch (e) {
       toggle.checked = false;
-      statusEl.innerHTML = '<span style="color:#ef4444;">Erreur : ' + (e.message || 'echec') + '</span>';
+      statusEl.textContent = 'Erreur : ' + (e.message || 'echec');
+      statusEl.style.color = '#ef4444';
       Toast.error('Impossible d\'activer les notifications');
     }
   },
@@ -280,16 +291,20 @@ const MonComptePage = {
 
       if (sub) {
         await sub.unsubscribe();
-        const apiBase = Store._apiBase || '/api';
-        const token = Auth.getToken();
-        await fetch(apiBase + '/notifications/push/subscribe', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify({ endpoint: sub.endpoint })
-        });
+        try {
+          const apiBase = Store._apiBase || '/api';
+          const token = Auth.getToken();
+          await fetch(apiBase + '/notifications/push/subscribe', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ endpoint: sub.endpoint })
+          });
+        } catch (pushErr) {
+          console.warn('Push unsubscribe server call not available:', pushErr.message);
+        }
       }
 
       statusEl.innerHTML = '<span style="color:var(--text-muted);">Desactive</span>';
@@ -321,26 +336,34 @@ const MonComptePage = {
     }
 
     try {
-      const apiBase = Store._apiBase || '/api';
-      const token = Auth.getToken();
-      const res = await fetch(apiBase + '/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify({ currentPassword: current, newPassword: newPwd })
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        Toast.success('Mot de passe modifie avec succes');
-        document.getElementById('mc-current-pwd').value = '';
-        document.getElementById('mc-new-pwd').value = '';
-        document.getElementById('mc-confirm-pwd').value = '';
-      } else {
-        Toast.error(data.error || 'Erreur lors du changement');
+      // Verify current password via Supabase Auth
+      const email = session.email;
+      if (!email) {
+        Toast.error('Email de session introuvable');
+        return;
       }
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: current
+      });
+      if (signInError) {
+        Toast.error('Mot de passe actuel incorrect');
+        return;
+      }
+
+      // Set new password via Supabase Auth
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPwd
+      });
+      if (updateError) {
+        Toast.error(updateError.message || 'Erreur lors du changement');
+        return;
+      }
+
+      Toast.success('Mot de passe modifie avec succes');
+      document.getElementById('mc-current-pwd').value = '';
+      document.getElementById('mc-new-pwd').value = '';
+      document.getElementById('mc-confirm-pwd').value = '';
     } catch (e) {
       Toast.error('Erreur de connexion');
     }

@@ -280,12 +280,22 @@ const GpsConduitePage = {
     if (!this._map) return;
 
     try {
-      const token = localStorage.getItem('pilote_token');
-      const resp = await fetch('/api/gps/positions', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const chauffeurs = Store.getAll('chauffeurs').filter(c => c.statut === 'actif' && c.location && c.location.lat);
+      const vehicules = Store.getAll('vehicules');
+      const positions = chauffeurs.map(c => {
+        const v = vehicules.find(v => v.id === c.vehiculeAssigne);
+        return {
+          chauffeurId: c.id,
+          prenom: c.prenom,
+          nom: c.nom,
+          vehicule: v ? `${v.marque} ${v.modele} - ${v.immatriculation}` : '',
+          lat: c.location.lat,
+          lng: c.location.lng,
+          speed: c.location.speed,
+          heading: c.location.heading,
+          updatedAt: c.location.updatedAt
+        };
       });
-      if (!resp.ok) return;
-      const positions = await resp.json();
 
       const countEl = document.getElementById('map-driver-count');
       if (countEl) {

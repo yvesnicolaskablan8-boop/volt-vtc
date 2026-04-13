@@ -103,16 +103,13 @@ const ActivitePage = {
 
   async _loadLogs() {
     try {
-      const token = localStorage.getItem('pilote_token');
-      const apiBase = Store._apiBase || '/api';
-      const res = await fetch(apiBase + '/activityLogs?sort=timestamp&order=desc&limit=5000', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (res.ok) {
-        this._logs = await res.json();
-      } else {
-        this._logs = [];
-      }
+      const { data, error } = await supabase
+        .from('fleet_activity_logs')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(5000);
+      if (error) throw error;
+      this._logs = rowsToCamel(data || []);
     } catch (e) {
       console.warn('[ActivitePage] Load error:', e.message);
       this._logs = [];

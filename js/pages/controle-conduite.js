@@ -1511,28 +1511,11 @@ const ControleConduitePage = {
 
     if (!confirm('Payer la contravention de ' + name + ' (' + Utils.formatCurrency(c.montant) + ') via Wave ?')) return;
 
-    Toast.show('Redirection vers Wave...', 'info');
+    Toast.show('Fonctionnalite Wave temporairement indisponible — migration en cours', 'warning');
+    return;
 
-    try {
-      const apiBase = Store._apiBase || '/api';
-      const res = await fetch(apiBase + '/contraventions/wave/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + (localStorage.getItem('pilote_token') || '')
-        },
-        body: JSON.stringify({ contraventionId: id })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        Toast.show(data.error || 'Erreur Wave', 'error');
-        return;
-      }
-
-      if (data.waveLaunchUrl) {
-        window.open(data.waveLaunchUrl, '_blank');
+    // TODO: Migrate Wave checkout to Vercel API route
+    if (false) {
 
         const versements = Store.get('versements') || [];
         const dette = versements.find(v => v.reference === id && v.traitementManquant === 'dette');
@@ -1568,13 +1551,8 @@ const ControleConduitePage = {
       penaliteVirage: { faible: -2, modere: -3, severe: -4 },
       moyenneMobileAncien: 70, moyenneMobileNouveau: 30
     };
-    try {
-      const res = await fetch('/api/settings', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('pilote_token') } });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.scoreConduite) cfg = { ...cfg, ...data.scoreConduite };
-      }
-    } catch (e) { /* use defaults */ }
+    const data = Store.get('settings') || {};
+    if (data.scoreConduite) cfg = { ...cfg, ...data.scoreConduite };
 
     const esc = this._escapeHtml.bind(this);
 
@@ -1749,16 +1727,10 @@ const ControleConduitePage = {
       try {
         btnSave.disabled = true;
         btnSave.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone" class="spin"></iconify-icon> Enregistrement...';
-        const res = await fetch('/api/settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pilote_token') },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          Toast.show('Param\u00e8tres du score de conduite enregistr\u00e9s', 'success');
-        } else {
-          Toast.show('Erreur lors de la sauvegarde', 'error');
-        }
+        const settings = Store.get('settings') || {};
+        settings.scoreConduite = payload.scoreConduite;
+        Store.set('settings', settings);
+        Toast.show('Param\u00e8tres du score de conduite enregistr\u00e9s', 'success');
       } catch (e) {
         Toast.show('Erreur de connexion', 'error');
       } finally {
