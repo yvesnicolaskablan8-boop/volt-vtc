@@ -287,7 +287,6 @@ const Auth = {
         prenom: prenom || '',
         nom: nom || '',
         telephone: telephone || null,
-        entreprise_nom: entrepriseNom || null,
         role: 'admin',
         permissions: allPermissions,
         must_change_password: false,
