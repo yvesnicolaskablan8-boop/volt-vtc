@@ -1,420 +1,370 @@
 /**
- * DriverStore — Client API leger pour la PWA chauffeur
- * Chaque appel fetch un endpoint scope au chauffeur connecte
+ * DriverStore — Acces direct Supabase pour la PWA chauffeur
+ * Chaque appel requete les tables fleet_* scopees au chauffeur connecte
  */
 const DriverStore = {
-  _apiBase: window.location.hostname === 'localhost'
-    ? 'http://localhost:3001/api/driver'
-    : 'https://volt-vtc-production.up.railway.app/api/driver',
 
-  // Endpoints a mettre en cache pour le mode hors-ligne
-  _CACHEABLE: {
-    '/dashboard': 'pilote_cache_dashboard',
-    '/planning': 'pilote_cache_planning',
-    '/dettes': 'pilote_cache_dettes'
+  _chauffeurId() {
+    return DriverAuth.getChauffeurId();
   },
 
-  _CACHE_MAX_AGE: 24 * 60 * 60 * 1000, // 24h
+  // ===== DASHBOARD =====
 
-  _headers() {
-    const token = localStorage.getItem('pilote_driver_token');
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = 'Bearer ' + token;
-    return headers;
+  async getDashboard() {
+    const id = this._chauffeurId();
+    if (!id) return null;
+
+    const today = new Date().toISOString().split('T')[0];
+    const monthStart = today.slice(0, 7) + '-01';
+
+    const [planningRes, versementsRes, coursesRes, signRes, chauffeurRes] = await Promise.all([
+      supabase.from('fleet_planning').select('*').eq('chauffeur_id', id).eq('date', today),
+      supabase.from('fleet_versements').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('date', { ascending: false }),
+      supabase.from('fleet_courses').select('*').eq('chauffeur_id', id).gte('date_heure', monthStart + 'T00:00:00'),
+      supabase.from('fleet_signalements').select('*').eq('chauffeur_id', id).in('statut', ['ouvert', 'en_cours']),
+      supabase.from('fleet_chauffeurs').select('score_conduite, redevance_quotidienne, objectif_ca, vehicule_assigne').eq('id', id).single()
+    ]);
+
+    const courses = (coursesRes.data || []).map(objToCamel);
+    const versements = (versementsRes.data || []).map(objToCamel);
+    const ch = chauffeurRes.data ? objToCamel(chauffeurRes.data) : {};
+
+    return {
+      planning: (planningRes.data || []).map(objToCamel),
+      versements,
+      alertes: (signRes.data || []).map(objToCamel),
+      stats: {
+        courses: courses.length,
+        ca: courses.reduce((s, c) => s + (c.montantTtc || 0), 0),
+        versementsTotal: versements.reduce((s, v) => s + (v.montantVerse || 0), 0),
+        scoreConduite: ch.scoreConduite || 0
+      },
+      chauffeur: ch
+    };
   },
 
-  /** Lire une entree du cache hors-ligne */
-  _readCache(path) {
-    const key = this._CACHEABLE[path];
-    if (!key) return null;
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return null;
-      const entry = JSON.parse(raw);
-      return entry; // { data, ts }
-    } catch (e) {
-      return null;
-    }
+  // ===== PLANNING =====
+
+  async getPlanning(from, to) {
+    const id = this._chauffeurId();
+    if (!id) return null;
+    let query = supabase.from('fleet_planning').select('*').eq('chauffeur_id', id);
+    if (from) query = query.gte('date', from);
+    if (to) query = query.lte('date', to);
+    const { data } = await query.order('date');
+    return (data || []).map(objToCamel);
   },
 
-  /** Ecrire une entree dans le cache hors-ligne */
-  _writeCache(path, data) {
-    const key = this._CACHEABLE[path];
-    if (!key) return;
-    try {
-      localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
-    } catch (e) { /* localStorage plein */ }
+  async getAbsences() {
+    const id = this._chauffeurId();
+    const { data } = await supabase.from('fleet_absences').select('*').eq('chauffeur_id', id).order('date_debut', { ascending: false });
+    return (data || []).map(objToCamel);
   },
 
-  /** Verifier si le cache est perime (> 24h) */
-  isCacheStale(path) {
-    const entry = this._readCache(path);
-    if (!entry || !entry.ts) return true;
-    return (Date.now() - entry.ts) > this._CACHE_MAX_AGE;
-  },
-
-  /** Obtenir le timestamp du cache pour un endpoint */
-  getCacheTimestamp(path) {
-    const entry = this._readCache(path);
-    return entry ? entry.ts : null;
-  },
-
-  async _get(path) {
-    // Extraire le chemin de base (sans query string) pour le cache
-    const basePath = path.split('?')[0];
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(this._apiBase + path, {
-        headers: this._headers(),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      if (res.status === 401) {
-        DriverAuth.logout();
-        return null;
-      }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      // Mettre en cache si endpoint cacheable (uniquement sans query string)
-      if (basePath === path && this._CACHEABLE[basePath]) {
-        this._writeCache(basePath, data);
-      }
-      return data;
-    } catch (e) {
-      console.warn('DriverStore GET ' + path + ' failed:', e.message);
-      // Fallback: lire le cache hors-ligne
-      if (this._CACHEABLE[basePath]) {
-        const cached = this._readCache(basePath);
-        if (cached && cached.data) {
-          console.log('[Offline] Donnees en cache pour ' + basePath);
-          return cached.data;
-        }
-      }
-      return null;
-    }
-  },
-
-  async _post(path, body) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(this._apiBase + path, {
-        method: 'POST',
-        headers: this._headers(),
-        body: JSON.stringify(body),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      if (res.status === 401) {
-        DriverAuth.logout();
-        return null;
-      }
-      const data = await res.json();
-      if (!res.ok) {
-        return { error: data.error || `Erreur ${res.status}` };
-      }
-      return data;
-    } catch (e) {
-      console.warn('DriverStore POST ' + path + ' failed:', e.message);
-      return { error: 'Erreur reseau' };
-    }
-  },
-
-  // ===== ENDPOINTS =====
-
-  getDashboard() {
-    return this._get('/dashboard');
-  },
-
-  getPlanning(from, to) {
-    let qs = '';
-    if (from || to) {
-      const params = new URLSearchParams();
-      if (from) params.set('from', from);
-      if (to) params.set('to', to);
-      qs = '?' + params.toString();
-    }
-    return this._get('/planning' + qs);
-  },
-
-  getAbsences() {
-    return this._get('/absences');
-  },
-
-  createAbsence(data) {
-    return this._post('/absences', data);
+  async createAbsence(absence) {
+    const id = this._chauffeurId();
+    const row = objToSnake({ ...absence, chauffeurId: id });
+    const { data, error } = await supabase.from('fleet_absences').insert(row).select().single();
+    if (error) return { error: error.message };
+    return objToCamel(data);
   },
 
   // ===== SERVICE / POINTAGE =====
 
-  getServiceToday() {
-    return this._get('/service/today');
+  async getServiceToday() {
+    const id = this._chauffeurId();
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await supabase.from('fleet_pointages').select('*').eq('chauffeur_id', id).eq('date', today).single();
+    return data ? objToCamel(data) : null;
   },
 
-  startService() {
-    return this._post('/service/start', {});
+  async startService() {
+    const id = this._chauffeurId();
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toTimeString().slice(0, 5);
+    const row = {
+      chauffeur_id: id,
+      date: today,
+      statut: 'en_service',
+      heure_debut: now,
+      evenements: [{ type: 'debut', heure: now }]
+    };
+    const { data, error } = await supabase.from('fleet_pointages').insert(row).select().single();
+    if (error) return { error: error.message };
+    return objToCamel(data);
   },
 
-  pauseService() {
-    return this._post('/service/pause', {});
+  async pauseService() {
+    const id = this._chauffeurId();
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toTimeString().slice(0, 5);
+    const { data: existing } = await supabase.from('fleet_pointages').select('*').eq('chauffeur_id', id).eq('date', today).single();
+    if (!existing) return { error: 'Pas de pointage' };
+    const evts = existing.evenements || [];
+    evts.push({ type: 'pause', heure: now });
+    const { data } = await supabase.from('fleet_pointages').update({ statut: 'pause', evenements: evts }).eq('id', existing.id).select().single();
+    return data ? objToCamel(data) : { error: 'Erreur' };
   },
 
-  resumeService() {
-    return this._post('/service/resume', {});
+  async resumeService() {
+    const id = this._chauffeurId();
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toTimeString().slice(0, 5);
+    const { data: existing } = await supabase.from('fleet_pointages').select('*').eq('chauffeur_id', id).eq('date', today).single();
+    if (!existing) return { error: 'Pas de pointage' };
+    const evts = existing.evenements || [];
+    evts.push({ type: 'reprise', heure: now });
+    const { data } = await supabase.from('fleet_pointages').update({ statut: 'en_service', evenements: evts }).eq('id', existing.id).select().single();
+    return data ? objToCamel(data) : { error: 'Erreur' };
   },
 
-  endService() {
-    return this._post('/service/end', {});
+  async endService() {
+    const id = this._chauffeurId();
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toTimeString().slice(0, 5);
+    const { data: existing } = await supabase.from('fleet_pointages').select('*').eq('chauffeur_id', id).eq('date', today).single();
+    if (!existing) return { error: 'Pas de pointage' };
+    const evts = existing.evenements || [];
+    evts.push({ type: 'fin', heure: now });
+    const { data } = await supabase.from('fleet_pointages').update({ statut: 'termine', heure_fin: now, evenements: evts }).eq('id', existing.id).select().single();
+    return data ? objToCamel(data) : { error: 'Erreur' };
   },
 
-  getDeadline() {
-    return this._get('/deadline');
+  // ===== VERSEMENTS / DETTES =====
+
+  async getDeadline() {
+    const id = this._chauffeurId();
+    const { data: settings } = await supabase.from('fleet_settings').select('versements').limit(1).single();
+    const { data: ch } = await supabase.from('fleet_chauffeurs').select('redevance_quotidienne').eq('id', id).single();
+    return {
+      settings: settings ? settings.versements : {},
+      redevance: ch ? ch.redevance_quotidienne : 0
+    };
   },
 
-  getVersements() {
-    return this._get('/versements');
+  async getVersements() {
+    const id = this._chauffeurId();
+    const { data } = await supabase.from('fleet_versements').select('*').eq('chauffeur_id', id).order('date', { ascending: false }).limit(30);
+    return (data || []).map(objToCamel);
   },
 
-  getDettes() {
-    return this._get('/dettes');
+  async getDettes() {
+    const id = this._chauffeurId();
+    const { data } = await supabase.from('fleet_versements').select('*').eq('chauffeur_id', id).eq('en_retard', true).order('date', { ascending: false });
+    return (data || []).map(objToCamel);
   },
 
-  createVersement(data) {
-    return this._post('/versements', data);
+  async createVersement(versement) {
+    const id = this._chauffeurId();
+    const row = objToSnake({ ...versement, chauffeurId: id, soumisParChauffeur: true });
+    const { data, error } = await supabase.from('fleet_versements').insert(row).select().single();
+    if (error) return { error: error.message };
+    return objToCamel(data);
   },
 
-  getSignalements() {
-    return this._get('/signalements');
+  // ===== SIGNALEMENTS =====
+
+  async getSignalements() {
+    const id = this._chauffeurId();
+    const { data } = await supabase.from('fleet_signalements').select('*').eq('chauffeur_id', id).order('date_signalement', { ascending: false });
+    return (data || []).map(objToCamel);
   },
 
-  createSignalement(data) {
-    return this._post('/signalements', data);
+  async createSignalement(signalement) {
+    const id = this._chauffeurId();
+    const row = objToSnake({ ...signalement, chauffeurId: id });
+    const { data, error } = await supabase.from('fleet_signalements').insert(row).select().single();
+    if (error) return { error: error.message };
+    return objToCamel(data);
   },
 
-  getEtatLieuxToday() {
-    return this._get('/etat-lieux/today');
+  // ===== PROFIL =====
+
+  async getProfil() {
+    const id = this._chauffeurId();
+    const { data } = await supabase.from('fleet_chauffeurs').select('*').eq('id', id).single();
+    return data ? objToCamel(data) : null;
   },
 
-  getProfil() {
-    return this._get('/profil');
+  async getContrat() {
+    // Contract data stored in chauffeur profile
+    const id = this._chauffeurId();
+    const { data } = await supabase.from('fleet_chauffeurs').select('date_debut_contrat, date_fin_contrat, redevance_quotidienne').eq('id', id).single();
+    return data ? objToCamel(data) : null;
   },
 
-  getContrat() {
-    return this._get('/contrat');
+  async accepterContrat() {
+    return { success: true }; // Placeholder
   },
 
-  accepterContrat() {
-    return this._post('/contrat/accepter', {});
+  async getVehicule() {
+    const id = this._chauffeurId();
+    const { data: ch } = await supabase.from('fleet_chauffeurs').select('vehicule_assigne').eq('id', id).single();
+    if (!ch || !ch.vehicule_assigne) return null;
+    const { data } = await supabase.from('fleet_vehicules').select('*').eq('id', ch.vehicule_assigne).single();
+    return data ? objToCamel(data) : null;
   },
 
-  getVehicule() {
-    return this._get('/vehicule');
+  async getGps() {
+    const id = this._chauffeurId();
+    const { data } = await supabase.from('fleet_gps').select('*').eq('chauffeur_id', id).order('date', { ascending: false }).limit(1).single();
+    return data ? objToCamel(data) : null;
   },
 
-  getGps() {
-    return this._get('/gps');
-  },
-
-  getGpsScores() {
-    return this._get('/gps');
-  },
-
-  getYangoActivity() {
-    return this._get('/yango');
+  async getGpsScores() {
+    return this.getGps();
   },
 
   // ===== NOTIFICATIONS =====
 
-  getNotifications(limit = 30) {
-    return this._get(`/notifications?limit=${limit}`);
+  async getNotifications(limit = 30) {
+    const id = this._chauffeurId();
+    const { data } = await supabase.from('fleet_notifications').select('*').eq('chauffeur_id', id).order('created_at', { ascending: false }).limit(limit);
+    return (data || []).map(objToCamel);
   },
 
-  markNotificationRead(id) {
-    return this._put(`/notifications/${id}/read`, {});
-  },
-
-  getVapidKey() {
-    return this._get('/push/vapid-key');
-  },
-
-  subscribePush(subscription) {
-    return this._post('/push/subscribe', { subscription });
-  },
-
-  unsubscribePush(endpoint) {
-    return this._delete('/push/subscribe', { endpoint });
+  async markNotificationRead(notifId) {
+    const { error } = await supabase.from('fleet_notifications').update({ statut: 'lue', date_lue: new Date().toISOString() }).eq('id', notifId);
+    return error ? { error: error.message } : { success: true };
   },
 
   // ===== MESSAGERIE =====
 
-  getConversations() {
-    return this._get('/messages');
+  async getConversations() {
+    const id = this._chauffeurId();
+    const { data } = await supabase.from('fleet_conversations').select('*').eq('chauffeur_id', id).order('dernier_message_date', { ascending: false });
+    return (data || []).map(objToCamel);
   },
 
-  getConversation(id) {
-    return this._get(`/messages/${id}`);
+  async getConversation(convId) {
+    const { data } = await supabase.from('fleet_conversations').select('*').eq('id', convId).single();
+    return data ? objToCamel(data) : null;
   },
 
-  replyToConversation(id, message) {
-    return this._post(`/messages/${id}/reply`, { message });
-  },
-
-  markConversationRead(id) {
-    return this._put(`/messages/${id}/read`, {});
-  },
-
-  pollMessages() {
-    return this._get('/messages/poll');
+  async replyToConversation(convId, message) {
+    const ch = DriverAuth.getChauffeur();
+    const { data: conv } = await supabase.from('fleet_conversations').select('messages, non_lus_admin').eq('id', convId).single();
+    if (!conv) return { error: 'Conversation non trouvee' };
+    const messages = conv.messages || [];
+    messages.push({
+      id: crypto.randomUUID(),
+      auteur: 'chauffeur',
+      auteurNom: ch ? `${ch.prenom} ${ch.nom}` : 'Chauffeur',
+      contenu: message,
+      type: 'message',
+      dateCreation: new Date().toISOString()
+    });
+    const { error } = await supabase.from('fleet_conversations').update({
+      messages,
+      dernier_message: message,
+      dernier_message_date: new Date().toISOString(),
+      non_lus_admin: (conv.non_lus_admin || 0) + 1
+    }).eq('id', convId);
+    return error ? { error: error.message } : { success: true };
   },
 
   // ===== LOCATION GPS =====
 
-  sendLocation(lat, lng, speed, heading, accuracy) {
-    return this._post('/location', { lat, lng, speed, heading, accuracy });
+  async sendLocation(lat, lng, speed, heading, accuracy) {
+    const id = this._chauffeurId();
+    const { error } = await supabase.from('fleet_chauffeurs').update({
+      location: { lat, lng, speed, heading, accuracy, updatedAt: new Date().toISOString() }
+    }).eq('id', id);
+    return error ? { error: error.message } : { success: true };
   },
 
-  sendLocationBatch(points) {
-    return this._post('/location/batch', { points });
+  async sendLocationBatch(points) {
+    // Send the latest point from the batch
+    if (!points || points.length === 0) return { success: true };
+    const last = points[points.length - 1];
+    return this.sendLocation(last.lat, last.lng, last.speed, last.heading, last.accuracy);
   },
 
-  // ===== BEHAVIOR / ANALYSE CONDUITE =====
+  // ===== CHECKLIST / ETAT DES LIEUX =====
 
-  sendBehaviorEvents(batch) {
-    return this._post('/behavior/events', batch);
+  async getChecklistToday() {
+    const id = this._chauffeurId();
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await supabase.from('fleet_checklist_vehicules').select('*').eq('chauffeur_id', id).eq('date', today).single();
+    return data ? objToCamel(data) : null;
   },
 
-  finalizeBehaviorSession() {
-    return this._post('/behavior/finalize', {});
+  async getEtatLieuxToday() {
+    return this.getChecklistToday();
   },
 
-  getBehaviorStatus() {
-    return this._get('/behavior/status');
-  },
-
-  // ===== TRAJETS =====
-
-  getTrajets(from, to) {
-    const params = new URLSearchParams();
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const qs = params.toString();
-    return this._get('/trajets' + (qs ? '?' + qs : ''));
-  },
-
-  // ===== CHECKLIST VEHICULE =====
-
-  getChecklistToday() {
-    return this._get('/checklist/today');
-  },
-
-  submitChecklist(data) {
-    return this._post('/checklist', data);
-  },
-
-  // ===== CLASSEMENT =====
-
-  getClassement() {
-    return this._get('/classement');
-  },
-
-  // ===== RESUME HEBDO =====
-
-  getResumeHebdo() {
-    return this._get('/resume-hebdo');
+  async submitChecklist(checklist) {
+    const id = this._chauffeurId();
+    const ch = DriverAuth.getChauffeur();
+    const row = objToSnake({ ...checklist, chauffeurId: id, vehiculeId: ch?.vehiculeAssigne || null });
+    const { data, error } = await supabase.from('fleet_checklist_vehicules').insert(row).select().single();
+    if (error) return { error: error.message };
+    return objToCamel(data);
   },
 
   // ===== CONTRAVENTIONS =====
 
-  getContraventions() {
-    return this._get('/contraventions');
+  async getContraventions() {
+    const id = this._chauffeurId();
+    const { data } = await supabase.from('fleet_contraventions').select('*').eq('chauffeur_id', id).order('date', { ascending: false });
+    return (data || []).map(objToCamel);
   },
 
-  contesterContravention(id, motif) {
-    return this._put('/contraventions/' + id + '/contester', { motif });
-  },
-
-  createWaveContraventionCheckout(contraventionId) {
-    return this._post('/contraventions/wave/checkout', { contraventionId });
-  },
-
-  // ===== WAVE PAIEMENT =====
-
-  createWaveCheckout(data) {
-    return this._post('/wave/checkout', data);
-  },
-
-  getWaveStatus(versementId) {
-    return this._get(`/wave/status/${versementId}`);
-  },
-
-  // ===== OBJECTIFS & GAMIFICATION =====
-
-  getObjectifs() {
-    return this._get('/objectifs');
-  },
-
-  // ===== DOCUMENTS UPLOAD =====
-
-  uploadDocument(type, fichierData, fichierType, fichierNom) {
-    return this._post('/documents/' + type + '/upload', { fichierData, fichierType, fichierNom });
-  },
-
-  getDocumentFile(type) {
-    return this._get('/documents/' + type + '/file');
+  async contesterContravention(contraId, motif) {
+    const { error } = await supabase.from('fleet_contraventions').update({ motif_contestation: motif }).eq('id', contraId);
+    return error ? { error: error.message } : { success: true };
   },
 
   // ===== MAINTENANCES =====
 
-  getMaintenances() {
-    return this._get('/maintenances');
+  async getMaintenances() {
+    const ch = DriverAuth.getChauffeur();
+    if (!ch || !ch.vehiculeAssigne) return [];
+    const { data } = await supabase.from('fleet_vehicules').select('maintenances_planifiees').eq('id', ch.vehiculeAssigne).single();
+    return data ? (data.maintenances_planifiees || []) : [];
   },
 
-  signalMaintenanceProblem(data) {
-    return this._post('/maintenances/signal', data);
+  async signalMaintenanceProblem(problemData) {
+    const id = this._chauffeurId();
+    const ch = DriverAuth.getChauffeur();
+    const row = objToSnake({
+      chauffeurId: id,
+      vehiculeId: ch?.vehiculeAssigne || null,
+      type: 'panne',
+      titre: problemData.titre || 'Probleme signale',
+      description: problemData.description || '',
+      urgence: problemData.urgence || 'normale',
+      statut: 'ouvert'
+    });
+    const { data, error } = await supabase.from('fleet_signalements').insert(row).select().single();
+    if (error) return { error: error.message };
+    return objToCamel(data);
   },
 
-  // ===== HTTP METHODS SUPPLEMENTAIRES =====
+  // ===== COURSES / TRAJETS =====
 
-  async _put(path, body) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(this._apiBase + path, {
-        method: 'PUT',
-        headers: this._headers(),
-        body: JSON.stringify(body),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      if (res.status === 401) { DriverAuth.logout(); return null; }
-      const data = await res.json();
-      if (!res.ok) return { error: data.error || `Erreur ${res.status}` };
-      return data;
-    } catch (e) {
-      console.warn('DriverStore PUT ' + path + ' failed:', e.message);
-      return { error: 'Erreur reseau' };
-    }
+  async getTrajets(from, to) {
+    const id = this._chauffeurId();
+    let query = supabase.from('fleet_courses').select('*').eq('chauffeur_id', id);
+    if (from) query = query.gte('date_heure', from + 'T00:00:00');
+    if (to) query = query.lte('date_heure', to + 'T23:59:59');
+    const { data } = await query.order('date_heure', { ascending: false });
+    return (data || []).map(objToCamel);
   },
 
-  async _delete(path, body) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch(this._apiBase + path, {
-        method: 'DELETE',
-        headers: this._headers(),
-        body: JSON.stringify(body),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      if (res.status === 401) { DriverAuth.logout(); return null; }
-      const data = await res.json();
-      if (!res.ok) return { error: data.error || `Erreur ${res.status}` };
-      return data;
-    } catch (e) {
-      console.warn('DriverStore DELETE ' + path + ' failed:', e.message);
-      return { error: 'Erreur reseau' };
-    }
-  }
+  // ===== STUBS (need Edge Functions for full implementation) =====
+
+  async getYangoActivity() { return null; },
+  async getVapidKey() { return null; },
+  async subscribePush(sub) { return { error: 'Non configure' }; },
+  async unsubscribePush(endpoint) { return { error: 'Non configure' }; },
+  async pollMessages() { return null; },
+  async markConversationRead(id) { return { success: true }; },
+  async sendBehaviorEvents(batch) { return { error: 'Non configure' }; },
+  async finalizeBehaviorSession() { return { error: 'Non configure' }; },
+  async getBehaviorStatus() { return null; },
+  async getClassement() { return null; },
+  async getResumeHebdo() { return null; },
+  async createWaveCheckout(data) { return { error: 'Non configure' }; },
+  async getWaveStatus(id) { return null; }
 };

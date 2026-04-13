@@ -1,45 +1,80 @@
 /**
- * Store - Cache-First data layer with API synchronization
+ * Store - Cache-First data layer with Supabase synchronization
  *
  * Architecture:
- * - Reads are SYNCHRONOUS (from in-memory cache) → zero changes needed in pages
- * - Writes update cache immediately + fire API call in background
- * - Falls back to localStorage when API is unreachable (offline mode)
+ * - Reads are SYNCHRONOUS (from in-memory cache) -- zero changes needed in pages
+ * - Writes update cache immediately + fire Supabase call in background
+ * - Falls back to localStorage when Supabase is unreachable (offline mode)
+ *
+ * Dependencies (loaded before this file):
+ *   - supabase-config.js : supabase client, TABLE_MAP, objToSnake, objToCamel, rowsToCamel
  */
 const Store = {
   _KEY: 'pilote_data',
   _cache: null,
-  _apiBase: window.location.hostname === 'localhost'
-    ? 'http://localhost:3001/api'
-    : '/api',
 
   // =================== INITIALIZATION ===================
 
   /**
-   * Load all data from API into memory cache.
+   * Load all data from Supabase into memory cache.
    * Called once at app startup after authentication.
+   * Fetches every collection in parallel via Promise.all.
    */
   async initialize() {
     try {
-      const res = await fetch(this._apiBase + '/data', {
-        headers: this._headers()
+      // Determine which collections are arrays vs object (settings)
+      const SETTINGS_COLLECTIONS = ['settings'];
+      const collections = Object.keys(this._emptyData());
+
+      const fetchPromises = collections.map(async (col) => {
+        const table = TABLE_MAP[col];
+        if (!table) {
+          // No table mapping -- return the empty default
+          const empty = this._emptyData();
+          return { collection: col, data: empty[col] };
+        }
+
+        if (SETTINGS_COLLECTIONS.includes(col)) {
+          // Settings: single row
+          const { data, error } = await supabase
+            .from(table)
+            .select('*')
+            .limit(1)
+            .single();
+
+          if (error) {
+            console.warn(`Store: Supabase fetch ${col} error:`, error.message);
+            return { collection: col, data: { entreprise: {}, preferences: {} } };
+          }
+          return { collection: col, data: objToCamel(data) };
+        }
+
+        // Regular collection: array of rows
+        const { data, error } = await supabase
+          .from(table)
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.warn(`Store: Supabase fetch ${col} error:`, error.message);
+          return { collection: col, data: [] };
+        }
+        return { collection: col, data: rowsToCamel(data || []) };
       });
-      if (res.ok) {
-        this._cache = await res.json();
-        this._backupToLocalStorage();
-        this.connectSSE();
-        console.log('Store: Data loaded from API');
-      } else if (res.status === 401) {
-        // Token invalid — will redirect to login
-        this._cache = this._emptyData();
-      } else {
-        // API error — try localStorage fallback
-        console.warn('Store: API returned', res.status, '— using local backup');
-        this._cache = this._loadFromLocalStorage() || this._emptyData();
+
+      const results = await Promise.all(fetchPromises);
+
+      // Build cache from results
+      this._cache = this._emptyData();
+      for (const { collection, data } of results) {
+        this._cache[collection] = data;
       }
+
+      this._backupToLocalStorage();
+      console.log('Store: Data loaded from Supabase');
     } catch (e) {
-      // Offline — use localStorage fallback
-      console.warn('Store: API unreachable — using local backup');
+      // Offline or unexpected error -- use localStorage fallback
+      console.warn('Store: Supabase unreachable -- using local backup:', e.message);
       this._cache = this._loadFromLocalStorage() || this._emptyData();
     }
   },
@@ -78,7 +113,7 @@ const Store = {
     return Array.isArray(items) ? items.length : 0;
   },
 
-  // =================== WRITES (cache + background API sync) ===================
+  // =================== WRITES (cache + background Supabase sync) ===================
 
   add(collection, item) {
     if (!this._cache) this._cache = this._emptyData();
@@ -86,8 +121,8 @@ const Store = {
     this._cache[collection].push(item);
     this._backupToLocalStorage();
     this._notify();
-    // Background API sync
-    this._apiCall('POST', `/${collection}`, item);
+    // Background Supabase sync
+    this._supabaseInsert(collection, item);
     return item;
   },
 
@@ -100,8 +135,8 @@ const Store = {
     items[index] = { ...items[index], ...updates };
     this._backupToLocalStorage();
     this._notify();
-    // Background API sync
-    this._apiCall('PUT', `/${collection}/${id}`, updates);
+    // Background Supabase sync
+    this._supabaseUpdate(collection, id, updates);
     return items[index];
   },
 
@@ -111,8 +146,8 @@ const Store = {
     this._cache[collection] = items.filter(item => item.id !== id);
     this._backupToLocalStorage();
     this._notify();
-    // Background API sync
-    this._apiCall('DELETE', `/${collection}/${id}`);
+    // Background Supabase sync
+    this._supabaseDelete(collection, id);
   },
 
   set(collection, data) {
@@ -120,101 +155,11 @@ const Store = {
     this._cache[collection] = data;
     this._backupToLocalStorage();
     this._notify();
-    // Background API sync — settings uses PUT /api/settings, others use bulk replace
+    // Background Supabase sync -- settings uses upsert, others use bulk replace
     if (collection === 'settings') {
-      this._apiCall('PUT', '/settings', data);
+      this._supabaseUpsertSettings(data);
     } else {
-      // For budgets and other bulk-replace operations
-      this._apiBulkReplace(collection, data);
-    }
-  },
-
-  // =================== TEMPS RÉEL (SSE) ===================
-
-  _eventSource: null,
-  _clientId: Math.random().toString(36).substring(2, 10),
-
-  /**
-   * Connecte le client au flux SSE pour recevoir les mises à jour en temps réel.
-   * Appelé automatiquement après initialize().
-   */
-  connectSSE() {
-    if (this._eventSource) {
-      this._eventSource.close();
-      this._eventSource = null;
-    }
-
-    const token = localStorage.getItem('pilote_token');
-    if (!token) return;
-
-    const url = this._apiBase + '/events?token=' + encodeURIComponent(token) + '&clientId=' + this._clientId;
-
-    try {
-      this._eventSource = new EventSource(url);
-
-      this._eventSource.onmessage = (event) => {
-        try {
-          const { collection, action, data } = JSON.parse(event.data);
-          this._applyRemoteChange(collection, action, data);
-        } catch (e) {
-          console.warn('Store SSE: erreur parsing:', e);
-        }
-      };
-
-      this._eventSource.onerror = () => {
-        // EventSource reconnecte automatiquement
-        console.warn('Store SSE: connexion perdue, reconnexion auto...');
-      };
-
-      console.log('Store SSE: connecté');
-    } catch (e) {
-      console.warn('Store SSE: impossible de se connecter:', e.message);
-    }
-  },
-
-  /**
-   * Applique un changement reçu via SSE au cache local.
-   */
-  _applyRemoteChange(collection, action, data) {
-    if (!this._cache) return;
-
-    if (action === 'add') {
-      if (!this._cache[collection]) this._cache[collection] = [];
-      // Éviter les doublons (si l'item existe déjà)
-      const existing = this._cache[collection].findIndex(i => i.id === data.id);
-      if (existing === -1) {
-        this._cache[collection].push(data);
-      } else {
-        this._cache[collection][existing] = { ...this._cache[collection][existing], ...data };
-      }
-    } else if (action === 'update') {
-      if (!this._cache[collection]) return;
-      const items = this._cache[collection];
-      if (!Array.isArray(items)) return;
-      const index = items.findIndex(i => i.id === data.id);
-      if (index !== -1) {
-        items[index] = { ...items[index], ...data };
-      } else {
-        // Item pas encore dans le cache — l'ajouter
-        items.push(data);
-      }
-    } else if (action === 'delete') {
-      if (!this._cache[collection]) return;
-      this._cache[collection] = this._cache[collection].filter(i => i.id !== data.id);
-    } else if (action === 'bulk_replace') {
-      this._cache[collection] = Array.isArray(data) ? data : [];
-    }
-
-    this._backupToLocalStorage();
-    this._notifyRemote();
-    console.log(`Store SSE: ${collection}:${action} appliqué`);
-  },
-
-  disconnectSSE() {
-    if (this._eventSource) {
-      this._eventSource.close();
-      this._eventSource = null;
-      console.log('Store SSE: déconnecté');
+      this._supabaseBulkReplace(collection, data);
     }
   },
 
@@ -225,7 +170,6 @@ const Store = {
   },
 
   reset() {
-    this.disconnectSSE();
     this._cache = this._emptyData();
     localStorage.removeItem(this._KEY);
     this._notify();
@@ -241,63 +185,138 @@ const Store = {
     };
   },
 
-  // =================== INTERNAL: API Communication ===================
+  // =================== INTERNAL: Supabase Communication ===================
 
-  _headers() {
-    const token = localStorage.getItem('pilote_token');
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = 'Bearer ' + token;
-    headers['X-Client-Id'] = this._clientId;
-    return headers;
-  },
-
-  async _apiCall(method, path, body) {
+  /**
+   * Insert a single row into a Supabase table.
+   */
+  async _supabaseInsert(collection, item) {
+    const table = TABLE_MAP[collection];
+    if (!table) {
+      console.warn(`Store: No table mapping for collection "${collection}"`);
+      return;
+    }
     try {
-      const opts = {
-        method,
-        headers: this._headers()
-      };
-      if (body && method !== 'DELETE') {
-        opts.body = JSON.stringify(body);
-      }
-      const res = await fetch(this._apiBase + path, opts);
-
-      if (res.status === 401) {
-        // Token expired — force logout
-        console.warn('Store: Token expired, redirecting to login');
-        if (typeof Auth !== 'undefined') Auth.destroySession();
-        localStorage.removeItem('pilote_token');
-        if (typeof App !== 'undefined') App._showLogin();
-        return;
-      }
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error(`Store: API ${method} ${path} failed (${res.status}):`, text);
-        if (typeof Toast !== 'undefined') {
-          Toast.show('Erreur de synchronisation avec le serveur', 'error');
-        }
+      const row = objToSnake(item);
+      const { error } = await supabase.from(table).insert(row);
+      if (error) {
+        console.error(`Store: Supabase insert ${collection} failed:`, error.message);
+        this._showSyncError();
       }
     } catch (e) {
-      // Network error — data is saved in localStorage backup
-      console.warn(`Store: API ${method} ${path} failed (offline):`, e.message);
+      console.warn(`Store: Supabase insert ${collection} failed (offline):`, e.message);
     }
   },
 
-  async _apiBulkReplace(collection, items) {
-    // Delete all existing + insert all new (used for budgets bulk replace)
+  /**
+   * Update a single row in a Supabase table by id.
+   */
+  async _supabaseUpdate(collection, id, updates) {
+    const table = TABLE_MAP[collection];
+    if (!table) {
+      console.warn(`Store: No table mapping for collection "${collection}"`);
+      return;
+    }
     try {
-      // Simple approach: send array via PUT to collection root
-      const res = await fetch(this._apiBase + `/${collection}`, {
-        method: 'PUT',
-        headers: this._headers(),
-        body: JSON.stringify(items)
-      });
-      if (!res.ok && res.status !== 404) {
-        console.error(`Store: Bulk replace ${collection} failed:`, res.status);
+      const row = objToSnake(updates);
+      const { error } = await supabase.from(table).update(row).eq('id', id);
+      if (error) {
+        console.error(`Store: Supabase update ${collection}/${id} failed:`, error.message);
+        this._showSyncError();
       }
     } catch (e) {
-      console.warn(`Store: Bulk replace ${collection} failed (offline):`, e.message);
+      console.warn(`Store: Supabase update ${collection}/${id} failed (offline):`, e.message);
+    }
+  },
+
+  /**
+   * Delete a single row from a Supabase table by id.
+   */
+  async _supabaseDelete(collection, id) {
+    const table = TABLE_MAP[collection];
+    if (!table) {
+      console.warn(`Store: No table mapping for collection "${collection}"`);
+      return;
+    }
+    try {
+      const { error } = await supabase.from(table).delete().eq('id', id);
+      if (error) {
+        console.error(`Store: Supabase delete ${collection}/${id} failed:`, error.message);
+        this._showSyncError();
+      }
+    } catch (e) {
+      console.warn(`Store: Supabase delete ${collection}/${id} failed (offline):`, e.message);
+    }
+  },
+
+  /**
+   * Upsert settings as a single row.
+   */
+  async _supabaseUpsertSettings(data) {
+    const table = TABLE_MAP.settings;
+    if (!table) return;
+    try {
+      const row = objToSnake(data);
+      const { error } = await supabase.from(table).upsert(row, { onConflict: 'id' });
+      if (error) {
+        console.error('Store: Supabase upsert settings failed:', error.message);
+        this._showSyncError();
+      }
+    } catch (e) {
+      console.warn('Store: Supabase upsert settings failed (offline):', e.message);
+    }
+  },
+
+  /**
+   * Bulk replace: delete all existing rows for the user, then insert new ones.
+   * Used for budgets and other collections that are replaced wholesale.
+   */
+  async _supabaseBulkReplace(collection, items) {
+    const table = TABLE_MAP[collection];
+    if (!table) {
+      console.warn(`Store: No table mapping for collection "${collection}"`);
+      return;
+    }
+    try {
+      // Get current user to scope the delete
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.warn('Store: No authenticated user for bulk replace');
+        return;
+      }
+
+      // Delete all existing rows for this user
+      const { error: delError } = await supabase
+        .from(table)
+        .delete()
+        .eq('user_id', user.id);
+
+      if (delError) {
+        console.error(`Store: Supabase bulk delete ${collection} failed:`, delError.message);
+        this._showSyncError();
+        return;
+      }
+
+      // Insert all new rows (if any)
+      if (Array.isArray(items) && items.length > 0) {
+        const rows = items.map(item => objToSnake(item));
+        const { error: insError } = await supabase.from(table).insert(rows);
+        if (insError) {
+          console.error(`Store: Supabase bulk insert ${collection} failed:`, insError.message);
+          this._showSyncError();
+        }
+      }
+    } catch (e) {
+      console.warn(`Store: Supabase bulk replace ${collection} failed (offline):`, e.message);
+    }
+  },
+
+  /**
+   * Show a toast notification for sync errors (if Toast is available).
+   */
+  _showSyncError() {
+    if (typeof Toast !== 'undefined') {
+      Toast.show('Erreur de synchronisation avec le serveur', 'error');
     }
   },
 
@@ -307,7 +326,7 @@ const Store = {
     try {
       localStorage.setItem(this._KEY, JSON.stringify(this._cache));
     } catch (e) {
-      // QuotaExceeded — not critical since API is primary storage
+      // QuotaExceeded -- not critical since Supabase is primary storage
       console.warn('Store: localStorage backup failed:', e.message);
     }
   },
@@ -356,239 +375,76 @@ const Store = {
       depenseRecurrentes: [],
       depenseCategories: [],
       versementRecurrents: [],
+      conversations: [],
+      notifications: [],
       settings: { entreprise: {}, preferences: {} }
     };
   },
 
-  // =================== YANGO API (real-time, no cache) ===================
+  // =================== YANGO API (stubs -- require Edge Functions) ===================
 
   async getYangoWorkRules() {
-    try {
-      const res = await fetch(this._apiBase + '/yango/work-rules', {
-        headers: this._headers()
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn('Store: Yango work-rules failed:', e.message);
-      return null;
-    }
+    console.warn('Store: getYangoWorkRules requires Supabase Edge Functions (not yet implemented)');
+    return null;
   },
 
   async getYangoStats(workRuleIds, dateRange) {
-    try {
-      const params = new URLSearchParams();
-      if (workRuleIds && workRuleIds.length > 0) {
-        params.set('work_rule', workRuleIds.join(','));
-      }
-      if (dateRange && dateRange.from) {
-        params.set('from', dateRange.from);
-      }
-      if (dateRange && dateRange.to) {
-        params.set('to', dateRange.to);
-      }
-      const qs = params.toString();
-      const url = this._apiBase + '/yango/stats' + (qs ? '?' + qs : '');
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
-      const res = await fetch(url, {
-        headers: this._headers(),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      const data = await res.json();
-      if (!res.ok) {
-        console.warn('Store: Yango stats error:', data);
-        return { error: data.error || 'Erreur API', details: data.details || `HTTP ${res.status}` };
-      }
-      return data;
-    } catch (e) {
-      console.warn('Store: Yango stats failed:', e.message);
-      if (e.name === 'AbortError') {
-        return { error: 'Délai dépassé', details: 'Le serveur met trop de temps à répondre' };
-      }
-      return { error: 'Erreur reseau', details: e.message };
-    }
+    console.warn('Store: getYangoStats requires Supabase Edge Functions (not yet implemented)');
+    return { error: 'Non disponible', details: 'Les Edge Functions Yango ne sont pas encore configurees' };
   },
 
   async getYangoDriverStats(yangoDriverId, date) {
-    try {
-      const params = new URLSearchParams();
-      if (date) {
-        // date is 'YYYY-MM-DD' string — build full day range
-        params.set('from', new Date(date + 'T00:00:00').toISOString());
-        params.set('to', new Date(date + 'T23:59:59').toISOString());
-      }
-      const qs = params.toString();
-      const url = this._apiBase + '/yango/driver-stats/' + encodeURIComponent(yangoDriverId) + (qs ? '?' + qs : '');
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
-      const res = await fetch(url, {
-        headers: this._headers(),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      const data = await res.json();
-      if (!res.ok) {
-        console.warn('Store: Yango driver-stats error:', data);
-        return { error: data.error || 'Erreur API', details: data.details || `HTTP ${res.status}` };
-      }
-      return data;
-    } catch (e) {
-      console.warn('Store: Yango driver-stats failed:', e.message);
-      if (e.name === 'AbortError') {
-        return { error: 'Délai dépassé', details: 'Le serveur met trop de temps à répondre' };
-      }
-      return { error: 'Erreur reseau', details: e.message };
-    }
+    console.warn('Store: getYangoDriverStats requires Supabase Edge Functions (not yet implemented)');
+    return { error: 'Non disponible', details: 'Les Edge Functions Yango ne sont pas encore configurees' };
   },
 
   async getYangoDrivers(workRuleIds) {
-    try {
-      let url = this._apiBase + '/yango/drivers';
-      if (workRuleIds && workRuleIds.length > 0) {
-        url += '?work_rule=' + encodeURIComponent(workRuleIds.join(','));
-      }
-      const res = await fetch(url, {
-        headers: this._headers()
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn('Store: Yango drivers failed:', e.message);
-      return null;
-    }
+    console.warn('Store: getYangoDrivers requires Supabase Edge Functions (not yet implemented)');
+    return null;
   },
 
   async getYangoOrders(from, to) {
-    try {
-      const params = new URLSearchParams();
-      if (from) params.set('from', from);
-      if (to) params.set('to', to);
-      const res = await fetch(this._apiBase + '/yango/orders?' + params.toString(), {
-        headers: this._headers()
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn('Store: Yango orders failed:', e.message);
-      return null;
-    }
+    console.warn('Store: getYangoOrders requires Supabase Edge Functions (not yet implemented)');
+    return null;
   },
 
   async getYangoVehicles() {
-    try {
-      const res = await fetch(this._apiBase + '/yango/vehicles', {
-        headers: this._headers()
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn('Store: Yango vehicles failed:', e.message);
-      return null;
-    }
+    console.warn('Store: getYangoVehicles requires Supabase Edge Functions (not yet implemented)');
+    return null;
   },
 
   async triggerYangoSync(date = null) {
-    try {
-      const body = date ? { date } : {};
-      const res = await fetch(this._apiBase + '/yango/sync', {
-        method: 'POST',
-        headers: this._headers(),
-        body: JSON.stringify(body)
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        return { error: data.error || `HTTP ${res.status}`, details: data.details || '' };
-      }
-      return data;
-    } catch (e) {
-      console.warn('Store: Yango sync failed:', e.message);
-      return { error: 'Erreur réseau', details: e.message };
-    }
+    console.warn('Store: triggerYangoSync requires Supabase Edge Functions (not yet implemented)');
+    return { error: 'Non disponible', details: 'Les Edge Functions Yango ne sont pas encore configurees' };
   },
 
   async getYangoSyncStatus() {
-    try {
-      const res = await fetch(this._apiBase + '/yango/sync/status', {
-        headers: this._headers()
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn('Store: Yango sync status failed:', e.message);
-      return null;
-    }
+    console.warn('Store: getYangoSyncStatus requires Supabase Edge Functions (not yet implemented)');
+    return null;
   },
 
   async getYangoDriversForLinking() {
-    try {
-      const res = await fetch(this._apiBase + '/yango/drivers/all', {
-        headers: this._headers()
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn('Store: Yango drivers for linking failed:', e.message);
-      return null;
-    }
+    console.warn('Store: getYangoDriversForLinking requires Supabase Edge Functions (not yet implemented)');
+    return null;
   },
 
   async getYangoVehiclesForLinking() {
-    try {
-      const res = await fetch(this._apiBase + '/yango/vehicles/all', {
-        headers: this._headers()
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (e) {
-      console.warn('Store: Yango vehicles for linking failed:', e.message);
-      return null;
-    }
+    console.warn('Store: getYangoVehiclesForLinking requires Supabase Edge Functions (not yet implemented)');
+    return null;
   },
 
   async cleanupGhostVersements() {
-    try {
-      const res = await fetch(this._apiBase + '/versements/cleanup-ghosts', {
-        method: 'POST',
-        headers: this._headers()
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      return data;
-    } catch (e) {
-      console.error('Store: cleanup ghost versements failed:', e.message);
-      throw e;
-    }
+    console.warn('Store: cleanupGhostVersements requires Supabase Edge Functions (not yet implemented)');
+    throw new Error('Edge Function non disponible');
   },
 
   async yangoBalance(chauffeurId) {
-    try {
-      const res = await fetch(this._apiBase + '/yango/balance/' + chauffeurId, {
-        headers: this._headers()
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      return data;
-    } catch (e) {
-      console.error('Store: Yango balance failed:', e.message);
-      throw e;
-    }
+    console.warn('Store: yangoBalance requires Supabase Edge Functions (not yet implemented)');
+    throw new Error('Edge Function non disponible');
   },
 
   async yangoRecharge(chauffeurId, amount, description) {
-    try {
-      const res = await fetch(this._apiBase + '/yango/recharge', {
-        method: 'POST',
-        headers: { ...this._headers(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chauffeurId, amount, description })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      return data;
-    } catch (e) {
-      console.error('Store: Yango recharge failed:', e.message);
-      throw e;
-    }
+    console.warn('Store: yangoRecharge requires Supabase Edge Functions (not yet implemented)');
+    throw new Error('Edge Function non disponible');
   }
 };

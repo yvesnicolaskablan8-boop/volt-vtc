@@ -251,51 +251,29 @@ const App = {
       if (typeof Toast !== 'undefined') Toast.success('Pilote installé !');
     });
 
-    // Check authentication — token in localStorage persists across tabs/refresh
-    const token = Auth.getToken();
-    const existingSession = Auth.getSession();
-
-    if (token && existingSession) {
-      // FAST PATH: session already exists (refresh / returning user)
-      // Show app immediately with cached data, verify token in background
-      await Store.initialize();
-      this._showApp();
-
-      // Background verification — if token is invalid, logout silently
-      this._verifyTokenBackground(token);
-    } else if (token) {
-      // Token exists but no session (new tab or cleared session)
-      // Must verify token before showing app
-      try {
-        const apiBase = Store._apiBase || '/api';
-        const res = await fetch(apiBase + '/auth/me', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-
-        if (res.ok) {
-          const userData = await res.json();
-          if (userData && userData.id && userData.statut === 'actif') {
-            Auth.createSession(userData);
-            await Store.initialize();
-            this._showApp();
-          } else {
-            Auth.destroySession();
-            this._showLogin();
-          }
-        } else if (res.status === 401 || res.status === 403) {
-          console.warn('Token invalide ou expiré — déconnexion');
-          Auth.destroySession();
-          this._showLogin();
-        } else {
-          console.warn('Erreur serveur', res.status, '— connexion requise');
-          this._showLogin();
-        }
-      } catch (err) {
-        console.warn('API injoignable — connexion requise');
+    // Check authentication via Supabase
+    try {
+      const authResult = await Auth.checkAuth();
+      if (authResult && authResult.authenticated && authResult.user) {
+        Auth.createSession(authResult.user);
+        await Store.initialize();
+        this._showApp();
+      } else if (Auth.getSession()) {
+        // Supabase session expired but local session exists — try offline
+        console.warn('Session Supabase expirée — mode local');
+        await Store.initialize();
+        this._showApp();
+      } else {
         this._showLogin();
       }
-    } else {
-      this._showLogin();
+    } catch (err) {
+      if (Auth.getSession()) {
+        console.warn('Supabase injoignable — session locale conservée');
+        await Store.initialize();
+        this._showApp();
+      } else {
+        this._showLogin();
+      }
     }
 
     // Detect native WebView app and force mobile mode
@@ -914,33 +892,7 @@ const App = {
     }
   },
 
-  async _verifyTokenBackground(token) {
-    try {
-      const apiBase = Store._apiBase || '/api';
-      const res = await fetch(apiBase + '/auth/me', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-
-      if (res.ok) {
-        const userData = await res.json();
-        if (userData && userData.id && userData.statut === 'actif') {
-          Auth.createSession(userData);
-          Auth.refreshSession();
-        } else {
-          // Account disabled or deleted
-          this.logout();
-        }
-      } else if (res.status === 401 || res.status === 403) {
-        // Token expired or invalid
-        console.warn('Token invalide (background) — déconnexion');
-        this.logout();
-      }
-      // For other errors (500, 503, network), do nothing — keep session
-    } catch (e) {
-      // Network error — do nothing, keep session
-      console.warn('Vérification token (background) échouée:', e.message);
-    }
-  },
+  // Token verification now handled by Supabase Auth session management
 
   logout() {
     Auth.destroySession();
