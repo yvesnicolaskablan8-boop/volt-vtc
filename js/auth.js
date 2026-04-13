@@ -302,7 +302,7 @@ const Auth = {
 
       if (insertErr) {
         console.error('Auth.register: fleet_users insert failed', insertErr);
-        return { success: false, error: 'user_creation_failed' };
+        return { success: false, error: 'user_creation_failed', detail: insertErr.message || String(insertErr) };
       }
 
       const user = objToCamel(fleetUser);
@@ -319,7 +319,7 @@ const Auth = {
 
     } catch (err) {
       console.error('Auth.register error:', err);
-      return { success: false, error: 'network_error' };
+      return { success: false, error: 'network_error', detail: err.message || String(err) };
     }
   },
 

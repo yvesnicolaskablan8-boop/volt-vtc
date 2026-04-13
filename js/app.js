@@ -826,7 +826,8 @@ const App = {
           'weak_password': 'Le mot de passe est trop faible.',
           'network_error': 'Impossible de contacter le serveur. Vérifiez votre connexion.',
         };
-        this._showRegisterError(messages[result.error] || 'Erreur lors de la création du compte.');
+        const msg = messages[result.error] || result.error || 'Erreur lors de la création du compte.';
+        this._showRegisterError(result.detail ? msg + ' (' + result.detail + ')' : msg);
       }
     } catch (err) {
       console.error('Register error:', err);
