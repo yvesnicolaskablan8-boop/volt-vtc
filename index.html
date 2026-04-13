@@ -1,538 +1,377 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark">
+<html lang="fr">
 <head>
-  <script>
-  // Migration Volt → Pilote (one-time)
-  (function(){
-    [['volt_token','pilote_token'],['volt_session','pilote_session'],['volt_app_version','pilote_app_version']].forEach(function(m){
-      var o=localStorage.getItem(m[0]);if(o&&!localStorage.getItem(m[1])){localStorage.setItem(m[1],o);}localStorage.removeItem(m[0]);
-    });
-  })();
-  </script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Pilote</title>
-  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#3b82f6">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="assets/icon-192.png">
-
-  <!-- Force SW + cache update -->
-  <script>
-  (function(){
-    var APP_VERSION = 186;
-    var stored = parseInt(localStorage.getItem('pilote_app_version') || '0');
-    if (stored < APP_VERSION && 'serviceWorker' in navigator) {
-      localStorage.setItem('pilote_app_version', APP_VERSION);
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        var p = regs.map(function(r) { return r.unregister(); });
-        return Promise.all(p);
-      }).then(function() {
-        return caches.keys();
-      }).then(function(keys) {
-        return Promise.all(keys.map(function(k) { return caches.delete(k); }));
-      }).then(function() {
-        window.location.reload(true);
-      });
-    }
-  })();
-  </script>
-
-  <!-- Nom entreprise depuis le cache -->
-  <script>
-  (function(){
-    var cn = localStorage.getItem('pilote_company_name');
-    if (cn) {
-      document.addEventListener('DOMContentLoaded', function() {
-        var el = document.getElementById('login-company-name');
-        if (el) el.textContent = cn;
-      });
-    }
-  })();
-  </script>
-
-  <!-- Google Fonts -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pilote — Gestion de flotte VTC intelligente</title>
+  <meta name="description" content="Pilote simplifie la gestion de votre flotte VTC. Suivez vos chauffeurs, véhicules, versements et rentabilité en temps réel.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="/assets/logo-pilote.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <!-- Font Awesome (legacy — pages JS still use it) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-  <!-- Iconify (Solar icons — modern icon system) -->
-  <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
-
-  <!-- Leaflet (carte GPS temps réel) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- App CSS -->
-  <link rel="stylesheet" href="css/variables.css?v=395">
-  <link rel="stylesheet" href="css/base.css?v=395">
-  <link rel="stylesheet" href="css/layout.css?v=395">
-  <link rel="stylesheet" href="css/components.css?v=395">
-  <link rel="stylesheet" href="css/charts.css?v=395">
-  <link rel="stylesheet" href="css/animations.css?v=395">
-  <link rel="stylesheet" href="css/responsive.css?v=395">
-
-  <!-- Prevent flash of login screen on refresh when already authenticated -->
-  <script>
-    if (localStorage.getItem('pilote_token')) {
-      document.documentElement.classList.add('pilote-has-token');
-    }
-  </script>
-  <style>
-    .pilote-has-token .login-overlay { opacity: 0; visibility: hidden; pointer-events: none; }
-    .pilote-has-token .app-container { display: block !important; }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing.css?v=6">
 </head>
 <body>
-  <!-- Splash Screen -->
-  <div id="splash-screen" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f1629 0%,#1a1f3a 50%,#0f1629 100%);transition:opacity .5s ease,visibility .5s ease;">
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;animation:splashFadeIn .8s ease-out both;">
-      <img src="assets/logo-pilote.png" alt="Pilote" style="width:88px;height:88px;animation:splashPulse 2s ease-in-out infinite;filter:drop-shadow(0 0 24px rgba(59,130,246,.35));">
-      <div style="width:160px;height:3px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-top:28px;">
-        <div id="splash-progress" style="width:0%;height:100%;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:3px;transition:width .3s ease;"></div>
+
+  <!-- ============ NAVBAR ============ -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <img src="/assets/logo-pilote.png" alt="Pilote" class="nav-logo-img">
+      </a>
+      <div class="nav-links">
+        <a href="#features">Fonctionnalites</a>
+        <a href="#how">Comment ca marche</a>
+        <a href="#pricing">Tarifs</a>
+      </div>
+      <div class="nav-actions">
+        <a href="/app" class="nav-login">Se connecter</a>
+        <a href="/app#register" class="nav-cta">Commencer</a>
+      </div>
+      <button class="nav-mobile-toggle" id="nav-toggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile" id="nav-mobile">
+      <a href="#features">Fonctionnalites</a>
+      <a href="#how">Comment ca marche</a>
+      <a href="#pricing">Tarifs</a>
+      <a href="/app">Se connecter</a>
+      <a href="/app#register" class="nav-cta">Commencer gratuitement</a>
+    </div>
+  </nav>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-bg">
+      <div class="hero-gradient"></div>
+      <div class="hero-grid"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge reveal">
+        <span class="badge-dot"></span>
+        Nouveau — Gestion multi-entreprise disponible
+      </div>
+      <h1 class="hero-title reveal">
+        Gerez votre flotte.<br>
+        <span class="text-gradient">Simplifiez tout.</span>
+      </h1>
+      <p class="hero-subtitle reveal">
+        Pilote centralise la gestion de vos chauffeurs, vehicules, versements
+        et rentabilite dans une interface unique, moderne et puissante.
+      </p>
+      <div class="hero-actions reveal">
+        <a href="/app#register" class="btn-primary btn-lg">
+          Commencer gratuitement
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#features" class="btn-ghost btn-lg">
+          Decouvrir
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+      <div class="hero-metrics reveal">
+        <div class="metric">
+          <span class="metric-value" data-count="850">0</span><span class="metric-suffix">+</span>
+          <span class="metric-label">Vehicules geres</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric">
+          <span class="metric-value" data-count="98">0</span><span class="metric-suffix">%</span>
+          <span class="metric-label">Disponibilite</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric">
+          <span class="metric-value" data-count="24">0</span><span class="metric-suffix">/7</span>
+          <span class="metric-label">Suivi en temps reel</span>
+        </div>
       </div>
     </div>
-  </div>
-  <style>
-    @keyframes splashFadeIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
-    @keyframes splashPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.88}}
-  </style>
-  <script>
-  (function(){
-    var bar=document.getElementById('splash-progress');
-    var progress=0;
-    var iv=setInterval(function(){
-      progress+=Math.random()*15+5;
-      if(progress>90)progress=90;
-      if(bar)bar.style.width=progress+'%';
-    },200);
-    window._splashDismiss=function(){
-      clearInterval(iv);
-      if(bar)bar.style.width='100%';
-      setTimeout(function(){
-        var s=document.getElementById('splash-screen');
-        if(s){s.style.opacity='0';s.style.visibility='hidden';}
-        setTimeout(function(){if(s)s.remove();},500);
-      },300);
-    };
-    // Fallback: dismiss after 4s max
-    setTimeout(function(){window._splashDismiss();},4000);
-  })();
-  </script>
-
-  <!-- Login Overlay -->
-  <div class="login-overlay" id="login-overlay">
-    <!-- Animated Background -->
-    <div class="login-bg">
-      <div class="login-bg-gradient"></div>
-      <div class="login-bg-grid"></div>
-      <div class="login-bg-glow login-bg-glow-1"></div>
-      <div class="login-bg-glow login-bg-glow-2"></div>
-      <div class="login-bg-glow login-bg-glow-3"></div>
+    <div class="hero-visual reveal">
+      <div class="hero-screen hero-screen--real">
+        <img src="./assets/dashboard-mockup.png" alt="Tableau de bord Pilote — gestion de flotte VTC" class="hero-screenshot" loading="eager">
+      </div>
+      <div class="hero-glow"></div>
     </div>
+  </section>
 
-    <div class="login-container">
-      <div class="login-card">
-        <!-- Logo -->
-        <div class="login-logo">
-          <img src="assets/logo-pilote.png" alt="Pilote" class="login-brand-img">
-          <div class="login-logo-subtitle" id="login-company-name">Gestion de flotte</div>
+  <!-- ============ LOGOS / SOCIAL PROOF ============ -->
+  <section class="social-proof">
+    <div class="container">
+      <p class="sp-label reveal">Fait confiance par des gestionnaires de flotte en Afrique de l'Ouest</p>
+      <div class="sp-stats reveal">
+        <div class="sp-stat">
+          <iconify-icon icon="solar:shield-check-bold-duotone" width="32"></iconify-icon>
+          <span>Donnees securisees</span>
         </div>
-
-        <!-- Login Form -->
-        <div id="login-form-section">
-          <h2 class="login-title">Connexion</h2>
-          <p class="login-subtitle">Accédez à votre espace de gestion</p>
-          <div class="login-error" id="login-error" style="display:none;"></div>
-          <form id="login-form" autocomplete="off">
-            <div class="form-group">
-              <label class="form-label"><iconify-icon icon="solar:letter-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Adresse email</label>
-              <input type="email" class="form-control login-input" id="login-email" placeholder="votre@email.com" required autocomplete="username">
-            </div>
-            <div class="form-group">
-              <label class="form-label"><iconify-icon icon="solar:lock-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Mot de passe</label>
-              <div style="position:relative;">
-                <input type="password" class="form-control login-input" id="login-password" placeholder="Votre mot de passe" required autocomplete="current-password">
-                <button type="button" class="login-toggle-pwd" id="login-toggle-pwd">
-                  <iconify-icon icon="solar:eye-bold" style="font-size:18px;"></iconify-icon>
-                </button>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block login-submit" id="login-btn">
-              <iconify-icon icon="solar:login-2-bold-duotone"></iconify-icon> Se connecter
-            </button>
-          </form>
-          <div class="login-footer">
-            <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Connexion sécurisée
-          </div>
-          <div style="text-align:center;margin-top:12px;">
-            <button type="button" class="login-back-btn" id="show-register-btn" style="display:inline;">
-              <iconify-icon icon="solar:user-plus-bold-duotone" style="margin-right:4px;"></iconify-icon> Créer un compte
-            </button>
-          </div>
+        <div class="sp-stat">
+          <iconify-icon icon="solar:cloud-bolt-bold-duotone" width="32"></iconify-icon>
+          <span>Cloud haute dispo</span>
         </div>
-
-        <!-- Registration Form -->
-        <div id="register-form-section" style="display:none;">
-          <h2 class="login-title">Créer un compte</h2>
-          <p class="login-subtitle">Inscrivez-vous pour gérer votre flotte</p>
-          <div class="login-error" id="register-error" style="display:none;"></div>
-          <form id="register-form" autocomplete="off">
-            <div class="form-group">
-              <label class="form-label"><iconify-icon icon="solar:buildings-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Nom de l'entreprise</label>
-              <input type="text" class="form-control login-input" id="register-entreprise" placeholder="Mon entreprise VTC" required>
-            </div>
-            <div style="display:flex;gap:10px;">
-              <div class="form-group" style="flex:1;">
-                <label class="form-label"><iconify-icon icon="solar:user-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Prénom</label>
-                <input type="text" class="form-control login-input" id="register-prenom" placeholder="Prénom" required>
-              </div>
-              <div class="form-group" style="flex:1;">
-                <label class="form-label"><iconify-icon icon="solar:user-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Nom</label>
-                <input type="text" class="form-control login-input" id="register-nom" placeholder="Nom" required>
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label"><iconify-icon icon="solar:letter-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Adresse email</label>
-              <input type="email" class="form-control login-input" id="register-email" placeholder="votre@email.com" required autocomplete="username">
-            </div>
-            <div class="form-group">
-              <label class="form-label"><iconify-icon icon="solar:lock-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Mot de passe</label>
-              <div style="position:relative;">
-                <input type="password" class="form-control login-input" id="register-password" placeholder="Minimum 6 caractères" required minlength="6" autocomplete="new-password">
-                <button type="button" class="login-toggle-pwd" id="register-pwd-toggle">
-                  <iconify-icon icon="solar:eye-bold" style="font-size:18px;"></iconify-icon>
-                </button>
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label"><iconify-icon icon="solar:phone-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Téléphone <span style="color:var(--text-secondary);font-weight:normal;">(optionnel)</span></label>
-              <input type="tel" class="form-control login-input" id="register-telephone" placeholder="+221 77 000 00 00">
-            </div>
-            <button type="submit" class="btn btn-primary btn-block login-submit" id="register-btn">
-              <iconify-icon icon="solar:user-plus-bold-duotone"></iconify-icon> Créer mon compte
-            </button>
-          </form>
-          <button type="button" class="login-back-btn" id="show-login-btn">
-            <iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon> Déjà un compte ? Se connecter
-          </button>
+        <div class="sp-stat">
+          <iconify-icon icon="solar:smartphone-bold-duotone" width="32"></iconify-icon>
+          <span>App mobile chauffeur</span>
         </div>
-
-        <!-- Set Password Form (first login / must change) -->
-        <div id="set-password-section" style="display:none;">
-          <div class="login-setpwd-icon">
-            <iconify-icon icon="solar:key-bold-duotone" style="font-size:32px;"></iconify-icon>
-          </div>
-          <h2 class="login-title" id="set-password-title">Définir votre mot de passe</h2>
-          <p class="login-subtitle" id="set-password-subtitle">Bienvenue ! Créez votre mot de passe pour accéder à l'application.</p>
-          <div class="login-error" id="set-password-error" style="display:none;"></div>
-          <form id="set-password-form" autocomplete="off">
-            <input type="hidden" id="set-password-user-id">
-            <div class="form-group">
-              <label class="form-label"><iconify-icon icon="solar:lock-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Nouveau mot de passe</label>
-              <div style="position:relative;">
-                <input type="password" class="form-control login-input" id="new-password" placeholder="Minimum 6 caractères" required minlength="6" autocomplete="new-password">
-                <button type="button" class="login-toggle-pwd" id="new-pwd-toggle">
-                  <iconify-icon icon="solar:eye-bold" style="font-size:18px;"></iconify-icon>
-                </button>
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label"><iconify-icon icon="solar:check-circle-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Confirmer le mot de passe</label>
-              <div style="position:relative;">
-                <input type="password" class="form-control login-input" id="confirm-password" placeholder="Retapez le mot de passe" required minlength="6" autocomplete="new-password">
-                <button type="button" class="login-toggle-pwd" id="confirm-pwd-toggle">
-                  <iconify-icon icon="solar:eye-bold" style="font-size:18px;"></iconify-icon>
-                </button>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block login-submit" id="set-password-btn">
-              <iconify-icon icon="solar:lock-bold-duotone"></iconify-icon> Définir le mot de passe
-            </button>
-          </form>
-          <button type="button" class="login-back-btn" onclick="document.getElementById('login-form-section').style.display='';document.getElementById('set-password-section').style.display='none';">
-            <iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon> Retour à la connexion
-          </button>
+        <div class="sp-stat">
+          <iconify-icon icon="solar:refresh-circle-bold-duotone" width="32"></iconify-icon>
+          <span>Mises a jour continues</span>
         </div>
       </div>
-
-      <!-- App version -->
-      <div class="login-version">Pilote v2.0</div>
     </div>
-  </div>
+  </section>
 
-  <div class="app-container">
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-logo">
-        <img src="assets/logo-pilote.png" alt="Pilote" class="logo-icon">
-        <div>
-          <div class="logo-text" id="sidebar-company-name">PILOTE</div>
-          <div class="logo-subtitle" id="sidebar-company-sub">Gestion de flotte</div>
-        </div>
+  <!-- ============ FEATURES ============ -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="section-label">Fonctionnalites</p>
+        <h2 class="section-title">Tout ce dont vous avez besoin.<br><span class="text-gradient">Rien de superflu.</span></h2>
+        <p class="section-subtitle">Une suite complete d'outils pour piloter votre activite VTC au quotidien.</p>
       </div>
 
-      <nav class="sidebar-nav" id="sidebar-nav">
-        <div class="nav-section-title">Principal</div>
-        <a class="nav-item active" href="#/dashboard" data-route="/dashboard">
-          <iconify-icon icon="solar:spedometer-max-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Tableau de bord</span>
-        </a>
-        <a class="nav-item" href="#/yango" data-route="/yango">
-          <iconify-icon icon="solar:bus-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Yango Fleet</span>
-        </a>
-        <a class="nav-item" href="#/chauffeurs" data-route="/chauffeurs">
-          <iconify-icon icon="solar:user-id-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Chauffeurs</span>
-        </a>
-        <a class="nav-item" href="#/vehicules" data-route="/vehicules">
-          <iconify-icon icon="solar:wheel-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>V&eacute;hicules</span>
-        </a>
-        <a class="nav-item" href="#/planning" data-route="/planning">
-          <iconify-icon icon="solar:calendar-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Planning</span>
-        </a>
-
-        <div class="nav-section-title">Finances</div>
-        <a class="nav-item" href="#/versements" data-route="/versements">
-          <iconify-icon icon="solar:transfer-horizontal-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Versements</span>
-        </a>
-        <a class="nav-item" href="#/rentabilite" data-route="/rentabilite">
-          <iconify-icon icon="solar:pie-chart-2-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Rentabilit&eacute;</span>
-        </a>
-        <a class="nav-item" href="#/comptabilite" data-route="/comptabilite">
-          <iconify-icon icon="solar:calculator-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Comptabilit&eacute;</span>
-        </a>
-
-        <div class="nav-section-title">Suivi</div>
-        <a class="nav-item" href="#/taches" data-route="/taches">
-          <iconify-icon icon="solar:checklist-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>T&acirc;ches</span>
-        </a>
-        <a class="nav-item" href="#/messagerie" data-route="/messagerie">
-          <iconify-icon icon="solar:chat-round-dots-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Messagerie</span>
-        </a>
-        <a class="nav-item" href="#/gps-conduite" data-route="/gps-conduite">
-          <iconify-icon icon="solar:map-arrow-right-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>GPS &amp; Conduite</span>
-        </a>
-        <a class="nav-item" href="#/controle-conduite" data-route="/controle-conduite">
-          <iconify-icon icon="solar:shield-check-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Contr&ocirc;le conduite</span>
-        </a>
-        <a class="nav-item" href="#/classement" data-route="/classement">
-          <iconify-icon icon="solar:cup-star-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Classement</span>
-        </a>
-        <a class="nav-item" href="#/alertes" data-route="/alertes">
-          <iconify-icon icon="solar:bell-bing-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Alertes</span>
-        </a>
-        <a class="nav-item" href="#/rapports" data-route="/rapports">
-          <iconify-icon icon="solar:file-download-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Rapports</span>
-        </a>
-
-        <div class="nav-section-title">Syst&egrave;me</div>
-        <a class="nav-item" href="#/notifications-admin" data-route="/notifications-admin">
-          <iconify-icon icon="solar:bell-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Notifications</span>
-        </a>
-        <a class="nav-item" href="#/activite" data-route="/activite">
-          <iconify-icon icon="solar:document-text-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Journal d'activit&eacute;</span>
-        </a>
-        <a class="nav-item" href="#/mon-compte" data-route="/mon-compte">
-          <iconify-icon icon="solar:user-circle-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Mon compte</span>
-        </a>
-        <a class="nav-item" href="#/parametres" data-route="/parametres">
-          <iconify-icon icon="solar:settings-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Param&egrave;tres</span>
-        </a>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="version">Pilote v1.0.0</div>
-      </div>
-    </aside>
-
-    <!-- Sidebar Overlay (mobile) -->
-    <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
-    <!-- Main Content -->
-    <main class="main-content">
-      <!-- Header -->
-      <header class="header">
-        <div class="header-left">
-          <button class="header-toggle" id="sidebar-toggle">
-            <iconify-icon icon="solar:hamburger-menu-bold" style="font-size:20px;"></iconify-icon>
-          </button>
-          <div class="header-breadcrumb" id="header-breadcrumb">
-            <span class="text-muted">Pilote</span>
-            <iconify-icon icon="solar:alt-arrow-right-bold" class="text-muted" style="font-size: 12px;"></iconify-icon>
-            <span class="current">Tableau de bord</span>
+      <div class="features-grid">
+        <div class="feature-card feature-large reveal">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">
+            <iconify-icon icon="solar:widget-bold-duotone" width="32"></iconify-icon>
+          </div>
+          <h3>Tableau de bord</h3>
+          <p>Vue d'ensemble en temps reel de toute votre activite. KPIs, graphiques de performance, alertes — tout dans un seul ecran.</p>
+          <div class="feature-visual">
+            <div class="fv-bar" style="width:85%;background:#7c3aed;"></div>
+            <div class="fv-bar" style="width:65%;background:#4f46e5;"></div>
+            <div class="fv-bar" style="width:92%;background:#6d28d9;"></div>
           </div>
         </div>
-        <div class="header-right">
-          <button class="theme-toggle" id="btn-refresh-page" title="Actualiser les données" style="position:relative;">
-            <iconify-icon icon="solar:refresh-bold" id="refresh-icon" style="font-size:18px;"></iconify-icon>
-          </button>
-          <button class="theme-toggle" id="theme-toggle" title="Changer de thème">
-            <iconify-icon icon="solar:moon-bold" id="theme-icon" style="font-size:18px;"></iconify-icon>
-          </button>
-          <div class="header-search">
-            <iconify-icon icon="solar:magnifer-bold" style="font-size:16px;"></iconify-icon>
-            <input type="text" placeholder="Rechercher..." id="global-search">
+
+        <div class="feature-card reveal">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#059669,#10b981);">
+            <iconify-icon icon="solar:wallet-money-bold-duotone" width="32"></iconify-icon>
           </div>
-          <div class="header-notifications" id="notifications-toggle">
-            <iconify-icon icon="solar:bell-bing-bold-duotone" style="font-size:20px;"></iconify-icon>
-            <span class="badge-count" id="notif-count">3</span>
-            <div class="notif-dropdown" id="notif-dropdown">
-              <div class="notif-dropdown-header">
-                <span>Notifications</span>
-                <button class="btn btn-sm btn-secondary" id="notif-clear">Tout effacer</button>
-              </div>
-              <div id="notif-list"></div>
-            </div>
-          </div>
-          <div class="header-user" id="header-user-toggle">
-            <div class="header-user-avatar">YN</div>
-            <span class="header-user-name">Yves Nicolas</span>
-            <iconify-icon icon="solar:alt-arrow-down-bold" class="header-user-chevron" style="font-size:14px;"></iconify-icon>
-            <!-- User Dropdown -->
-            <div class="header-user-dropdown" id="user-dropdown">
-              <div class="user-dropdown-header">
-                <div class="user-dropdown-avatar">YN</div>
-                <div class="user-dropdown-info">
-                  <div class="user-dropdown-name">Yves Nicolas</div>
-                  <div class="user-dropdown-role">Administrateur</div>
-                </div>
-              </div>
-              <div class="user-dropdown-divider"></div>
-              <button class="user-dropdown-item" id="user-dropdown-profile">
-                <iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon>
-                <span>Mon compte</span>
-              </button>
-              <button class="user-dropdown-item" id="user-dropdown-settings">
-                <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
-                <span>Paramètres</span>
-              </button>
-              <div class="user-dropdown-divider"></div>
-              <button class="user-dropdown-item user-dropdown-logout" id="user-dropdown-logout">
-                <iconify-icon icon="solar:logout-2-bold-duotone"></iconify-icon>
-                <span>Déconnexion</span>
-              </button>
-            </div>
-          </div>
+          <h3>Versements</h3>
+          <p>Suivi automatique des paiements chauffeurs. Integration Wave Money, detection des dettes, relances automatiques.</p>
         </div>
-      </header>
 
-      <!-- Dynamic Page Content -->
-      <div id="page-content">
-        <!-- Content loaded by router -->
-      </div>
-    </main>
+        <div class="feature-card reveal">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#d97706,#f59e0b);">
+            <iconify-icon icon="solar:map-point-wave-bold-duotone" width="32"></iconify-icon>
+          </div>
+          <h3>GPS & Conduite</h3>
+          <p>Localisation en direct, scores de conduite, historique des trajets. Connecte a Yango Fleet API.</p>
+        </div>
 
-    <!-- Bottom Navigation (mobile only, hidden on desktop via CSS) -->
-    <nav class="bottom-nav" id="bottom-nav">
-      <div class="bottom-nav-item active" data-route="/dashboard">
-        <iconify-icon icon="solar:spedometer-max-bold-duotone" class="nav-icon"></iconify-icon>
-        <span>Dashboard</span>
-      </div>
-      <div class="bottom-nav-item" data-route="/chauffeurs">
-        <iconify-icon icon="solar:user-id-bold-duotone" class="nav-icon"></iconify-icon>
-        <span>Chauffeurs</span>
-      </div>
-      <div class="bottom-nav-item" data-route="/planning">
-        <iconify-icon icon="solar:calendar-bold-duotone" class="nav-icon"></iconify-icon>
-        <span>Planning</span>
-      </div>
-      <div class="bottom-nav-item" data-route="/vehicules">
-        <iconify-icon icon="solar:wheel-bold-duotone" class="nav-icon"></iconify-icon>
-        <span>Véhicules</span>
-      </div>
-      <div class="bottom-nav-item" data-route="/menu">
-        <iconify-icon icon="solar:widget-bold-duotone" class="nav-icon"></iconify-icon>
-        <span>Menu</span>
-      </div>
-    </nav>
-  </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#dc2626,#f87171);">
+            <iconify-icon icon="solar:calendar-bold-duotone" width="32"></iconify-icon>
+          </div>
+          <h3>Planning</h3>
+          <p>Planifiez les rotations de vos chauffeurs. Gestion des absences, conges, et disponibilites en un clic.</p>
+        </div>
 
-  <!-- Toast Container -->
-  <div class="toast-container" id="toast-container"></div>
+        <div class="feature-card reveal">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#2563eb,#3b82f6);">
+            <iconify-icon icon="solar:pie-chart-bold-duotone" width="32"></iconify-icon>
+          </div>
+          <h3>Rentabilite</h3>
+          <p>ROI par vehicule, suivi du leasing, profit d'exploitation. Visualisez exactement ou va votre argent.</p>
+        </div>
 
-  <!-- Modal Container -->
-  <div class="modal-overlay" id="modal-overlay">
-    <div class="modal" id="modal-container">
-      <div class="modal-header">
-        <h2 id="modal-title"></h2>
-        <button class="modal-close" id="modal-close"><iconify-icon icon="solar:close-circle-bold" style="font-size:20px;"></iconify-icon></button>
+        <div class="feature-card reveal">
+          <div class="feature-icon" style="background:linear-gradient(135deg,#7c3aed,#a855f7);">
+            <iconify-icon icon="solar:garage-bold-duotone" width="32"></iconify-icon>
+          </div>
+          <h3>Garage</h3>
+          <p>Maintenance preventive, reparations, controles techniques, assurances. Gerez tout le cycle de vie de vos vehicules.</p>
+        </div>
       </div>
-      <div class="modal-body" id="modal-body"></div>
-      <div class="modal-footer" id="modal-footer"></div>
     </div>
-  </div>
+  </section>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.js"></script>
+  <!-- ============ SHOWCASE ============ -->
+  <section class="showcase">
+    <div class="container">
+      <div class="showcase-content reveal">
+        <p class="section-label">Application chauffeur</p>
+        <h2 class="section-title">Vos chauffeurs aussi<br>ont leur app.</h2>
+        <p class="section-subtitle">Une PWA mobile dediee pour chaque chauffeur : versements, planning, notifications push, tout dans leur poche.</p>
+        <ul class="showcase-list">
+          <li>
+            <iconify-icon icon="solar:check-circle-bold" style="color:#10b981;font-size:24px;"></iconify-icon>
+            Versements en un tap via Wave Money
+          </li>
+          <li>
+            <iconify-icon icon="solar:check-circle-bold" style="color:#10b981;font-size:24px;"></iconify-icon>
+            Planning et absences en temps reel
+          </li>
+          <li>
+            <iconify-icon icon="solar:check-circle-bold" style="color:#10b981;font-size:24px;"></iconify-icon>
+            Notifications push instantanees
+          </li>
+          <li>
+            <iconify-icon icon="solar:check-circle-bold" style="color:#10b981;font-size:24px;"></iconify-icon>
+            Fonctionne hors-ligne (PWA)
+          </li>
+        </ul>
+      </div>
+      <div class="showcase-visual reveal">
+        <div class="phone-frame phone-frame--real">
+          <img src="./assets/driver-mockup.png" alt="Application chauffeur Pilote" class="phone-screenshot" loading="lazy">
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <!-- jsPDF -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="how" id="how">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="section-label">Comment ca marche</p>
+        <h2 class="section-title">Operationnel en<br><span class="text-gradient">3 minutes.</span></h2>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-number">01</div>
+          <div class="step-content">
+            <h3>Creez votre compte</h3>
+            <p>Inscrivez-vous gratuitement. Renseignez le nom de votre entreprise et c'est parti.</p>
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step reveal">
+          <div class="step-number">02</div>
+          <div class="step-content">
+            <h3>Ajoutez votre flotte</h3>
+            <p>Enregistrez vos vehicules et chauffeurs. Configurez vos redevances et integrations (Wave, Yango).</p>
+          </div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step reveal">
+          <div class="step-number">03</div>
+          <div class="step-content">
+            <h3>Pilotez en temps reel</h3>
+            <p>Suivez tout depuis votre tableau de bord. Recevez des alertes, analysez vos performances, optimisez vos profits.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- ============ PRICING ============ -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="section-label">Tarifs</p>
+        <h2 class="section-title">Simple et transparent.</h2>
+        <p class="section-subtitle">Commencez gratuitement, evoluez quand vous grandissez.</p>
+      </div>
 
-  <!-- App JS -->
-  <script src="js/supabase-config.js?v=395"></script>
-  <script src="js/store.js?v=395"></script>
-  <script src="js/utils.js?v=395"></script>
-  <script src="js/demo-data.js?v=395"></script>
-  <script src="js/auth.js?v=395"></script>
-  <script src="js/components/toast.js?v=395"></script>
-  <script src="js/components/modal.js?v=395"></script>
-  <script src="js/components/sidebar.js?v=395"></script>
-  <script src="js/components/header.js?v=395"></script>
-  <script src="js/components/table.js?v=395"></script>
-  <script src="js/components/form-builder.js?v=395"></script>
-  <script src="js/pages/dashboard.js?v=395"></script>
-  <script src="js/pages/chauffeurs.js?v=395"></script>
-  <script src="js/pages/vehicules.js?v=395"></script>
-  <script src="js/pages/versements.js?v=395"></script>
-  <script src="js/pages/rentabilite.js?v=395"></script>
-  <script src="js/pages/gps-conduite.js?v=395"></script>
-  <script src="js/pages/controle-conduite.js?v=395"></script>
-  <script src="js/pages/rapports.js?v=395"></script>
-  <script src="js/pages/comptabilite.js?v=395"></script>
-  <script src="js/pages/planning.js?v=395"></script>
-  <script src="js/pages/alertes.js?v=395"></script>
-  <script src="js/pages/parametres.js?v=395"></script>
-  <script src="js/pages/yango.js?v=395"></script>
-  <script src="js/pages/messagerie.js?v=395"></script>
-  <script src="js/pages/garage.js?v=395"></script>
-  <script src="js/pages/incidents.js?v=395"></script>
-  <script src="js/pages/contraventions.js?v=395"></script>
-  <script src="js/pages/depenses.js?v=395"></script>
-  <script src="js/pages/activite.js?v=395"></script>
-  <script src="js/pages/notifications-admin.js?v=395"></script>
-  <script src="js/pages/taches.js?v=395"></script>
-  <script src="js/pages/mon-compte.js?v=395"></script>
-  <script src="js/pages/classement.js?v=395"></script>
-  <script src="js/pages/menu.js?v=395"></script>
-  <script src="js/components/bottom-nav.js?v=395"></script>
-  <script src="js/router.js?v=395"></script>
-  <script src="js/app.js?v=395"></script>
+      <div class="pricing-grid">
+        <div class="pricing-card reveal">
+          <div class="pc-header">
+            <h3>Decouverte</h3>
+            <div class="pc-price"><span class="pc-amount">Gratuit</span></div>
+            <p class="pc-desc">Pour demarrer et tester la plateforme.</p>
+          </div>
+          <ul class="pc-features">
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Jusqu'a 3 vehicules</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Gestion des chauffeurs</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Suivi des versements</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Tableau de bord</li>
+            <li class="disabled"><iconify-icon icon="solar:close-circle-bold" style="color:#666;"></iconify-icon> GPS & Conduite</li>
+            <li class="disabled"><iconify-icon icon="solar:close-circle-bold" style="color:#666;"></iconify-icon> Rentabilite avancee</li>
+          </ul>
+          <a href="/app#register" class="btn-outline btn-full">Commencer</a>
+        </div>
+
+        <div class="pricing-card pricing-featured reveal">
+          <div class="pc-badge">Populaire</div>
+          <div class="pc-header">
+            <h3>Standard</h3>
+            <div class="pc-price"><span class="pc-currency">FCFA</span><span class="pc-amount">25 000</span><span class="pc-period">/ mois</span></div>
+            <p class="pc-desc">Pour les flottes en croissance.</p>
+          </div>
+          <ul class="pc-features">
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Jusqu'a 15 vehicules</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Toutes les fonctionnalites</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> GPS & Conduite</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Rentabilite avancee</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Integration Wave & Yango</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Support prioritaire</li>
+          </ul>
+          <a href="/app#register" class="btn-primary btn-full">Commencer l'essai</a>
+        </div>
+
+        <div class="pricing-card reveal">
+          <div class="pc-header">
+            <h3>Premium</h3>
+            <div class="pc-price"><span class="pc-currency">FCFA</span><span class="pc-amount">50 000</span><span class="pc-period">/ mois</span></div>
+            <p class="pc-desc">Pour les grandes flottes.</p>
+          </div>
+          <ul class="pc-features">
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Vehicules illimites</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Toutes les fonctionnalites</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Multi-parc</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Rapports & exports</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> API personnalisee</li>
+            <li><iconify-icon icon="solar:check-circle-bold" style="color:#10b981;"></iconify-icon> Support dedie WhatsApp</li>
+          </ul>
+          <a href="/app#register" class="btn-outline btn-full">Contacter</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA FINAL ============ -->
+  <section class="final-cta">
+    <div class="container">
+      <div class="cta-box reveal">
+        <div class="cta-glow"></div>
+        <h2>Pret a transformer votre gestion de flotte ?</h2>
+        <p>Rejoignez les gestionnaires qui font confiance a Pilote pour optimiser leur activite VTC.</p>
+        <a href="/app#register" class="btn-primary btn-lg">
+          Creer mon compte gratuitement
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <img src="/assets/logo-pilote.png" alt="Pilote" class="footer-logo-img">
+          </div>
+          <p>La plateforme de gestion de flotte VTC la plus complete d'Afrique de l'Ouest.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Produit</h4>
+          <a href="#features">Fonctionnalites</a>
+          <a href="#pricing">Tarifs</a>
+          <a href="#how">Comment ca marche</a>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <a href="mailto:contact@pilote.app">Contact</a>
+          <a href="#">Documentation</a>
+          <a href="#">FAQ</a>
+        </div>
+        <div class="footer-col">
+          <h4>Entreprise</h4>
+          <a href="#">A propos</a>
+          <a href="#">Confidentialite</a>
+          <a href="#">Conditions d'utilisation</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Pilote. Tous droits reserves.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+  <script src="/landing.js?v=2"></script>
 </body>
 </html>

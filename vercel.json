@@ -6,8 +6,8 @@
     { "source": "/driver/(.*)", "destination": "/driver/index.html" },
     { "source": "/monitor/(.*)", "destination": "/monitor/index.html" },
     { "source": "/.well-known/(.*)", "destination": "/.well-known/$1" },
-    { "source": "/app", "destination": "/index.html" },
-    { "source": "/(.*)", "destination": "/landing.html" }
+    { "source": "/app", "destination": "/app.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
