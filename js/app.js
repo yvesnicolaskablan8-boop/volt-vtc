@@ -572,7 +572,10 @@ const App = {
         redirectTo: window.location.origin + '/app'
       });
       if (error) {
-        this._showLoginError('Erreur : ' + error.message);
+        const msg = error.message.includes('security purposes')
+          ? 'Un email a déjà été envoyé. Vérifiez votre boîte mail (et les spams). Réessayez dans 60 secondes.'
+          : 'Erreur : ' + error.message;
+        this._showLoginError(msg);
       } else {
         this._hideLoginError();
         Toast.show('Un email de réinitialisation a été envoyé à ' + email, 'success');
@@ -683,9 +686,12 @@ const App = {
           'user_not_found': 'Aucun compte trouvé avec cet email.',
           'account_disabled': 'Ce compte est désactivé. Contactez l\'administrateur.',
           'invalid_password': 'Mot de passe incorrect.',
+          'invalid_credentials': 'Email ou mot de passe incorrect.',
+          'Invalid login credentials': 'Email ou mot de passe incorrect.',
+          'no_fleet_user': 'Aucun accès configuré pour ce compte. Contactez votre administrateur.',
           'network_error': 'Impossible de contacter le serveur. Vérifiez votre connexion.',
         };
-        const msg = messages[result.error] || result.error || 'Erreur de connexion.';
+        const msg = messages[result.error] || (result.error && result.error.includes('Invalid login') ? 'Email ou mot de passe incorrect.' : result.error) || 'Erreur de connexion.';
         this._showLoginError(result.detail ? msg + ' (' + result.detail + ')' : msg);
       }
     } catch (err) {
