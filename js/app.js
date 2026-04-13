@@ -251,6 +251,13 @@ const App = {
       if (typeof Toast !== 'undefined') Toast.success('Pilote installé !');
     });
 
+    // Debug: check Supabase client is loaded
+    if (typeof supabase === 'undefined') {
+      console.error('FATAL: supabase client not defined — CDN or config failed');
+    } else {
+      console.log('Supabase client OK:', typeof supabase.auth);
+    }
+
     // Check authentication via Supabase
     try {
       const authResult = await Auth.checkAuth();
@@ -636,7 +643,8 @@ const App = {
           'invalid_password': 'Mot de passe incorrect.',
           'network_error': 'Impossible de contacter le serveur. Vérifiez votre connexion.',
         };
-        this._showLoginError(messages[result.error] || 'Erreur de connexion.');
+        const msg = messages[result.error] || result.error || 'Erreur de connexion.';
+        this._showLoginError(result.detail ? msg + ' (' + result.detail + ')' : msg);
       }
     } catch (err) {
       console.error('Login error:', err);

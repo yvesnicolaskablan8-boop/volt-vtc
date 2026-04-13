@@ -245,7 +245,7 @@ const Auth = {
 
     } catch (err) {
       console.error('Auth.login error:', err);
-      return { success: false, error: 'network_error' };
+      return { success: false, error: 'network_error', detail: err.message || String(err) };
     }
   },
 
