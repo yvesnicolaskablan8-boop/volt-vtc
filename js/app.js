@@ -258,6 +258,21 @@ const App = {
       console.log('Supabase client OK:', typeof supabase.auth);
     }
 
+    // Check for password recovery flow (from reset email link)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hashType = hashParams.get('type');
+    if (hashType === 'recovery') {
+      // Let Supabase process the recovery token from the hash
+      const { data, error } = await supabase.auth.getSession();
+      if (!error && data.session) {
+        this._showLogin();
+        this._showResetPasswordForm(data.session.user.email);
+        // Clear hash
+        history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+    }
+
     // Check authentication via Supabase
     try {
       const authResult = await Auth.checkAuth();
@@ -578,12 +593,43 @@ const App = {
         this._showLoginError(msg);
       } else {
         this._hideLoginError();
-        Toast.show('Un email de réinitialisation a été envoyé à ' + email, 'success');
+        // Show success directly in login section
+        const loginSection = document.getElementById('login-form-section');
+        if (loginSection) {
+          const successDiv = document.createElement('div');
+          successDiv.style.cssText = 'text-align:center;padding:2rem 0;';
+
+          const icon = document.createElement('iconify-icon');
+          icon.setAttribute('icon', 'solar:letter-bold-duotone');
+          icon.style.cssText = 'font-size:3rem;color:#3b82f6;display:block;margin-bottom:1rem;';
+          successDiv.appendChild(icon);
+
+          const title = document.createElement('h2');
+          title.className = 'login-title';
+          title.textContent = 'Email envoyé !';
+          successDiv.appendChild(title);
+
+          const desc = document.createElement('p');
+          desc.style.cssText = 'color:var(--text-secondary);margin:0.75rem 0 1.5rem;line-height:1.6;';
+          desc.textContent = 'Un lien de réinitialisation a été envoyé à ' + email + '. Vérifiez votre boîte de réception (et les spams) puis cliquez sur le lien.';
+          successDiv.appendChild(desc);
+
+          const backBtn = document.createElement('button');
+          backBtn.type = 'button';
+          backBtn.className = 'btn btn-primary btn-block';
+          backBtn.textContent = 'Retour à la connexion';
+          backBtn.addEventListener('click', function() { location.reload(); });
+          successDiv.appendChild(backBtn);
+
+          loginSection.textContent = '';
+          loginSection.appendChild(successDiv);
+        }
       }
     } catch (e) {
       this._showLoginError('Erreur réseau. Réessayez.');
-    } finally {
-      if (btn) btn.disabled = false;
+      if (btn) {
+        btn.disabled = false;
+      }
     }
   },
 
@@ -793,6 +839,130 @@ const App = {
         btn.disabled = false;
         btn.innerHTML = '<iconify-icon icon="solar:lock-bold-duotone"></iconify-icon> Définir le mot de passe';
       }
+    }
+  },
+
+  _showResetPasswordForm(email) {
+    // Dismiss splash
+    if (typeof window._splashDismiss === 'function') window._splashDismiss();
+
+    const loginSection = document.getElementById('login-form-section');
+    const registerSection = document.getElementById('register-form-section');
+    const setPasswordSection = document.getElementById('set-password-section');
+    if (registerSection) registerSection.style.display = 'none';
+    if (setPasswordSection) setPasswordSection.style.display = 'none';
+
+    if (loginSection) {
+      // Clear existing content and build reset form with DOM methods
+      loginSection.textContent = '';
+
+      const icon = document.createElement('iconify-icon');
+      icon.setAttribute('icon', 'solar:lock-bold-duotone');
+      icon.style.cssText = 'font-size:3rem;color:#3b82f6;display:block;text-align:center;margin-bottom:1rem;';
+      loginSection.appendChild(icon);
+
+      const title = document.createElement('h2');
+      title.className = 'login-title';
+      title.textContent = 'Nouveau mot de passe';
+      loginSection.appendChild(title);
+
+      const subtitle = document.createElement('p');
+      subtitle.className = 'login-subtitle';
+      subtitle.textContent = email ? 'Choisissez un nouveau mot de passe pour ' + email : 'Choisissez un nouveau mot de passe';
+      loginSection.appendChild(subtitle);
+
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'login-error';
+      errorDiv.id = 'reset-pwd-error';
+      errorDiv.style.display = 'none';
+      loginSection.appendChild(errorDiv);
+
+      const form = document.createElement('form');
+      form.id = 'reset-pwd-form';
+      form.autocomplete = 'off';
+
+      // New password field
+      const group1 = document.createElement('div');
+      group1.className = 'form-group';
+      const label1 = document.createElement('label');
+      label1.className = 'form-label';
+      label1.textContent = 'Nouveau mot de passe';
+      group1.appendChild(label1);
+      const input1 = document.createElement('input');
+      input1.type = 'password';
+      input1.className = 'form-control login-input';
+      input1.id = 'reset-new-password';
+      input1.placeholder = 'Minimum 6 caractères';
+      input1.required = true;
+      input1.minLength = 6;
+      input1.autocomplete = 'new-password';
+      group1.appendChild(input1);
+      form.appendChild(group1);
+
+      // Confirm password field
+      const group2 = document.createElement('div');
+      group2.className = 'form-group';
+      const label2 = document.createElement('label');
+      label2.className = 'form-label';
+      label2.textContent = 'Confirmer le mot de passe';
+      group2.appendChild(label2);
+      const input2 = document.createElement('input');
+      input2.type = 'password';
+      input2.className = 'form-control login-input';
+      input2.id = 'reset-confirm-password';
+      input2.placeholder = 'Confirmez votre mot de passe';
+      input2.required = true;
+      input2.autocomplete = 'new-password';
+      group2.appendChild(input2);
+      form.appendChild(group2);
+
+      // Submit button
+      const submitBtn = document.createElement('button');
+      submitBtn.type = 'submit';
+      submitBtn.className = 'btn btn-primary btn-block login-submit';
+      submitBtn.id = 'reset-pwd-btn';
+      submitBtn.textContent = 'Définir le mot de passe';
+      form.appendChild(submitBtn);
+
+      loginSection.appendChild(form);
+
+      // Handle form submit
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newPwd = document.getElementById('reset-new-password').value;
+        const confirmPwd = document.getElementById('reset-confirm-password').value;
+        const btn = document.getElementById('reset-pwd-btn');
+        const errEl = document.getElementById('reset-pwd-error');
+
+        if (newPwd.length < 6) {
+          if (errEl) { errEl.textContent = 'Le mot de passe doit contenir au moins 6 caractères.'; errEl.style.display = 'flex'; }
+          return;
+        }
+        if (newPwd !== confirmPwd) {
+          if (errEl) { errEl.textContent = 'Les mots de passe ne correspondent pas.'; errEl.style.display = 'flex'; }
+          return;
+        }
+
+        if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement...'; }
+        if (errEl) errEl.style.display = 'none';
+
+        try {
+          const { error } = await supabase.auth.updateUser({ password: newPwd });
+          if (error) {
+            if (errEl) { errEl.textContent = 'Erreur : ' + error.message; errEl.style.display = 'flex'; }
+            if (btn) { btn.disabled = false; btn.textContent = 'Définir le mot de passe'; }
+          } else {
+            Toast.show('Mot de passe mis à jour ! Connectez-vous.', 'success');
+            await supabase.auth.signOut();
+            location.reload();
+          }
+        } catch (err) {
+          if (errEl) { errEl.textContent = 'Erreur réseau. Réessayez.'; errEl.style.display = 'flex'; }
+          if (btn) { btn.disabled = false; btn.textContent = 'Définir le mot de passe'; }
+        }
+      });
+
+      input1.focus();
     }
   },
 
