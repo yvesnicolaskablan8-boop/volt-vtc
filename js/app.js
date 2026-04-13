@@ -498,13 +498,14 @@ const App = {
     this._hideSetPasswordError();
     this._hideRegisterError();
 
-    // Show login section, hide set-password and register sections
+    // Show login or register section based on URL hash
     const loginSection = document.getElementById('login-form-section');
     const setPasswordSection = document.getElementById('set-password-section');
     const registerSection = document.getElementById('register-form-section');
-    if (loginSection) loginSection.style.display = '';
+    const showRegister = window.location.hash === '#register';
+    if (loginSection) loginSection.style.display = showRegister ? 'none' : '';
     if (setPasswordSection) setPasswordSection.style.display = 'none';
-    if (registerSection) registerSection.style.display = 'none';
+    if (registerSection) registerSection.style.display = showRegister ? '' : 'none';
 
     // Register form submit
     const registerForm = document.getElementById('register-form');
