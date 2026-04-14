@@ -1238,7 +1238,8 @@ const VersementsPage = {
     DashboardPage._generateReceiptPDF(v.chauffeurId, v.date, v.montantVerse, v.moyenPaiement, v.referencePaiement);
   },
 
-  _exportPDF() {
+  async _exportPDF() {
+    await LazyLibs.jspdf();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const versements = Store.get('versements').filter(_isRealVersement);

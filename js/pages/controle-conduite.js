@@ -543,8 +543,8 @@ const ControleConduitePage = {
     this._initZonesMap(zones);
   },
 
-  _initZonesMap(zones) {
-    if (typeof L === 'undefined') return;
+  async _initZonesMap(zones) {
+    if (typeof L === 'undefined') await LazyLibs.leaflet();
 
     try {
       // Default center: Abidjan

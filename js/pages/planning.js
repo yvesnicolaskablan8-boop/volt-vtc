@@ -1569,7 +1569,8 @@ const PlanningPage = {
     this._showTemplates();
   },
 
-  _exportPDF() {
+  async _exportPDF() {
+    await LazyLibs.jspdf();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('landscape');
     const planning = Store.get('planning') || [];

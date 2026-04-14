@@ -103,9 +103,10 @@ const CarteTrajetsPage = {
     `;
   },
 
-  _initMap() {
+  async _initMap() {
     const mapEl = document.getElementById('ct-map');
     if (!mapEl || this._map) return;
+    if (typeof L === 'undefined') await LazyLibs.leaflet();
 
     this._map = L.map(mapEl).setView([5.3600, -4.0083], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

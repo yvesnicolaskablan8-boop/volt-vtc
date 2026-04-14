@@ -21,62 +21,72 @@ const Store = {
    * Fetches every collection in parallel via Promise.all.
    */
   async initialize() {
+    // Phase 1: load critical collections first (dashboard needs these)
+    const CRITICAL = ['chauffeurs', 'vehicules', 'versements', 'planning', 'settings'];
+    const SETTINGS_COLLECTIONS = ['settings'];
+
+    // Start with localStorage backup for instant display
+    this._cache = this._loadFromLocalStorage() || this._emptyData();
+
     try {
-      // Determine which collections are arrays vs object (settings)
-      const SETTINGS_COLLECTIONS = ['settings'];
-      const collections = Object.keys(this._emptyData());
-
-      const fetchPromises = collections.map(async (col) => {
-        const table = TABLE_MAP[col];
-        if (!table) {
-          // No table mapping -- return the empty default
-          const empty = this._emptyData();
-          return { collection: col, data: empty[col] };
-        }
-
-        if (SETTINGS_COLLECTIONS.includes(col)) {
-          // Settings: single row
-          const { data, error } = await supabase
-            .from(table)
-            .select('*')
-            .limit(1)
-            .single();
-
-          if (error) {
-            console.warn(`Store: Supabase fetch ${col} error:`, error.message);
-            return { collection: col, data: { entreprise: {}, preferences: {} } };
-          }
-          return { collection: col, data: objToCamel(data) };
-        }
-
-        // Regular collection: array of rows
-        const { data, error } = await supabase
-          .from(table)
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.warn(`Store: Supabase fetch ${col} error:`, error.message);
-          return { collection: col, data: [] };
-        }
-        return { collection: col, data: rowsToCamel(data || []) };
-      });
-
-      const results = await Promise.all(fetchPromises);
-
-      // Build cache from results
-      this._cache = this._emptyData();
-      for (const { collection, data } of results) {
+      // Phase 1: fetch critical collections in parallel
+      const criticalResults = await Promise.all(CRITICAL.map(col => this._fetchCollection(col, SETTINGS_COLLECTIONS)));
+      for (const { collection, data } of criticalResults) {
         this._cache[collection] = data;
       }
-
       this._backupToLocalStorage();
-      console.log('Store: Data loaded from Supabase');
+      this._notify();
+      console.log('Store: Phase 1 loaded (critical collections)');
+
+      // Phase 2: fetch remaining collections in background (non-blocking)
+      const allCollections = Object.keys(this._emptyData());
+      const remaining = allCollections.filter(col => !CRITICAL.includes(col));
+
+      Promise.all(remaining.map(col => this._fetchCollection(col, SETTINGS_COLLECTIONS)))
+        .then(results => {
+          for (const { collection, data } of results) {
+            this._cache[collection] = data;
+          }
+          this._backupToLocalStorage();
+          this._notify();
+          console.log('Store: Phase 2 loaded (all collections)');
+        })
+        .catch(e => console.warn('Store: Phase 2 partial failure:', e.message));
+
     } catch (e) {
-      // Offline or unexpected error -- use localStorage fallback
-      console.warn('Store: Supabase unreachable -- using local backup:', e.message);
-      this._cache = this._loadFromLocalStorage() || this._emptyData();
+      console.warn('Store: Supabase unreachable — using local backup:', e.message);
     }
+  },
+
+  async _fetchCollection(col, settingsCollections) {
+    const table = TABLE_MAP[col];
+    if (!table) {
+      const empty = this._emptyData();
+      return { collection: col, data: empty[col] };
+    }
+
+    if (settingsCollections.includes(col)) {
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .limit(1)
+        .single();
+      if (error) {
+        console.warn(`Store: Supabase fetch ${col} error:`, error.message);
+        return { collection: col, data: { entreprise: {}, preferences: {} } };
+      }
+      return { collection: col, data: objToCamel(data) };
+    }
+
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.warn(`Store: Supabase fetch ${col} error:`, error.message);
+      return { collection: col, data: [] };
+    }
+    return { collection: col, data: rowsToCamel(data || []) };
   },
 
   // =================== SYNCHRONOUS READS (from cache) ===================

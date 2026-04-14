@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-v397';
+const CACHE_NAME = 'pilote-v398';
 const ASSETS = [
   './',
   './index.html',
@@ -119,23 +119,28 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Fetch — network first, fallback to cache
+// Fetch — stale-while-revalidate: serve cache instantly, update in background
 self.addEventListener('fetch', (e) => {
-  // Skip non-GET and API requests
+  // Skip non-GET and API/Supabase requests
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('/api/')) return;
+  if (e.request.url.includes('supabase')) return;
   if (!e.request.url.startsWith(self.location.origin)) return;
 
   e.respondWith(
-    fetch(e.request).then((response) => {
-      if (!response || response.status !== 200) return response;
-      const clone = response.clone();
-      caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-      return response;
-    }).catch(() => {
-      return caches.match(e.request).then((cached) => {
-        return cached || caches.match('./index.html');
-      });
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.match(e.request).then((cached) => {
+        // Always fetch in background to update cache
+        const networkFetch = fetch(e.request).then((response) => {
+          if (response && response.status === 200) {
+            cache.put(e.request, response.clone());
+          }
+          return response;
+        }).catch(() => null);
+
+        // Return cache immediately if available, otherwise wait for network
+        return cached || networkFetch.then(r => r || caches.match('./index.html'));
+      })
+    )
   );
 });

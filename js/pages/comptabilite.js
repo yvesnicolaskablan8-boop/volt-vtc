@@ -1421,7 +1421,8 @@ const ComptabilitePage = {
     this._renderTab('factures');
   },
 
-  _exportPDF() {
+  async _exportPDF() {
+    await LazyLibs.jspdf();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const ops = this._getOperations().sort((a, b) => b.date.localeCompare(a.date));

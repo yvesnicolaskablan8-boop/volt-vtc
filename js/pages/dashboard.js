@@ -2123,7 +2123,8 @@ const DashboardPage = {
 
   // =================== EXPORT PDF REÇU ===================
 
-  _generateReceiptPDF(chauffeurId, date, montant, moyenPaiement, reference) {
+  async _generateReceiptPDF(chauffeurId, date, montant, moyenPaiement, reference) {
+    await LazyLibs.jspdf();
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === chauffeurId);
     const name = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;

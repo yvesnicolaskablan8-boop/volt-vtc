@@ -257,9 +257,10 @@ const GpsConduitePage = {
 
   // =================== REAL-TIME MAP ===================
 
-  _initMap() {
+  async _initMap() {
     const mapEl = document.getElementById('gps-realtime-map');
-    if (!mapEl || typeof L === 'undefined') return;
+    if (!mapEl) return;
+    if (typeof L === 'undefined') await LazyLibs.leaflet();
 
     this._map = L.map('gps-realtime-map', {
       center: [5.345, -4.025],
