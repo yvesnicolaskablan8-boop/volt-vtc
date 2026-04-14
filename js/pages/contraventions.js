@@ -748,30 +748,6 @@ const ContraventionsPage = {
 
     if (!confirm(`Payer la contravention de ${name} (${Utils.formatCurrency(c.montant)}) via Wave ?`)) return;
 
-    Toast.show('Fonctionnalite Wave temporairement indisponible — migration en cours', 'warning');
-    return;
-
-    // TODO: Migrate Wave checkout to Vercel API route
-    if (false) {
-
-        // Solder la dette liée à cette contravention (paiement Wave)
-        const versements = Store.get('versements') || [];
-        const dette = versements.find(v => v.reference === id && v.traitementManquant === 'dette');
-        if (dette) {
-          Store.update('versements', dette.id, {
-            montantVerse: dette.montantAttendu || dette.manquant,
-            manquant: 0,
-            statut: 'valide',
-            traitementManquant: null,
-            commentaire: (dette.commentaire || '') + ' — Réglée (Wave)'
-          });
-        }
-      } else {
-        Toast.show('URL de paiement non disponible', 'error');
-      }
-    } catch (err) {
-      console.error('Wave checkout error:', err);
-      Toast.show('Erreur de connexion', 'error');
-    }
+    Toast.show('Fonctionnalité Wave temporairement indisponible', 'warning');
   }
 };
