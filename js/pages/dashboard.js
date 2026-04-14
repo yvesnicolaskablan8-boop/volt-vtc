@@ -10,14 +10,68 @@ const DashboardPage = {
 
   render() {
     const container = document.getElementById('page-content');
-    const data = this._getData();
-    this._lastData = data;
-    container.innerHTML = this._template(data); // template uses escaped/static content
-    this._loadCharts(data);
-    this._bindPeriodSelector();
-    if (this._isToday()) this._startAutoRefresh(); else this._stopAutoRefresh();
-    // Fire-and-forget: auto-generate then re-render if new data
-    this._autoGenerateVersements();
+    try {
+      let data;
+      try {
+        data = this._getData();
+      } catch (dataErr) {
+        console.error('DashboardPage._getData() error:', dataErr);
+        const errDiv = document.createElement('div');
+        errDiv.style.cssText = 'padding:40px;color:#ef4444;font-size:16px;';
+        const errTitle = document.createElement('strong');
+        errTitle.textContent = 'Erreur getData :';
+        const errPre = document.createElement('pre');
+        errPre.style.cssText = 'white-space:pre-wrap;margin-top:12px;background:#fef2f2;padding:16px;border-radius:12px;font-size:13px;';
+        errPre.textContent = String(dataErr.stack || dataErr);
+        errDiv.appendChild(errTitle);
+        errDiv.appendChild(errPre);
+        container.textContent = '';
+        container.appendChild(errDiv);
+        return;
+      }
+      this._lastData = data;
+      let html;
+      try {
+        html = this._template(data);
+      } catch (tplErr) {
+        console.error('DashboardPage._template() error:', tplErr);
+        const errDiv = document.createElement('div');
+        errDiv.style.cssText = 'padding:40px;color:#ef4444;font-size:16px;';
+        const errTitle = document.createElement('strong');
+        errTitle.textContent = 'Erreur template :';
+        const errPre = document.createElement('pre');
+        errPre.style.cssText = 'white-space:pre-wrap;margin-top:12px;background:#fef2f2;padding:16px;border-radius:12px;font-size:13px;';
+        errPre.textContent = String(tplErr.stack || tplErr);
+        errDiv.appendChild(errTitle);
+        errDiv.appendChild(errPre);
+        container.textContent = '';
+        container.appendChild(errDiv);
+        return;
+      }
+      container.innerHTML = html; // template uses escaped/static content only
+      try {
+        this._loadCharts(data);
+      } catch (chartErr) {
+        console.error('DashboardPage._loadCharts() error:', chartErr);
+      }
+      this._bindPeriodSelector();
+      if (this._isToday()) this._startAutoRefresh(); else this._stopAutoRefresh();
+      // Fire-and-forget: auto-generate then re-render if new data
+      this._autoGenerateVersements();
+    } catch (err) {
+      console.error('DashboardPage.render() error:', err);
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'padding:40px;color:#ef4444;font-size:16px;';
+      const errTitle = document.createElement('strong');
+      errTitle.textContent = 'Erreur dashboard :';
+      const errPre = document.createElement('pre');
+      errPre.style.cssText = 'white-space:pre-wrap;margin-top:12px;background:#fef2f2;padding:16px;border-radius:12px;font-size:13px;';
+      errPre.textContent = String(err.stack || err);
+      errDiv.appendChild(errTitle);
+      errDiv.appendChild(errPre);
+      container.textContent = '';
+      container.appendChild(errDiv);
+    }
   },
 
   // Auto-générer les versements du jour (1x/jour max)
@@ -91,21 +145,25 @@ const DashboardPage = {
   },
 
   _silentRefresh() {
-    if (!this._isToday()) return; // Don't auto-refresh historical data
-    const indicator = document.getElementById('live-indicator');
-    if (indicator) {
-      indicator.classList.add('pulse');
-      setTimeout(() => indicator.classList.remove('pulse'), 1500);
+    try {
+      if (!this._isToday()) return;
+      const indicator = document.getElementById('live-indicator');
+      if (indicator) {
+        indicator.classList.add('pulse');
+        setTimeout(() => indicator.classList.remove('pulse'), 1500);
+      }
+      this.destroy();
+      const container = document.getElementById('page-content');
+      if (!container) return;
+      const data = this._getData();
+      this._lastData = data;
+      container.innerHTML = this._template(data); // template uses escaped/static content only
+      this._loadCharts(data);
+      this._bindPeriodSelector();
+      this._startAutoRefresh();
+    } catch (err) {
+      console.error('DashboardPage._silentRefresh() error:', err);
     }
-    this.destroy();
-    const container = document.getElementById('page-content');
-    if (!container) return;
-    const data = this._getData();
-    this._lastData = data;
-    container.innerHTML = this._template(data);
-    this._loadCharts(data);
-    this._bindPeriodSelector();
-    this._startAutoRefresh();
   },
 
   _getData() {
