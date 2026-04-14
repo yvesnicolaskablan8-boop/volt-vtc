@@ -703,6 +703,18 @@ const ParametresPage = {
       const adminSession = Auth.getSession();
 
       try {
+        // 0. Check if email already exists in fleet_users
+        const { data: existingUser } = await supabase
+          .from('fleet_users')
+          .select('id, email')
+          .eq('email', values.email.trim())
+          .maybeSingle();
+
+        if (existingUser) {
+          Toast.error('Un utilisateur avec cet email existe déjà dans le système.');
+          return;
+        }
+
         // 1. Create Supabase Auth account
         let authId = null;
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -718,7 +730,16 @@ const ParametresPage = {
               password: pwd
             });
             if (signInError) {
-              Toast.error('Ce compte existe déjà mais le mot de passe ne correspond pas. Utilisez le même mot de passe que lors de la première tentative.');
+              // Orphan auth account — offer password reset
+              const resetConfirm = confirm(
+                'Un compte Auth existe avec cet email mais le mot de passe ne correspond pas.\n\n' +
+                'Voulez-vous envoyer un email de réinitialisation de mot de passe à ' + values.email.trim() + ' ?\n\n' +
+                'Après avoir reçu l\'email et réinitialisé le mot de passe, retentez la création avec le nouveau mot de passe.'
+              );
+              if (resetConfirm) {
+                await supabase.auth.resetPasswordForEmail(values.email.trim());
+                Toast.show('Email de réinitialisation envoyé à ' + values.email.trim(), 'info');
+              }
               return;
             }
             authId = signInData.user.id;
@@ -727,7 +748,28 @@ const ParametresPage = {
             return;
           }
         } else {
-          authId = authData.user.id;
+          // Check for fake user (email enumeration protection)
+          if (authData.user && (!authData.user.identities || authData.user.identities.length === 0)) {
+            // User already exists but Supabase returned a fake response
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: values.email.trim(),
+              password: pwd
+            });
+            if (signInError) {
+              const resetConfirm = confirm(
+                'Un compte existe déjà avec cet email.\n\n' +
+                'Voulez-vous envoyer un email de réinitialisation de mot de passe à ' + values.email.trim() + ' ?'
+              );
+              if (resetConfirm) {
+                await supabase.auth.resetPasswordForEmail(values.email.trim());
+                Toast.show('Email de réinitialisation envoyé à ' + values.email.trim(), 'info');
+              }
+              return;
+            }
+            authId = signInData.user.id;
+          } else {
+            authId = authData.user.id;
+          }
         }
 
         // 2. Restore admin session (signUp/signIn may have changed the session)
