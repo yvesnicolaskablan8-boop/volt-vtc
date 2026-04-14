@@ -66,6 +66,7 @@ const ParametresPage = {
         <div class="tab" data-tab="notifications-settings"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Notifications</div>
         <div class="tab" data-tab="parcs"><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Parcs</div>
         <div class="tab" data-tab="contrat"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> Contrat</div>
+        <div class="tab" data-tab="annonces"><iconify-icon icon="solar:megaphone-bold-duotone"></iconify-icon> Annonces</div>
         <div class="tab" data-tab="integrations"><iconify-icon icon="solar:plug-circle-bold-duotone"></iconify-icon> Intégrations</div>
       </div>
 
@@ -95,6 +96,7 @@ const ParametresPage = {
       case 'notifications-settings': ct.innerHTML = this._renderNotificationsSettings(); this._bindNotificationsSettingsEvents(); break;
       case 'parcs': ct.innerHTML = this._renderParcs(); this._bindParcsEvents(); break;
       case 'contrat': ct.innerHTML = this._renderContrat(); this._bindContratEvents(); break;
+      case 'annonces': this._renderAnnonces(ct); break;
       case 'integrations': ct.innerHTML = this._renderIntegrations(); this._bindIntegrationsEvents(); break;
     }
   },
@@ -3036,5 +3038,162 @@ const ParametresPage = {
     input.type = isPassword ? 'text' : 'password';
     const btn = input.parentElement.querySelector('button iconify-icon');
     if (btn) btn.setAttribute('icon', isPassword ? 'solar:eye-closed-bold-duotone' : 'solar:eye-bold-duotone');
+  },
+
+  // ========================= ONGLET ANNONCES (pilote.tech) =========================
+
+  async _renderAnnonces(ct) {
+    ct.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);"><iconify-icon icon="solar:refresh-bold-duotone" style="font-size:24px;" class="spin"></iconify-icon> Chargement...</div>';
+
+    const { data: annonces, error } = await supabase
+      .from('fleet_announcements')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      ct.innerHTML = '<div class="card"><p style="color:var(--danger);">Erreur : ' + Utils.escHtml(error.message) + '</p></div>';
+      return;
+    }
+
+    const rows = (annonces || []).map(a => {
+      const isActive = a.active && (!a.end_date || new Date(a.end_date) > new Date());
+      const typeLabel = { promotion: 'Promotion', info: 'Info', urgent: 'Urgent' }[a.type] || a.type;
+      const typeColor = { promotion: 'var(--primary)', info: 'var(--success)', urgent: 'var(--danger)' }[a.type] || 'var(--text-muted)';
+      return `
+        <tr>
+          <td>
+            <div style="font-weight:600;">${Utils.escHtml(a.title)}</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:2px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${Utils.escHtml(a.message)}</div>
+          </td>
+          <td><span class="badge" style="background:${typeColor}15;color:${typeColor};border:1px solid ${typeColor}30;">${typeLabel}</span></td>
+          <td>
+            <label class="toggle-switch" style="margin:0;">
+              <input type="checkbox" ${a.active ? 'checked' : ''} onchange="ParametresPage._toggleAnnonce('${a.id}', this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+          <td>${isActive ? '<span style="color:var(--success);font-weight:600;">● En ligne</span>' : '<span style="color:var(--text-muted);">○ Hors ligne</span>'}</td>
+          <td style="font-size:var(--font-size-xs);color:var(--text-muted);">${a.created_at ? new Date(a.created_at).toLocaleDateString('fr-FR') : '-'}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <button class="btn-icon" onclick="ParametresPage._editAnnonce('${a.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+              <button class="btn-icon btn-icon-danger" onclick="ParametresPage._deleteAnnonce('${a.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+
+    ct.innerHTML = `
+      <div class="card">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="card-title"><iconify-icon icon="solar:megaphone-bold-duotone"></iconify-icon> Annonces & Promotions</span>
+          <button class="btn btn-primary btn-sm" onclick="ParametresPage._addAnnonce()">
+            <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Nouvelle annonce
+          </button>
+        </div>
+        <p style="color:var(--text-muted);font-size:var(--font-size-sm);margin-bottom:var(--space-md);">
+          Les annonces actives s'affichent en popup sur <strong>pilote.tech</strong> pour les visiteurs du site.
+        </p>
+        ${annonces.length === 0 ? '<div style="text-align:center;padding:40px;color:var(--text-muted);"><iconify-icon icon="solar:megaphone-bold-duotone" style="font-size:48px;opacity:.3;"></iconify-icon><p style="margin-top:12px;">Aucune annonce pour le moment</p></div>' : `
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Annonce</th>
+                <th>Type</th>
+                <th>Actif</th>
+                <th>Statut</th>
+                <th>Créé le</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`}
+      </div>
+    `;
+  },
+
+  _addAnnonce() {
+    this._openAnnonceForm(null);
+  },
+
+  async _editAnnonce(id) {
+    const { data } = await supabase.from('fleet_announcements').select('*').eq('id', id).single();
+    if (data) this._openAnnonceForm(data);
+  },
+
+  _openAnnonceForm(existing) {
+    const isEdit = !!existing;
+    Modal.form({
+      title: isEdit ? 'Modifier l\'annonce' : 'Nouvelle annonce',
+      icon: 'solar:megaphone-bold-duotone',
+      fields: [
+        { name: 'title', label: 'Titre', type: 'text', required: true, value: existing?.title || '', placeholder: 'Ex: Promotion rentrée -20%' },
+        { name: 'message', label: 'Message', type: 'textarea', required: true, value: existing?.message || '', placeholder: 'Décrivez votre offre...' },
+        { type: 'row-start' },
+        { name: 'type', label: 'Type', type: 'select', value: existing?.type || 'promotion', options: [
+          { value: 'promotion', label: 'Promotion' },
+          { value: 'info', label: 'Information' },
+          { value: 'urgent', label: 'Urgent' }
+        ]},
+        { name: 'active', label: 'Activer immédiatement', type: 'select', value: existing?.active ? 'true' : 'false', options: [
+          { value: 'true', label: 'Oui — visible sur pilote.tech' },
+          { value: 'false', label: 'Non — brouillon' }
+        ]},
+        { type: 'row-end' },
+        { type: 'row-start' },
+        { name: 'image_url', label: 'URL de l\'image (optionnel)', type: 'text', value: existing?.image_url || '', placeholder: 'https://...' },
+        { name: 'end_date', label: 'Date de fin (optionnel)', type: 'date', value: existing?.end_date ? existing.end_date.split('T')[0] : '' },
+        { type: 'row-end' },
+        { type: 'row-start' },
+        { name: 'cta_text', label: 'Texte du bouton', type: 'text', value: existing?.cta_text || 'En savoir plus', placeholder: 'En savoir plus' },
+        { name: 'cta_link', label: 'Lien du bouton', type: 'text', value: existing?.cta_link || '', placeholder: 'https://pilote.tech/vehicules' },
+        { type: 'row-end' }
+      ],
+      submitLabel: isEdit ? 'Enregistrer' : 'Créer l\'annonce',
+      onSubmit: async (values) => {
+        const record = {
+          title: values.title,
+          message: values.message,
+          type: values.type || 'promotion',
+          active: values.active === 'true',
+          image_url: values.image_url || null,
+          cta_text: values.cta_text || 'En savoir plus',
+          cta_link: values.cta_link || null,
+          end_date: values.end_date ? new Date(values.end_date + 'T23:59:59').toISOString() : null
+        };
+
+        if (isEdit) {
+          const { error } = await supabase.from('fleet_announcements').update(record).eq('id', existing.id);
+          if (error) { Toast.error('Erreur : ' + error.message); return; }
+          Toast.success('Annonce modifiée');
+        } else {
+          const { error } = await supabase.from('fleet_announcements').insert(record);
+          if (error) { Toast.error('Erreur : ' + error.message); return; }
+          Toast.success('Annonce créée');
+        }
+
+        Modal.close();
+        this._renderAnnonces(document.getElementById('settings-content'));
+      }
+    });
+  },
+
+  async _toggleAnnonce(id, active) {
+    const { error } = await supabase.from('fleet_announcements').update({ active }).eq('id', id);
+    if (error) {
+      Toast.error('Erreur : ' + error.message);
+      return;
+    }
+    Toast.success(active ? 'Annonce activée — visible sur pilote.tech' : 'Annonce désactivée');
+  },
+
+  async _deleteAnnonce(id) {
+    if (!confirm('Supprimer cette annonce ?')) return;
+    const { error } = await supabase.from('fleet_announcements').delete().eq('id', id);
+    if (error) { Toast.error('Erreur : ' + error.message); return; }
+    Toast.success('Annonce supprimée');
+    this._renderAnnonces(document.getElementById('settings-content'));
   }
 };
