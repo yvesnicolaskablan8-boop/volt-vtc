@@ -258,19 +258,48 @@ const App = {
       console.log('Supabase client OK:', typeof supabase.auth);
     }
 
-    // Check for password recovery flow (from reset email link)
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const hashType = hashParams.get('type');
-    if (hashType === 'recovery') {
-      // Let Supabase process the recovery token from the hash
-      const { data, error } = await supabase.auth.getSession();
-      if (!error && data.session) {
-        this._showLogin();
-        this._showResetPasswordForm(data.session.user.email);
-        // Clear hash
+    // Listen for password recovery event from Supabase
+    // When user clicks reset link, Supabase processes the hash token asynchronously
+    // and fires PASSWORD_RECOVERY event when ready
+    this._recoveryHandled = false;
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' && session && !this._recoveryHandled) {
+        this._recoveryHandled = true;
+        console.log('Password recovery session detected');
+        // Clear hash from URL
         history.replaceState(null, '', window.location.pathname);
-        return;
+        // Show reset form
+        this._showLogin();
+        this._showResetPasswordForm(session.user.email);
       }
+    });
+
+    // If URL has recovery hash, wait for Supabase to process it before proceeding
+    const hashStr = window.location.hash || '';
+    if (hashStr.includes('type=recovery')) {
+      console.log('Recovery hash detected, waiting for Supabase to process...');
+      // Dismiss splash while waiting
+      if (typeof window._splashDismiss === 'function') window._splashDismiss();
+      // Give Supabase up to 3 seconds to process the recovery token
+      await new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (this._recoveryHandled) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 100);
+        // Timeout fallback — show login if Supabase can't process the token
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          if (!this._recoveryHandled) {
+            console.warn('Recovery token processing timed out');
+            this._showLogin();
+            this._showLoginError('Le lien de réinitialisation a expiré ou est invalide. Cliquez sur "Mot de passe oublié" pour en recevoir un nouveau.');
+          }
+          resolve();
+        }, 3000);
+      });
+      return;
     }
 
     // Check authentication via Supabase
