@@ -688,39 +688,93 @@ const ParametresPage = {
 
       // Clean empty email to avoid duplicate key errors in MongoDB
       if (!values.email || !values.email.trim()) {
-        delete values.email;
+        Toast.error('L\'email est obligatoire pour créer un compte');
+        return;
       }
 
-      const user = {
-        id: Utils.generateId('USR'),
-        ...values,
-        chauffeurId: values.role === 'chauffeur' ? chauffeurId : undefined,
-        avatar: null,
-        passwordHash: null,
-        mustChangePassword: pwd ? true : true,
-        permissions,
-        dernierConnexion: null,
-        dateCreation: new Date().toISOString()
-      };
-
-      Store.add('users', user);
-
-      // If a password was provided, set it via API (server-side hashing)
-      if (pwd) {
-        await Auth.setTemporaryPassword(user.id, pwd);
+      // Password is required for new users
+      if (!pwd) {
+        Toast.error('Le mot de passe est obligatoire pour un nouvel utilisateur');
+        return;
       }
 
-      // If chauffeur role with PIN, set the PIN via API
-      if (values.role === 'chauffeur' && pin) {
-        const pinSet = await this._setChauffeurPin(user.id, pin, chauffeurId);
-        if (!pinSet) {
-          Toast.warning('Utilisateur créé mais le PIN n\'a pas pu être défini. Modifiez l\'utilisateur pour réessayer.');
+      // Save admin session before creating new auth user
+      const adminToken = Auth.getToken();
+      const adminSession = Auth.getSession();
+
+      try {
+        // 1. Create Supabase Auth account
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: values.email.trim(),
+          password: pwd
+        });
+
+        if (authError) {
+          Toast.error(App._translateSupabaseError ? App._translateSupabaseError(authError.message) : authError.message);
+          return;
+        }
+
+        const authId = authData.user.id;
+
+        // 2. Restore admin session (signUp may have created a new session)
+        if (adminToken) {
+          await supabase.auth.setSession({
+            access_token: adminToken,
+            refresh_token: (await supabase.auth.getSession()).data?.session?.refresh_token || adminToken
+          });
+          Auth.setToken(adminToken);
+          if (adminSession) {
+            localStorage.setItem(Auth._SESSION_KEY, JSON.stringify(adminSession));
+          }
+        }
+
+        // 3. Insert fleet_users entry with auth_id (directly via Supabase)
+        const newFleetUser = {
+          auth_id: authId,
+          email: values.email.trim(),
+          prenom: values.prenom || '',
+          nom: values.nom || '',
+          telephone: values.telephone || null,
+          role: values.role || 'Opérateur',
+          statut: values.statut || 'actif',
+          permissions: permissions,
+          must_change_password: true,
+          chauffeur_id: values.role === 'chauffeur' ? chauffeurId : null,
+          created_at: new Date().toISOString()
+        };
+
+        const { data: insertedUser, error: insertError } = await supabase
+          .from('fleet_users')
+          .insert(newFleetUser)
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('fleet_users insert failed:', insertError);
+          Toast.error('Erreur lors de la création : ' + (insertError.message || 'échec d\'insertion'));
+          return;
+        }
+
+        // 4. Add to local Store cache (using camelCase)
+        const userForStore = objToCamel(insertedUser);
+        if (!Store._cache) Store._cache = Store._emptyData();
+        if (!Store._cache.users) Store._cache.users = [];
+        Store._cache.users.push(userForStore);
+        Store._backupToLocalStorage();
+
+        Modal.close();
+        Toast.success('Utilisateur ' + values.prenom + ' ' + values.nom + ' créé avec mot de passe temporaire');
+        this._renderTab('users');
+
+      } catch (err) {
+        console.error('User creation error:', err);
+        Toast.error('Erreur : ' + (err.message || 'échec de création'));
+        // Restore admin session on error
+        if (adminToken && adminSession) {
+          Auth.setToken(adminToken);
+          localStorage.setItem(Auth._SESSION_KEY, JSON.stringify(adminSession));
         }
       }
-
-      Modal.close();
-      Toast.success(`Utilisateur ${values.prenom} ${values.nom} créé` + (values.role === 'chauffeur' ? ' (compte chauffeur)' : pwd ? ' avec mot de passe temporaire' : ''));
-      this._renderTab('users');
     }, 'modal-lg');
 
     // Bind permission toggles + chauffeur role toggle after modal is open
