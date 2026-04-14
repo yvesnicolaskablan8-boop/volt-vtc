@@ -749,6 +749,7 @@ const ParametresPage = {
 
         // 3. Insert fleet_users entry with auth_id (directly via Supabase)
         const newFleetUser = {
+          id: crypto.randomUUID(),
           auth_id: authId,
           email: values.email.trim(),
           prenom: values.prenom || '',
