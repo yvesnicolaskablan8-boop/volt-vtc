@@ -258,48 +258,25 @@ const App = {
       console.log('Supabase client OK:', typeof supabase.auth);
     }
 
-    // Listen for password recovery event from Supabase
-    // When user clicks reset link, Supabase processes the hash token asynchronously
-    // and fires PASSWORD_RECOVERY event when ready
-    this._recoveryHandled = false;
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' && session && !this._recoveryHandled) {
-        this._recoveryHandled = true;
-        console.log('Password recovery session detected');
+    // Check for password recovery flow
+    // The flag is set in app.html BEFORE Supabase processes the hash
+    if (sessionStorage.getItem('pilote_recovery')) {
+      sessionStorage.removeItem('pilote_recovery');
+      console.log('Recovery flow detected via sessionStorage flag');
+      // By now Supabase has already processed the hash and created a session
+      const { data } = await supabase.auth.getSession();
+      if (data && data.session) {
         // Clear hash from URL
         history.replaceState(null, '', window.location.pathname);
-        // Show reset form
         this._showLogin();
-        this._showResetPasswordForm(session.user.email);
+        this._showResetPasswordForm(data.session.user.email);
+        return;
+      } else {
+        // Token expired or invalid
+        this._showLogin();
+        this._showLoginError('Le lien de réinitialisation a expiré. Cliquez sur "Mot de passe oublié" pour en recevoir un nouveau.');
+        return;
       }
-    });
-
-    // If URL has recovery hash, wait for Supabase to process it before proceeding
-    const hashStr = window.location.hash || '';
-    if (hashStr.includes('type=recovery')) {
-      console.log('Recovery hash detected, waiting for Supabase to process...');
-      // Dismiss splash while waiting
-      if (typeof window._splashDismiss === 'function') window._splashDismiss();
-      // Give Supabase up to 3 seconds to process the recovery token
-      await new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (this._recoveryHandled) {
-            clearInterval(checkInterval);
-            resolve();
-          }
-        }, 100);
-        // Timeout fallback — show login if Supabase can't process the token
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          if (!this._recoveryHandled) {
-            console.warn('Recovery token processing timed out');
-            this._showLogin();
-            this._showLoginError('Le lien de réinitialisation a expiré ou est invalide. Cliquez sur "Mot de passe oublié" pour en recevoir un nouveau.');
-          }
-          resolve();
-        }, 3000);
-      });
-      return;
     }
 
     // Check authentication via Supabase
@@ -546,10 +523,12 @@ const App = {
     const loginSection = document.getElementById('login-form-section');
     const setPasswordSection = document.getElementById('set-password-section');
     const registerSection = document.getElementById('register-form-section');
+    const forgotSection = document.getElementById('forgot-form-section');
     const showRegister = window.location.hash === '#register';
     if (loginSection) loginSection.style.display = showRegister ? 'none' : '';
     if (setPasswordSection) setPasswordSection.style.display = 'none';
     if (registerSection) registerSection.style.display = showRegister ? '' : 'none';
+    if (forgotSection) forgotSection.style.display = 'none';
 
     // Register form submit
     const registerForm = document.getElementById('register-form');
@@ -590,26 +569,59 @@ const App = {
       });
     }
 
-    // Forgot password
+    // Forgot password — open dedicated section
     const forgotBtn = document.getElementById('forgot-password-btn');
     if (forgotBtn) {
       const newBtn = forgotBtn.cloneNode(true);
       forgotBtn.parentNode.replaceChild(newBtn, forgotBtn);
-      newBtn.addEventListener('click', () => this._handleForgotPassword());
+      newBtn.addEventListener('click', () => {
+        document.getElementById('login-form-section').style.display = 'none';
+        document.getElementById('forgot-form-section').style.display = '';
+        this._hideLoginError();
+        const forgotEmail = document.getElementById('forgot-email');
+        const loginEmail = document.getElementById('login-email');
+        if (forgotEmail && loginEmail && loginEmail.value) forgotEmail.value = loginEmail.value;
+        if (forgotEmail) forgotEmail.focus();
+      });
+    }
+
+    // Forgot form — back to login
+    const forgotBackBtn = document.getElementById('forgot-back-btn');
+    if (forgotBackBtn) {
+      const newBtn = forgotBackBtn.cloneNode(true);
+      forgotBackBtn.parentNode.replaceChild(newBtn, forgotBackBtn);
+      newBtn.addEventListener('click', () => {
+        document.getElementById('forgot-form-section').style.display = 'none';
+        document.getElementById('login-form-section').style.display = '';
+      });
+    }
+
+    // Forgot form submit
+    const forgotForm = document.getElementById('forgot-form');
+    if (forgotForm) {
+      const newForm = forgotForm.cloneNode(true);
+      forgotForm.parentNode.replaceChild(newForm, forgotForm);
+      newForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this._handleForgotPassword();
+      });
     }
   },
 
   async _handleForgotPassword() {
-    const emailInput = document.getElementById('login-email');
+    const emailInput = document.getElementById('forgot-email');
     const email = emailInput ? emailInput.value.trim() : '';
+    const btn = document.getElementById('forgot-submit-btn');
+    const errEl = document.getElementById('forgot-error');
+
     if (!email) {
-      this._showLoginError('Entrez votre adresse email, puis cliquez sur "Mot de passe oublié".');
+      if (errEl) { errEl.textContent = 'Veuillez entrer votre adresse email.'; errEl.style.display = 'flex'; }
       if (emailInput) emailInput.focus();
       return;
     }
 
-    const btn = document.getElementById('forgot-password-btn');
-    if (btn) btn.disabled = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Envoi en cours...'; }
+    if (errEl) errEl.style.display = 'none';
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -619,46 +631,42 @@ const App = {
         const msg = error.message.includes('security purposes')
           ? 'Un email a déjà été envoyé. Vérifiez votre boîte mail (et les spams). Réessayez dans 60 secondes.'
           : 'Erreur : ' + error.message;
-        this._showLoginError(msg);
+        if (errEl) { errEl.textContent = msg; errEl.style.display = 'flex'; }
+        if (btn) { btn.disabled = false; btn.textContent = 'Envoyer le lien'; }
       } else {
-        this._hideLoginError();
-        // Show success directly in login section
-        const loginSection = document.getElementById('login-form-section');
-        if (loginSection) {
-          const successDiv = document.createElement('div');
-          successDiv.style.cssText = 'text-align:center;padding:2rem 0;';
+        // Show success in the forgot section
+        const forgotSection = document.getElementById('forgot-form-section');
+        if (forgotSection) {
+          forgotSection.textContent = '';
 
           const icon = document.createElement('iconify-icon');
           icon.setAttribute('icon', 'solar:letter-bold-duotone');
-          icon.style.cssText = 'font-size:3rem;color:#3b82f6;display:block;margin-bottom:1rem;';
-          successDiv.appendChild(icon);
+          icon.style.cssText = 'font-size:3rem;color:#3b82f6;display:block;text-align:center;margin-bottom:1rem;';
+          forgotSection.appendChild(icon);
 
           const title = document.createElement('h2');
           title.className = 'login-title';
           title.textContent = 'Email envoyé !';
-          successDiv.appendChild(title);
+          forgotSection.appendChild(title);
 
           const desc = document.createElement('p');
-          desc.style.cssText = 'color:var(--text-secondary);margin:0.75rem 0 1.5rem;line-height:1.6;';
+          desc.className = 'login-subtitle';
+          desc.style.lineHeight = '1.6';
           desc.textContent = 'Un lien de réinitialisation a été envoyé à ' + email + '. Vérifiez votre boîte de réception (et les spams) puis cliquez sur le lien.';
-          successDiv.appendChild(desc);
+          forgotSection.appendChild(desc);
 
           const backBtn = document.createElement('button');
           backBtn.type = 'button';
-          backBtn.className = 'btn btn-primary btn-block';
+          backBtn.className = 'btn btn-primary btn-block login-submit';
           backBtn.textContent = 'Retour à la connexion';
+          backBtn.style.marginTop = '1.5rem';
           backBtn.addEventListener('click', function() { location.reload(); });
-          successDiv.appendChild(backBtn);
-
-          loginSection.textContent = '';
-          loginSection.appendChild(successDiv);
+          forgotSection.appendChild(backBtn);
         }
       }
     } catch (e) {
-      this._showLoginError('Erreur réseau. Réessayez.');
-      if (btn) {
-        btn.disabled = false;
-      }
+      if (errEl) { errEl.textContent = 'Erreur réseau. Réessayez.'; errEl.style.display = 'flex'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Envoyer le lien'; }
     }
   },
 

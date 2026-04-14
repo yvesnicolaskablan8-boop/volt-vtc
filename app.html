@@ -77,9 +77,16 @@
   <link rel="stylesheet" href="css/animations.css?v=395">
   <link rel="stylesheet" href="css/responsive.css?v=395">
 
+  <!-- Detect password recovery BEFORE Supabase processes the hash -->
+  <script>
+    if (window.location.hash && window.location.hash.indexOf('type=recovery') !== -1) {
+      sessionStorage.setItem('pilote_recovery', '1');
+    }
+  </script>
+
   <!-- Prevent flash of login screen on refresh when already authenticated -->
   <script>
-    if (localStorage.getItem('pilote_token')) {
+    if (localStorage.getItem('pilote_token') && !sessionStorage.getItem('pilote_recovery')) {
       document.documentElement.classList.add('pilote-has-token');
     }
   </script>
@@ -225,6 +232,28 @@
           </form>
           <button type="button" class="login-back-btn" id="show-login-btn">
             <iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon> Déjà un compte ? Se connecter
+          </button>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div id="forgot-form-section" style="display:none;">
+          <div style="text-align:center;margin-bottom:1.5rem;">
+            <iconify-icon icon="solar:lock-keyhole-bold-duotone" style="font-size:2.5rem;color:var(--primary);"></iconify-icon>
+          </div>
+          <h2 class="login-title">Mot de passe oublié</h2>
+          <p class="login-subtitle">Entrez votre adresse email pour recevoir un lien de réinitialisation.</p>
+          <div class="login-error" id="forgot-error" style="display:none;"></div>
+          <form id="forgot-form" autocomplete="off">
+            <div class="form-group">
+              <label class="form-label"><iconify-icon icon="solar:letter-bold-duotone" style="margin-right:6px;color:var(--primary);font-size:14px;vertical-align:-2px;"></iconify-icon>Adresse email</label>
+              <input type="email" class="form-control login-input" id="forgot-email" placeholder="votre@email.com" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block login-submit" id="forgot-submit-btn">
+              <iconify-icon icon="solar:letter-bold-duotone"></iconify-icon> Envoyer le lien
+            </button>
+          </form>
+          <button type="button" class="login-back-btn" id="forgot-back-btn">
+            <iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon> Retour à la connexion
           </button>
         </div>
 
