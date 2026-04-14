@@ -32,6 +32,7 @@ const Router = {
       '/taches': { page: TachesPage, title: 'Taches' },
       '/incidents': { redirect: '/vehicules' },
       '/activite': { page: ActivitePage, title: 'Journal d\'activite' },
+      '/annonces': { page: AnnoncesPage, title: 'Annonces' },
       '/notifications-admin': { page: NotificationsAdminPage, title: 'Notifications' },
       '/parametres': { page: ParametresPage, title: 'Paramètres' },
       '/mon-compte': { page: MonComptePage, title: 'Mon compte' },

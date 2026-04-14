@@ -41,6 +41,7 @@ const ASSETS = [
   './js/pages/contraventions.js',
   './js/pages/depenses.js',
   './js/pages/activite.js',
+  './js/pages/annonces.js',
   './js/pages/notifications-admin.js',
   './js/pages/taches.js',
   './js/components/bottom-nav.js',
