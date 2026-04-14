@@ -704,24 +704,43 @@ const ParametresPage = {
 
       try {
         // 1. Create Supabase Auth account
+        let authId = null;
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: values.email.trim(),
           password: pwd
         });
 
         if (authError) {
-          Toast.error(App._translateSupabaseError ? App._translateSupabaseError(authError.message) : authError.message);
-          return;
+          // If user already registered in Auth, try signing in to get their auth_id
+          if (authError.message && authError.message.includes('already registered')) {
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: values.email.trim(),
+              password: pwd
+            });
+            if (signInError) {
+              Toast.error('Ce compte existe déjà mais le mot de passe ne correspond pas. Utilisez le même mot de passe que lors de la première tentative.');
+              return;
+            }
+            authId = signInData.user.id;
+          } else {
+            Toast.error(App._translateSupabaseError ? App._translateSupabaseError(authError.message) : authError.message);
+            return;
+          }
+        } else {
+          authId = authData.user.id;
         }
 
-        const authId = authData.user.id;
-
-        // 2. Restore admin session (signUp may have created a new session)
+        // 2. Restore admin session (signUp/signIn may have changed the session)
         if (adminToken) {
-          await supabase.auth.setSession({
-            access_token: adminToken,
-            refresh_token: (await supabase.auth.getSession()).data?.session?.refresh_token || adminToken
-          });
+          try {
+            const currentSession = (await supabase.auth.getSession()).data?.session;
+            await supabase.auth.setSession({
+              access_token: adminToken,
+              refresh_token: currentSession?.refresh_token || adminToken
+            });
+          } catch (e) {
+            console.warn('Session restore warning:', e);
+          }
           Auth.setToken(adminToken);
           if (adminSession) {
             localStorage.setItem(Auth._SESSION_KEY, JSON.stringify(adminSession));
