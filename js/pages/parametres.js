@@ -755,10 +755,8 @@ const ParametresPage = {
           nom: values.nom || '',
           telephone: values.telephone || null,
           role: values.role || 'Opérateur',
-          statut: values.statut || 'actif',
           permissions: permissions,
           must_change_password: true,
-          chauffeur_id: values.role === 'chauffeur' ? chauffeurId : null,
           created_at: new Date().toISOString()
         };
 
