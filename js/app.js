@@ -630,7 +630,7 @@ const App = {
       if (error) {
         const msg = error.message.includes('security purposes')
           ? 'Un email a déjà été envoyé. Vérifiez votre boîte mail (et les spams). Réessayez dans 60 secondes.'
-          : 'Erreur : ' + error.message;
+          : App._translateSupabaseError(error.message);
         if (errEl) { errEl.textContent = msg; errEl.style.display = 'flex'; }
         if (btn) { btn.disabled = false; btn.textContent = 'Envoyer le lien'; }
       } else {
@@ -772,9 +772,10 @@ const App = {
           'invalid_credentials': 'Email ou mot de passe incorrect.',
           'Invalid login credentials': 'Email ou mot de passe incorrect.',
           'no_fleet_user': 'Aucun accès configuré pour ce compte. Contactez votre administrateur.',
+          'user_creation_failed': 'Erreur lors de la création du profil. Réessayez ou contactez le support.',
           'network_error': 'Impossible de contacter le serveur. Vérifiez votre connexion.',
         };
-        const msg = messages[result.error] || (result.error && result.error.includes('Invalid login') ? 'Email ou mot de passe incorrect.' : result.error) || 'Erreur de connexion.';
+        const msg = messages[result.error] || App._translateSupabaseError(result.error) || 'Erreur de connexion.';
         this._showLoginError(result.detail ? msg + ' (' + result.detail + ')' : msg);
       }
     } catch (err) {
@@ -986,7 +987,8 @@ const App = {
         try {
           const { error } = await supabase.auth.updateUser({ password: newPwd });
           if (error) {
-            if (errEl) { errEl.textContent = 'Erreur : ' + error.message; errEl.style.display = 'flex'; }
+            const translated = App._translateSupabaseError(error.message);
+            if (errEl) { errEl.textContent = translated; errEl.style.display = 'flex'; }
             if (btn) { btn.disabled = false; btn.textContent = 'Définir le mot de passe'; }
           } else {
             Toast.show('Mot de passe mis à jour ! Connectez-vous.', 'success');
@@ -1042,6 +1044,30 @@ const App = {
     if (el) el.style.display = 'none';
   },
 
+  _translateSupabaseError(msg) {
+    if (!msg) return 'Erreur inconnue.';
+    const translations = {
+      'Invalid login credentials': 'Email ou mot de passe incorrect.',
+      'Email not confirmed': 'Votre email n\'a pas été confirmé.',
+      'User already registered': 'Un compte existe déjà avec cet email.',
+      'Password should be at least 6 characters': 'Le mot de passe doit contenir au moins 6 caractères.',
+      'New password should be different from the old password': 'Le nouveau mot de passe doit être différent de l\'ancien.',
+      'New password should be different from the old password.': 'Le nouveau mot de passe doit être différent de l\'ancien.',
+      'Auth session missing': 'Session expirée. Veuillez vous reconnecter.',
+      'User not found': 'Aucun compte trouvé avec cet email.',
+      'Email rate limit exceeded': 'Trop de tentatives. Réessayez dans quelques minutes.',
+      'For security purposes, you can only request this after': 'Un email a déjà été envoyé. Réessayez dans 60 secondes.',
+    };
+    // Exact match
+    if (translations[msg]) return translations[msg];
+    // Partial match
+    for (var key in translations) {
+      if (msg.toLowerCase().indexOf(key.toLowerCase()) !== -1) return translations[key];
+    }
+    // Fallback
+    return 'Erreur : ' + msg;
+  },
+
   async _handleRegister() {
     const entrepriseNom = document.getElementById('register-entreprise').value.trim();
     const prenom = document.getElementById('register-prenom').value.trim();
@@ -1079,9 +1105,11 @@ const App = {
           'email_exists': 'Un compte existe déjà avec cet email.',
           'invalid_email': 'L\'adresse email n\'est pas valide.',
           'weak_password': 'Le mot de passe est trop faible.',
+          'user_creation_failed': 'Erreur lors de la création du profil. Réessayez.',
+          'registration_failed': 'Erreur lors de l\'inscription. Réessayez.',
           'network_error': 'Impossible de contacter le serveur. Vérifiez votre connexion.',
         };
-        const msg = messages[result.error] || result.error || 'Erreur lors de la création du compte.';
+        const msg = messages[result.error] || App._translateSupabaseError(result.error) || 'Erreur lors de la création du compte.';
         this._showRegisterError(result.detail ? msg + ' (' + result.detail + ')' : msg);
       }
     } catch (err) {

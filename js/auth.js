@@ -208,7 +208,7 @@ const Auth = {
             email: authData.user.email,
             prenom: 'Admin',
             nom: '',
-            role: 'admin',
+            role: 'Admin',
             permissions: allPermissions,
             must_change_password: false,
             created_at: new Date().toISOString()
@@ -287,7 +287,7 @@ const Auth = {
         prenom: prenom || '',
         nom: nom || '',
         telephone: telephone || null,
-        role: 'admin',
+        role: 'Admin',
         permissions: allPermissions,
         must_change_password: false,
         created_at: new Date().toISOString()
