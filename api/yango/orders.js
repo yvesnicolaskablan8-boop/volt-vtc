@@ -11,9 +11,8 @@ module.exports = withYango(async (req, res, creds) => {
 
   const data = await yangoPost('/v1/parks/orders/list', {
     limit: 500,
-    park_id: creds.parkId,
     query: {
-      park: { order: {
+      park: { id: creds.parkId, order: {
         booked_at: { from, to },
         status: ['complete', 'cancelled', 'driving', 'waiting', 'transporting'],
       }},

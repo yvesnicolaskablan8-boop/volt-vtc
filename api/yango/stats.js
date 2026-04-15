@@ -9,21 +9,21 @@ module.exports = withYango(async (req, res, creds) => {
 
   // Fetch drivers, today orders, month orders in parallel
   const driverBody = {
-    limit: 500, offset: 0, park_id: creds.parkId,
+    limit: 500, offset: 0,
     fields: {
       account: ['balance', 'currency'],
       car: ['brand', 'model', 'number'],
       driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_status', 'work_rule_id'],
       current_status: ['status'],
     },
-    query: { park: { work_status: ['working'] } },
+    query: { park: { id: creds.parkId, work_status: ['working'] } },
   };
   if (workRuleFilter.length) driverBody.query.park.work_rule_id = workRuleFilter;
 
   const orderBody = {
-    limit: 500, park_id: creds.parkId,
+    limit: 500,
     query: {
-      park: { order: {
+      park: { id: creds.parkId, order: {
         booked_at: { from, to },
         status: ['complete', 'cancelled', 'driving', 'waiting', 'transporting'],
       }},
@@ -31,9 +31,9 @@ module.exports = withYango(async (req, res, creds) => {
   };
 
   const monthOrderBody = {
-    limit: 500, park_id: creds.parkId,
+    limit: 500,
     query: {
-      park: { order: {
+      park: { id: creds.parkId, order: {
         booked_at: { from: monthStart, to: now.toISOString() },
         status: ['complete'],
       }},

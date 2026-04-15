@@ -5,8 +5,8 @@ module.exports = withYango(async (req, res, creds) => {
   const data = await yangoPost('/v1/parks/driver-profiles/list', {
     limit: 1,
     offset: 0,
-    park_id: creds.parkId,
     fields: { account: [], car: [], driver_profile: ['id'] },
+    query: { park: { id: creds.parkId } },
   }, creds, { timeout: 10000 });
 
   res.json({

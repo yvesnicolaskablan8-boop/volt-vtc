@@ -7,17 +7,17 @@ module.exports = withYango(async (req, res, creds) => {
   const body = {
     limit: 300,
     offset: 0,
-    park_id: creds.parkId,
     fields: {
       account: ['balance', 'currency'],
       car: ['brand', 'model', 'color', 'number', 'year'],
       driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_status', 'work_rule_id', 'hire_date', 'created_date'],
       current_status: ['status'],
     },
+    query: { park: { id: creds.parkId } },
   };
 
   if (!all) {
-    body.query = { park: { work_status: ['working'] } };
+    body.query.park.work_status = ['working'];
     if (workRuleFilter.length) {
       body.query.park.work_rule_id = workRuleFilter;
     }

@@ -98,8 +98,7 @@ module.exports = withYango(async (req, res, creds) => {
   try {
     const ordersData = await yangoPost('/v1/parks/orders/list', {
       limit: 500,
-      park_id: creds.parkId,
-      query: { park: { order: { booked_at: { from, to } } } },
+      query: { park: { id: creds.parkId, order: { booked_at: { from, to } } } },
     }, creds, { timeout: 15000 });
 
     const driverOrders = (ordersData.orders || []).filter(o => o.driver && o.driver.id === yangoDriverId);

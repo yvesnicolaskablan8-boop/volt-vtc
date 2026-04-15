@@ -4,11 +4,11 @@ module.exports = withYango(async (req, res, creds) => {
   const data = await yangoPost('/v1/parks/driver-profiles/list', {
     limit: 500,
     offset: 0,
-    park_id: creds.parkId,
     fields: {
       driver_profile: ['id', 'first_name', 'last_name'],
       current_status: ['status'],
     },
+    query: { park: { id: creds.parkId } },
   }, creds);
 
   const profiles = data.driver_profiles || [];
