@@ -1,6 +1,7 @@
 const { withYango, yangoPost } = require('../_lib/yango');
 
 module.exports = withYango(async (req, res, creds) => {
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
   const workRuleFilter = req.query.work_rule ? req.query.work_rule.split(',') : [];
   const all = req.query.all === '1'; // /api/yango/drivers?all=1 for linking
 

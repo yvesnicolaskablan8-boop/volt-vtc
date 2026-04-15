@@ -1,13 +1,37 @@
-const { withYango, yangoPost } = require('../_lib/yango');
+const { withYango, yangoPost, YANGO_BASE } = require('../_lib/yango');
+
+const SUPABASE_URL = 'https://cnwigcbgzzwvvihopvto.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNud2lnY2Jnenp3dnZpaG9wdnRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwOTMzNTksImV4cCI6MjA5MTY2OTM1OX0.v9L44YLNpphKZZyMHSrDa9bYaxtZMqaF5BsEKtg9NH8';
+
+// Cache Pilote driver IDs for 5 minutes
+let _piloteIdsCache = null;
+let _piloteIdsCacheTime = 0;
+
+async function getPiloteDriverIds() {
+  const now = Date.now();
+  if (_piloteIdsCache && (now - _piloteIdsCacheTime) < 300000) return _piloteIdsCache;
+
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/fleet_chauffeurs?select=yango_driver_id&yango_driver_id=not.is.null&yango_driver_id=neq.`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+  );
+  const rows = await res.json();
+  _piloteIdsCache = new Set(rows.map(r => r.yango_driver_id).filter(Boolean));
+  _piloteIdsCacheTime = now;
+  return _piloteIdsCache;
+}
 
 module.exports = withYango(async (req, res, creds) => {
+  // Edge cache: 2 min fresh, serve stale 5 min while revalidating
+  res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=300');
+
   const workRuleFilter = req.query.work_rule ? req.query.work_rule.split(',') : [];
   const now = new Date();
   const from = req.query.from || new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const to = req.query.to || now.toISOString();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  // Fetch drivers, today orders, month orders in parallel
+  // Fetch Pilote-linked driver IDs + Yango data in parallel
   const driverBody = {
     limit: 500, offset: 0,
     fields: {
@@ -16,9 +40,8 @@ module.exports = withYango(async (req, res, creds) => {
       driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_status', 'work_rule_id'],
       current_status: ['status'],
     },
-    query: { park: { id: creds.parkId, work_status: ['working'] } },
+    query: { park: { id: creds.parkId } },
   };
-  if (workRuleFilter.length) driverBody.query.park.work_rule_id = workRuleFilter;
 
   const orderBody = {
     limit: 500,
@@ -40,14 +63,22 @@ module.exports = withYango(async (req, res, creds) => {
     },
   };
 
-  const [driversData, ordersData, monthData] = await Promise.all([
+  const [piloteIds, driversData, ordersData, monthData] = await Promise.all([
+    getPiloteDriverIds(),
     yangoPost('/v1/parks/driver-profiles/list', driverBody, creds),
     yangoPost('/v1/parks/orders/list', orderBody, creds),
     yangoPost('/v1/parks/orders/list', monthOrderBody, creds),
   ]);
 
-  // Process drivers
-  const profiles = driversData.driver_profiles || [];
+  // Filter drivers to Pilote-linked only
+  const allProfiles = driversData.driver_profiles || [];
+  const profiles = allProfiles.filter(p => {
+    const dp = p.driver_profile || {};
+    if (!piloteIds.has(dp.id)) return false;
+    if (workRuleFilter.length && !workRuleFilter.includes(dp.work_rule_id)) return false;
+    return true;
+  });
+
   let enLigne = 0, occupes = 0, horsLigne = 0;
   const chauffeursList = profiles.map(p => {
     const dp = p.driver_profile || {};
@@ -63,8 +94,10 @@ module.exports = withYango(async (req, res, creds) => {
     };
   });
 
-  // Process today orders
-  const orders = ordersData.orders || [];
+  // Filter orders to Pilote drivers only
+  const allOrders = ordersData.orders || [];
+  const orders = allOrders.filter(o => o.driver && piloteIds.has(o.driver.id));
+
   let caAujourdhui = 0, coursesEnCours = 0, terminees = 0, annulees = 0;
   const recentes = [];
 
@@ -87,12 +120,13 @@ module.exports = withYango(async (req, res, creds) => {
     }
   });
 
-  // Process month orders
-  const monthOrders = monthData.orders || [];
+  // Filter month orders to Pilote drivers only
+  const allMonthOrders = monthData.orders || [];
+  const monthOrders = allMonthOrders.filter(o => o.driver && piloteIds.has(o.driver.id));
   let caMois = 0;
   monthOrders.forEach(o => { caMois += parseFloat(o.price) || 0; });
 
-  // Top chauffeurs by revenue
+  // Top chauffeurs by revenue (Pilote only)
   const chauffeurCA = {};
   orders.filter(o => o.status === 'complete' && o.driver).forEach(o => {
     const id = o.driver.id || 'unknown';

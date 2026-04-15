@@ -5,6 +5,7 @@ const { withYango, yangoPost } = require('../_lib/yango');
  * Fetches all Yango vehicles for linking to local fleet.
  */
 module.exports = withYango(async (req, res, creds) => {
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
   const allVehicles = [];
   let offset = 0;
   const LIMIT = 100;

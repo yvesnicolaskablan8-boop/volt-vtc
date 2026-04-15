@@ -1,6 +1,7 @@
 const { withYango, yangoPost } = require('../_lib/yango');
 
 module.exports = withYango(async (req, res, creds) => {
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
   const data = await yangoPost('/v1/parks/driver-profiles/list', {
     limit: 500,
     offset: 0,
