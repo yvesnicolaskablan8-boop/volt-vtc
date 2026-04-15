@@ -2696,7 +2696,22 @@ const ParametresPage = {
     const testYangoBtn = document.getElementById('test-yango-btn');
     if (testYangoBtn) {
       testYangoBtn.addEventListener('click', async () => {
-        Toast.error('Fonctionnalite temporairement indisponible');
+        testYangoBtn.disabled = true;
+        testYangoBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Test...';
+        try {
+          const res = await fetch('/api/yango/test');
+          const data = await res.json();
+          if (data.success) {
+            Toast.success(data.message || 'Connexion Yango reussie');
+          } else {
+            Toast.error(data.error || 'Echec de la connexion Yango');
+          }
+        } catch (e) {
+          Toast.error('Erreur réseau: ' + e.message);
+        } finally {
+          testYangoBtn.disabled = false;
+          testYangoBtn.innerHTML = '<iconify-icon icon="solar:test-tube-bold-duotone"></iconify-icon> Tester';
+        }
       });
     }
   },

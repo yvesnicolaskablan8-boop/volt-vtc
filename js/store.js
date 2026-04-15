@@ -391,70 +391,108 @@ const Store = {
     };
   },
 
-  // =================== YANGO API (stubs -- require Edge Functions) ===================
+  // =================== YANGO API (via Vercel serverless /api/yango/*) ===================
+
+  async _yangoFetch(path) {
+    const res = await fetch(`/api/yango/${path}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      return { error: err.error || `Erreur ${res.status}`, details: err.details || '' };
+    }
+    return res.json();
+  },
 
   async getYangoWorkRules() {
-    console.warn('Store: getYangoWorkRules requires Supabase Edge Functions (not yet implemented)');
-    return null;
+    const data = await this._yangoFetch('work-rules');
+    if (data.error) { console.warn('getYangoWorkRules:', data.error); return null; }
+    return data;
   },
 
   async getYangoStats(workRuleIds, dateRange) {
-    console.warn('Store: getYangoStats requires Supabase Edge Functions (not yet implemented)');
-    return { error: 'Non disponible', details: 'Les Edge Functions Yango ne sont pas encore configurees' };
+    let qs = '';
+    if (workRuleIds && workRuleIds.length) qs += `work_rule=${encodeURIComponent(workRuleIds.join(','))}`;
+    if (dateRange) {
+      if (dateRange.from) qs += `${qs ? '&' : ''}from=${encodeURIComponent(dateRange.from)}`;
+      if (dateRange.to) qs += `${qs ? '&' : ''}to=${encodeURIComponent(dateRange.to)}`;
+    }
+    return this._yangoFetch(`stats${qs ? '?' + qs : ''}`);
   },
 
   async getYangoDriverStats(yangoDriverId, date) {
-    console.warn('Store: getYangoDriverStats requires Supabase Edge Functions (not yet implemented)');
-    return { error: 'Non disponible', details: 'Les Edge Functions Yango ne sont pas encore configurees' };
+    if (!yangoDriverId) return { error: 'Pas de yangoDriverId' };
+    let qs = `driver_id=${encodeURIComponent(yangoDriverId)}`;
+    if (date) {
+      const d = new Date(date);
+      const from = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
+      const to = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59).toISOString();
+      qs += `&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    }
+    return this._yangoFetch(`driver-stats?${qs}`);
   },
 
   async getYangoDrivers(workRuleIds) {
-    console.warn('Store: getYangoDrivers requires Supabase Edge Functions (not yet implemented)');
-    return null;
+    let qs = '';
+    if (workRuleIds && workRuleIds.length) qs = `work_rule=${encodeURIComponent(workRuleIds.join(','))}`;
+    const data = await this._yangoFetch(`drivers${qs ? '?' + qs : ''}`);
+    if (data.error) { console.warn('getYangoDrivers:', data.error); return null; }
+    return data;
   },
 
   async getYangoOrders(from, to) {
-    console.warn('Store: getYangoOrders requires Supabase Edge Functions (not yet implemented)');
-    return null;
+    let qs = '';
+    if (from) qs += `from=${encodeURIComponent(from)}`;
+    if (to) qs += `${qs ? '&' : ''}to=${encodeURIComponent(to)}`;
+    const data = await this._yangoFetch(`orders${qs ? '?' + qs : ''}`);
+    if (data.error) { console.warn('getYangoOrders:', data.error); return null; }
+    return data;
   },
 
   async getYangoVehicles() {
-    console.warn('Store: getYangoVehicles requires Supabase Edge Functions (not yet implemented)');
-    return null;
+    const data = await this._yangoFetch('vehicles');
+    if (data.error) { console.warn('getYangoVehicles:', data.error); return null; }
+    return data;
   },
 
   async triggerYangoSync(date = null) {
-    console.warn('Store: triggerYangoSync requires Supabase Edge Functions (not yet implemented)');
-    return { error: 'Non disponible', details: 'Les Edge Functions Yango ne sont pas encore configurees' };
+    // Sync is now implicit — stats/driver-stats always query Yango live.
+    // This method returns a success stub so callers don't break.
+    return { success: true, message: 'Les donnees sont synchronisees en temps reel via l\'API Yango.' };
   },
 
   async getYangoSyncStatus() {
-    console.warn('Store: getYangoSyncStatus requires Supabase Edge Functions (not yet implemented)');
-    return null;
+    // With serverless proxy, data is always live — no cron needed.
+    return { running: true, enabled: true, lastSyncDate: new Date().toISOString().split('T')[0], realtime: true };
   },
 
   async getYangoDriversForLinking() {
-    console.warn('Store: getYangoDriversForLinking requires Supabase Edge Functions (not yet implemented)');
-    return null;
+    const data = await this._yangoFetch('drivers?all=1');
+    if (data.error) { console.warn('getYangoDriversForLinking:', data.error); return null; }
+    return data;
   },
 
   async getYangoVehiclesForLinking() {
-    console.warn('Store: getYangoVehiclesForLinking requires Supabase Edge Functions (not yet implemented)');
-    return null;
+    const data = await this._yangoFetch('vehicles');
+    if (data.error) { console.warn('getYangoVehiclesForLinking:', data.error); return null; }
+    return data;
   },
 
   async cleanupGhostVersements() {
-    console.warn('Store: cleanupGhostVersements requires Supabase Edge Functions (not yet implemented)');
-    throw new Error('Edge Function non disponible');
+    // Not applicable in serverless mode — no local DB to clean
+    return { success: true, cleaned: 0 };
   },
 
   async yangoBalance(chauffeurId) {
-    console.warn('Store: yangoBalance requires Supabase Edge Functions (not yet implemented)');
-    throw new Error('Edge Function non disponible');
+    // Resolve yangoDriverId from local chauffeur record
+    const chauffeur = this.findById('chauffeurs', chauffeurId);
+    const yangoId = chauffeur?.yangoDriverId;
+    if (!yangoId) throw new Error('Chauffeur non lié à Yango');
+    const data = await this._yangoFetch(`balance?driver_id=${encodeURIComponent(yangoId)}`);
+    if (data.error) throw new Error(data.error);
+    return data;
   },
 
   async yangoRecharge(chauffeurId, amount, description) {
-    console.warn('Store: yangoRecharge requires Supabase Edge Functions (not yet implemented)');
-    throw new Error('Edge Function non disponible');
+    // Recharge is not available via serverless (requires Park-level write access)
+    throw new Error('La recharge Yango n\'est pas encore disponible en mode serverless. Utilisez le portail Yango.');
   }
 };
