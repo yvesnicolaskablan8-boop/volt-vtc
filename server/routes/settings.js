@@ -197,7 +197,7 @@ router.post('/test-yango', async (req, res) => {
       return res.json({ success: false, message: 'Identifiants Yango incomplets' });
     }
 
-    const response = await fetch('https://fleet-api.taxi.yandex.net/v1/parks/driver-profiles/list', {
+    const response = await fetch('https://fleet-api.yango.tech/v1/parks/driver-profiles/list', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

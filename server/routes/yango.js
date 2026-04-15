@@ -2,7 +2,7 @@
  * Yango Fleet API Proxy Routes
  *
  * Proxies requests to the Yango (Yandex Taxi) Fleet API
- * Base URL: https://fleet-api.taxi.yandex.net
+ * Base URL: https://fleet-api.yango.tech
  * Auth: X-Client-ID + X-API-Key headers
  */
 const express = require('express');
@@ -26,7 +26,7 @@ router.use(async (req, res, next) => {
   }
 });
 
-const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
+const YANGO_BASE = 'https://fleet-api.yango.tech';
 
 // Helper: make Yango POST API call with detailed error logging
 async function yangoFetch(endpoint, body = {}, maxRetries = 3, creds = null) {

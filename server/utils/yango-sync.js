@@ -14,7 +14,7 @@
 
 const { getYangoCredentials } = require('./get-integration-keys');
 
-const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
+const YANGO_BASE = 'https://fleet-api.yango.tech';
 
 // Module-level credentials, resolved at start of each sync
 let _creds = null;
