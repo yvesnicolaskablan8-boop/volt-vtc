@@ -27,15 +27,27 @@ const TABLE_MAP = {
   conversations: 'fleet_conversations',
   notifications: 'fleet_notifications',
   contraventions: 'fleet_contraventions',
-  pushSubscriptions: 'fleet_push_subscriptions'
+  pushSubscriptions: 'fleet_push_subscriptions',
+  depenses: 'fleet_depenses',
+  reparations: 'fleet_reparations',
+  incidents: 'fleet_incidents',
+  taches: 'fleet_taches',
+  depenseCategories: 'fleet_depense_categories',
+  versementRecurrents: 'fleet_versement_recurrents'
 };
 
 // Field name conversion utilities (camelCase ↔ snake_case)
+// Special aliases: app fields whose DB column name differs from simple snake_case
+const FIELD_TO_DB = { dateCreation: 'created_at' };
+const DB_TO_FIELD = { created_at: 'dateCreation' };
+
 function toSnakeCase(str) {
+  if (FIELD_TO_DB[str]) return FIELD_TO_DB[str];
   return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
 }
 
 function toCamelCase(str) {
+  if (DB_TO_FIELD[str]) return DB_TO_FIELD[str];
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
