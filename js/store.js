@@ -394,7 +394,8 @@ const Store = {
   // =================== YANGO API (via Vercel Serverless Functions) ===================
 
   /**
-   * Helper: make authenticated API call to /api/yango/* serverless functions.
+   * Helper: make authenticated API call to /api/yango?action=<endpoint>
+   * Single consolidated serverless function — routes via query parameter.
    * Passes the Supabase session token as Bearer auth.
    */
   async _yangoApi(endpoint, options = {}) {
@@ -411,7 +412,9 @@ const Store = {
     const fetchOpts = { method, headers };
     if (options.body) fetchOpts.body = JSON.stringify(options.body);
 
-    const url = `/api/yango/${endpoint}${options.query || ''}`;
+    const extra = options.query || '';
+    const separator = extra.startsWith('?') ? '&' : '';
+    const url = `/api/yango?action=${encodeURIComponent(endpoint)}${separator}${extra.replace(/^\?/, '')}`;
     const res = await fetch(url, fetchOpts);
     const json = await res.json();
 
