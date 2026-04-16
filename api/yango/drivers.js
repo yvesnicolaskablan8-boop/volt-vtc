@@ -1,62 +1,98 @@
-const { withYango, yangoPost } = require('../_lib/yango');
+/**
+ * GET /api/yango/drivers?work_rule=ID1,ID2
+ * Lists active (working) drivers from Yango with optional work-rule filter
+ */
+const { verifyAuth, assertYangoCreds, yangoFetch, yangoGet, setCors, handleOptions } = require('../_lib/helpers');
 
-module.exports = withYango(async (req, res, creds) => {
-  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
-  const workRuleFilter = req.query.work_rule ? req.query.work_rule.split(',') : [];
-  const all = req.query.all === '1'; // /api/yango/drivers?all=1 for linking
+function mapStatus(s) {
+  if (s === 'free') return 'en_ligne';
+  if (s === 'busy' || s === 'in_order') return 'occupe';
+  return 'hors_ligne';
+}
 
-  const body = {
-    limit: 300,
-    offset: 0,
-    fields: {
-      account: ['balance', 'currency'],
-      car: ['brand', 'model', 'color', 'number', 'year'],
-      driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_status', 'work_rule_id', 'hire_date', 'created_date'],
-      current_status: ['status'],
-    },
-    query: { park: { id: creds.parkId } },
-  };
+module.exports = async function handler(req, res) {
+  setCors(res);
+  if (handleOptions(req, res)) return;
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (!all) {
-    body.query.park.work_status = ['working'];
-    if (workRuleFilter.length) {
-      body.query.park.work_rule_id = workRuleFilter;
-    }
-  }
+  const user = await verifyAuth(req);
+  if (!user) return res.status(401).json({ error: 'Non autorise' });
 
-  const data = await yangoPost('/v1/parks/driver-profiles/list', body, creds);
-  const profiles = data.driver_profiles || [];
+  try {
+    const { parkId } = assertYangoCreds();
 
-  let online = 0, busy = 0, offline = 0;
-  const drivers = profiles.map(p => {
-    const dp = p.driver_profile || {};
-    const acc = p.accounts || [];
-    const car = p.car || {};
-    const status = (p.current_status || {}).status || 'offline';
-
-    if (status === 'free') online++;
-    else if (status === 'busy' || status === 'in_order') busy++;
-    else offline++;
-
-    return {
-      id: dp.id,
-      prenom: dp.first_name || '',
-      nom: dp.last_name || '',
-      telephone: (dp.phones || [])[0] || '',
-      statut: status === 'free' ? 'En ligne' : status === 'busy' || status === 'in_order' ? 'Occupe' : 'Hors ligne',
-      workStatus: dp.work_status,
-      workRuleId: dp.work_rule_id,
-      balance: acc[0]?.balance || '0',
-      devise: acc[0]?.currency || 'XOF',
-      vehicule: {
-        marque: car.brand || '',
-        modele: car.model || '',
-        couleur: car.color || '',
-        immatriculation: car.number || '',
-        annee: car.year || '',
-      },
+    // Build query
+    const query = {
+      park: {
+        id: parkId,
+        driver_profile: { work_status: ['working'] }
+      }
     };
-  });
 
-  res.json({ total: data.total || drivers.length, drivers, online, busy, offline });
-});
+    // Optional work-rule filter
+    const workRuleParam = req.query.work_rule;
+    if (workRuleParam) {
+      const ruleIds = workRuleParam.split(',').filter(Boolean);
+      if (ruleIds.length) query.park.driver_profile.work_rule_id = ruleIds;
+    }
+
+    const data = await yangoFetch('/v1/parks/driver-profiles/list', {
+      fields: {
+        account: ['balance'],
+        driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_status', 'work_rule_id'],
+        current_status: ['status'],
+        car: ['id', 'brand', 'model', 'number']
+      },
+      limit: 100,
+      offset: 0,
+      query
+    });
+
+    // Fetch work-rule names for lookup
+    let rulesMap = {};
+    try {
+      const rulesData = await yangoGet('/v1/parks/driver-work-rules', { park_id: parkId });
+      const rules = rulesData.rules || rulesData.work_rules || [];
+      for (const r of rules) { rulesMap[r.id] = r.name; }
+    } catch { /* ignore */ }
+
+    const profiles = data.driver_profiles || [];
+    let online = 0, busy = 0, offline = 0;
+
+    const drivers = profiles.map(p => {
+      const dp = p.driver_profile || {};
+      const cs = p.current_status || {};
+      const car = p.car || {};
+      const acc = (p.accounts || [])[0] || {};
+      const status = mapStatus(cs.status);
+
+      if (status === 'en_ligne') online++;
+      else if (status === 'occupe') busy++;
+      else offline++;
+
+      return {
+        id: dp.id,
+        prenom: dp.first_name || '',
+        nom: dp.last_name || '',
+        telephone: (dp.phones || [])[0] || '',
+        statut: status,
+        statutRaw: cs.status || 'offline',
+        workRuleId: dp.work_rule_id || '',
+        workRuleName: rulesMap[dp.work_rule_id] || '',
+        vehicule: car.id ? {
+          id: car.id,
+          marque: car.brand || '',
+          modele: car.model || '',
+          immatriculation: car.number || ''
+        } : null,
+        balance: parseFloat(acc.balance || 0)
+      };
+    });
+
+    res.json({ total: drivers.length, drivers, online, busy, offline });
+
+  } catch (err) {
+    console.error('[drivers] Error:', err.message);
+    res.status(502).json({ error: 'Erreur API Yango', details: err.message });
+  }
+};

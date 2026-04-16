@@ -1,41 +1,40 @@
-const { withYango, yangoPost } = require('../_lib/yango');
-
 /**
  * GET /api/yango/vehicles
- * Fetches all Yango vehicles for linking to local fleet.
+ * Lists vehicles in the Yango park (single page)
  */
-module.exports = withYango(async (req, res, creds) => {
-  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
-  const allVehicles = [];
-  let offset = 0;
-  const LIMIT = 100;
-  const MAX_PAGES = 5;
-  let page = 0;
+const { verifyAuth, assertYangoCreds, yangoFetch, setCors, handleOptions } = require('../_lib/helpers');
 
-  do {
-    const data = await yangoPost('/v1/parks/cars/list', {
-      limit: LIMIT,
-      offset,
-      query: { park: { id: creds.parkId } },
-    }, creds);
+module.exports = async function handler(req, res) {
+  setCors(res);
+  if (handleOptions(req, res)) return;
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-    const cars = data.cars || [];
-    for (const car of cars) {
-      allVehicles.push({
-        id: car.id || '',
-        marque: car.brand || '',
-        modele: car.model || '',
-        immatriculation: car.number || '',
-        couleur: car.color || '',
-        annee: car.year || '',
-        statut: car.status || '',
-      });
-    }
+  const user = await verifyAuth(req);
+  if (!user) return res.status(401).json({ error: 'Non autorise' });
 
-    if (cars.length < LIMIT) break;
-    offset += LIMIT;
-    page++;
-  } while (page < MAX_PAGES);
+  try {
+    const { parkId } = assertYangoCreds();
 
-  res.json({ total: allVehicles.length, vehicles: allVehicles });
-});
+    const data = await yangoFetch('/v1/parks/cars/list', {
+      limit: 100,
+      query: { park: { id: parkId } }
+    });
+
+    const vehicles = (data.cars || []).map(c => ({
+      id: c.id,
+      marque: c.brand || '',
+      modele: c.model || '',
+      couleur: c.color || '',
+      immatriculation: c.number || '',
+      annee: c.year || 0,
+      statut: c.status || 'unknown',
+      callsign: c.callsign || ''
+    }));
+
+    res.json({ total: vehicles.length, vehicles });
+
+  } catch (err) {
+    console.error('[vehicles] Error:', err.message);
+    res.status(502).json({ error: 'Erreur API Yango', details: err.message });
+  }
+};

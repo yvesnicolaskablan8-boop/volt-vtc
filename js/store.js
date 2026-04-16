@@ -391,108 +391,172 @@ const Store = {
     };
   },
 
-  // =================== YANGO API (via Vercel serverless /api/yango/*) ===================
+  // =================== YANGO API (via Vercel Serverless Functions) ===================
 
-  async _yangoFetch(path) {
-    const res = await fetch(`/api/yango/${path}`);
+  /**
+   * Helper: make authenticated API call to /api/yango/* serverless functions.
+   * Passes the Supabase session token as Bearer auth.
+   */
+  async _yangoApi(endpoint, options = {}) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error('Non authentifie — veuillez vous reconnecter');
+
+    const method = options.method || 'GET';
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+
+    const fetchOpts = { method, headers };
+    if (options.body) fetchOpts.body = JSON.stringify(options.body);
+
+    const url = `/api/yango/${endpoint}${options.query || ''}`;
+    const res = await fetch(url, fetchOpts);
+    const json = await res.json();
+
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-      return { error: err.error || `Erreur ${res.status}`, details: err.details || '' };
+      const msg = json.error || json.details || `Erreur ${res.status}`;
+      throw new Error(msg);
     }
-    return res.json();
+    return json;
   },
 
   async getYangoWorkRules() {
-    const data = await this._yangoFetch('work-rules');
-    if (data.error) { console.warn('getYangoWorkRules:', data.error); return null; }
-    return data;
+    try {
+      return await this._yangoApi('work-rules');
+    } catch (e) {
+      console.warn('Store: getYangoWorkRules error:', e.message);
+      return null;
+    }
   },
 
   async getYangoStats(workRuleIds, dateRange) {
-    let qs = '';
-    if (workRuleIds && workRuleIds.length) qs += `work_rule=${encodeURIComponent(workRuleIds.join(','))}`;
-    if (dateRange) {
-      if (dateRange.from) qs += `${qs ? '&' : ''}from=${encodeURIComponent(dateRange.from)}`;
-      if (dateRange.to) qs += `${qs ? '&' : ''}to=${encodeURIComponent(dateRange.to)}`;
+    try {
+      const params = new URLSearchParams();
+      if (workRuleIds && workRuleIds.length) params.set('work_rule', workRuleIds.join(','));
+      if (dateRange?.from) params.set('from', dateRange.from);
+      if (dateRange?.to) params.set('to', dateRange.to);
+      const qs = params.toString();
+      return await this._yangoApi('stats', { query: qs ? `?${qs}` : '' });
+    } catch (e) {
+      console.warn('Store: getYangoStats error:', e.message);
+      return { error: 'Non disponible', details: e.message };
     }
-    return this._yangoFetch(`stats${qs ? '?' + qs : ''}`);
   },
 
   async getYangoDriverStats(yangoDriverId, date) {
-    if (!yangoDriverId) return { error: 'Pas de yangoDriverId' };
-    let qs = `driver_id=${encodeURIComponent(yangoDriverId)}`;
-    if (date) {
-      const d = new Date(date);
-      const from = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
-      const to = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59).toISOString();
-      qs += `&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    try {
+      const params = new URLSearchParams({ yangoDriverId });
+      if (date) {
+        params.set('from', `${date}T00:00:00+00:00`);
+        params.set('to', `${date}T23:59:59+00:00`);
+      }
+      return await this._yangoApi('driver-stats', { query: `?${params}` });
+    } catch (e) {
+      console.warn('Store: getYangoDriverStats error:', e.message);
+      return { error: 'Non disponible', details: e.message };
     }
-    return this._yangoFetch(`driver-stats?${qs}`);
   },
 
   async getYangoDrivers(workRuleIds) {
-    let qs = '';
-    if (workRuleIds && workRuleIds.length) qs = `work_rule=${encodeURIComponent(workRuleIds.join(','))}`;
-    const data = await this._yangoFetch(`drivers${qs ? '?' + qs : ''}`);
-    if (data.error) { console.warn('getYangoDrivers:', data.error); return null; }
-    return data;
+    try {
+      const params = new URLSearchParams();
+      if (workRuleIds && workRuleIds.length) params.set('work_rule', workRuleIds.join(','));
+      const qs = params.toString();
+      return await this._yangoApi('drivers', { query: qs ? `?${qs}` : '' });
+    } catch (e) {
+      console.warn('Store: getYangoDrivers error:', e.message);
+      return null;
+    }
   },
 
   async getYangoOrders(from, to) {
-    let qs = '';
-    if (from) qs += `from=${encodeURIComponent(from)}`;
-    if (to) qs += `${qs ? '&' : ''}to=${encodeURIComponent(to)}`;
-    const data = await this._yangoFetch(`orders${qs ? '?' + qs : ''}`);
-    if (data.error) { console.warn('getYangoOrders:', data.error); return null; }
-    return data;
+    try {
+      const params = new URLSearchParams();
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      const qs = params.toString();
+      return await this._yangoApi('orders', { query: qs ? `?${qs}` : '' });
+    } catch (e) {
+      console.warn('Store: getYangoOrders error:', e.message);
+      return null;
+    }
   },
 
   async getYangoVehicles() {
-    const data = await this._yangoFetch('vehicles');
-    if (data.error) { console.warn('getYangoVehicles:', data.error); return null; }
-    return data;
+    try {
+      return await this._yangoApi('vehicles');
+    } catch (e) {
+      console.warn('Store: getYangoVehicles error:', e.message);
+      return null;
+    }
   },
 
   async triggerYangoSync(date = null) {
-    // Sync is now implicit — stats/driver-stats always query Yango live.
-    // This method returns a success stub so callers don't break.
-    return { success: true, message: 'Les donnees sont synchronisees en temps reel via l\'API Yango.' };
+    try {
+      return await this._yangoApi('sync', {
+        method: 'POST',
+        body: date ? { date } : {}
+      });
+    } catch (e) {
+      console.warn('Store: triggerYangoSync error:', e.message);
+      return { error: 'Non disponible', details: e.message };
+    }
   },
 
   async getYangoSyncStatus() {
-    // With serverless proxy, data is always live — no cron needed.
-    return { running: true, enabled: true, lastSyncDate: new Date().toISOString().split('T')[0], realtime: true };
+    // Sync status is now server-side only; return basic info
+    try {
+      return { running: false, enabled: true, lastSyncDate: null };
+    } catch (e) {
+      return null;
+    }
   },
 
   async getYangoDriversForLinking() {
-    const data = await this._yangoFetch('drivers?all=1');
-    if (data.error) { console.warn('getYangoDriversForLinking:', data.error); return null; }
-    return data;
+    try {
+      return await this._yangoApi('drivers-all');
+    } catch (e) {
+      console.warn('Store: getYangoDriversForLinking error:', e.message);
+      return null;
+    }
   },
 
   async getYangoVehiclesForLinking() {
-    const data = await this._yangoFetch('vehicles');
-    if (data.error) { console.warn('getYangoVehiclesForLinking:', data.error); return null; }
-    return data;
+    try {
+      return await this._yangoApi('vehicles-all');
+    } catch (e) {
+      console.warn('Store: getYangoVehiclesForLinking error:', e.message);
+      return null;
+    }
   },
 
   async cleanupGhostVersements() {
-    // Not applicable in serverless mode — no local DB to clean
-    return { success: true, cleaned: 0 };
+    // Clean up ghost versements locally: remove versements where chauffeur no longer exists
+    try {
+      const versements = this.getAll('versements') || [];
+      const chauffeurs = this.getAll('chauffeurs') || [];
+      const chauffeurIds = new Set(chauffeurs.map(c => c.id));
+      const ghosts = versements.filter(v => v.chauffeurId && !chauffeurIds.has(v.chauffeurId));
+      for (const g of ghosts) {
+        await this.delete('versements', g.id);
+      }
+      return { removed: ghosts.length };
+    } catch (e) {
+      console.warn('Store: cleanupGhostVersements error:', e.message);
+      throw e;
+    }
   },
 
   async yangoBalance(chauffeurId) {
-    // Resolve yangoDriverId from local chauffeur record
-    const chauffeur = this.findById('chauffeurs', chauffeurId);
-    const yangoId = chauffeur?.yangoDriverId;
-    if (!yangoId) throw new Error('Chauffeur non lié à Yango');
-    const data = await this._yangoFetch(`balance?driver_id=${encodeURIComponent(yangoId)}`);
-    if (data.error) throw new Error(data.error);
-    return data;
+    return await this._yangoApi('balance', { query: `?chauffeurId=${encodeURIComponent(chauffeurId)}` });
   },
 
   async yangoRecharge(chauffeurId, amount, description) {
-    // Recharge is not available via serverless (requires Park-level write access)
-    throw new Error('La recharge Yango n\'est pas encore disponible en mode serverless. Utilisez le portail Yango.');
+    return await this._yangoApi('recharge', {
+      method: 'POST',
+      body: { chauffeurId, amount, description }
+    });
   }
 };
