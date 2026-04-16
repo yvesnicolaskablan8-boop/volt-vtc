@@ -39,7 +39,7 @@ const {
 // ---------- test ----------
 async function handleTest(req, res) {
   try {
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
     const data = await yangoFetch('/v1/parks/driver-profiles/list', {
       limit: 1,
       offset: 0,
@@ -81,7 +81,7 @@ async function handleBalance(req, res) {
       return res.status(400).json({ error: "Ce chauffeur n'est pas lie a un profil Yango" });
     }
 
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
 
     const data = await yangoFetch('/v1/parks/driver-profiles/list', {
       fields: {
@@ -131,7 +131,7 @@ async function handleDriverStats(req, res) {
     const { yangoDriverId } = req.query;
     if (!yangoDriverId) return res.status(400).json({ error: 'yangoDriverId requis' });
 
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
 
     // Default date range: today
     const now = new Date();
@@ -239,7 +239,7 @@ async function handleWorkRules(req, res) {
   if (!user) return res.status(401).json({ error: 'Non autorise' });
 
   try {
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
     const data = await yangoGet('/v1/parks/driver-work-rules', { park_id: parkId });
 
     const allRules = data.rules || data.work_rules || [];
@@ -270,7 +270,7 @@ async function handleDrivers(req, res) {
   if (!user) return res.status(401).json({ error: 'Non autorise' });
 
   try {
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
 
     // Build query
     const query = {
@@ -356,7 +356,7 @@ async function handleDriversAll(req, res) {
   if (!user) return res.status(401).json({ error: 'Non autorise' });
 
   try {
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
     let allDrivers = [];
     const PAGE_SIZE = 300;
     const MAX_PAGES = 10;
@@ -403,7 +403,7 @@ async function handleOrders(req, res) {
   if (!user) return res.status(401).json({ error: 'Non autorise' });
 
   try {
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
     const from = req.query.from || `${todayStr}T00:00:00+00:00`;
@@ -461,7 +461,7 @@ async function handleVehicles(req, res) {
   if (!user) return res.status(401).json({ error: 'Non autorise' });
 
   try {
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
 
     const data = await yangoFetch('/v1/parks/cars/list', {
       limit: 100,
@@ -495,7 +495,7 @@ async function handleVehiclesAll(req, res) {
   if (!user) return res.status(401).json({ error: 'Non autorise' });
 
   try {
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
     let allVehicles = [];
     const PAGE_SIZE = 100;
     const MAX_PAGES = 5;
@@ -539,7 +539,7 @@ async function handleFleetStatus(req, res) {
   if (!user) return res.status(401).json({ error: 'Non autorise' });
 
   try {
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
 
     const data = await yangoFetch('/v1/parks/driver-profiles/list', {
       fields: {
@@ -599,7 +599,7 @@ async function handleStats(req, res) {
   if (!user) return res.status(401).json({ error: 'Non autorise' });
 
   try {
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
     const token = getToken(req);
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
@@ -814,7 +814,7 @@ async function handleRecharge(req, res) {
       return res.status(400).json({ error: "Ce chauffeur n'est pas lie a un profil Yango" });
     }
 
-    const { parkId, apiKey, clientId } = assertYangoCreds();
+    const { parkId, apiKey, clientId } = await assertYangoCreds();
 
     // Idempotency token
     const idempotencyToken = `pilote-recharge-${chauffeurId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -880,7 +880,7 @@ async function handleSync(req, res) {
   if (!user) return res.status(401).json({ error: 'Non autorise' });
 
   try {
-    const { parkId } = assertYangoCreds();
+    const { parkId } = await assertYangoCreds();
     const token = getToken(req);
     const syncDate = req.body?.date || null;
 

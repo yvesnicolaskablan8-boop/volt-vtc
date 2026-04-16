@@ -53,18 +53,57 @@ async function supabaseQuery(table, params = '', token = null) {
 
 // =================== YANGO CREDENTIALS ===================
 
-function getYangoCreds() {
-  return {
+// Cache credentials for 60 seconds (DB-first, env fallback)
+let _credCache = null;
+let _credTime = 0;
+
+async function getYangoCreds() {
+  const now = Date.now();
+  if (_credCache && (now - _credTime) < 60000) return _credCache;
+
+  // 1) Try reading from fleet_settings in Supabase (DB-first)
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/fleet_settings?select=integrations&order=created_at.desc`,
+      {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      }
+    );
+    const rows = await res.json();
+    for (const row of (Array.isArray(rows) ? rows : [])) {
+      const y = row?.integrations?.yango;
+      if (y && y.parkId && y.apiKey) {
+        _credCache = { parkId: y.parkId, apiKey: y.apiKey, clientId: y.clientId || '' };
+        _credTime = now;
+        console.log('[Yango] Credentials loaded from Supabase fleet_settings');
+        return _credCache;
+      }
+    }
+  } catch (e) {
+    console.warn('[Yango] fleet_settings fetch error:', e.message);
+  }
+
+  // 2) Fallback to env vars
+  const creds = {
     parkId: process.env.YANGO_PARK_ID || '',
     apiKey: process.env.YANGO_API_KEY || '',
     clientId: process.env.YANGO_CLIENT_ID || '',
   };
+  if (creds.parkId && creds.apiKey) {
+    _credCache = creds;
+    _credTime = now;
+    console.log('[Yango] Credentials loaded from env vars');
+  }
+  return creds;
 }
 
-function assertYangoCreds() {
-  const creds = getYangoCreds();
+async function assertYangoCreds() {
+  const creds = await getYangoCreds();
   if (!creds.parkId || !creds.apiKey || !creds.clientId) {
-    throw new Error('Yango API credentials not configured — set YANGO_PARK_ID, YANGO_API_KEY, YANGO_CLIENT_ID env vars');
+    throw new Error('Yango API credentials not configured');
   }
   return creds;
 }
@@ -72,7 +111,7 @@ function assertYangoCreds() {
 // =================== YANGO POST (with retries) ===================
 
 async function yangoFetch(endpoint, body = {}, maxRetries = 3) {
-  const { apiKey, clientId } = assertYangoCreds();
+  const { apiKey, clientId } = await assertYangoCreds();
   let lastError;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -119,7 +158,7 @@ async function yangoFetch(endpoint, body = {}, maxRetries = 3) {
 // =================== YANGO GET ===================
 
 async function yangoGet(endpoint, params = {}) {
-  const { parkId, apiKey, clientId } = assertYangoCreds();
+  const { parkId, apiKey, clientId } = await assertYangoCreds();
 
   const url = new URL(`${YANGO_BASE}${endpoint}`);
   Object.entries(params).forEach(([k, v]) => url.searchParams.append(k, v));
@@ -169,7 +208,7 @@ function handleOptions(req, res) {
  * Fetch all transactions from Yango with cursor-based pagination
  */
 async function fetchAllTransactions(from, to, maxPages = 10) {
-  const { parkId } = assertYangoCreds();
+  const { parkId } = await assertYangoCreds();
   let allItems = [];
   let cursor = null;
 
