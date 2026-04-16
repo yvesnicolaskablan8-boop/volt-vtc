@@ -7,7 +7,7 @@
 
 const SUPABASE_URL = 'https://cnwigcbgzzwvvihopvto.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNud2lnY2Jnenp3dnZpaG9wdnRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwOTMzNTksImV4cCI6MjA5MTY2OTM1OX0.v9L44YLNpphKZZyMHSrDa9bYaxtZMqaF5BsEKtg9NH8';
-const YANGO_BASE = 'https://fleet-api.taxi.yandex.net';
+const YANGO_BASE = 'https://fleet-api.yango.tech';
 
 // =================== AUTH ===================
 
