@@ -669,34 +669,24 @@ const ParametresPage = {
       // Remove perm_* keys and pin (pin is handled separately via set-pin API with bcrypt)
       Object.keys(values).forEach(k => { if (k.startsWith('perm_') || k === 'pin') delete values[k]; });
 
-      // Extract and validate password
+      // Extract and validate password (only needed for non-chauffeur roles)
       let pwd = values.password || '';
       const pwdConfirm = values.password_confirm || '';
       delete values.password;
       delete values.password_confirm;
 
-      if (values.role !== 'chauffeur') {
-        if (pwd && pwd.length < 6) {
-          Toast.error('Le mot de passe doit contenir au moins 6 caractères');
-          return;
-        }
-        if (pwd && pwd !== pwdConfirm) {
-          Toast.error('Les mots de passe ne correspondent pas');
-          return;
-        }
-      } else {
-        // Chauffeurs authenticate via telephone+PIN in /driver/, never via
-        // email/password. We still need *some* value for supabase.auth.signUp,
-        // so generate a random one that's never surfaced to anyone.
-        pwd = 'chf_' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
-      }
-
       // Get chauffeur-specific fields
       const chauffeurId = body.querySelector('#add-chauffeurId')?.value || '';
       const pin = body.querySelector('#add-pin')?.value || '';
+      const isChauffeurRole = values.role === 'chauffeur';
 
-      // For chauffeur role, validate chauffeurId + PIN and source identity
-      if (values.role === 'chauffeur') {
+      // =================================================================
+      // CHAUFFEUR PATH — bypass Supabase Auth entirely.
+      // Chauffeurs authenticate via telephone+PIN in /driver/, hitting
+      // fleet_chauffeurs.pinHash directly. They never touch auth.users,
+      // so we skip signUp/signIn and insert fleet_users with auth_id=null.
+      // =================================================================
+      if (isChauffeurRole) {
         if (!chauffeurId) {
           Toast.error('Veuillez sélectionner un chauffeur à lier');
           return;
@@ -713,21 +703,125 @@ const ParametresPage = {
           values.nom = chauffeur.nom || values.nom;
           if (chauffeur.telephone) values.telephone = chauffeur.telephone;
         }
-        // Chauffeurs don't need a real email — they login via phone+PIN in
-        // /driver/. Generate a unique placeholder that satisfies Auth's
-        // uniqueness constraint without asking the admin for one.
-        if (!values.email || !values.email.trim()) {
-          values.email = `chauffeur-${chauffeurId}@pilote.local`;
+        // Placeholder email — satisfies any NOT NULL/UNIQUE constraint on
+        // fleet_users.email without hitting auth.users. The `.local` TLD is
+        // safe here because we never submit it to supabase.auth.signUp.
+        const placeholderEmail = `chauffeur-${chauffeurId}@pilote.local`;
+
+        try {
+          // 1. Check if a row already exists for this chauffeur (re-attempt
+          //    after a previous failed Auth signup — the row may have been
+          //    partially created). If so, just update PIN instead.
+          let existingRow = null;
+          const { data: byChauffeur } = await supabase
+            .from('fleet_users')
+            .select('*')
+            .eq('chauffeur_id', chauffeurId)
+            .maybeSingle();
+          existingRow = byChauffeur;
+          if (!existingRow) {
+            const { data: byEmail } = await supabase
+              .from('fleet_users')
+              .select('*')
+              .eq('email', placeholderEmail)
+              .maybeSingle();
+            existingRow = byEmail;
+          }
+
+          if (existingRow) {
+            // Re-attempt scenario — just refresh PIN on the linked chauffeur.
+            await this._setChauffeurPin(existingRow.id, pin, chauffeurId);
+            Modal.close();
+            Toast.success(`PIN mis à jour pour ${values.prenom} ${values.nom}`);
+            this._renderTab('users');
+            return;
+          }
+
+          // 2. Fresh insert — no Auth account. Try with optional columns
+          //    first; retry without them if the schema is older.
+          const baseUser = {
+            id: crypto.randomUUID(),
+            auth_id: null,
+            email: placeholderEmail,
+            prenom: values.prenom || '',
+            nom: values.nom || '',
+            telephone: values.telephone || null,
+            role: 'chauffeur',
+            permissions: {},
+            created_at: new Date().toISOString()
+          };
+          const optionalUser = {
+            must_change_password: false,
+            chauffeur_id: chauffeurId
+          };
+
+          let insertedUser = null;
+          let insertError = null;
+          ({ data: insertedUser, error: insertError } = await supabase
+            .from('fleet_users')
+            .insert({ ...baseUser, ...optionalUser })
+            .select()
+            .single());
+
+          if (insertError && /column .* does not exist|could not find/i.test(insertError.message || '')) {
+            console.warn('[addUser/chauffeur] optional columns missing, retrying without them:', insertError.message);
+            ({ data: insertedUser, error: insertError } = await supabase
+              .from('fleet_users')
+              .insert(baseUser)
+              .select()
+              .single());
+          }
+
+          if (insertError) {
+            console.error('fleet_users insert failed (chauffeur):', insertError);
+            Toast.error('Erreur lors de la création : ' + (insertError.message || 'échec d\'insertion'));
+            return;
+          }
+
+          // 3. Set PIN on fleet_chauffeurs. If chauffeur_id wasn't persisted
+          //    (older schema), also push the link through Store.update.
+          if (insertedUser.chauffeur_id == null) {
+            try { Store.update('users', insertedUser.id, { chauffeurId: chauffeurId }); } catch (e) { console.warn('Store.update chauffeurId failed:', e); }
+          }
+          await this._setChauffeurPin(insertedUser.id, pin, chauffeurId);
+
+          // 4. Sync local cache so the users table picks up the new row.
+          const userForStore = objToCamel(insertedUser);
+          if (!userForStore.chauffeurId) userForStore.chauffeurId = chauffeurId;
+          if (!Store._cache) Store._cache = Store._emptyData();
+          if (!Store._cache.users) Store._cache.users = [];
+          Store._cache.users.push(userForStore);
+          Store._backupToLocalStorage();
+
+          Modal.close();
+          Toast.success(`Compte chauffeur ${values.prenom} ${values.nom} créé avec PIN`);
+          this._renderTab('users');
+        } catch (err) {
+          console.error('Chauffeur user creation error:', err);
+          Toast.error('Erreur : ' + (err.message || 'échec de création'));
         }
+        return;
       }
 
-      // Clean empty email to avoid duplicate key errors in MongoDB
+      // =================================================================
+      // STAFF PATH (Admin/Manager/Opérateur/Comptable/Superviseur) —
+      // these roles log into gestion.pilote.tech via Supabase Auth, so we
+      // DO need an auth.users row + fleet_users row with matching auth_id.
+      // =================================================================
+      if (pwd && pwd.length < 6) {
+        Toast.error('Le mot de passe doit contenir au moins 6 caractères');
+        return;
+      }
+      if (pwd && pwd !== pwdConfirm) {
+        Toast.error('Les mots de passe ne correspondent pas');
+        return;
+      }
+
       if (!values.email || !values.email.trim()) {
         Toast.error('L\'email est obligatoire pour créer un compte');
         return;
       }
 
-      // Password is required for new users
       if (!pwd) {
         Toast.error('Le mot de passe est obligatoire pour un nouvel utilisateur');
         return;
@@ -824,11 +918,11 @@ const ParametresPage = {
           }
         }
 
-        // 3. Insert fleet_users entry with auth_id (directly via Supabase).
-        // Build the insert payload in two layers so we can retry without the
-        // optional columns if the prod schema doesn't have them yet (some
-        // deployments don't have must_change_password / chauffeur_id).
-        const isChauffeur = values.role === 'chauffeur';
+        // 3. Insert fleet_users entry with auth_id. Payload is split in two
+        // layers so we can retry without the optional columns if the prod
+        // schema doesn't have must_change_password yet.
+        // (Chauffeurs bypass this path entirely — see the chauffeur branch
+        // above — so we know role is a staff role here.)
         const baseUser = {
           id: crypto.randomUUID(),
           auth_id: authId,
@@ -841,8 +935,8 @@ const ParametresPage = {
           created_at: new Date().toISOString()
         };
         const optionalUser = {
-          must_change_password: !isChauffeur,
-          chauffeur_id: isChauffeur ? chauffeurId : null
+          must_change_password: true,
+          chauffeur_id: null
         };
 
         let insertedUser = null;
@@ -870,23 +964,6 @@ const ParametresPage = {
           return;
         }
 
-        // 3b. For chauffeur role, save the PIN on fleet_chauffeurs.pinHash
-        // and link chauffeur_id via Store.update (which gracefully ignores
-        // missing columns on some schemas).
-        if (isChauffeur) {
-          try {
-            if (insertedUser.chauffeur_id == null) {
-              // Either the column didn't exist on insert OR the value was dropped.
-              // Persist the link through the Store so we use the same code path
-              // that _editUser uses in prod.
-              Store.update('users', insertedUser.id, { chauffeurId: chauffeurId });
-            }
-            await this._setChauffeurPin(insertedUser.id, pin, chauffeurId);
-          } catch (e) {
-            console.warn('PIN/link set failed:', e);
-          }
-        }
-
         // 4. Add to local Store cache (using camelCase)
         const userForStore = objToCamel(insertedUser);
         if (!Store._cache) Store._cache = Store._emptyData();
@@ -895,11 +972,7 @@ const ParametresPage = {
         Store._backupToLocalStorage();
 
         Modal.close();
-        Toast.success(
-          isChauffeur
-            ? `Compte chauffeur ${values.prenom} ${values.nom} créé avec PIN`
-            : `Utilisateur ${values.prenom} ${values.nom} créé avec mot de passe temporaire`
-        );
+        Toast.success(`Utilisateur ${values.prenom} ${values.nom} créé avec mot de passe temporaire`);
         this._renderTab('users');
 
       } catch (err) {
