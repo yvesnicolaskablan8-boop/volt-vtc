@@ -681,17 +681,20 @@ const ParametresPage = {
       const isChauffeurRole = values.role === 'chauffeur';
 
       // =================================================================
-      // CHAUFFEUR PATH — bypass Supabase Auth entirely.
-      // Chauffeurs authenticate via telephone+PIN in /driver/, hitting
-      // fleet_chauffeurs.pinHash directly. They never touch auth.users,
-      // so we skip signUp/signIn and insert fleet_users with auth_id=null.
+      // CHAUFFEUR PATH — create a Supabase Auth account matching the
+      // `driver_<phone>@pilote.tech` pattern that DriverAuth._phoneToEmail()
+      // generates at login. The PIN IS the Auth password (not a separate
+      // pinHash column) because the /driver/ PWA calls
+      // supabase.auth.signInWithPassword({email:driver_<phone>@pilote.tech,
+      // password:pin}) directly. We also write pin_hash + auth_id onto
+      // fleet_chauffeurs for legacy/backup and for profil.js change-PIN.
       // =================================================================
       if (isChauffeurRole) {
         if (!chauffeurId) {
           Toast.error('Veuillez sélectionner un chauffeur à lier');
           return;
         }
-        if (!pin || pin.length < 4 || pin.length > 6) {
+        if (!pin || !/^\d{4,6}$/.test(pin)) {
           Toast.error('Le code PIN doit contenir 4 à 6 chiffres');
           return;
         }
@@ -703,15 +706,91 @@ const ParametresPage = {
           values.nom = chauffeur.nom || values.nom;
           if (chauffeur.telephone) values.telephone = chauffeur.telephone;
         }
-        // Placeholder email — satisfies any NOT NULL/UNIQUE constraint on
-        // fleet_users.email without hitting auth.users. The `.local` TLD is
-        // safe here because we never submit it to supabase.auth.signUp.
-        const placeholderEmail = `chauffeur-${chauffeurId}@pilote.local`;
+
+        // Generate the driver Auth email — MUST match DriverAuth._phoneToEmail
+        // in public/driver/js/driver-auth.js: `driver_${digits}@pilote.tech`.
+        const phoneDigits = (values.telephone || '').replace(/\D/g, '');
+        if (!phoneDigits) {
+          Toast.error('Le chauffeur doit avoir un numéro de téléphone pour se connecter');
+          return;
+        }
+        const driverEmail = `driver_${phoneDigits}@pilote.tech`;
+
+        // Save admin session BEFORE touching supabase.auth — signUp/signIn
+        // will swap the active session, and we need to restore it after.
+        const adminTokenC = Auth.getToken();
+        const adminSessionC = Auth.getSession();
 
         try {
-          // 1. Check if a row already exists for this chauffeur (re-attempt
-          //    after a previous failed Auth signup — the row may have been
-          //    partially created). If so, just update PIN instead.
+          // 1. Create the driver's Supabase Auth account (or recover existing).
+          let authId = null;
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: driverEmail,
+            password: pin
+          });
+
+          if (authError) {
+            if (authError.message && authError.message.includes('already registered')) {
+              // Account exists — sign in with the typed PIN to verify it matches.
+              const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                email: driverEmail,
+                password: pin
+              });
+              if (signInError) {
+                Toast.error('Un compte chauffeur existe déjà pour ce numéro avec un autre PIN. Utilisez « Modifier » puis réinitialiser le PIN, ou changez le PIN depuis la Supabase dashboard.');
+                return;
+              }
+              authId = signInData.user.id;
+            } else {
+              Toast.error('Erreur Auth: ' + authError.message);
+              return;
+            }
+          } else if (authData?.user && (!authData.user.identities || authData.user.identities.length === 0)) {
+            // Email enumeration fake response — try signIn to confirm PIN matches.
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: driverEmail,
+              password: pin
+            });
+            if (signInError) {
+              Toast.error('Un compte chauffeur existe déjà pour ce numéro avec un autre PIN. Utilisez « Modifier » pour réinitialiser le PIN.');
+              return;
+            }
+            authId = signInData.user.id;
+          } else {
+            authId = authData.user.id;
+          }
+
+          // 2. Restore admin session (signUp/signIn swapped it).
+          if (adminTokenC) {
+            try {
+              const currentSession = (await supabase.auth.getSession()).data?.session;
+              await supabase.auth.setSession({
+                access_token: adminTokenC,
+                refresh_token: currentSession?.refresh_token || adminTokenC
+              });
+            } catch (e) { console.warn('Session restore warning (chauffeur):', e); }
+            Auth.setToken(adminTokenC);
+            if (adminSessionC) {
+              localStorage.setItem(Auth._SESSION_KEY, JSON.stringify(adminSessionC));
+            }
+          }
+
+          // 3. Link fleet_chauffeurs.auth_id (so DriverAuth.login() can find
+          //    the chauffeur row via auth_id lookup after signInWithPassword).
+          //    Also persist a bcrypt pin_hash for the legacy Express route
+          //    /api/driver/auth/login (still live during the cutover).
+          await this._setChauffeurPin(null, pin, chauffeurId);
+          try {
+            await supabase
+              .from('fleet_chauffeurs')
+              .update({ auth_id: authId })
+              .eq('id', chauffeurId);
+          } catch (e) { console.warn('fleet_chauffeurs.auth_id update failed:', e); }
+          // Mirror the Store cache so the UI reflects the link immediately.
+          try { Store.update('chauffeurs', chauffeurId, { authId: authId }); } catch (_) { /* store.update also pushes to supabase */ }
+
+          // 4. Check if a fleet_users row already exists for this chauffeur
+          //    (re-attempt scenario). If so, refresh it and stop.
           let existingRow = null;
           const { data: byChauffeur } = await supabase
             .from('fleet_users')
@@ -723,26 +802,28 @@ const ParametresPage = {
             const { data: byEmail } = await supabase
               .from('fleet_users')
               .select('*')
-              .eq('email', placeholderEmail)
+              .eq('email', driverEmail)
               .maybeSingle();
             existingRow = byEmail;
           }
 
           if (existingRow) {
-            // Re-attempt scenario — just refresh PIN on the linked chauffeur.
-            await this._setChauffeurPin(existingRow.id, pin, chauffeurId);
+            // Update auth_id in case the chauffeur row was recreated.
+            try {
+              await supabase.from('fleet_users').update({ auth_id: authId }).eq('id', existingRow.id);
+            } catch (_) { /* non-fatal */ }
             Modal.close();
             Toast.success(`PIN mis à jour pour ${values.prenom} ${values.nom}`);
             this._renderTab('users');
             return;
           }
 
-          // 2. Fresh insert — no Auth account. Try with optional columns
-          //    first; retry without them if the schema is older.
+          // 5. Fresh insert into fleet_users — role=chauffeur, auth_id set to
+          //    the driver Auth id. Two-layer payload for schema compatibility.
           const baseUser = {
             id: crypto.randomUUID(),
-            auth_id: null,
-            email: placeholderEmail,
+            auth_id: authId,
+            email: driverEmail,
             prenom: values.prenom || '',
             nom: values.nom || '',
             telephone: values.telephone || null,
@@ -778,14 +859,7 @@ const ParametresPage = {
             return;
           }
 
-          // 3. Set PIN on fleet_chauffeurs. If chauffeur_id wasn't persisted
-          //    (older schema), also push the link through Store.update.
-          if (insertedUser.chauffeur_id == null) {
-            try { Store.update('users', insertedUser.id, { chauffeurId: chauffeurId }); } catch (e) { console.warn('Store.update chauffeurId failed:', e); }
-          }
-          await this._setChauffeurPin(insertedUser.id, pin, chauffeurId);
-
-          // 4. Sync local cache so the users table picks up the new row.
+          // 6. Sync local cache so the users table picks up the new row.
           const userForStore = objToCamel(insertedUser);
           if (!userForStore.chauffeurId) userForStore.chauffeurId = chauffeurId;
           if (!Store._cache) Store._cache = Store._emptyData();
@@ -794,11 +868,16 @@ const ParametresPage = {
           Store._backupToLocalStorage();
 
           Modal.close();
-          Toast.success(`Compte chauffeur ${values.prenom} ${values.nom} créé avec PIN`);
+          Toast.success(`Compte chauffeur ${values.prenom} ${values.nom} créé — PIN ${pin}`);
           this._renderTab('users');
         } catch (err) {
           console.error('Chauffeur user creation error:', err);
           Toast.error('Erreur : ' + (err.message || 'échec de création'));
+          // Restore admin session on error
+          if (adminTokenC && adminSessionC) {
+            Auth.setToken(adminTokenC);
+            localStorage.setItem(Auth._SESSION_KEY, JSON.stringify(adminSessionC));
+          }
         }
         return;
       }
