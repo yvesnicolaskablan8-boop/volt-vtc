@@ -679,10 +679,13 @@ const ParametresPage = {
           Toast.error('Veuillez sélectionner un chauffeur à lier');
           return;
         }
-        // Auto-fill telephone from chauffeur
+        // Source identity from the linked chauffeur — single source of truth
+        // so admins don't retype the name already stored on the chauffeur.
         const chauffeur = Store.findById('chauffeurs', chauffeurId);
-        if (chauffeur && chauffeur.telephone) {
-          values.telephone = chauffeur.telephone;
+        if (chauffeur) {
+          values.prenom = chauffeur.prenom || values.prenom;
+          values.nom = chauffeur.nom || values.nom;
+          if (chauffeur.telephone) values.telephone = chauffeur.telephone;
         }
       }
 
@@ -857,6 +860,16 @@ const ParametresPage = {
 
     const permsWrapper = container.querySelector('#permissions-section');
 
+    // Identity fields we reuse from the linked chauffeur so admins don't
+    // retype prenom/nom/telephone that already live on fleet_chauffeurs.
+    const prenomInput = container.querySelector('[name="prenom"]');
+    const nomInput = container.querySelector('[name="nom"]');
+    const telInput = container.querySelector('[name="telephone"]');
+    const prenomGroup = prenomInput?.closest('.form-group');
+    const nomGroup = nomInput?.closest('.form-group');
+    const telGroup = telInput?.closest('.form-group');
+    const chauffeurSelect = container.querySelector('#add-chauffeurId');
+
     const toggle = () => {
       const isChauffeur = roleSelect.value === 'chauffeur';
       chauffeurSection.style.display = isChauffeur ? 'block' : 'none';
@@ -866,12 +879,43 @@ const ParametresPage = {
         permsWrapper.style.display = isChauffeur ? 'none' : '';
       }
 
-      // Auto-uncheck all permissions when chauffeur is selected
+      // Hide prenom/nom/telephone when role=chauffeur — identity comes from
+      // the linked chauffeur record (filled on select change below).
+      if (prenomGroup) prenomGroup.style.display = isChauffeur ? 'none' : '';
+      if (nomGroup) nomGroup.style.display = isChauffeur ? 'none' : '';
+      if (telGroup) telGroup.style.display = isChauffeur ? 'none' : '';
+
       if (isChauffeur) {
+        // Populate from current dropdown selection (if any) so that pre-
+        // selected options are reflected immediately.
+        syncFromSelectedChauffeur();
+        // Auto-uncheck all permissions when chauffeur is selected
         container.querySelectorAll('#perms-grid input[type="checkbox"]').forEach(cb => { cb.checked = false; });
         this._updatePermLabels(container);
+      } else {
+        // Clear values that were auto-filled from a chauffeur so they don't
+        // leak into a regular admin account.
+        if (prenomInput && prenomInput.dataset.autoFilled === '1') prenomInput.value = '';
+        if (nomInput && nomInput.dataset.autoFilled === '1') nomInput.value = '';
+        if (telInput && telInput.dataset.autoFilled === '1') telInput.value = '';
+        [prenomInput, nomInput, telInput].forEach(i => i && delete i.dataset.autoFilled);
       }
     };
+
+    const syncFromSelectedChauffeur = () => {
+      if (!chauffeurSelect) return;
+      const id = chauffeurSelect.value;
+      if (!id) return;
+      const ch = Store.findById('chauffeurs', id);
+      if (!ch) return;
+      if (prenomInput) { prenomInput.value = ch.prenom || ''; prenomInput.dataset.autoFilled = '1'; }
+      if (nomInput) { nomInput.value = ch.nom || ''; nomInput.dataset.autoFilled = '1'; }
+      if (telInput && ch.telephone) { telInput.value = ch.telephone; telInput.dataset.autoFilled = '1'; }
+    };
+    if (chauffeurSelect) {
+      chauffeurSelect.addEventListener('change', syncFromSelectedChauffeur);
+    }
+
     roleSelect.addEventListener('change', toggle);
     toggle(); // apply initial state
 
@@ -936,11 +980,20 @@ const ParametresPage = {
             select.appendChild(opt);
           }
 
-          // Auto-fill telephone in user form
-          const telInput = container.querySelector('[name="telephone"]');
-          if (telInput && !telInput.value) {
-            telInput.value = tel;
-          }
+          // Auto-fill identity fields in user form from the just-created
+          // chauffeur. Even though the inputs are hidden when role=chauffeur,
+          // we still populate them so FormBuilder.getValues() returns the
+          // right values on submit.
+          const prenomInputTop = container.querySelector('[name="prenom"]');
+          const nomInputTop = container.querySelector('[name="nom"]');
+          const telInputTop = container.querySelector('[name="telephone"]');
+          if (prenomInputTop) { prenomInputTop.value = prenom; prenomInputTop.dataset.autoFilled = '1'; }
+          if (nomInputTop) { nomInputTop.value = nom; nomInputTop.dataset.autoFilled = '1'; }
+          if (telInputTop) { telInputTop.value = tel; telInputTop.dataset.autoFilled = '1'; }
+
+          // Notify the role toggle so it can run any pending sync (no-op if
+          // already aligned).
+          select?.dispatchEvent(new Event('change'));
 
           // Hide quick form
           quickForm.style.display = 'none';
@@ -1092,10 +1145,18 @@ const ParametresPage = {
       const chauffeurIdVal = body.querySelector('#add-chauffeurId')?.value || '';
       const pinVal = body.querySelector('#add-pin')?.value || '';
 
-      // For chauffeur role, validate
-      if (values.role === 'chauffeur' && !chauffeurIdVal) {
-        Toast.error('Veuillez sélectionner un chauffeur à lier');
-        return;
+      // For chauffeur role, validate + source identity from the linked record
+      if (values.role === 'chauffeur') {
+        if (!chauffeurIdVal) {
+          Toast.error('Veuillez sélectionner un chauffeur à lier');
+          return;
+        }
+        const chauffeur = Store.findById('chauffeurs', chauffeurIdVal);
+        if (chauffeur) {
+          values.prenom = chauffeur.prenom || values.prenom;
+          values.nom = chauffeur.nom || values.nom;
+          if (chauffeur.telephone) values.telephone = chauffeur.telephone;
+        }
       }
 
       const updateData = {
