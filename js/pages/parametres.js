@@ -586,14 +586,28 @@ const ParametresPage = {
         { value: 'actif', label: 'Actif' },
         { value: 'inactif', label: 'Inactif' }
       ]},
-      { type: 'row-end' },
-      { type: 'divider' },
-      { type: 'heading', label: 'Mot de passe' },
-      { type: 'row-start' },
-      { name: 'password', label: 'Mot de passe temporaire', type: 'password', placeholder: 'Minimum 6 caractères', minlength: 6 },
-      { name: 'password_confirm', label: 'Confirmer le mot de passe', type: 'password', placeholder: 'Retapez le mot de passe', minlength: 6 },
       { type: 'row-end' }
     ];
+
+    // Password block — hoisted out of `fields` so we can hide the whole section
+    // (heading + inputs + divider) via #password-section when role=chauffeur.
+    // For chauffeurs the credential is the Code PIN in the chauffeur section.
+    const passwordSection = `
+      <div id="password-section">
+        <hr style="margin:var(--space-md) 0;border:none;border-top:1px solid var(--border-color);">
+        <h4 style="margin:0 0 var(--space-md);font-size:var(--font-size-sm);">Mot de passe</h4>
+        <div class="grid-2" style="gap:var(--space-md);">
+          <div class="form-group">
+            <label class="form-label">Mot de passe temporaire</label>
+            <input type="password" class="form-control" name="password" placeholder="Minimum 6 caractères" minlength="6">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirmer le mot de passe</label>
+            <input type="password" class="form-control" name="password_confirm" placeholder="Retapez le mot de passe" minlength="6">
+          </div>
+        </div>
+      </div>
+    `;
 
     // Chauffeur-specific fields (shown/hidden based on role selection)
     const chauffeurs = Store.get('chauffeurs') || [];
@@ -641,8 +655,9 @@ const ParametresPage = {
     `;
 
     const formHtml = FormBuilder.build(fields) +
+      passwordSection +
       chauffeurSection +
-      `<div style="margin-top:-8px;margin-bottom:var(--space-md);font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Si aucun mot de passe n'est défini, l'utilisateur devra en créer un lors de sa première connexion.</div>` +
+      `<div id="password-hint" style="margin-top:-8px;margin-bottom:var(--space-md);font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Si aucun mot de passe n'est défini, l'utilisateur devra en créer un lors de sa première connexion.</div>` +
       this._getPermissionsHTML(allPerms);
 
     Modal.form('<iconify-icon icon="solar:user-plus-bold-duotone" style="color:var(--primary);"></iconify-icon> Nouvel utilisateur', formHtml, async () => {
@@ -655,28 +670,39 @@ const ParametresPage = {
       Object.keys(values).forEach(k => { if (k.startsWith('perm_') || k === 'pin') delete values[k]; });
 
       // Extract and validate password
-      const pwd = values.password || '';
+      let pwd = values.password || '';
       const pwdConfirm = values.password_confirm || '';
       delete values.password;
       delete values.password_confirm;
 
-      if (pwd && pwd.length < 6) {
-        Toast.error('Le mot de passe doit contenir au moins 6 caractères');
-        return;
-      }
-      if (pwd && pwd !== pwdConfirm) {
-        Toast.error('Les mots de passe ne correspondent pas');
-        return;
+      if (values.role !== 'chauffeur') {
+        if (pwd && pwd.length < 6) {
+          Toast.error('Le mot de passe doit contenir au moins 6 caractères');
+          return;
+        }
+        if (pwd && pwd !== pwdConfirm) {
+          Toast.error('Les mots de passe ne correspondent pas');
+          return;
+        }
+      } else {
+        // Chauffeurs authenticate via telephone+PIN in /driver/, never via
+        // email/password. We still need *some* value for supabase.auth.signUp,
+        // so generate a random one that's never surfaced to anyone.
+        pwd = 'chf_' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
       }
 
       // Get chauffeur-specific fields
       const chauffeurId = body.querySelector('#add-chauffeurId')?.value || '';
       const pin = body.querySelector('#add-pin')?.value || '';
 
-      // For chauffeur role, validate chauffeurId
+      // For chauffeur role, validate chauffeurId + PIN and source identity
       if (values.role === 'chauffeur') {
         if (!chauffeurId) {
           Toast.error('Veuillez sélectionner un chauffeur à lier');
+          return;
+        }
+        if (!pin || pin.length < 4 || pin.length > 6) {
+          Toast.error('Le code PIN doit contenir 4 à 6 chiffres');
           return;
         }
         // Source identity from the linked chauffeur — single source of truth
@@ -686,6 +712,12 @@ const ParametresPage = {
           values.prenom = chauffeur.prenom || values.prenom;
           values.nom = chauffeur.nom || values.nom;
           if (chauffeur.telephone) values.telephone = chauffeur.telephone;
+        }
+        // Chauffeurs don't need a real email — they login via phone+PIN in
+        // /driver/. Generate a unique placeholder that satisfies Auth's
+        // uniqueness constraint without asking the admin for one.
+        if (!values.email || !values.email.trim()) {
+          values.email = `chauffeur-${chauffeurId}@pilote.local`;
         }
       }
 
@@ -793,6 +825,7 @@ const ParametresPage = {
         }
 
         // 3. Insert fleet_users entry with auth_id (directly via Supabase)
+        const isChauffeur = values.role === 'chauffeur';
         const newFleetUser = {
           id: crypto.randomUUID(),
           auth_id: authId,
@@ -802,7 +835,10 @@ const ParametresPage = {
           telephone: values.telephone || null,
           role: values.role || 'Opérateur',
           permissions: permissions,
-          must_change_password: true,
+          // Chauffeurs never use the email/password path — don't flag them
+          // for forced password change on first login.
+          must_change_password: !isChauffeur,
+          chauffeur_id: isChauffeur ? chauffeurId : null,
           created_at: new Date().toISOString()
         };
 
@@ -818,6 +854,15 @@ const ParametresPage = {
           return;
         }
 
+        // 3b. For chauffeur role, save the PIN on fleet_chauffeurs.pinHash.
+        if (isChauffeur) {
+          try {
+            await this._setChauffeurPin(insertedUser.id, pin, chauffeurId);
+          } catch (e) {
+            console.warn('PIN set failed (user created without PIN):', e);
+          }
+        }
+
         // 4. Add to local Store cache (using camelCase)
         const userForStore = objToCamel(insertedUser);
         if (!Store._cache) Store._cache = Store._emptyData();
@@ -826,7 +871,11 @@ const ParametresPage = {
         Store._backupToLocalStorage();
 
         Modal.close();
-        Toast.success('Utilisateur ' + values.prenom + ' ' + values.nom + ' créé avec mot de passe temporaire');
+        Toast.success(
+          isChauffeur
+            ? `Compte chauffeur ${values.prenom} ${values.nom} créé avec PIN`
+            : `Utilisateur ${values.prenom} ${values.nom} créé avec mot de passe temporaire`
+        );
         this._renderTab('users');
 
       } catch (err) {
@@ -870,6 +919,11 @@ const ParametresPage = {
     const telGroup = telInput?.closest('.form-group');
     const chauffeurSelect = container.querySelector('#add-chauffeurId');
 
+    // Password section — chauffeurs use the Code PIN in the chauffeur section
+    // instead, so the email/password credential is hidden for that role.
+    const passwordSectionEl = container.querySelector('#password-section');
+    const passwordHintEl = container.querySelector('#password-hint');
+
     const toggle = () => {
       const isChauffeur = roleSelect.value === 'chauffeur';
       chauffeurSection.style.display = isChauffeur ? 'block' : 'none';
@@ -884,6 +938,10 @@ const ParametresPage = {
       if (prenomGroup) prenomGroup.style.display = isChauffeur ? 'none' : '';
       if (nomGroup) nomGroup.style.display = isChauffeur ? 'none' : '';
       if (telGroup) telGroup.style.display = isChauffeur ? 'none' : '';
+
+      // Hide password section when role=chauffeur — PIN is used instead.
+      if (passwordSectionEl) passwordSectionEl.style.display = isChauffeur ? 'none' : '';
+      if (passwordHintEl) passwordHintEl.style.display = isChauffeur ? 'none' : '';
 
       if (isChauffeur) {
         // Populate from current dropdown selection (if any) so that pre-
