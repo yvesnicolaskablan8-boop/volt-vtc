@@ -824,9 +824,12 @@ const ParametresPage = {
           }
         }
 
-        // 3. Insert fleet_users entry with auth_id (directly via Supabase)
+        // 3. Insert fleet_users entry with auth_id (directly via Supabase).
+        // Build the insert payload in two layers so we can retry without the
+        // optional columns if the prod schema doesn't have them yet (some
+        // deployments don't have must_change_password / chauffeur_id).
         const isChauffeur = values.role === 'chauffeur';
-        const newFleetUser = {
+        const baseUser = {
           id: crypto.randomUUID(),
           auth_id: authId,
           email: values.email.trim(),
@@ -835,18 +838,31 @@ const ParametresPage = {
           telephone: values.telephone || null,
           role: values.role || 'Opérateur',
           permissions: permissions,
-          // Chauffeurs never use the email/password path — don't flag them
-          // for forced password change on first login.
-          must_change_password: !isChauffeur,
-          chauffeur_id: isChauffeur ? chauffeurId : null,
           created_at: new Date().toISOString()
         };
+        const optionalUser = {
+          must_change_password: !isChauffeur,
+          chauffeur_id: isChauffeur ? chauffeurId : null
+        };
 
-        const { data: insertedUser, error: insertError } = await supabase
+        let insertedUser = null;
+        let insertError = null;
+
+        ({ data: insertedUser, error: insertError } = await supabase
           .from('fleet_users')
-          .insert(newFleetUser)
+          .insert({ ...baseUser, ...optionalUser })
           .select()
-          .single();
+          .single());
+
+        // Retry without optional columns if schema is older
+        if (insertError && /column .* does not exist|could not find/i.test(insertError.message || '')) {
+          console.warn('[addUser] optional columns missing, retrying without them:', insertError.message);
+          ({ data: insertedUser, error: insertError } = await supabase
+            .from('fleet_users')
+            .insert(baseUser)
+            .select()
+            .single());
+        }
 
         if (insertError) {
           console.error('fleet_users insert failed:', insertError);
@@ -854,12 +870,20 @@ const ParametresPage = {
           return;
         }
 
-        // 3b. For chauffeur role, save the PIN on fleet_chauffeurs.pinHash.
+        // 3b. For chauffeur role, save the PIN on fleet_chauffeurs.pinHash
+        // and link chauffeur_id via Store.update (which gracefully ignores
+        // missing columns on some schemas).
         if (isChauffeur) {
           try {
+            if (insertedUser.chauffeur_id == null) {
+              // Either the column didn't exist on insert OR the value was dropped.
+              // Persist the link through the Store so we use the same code path
+              // that _editUser uses in prod.
+              Store.update('users', insertedUser.id, { chauffeurId: chauffeurId });
+            }
             await this._setChauffeurPin(insertedUser.id, pin, chauffeurId);
           } catch (e) {
-            console.warn('PIN set failed (user created without PIN):', e);
+            console.warn('PIN/link set failed:', e);
           }
         }
 
