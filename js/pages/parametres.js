@@ -1344,10 +1344,13 @@ const ParametresPage = {
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Nouveau code PIN (laisser vide pour ne pas changer)</label>
-          <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="****">
+          <label class="form-label">Code PIN (utilisé à la <strong>création</strong> du compte)</label>
+          <input type="text" class="form-control" name="pin" id="add-pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="****" ${user.authId ? 'disabled' : ''}>
         </div>
-        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Le chauffeur se connectera via l'app <strong>/driver/</strong></div>
+        ${user.authId
+          ? `<div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);padding:8px 12px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);"><iconify-icon icon="solar:lock-keyhole-bold-duotone" style="color:var(--warning);"></iconify-icon> Le PIN ne peut être modifié que par le chauffeur lui-même depuis <strong>/driver/</strong> → Profil → Changer PIN. (raison : sécurité Supabase Auth)</div>`
+          : `<div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:var(--space-xs);"><iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Le chauffeur se connectera via l'app <strong>/driver/</strong> avec son numéro + ce PIN</div>`
+        }
       </div>
     `;
 
@@ -1401,13 +1404,20 @@ const ParametresPage = {
 
       Store.update('users', id, updateData);
 
-      // If chauffeur role with new PIN, set it via API
+      // If chauffeur role with new PIN, set it via API — ONLY if the Auth account
+      // doesn't exist yet (no authId). Once the Auth user exists, Supabase requires
+      // service_role access to change the password, so the driver must do it
+      // themselves from /driver/ → Profil → Changer PIN.
       if (values.role === 'chauffeur' && pinVal) {
-        const pinSet = await this._setChauffeurPin(id, pinVal, chauffeurIdVal);
-        if (pinSet) {
-          Toast.success('PIN mis à jour');
+        if (user.authId) {
+          Toast.warning('Le PIN ne peut être modifié que par le chauffeur depuis l\'app');
         } else {
-          Toast.error('Erreur lors de la mise à jour du PIN');
+          const pinSet = await this._setChauffeurPin(id, pinVal, chauffeurIdVal);
+          if (pinSet) {
+            Toast.success('PIN mis à jour');
+          } else {
+            Toast.error('Erreur lors de la mise à jour du PIN');
+          }
         }
       }
 
