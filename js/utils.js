@@ -406,18 +406,6 @@ const Utils = {
         paymentIndex.add(`${v.chauffeurId}|${v.date}`);
       }
     });
-    // ALL versement references (for contravention dedup — any versement linking to a contravention prevents double-counting)
-    const allVersementReferences = new Set();
-    versements.forEach(v => {
-      if (v.reference) allVersementReferences.add(v.reference);
-    });
-    // Paid references specifically (for marking as paid)
-    const paidReferences = new Set();
-    versements.forEach(v => {
-      if (v.reference && (v.statut === 'valide' || v.statut === 'supprime')) {
-        paidReferences.add(v.reference);
-      }
-    });
     // Absence lookup by chauffeurId
     const absencesByDriver = new Map();
     absences.forEach(a => {
@@ -431,29 +419,24 @@ const Utils = {
     };
 
     // 1. Explicit debts
-    const dettesExplicites = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0)
-      .map(v => ({ ...v, source: this.isContravention(v) ? 'contravention' : (v.source || 'recette') }));
-    const explicitDebtIndex = new Set(dettesExplicites.map(v => `${v.chauffeurId}|${v.date}`));
-    const explicitRefIndex = new Set(dettesExplicites.map(v => v.reference).filter(Boolean));
-    // Index of existing contravention-source debts by chauffeurId|date|montant for dedup
-    const contraDebtIndex = new Set();
-    dettesExplicites.forEach(v => {
-      if (v.source === 'contravention') {
-        contraDebtIndex.add(`${v.chauffeurId}|${v.date}|${v.manquant}`);
-      }
-    });
+    // The contraventions table is the single source of truth for contravention debts
+    // (to keep /versements aligned with /controle-conduite and /contraventions KPIs).
+    // Versements flagged as contravention-sourced are intentionally ignored here —
+    // they would double-count or diverge from the contraventions table.
+    const allDetteVersements = versements.filter(v => v.traitementManquant === 'dette' && v.manquant > 0);
+    const dettesExplicites = allDetteVersements
+      .filter(v => !this.isContravention(v))
+      .map(v => ({ ...v, source: v.source || 'recette' }));
+    // explicitDebtIndex covers ALL dette versements (incl. contravention-flagged ones)
+    // so implicit debts in step 3 are still deduped against days where a dette exists.
+    const explicitDebtIndex = new Set(allDetteVersements.map(v => `${v.chauffeurId}|${v.date}`));
 
-    // 2. Unpaid contraventions without existing versement
-    // NOTE: Only `impayee` counts as debt. `contestee` is a pending dispute — not yet a confirmed debt,
-    // and the KPIs on /controle-conduite and /contraventions exclude it from "Total impayé".
+    // 2. Unpaid contraventions from the contraventions table — only `impayee` counts as debt.
+    // `contestee` is a pending dispute (not a confirmed debt) — the /controle-conduite and
+    // /contraventions KPIs exclude it from "Total impayé", so we do the same here.
     const allDettes = [...dettesExplicites];
     const contraImpayees = (contraventions || []).filter(c => c.statut === 'impayee' && c.montant > 0 && c.chauffeurId);
     contraImpayees.forEach(c => {
-      // Skip if ANY versement already references this contravention
-      if (allVersementReferences.has(c.id)) return;
-      if (explicitRefIndex.has(c.id) || paidReferences.has(c.id)) return;
-      // Skip if a versement with same chauffeur+date+montant+source=contravention already exists (dedup without reference)
-      if (contraDebtIndex.has(`${c.chauffeurId}|${c.date}|${c.montant}`)) return;
       allDettes.push({
         id: `contra_${c.id}`, chauffeurId: c.chauffeurId, date: c.date,
         manquant: c.montant, traitementManquant: 'dette', source: 'contravention',
