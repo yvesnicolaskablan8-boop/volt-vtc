@@ -444,8 +444,10 @@ const Utils = {
     });
 
     // 2. Unpaid contraventions without existing versement
+    // NOTE: Only `impayee` counts as debt. `contestee` is a pending dispute — not yet a confirmed debt,
+    // and the KPIs on /controle-conduite and /contraventions exclude it from "Total impayé".
     const allDettes = [...dettesExplicites];
-    const contraImpayees = (contraventions || []).filter(c => (c.statut === 'impayee' || c.statut === 'contestee') && c.montant > 0 && c.chauffeurId);
+    const contraImpayees = (contraventions || []).filter(c => c.statut === 'impayee' && c.montant > 0 && c.chauffeurId);
     contraImpayees.forEach(c => {
       // Skip if ANY versement already references this contravention
       if (allVersementReferences.has(c.id)) return;
