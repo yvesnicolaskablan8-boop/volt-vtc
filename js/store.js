@@ -78,15 +78,29 @@ const Store = {
       return { collection: col, data: objToCamel(data) };
     }
 
-    const { data, error } = await supabase
-      .from(table)
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.warn(`Store: Supabase fetch ${col} error:`, error.message);
-      return { collection: col, data: [] };
+    // Pagination obligatoire : PostgREST plafonne chaque requête à 1000 lignes.
+    // Sans boucle .range(), toute collection > 1000 lignes est silencieusement
+    // tronquée (les plus anciennes disparaissent → fausses dettes implicites).
+    const PAGE_SIZE = 1000;
+    const all = [];
+    let offset = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1);
+      if (error) {
+        console.warn(`Store: Supabase fetch ${col} error:`, error.message);
+        // Conserver les données déjà en cache plutôt que d'écraser avec du vide
+        const prev = this._cache && Array.isArray(this._cache[col]) ? this._cache[col] : [];
+        return { collection: col, data: prev };
+      }
+      all.push(...(data || []));
+      if (!data || data.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
     }
-    return { collection: col, data: rowsToCamel(data || []) };
+    return { collection: col, data: rowsToCamel(all) };
   },
 
   // =================== SYNCHRONOUS READS (from cache) ===================
@@ -158,6 +172,23 @@ const Store = {
     this._notify();
     // Background Supabase sync
     this._supabaseDelete(collection, id);
+  },
+
+  // Alias de compatibilité : certaines pages appellent create/remove.
+  // Sans ces alias, l'appel lève un TypeError et l'enregistrement est perdu.
+  create(collection, item) {
+    const it = { ...item };
+    if (!it.id) {
+      it.id = (typeof Utils !== 'undefined' && Utils.generateId)
+        ? Utils.generateId('GEN')
+        : 'GEN-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+    if (!it.dateCreation) it.dateCreation = new Date().toISOString();
+    return this.add(collection, it);
+  },
+
+  remove(collection, id) {
+    return this.delete(collection, id);
   },
 
   set(collection, data) {

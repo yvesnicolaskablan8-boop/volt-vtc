@@ -2557,22 +2557,25 @@ const VersementsPage = {
         const dateStr = new Date().toLocaleDateString('fr-FR');
         const todayISO = new Date().toISOString().split('T')[0];
         Store.update('versements', versementId, { manquant: 0, traitementManquant: null, statut: 'valide', commentaire: (v.commentaire || '') + ' | Dette réglée le ' + dateStr });
-        Store.create('versements', {
+        Store.add('versements', {
+          id: Utils.generateId('VRS'),
           chauffeurId: v.chauffeurId,
           date: todayISO,
           montantVerse: montant,
           montantAttendu: montant,
           manquant: 0,
           statut: 'valide',
-          typeVersement: 'reglement_dette',
-          commentaire: `Règlement dette du ${Utils.formatDate(v.date)} (${Utils.formatCurrency(montant)})`
+          source: 'reglement_dette',
+          commentaire: `Règlement dette du ${Utils.formatDate(v.date)} (${Utils.formatCurrency(montant)})`,
+          dateValidation: new Date().toISOString(),
+          dateCreation: new Date().toISOString()
         });
         Toast.success(`Dette réglée — ${Utils.formatCurrency(montant)} ajouté aux versements du jour`);
       } else if (action === 'perte') {
         Store.update('versements', versementId, { statut: 'perte', traitementManquant: 'perte', commentaire: (Store.get('versements').find(v => v.id === versementId)?.commentaire || '') + ' | Passée en perte le ' + new Date().toLocaleDateString('fr-FR') });
         Toast.success('Dette passée en perte');
       } else if (action === 'supprimer') {
-        Store.remove('versements', versementId);
+        Store.delete('versements', versementId);
         Toast.success('Dette supprimée');
       }
     } catch (err) {
@@ -2622,16 +2625,19 @@ const VersementsPage = {
       const moyenLabel = moyenLabels[moyenReglement] || moyenReglement;
 
       // Créer un versement à la date du jour pour tracer le paiement
-      Store.create('versements', {
+      Store.add('versements', {
+        id: Utils.generateId('VRS'),
         chauffeurId: v.chauffeurId,
         date: todayISO,
         montantVerse: verse,
         montantAttendu: verse,
         manquant: 0,
         statut: 'valide',
-        typeVersement: 'reglement_dette',
-        moyenReglement: moyenReglement,
-        commentaire: `Règlement dette du ${Utils.formatDate(v.date)} — ${moyenLabel} (${Utils.formatCurrency(verse)}${reliquat > 0 ? ', partiel' : ''})`
+        source: 'reglement_dette',
+        moyenPaiement: moyenReglement,
+        commentaire: `Règlement dette du ${Utils.formatDate(v.date)} — ${moyenLabel} (${Utils.formatCurrency(verse)}${reliquat > 0 ? ', partiel' : ''})`,
+        dateValidation: new Date().toISOString(),
+        dateCreation: new Date().toISOString()
       });
 
       if (reliquat <= 0) {

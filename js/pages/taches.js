@@ -1859,7 +1859,7 @@ const TachesPage = {
       'Supprimer cette tâche ?',
       'Voulez-vous supprimer la tâche <strong>' + Utils.escHtml(t.titre) + '</strong> ? Cette action est irréversible.',
       () => {
-        Store.remove('taches', taskId);
+        Store.delete('taches', taskId);
         Toast.success('Tâche supprimée');
         Modal.close();
         this._renderActiveView();

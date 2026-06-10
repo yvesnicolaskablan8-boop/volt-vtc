@@ -64,9 +64,13 @@ const Utils = {
   },
 
   // Generate unique ID with prefix
+  // Horodatage base36 + aléa : un simple nombre aléatoire à 6 chiffres
+  // finit par entrer en collision avec une clé primaire existante
+  // (l'insertion Supabase échoue alors et l'enregistrement est perdu).
   generateId(prefix) {
-    const num = Math.floor(Math.random() * 900000) + 100000;
-    return `${prefix}-${num}`;
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return `${prefix}-${ts}${rand}`;
   },
 
   // Get initials from name
