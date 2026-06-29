@@ -747,6 +747,27 @@ const DashboardPage = {
       </svg>`;
     };
 
+    // SVG radial tick gauge (demi-cercle de rayons) — style "Objectif flotte"
+    const radialGauge = (pct, color) => {
+      const N = 24;                       // nombre de rayons
+      const cx = 100, cy = 104;           // centre (bas du demi-cercle)
+      const rInner = 66, rOuter = 94;     // rayons interne/externe des traits
+      const safe = Math.min(Math.max(pct || 0, 0), 100);
+      const active = Math.round(safe / 100 * N);
+      let ticks = '';
+      for (let i = 0; i < N; i++) {
+        const f = N === 1 ? 0 : i / (N - 1);
+        const ang = (180 - f * 180) * Math.PI / 180;  // de gauche (180°) à droite (0°)
+        const cos = Math.cos(ang), sin = Math.sin(ang);
+        const x1 = (cx + rInner * cos).toFixed(1), y1 = (cy - rInner * sin).toFixed(1);
+        const x2 = (cx + rOuter * cos).toFixed(1), y2 = (cy - rOuter * sin).toFixed(1);
+        const on = i < active;
+        const stroke = on ? color : 'var(--border-color, #e5e7eb)';
+        ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="5" stroke-linecap="round" opacity="${on ? 1 : 0.6}"/>`;
+      }
+      return `<svg viewBox="0 0 200 116" width="100%" style="display:block;max-width:200px;margin:0 auto;overflow:visible;">${ticks}</svg>`;
+    };
+
     // Mini sparkline SVG with area fill
     const sparkline = (values, color = '#0d9488', w = 90, h = 32) => {
       if (!values || values.length < 2) return '';
@@ -1146,17 +1167,23 @@ const DashboardPage = {
 
         <!-- Objectif -->
         <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
             <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;">
               <iconify-icon icon="solar:target-bold-duotone"></iconify-icon>
             </div>
             <div class="d-lbl" style="margin:0;">Objectif</div>
           </div>
-          <div class="d-gauge-wrap" style="margin:4px 0;">
-            ${gauge(d.progressionObjectif, progressColor, 64, 5)}
-            <div class="d-gauge-txt" style="color:${progressColor};font-size:14px;">${d.progressionObjectif}%</div>
+          <div style="position:relative;margin:2px 0 0;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-primary);position:absolute;top:4px;left:4px;z-index:1;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${progressColor};display:inline-block;flex-shrink:0;"></span>${d.progressionObjectif}%
+            </div>
+            ${radialGauge(d.progressionObjectif, progressColor)}
+            <div style="position:absolute;left:50%;bottom:2px;transform:translateX(-50%);text-align:center;width:100%;">
+              <div style="font-size:30px;font-weight:800;color:var(--text-primary);line-height:1;">${d.progressionObjectif}%</div>
+              <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-top:3px;">de l'objectif</div>
+            </div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:var(--text-primary);text-align:center;margin-top:6px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-primary);text-align:center;margin-top:8px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
           <div class="d-sub" style="text-align:center;">${d.joursRestants}j restants</div>
         </div>
 
