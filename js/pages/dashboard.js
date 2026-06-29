@@ -762,8 +762,10 @@ const DashboardPage = {
         const x1 = (cx + rInner * cos).toFixed(1), y1 = (cy - rInner * sin).toFixed(1);
         const x2 = (cx + rOuter * cos).toFixed(1), y2 = (cy - rOuter * sin).toFixed(1);
         const on = i < active;
-        const stroke = on ? color : 'var(--border-color, #e5e7eb)';
-        ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="5" stroke-linecap="round" opacity="${on ? 1 : 0.6}"/>`;
+        // Rayon inactif : gris semi-transparent visible sur thème clair ET sombre
+        // (ne pas utiliser var(--border-color) qui vaut du blanc en thème clair).
+        const stroke = on ? color : 'rgba(148,163,184,0.35)';
+        ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="5" stroke-linecap="round"/>`;
       }
       return `<svg viewBox="0 0 200 116" width="100%" style="display:block;max-width:200px;margin:0 auto;overflow:visible;">${ticks}</svg>`;
     };
