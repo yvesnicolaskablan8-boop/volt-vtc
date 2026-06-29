@@ -735,18 +735,6 @@ const DashboardPage = {
       </svg>`;
     };
 
-    // SVG circular gauge helper
-    const gauge = (pct, color, size = 72, stroke = 6) => {
-      const r = (size - stroke) / 2;
-      const circ = 2 * Math.PI * r;
-      const offset = circ - (Math.min(pct, 100) / 100) * circ;
-      return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform:rotate(-90deg);">
-        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#e5e7eb" stroke-width="${stroke}"/>
-        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
-          stroke-dasharray="${circ}" stroke-dashoffset="${offset}" style="transition:stroke-dashoffset .8s ease;"/>
-      </svg>`;
-    };
-
     // SVG radial tick gauge (demi-cercle de rayons) — style "Objectif flotte"
     const radialGauge = (pct, color) => {
       const N = 24;                       // nombre de rayons
@@ -1197,11 +1185,17 @@ const DashboardPage = {
             </div>
             <div class="d-lbl" style="margin:0;">Recouvrement</div>
           </div>
-          <div class="d-gauge-wrap" style="margin:4px 0;">
-            ${gauge(d.tauxRecouvrement, recouvrementColor, 64, 5)}
-            <div class="d-gauge-txt" style="color:${recouvrementColor};font-size:14px;">${d.tauxRecouvrement}%</div>
+          <div style="position:relative;margin:2px 0 0;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-primary);position:absolute;top:4px;left:4px;z-index:1;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${recouvrementColor};display:inline-block;flex-shrink:0;"></span>${d.tauxRecouvrement}%
+            </div>
+            ${radialGauge(d.tauxRecouvrement, recouvrementColor)}
+            <div style="position:absolute;left:50%;bottom:2px;transform:translateX(-50%);text-align:center;width:100%;">
+              <div style="font-size:30px;font-weight:800;color:var(--text-primary);line-height:1;">${d.tauxRecouvrement}%</div>
+              <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-top:3px;">recouvré</div>
+            </div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:var(--text-primary);text-align:center;margin-top:6px;">${Utils.formatCurrency(d.totalVerseMonth)}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-primary);text-align:center;margin-top:8px;">${Utils.formatCurrency(d.totalVerseMonth)}</div>
           <div class="d-sub" style="text-align:center;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
         </div>
 
