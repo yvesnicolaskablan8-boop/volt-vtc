@@ -718,8 +718,10 @@ const DashboardPage = {
 
   _template(d) {
     const caTrendSign = d.caTrend >= 0 ? '+' : '';
-    const recouvrementColor = d.tauxRecouvrement >= 80 ? '#0d9488' : d.tauxRecouvrement >= 50 ? '#d97706' : '#dc2626';
-    const progressColor = d.progressionObjectif >= 80 ? '#0d9488' : d.progressionObjectif >= 50 ? '#d97706' : '#dc2626';
+    // Couleur fixe par carte pour les différencier (alignée sur la couleur de l'icône) :
+    // Recouvrement = émeraude, Objectif = indigo.
+    const recouvrementColor = '#10b981';
+    const progressColor = '#6366f1';
     const session = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : {};
     const userName = session.prenom || 'Patron';
 
