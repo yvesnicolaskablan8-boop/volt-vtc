@@ -1446,47 +1446,56 @@ const DashboardPage = {
       if (v.chauffeurAssigne) chauffeurPlaqueMap[v.chauffeurAssigne] = v.immatriculation || `${v.marque} ${v.modele}`;
     });
 
-    const statusIcons = {
-      verse: '<iconify-icon icon="solar:check-circle-bold" style="font-size:14px;"></iconify-icon>',
-      en_retard: '',
-      absent: '<iconify-icon icon="solar:minus-circle-bold" style="font-size:14px;"></iconify-icon>',
-      repos: ''
-    };
     const statusLabels = { verse: 'Versé', programme: 'Programmé', en_retard: 'En retard', absent: 'Absent', repos: 'Repos' };
-    const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
+    const statusColors = { verse: '#10b981', programme: '#6366f1', en_retard: '#ef4444', absent: '#f97316', repos: '#9ca3af' };
+    const MAX_CHIPS = 6;
 
-    // Header row
-    let html = '<div class="d-hm-grid" style="animation:dSlide .5s cubic-bezier(.16,1,.3,1);">';
-    html += '<div></div>'; // empty top-left
-    days.forEach(wd => {
-      html += `<div class="d-hm-head ${wd.isToday ? 'today' : ''}">
-        <span>${wd.label}</span>
-        <span class="d-hm-daynum">${wd.dayNum}</span>
-      </div>`;
-    });
-
-    // Driver rows
-    drivers.forEach((dr, idx) => {
-      const color = avatarColors[idx % avatarColors.length];
-      const rowClass = idx % 2 === 1 ? ' d-hm-row-even' : '';
-      const avatarHtml = dr.photo
-        ? `<img src="${dr.photo}" alt="${dr.initials}" class="d-hm-avatar" style="object-fit:cover;">`
-        : `<div class="d-hm-avatar" style="background:linear-gradient(135deg,${color},${color}dd);">${dr.initials}</div>`;
-      const plaque = (dr.vehiculeAssigne ? (vehMap[dr.vehiculeAssigne] || '') : '') || chauffeurPlaqueMap[dr.id] || '';
-      const hasRetard = dr.cells.some(c => c.status === 'en_retard');
-      const nameStyle = hasRetard ? 'color:#ef4444;' : '';
-      html += `<div class="d-hm-driver${rowClass}" style="${nameStyle}animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30}ms both;" title="${dr.prenom} ${dr.nom}${hasRetard ? ' — Versement(s) en retard' : ''}"><div style="display:flex;flex-direction:column;line-height:1.2;overflow:hidden;"><span>${dr.prenom} ${dr.nom}</span>${plaque ? `<span style="font-size:9px;color:${hasRetard ? '#ef4444' : 'var(--text-muted)'};font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${plaque}</span>` : ''}</div></div>`;
-      dr.cells.forEach((cell, ci) => {
-        const status = cell.status;
-        const heures = cell.heures;
-        const shiftId = cell.shiftId;
-        const tooltip = `${dr.prenom} ${dr.nom} — ${days[ci].label} ${days[ci].dayNum}: ${statusLabels[status]}${heures ? ' (' + heures + ')' : ''}`;
-        const content = status === 'programme' && heures ? `<span style="font-size:9px;font-weight:700;letter-spacing:-.2px;">${heures}</span>` : (statusIcons[status] || '');
-        const onclick = shiftId ? `DashboardPage._openShift('${shiftId}')` : `Router.navigate('/planning')`;
-        html += `<div class="d-hm-cell hm-${status}${rowClass}" title="${tooltip}" onclick="${onclick}" style="animation:dSlide .4s cubic-bezier(.16,1,.3,1) ${idx * 30 + ci * 15}ms both;">${content}</div>`;
+    // Cartes calendrier par jour (style MAURALEX) : les chauffeurs programmés
+    // apparaissent dans le cadre du jour sous forme de puces colorées par statut.
+    const dayCards = days.map((wd, ci) => {
+      const chips = [];
+      drivers.forEach(dr => {
+        const cell = dr.cells[ci] || {};
+        if (!cell.status || cell.status === 'repos') return;
+        const color = statusColors[cell.status] || '#9ca3af';
+        const onclick = cell.shiftId ? `event.stopPropagation();DashboardPage._openShift('${cell.shiftId}')` : `event.stopPropagation();Router.navigate('/planning')`;
+        const tooltip = `${dr.prenom} ${dr.nom} — ${statusLabels[cell.status]}${cell.heures ? ' (' + cell.heures + ')' : ''}`;
+        chips.push(`<div class="d-pcal-chip" title="${tooltip}" onclick="${onclick}">
+          <span class="d-pcal-dot" style="background:${color};"></span><span class="d-pcal-chip-txt">${dr.prenom.split(' ')[0]} ${dr.nom.charAt(0)}.${cell.status === 'programme' && cell.heures ? ` <span class="d-pcal-time">${cell.heures}</span>` : ''}</span>
+        </div>`);
       });
-    });
-    html += '</div>';
+      const visible = chips.slice(0, MAX_CHIPS);
+      const overflow = chips.length - visible.length;
+      const numHtml = wd.isToday
+        ? `<span class="d-pcal-num d-pcal-today">${wd.dayNum}</span>`
+        : `<span class="d-pcal-num">${wd.dayNum}</span>`;
+      return `<div class="d-pcal-cell${wd.isToday ? ' d-pcal-cell-today' : ''}" onclick="Router.navigate('/planning')" title="Voir le planning">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          ${numHtml}
+          <span style="font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);">${wd.label.toUpperCase()}</span>
+        </div>
+        <div class="d-pcal-chips">${visible.join('')}${overflow > 0 ? `<div class="d-pcal-more">+${overflow} autre${overflow > 1 ? 's' : ''}</div>` : ''}</div>
+      </div>`;
+    }).join('');
+
+    let html = `
+      <style>
+        .d-pcal-wrap { overflow-x:auto; }
+        .d-pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; min-width:640px; animation:dSlide .5s cubic-bezier(.16,1,.3,1); }
+        .d-pcal-cell { border:1px solid var(--border-color); border-radius:12px; background:var(--bg-secondary); min-height:120px; padding:8px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:5px; }
+        .d-pcal-cell:hover { border-color:#6366f1; box-shadow:0 2px 10px rgba(99,102,241,.10); }
+        .d-pcal-cell-today { border-color:rgba(99,102,241,.45); }
+        .d-pcal-num { font-size:12px; font-weight:700; color:var(--text-primary); line-height:22px; }
+        .d-pcal-today { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--text-primary); color:var(--bg-secondary); font-weight:800; }
+        .d-pcal-chips { display:flex; flex-direction:column; gap:3px; overflow:hidden; }
+        .d-pcal-chip { display:flex; align-items:center; gap:4px; font-size:9.5px; font-weight:600; color:var(--text-secondary); background:var(--bg-tertiary); border-radius:5px; padding:2px 5px; white-space:nowrap; overflow:hidden; }
+        .d-pcal-chip:hover { background:var(--border-color); }
+        .d-pcal-chip-txt { overflow:hidden; text-overflow:ellipsis; }
+        .d-pcal-time { font-weight:500; color:var(--text-muted); font-size:8.5px; }
+        .d-pcal-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+        .d-pcal-more { font-size:9px; font-weight:600; color:var(--text-muted); padding-left:2px; }
+      </style>
+      <div class="d-pcal-wrap"><div class="d-pcal-grid">${dayCards}</div></div>`;
 
     // Legend — modern pills
     html += `<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
