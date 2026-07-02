@@ -354,6 +354,10 @@ const DriverApp = {
   },
 
   async _startLocationTracking() {
+    // App native (Capacitor + Transistorsoft) : service GPS d'arrière-plan qui
+    // continue même app fermée / écran verrouillé. Le web reste le fallback.
+    if (await this._startNativeTracking()) return;
+
     if (!('geolocation' in navigator)) {
       console.log('[Geo] Geolocation non supportee');
       return;
@@ -405,6 +409,64 @@ const DriverApp = {
         this._bufferPoint(this._lastLat, this._lastLng, this._lastSpeed, null, null);
       }
     });
+  },
+
+  /**
+   * Suivi GPS natif via Capacitor + @transistorsoft/capacitor-background-geolocation.
+   * Le service Android POSTe chaque position directement vers le RPC Supabase
+   * fleet_ingest_position (position temps réel + trajet du jour) — aucun JS requis
+   * une fois démarré, donc le suivi survit à la fermeture de l'app.
+   * Retourne true si le mode natif est actif (le fallback web est alors ignoré).
+   */
+  async _startNativeTracking() {
+    try {
+      const cap = window.Capacitor;
+      if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return false;
+      const BG = cap.Plugins && cap.Plugins.BackgroundGeolocation;
+      if (!BG) { console.log('[Geo] Plugin natif absent, fallback web'); return false; }
+      const ch = (typeof DriverAuth !== 'undefined' && DriverAuth.getChauffeur) ? DriverAuth.getChauffeur() : null;
+      if (!ch || !ch.id) return false;
+
+      await BG.ready({
+        reset: true,
+        desiredAccuracy: -1, // DESIRED_ACCURACY_HIGH
+        distanceFilter: 50,           // mètres entre deux points en roulant
+        stopOnTerminate: false,       // continue après fermeture de l'app
+        startOnBoot: true,            // reprend après redémarrage du téléphone
+        foregroundService: true,      // service Android au premier plan (notification)
+        backgroundPermissionRationale: {
+          title: 'Autoriser la localisation « Tout le temps »',
+          message: "Pour suivre le véhicule même quand l'application est fermée, autorisez la localisation en permanence.",
+          positiveAction: 'Ouvrir les réglages'
+        },
+        notification: {
+          title: 'Pilote Chauffeur',
+          text: 'Suivi GPS actif'
+        },
+        // Envoi HTTP NATIF direct vers le RPC Supabase (fonctionne app fermée)
+        url: SUPABASE_URL + '/rest/v1/rpc/fleet_ingest_position',
+        method: 'POST',
+        httpRootProperty: '.',
+        locationTemplate: '{"p_lat":<%= latitude %>,"p_lng":<%= longitude %>,"p_speed":<%= speed %>,"p_heading":<%= heading %>,"p_accuracy":<%= accuracy %>}',
+        params: { p_chauffeur: ch.id },
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json'
+        },
+        autoSync: true,
+        autoSyncThreshold: 0,
+        batchSync: false,
+        maxRecordsToPersist: -1      // garde tout en file si le réseau coupe
+      });
+
+      await BG.start();
+      console.log('[Geo] Suivi natif Transistorsoft actif (arrière-plan OK)');
+      return true;
+    } catch (e) {
+      console.warn('[Geo] Suivi natif indisponible, fallback web:', e && e.message);
+      return false;
+    }
   },
 
   _startWatch() {

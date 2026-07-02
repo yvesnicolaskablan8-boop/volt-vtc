@@ -1,0 +1,21 @@
+{
+  "name": "pilote-chauffeur-native",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App native chauffeur Pilote (Capacitor + Transistorsoft) — suivi GPS en arrière-plan",
+  "scripts": {
+    "sync": "cap sync android",
+    "apk:debug": "cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.7",
+    "@capacitor/core": "^7.6.7",
+    "@capacitor/splash-screen": "^7.0.5",
+    "@transistorsoft/capacitor-background-fetch": "^7.1.0",
+    "@transistorsoft/capacitor-background-geolocation": "^7.2.5"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.6.7",
+    "typescript": "^6.0.3"
+  }
+}
