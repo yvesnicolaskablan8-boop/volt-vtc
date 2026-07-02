@@ -267,6 +267,8 @@ const DriverStore = {
 
   async sendLocation(lat, lng, speed, heading, accuracy) {
     const id = this._chauffeurId();
+    // Alimente aussi l'historique de trajet du jour (fleet_conduite_brute)
+    this._trackSample(lat, lng, speed);
     const { error } = await supabase.from('fleet_chauffeurs').update({
       location: { lat, lng, speed, heading, accuracy, updatedAt: new Date().toISOString() }
     }).eq('id', id);
@@ -274,10 +276,51 @@ const DriverStore = {
   },
 
   async sendLocationBatch(points) {
-    // Send the latest point from the batch
     if (!points || points.length === 0) return { success: true };
+    // Tous les points bufferisés vont dans l'historique de trajet
+    // (avant : seul le dernier point était conservé, le reste était perdu)
+    points.forEach(p => this._trackSample(p.lat, p.lng, p.speed, p.t ? new Date(p.t).toTimeString().slice(0, 8) : null));
+    await this._flushTripSamples();
     const last = points[points.length - 1];
     return this.sendLocation(last.lat, last.lng, last.speed, last.heading, last.accuracy);
+  },
+
+  // ===== HISTORIQUE DE TRAJET (fleet_conduite_brute, 1 ligne par chauffeur+jour) =====
+
+  _tripSamples: [],
+  _tripFlushTimer: null,
+
+  _trackSample(lat, lng, speed, heure) {
+    if (lat == null || lng == null) return;
+    this._tripSamples.push({ lat, lng, speed: speed || 0, heure: heure || new Date().toTimeString().slice(0, 8) });
+    if (this._tripSamples.length >= 10) {
+      this._flushTripSamples();
+    } else if (!this._tripFlushTimer) {
+      this._tripFlushTimer = setTimeout(() => this._flushTripSamples(), 60000);
+    }
+  },
+
+  async _flushTripSamples() {
+    if (this._tripFlushTimer) { clearTimeout(this._tripFlushTimer); this._tripFlushTimer = null; }
+    if (!this._tripSamples.length) return;
+    const id = this._chauffeurId();
+    if (!id) { this._tripSamples = []; return; }
+    const batch = this._tripSamples.splice(0);
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      const ch = (typeof DriverAuth !== 'undefined' && DriverAuth.getChauffeur) ? DriverAuth.getChauffeur() : null;
+      const { error } = await supabase.rpc('fleet_append_gps_samples', {
+        p_id: `CB-${id}-${today}`,
+        p_chauffeur: id,
+        p_vehicule: (ch && ch.vehiculeAssigne) || null,
+        p_date: today,
+        p_samples: batch
+      });
+      if (error) throw new Error(error.message);
+    } catch (e) {
+      // Réseau KO : remettre les points en file pour le prochain flush (plafonné)
+      this._tripSamples = batch.concat(this._tripSamples).slice(-500);
+    }
   },
 
   // ===== CHECKLIST / ETAT DES LIEUX =====

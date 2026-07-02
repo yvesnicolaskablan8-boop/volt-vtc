@@ -9,6 +9,8 @@ const GpsConduitePage = {
   // Real-time map state
   _map: null,
   _markers: {},
+  _trails: {},
+  _trailLines: {},
   _mapPollInterval: null,
   _mapFitted: false,
   // History map state
@@ -44,6 +46,8 @@ const GpsConduitePage = {
       this._map = null;
     }
     this._markers = {};
+    this._trails = {};
+    this._trailLines = {};
     this._mapFitted = false;
   },
 
@@ -281,9 +285,25 @@ const GpsConduitePage = {
     if (!this._map) return;
 
     try {
-      const chauffeurs = Store.get('chauffeurs').filter(c => c.statut === 'actif' && c.location && c.location.lat);
+      // Positions FRA\u00ceCHES depuis Supabase \u00e0 chaque tick \u2014 le cache Store n'est
+      // charg\u00e9 qu'au d\u00e9marrage de l'app, donc la carte ne bougeait jamais sans F5.
+      const { data: rows, error } = await supabase
+        .from('fleet_chauffeurs')
+        .select('id, prenom, nom, statut, vehicule_assigne, location')
+        .eq('statut', 'actif')
+        .not('location', 'is', null);
+      if (error) throw new Error(error.message);
+      const fresh = rowsToCamel(rows || []);
+
+      // Propager les positions fra\u00eeches dans le cache (dashboard, autres pages)
+      const cached = Store.get('chauffeurs') || [];
+      fresh.forEach(f => {
+        const c = cached.find(x => x.id === f.id);
+        if (c) c.location = f.location;
+      });
+
       const vehicules = Store.get('vehicules');
-      const positions = chauffeurs.map(c => {
+      const positions = fresh.filter(c => c.location && c.location.lat).map(c => {
         const v = vehicules.find(v => v.id === c.vehiculeAssigne);
         return {
           chauffeurId: c.id,
@@ -298,12 +318,16 @@ const GpsConduitePage = {
         };
       });
 
+      const now = Date.now();
+      const isOnline = p => p.updatedAt && (now - new Date(p.updatedAt).getTime()) < 5 * 60000;
+      const onlineCount = positions.filter(isOnline).length;
+      const staleCount = positions.length - onlineCount;
+
       const countEl = document.getElementById('map-driver-count');
       if (countEl) {
-        countEl.textContent = `${positions.length} en ligne`;
+        countEl.textContent = `${onlineCount} en ligne${staleCount > 0 ? ` \u00b7 ${staleCount} signal ancien` : ''}`;
       }
 
-      const now = Date.now();
       const activeIds = new Set();
 
       positions.forEach(pos => {
@@ -312,6 +336,22 @@ const GpsConduitePage = {
         const updatedAt = pos.updatedAt ? new Date(pos.updatedAt).getTime() : 0;
         const ageMin = Math.round((now - updatedAt) / 60000);
         const isStale = ageMin > 5;
+        const isMoving = !isStale && pos.speed != null && pos.speed > 3;
+
+        // Trace de session (points accumul\u00e9s pendant que la page est ouverte)
+        const trail = this._trails[pos.chauffeurId] = this._trails[pos.chauffeurId] || [];
+        const lastPt = trail[trail.length - 1];
+        if (!lastPt || lastPt[0] !== pos.lat || lastPt[1] !== pos.lng) {
+          trail.push([pos.lat, pos.lng]);
+          if (trail.length > 300) trail.shift();
+        }
+        if (trail.length > 1) {
+          if (this._trailLines[pos.chauffeurId]) {
+            this._trailLines[pos.chauffeurId].setLatLngs(trail);
+          } else {
+            this._trailLines[pos.chauffeurId] = L.polyline(trail, { color: '#3b82f6', weight: 3, opacity: 0.45 }).addTo(this._map);
+          }
+        }
 
         const popupContent = `
           <div style="font-size:13px;min-width:160px;">
@@ -323,23 +363,29 @@ const GpsConduitePage = {
           </div>
         `;
 
-        const markerColor = isStale ? '#94a3b8' : '#3b82f6';
+        // Couleur d'\u00e9tat : vert = en mouvement, bleu = \u00e0 l'arr\u00eat, gris = signal ancien
+        const markerColor = isStale ? '#94a3b8' : isMoving ? '#22c55e' : '#3b82f6';
         const markerIcon = L.divIcon({
           className: 'gps-marker-icon',
           html: `
-            <div style="
-              background:${markerColor};
-              width:32px;height:32px;border-radius:50%;
-              display:flex;align-items:center;justify-content:center;
-              color:white;font-size:14px;font-weight:700;
-              border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);
-              ${pos.heading != null ? `transform:rotate(${pos.heading}deg);` : ''}
-            ">
-              <iconify-icon icon="solar:${pos.heading != null ? 'map-arrow-right-bold-duotone' : 'wheel-bold-duotone'}" style="font-size:14px;"></iconify-icon>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;width:88px;">
+              <div style="
+                background:${markerColor};
+                width:32px;height:32px;border-radius:50%;
+                display:flex;align-items:center;justify-content:center;
+                color:white;font-size:14px;font-weight:700;
+                border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);
+                ${pos.heading != null ? `transform:rotate(${pos.heading}deg);` : ''}
+              ">
+                <iconify-icon icon="solar:${pos.heading != null ? 'map-arrow-right-bold-duotone' : 'wheel-bold-duotone'}" style="font-size:14px;"></iconify-icon>
+              </div>
+              <div style="background:rgba(15,23,42,.82);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;white-space:nowrap;max-width:88px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.3);">
+                ${pos.prenom}${isMoving ? ` \u00b7 ${pos.speed} km/h` : ''}
+              </div>
             </div>
           `,
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
+          iconSize: [88, 50],
+          iconAnchor: [44, 16],
           popupAnchor: [0, -20]
         });
 
@@ -358,6 +404,11 @@ const GpsConduitePage = {
         if (!activeIds.has(id)) {
           this._map.removeLayer(this._markers[id]);
           delete this._markers[id];
+          if (this._trailLines[id]) {
+            this._map.removeLayer(this._trailLines[id]);
+            delete this._trailLines[id];
+            delete this._trails[id];
+          }
         }
       });
 
