@@ -10,7 +10,7 @@
  */
 const PlanningPage = {
   _charts: [],
-  _currentView: 'week',
+  _currentView: 'month',
   _currentWeekStart: null,
   _currentMonth: null,
   _filterChauffeurId: '',
@@ -65,9 +65,9 @@ const PlanningPage = {
                 <input type="text" id="filter-planning-search" class="form-control" placeholder="Nom..." value="${this._filterSearch}" style="width:80px;font-size:11px;padding:3px 4px;border:none;background:transparent;font-weight:500;min-width:0;">
               </div>
               <div class="tabs" id="planning-view-tabs" style="margin:0;flex-shrink:0;">
-                <div class="tab active" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
-                <div class="tab" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
-                <div class="tab" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
+                <div class="tab ${this._currentView === 'month' ? 'active' : ''}" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
+                <div class="tab ${this._currentView === 'week' ? 'active' : ''}" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
+                <div class="tab ${this._currentView === 'stats' ? 'active' : ''}" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
               </div>
             </div>
           </div>
