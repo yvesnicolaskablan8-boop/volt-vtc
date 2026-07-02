@@ -785,90 +785,97 @@ const PlanningPage = {
     _vehList3.forEach(v => { if (v.chauffeurAssigne) chPlaqueMap[v.chauffeurAssigne] = v.immatriculation || `${v.marque} ${v.modele}`; });
     const year = this._currentMonth.getFullYear();
     const month = this._currentMonth.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const chSet = new Set(chauffeurs.map(c => c.id));
+    const chById = {};
+    chauffeurs.forEach(c => { chById[c.id] = c; });
 
-    // Build day headers
-    const dayHeaders = [];
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dt = new Date(year, month, d);
-      const dow = dt.getDay();
-      const isWeekend = dow === 0 || dow === 6;
-      dayHeaders.push({ num: d, date: this._dateStr(dt), isWeekend, isToday: this._isToday(this._dateStr(dt)), dow });
-    }
+    // Grille calendrier : du lundi précédant le 1er au dimanche suivant la fin du mois
+    const firstOfMonth = new Date(year, month, 1);
+    const gridStart = new Date(firstOfMonth);
+    const fdow = firstOfMonth.getDay(); // 0=dim
+    gridStart.setDate(firstOfMonth.getDate() - (fdow === 0 ? 6 : fdow - 1));
+    const cells = [];
+    const cur = new Date(gridStart);
+    do {
+      cells.push({
+        date: this._dateStr(cur),
+        num: cur.getDate(),
+        inMonth: cur.getMonth() === month,
+        isToday: this._isToday(this._dateStr(cur))
+      });
+      cur.setDate(cur.getDate() + 1);
+    } while (cur.getMonth() === month || cur.getDay() !== 1); // s'arrête au lundi après la fin du mois
+
+    const planning = Store.get('planning') || [];
+    const shiftsByDate = {};
+    planning.forEach(p => {
+      if (p.chauffeurId && chSet.has(p.chauffeurId)) {
+        (shiftsByDate[p.date] = shiftsByDate[p.date] || []).push(p);
+      }
+    });
+
+    const MAX_CHIPS = 3;
+    const dayNames = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
+
+    const renderCell = (c) => {
+      const dayShifts = c.inMonth ? (shiftsByDate[c.date] || []) : [];
+      // Absences des chauffeurs planifiés ou non ce jour-là
+      const dayAbsences = c.inMonth ? chauffeurs.flatMap(ch => this._getDriverAbsencesForDate(ch.id, c.date).slice(0, 1)) : [];
+
+      const chips = [];
+      dayShifts.forEach(s => {
+        const ch = chById[s.chauffeurId];
+        if (!ch) return;
+        chips.push(`<div class="pcal-chip" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
+          <span class="pcal-dot" style="background:${this._getShiftColor(s)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.</span>
+        </div>`);
+      });
+      dayAbsences.forEach(a => {
+        const ch = chById[a.chauffeurId];
+        if (!ch) return;
+        chips.push(`<div class="pcal-chip pcal-chip-abs" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._absenceTypeLabel(a.type)}" onclick="event.stopPropagation();PlanningPage._viewAbsence('${a.id}')">
+          <span class="pcal-dot" style="background:${this._absenceTypeColor(a.type)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}. <em>(${this._absenceTypeLabel(a.type).toLowerCase()})</em></span>
+        </div>`);
+      });
+
+      const visible = chips.slice(0, MAX_CHIPS);
+      const overflow = chips.length - visible.length;
+      const numHtml = c.isToday
+        ? `<span class="pcal-num pcal-today">${c.num}</span>`
+        : `<span class="pcal-num${c.inMonth ? '' : ' pcal-num-out'}">${c.num}</span>`;
+
+      return `<div class="pcal-cell${c.inMonth ? '' : ' pcal-cell-out'}" ${c.inMonth ? `onclick="PlanningPage._addShift('','${c.date}')" title="Ajouter un créneau le ${Utils.formatDate(c.date)}"` : ''}>
+        ${numHtml}
+        <div class="pcal-chips">${visible.join('')}${overflow > 0 ? `<div class="pcal-more">+${overflow} autre${overflow > 1 ? 's' : ''}</div>` : ''}</div>
+      </div>`;
+    };
 
     return `
-      <!-- Légende -->
-      <div class="card" style="margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);">
-        <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;align-items:center;font-size:var(--font-size-xs);">
-          <span style="font-weight:600;color:var(--text-secondary);">Créneaux :</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#22c55e;vertical-align:middle;"></span> <strong>M</strong> Matin</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> <strong>AM</strong> Après-midi</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f59e0b;vertical-align:middle;"></span> <strong>J</strong> Journée</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#8b5cf6;vertical-align:middle;"></span> <strong>N</strong> Nuit</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6366f1;vertical-align:middle;"></span> <strong>P</strong> Personnalisé</span>
-          <span style="margin-left:var(--space-sm);font-weight:600;color:var(--text-secondary);">Absences :</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#64748b;vertical-align:middle;"></span> <strong>R</strong> Repos</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ef4444;vertical-align:middle;"></span> <strong>M</strong> Maladie</span>
-          <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#3b82f6;vertical-align:middle;"></span> <strong>C</strong> Congé</span>
+      <style>
+        .pcal-wrap { overflow-x:auto; }
+        .pcal { min-width:680px; }
+        .pcal-head { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:8px; }
+        .pcal-head div { text-align:center; font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--text-muted); }
+        .pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
+        .pcal-cell { border:1px solid var(--border-color); border-radius:14px; background:var(--bg-secondary); min-height:104px; padding:10px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:6px; }
+        .pcal-cell:hover { border-color:var(--pilote-blue, #3b82f6); box-shadow:0 2px 10px rgba(59,130,246,.10); }
+        .pcal-cell-out { background:var(--bg-tertiary); border-color:transparent; cursor:default; opacity:.55; }
+        .pcal-num { font-size:13px; font-weight:600; color:var(--text-primary); line-height:26px; }
+        .pcal-num-out { color:var(--text-muted); }
+        .pcal-today { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--text-primary); color:var(--bg-secondary); font-weight:800; }
+        .pcal-chips { display:flex; flex-direction:column; gap:3px; overflow:hidden; }
+        .pcal-chip { display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:var(--text-secondary); background:var(--bg-tertiary); border-radius:6px; padding:2px 6px; white-space:nowrap; overflow:hidden; }
+        .pcal-chip:hover { background:var(--border-color); }
+        .pcal-chip-abs .pcal-chip-txt { opacity:.75; }
+        .pcal-chip-txt { overflow:hidden; text-overflow:ellipsis; }
+        .pcal-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+        .pcal-more { font-size:10px; font-weight:600; color:var(--text-muted); padding-left:2px; }
+      </style>
+      <div class="card pcal-wrap" style="padding:var(--space-md);">
+        <div class="pcal">
+          <div class="pcal-head">${dayNames.map(d => `<div>${d}</div>`).join('')}</div>
+          <div class="pcal-grid">${cells.map(renderCell).join('')}</div>
         </div>
-      </div>
-
-      <div class="card" style="padding:0;overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;min-width:${daysInMonth * 36 + 180}px;">
-          <thead>
-            <tr style="background:var(--bg-tertiary);">
-              <th style="padding:8px 12px;text-align:left;font-size:var(--font-size-xs);font-weight:600;color:var(--text-secondary);width:160px;border-bottom:2px solid var(--border-color);position:sticky;left:0;background:var(--bg-tertiary);z-index:1;">Chauffeur</th>
-              ${dayHeaders.map(d => `
-                <th style="padding:4px 2px;text-align:center;font-size:10px;border-bottom:2px solid var(--border-color);min-width:30px;
-                  ${d.isToday ? 'background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;font-weight:700;' : d.isWeekend ? 'background:rgba(100,116,139,0.1);color:var(--text-muted);' : 'color:var(--text-secondary);'}">
-                  <div style="font-weight:600;">${d.num}</div>
-                  <div style="font-size:9px;">${this._getDayName(d.dow === 0 ? 6 : d.dow - 1)}</div>
-                </th>
-              `).join('')}
-            </tr>
-          </thead>
-          <tbody>
-            ${chauffeurs.map(ch => `
-              <tr style="border-bottom:1px solid var(--border-color);">
-                <td style="padding:6px 12px;position:sticky;left:0;background:var(--bg-secondary);z-index:1;">
-                  <a href="#/chauffeurs/${ch.id}" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:inherit;" title="Voir le détail de ${ch.prenom} ${ch.nom}">
-                    ${Utils.getAvatarHtml(ch, '', 'width:24px;height:24px;font-size:9px;')}
-                    <div style="display:flex;flex-direction:column;line-height:1.2;">
-                      <span style="font-size:var(--font-size-xs);font-weight:500;">${ch.prenom} ${ch.nom.charAt(0)}.</span>
-                      ${(() => { const _p = (ch.vehiculeAssigne ? (vehMap[ch.vehiculeAssigne] || '') : '') || chPlaqueMap[ch.id] || ''; return _p ? `<span style="font-size:8px;color:var(--text-muted);">${_p}</span>` : ''; })()}
-                    </div>
-                  </a>
-                </td>
-                ${dayHeaders.map(d => {
-                  const shifts = this._getDriverShiftsForDate(ch.id, d.date);
-                  const absences = this._getDriverAbsencesForDate(ch.id, d.date);
-
-                  if (absences.length > 0) {
-                    const a = absences[0];
-                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(251,191,36,0.15);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
-                      <div style="width:24px;height:24px;border-radius:4px;background:${this._absenceTypeColor(a.type)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._absenceTypeLabel(a.type)}" onclick="PlanningPage._viewAbsence('${a.id}')">
-                        ${a.type === 'repos' ? 'R' : a.type === 'conge' ? 'C' : a.type === 'maladie' ? 'M' : a.type === 'formation' ? 'F' : a.type === 'suspension' ? 'S' : 'P'}
-                      </div>
-                    </td>`;
-                  }
-
-                  if (shifts.length > 0) {
-                    const s = shifts[0];
-                    return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(251,191,36,0.15);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
-                      <div style="width:24px;height:24px;border-radius:4px;background:${this._getShiftColor(s)};margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;" title="${this._getShiftTimeLabel(s)}" onclick="PlanningPage._editShift('${s.id}')">
-                        ${this._shiftTypeShort(s.typeCreneaux)}
-                      </div>
-                    </td>`;
-                  }
-
-                  return `<td style="padding:2px;text-align:center;${d.isToday ? 'background:rgba(251,191,36,0.15);' : d.isWeekend ? 'background:rgba(100,116,139,0.05);' : ''}">
-                    <div style="width:24px;height:24px;border-radius:4px;border:1px dashed var(--border-color);margin:auto;opacity:0.3;"></div>
-                  </td>`;
-                }).join('')}
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
       </div>
     `;
   },
