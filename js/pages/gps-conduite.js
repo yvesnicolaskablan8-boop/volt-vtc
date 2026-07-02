@@ -281,8 +281,8 @@ const GpsConduitePage = {
     if (!this._map) return;
 
     try {
-      const chauffeurs = Store.getAll('chauffeurs').filter(c => c.statut === 'actif' && c.location && c.location.lat);
-      const vehicules = Store.getAll('vehicules');
+      const chauffeurs = Store.get('chauffeurs').filter(c => c.statut === 'actif' && c.location && c.location.lat);
+      const vehicules = Store.get('vehicules');
       const positions = chauffeurs.map(c => {
         const v = vehicules.find(v => v.id === c.vehiculeAssigne);
         return {

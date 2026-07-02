@@ -122,7 +122,7 @@ const AlertesPage = {
     if (!banner) return;
 
     try {
-      const notifs = Store.getAll('notifications') || [];
+      const notifs = Store.get('notifications') || [];
       const now = new Date();
       const moisDebut = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       const aujourdHuiDebut = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();

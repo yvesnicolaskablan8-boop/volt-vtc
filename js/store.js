@@ -49,6 +49,10 @@ const Store = {
           }
           this._backupToLocalStorage();
           this._notify();
+          // Re-render la page courante : sans ça, les collections de Phase 2
+          // (contraventions, comptabilité…) restent affichées avec les vieilles
+          // données du localStorage jusqu'à une navigation manuelle.
+          this._notifyRemote();
           console.log('Store: Phase 2 loaded (all collections)');
         })
         .catch(e => console.warn('Store: Phase 2 partial failure:', e.message));
@@ -319,18 +323,13 @@ const Store = {
       return;
     }
     try {
-      // Get current user to scope the delete
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.warn('Store: No authenticated user for bulk replace');
-        return;
-      }
-
-      // Delete all existing rows for this user
+      // App mono-entreprise : on remplace TOUTES les lignes de la table.
+      // (L'ancien filtre .eq('user_id', ...) échouait — les tables fleet_*
+      // n'ont pas de colonne user_id — et le set() ne synchronisait jamais.)
       const { error: delError } = await supabase
         .from(table)
         .delete()
-        .eq('user_id', user.id);
+        .not('id', 'is', null);
 
       if (delError) {
         console.error(`Store: Supabase bulk delete ${collection} failed:`, delError.message);
@@ -569,8 +568,8 @@ const Store = {
   async cleanupGhostVersements() {
     // Clean up ghost versements locally: remove versements where chauffeur no longer exists
     try {
-      const versements = this.getAll('versements') || [];
-      const chauffeurs = this.getAll('chauffeurs') || [];
+      const versements = this.get('versements') || [];
+      const chauffeurs = this.get('chauffeurs') || [];
       const chauffeurIds = new Set(chauffeurs.map(c => c.id));
       const ghosts = versements.filter(v => v.chauffeurId && !chauffeurIds.has(v.chauffeurId));
       for (const g of ghosts) {

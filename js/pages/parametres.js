@@ -2572,7 +2572,7 @@ const ParametresPage = {
         sendBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Envoi en cours...';
 
         try {
-          const activeChauffs = Store.getAll('chauffeurs').filter(c => c.statut === 'actif');
+          const activeChauffs = Store.get('chauffeurs').filter(c => c.statut === 'actif');
           const notifRows = activeChauffs.map(c => objToSnake({
             chauffeurId: c.id, type: 'annonce', titre, message, canal, statut: 'envoyee'
           }));

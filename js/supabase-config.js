@@ -33,7 +33,14 @@ const TABLE_MAP = {
   incidents: 'fleet_incidents',
   taches: 'fleet_taches',
   depenseCategories: 'fleet_depense_categories',
-  versementRecurrents: 'fleet_versement_recurrents'
+  versementRecurrents: 'fleet_versement_recurrents',
+  comptesRendus: 'fleet_comptes_rendus',
+  controlesTechniques: 'fleet_controles_techniques',
+  depenseRecurrentes: 'fleet_depense_recurrentes',
+  planningTemplates: 'fleet_planning_templates',
+  zonesVitesse: 'fleet_zones_vitesse',
+  infractionsVitesse: 'fleet_infractions_vitesse',
+  parcs: 'fleet_parcs'
 };
 
 // Field name conversion utilities (camelCase ↔ snake_case)
