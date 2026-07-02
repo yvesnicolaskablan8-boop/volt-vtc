@@ -316,8 +316,75 @@ const PlanningPage = {
     const absencesWeek = this._getAbsences().filter(a => a.dateFin >= days[0].date && a.dateDebut <= days[6].date);
     const uniqueAbsDrivers = [...new Set(absencesWeek.map(a => a.chauffeurId))].length;
 
-    // Same grid view for desktop and mobile (responsive CSS handles sizing)
-    return this._renderDesktopGridView(chauffeurs, days, vehMap, { filledSlots, totalSlots, uniqueAbsDrivers }, todayStr, versements);
+    // Vue semaine en cartes calendrier (même style que la vue Mois)
+    const chSet = new Set(chauffeurs.map(c => c.id));
+    const chById = {};
+    chauffeurs.forEach(c => { chById[c.id] = c; });
+    const shiftsByDate = {};
+    weekShifts.forEach(p => {
+      if (p.chauffeurId && chSet.has(p.chauffeurId)) {
+        (shiftsByDate[p.date] = shiftsByDate[p.date] || []).push(p);
+      }
+    });
+
+    const MAX_CHIPS = 10;
+    const dayNames = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
+
+    const renderDayCard = (d, i) => {
+      const isToday = d.date === todayStr;
+      const dayShifts = (shiftsByDate[d.date] || []).slice().sort((a, b) => (a.heureDebut || '').localeCompare(b.heureDebut || ''));
+      const dayAbsences = chauffeurs.flatMap(ch => this._getDriverAbsencesForDate(ch.id, d.date).slice(0, 1));
+
+      const chips = [];
+      dayShifts.forEach(s => {
+        const ch = chById[s.chauffeurId];
+        if (!ch) return;
+        chips.push(`<div class="pcal-chip" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
+          <span class="pcal-dot" style="background:${this._getShiftColor(s)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}. <span class="pcal-chip-time">${s.heureDebut || ''}${s.heureFin ? '–' + s.heureFin : ''}</span></span>
+        </div>`);
+      });
+      dayAbsences.forEach(a => {
+        const ch = chById[a.chauffeurId];
+        if (!ch) return;
+        chips.push(`<div class="pcal-chip pcal-chip-abs" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._absenceTypeLabel(a.type)}" onclick="event.stopPropagation();PlanningPage._viewAbsence('${a.id}')">
+          <span class="pcal-dot" style="background:${this._absenceTypeColor(a.type)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}. <em>(${this._absenceTypeLabel(a.type).toLowerCase()})</em></span>
+        </div>`);
+      });
+
+      const visible = chips.slice(0, MAX_CHIPS);
+      const overflow = chips.length - visible.length;
+      const numHtml = isToday
+        ? `<span class="pcal-num pcal-today">${d.obj.getDate()}</span>`
+        : `<span class="pcal-num">${d.obj.getDate()}</span>`;
+
+      return `<div class="pcal-cell pcal-cell-week" onclick="PlanningPage._addShift('','${d.date}')" title="Ajouter un créneau le ${Utils.formatDate(d.date)}">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          ${numHtml}
+          <span style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);">${dayNames[i]}</span>
+        </div>
+        <div class="pcal-chips">${visible.join('')}${overflow > 0 ? `<div class="pcal-more">+${overflow} autre${overflow > 1 ? 's' : ''}</div>` : ''}</div>
+      </div>`;
+    };
+
+    return `
+      ${this._pcalCss()}
+      <style>
+        .pcal-cell-week { min-height:240px; }
+        .pcal-chip-time { font-weight:500; color:var(--text-muted); font-size:9.5px; }
+      </style>
+      ${this._renderServiceDuJour(chauffeurs, days)}
+      <div class="card" style="margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);display:flex;gap:var(--space-lg);flex-wrap:wrap;font-size:var(--font-size-xs);color:var(--text-secondary);">
+        <span><strong>${filledSlots}</strong> créneau${filledSlots > 1 ? 'x' : ''} programmé${filledSlots > 1 ? 's' : ''}</span>
+        <span><strong>${uniqueAbsDrivers}</strong> chauffeur${uniqueAbsDrivers > 1 ? 's' : ''} absent${uniqueAbsDrivers > 1 ? 's' : ''}</span>
+        <span style="color:var(--text-muted);">Cliquez sur un jour pour ajouter un créneau</span>
+      </div>
+      <div class="card pcal-wrap" style="padding:var(--space-md);">
+        <div class="pcal">
+          <div class="pcal-head">${days.map((d, i) => `<div>${dayNames[i]} ${d.obj.getDate()}</div>`).join('')}</div>
+          <div class="pcal-grid">${days.map(renderDayCard).join('')}</div>
+        </div>
+      </div>
+    `;
   },
 
   // =================== VUE MOBILE (grille compacte comme dashboard) ===================
@@ -851,26 +918,7 @@ const PlanningPage = {
     };
 
     return `
-      <style>
-        .pcal-wrap { overflow-x:auto; }
-        .pcal { min-width:680px; }
-        .pcal-head { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:8px; }
-        .pcal-head div { text-align:center; font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--text-muted); }
-        .pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
-        .pcal-cell { border:1px solid var(--border-color); border-radius:14px; background:var(--bg-secondary); min-height:104px; padding:10px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:6px; }
-        .pcal-cell:hover { border-color:var(--pilote-blue, #3b82f6); box-shadow:0 2px 10px rgba(59,130,246,.10); }
-        .pcal-cell-out { background:var(--bg-tertiary); border-color:transparent; cursor:default; opacity:.55; }
-        .pcal-num { font-size:13px; font-weight:600; color:var(--text-primary); line-height:26px; }
-        .pcal-num-out { color:var(--text-muted); }
-        .pcal-today { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--text-primary); color:var(--bg-secondary); font-weight:800; }
-        .pcal-chips { display:flex; flex-direction:column; gap:3px; overflow:hidden; }
-        .pcal-chip { display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:var(--text-secondary); background:var(--bg-tertiary); border-radius:6px; padding:2px 6px; white-space:nowrap; overflow:hidden; }
-        .pcal-chip:hover { background:var(--border-color); }
-        .pcal-chip-abs .pcal-chip-txt { opacity:.75; }
-        .pcal-chip-txt { overflow:hidden; text-overflow:ellipsis; }
-        .pcal-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-        .pcal-more { font-size:10px; font-weight:600; color:var(--text-muted); padding-left:2px; }
-      </style>
+      ${this._pcalCss()}
       <div class="card pcal-wrap" style="padding:var(--space-md);">
         <div class="pcal">
           <div class="pcal-head">${dayNames.map(d => `<div>${d}</div>`).join('')}</div>
@@ -878,6 +926,30 @@ const PlanningPage = {
         </div>
       </div>
     `;
+  },
+
+  // CSS partagé des vues calendrier (Mois et Semaine)
+  _pcalCss() {
+    return `<style>
+      .pcal-wrap { overflow-x:auto; }
+      .pcal { min-width:680px; }
+      .pcal-head { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:8px; }
+      .pcal-head div { text-align:center; font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--text-muted); }
+      .pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
+      .pcal-cell { border:1px solid var(--border-color); border-radius:14px; background:var(--bg-secondary); min-height:104px; padding:10px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:6px; }
+      .pcal-cell:hover { border-color:var(--pilote-blue, #3b82f6); box-shadow:0 2px 10px rgba(59,130,246,.10); }
+      .pcal-cell-out { background:var(--bg-tertiary); border-color:transparent; cursor:default; opacity:.55; }
+      .pcal-num { font-size:13px; font-weight:600; color:var(--text-primary); line-height:26px; }
+      .pcal-num-out { color:var(--text-muted); }
+      .pcal-today { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--text-primary); color:var(--bg-secondary); font-weight:800; }
+      .pcal-chips { display:flex; flex-direction:column; gap:3px; overflow:hidden; }
+      .pcal-chip { display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:var(--text-secondary); background:var(--bg-tertiary); border-radius:6px; padding:2px 6px; white-space:nowrap; overflow:hidden; }
+      .pcal-chip:hover { background:var(--border-color); }
+      .pcal-chip-abs .pcal-chip-txt { opacity:.75; }
+      .pcal-chip-txt { overflow:hidden; text-overflow:ellipsis; }
+      .pcal-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+      .pcal-more { font-size:10px; font-weight:600; color:var(--text-muted); padding-left:2px; }
+    </style>`;
   },
 
   // =================== VUE STATISTIQUES ===================
