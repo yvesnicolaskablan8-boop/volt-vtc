@@ -427,6 +427,22 @@ const DriverApp = {
       const ch = (typeof DriverAuth !== 'undefined' && DriverAuth.getChauffeur) ? DriverAuth.getChauffeur() : null;
       if (!ch || !ch.id) return false;
 
+      // Jeton d'appareil : émis pour CE chauffeur pendant qu'il a une session,
+      // puis utilisé par le service natif (app fermée, pas de session).
+      // Non falsifiable : le RPC d'ingestion refuse tout jeton inconnu.
+      let deviceToken = localStorage.getItem('pilote_device_token');
+      try {
+        const { data: freshToken, error: tokErr } = await supabase.rpc('fleet_issue_device_token');
+        if (!tokErr && freshToken) {
+          deviceToken = freshToken;
+          localStorage.setItem('pilote_device_token', freshToken);
+        }
+      } catch (e) { /* hors-ligne : on réutilise le jeton stocké */ }
+      if (!deviceToken) {
+        console.warn('[Geo] Pas de jeton appareil disponible, fallback web');
+        return false;
+      }
+
       await BG.ready({
         reset: true,
         desiredAccuracy: -1, // DESIRED_ACCURACY_HIGH
@@ -448,7 +464,7 @@ const DriverApp = {
         method: 'POST',
         httpRootProperty: '.',
         locationTemplate: '{"p_lat":<%= latitude %>,"p_lng":<%= longitude %>,"p_speed":<%= speed %>,"p_heading":<%= heading %>,"p_accuracy":<%= accuracy %>}',
-        params: { p_chauffeur: ch.id },
+        params: { p_token: deviceToken },
         headers: {
           apikey: SUPABASE_ANON_KEY,
           Authorization: 'Bearer ' + SUPABASE_ANON_KEY,

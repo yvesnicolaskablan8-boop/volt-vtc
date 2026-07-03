@@ -134,10 +134,12 @@ const DriverStore = {
 
   async getDeadline() {
     const id = this._chauffeurId();
-    const { data: settings } = await supabase.from('fleet_settings').select('versements').limit(1).single();
+    // RPC dédié : fleet_settings n'est plus lisible par les chauffeurs
+    // (la ligne contient les clés API dans integrations).
+    const { data: versementsSettings } = await supabase.rpc('fleet_settings_versements');
     const { data: ch } = await supabase.from('fleet_chauffeurs').select('redevance_quotidienne').eq('id', id).single();
     return {
-      settings: settings ? settings.versements : {},
+      settings: versementsSettings || {},
       redevance: ch ? ch.redevance_quotidienne : 0
     };
   },
