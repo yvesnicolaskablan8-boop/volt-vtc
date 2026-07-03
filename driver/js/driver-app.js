@@ -111,6 +111,7 @@ const DriverApp = {
     if (typeof EtatLieuxPage !== 'undefined') DriverRouter.register('etat-lieux', EtatLieuxPage);
     if (typeof DocumentsPage !== 'undefined') DriverRouter.register('documents', DocumentsPage);
     if (typeof SupportPage !== 'undefined') DriverRouter.register('support', SupportPage);
+    if (typeof PlusPage !== 'undefined') DriverRouter.register('plus', PlusPage);
     if (typeof TrajetsPage !== 'undefined') DriverRouter.register('trajets', TrajetsPage);
     if (typeof ChecklistPage !== 'undefined') DriverRouter.register('checklist', ChecklistPage);
     if (typeof ClassementPage !== 'undefined') DriverRouter.register('classement', ClassementPage);

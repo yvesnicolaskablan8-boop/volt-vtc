@@ -14,10 +14,11 @@ const AccueilPage = {
     endDate.setDate(endDate.getDate() + 5);
     const endStr = endDate.toISOString().split('T')[0];
 
-    const [data, planningData, contraventionsData] = await Promise.all([
+    const [data, planningData, contraventionsData, serviceJourReel] = await Promise.all([
       DriverStore.getDashboard(),
       DriverStore.getPlanning(todayStr, endStr),
-      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null)
+      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null),
+      typeof DriverStore.getServiceToday === 'function' ? DriverStore.getServiceToday().catch(() => null) : Promise.resolve(null)
     ]);
 
     if (!data) {
@@ -56,7 +57,14 @@ const AccueilPage = {
       nuit: 'linear-gradient(135deg, #6366f1, #4f46e5)',
       custom: 'linear-gradient(135deg, #6366f1, #4f46e5)'
     };
-    const creneau = data.creneauJour;
+    // creneauJour venait de l'ancien serveur Express ; on le dérive du planning Supabase
+    const planningJour = (data.planning && data.planning[0]) || null;
+    const creneau = data.creneauJour || (planningJour ? {
+      type: planningJour.typeCreneaux || 'custom',
+      heureDebut: planningJour.heureDebut,
+      heureFin: planningJour.heureFin,
+      notes: planningJour.notes
+    } : null);
     // Pour les creneaux personnalises, afficher les heures reelles
     let creneauText = null;
     if (creneau) {
@@ -144,125 +152,98 @@ const AccueilPage = {
     const redevanceJour = chauffeur.redevanceQuotidienne || 0;
     const redevanceStr = redevanceJour > 0 ? redevanceJour.toLocaleString('fr-FR') + ' FCFA' : '';
 
-    container.innerHTML = `
-      <!-- Hero Card — Greeting + Montant a verser -->
-      <div style="border-radius:var(--radius-2xl);background:linear-gradient(135deg,#7c3aed 0%,#a855f7 40%,#c084fc 100%);padding:1.5rem 1.25rem;color:white;margin-bottom:1.25rem;box-shadow:0 8px 32px rgba(124,58,237,0.25);position:relative;overflow:hidden">
-        <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.08)"></div>
-        <div style="position:absolute;bottom:-20px;left:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.06)"></div>
-        <div style="position:relative;z-index:1">
-          <div style="font-size:1rem;font-weight:600;opacity:0.9;margin-bottom:6px">${greeting}, ${prenom}</div>
-          ${redevanceJour > 0 ? `
-            <div style="font-size:2.2rem;font-weight:900;letter-spacing:-0.02em;margin-bottom:4px">${redevanceStr}</div>
-            <div style="font-size:0.8rem;font-weight:500;opacity:0.75">A verser aujourd'hui</div>
-          ` : `
-            <div style="font-size:0.85rem;font-weight:500;opacity:0.8;margin-top:4px">${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</div>
-          `}
+    // === Paiement du jour (la SEULE info qui compte le matin) ===
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const prenomSafe = esc(prenom);
+    const serviceJourLocal = serviceJourReel;
+    const versementsJour = (data.versements || []).filter(v => v.date === todayStr && v.statut !== 'supprime');
+    const totalVerseJour = versementsJour.reduce((s, v) => s + (v.montantVerse || 0), 0);
+    const aPaye = redevanceJour > 0 ? totalVerseJour >= redevanceJour : totalVerseJour > 0;
+    const resteAPayer = Math.max(0, redevanceJour - totalVerseJour);
+
+    // Carte argent : verte = payé, orange = à payer (montant énorme + bouton géant)
+    let carteArgentHTML = '';
+    if (redevanceJour > 0 && !aPaye) {
+      carteArgentHTML = `
+      <div style="border-radius:1.5rem;background:linear-gradient(150deg,#b45309,#f59e0b);padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(245,158,11,0.35);text-align:center">
+        <div style="font-size:1.05rem;font-weight:800;opacity:0.95;display:flex;align-items:center;justify-content:center;gap:8px">
+          <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:1.5rem"></iconify-icon> À PAYER AUJOURD'HUI
         </div>
-      </div>
-
-      <!-- Widget Classement & Score -->
-      <div id="classement-widget-slot"></div>
-
-      <!-- Actions rapides -->
-      <div style="margin-bottom:1rem">
-        <div class="section-label">Actions rapides</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <button id="btn-payer-accueil" onclick="DriverRouter.navigate('versements')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:3.5rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(34,197,94,0.25);font-family:inherit;position:relative;overflow:hidden">
-            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:2.5rem"></iconify-icon>
-            <span style="font-size:0.9rem;font-weight:700">Payer</span>
-          </button>
-          <button onclick="DriverRouter.navigate('planning')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:3.5rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(59,130,246,0.2);font-family:inherit;position:relative;overflow:hidden">
-            <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size:2.5rem"></iconify-icon>
-            <span style="font-size:0.9rem;font-weight:700">Planning</span>
-          </button>
-          <button onclick="DriverRouter.navigate('dettes')" class="tap-scale" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:3.5rem 0.5rem;border-radius:var(--radius-xl);border:none;background:linear-gradient(135deg,#f97316,#ea580c);color:white;cursor:pointer;box-shadow:0 6px 20px rgba(249,115,22,0.2);font-family:inherit;position:relative;overflow:hidden">
-            <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:2.5rem"></iconify-icon>
-            <span style="font-size:0.9rem;font-weight:700">Mes dettes</span>
-          </button>
+        <div style="font-size:3rem;font-weight:900;letter-spacing:-0.02em;margin:10px 0 2px;line-height:1">${resteAPayer.toLocaleString('fr-FR')}</div>
+        <div style="font-size:1.1rem;font-weight:800;opacity:0.9;margin-bottom:16px">FCFA</div>
+        ${totalVerseJour > 0 ? `<div style="font-size:0.95rem;font-weight:700;background:rgba(255,255,255,0.18);border-radius:12px;padding:8px;margin-bottom:14px">Déjà versé : ${totalVerseJour.toLocaleString('fr-FR')} FCFA 👍</div>` : ''}
+        <button id="btn-payer-accueil" onclick="DriverRouter.navigate('versements')" class="tap-scale" style="width:100%;min-height:74px;border-radius:1.25rem;border:none;background:#16a34a;color:white;font-size:1.5rem;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;gap:12px">
+          <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:2rem"></iconify-icon> PAYER
+        </button>
+      </div>`;
+    } else if (aPaye) {
+      carteArgentHTML = `
+      <div style="border-radius:1.5rem;background:linear-gradient(150deg,#15803d,#22c55e);padding:1.75rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(34,197,94,0.35);text-align:center">
+        <div style="width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+          <iconify-icon icon="solar:check-circle-bold" style="font-size:3rem"></iconify-icon>
         </div>
-      </div>
-
-      <!-- Raccourcis secondaires -->
-      <div style="margin-bottom:1rem">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <button onclick="DriverRouter.navigate('versements')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:14px;padding:22px 20px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
-            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#059669,#047857);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:history-bold-duotone" style="font-size:1.6rem"></iconify-icon>
-            </div>
-            <div style="font-size:1rem;font-weight:700;color:var(--text-primary)">Historique</div>
-          </button>
-          <button onclick="DriverRouter.navigate('etat-lieux')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:14px;padding:22px 20px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
-            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:clipboard-check-bold-duotone" style="font-size:1.6rem"></iconify-icon>
-            </div>
-            <div style="font-size:1rem;font-weight:700;color:var(--text-primary)">Etat des lieux</div>
-          </button>
-          <button onclick="DriverRouter.navigate('contraventions')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:14px;padding:22px 20px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0;position:relative">
-            ${nbContraventionsImpayees > 0 ? `<span style="position:absolute;top:8px;right:8px;min-width:20px;height:20px;border-radius:10px;background:#ef4444;color:#fff;font-size:0.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 5px">${nbContraventionsImpayees}</span>` : ''}
-            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:document-text-bold-duotone" style="font-size:1.6rem"></iconify-icon>
-            </div>
-            <div style="font-size:1rem;font-weight:700;color:var(--text-primary)">Contraventions</div>
-          </button>
-          <button onclick="DriverRouter.navigate('support')" class="glass-card tap-scale" style="display:flex;align-items:center;gap:14px;padding:22px 20px;cursor:pointer;border:1px solid var(--glass-border);margin-bottom:0">
-            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#6b7280,#4b5563);color:white;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <iconify-icon icon="solar:danger-bold-duotone" style="font-size:1.6rem"></iconify-icon>
-            </div>
-            <div style="font-size:1rem;font-weight:700;color:var(--text-primary)">Support</div>
-          </button>
-        </div>
-      </div>
-
-      <!-- Widget statut sante -->
-      ${this._renderStatusWidget(data)}
-
-      <!-- Countdown deadline versement -->
-      ${countdownHTML}
-
-      <!-- Activite Yango -->
-      <div class="glass-card" id="yango-activity-card" style="display:none;">
-        <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:taxi-bold-duotone" style="color:#FC4C02;font-size:1.1rem;vertical-align:middle"></iconify-icon> Mon activite Yango</span>
-          <span class="badge" id="yango-activity-badge" style="background:#FC4C02;color:#fff;">--</span>
-        </div>
-        <div id="yango-activity-content">
-          <div class="loading" style="padding:0.5rem"><i class="fas fa-spinner fa-spin"></i></div>
-        </div>
-      </div>
-
-      <!-- Alertes maintenance vehicule -->
-      <div id="maintenance-alerts"></div>
-
-      <!-- Resume hebdomadaire (dimanche) -->
-      <div id="weekly-summary-card"></div>
-    `;
-
-    // Demarrer le timer du countdown apres le render
-    if (data.deadline && data.deadline.configured) {
-      DriverCountdown.startTimer();
+        <div style="font-size:1.5rem;font-weight:900">C'est payé !</div>
+        <div style="font-size:1rem;font-weight:700;opacity:0.9;margin-top:6px">${totalVerseJour.toLocaleString('fr-FR')} FCFA versés aujourd'hui</div>
+      </div>`;
+    } else {
+      carteArgentHTML = `
+      <div style="border-radius:1.5rem;background:linear-gradient(150deg,#1d4ed8,#3b82f6);padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(59,130,246,0.3);text-align:center">
+        <div style="font-size:1.4rem;font-weight:900">${greeting} ${prenomSafe} 👋</div>
+        <div style="font-size:0.95rem;font-weight:600;opacity:0.85;margin-top:6px">${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</div>
+      </div>`;
     }
 
-    // Demarrer le timer du service si en cours
-    if (serviceJour) {
-      if (serviceJour.statut === 'en_service') {
-        this._startServiceTimer(serviceJour.heureDebut, serviceJour.evenements);
-        this._resumeBehaviorIfActive(serviceJour);
-      } else if (serviceJour.statut === 'pause') {
-        this._startPauseTimer(serviceJour.evenements);
+    // Tuile géante réutilisable : icône énorme + UN mot (routes/gradients internes, pas de saisie utilisateur)
+    const tuile = (route, icon, label, grad, badge = 0) => `
+      <button onclick="DriverRouter.navigate('${route}')" class="tap-scale" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:118px;padding:1rem 0.5rem;border-radius:1.25rem;border:none;background:${grad};color:white;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px rgba(0,0,0,0.18)">
+        ${badge > 0 ? `<span style="position:absolute;top:10px;right:10px;min-width:26px;height:26px;border-radius:13px;background:#dc2626;border:2px solid white;color:#fff;font-size:0.85rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 6px">${badge}</span>` : ''}
+        <iconify-icon icon="${icon}" style="font-size:2.6rem"></iconify-icon>
+        <span style="font-size:1.05rem;font-weight:800">${label}</span>
+      </button>`;
+
+    container.innerHTML = `
+      <!-- Salutation (simple, grosse) -->
+      ${redevanceJour > 0 || aPaye ? `<div style="font-size:1.15rem;font-weight:800;color:var(--text-primary);margin:2px 0 10px">${greeting} ${prenomSafe} 👋</div>` : ''}
+
+      <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
+      ${carteArgentHTML}
+
+      <!-- 2. MA JOURNÉE : commencer / terminer (gros boutons existants) -->
+      ${this._buildServiceCard(creneau, serviceJourLocal, null)}
+
+      <!-- 3. Mon créneau du jour / prochain créneau -->
+      ${todayShiftHTML}
+      ${nextShiftHTML}
+
+      <!-- 4. QUATRE GRANDES TUILES, un mot chacune -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        ${tuile('planning', 'solar:calendar-date-bold-duotone', 'Planning', 'linear-gradient(135deg,#2563eb,#3b82f6)')}
+        ${tuile('messagerie', 'solar:chat-round-dots-bold-duotone', 'Messages', 'linear-gradient(135deg,#7c3aed,#a855f7)')}
+        ${tuile('dettes', 'solar:hand-money-bold-duotone', 'Mes dettes', 'linear-gradient(135deg,#ea580c,#f97316)', nbContraventionsImpayees)}
+        ${tuile('signalements', 'solar:danger-triangle-bold-duotone', 'Un problème ?', 'linear-gradient(135deg,#dc2626,#ef4444)')}
+      </div>
+
+      <!-- 5. Tout le reste, rangé ailleurs -->
+      <button onclick="DriverRouter.navigate('plus')" class="tap-scale" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:60px;border-radius:1.25rem;border:2px solid var(--glass-border);background:transparent;color:var(--text-primary);font-size:1.05rem;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:1rem">
+        <iconify-icon icon="solar:widget-4-bold-duotone" style="font-size:1.5rem"></iconify-icon> Autres services
+      </button>
+
+      <!-- Alertes vehicule urgentes uniquement -->
+      <div id="maintenance-alerts"></div>
+    `;
+
+    // Demarrer le timer du service si en cours (donnees reelles fleet_pointages)
+    if (serviceJourLocal) {
+      if (serviceJourLocal.statut === 'en_service') {
+        this._startServiceTimer(serviceJourLocal.heureDebut, serviceJourLocal.evenements);
+        this._resumeBehaviorIfActive(serviceJourLocal);
+      } else if (serviceJourLocal.statut === 'pause') {
+        this._startPauseTimer(serviceJourLocal.evenements);
       }
     }
 
-    // Charger le widget classement en arriere plan
-    this._loadClassementWidget();
-
-    // Charger l'activite Yango en arriere plan
-    this._loadYangoActivity();
-
-    // Charger les alertes maintenance vehicule
+    // Alertes maintenance vehicule (urgentes)
     this._loadMaintenanceAlerts();
-
-    // Charger le resume hebdomadaire (dimanche ou toujours pour info)
-    this._loadWeeklySummary();
 
     // Gestion du bouton Payer en mode hors-ligne
     this._setupOfflinePayerButton();

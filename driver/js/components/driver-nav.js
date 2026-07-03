@@ -2,7 +2,7 @@
  * DriverNav — Gestion de la barre de navigation bottom (4 onglets)
  */
 const DriverNav = {
-  _tabRoutes: ['accueil', 'versements', 'messagerie', 'profil'],
+  _tabRoutes: ['accueil', 'versements', 'messagerie', 'plus'],
 
   setActive(route) {
     const nav = document.getElementById('bottom-nav');
