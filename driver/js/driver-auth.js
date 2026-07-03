@@ -51,17 +51,9 @@ const DriverAuth = {
       });
 
       if (authError) {
-        // Try lookup by telephone to give better error message
-        const { data: chauffeur } = await supabase
-          .from('fleet_chauffeurs')
-          .select('id, prenom, nom')
-          .eq('telephone', telephone)
-          .single();
-
-        if (!chauffeur) {
-          return { success: false, error: 'Numero non reconnu' };
-        }
-        return { success: false, error: 'PIN incorrect' };
+        // Message générique : ne révèle pas quels numéros existent, et la
+        // lecture anonyme de fleet_chauffeurs n'est plus permise (RLS).
+        return { success: false, error: 'Numéro ou PIN incorrect' };
       }
 
       // Find chauffeur by auth_id

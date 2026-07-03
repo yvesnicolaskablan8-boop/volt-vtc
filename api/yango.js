@@ -20,6 +20,7 @@
 const {
   verifyAuth,
   getToken,
+  setRequestToken,
   supabaseQuery,
   getYangoCreds,
   assertYangoCreds,
@@ -1032,6 +1033,9 @@ module.exports = async function handler(req, res) {
   // CORS for every request
   setCors(res);
   if (handleOptions(req, res)) return;
+
+  // Jeton de l'appelant pour les lectures Supabase (RLS : authenticated only)
+  setRequestToken(getToken(req));
 
   const action = req.query.action;
 

@@ -53,6 +53,13 @@ async function supabaseQuery(table, params = '', token = null) {
 
 // =================== YANGO CREDENTIALS ===================
 
+// Jeton de la requête en cours (JWT de l'admin appelant, déjà validé par
+// verifyAuth). RLS n'autorise plus la clé anon à lire fleet_settings : la
+// lecture des credentials se fait donc avec le jeton authenticated de
+// l'appelant. Posé par le handler principal à chaque requête.
+let _reqToken = null;
+function setRequestToken(token) { _reqToken = token || null; }
+
 // Cache credentials for 60 seconds (DB-first, env fallback)
 let _credCache = null;
 let _credTime = 0;
@@ -68,7 +75,7 @@ async function getYangoCreds() {
       {
         headers: {
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${_reqToken || SUPABASE_ANON_KEY}`,
         },
       }
     );
@@ -271,6 +278,7 @@ function aggregateTransactions(transactions, filterDriverId = null) {
 module.exports = {
   verifyAuth,
   getToken,
+  setRequestToken,
   supabaseQuery,
   getYangoCreds,
   assertYangoCreds,
