@@ -14,11 +14,10 @@ const AccueilPage = {
     endDate.setDate(endDate.getDate() + 5);
     const endStr = endDate.toISOString().split('T')[0];
 
-    const [data, planningData, contraventionsData, serviceJourReel] = await Promise.all([
+    const [data, planningData, contraventionsData] = await Promise.all([
       DriverStore.getDashboard(),
       DriverStore.getPlanning(todayStr, endStr),
-      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null),
-      typeof DriverStore.getServiceToday === 'function' ? DriverStore.getServiceToday().catch(() => null) : Promise.resolve(null)
+      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null)
     ]);
 
     if (!data) {
@@ -155,7 +154,6 @@ const AccueilPage = {
     // === Paiement du jour (la SEULE info qui compte le matin) ===
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const prenomSafe = esc(prenom);
-    const serviceJourLocal = serviceJourReel;
     const versementsJour = (data.versements || []).filter(v => v.date === todayStr && v.statut !== 'supprime');
     const totalVerseJour = versementsJour.reduce((s, v) => s + (v.montantVerse || 0), 0);
     const aPaye = redevanceJour > 0 ? totalVerseJour >= redevanceJour : totalVerseJour > 0;
@@ -208,14 +206,13 @@ const AccueilPage = {
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
 
-      <!-- 2. MA JOURNÉE : commencer / terminer (gros boutons existants) -->
-      ${this._buildServiceCard(creneau, serviceJourLocal, null)}
-
-      <!-- 3. Mon créneau du jour / prochain créneau -->
+      <!-- 2. Mon créneau du jour / prochain créneau
+           (le pointage a été retiré : la prise de fonction est suivie
+           par l'administration via le planning) -->
       ${todayShiftHTML}
       ${nextShiftHTML}
 
-      <!-- 4. QUATRE GRANDES TUILES, un mot chacune -->
+      <!-- 3. QUATRE GRANDES TUILES, un mot chacune -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
         ${tuile('planning', 'solar:calendar-date-bold-duotone', 'Planning', 'linear-gradient(135deg,#2563eb,#3b82f6)')}
         ${tuile('messagerie', 'solar:chat-round-dots-bold-duotone', 'Messages', 'linear-gradient(135deg,#7c3aed,#a855f7)')}
@@ -231,16 +228,6 @@ const AccueilPage = {
       <!-- Alertes vehicule urgentes uniquement -->
       <div id="maintenance-alerts"></div>
     `;
-
-    // Demarrer le timer du service si en cours (donnees reelles fleet_pointages)
-    if (serviceJourLocal) {
-      if (serviceJourLocal.statut === 'en_service') {
-        this._startServiceTimer(serviceJourLocal.heureDebut, serviceJourLocal.evenements);
-        this._resumeBehaviorIfActive(serviceJourLocal);
-      } else if (serviceJourLocal.statut === 'pause') {
-        this._startPauseTimer(serviceJourLocal.evenements);
-      }
-    }
 
     // Alertes maintenance vehicule (urgentes)
     this._loadMaintenanceAlerts();

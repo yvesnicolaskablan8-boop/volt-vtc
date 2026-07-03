@@ -723,7 +723,7 @@ const DriverApp = {
       </form>
 
       <div id="login-error" class="login-error" style="display:none"></div>
-      <p class="login-version">Pilote v1.2.0 &bull; Propuls\u00e9 par Yango</p>
+      <p class="login-version">Pilote v1.2.0</p>
     `;
 
     const form = document.getElementById('create-pin-form');
