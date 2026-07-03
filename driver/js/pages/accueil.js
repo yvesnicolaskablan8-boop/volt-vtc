@@ -163,20 +163,20 @@ const AccueilPage = {
     let carteArgentHTML = '';
     if (redevanceJour > 0 && !aPaye) {
       carteArgentHTML = `
-      <div style="border-radius:1.5rem;background:linear-gradient(150deg,#b45309,#f59e0b);padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(245,158,11,0.35);text-align:center">
+      <div style="border-radius:1.5rem;background:linear-gradient(150deg,#172554,#1e3a8a);padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(30,58,138,0.35);text-align:center">
         <div style="font-size:1.05rem;font-weight:800;opacity:0.95;display:flex;align-items:center;justify-content:center;gap:8px">
           <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:1.5rem"></iconify-icon> À PAYER AUJOURD'HUI
         </div>
         <div style="font-size:3rem;font-weight:900;letter-spacing:-0.02em;margin:10px 0 2px;line-height:1">${resteAPayer.toLocaleString('fr-FR')}</div>
         <div style="font-size:1.1rem;font-weight:800;opacity:0.9;margin-bottom:16px">FCFA</div>
         ${totalVerseJour > 0 ? `<div style="font-size:0.95rem;font-weight:700;background:rgba(255,255,255,0.18);border-radius:12px;padding:8px;margin-bottom:14px">Déjà versé : ${totalVerseJour.toLocaleString('fr-FR')} FCFA 👍</div>` : ''}
-        <button id="btn-payer-accueil" onclick="DriverRouter.navigate('versements')" class="tap-scale" style="width:100%;min-height:74px;border-radius:1.25rem;border:none;background:#16a34a;color:white;font-size:1.5rem;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;gap:12px">
+        <button id="btn-payer-accueil" onclick="DriverRouter.navigate('versements')" class="tap-scale" style="width:100%;min-height:74px;border-radius:1.25rem;border:none;background:#15803d;color:white;font-size:1.5rem;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;gap:12px">
           <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:2rem"></iconify-icon> PAYER
         </button>
       </div>`;
     } else if (aPaye) {
       carteArgentHTML = `
-      <div style="border-radius:1.5rem;background:linear-gradient(150deg,#15803d,#22c55e);padding:1.75rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(34,197,94,0.35);text-align:center">
+      <div style="border-radius:1.5rem;background:linear-gradient(150deg,#14532d,#166534);padding:1.75rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(22,101,52,0.3);text-align:center">
         <div style="width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
           <iconify-icon icon="solar:check-circle-bold" style="font-size:3rem"></iconify-icon>
         </div>
@@ -185,18 +185,20 @@ const AccueilPage = {
       </div>`;
     } else {
       carteArgentHTML = `
-      <div style="border-radius:1.5rem;background:linear-gradient(150deg,#1d4ed8,#3b82f6);padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(59,130,246,0.3);text-align:center">
+      <div style="border-radius:1.5rem;background:linear-gradient(150deg,#172554,#1e3a8a);padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(30,58,138,0.3);text-align:center">
         <div style="font-size:1.4rem;font-weight:900">${greeting} ${prenomSafe} 👋</div>
         <div style="font-size:0.95rem;font-weight:600;opacity:0.85;margin-top:6px">${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</div>
       </div>`;
     }
 
-    // Tuile géante réutilisable : icône énorme + UN mot (routes/gradients internes, pas de saisie utilisateur)
-    const tuile = (route, icon, label, grad, badge = 0) => `
-      <button onclick="DriverRouter.navigate('${route}')" class="tap-scale" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:118px;padding:1rem 0.5rem;border-radius:1.25rem;border:none;background:${grad};color:white;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px rgba(0,0,0,0.18)">
-        ${badge > 0 ? `<span style="position:absolute;top:10px;right:10px;min-width:26px;height:26px;border-radius:13px;background:#dc2626;border:2px solid white;color:#fff;font-size:0.85rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 6px">${badge}</span>` : ''}
-        <iconify-icon icon="${icon}" style="font-size:2.6rem"></iconify-icon>
-        <span style="font-size:1.05rem;font-weight:800">${label}</span>
+    // Tuile : carte blanche sobre, icône dans une pastille discrète (palette professionnelle)
+    const tuile = (route, icon, label, chipBg, iconColor, badge = 0) => `
+      <button onclick="DriverRouter.navigate('${route}')" class="tap-scale" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:118px;padding:1rem 0.5rem;border-radius:1.25rem;border:1px solid var(--glass-border);background:var(--bg-card, #fff);color:var(--text-primary);cursor:pointer;font-family:inherit;box-shadow:0 2px 10px rgba(15,23,42,0.06)">
+        ${badge > 0 ? `<span style="position:absolute;top:10px;right:10px;min-width:26px;height:26px;border-radius:13px;background:#b91c1c;color:#fff;font-size:0.85rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 6px">${badge}</span>` : ''}
+        <span style="width:58px;height:58px;border-radius:16px;background:${chipBg};display:flex;align-items:center;justify-content:center">
+          <iconify-icon icon="${icon}" style="font-size:2rem;color:${iconColor}"></iconify-icon>
+        </span>
+        <span style="font-size:1.02rem;font-weight:800">${label}</span>
       </button>`;
 
     container.innerHTML = `
@@ -214,10 +216,10 @@ const AccueilPage = {
 
       <!-- 3. QUATRE GRANDES TUILES, un mot chacune -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-        ${tuile('planning', 'solar:calendar-date-bold-duotone', 'Planning', 'linear-gradient(135deg,#2563eb,#3b82f6)')}
-        ${tuile('messagerie', 'solar:chat-round-dots-bold-duotone', 'Messages', 'linear-gradient(135deg,#7c3aed,#a855f7)')}
-        ${tuile('dettes', 'solar:hand-money-bold-duotone', 'Mes dettes', 'linear-gradient(135deg,#ea580c,#f97316)', nbContraventionsImpayees)}
-        ${tuile('signalements', 'solar:danger-triangle-bold-duotone', 'Un problème ?', 'linear-gradient(135deg,#dc2626,#ef4444)')}
+        ${tuile('planning', 'solar:calendar-date-bold-duotone', 'Planning', '#eff6ff', '#1e40af')}
+        ${tuile('messagerie', 'solar:chat-round-dots-bold-duotone', 'Messages', '#eff6ff', '#1e40af')}
+        ${tuile('dettes', 'solar:hand-money-bold-duotone', 'Mes dettes', '#fef3c7', '#b45309', nbContraventionsImpayees)}
+        ${tuile('signalements', 'solar:danger-triangle-bold-duotone', 'Un problème ?', '#fee2e2', '#b91c1c')}
       </div>
 
       <!-- 5. Tout le reste, rangé ailleurs -->
