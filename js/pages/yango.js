@@ -309,6 +309,49 @@ const YangoPage = {
     const sousExploites = lignes.filter(l => l.caMoyenJour < seuil && l.potentielJour >= seuil);
     const nonLies = lignes.filter(l => !l.ch).length;
 
+
+    // --- Repartition horaire + faisabilite du service de nuit ---
+    const rh = rapport.repartitionHoraire || [];
+    const nuit = rapport.nuit || {};
+    let horaireHtml = '';
+    if (rh.length === 24) {
+      const maxCa = Math.max(...rh.map(h => h.caMoyenParJour), 1);
+      const barres = rh.map(h => {
+        const nuitTranche = (h.heure >= 22 || h.heure < 5);
+        const brideParConsigne = (h.heure >= 0 && h.heure < 5);
+        const hauteur = Math.max(2, Math.round((h.caMoyenParJour / maxCa) * 100));
+        const couleur = brideParConsigne ? '#cbd5e1' : nuitTranche ? '#1e40af' : '#60a5fa';
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;" title="${h.heure}h — ${Utils.formatCurrency(h.caMoyenParJour)}/jour · ${h.courses} course(s)">
+          <div style="width:100%;height:90px;display:flex;align-items:flex-end;">
+            <div style="width:100%;height:${hauteur}%;background:${couleur};border-radius:3px 3px 0 0;"></div>
+          </div>
+          <div style="font-size:8px;color:var(--text-muted);">${h.heure}</div>
+        </div>`;
+      }).join('');
+
+      const recetteNuitCible = 18000;
+      const projection = nuit.projectionNuitComplete || 0;
+      // Ce qu'il reste au chauffeur de nuit apres commission Yango, recette et carburant
+      const resteChauffeur = Math.round(projection * 0.82 - recetteNuitCible - 4000);
+
+      horaireHtml = `
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border-color);">
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">Repartition du CA par heure</div>
+          <div class="d-sub" style="margin-bottom:10px;">CA moyen par jour actif · <span style="color:#1e40af;font-weight:700;">bleu fonce</span> = tranche de nuit · <span style="color:#94a3b8;font-weight:700;">gris</span> = apres minuit, brides par votre consigne</div>
+          <div style="display:flex;gap:2px;align-items:flex-end;">${barres}</div>
+
+          <div style="margin-top:14px;padding:12px;border-radius:10px;background:rgba(30,64,175,.06);border:1px solid rgba(30,64,175,.18);font-size:var(--font-size-sm);line-height:1.7;">
+            <div style="font-weight:700;margin-bottom:6px;">Faisabilite du service de nuit (22h-05h)</div>
+            <div>Productivite mesuree en soiree (22h-00h) : <strong>${Utils.formatCurrency(nuit.caParHeureSoiree || 0)} / heure</strong> sur ${nuit.joursObserves || 0} soiree(s) observee(s).</div>
+            <div>Projection sur une nuit complete de 7 h : <strong style="color:#1e40af;">${Utils.formatCurrency(projection)} de CA</strong>.</div>
+            <div style="margin-top:6px;">Avec une recette de nuit a ${Utils.formatCurrency(recetteNuitCible)}, il resterait environ <strong style="color:${resteChauffeur > 8000 ? '#15803d' : '#b91c1c'};">${Utils.formatCurrency(resteChauffeur)}</strong> au chauffeur de nuit (apres commission Yango et carburant).</div>
+            ${nuit.biaisConnu ? `<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(180,83,9,.08);color:#b45309;font-weight:600;">
+              Donnees apres minuit quasi nulles (${Utils.formatCurrency(nuit.caApresMinuitObserve || 0)}) : c'est votre consigne de ne pas rouler apres minuit, pas l'absence de demande. La projection ci-dessus suppose que la nuit profonde vaut autant que la soiree — a confirmer par un test reel.
+            </div>` : ''}
+          </div>
+        </div>`;
+    }
+
     const ligneHtml = lignes.map(l => {
       const atteint = l.caMoyenJour >= seuil;
       const capable = l.potentielJour >= seuil;
@@ -373,6 +416,7 @@ const YangoPage = {
           <tbody>${ligneHtml || '<tr><td colspan="9" style="padding:16px;text-align:center;color:var(--text-muted);">Aucune transaction sur la periode</td></tr>'}</tbody>
         </table>
       </div>
+      ${horaireHtml}
       ${nonLies > 0 ? `<div class="d-sub" style="margin-top:10px;color:#b45309;">${nonLies} profil(s) Yango non relie(s) a un chauffeur Pilote — associez-les dans la fiche chauffeur pour voir leurs recettes.</div>` : ''}
       <div class="d-sub" style="margin-top:8px;">CA brut hors commission Yango · ${rapport.nbTransactions} transactions analysees · « Amplitude » = de la 1re a la derniere course du jour · « Potentiel » = CA/heure projete sur ${heures} h · « Ecart » = recettes reellement versees moins recettes attendues sur les jours travailles.</div>
     `;

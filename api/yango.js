@@ -1037,6 +1037,10 @@ async function handleCaReport(req, res) {
     const CARD_CATS = ['card', 'partner_ride_card', 'ewallet_payment', 'terminal_payment'];
     const YANGO_CATS = ['platform_ride_fee', 'platform_ride_vat'];
 
+    // Repartition horaire de l'activite. La Cote d'Ivoire est a UTC+0 :
+    // l'heure lue dans event_at est donc directement l'heure locale.
+    const parHeure = Array.from({ length: 24 }, () => ({ ca: 0, courses: 0, jours: new Set() }));
+
     // Agregation par chauffeur, en gardant la trace des jours actifs
     const parChauffeur = {};
     for (const tx of allTx) {
@@ -1057,6 +1061,12 @@ async function handleCaReport(req, res) {
       else if (YANGO_CATS.includes(cat)) { c.commissionYango += Math.abs(montant); }
 
       if (estCourse && jour) {
+        const h = parseInt(String(tx.event_at || '').slice(11, 13), 10);
+        if (!isNaN(h) && h >= 0 && h < 24) {
+          parHeure[h].ca += montant;
+          parHeure[h].courses++;
+          parHeure[h].jours.add(jour);
+        }
         c.joursActifs.add(jour);
         if (!c.parJour[jour]) c.parJour[jour] = { ca: 0, n: 0, min: null, max: null };
         const d = c.parJour[jour];
@@ -1113,11 +1123,39 @@ async function handleCaReport(req, res) {
       };
     }).filter(c => c.totalCA > 0).sort((a, b) => b.caMoyenJour - a.caMoyenJour);
 
+    // Synthese horaire + extrapolation de la nuit a partir de la tranche
+    // reellement observee (22h-00h). Au-dela, les donnees refletent la
+    // consigne interne de ne pas rouler apres minuit, pas la demande reelle.
+    const repartitionHoraire = parHeure.map((h, i) => ({
+      heure: i,
+      ca: Math.round(h.ca),
+      courses: h.courses,
+      joursActifs: h.jours.size,
+      caMoyenParJour: h.jours.size > 0 ? Math.round(h.ca / h.jours.size) : 0
+    }));
+
+    const joursSoiree = new Set([...parHeure[22].jours, ...parHeure[23].jours]).size;
+    const caSoiree = parHeure[22].ca + parHeure[23].ca;
+    const caParHeureSoiree = joursSoiree > 0 ? caSoiree / (joursSoiree * 2) : 0;
+    const caApresMinuit = [0, 1, 2, 3, 4].reduce((sum, h) => sum + parHeure[h].ca, 0);
+
+    const nuit = {
+      caParHeureSoiree: Math.round(caParHeureSoiree),
+      joursObserves: joursSoiree,
+      caSoiree: Math.round(caSoiree),
+      caApresMinuitObserve: Math.round(caApresMinuit),
+      // 22h-05h = 7 heures, projetees a la productivite de la soiree
+      projectionNuitComplete: Math.round(caParHeureSoiree * 7),
+      biaisConnu: caApresMinuit < caSoiree * 0.1
+    };
+
     return res.status(200).json({
       periode: { from, to, jours },
       heuresCible,
       nbTransactions: allTx.length,
-      chauffeurs
+      chauffeurs,
+      repartitionHoraire,
+      nuit
     });
   } catch (e) {
     console.error('[ca-report] error:', e.message);
