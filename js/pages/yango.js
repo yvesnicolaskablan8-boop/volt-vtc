@@ -203,7 +203,12 @@ const YangoPage = {
               <option value="60">60 jours</option>
               <option value="90">90 jours</option>
             </select>
-            <input type="number" id="yp-ca-seuil" class="form-control" value="62000" step="1000" min="0" title="Seuil de rentabilite du salariat" style="width:110px;font-size:var(--font-size-xs);padding:4px 8px;border-radius:11px;">
+            <input type="number" id="yp-ca-seuil" class="form-control" value="62000" step="1000" min="0" title="Seuil de rentabilite du salariat (F/jour)" style="width:105px;font-size:var(--font-size-xs);padding:4px 8px;border-radius:11px;">
+            <select id="yp-ca-heures" class="form-control" title="Duree d'une journee de travail complete" style="width:auto;font-size:var(--font-size-xs);padding:4px 8px;border-radius:11px;">
+              <option value="8">8 h/jour</option>
+              <option value="10" selected>10 h/jour</option>
+              <option value="12">12 h/jour</option>
+            </select>
             <button class="btn btn-primary btn-sm" onclick="YangoPage._loadCaReport()" id="yp-ca-btn">
               <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Calculer
             </button>
@@ -269,11 +274,12 @@ const YangoPage = {
     if (!box) return;
     const jours = parseInt(document.getElementById('yp-ca-jours')?.value || '30', 10);
     const seuil = parseFloat(document.getElementById('yp-ca-seuil')?.value) || 62000;
+    const heures = parseInt(document.getElementById('yp-ca-heures')?.value || '10', 10);
 
     if (btn) { btn.disabled = true; btn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Calcul...'; }
     box.innerHTML = '<div class="d-sub" style="padding:14px 0;">Recuperation des transactions Yango sur ' + jours + ' jours...</div>';
 
-    const rapport = await Store.getYangoCaReport(jours);
+    const rapport = await Store.getYangoCaReport(jours, heures);
 
     if (btn) { btn.disabled = false; btn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Calculer'; }
 
@@ -300,20 +306,29 @@ const YangoPage = {
 
     const totalCA = lignes.reduce((s, l) => s + l.totalCA, 0);
     const eligibles = lignes.filter(l => l.caMoyenJour >= seuil);
+    const sousExploites = lignes.filter(l => l.caMoyenJour < seuil && l.potentielJour >= seuil);
     const nonLies = lignes.filter(l => !l.ch).length;
 
     const ligneHtml = lignes.map(l => {
-      const ok = l.caMoyenJour >= seuil;
-      const couleur = ok ? '#15803d' : l.caMoyenJour >= seuil * 0.85 ? '#b45309' : '#b91c1c';
+      const atteint = l.caMoyenJour >= seuil;
+      const capable = l.potentielJour >= seuil;
+      const couleur = atteint ? '#15803d' : l.caMoyenJour >= seuil * 0.85 ? '#b45309' : '#b91c1c';
       const ecartCouleur = l.ecart < 0 ? '#b91c1c' : '#15803d';
+      const badge = atteint
+        ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;">DEJA AU NIVEAU</span>'
+        : capable
+          ? '<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;" title="Sa productivite horaire suffit : il ne travaille pas assez longtemps">CAPABLE — SOUS-EXPLOITE</span>'
+          : '<span style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;" title="Meme en travaillant une journee complete, il n atteindrait pas le seuil">PAS AU NIVEAU</span>';
       return `<tr style="border-bottom:1px solid var(--border-color);">
         <td style="padding:8px 10px;font-weight:600;">${Utils.escHtml(l.nom)}${!l.ch ? ' <span style="font-size:10px;color:var(--text-muted)">(Yango ' + Utils.escHtml(String(l.yangoDriverId).slice(0, 8)) + '…)</span>' : ''}</td>
         <td style="padding:8px 10px;text-align:right;">${l.joursActifs} j</td>
         <td style="padding:8px 10px;text-align:right;font-weight:800;color:${couleur};">${Utils.formatCurrency(l.caMoyenJour)}</td>
-        <td style="padding:8px 10px;text-align:right;">${Utils.formatCurrency(l.totalCA)}</td>
+        <td style="padding:8px 10px;text-align:right;">${l.amplitudeMoyenne > 0 ? l.amplitudeMoyenne + ' h' : '—'}</td>
+        <td style="padding:8px 10px;text-align:right;font-weight:700;">${l.caParHeure > 0 ? Utils.formatCurrency(l.caParHeure) : '—'}</td>
+        <td style="padding:8px 10px;text-align:right;font-weight:800;color:${capable ? '#15803d' : '#b91c1c'};">${l.potentielJour > 0 ? Utils.formatCurrency(l.potentielJour) : '—'}</td>
         <td style="padding:8px 10px;text-align:right;">${l.ch ? Utils.formatCurrency(l.verse) : '—'}</td>
         <td style="padding:8px 10px;text-align:right;color:${ecartCouleur};font-weight:700;">${l.ch && l.attendu > 0 ? (l.ecart >= 0 ? '+' : '') + Utils.formatCurrency(l.ecart) : '—'}</td>
-        <td style="padding:8px 10px;text-align:center;">${ok ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;">SALARIABLE</span>' : '<span style="background:#f1f5f9;color:#64748b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">SOUS LE SEUIL</span>'}</td>
+        <td style="padding:8px 10px;text-align:center;">${badge}</td>
       </tr>`;
     }).join('');
 
@@ -335,28 +350,31 @@ const YangoPage = {
 
       <div style="padding:10px 12px;border-radius:8px;background:${eligibles.length > 0 ? 'rgba(22,163,74,.06)' : 'rgba(185,28,28,.06)'};border:1px solid ${eligibles.length > 0 ? 'rgba(22,163,74,.2)' : 'rgba(185,28,28,.2)'};font-size:var(--font-size-sm);margin-bottom:14px;">
         ${eligibles.length > 0
-          ? `<strong>${eligibles.length} chauffeur${eligibles.length > 1 ? 's' : ''}</strong> depasse${eligibles.length > 1 ? 'nt' : ''} ${Utils.formatCurrency(seuil)}/jour : le salariat serait rentable pour ${eligibles.length > 1 ? 'eux' : 'lui'}.`
-          : `<strong>Aucun chauffeur</strong> n'atteint ${Utils.formatCurrency(seuil)}/jour sur la periode. Le salariat ferait perdre de l'argent sur chaque voiture — la location reste plus rentable.`}
+          ? `<strong>${eligibles.length} chauffeur${eligibles.length > 1 ? 's' : ''}</strong> depasse${eligibles.length > 1 ? 'nt' : ''} deja ${Utils.formatCurrency(seuil)}/jour.`
+          : `<strong>Aucun chauffeur</strong> n'atteint ${Utils.formatCurrency(seuil)}/jour aujourd'hui.`}
+        ${sousExploites.length > 0 ? `<br><span style="color:#b45309"><strong>${sousExploites.length} chauffeur${sousExploites.length > 1 ? 's' : ''} sous-exploite${sousExploites.length > 1 ? 's' : ''}</strong> : leur productivite horaire suffirait pour depasser le seuil en travaillant ${heures} h par jour. Ce sont vos meilleurs candidats au salariat.</span>` : ''}
       </div>
 
       <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);min-width:760px;">
+        <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);min-width:900px;">
           <thead>
             <tr style="background:var(--bg-tertiary);">
               <th style="padding:8px 10px;text-align:left;font-size:var(--font-size-xs);color:var(--text-secondary);">Chauffeur</th>
               <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">Jours</th>
               <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">CA / jour</th>
-              <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">CA total</th>
+              <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);" title="Duree entre la premiere et la derniere course">Amplitude</th>
+              <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">CA / heure</th>
+              <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);" title="CA/heure projete sur une journee complete">Potentiel</th>
               <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">Recettes versees</th>
               <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">Ecart vs attendu</th>
               <th style="padding:8px 10px;text-align:center;font-size:var(--font-size-xs);color:var(--text-secondary);">Verdict</th>
             </tr>
           </thead>
-          <tbody>${ligneHtml || '<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-muted);">Aucune transaction sur la periode</td></tr>'}</tbody>
+          <tbody>${ligneHtml || '<tr><td colspan="9" style="padding:16px;text-align:center;color:var(--text-muted);">Aucune transaction sur la periode</td></tr>'}</tbody>
         </table>
       </div>
       ${nonLies > 0 ? `<div class="d-sub" style="margin-top:10px;color:#b45309;">${nonLies} profil(s) Yango non relie(s) a un chauffeur Pilote — associez-les dans la fiche chauffeur pour voir leurs recettes.</div>` : ''}
-      <div class="d-sub" style="margin-top:8px;">CA brut hors commission Yango · ${rapport.nbTransactions} transactions analysees · « Ecart » = recettes reellement versees moins recettes attendues sur les jours travailles.</div>
+      <div class="d-sub" style="margin-top:8px;">CA brut hors commission Yango · ${rapport.nbTransactions} transactions analysees · « Amplitude » = de la 1re a la derniere course du jour · « Potentiel » = CA/heure projete sur ${heures} h · « Ecart » = recettes reellement versees moins recettes attendues sur les jours travailles.</div>
     `;
   },
 

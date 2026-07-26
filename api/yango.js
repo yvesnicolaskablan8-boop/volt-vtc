@@ -1058,15 +1058,43 @@ async function handleCaReport(req, res) {
 
       if (estCourse && jour) {
         c.joursActifs.add(jour);
-        c.parJour[jour] = (c.parJour[jour] || 0) + montant;
+        if (!c.parJour[jour]) c.parJour[jour] = { ca: 0, n: 0, min: null, max: null };
+        const d = c.parJour[jour];
+        d.ca += montant;
+        d.n++;
+        const t = tx.event_at;
+        if (t) {
+          if (!d.min || t < d.min) d.min = t;
+          if (!d.max || t > d.max) d.max = t;
+        }
       }
     }
+
+    // Heures cible d'une journee de travail complete, pour la projection
+    const heuresCible = Math.min(Math.max(parseFloat(req.query.heures || '10') || 10, 4), 16);
 
     const chauffeurs = Object.values(parChauffeur).map(c => {
       const totalCA = c.cash + c.card;
       const nbJours = c.joursActifs.size;
-      const parJour = Object.entries(c.parJour).map(([date, ca]) => ({ date, ca: Math.round(ca) })).sort((a, b) => a.date.localeCompare(b.date));
+
+      // Amplitude d'activite : de la premiere a la derniere course du jour.
+      // Sous-estime le temps de connexion (l'attente avant la 1re course n'est
+      // pas visible), mais c'est la mesure la plus fiable disponible.
+      let heuresTotal = 0, caMesure = 0, joursMesures = 0;
+      const parJour = [];
+      for (const [date, d] of Object.entries(c.parJour)) {
+        parJour.push({ date, ca: Math.round(d.ca), courses: d.n });
+        if (d.n >= 2 && d.min && d.max) {
+          const h = (new Date(d.max) - new Date(d.min)) / 3600000;
+          if (h >= 0.5) { heuresTotal += h; caMesure += d.ca; joursMesures++; }
+        }
+      }
+      parJour.sort((a, b) => a.date.localeCompare(b.date));
       const meilleurJour = parJour.reduce((m, j) => (j.ca > (m ? m.ca : 0) ? j : m), null);
+
+      const caParHeure = heuresTotal > 0 ? caMesure / heuresTotal : 0;
+      const amplitudeMoyenne = joursMesures > 0 ? heuresTotal / joursMesures : 0;
+
       return {
         yangoDriverId: c.yangoDriverId,
         totalCA: Math.round(totalCA),
@@ -1075,6 +1103,11 @@ async function handleCaReport(req, res) {
         commissionYango: Math.round(c.commissionYango),
         joursActifs: nbJours,
         caMoyenJour: nbJours > 0 ? Math.round(totalCA / nbJours) : 0,
+        // Productivite reelle, independante du temps passe en ligne
+        caParHeure: Math.round(caParHeure),
+        amplitudeMoyenne: Math.round(amplitudeMoyenne * 10) / 10,
+        joursMesures,
+        potentielJour: Math.round(caParHeure * heuresCible),
         meilleurJour,
         parJour
       };
@@ -1082,6 +1115,7 @@ async function handleCaReport(req, res) {
 
     return res.status(200).json({
       periode: { from, to, jours },
+      heuresCible,
       nbTransactions: allTx.length,
       chauffeurs
     });

@@ -469,9 +469,9 @@ const Store = {
    * jours réellement travaillés — donne le CA moyen par jour, le chiffre qui
    * décide de la rentabilité d'un passage au salariat.
    */
-  async getYangoCaReport(jours = 30) {
+  async getYangoCaReport(jours = 30, heures = 10) {
     try {
-      return await this._yangoApi('ca-report', { query: `?jours=${jours}` });
+      return await this._yangoApi('ca-report', { query: `?jours=${jours}&heures=${heures}` });
     } catch (e) {
       console.warn('Store: getYangoCaReport error:', e.message);
       return { error: 'Non disponible', details: e.message };
