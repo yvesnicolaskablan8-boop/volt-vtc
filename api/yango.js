@@ -1013,6 +1013,84 @@ async function handleSync(req, res) {
 
 // =================== ROUTER ===================
 
+
+// =================== RAPPORT CA REEL PAR CHAUFFEUR ===================
+// Agrege le CA Yango par chauffeur sur une periode, avec le nombre de jours
+// reellement travailles -> donne le CA MOYEN PAR JOUR, le chiffre qui decide
+// si un chauffeur peut etre salarie (seuil de rentabilite ~62 000 F/jour).
+async function handleCaReport(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const user = await verifyAuth(req);
+  if (!user) return res.status(401).json({ error: 'Non autorise' });
+
+  try {
+    const jours = Math.min(parseInt(req.query.jours || '30', 10) || 30, 90);
+    const now = new Date();
+    const debut = new Date(now.getTime() - jours * 86400000);
+    const from = req.query.from || debut.toISOString();
+    const to = req.query.to || now.toISOString();
+
+    const allTx = await fetchAllTransactions(from, to, 10);
+
+    const CASH_CATS = ['cash_collected', 'partner_ride_cash_collected'];
+    const CARD_CATS = ['card', 'partner_ride_card', 'ewallet_payment', 'terminal_payment'];
+    const YANGO_CATS = ['platform_ride_fee', 'platform_ride_vat'];
+
+    // Agregation par chauffeur, en gardant la trace des jours actifs
+    const parChauffeur = {};
+    for (const tx of allTx) {
+      const id = tx.driver_profile_id;
+      if (!id) continue;
+      const cat = tx.category_id || '';
+      const montant = parseFloat(tx.amount || 0);
+      const jour = (tx.event_at || '').slice(0, 10);
+
+      if (!parChauffeur[id]) {
+        parChauffeur[id] = { yangoDriverId: id, totalCA: 0, cash: 0, card: 0, commissionYango: 0, joursActifs: new Set(), parJour: {} };
+      }
+      const c = parChauffeur[id];
+
+      let estCourse = false;
+      if (CASH_CATS.includes(cat)) { c.cash += montant; estCourse = true; }
+      else if (CARD_CATS.includes(cat)) { c.card += montant; estCourse = true; }
+      else if (YANGO_CATS.includes(cat)) { c.commissionYango += Math.abs(montant); }
+
+      if (estCourse && jour) {
+        c.joursActifs.add(jour);
+        c.parJour[jour] = (c.parJour[jour] || 0) + montant;
+      }
+    }
+
+    const chauffeurs = Object.values(parChauffeur).map(c => {
+      const totalCA = c.cash + c.card;
+      const nbJours = c.joursActifs.size;
+      const parJour = Object.entries(c.parJour).map(([date, ca]) => ({ date, ca: Math.round(ca) })).sort((a, b) => a.date.localeCompare(b.date));
+      const meilleurJour = parJour.reduce((m, j) => (j.ca > (m ? m.ca : 0) ? j : m), null);
+      return {
+        yangoDriverId: c.yangoDriverId,
+        totalCA: Math.round(totalCA),
+        cash: Math.round(c.cash),
+        card: Math.round(c.card),
+        commissionYango: Math.round(c.commissionYango),
+        joursActifs: nbJours,
+        caMoyenJour: nbJours > 0 ? Math.round(totalCA / nbJours) : 0,
+        meilleurJour,
+        parJour
+      };
+    }).filter(c => c.totalCA > 0).sort((a, b) => b.caMoyenJour - a.caMoyenJour);
+
+    return res.status(200).json({
+      periode: { from, to, jours },
+      nbTransactions: allTx.length,
+      chauffeurs
+    });
+  } catch (e) {
+    console.error('[ca-report] error:', e.message);
+    return res.status(500).json({ error: 'Erreur rapport CA', details: e.message });
+  }
+}
+
 const ACTION_MAP = {
   'test':          handleTest,
   'balance':       handleBalance,
@@ -1027,6 +1105,7 @@ const ACTION_MAP = {
   'stats':         handleStats,
   'recharge':      handleRecharge,
   'sync':          handleSync,
+  'ca-report':     handleCaReport,
 };
 
 module.exports = async function handler(req, res) {

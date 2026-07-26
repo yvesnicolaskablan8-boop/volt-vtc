@@ -464,6 +464,20 @@ const Store = {
     }
   },
 
+  /**
+   * CA réel par chauffeur sur une période (défaut 30 j), avec le nombre de
+   * jours réellement travaillés — donne le CA moyen par jour, le chiffre qui
+   * décide de la rentabilité d'un passage au salariat.
+   */
+  async getYangoCaReport(jours = 30) {
+    try {
+      return await this._yangoApi('ca-report', { query: `?jours=${jours}` });
+    } catch (e) {
+      console.warn('Store: getYangoCaReport error:', e.message);
+      return { error: 'Non disponible', details: e.message };
+    }
+  },
+
   async getYangoStats(workRuleIds, dateRange) {
     try {
       const params = new URLSearchParams();

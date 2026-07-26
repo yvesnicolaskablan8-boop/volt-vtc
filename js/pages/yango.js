@@ -184,6 +184,36 @@ const YangoPage = {
         </div>
       </div>
 
+      <!-- Rapport CA reel par chauffeur -->
+      <div class="d-card" style="margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="d-icon" style="background:rgba(30,64,175,.08);color:#1e40af;">
+              <iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon>
+            </div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--text-primary);">CA reel par chauffeur</div>
+              <div class="d-sub">Ce que chaque voiture produit vraiment, par jour travaille</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <select id="yp-ca-jours" class="form-control" style="width:auto;font-size:var(--font-size-xs);padding:4px 8px;border-radius:11px;">
+              <option value="7">7 jours</option>
+              <option value="30" selected>30 jours</option>
+              <option value="60">60 jours</option>
+              <option value="90">90 jours</option>
+            </select>
+            <input type="number" id="yp-ca-seuil" class="form-control" value="62000" step="1000" min="0" title="Seuil de rentabilite du salariat" style="width:110px;font-size:var(--font-size-xs);padding:4px 8px;border-radius:11px;">
+            <button class="btn btn-primary btn-sm" onclick="YangoPage._loadCaReport()" id="yp-ca-btn">
+              <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Calculer
+            </button>
+          </div>
+        </div>
+        <div id="yp-ca-result">
+          <div class="d-sub" style="padding:14px 0;">Choisissez une periode et cliquez sur <strong>Calculer</strong>. Le seuil (62 000 F par defaut) est le CA/jour a partir duquel salarier un chauffeur devient plus rentable que la location.</div>
+        </div>
+      </div>
+
       <!-- Synchronisation Yango → Pilote -->
       <div class="d-card" style="margin-top:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -229,6 +259,106 @@ const YangoPage = {
   },
 
   // =================== DATA LOADING ===================
+
+
+  // =================== RAPPORT CA REEL PAR CHAUFFEUR ===================
+
+  async _loadCaReport() {
+    const box = document.getElementById('yp-ca-result');
+    const btn = document.getElementById('yp-ca-btn');
+    if (!box) return;
+    const jours = parseInt(document.getElementById('yp-ca-jours')?.value || '30', 10);
+    const seuil = parseFloat(document.getElementById('yp-ca-seuil')?.value) || 62000;
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Calcul...'; }
+    box.innerHTML = '<div class="d-sub" style="padding:14px 0;">Recuperation des transactions Yango sur ' + jours + ' jours...</div>';
+
+    const rapport = await Store.getYangoCaReport(jours);
+
+    if (btn) { btn.disabled = false; btn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Calculer'; }
+
+    if (!rapport || rapport.error) {
+      box.innerHTML = `<div style="padding:12px;border-radius:8px;background:rgba(185,28,28,.06);border:1px solid rgba(185,28,28,.2);font-size:var(--font-size-sm);color:#b91c1c;">
+        Impossible de recuperer les donnees Yango.${rapport && rapport.details ? ' <span style="opacity:.8">(' + Utils.escHtml(rapport.details) + ')</span>' : ''}</div>`;
+      return;
+    }
+
+    // Rapprochement Yango <-> Pilote : nom du chauffeur, recettes reellement versees
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const versements = Store.get('versements') || [];
+    const debut = (rapport.periode && rapport.periode.from || '').slice(0, 10);
+
+    const lignes = (rapport.chauffeurs || []).map(r => {
+      const ch = chauffeurs.find(c => c.yangoDriverId === r.yangoDriverId);
+      const nom = ch ? `${ch.prenom} ${ch.nom}` : 'Non lie a Pilote';
+      const verse = ch ? versements
+        .filter(v => v.chauffeurId === ch.id && v.statut !== 'supprime' && (v.date || '') >= debut)
+        .reduce((s, v) => s + (v.montantVerse || 0), 0) : 0;
+      const attendu = ch ? (ch.redevanceQuotidienne || 0) * r.joursActifs : 0;
+      return { ...r, nom, ch, verse, attendu, ecart: verse - attendu };
+    });
+
+    const totalCA = lignes.reduce((s, l) => s + l.totalCA, 0);
+    const eligibles = lignes.filter(l => l.caMoyenJour >= seuil);
+    const nonLies = lignes.filter(l => !l.ch).length;
+
+    const ligneHtml = lignes.map(l => {
+      const ok = l.caMoyenJour >= seuil;
+      const couleur = ok ? '#15803d' : l.caMoyenJour >= seuil * 0.85 ? '#b45309' : '#b91c1c';
+      const ecartCouleur = l.ecart < 0 ? '#b91c1c' : '#15803d';
+      return `<tr style="border-bottom:1px solid var(--border-color);">
+        <td style="padding:8px 10px;font-weight:600;">${Utils.escHtml(l.nom)}${!l.ch ? ' <span style="font-size:10px;color:var(--text-muted)">(Yango ' + Utils.escHtml(String(l.yangoDriverId).slice(0, 8)) + '…)</span>' : ''}</td>
+        <td style="padding:8px 10px;text-align:right;">${l.joursActifs} j</td>
+        <td style="padding:8px 10px;text-align:right;font-weight:800;color:${couleur};">${Utils.formatCurrency(l.caMoyenJour)}</td>
+        <td style="padding:8px 10px;text-align:right;">${Utils.formatCurrency(l.totalCA)}</td>
+        <td style="padding:8px 10px;text-align:right;">${l.ch ? Utils.formatCurrency(l.verse) : '—'}</td>
+        <td style="padding:8px 10px;text-align:right;color:${ecartCouleur};font-weight:700;">${l.ch && l.attendu > 0 ? (l.ecart >= 0 ? '+' : '') + Utils.formatCurrency(l.ecart) : '—'}</td>
+        <td style="padding:8px 10px;text-align:center;">${ok ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;">SALARIABLE</span>' : '<span style="background:#f1f5f9;color:#64748b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">SOUS LE SEUIL</span>'}</td>
+      </tr>`;
+    }).join('');
+
+    box.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;">
+        <div style="padding:12px;border-radius:12px;background:var(--bg-tertiary);">
+          <div class="d-sub">Chauffeurs actifs</div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--text-primary);">${lignes.length}</div>
+        </div>
+        <div style="padding:12px;border-radius:12px;background:var(--bg-tertiary);">
+          <div class="d-sub">CA total (${rapport.periode.jours} j)</div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(totalCA)}</div>
+        </div>
+        <div style="padding:12px;border-radius:12px;background:${eligibles.length > 0 ? 'rgba(22,163,74,.08)' : 'var(--bg-tertiary)'};">
+          <div class="d-sub">Au-dessus du seuil</div>
+          <div style="font-size:1.4rem;font-weight:800;color:${eligibles.length > 0 ? '#15803d' : 'var(--text-primary)'};">${eligibles.length} / ${lignes.length}</div>
+        </div>
+      </div>
+
+      <div style="padding:10px 12px;border-radius:8px;background:${eligibles.length > 0 ? 'rgba(22,163,74,.06)' : 'rgba(185,28,28,.06)'};border:1px solid ${eligibles.length > 0 ? 'rgba(22,163,74,.2)' : 'rgba(185,28,28,.2)'};font-size:var(--font-size-sm);margin-bottom:14px;">
+        ${eligibles.length > 0
+          ? `<strong>${eligibles.length} chauffeur${eligibles.length > 1 ? 's' : ''}</strong> depasse${eligibles.length > 1 ? 'nt' : ''} ${Utils.formatCurrency(seuil)}/jour : le salariat serait rentable pour ${eligibles.length > 1 ? 'eux' : 'lui'}.`
+          : `<strong>Aucun chauffeur</strong> n'atteint ${Utils.formatCurrency(seuil)}/jour sur la periode. Le salariat ferait perdre de l'argent sur chaque voiture — la location reste plus rentable.`}
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);min-width:760px;">
+          <thead>
+            <tr style="background:var(--bg-tertiary);">
+              <th style="padding:8px 10px;text-align:left;font-size:var(--font-size-xs);color:var(--text-secondary);">Chauffeur</th>
+              <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">Jours</th>
+              <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">CA / jour</th>
+              <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">CA total</th>
+              <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">Recettes versees</th>
+              <th style="padding:8px 10px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">Ecart vs attendu</th>
+              <th style="padding:8px 10px;text-align:center;font-size:var(--font-size-xs);color:var(--text-secondary);">Verdict</th>
+            </tr>
+          </thead>
+          <tbody>${ligneHtml || '<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-muted);">Aucune transaction sur la periode</td></tr>'}</tbody>
+        </table>
+      </div>
+      ${nonLies > 0 ? `<div class="d-sub" style="margin-top:10px;color:#b45309;">${nonLies} profil(s) Yango non relie(s) a un chauffeur Pilote — associez-les dans la fiche chauffeur pour voir leurs recettes.</div>` : ''}
+      <div class="d-sub" style="margin-top:8px;">CA brut hors commission Yango · ${rapport.nbTransactions} transactions analysees · « Ecart » = recettes reellement versees moins recettes attendues sur les jours travailles.</div>
+    `;
+  },
 
   async _loadData() {
     const refreshBtn = document.getElementById('yp-refresh-btn');
