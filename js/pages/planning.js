@@ -330,6 +330,9 @@ const PlanningPage = {
     const MAX_CHIPS = 10;
     const dayNames = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
 
+    // Couverture de la flotte : un véhicule à l'arrêt un jour = une recette perdue.
+    const couv = this._couvertureSemaine(days);
+
     const renderDayCard = (d, i) => {
       const isToday = d.date === todayStr;
       const dayShifts = (shiftsByDate[d.date] || []).slice().sort((a, b) => (a.heureDebut || '').localeCompare(b.heureDebut || ''));
@@ -340,7 +343,7 @@ const PlanningPage = {
         const ch = chById[s.chauffeurId];
         if (!ch) return;
         chips.push(`<div class="pcal-chip" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
-          <span class="pcal-dot" style="background:${this._getShiftColor(s)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}. <span class="pcal-chip-time">${s.heureDebut || ''}${s.heureFin ? '–' + s.heureFin : ''}</span></span>
+          <span class="pcal-dot" style="background:${this._getShiftColor(s)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.${s.role === 'doublure' ? ' <span style="font-size:8.5px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:4px;padding:0 3px">REMPL</span>' : ''} <span class="pcal-chip-time">${s.heureDebut || ''}${s.heureFin ? '–' + s.heureFin : ''}</span></span>
         </div>`);
       });
       dayAbsences.forEach(a => {
@@ -376,7 +379,8 @@ const PlanningPage = {
       <div class="card" style="margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);display:flex;gap:var(--space-lg);flex-wrap:wrap;font-size:var(--font-size-xs);color:var(--text-secondary);">
         <span><strong>${filledSlots}</strong> créneau${filledSlots > 1 ? 'x' : ''} programmé${filledSlots > 1 ? 's' : ''}</span>
         <span><strong>${uniqueAbsDrivers}</strong> chauffeur${uniqueAbsDrivers > 1 ? 's' : ''} absent${uniqueAbsDrivers > 1 ? 's' : ''}</span>
-        <span style="color:var(--text-muted);">Cliquez sur un jour pour ajouter un créneau</span>
+        <span title="Jours-voiture couverts sur le total possible cette semaine">Couverture flotte : <strong style="color:${couv.pct >= 95 ? '#16a34a' : couv.pct >= 75 ? '#b45309' : '#b91c1c'}">${couv.couverts}/${couv.total} jours (${couv.pct}%)</strong>${couv.perte > 0 ? ` · <span style="color:#b91c1c">${Utils.formatCurrency(couv.perte)} non produits</span>` : ''}</span>
+        <button class="btn btn-sm btn-primary" id="btn-gen-semaine" style="margin-left:auto;"><iconify-icon icon="solar:magic-stick-3-bold-duotone"></iconify-icon> Compléter la semaine</button>
       </div>
       <div class="card pcal-wrap" style="padding:var(--space-md);">
         <div class="pcal">
@@ -772,6 +776,8 @@ const PlanningPage = {
   },
 
   _bindWeekEvents() {
+    const genBtn = document.getElementById('btn-gen-semaine');
+    if (genBtn) genBtn.addEventListener('click', () => this._genererSemaine());
     document.querySelectorAll('.planning-empty-cell').forEach(cell => {
       cell.addEventListener('click', () => {
         const chId = cell.dataset.chauffeur;
@@ -1195,6 +1201,175 @@ const PlanningPage = {
     }
   },
 
+
+  // =================== BINÔME TITULAIRE / DOUBLURE ===================
+
+  /** Véhicule d'un créneau : colonne vehiculeId, sinon voiture assignée au chauffeur. */
+  _vehiculeDuCreneau(p, chById) {
+    if (p.vehiculeId) return p.vehiculeId;
+    const ch = chById[p.chauffeurId];
+    return ch ? (ch.vehiculeAssigne || null) : null;
+  },
+
+  /**
+   * Couverture de la flotte sur la semaine : chaque jour où un véhicule actif
+   * n'a personne au volant est une recette qui n'est pas produite.
+   */
+  _couvertureSemaine(days) {
+    const vehicules = (Store.get('vehicules') || []).filter(v => v.statut !== 'inactif' && v.statut !== 'vendu');
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const chById = {};
+    chauffeurs.forEach(c => { chById[c.id] = c; });
+    const planning = Store.get('planning') || [];
+
+    const occupe = new Set();
+    planning.forEach(p => {
+      const vId = this._vehiculeDuCreneau(p, chById);
+      if (vId) occupe.add(`${vId}|${p.date}`);
+    });
+
+    let couverts = 0;
+    let perte = 0;
+    const total = vehicules.length * days.length;
+    vehicules.forEach(v => {
+      const titulaire = chauffeurs.find(c => c.id === v.chauffeurAssigne);
+      const redevance = titulaire ? (titulaire.redevanceQuotidienne || 0) : 0;
+      days.forEach(d => {
+        if (occupe.has(`${v.id}|${d.date}`)) couverts++;
+        else perte += redevance;
+      });
+    });
+    return { couverts, total, perte, pct: total > 0 ? Math.round((couverts / total) * 100) : 0 };
+  },
+
+  /** Nombre de jours consécutifs déjà travaillés par un chauffeur juste avant `dateStr`. */
+  _joursConsecutifsAvant(chauffeurId, dateStr, planning) {
+    const datesTravaillees = new Set(planning.filter(p => p.chauffeurId === chauffeurId).map(p => p.date));
+    let n = 0;
+    const [y, m, j] = dateStr.split('-').map(Number);
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(y, m - 1, j - i);
+      if (datesTravaillees.has(this._dateStr(d))) n++;
+      else break;
+    }
+    return n;
+  },
+
+  /**
+   * Remplit les trous de la semaine : le titulaire sur ses jours, la doublure
+   * attitrée sur son jour de repos — pour que chaque voiture roule 7 j/7.
+   * Ne touche jamais aux créneaux déjà saisis et respecte la règle des 6 jours
+   * consécutifs maximum par chauffeur.
+   */
+  _genererSemaine() {
+    const vehicules = (Store.get('vehicules') || []).filter(v => v.statut !== 'inactif' && v.statut !== 'vendu');
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const chById = {};
+    chauffeurs.forEach(c => { chById[c.id] = c; });
+    const planning = Store.get('planning') || [];
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(this._currentWeekStart);
+      d.setDate(d.getDate() + i);
+      days.push({ date: this._dateStr(d), dow: d.getDay() });
+    }
+
+    const occupe = new Set();
+    planning.forEach(p => {
+      const vId = this._vehiculeDuCreneau(p, chById);
+      if (vId) occupe.add(`${vId}|${p.date}`);
+    });
+    // Un chauffeur ne peut pas conduire deux voitures le même jour.
+    const chauffeurPris = new Set(planning.map(p => `${p.chauffeurId}|${p.date}`));
+
+    const nouveaux = [];
+    let sansDoublure = 0, sansTitulaire = 0, bloques = 0, dejaPris = 0;
+
+    vehicules.forEach(v => {
+      const titulaire = chById[v.chauffeurAssigne];
+      if (!titulaire) { sansTitulaire += days.length; return; }
+      const doublure = v.doublureId ? chById[v.doublureId] : null;
+      const jourRepos = (titulaire.jourRepos === 0 || titulaire.jourRepos) ? Number(titulaire.jourRepos) : null;
+
+      days.forEach(d => {
+        if (occupe.has(`${v.id}|${d.date}`)) return;
+        const estRepos = jourRepos !== null && d.dow === jourRepos;
+        const chauffeur = estRepos ? doublure : titulaire;
+        if (!chauffeur) { sansDoublure++; return; }
+        if (chauffeurPris.has(`${chauffeur.id}|${d.date}`)) { dejaPris++; return; }
+
+        const simule = planning.concat(nouveaux);
+        if (this._joursConsecutifsAvant(chauffeur.id, d.date, simule) >= 6) { bloques++; return; }
+
+        const creneau = {
+          id: Utils.generateId('PLN'),
+          chauffeurId: chauffeur.id,
+          vehiculeId: v.id,
+          role: estRepos ? 'doublure' : 'titulaire',
+          date: d.date,
+          typeCreneaux: 'journee',
+          heureDebut: '06:00',
+          heureFin: '20:00',
+          notes: estRepos ? `Remplacement — repos de ${titulaire.prenom} ${titulaire.nom}` : '',
+          redevanceOverride: null,
+          dateCreation: new Date().toISOString()
+        };
+        nouveaux.push(creneau);
+        occupe.add(`${v.id}|${d.date}`);
+        chauffeurPris.add(`${chauffeur.id}|${d.date}`);
+      });
+    });
+
+    if (nouveaux.length === 0) {
+      Modal.open({
+        title: '<iconify-icon icon="solar:info-circle-bold-duotone" style="color:var(--pilote-blue)"></iconify-icon> Rien à compléter',
+        body: `<div style="font-size:var(--font-size-sm);line-height:1.6">
+          <p>Aucun créneau n'a pu être ajouté cette semaine.</p>
+          ${sansTitulaire > 0 ? `<p>• ${sansTitulaire} jour(s)-voiture sans <strong>chauffeur titulaire</strong> assigné au véhicule.</p>` : ''}
+          ${sansDoublure > 0 ? `<p>• ${sansDoublure} jour(s) de repos sans <strong>doublure attitrée</strong> — désignez-la sur la fiche du véhicule.</p>` : ''}
+          ${bloques > 0 ? `<p>• ${bloques} jour(s) bloqué(s) par la règle des <strong>6 jours consécutifs</strong>.</p>` : ''}
+          ${dejaPris > 0 ? `<p>• ${dejaPris} jour(s) où le chauffeur conduisait déjà une autre voiture.</p>` : ''}
+        </div>`,
+        size: 'small'
+      });
+      return;
+    }
+
+    const parRole = nouveaux.filter(c => c.role === 'doublure').length;
+    const recettePotentielle = nouveaux.reduce((s, c) => {
+      const ch = chById[c.chauffeurId];
+      return s + (ch ? (ch.redevanceQuotidienne || 0) : 0);
+    }, 0);
+
+    Modal.open({
+      title: '<iconify-icon icon="solar:magic-stick-3-bold-duotone" style="color:var(--pilote-blue)"></iconify-icon> Compléter la semaine',
+      body: `<div style="font-size:var(--font-size-sm);line-height:1.7">
+        <p><strong>${nouveaux.length} créneau(x)</strong> vont être créés — dont <strong>${parRole}</strong> en remplacement par une doublure.</p>
+        <p style="padding:10px 12px;border-radius:8px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2)">Recette supplémentaire attendue : <strong style="color:#16a34a">${Utils.formatCurrency(recettePotentielle)}</strong></p>
+        ${sansDoublure > 0 ? `<p style="color:#b45309">⚠ ${sansDoublure} jour(s) de repos restent non couverts : aucune doublure n'est désignée sur ces véhicules.</p>` : ''}
+        ${bloques > 0 ? `<p style="color:#b45309">⚠ ${bloques} jour(s) écarté(s) : le chauffeur atteindrait 7 jours consécutifs.</p>` : ''}
+        <p style="color:var(--text-muted);font-size:var(--font-size-xs)">Les créneaux déjà saisis ne sont pas modifiés.</p>
+      </div>`,
+      footer: `<button class="btn btn-primary" id="btn-confirm-gen">Créer les ${nouveaux.length} créneaux</button><button class="btn btn-secondary" onclick="Modal.close()">Annuler</button>`
+    });
+
+    this._pendingGen = nouveaux;
+    setTimeout(() => {
+      const b = document.getElementById('btn-confirm-gen');
+      if (b) b.addEventListener('click', () => this._confirmGenererSemaine());
+    }, 60);
+  },
+
+  _confirmGenererSemaine() {
+    const creneaux = this._pendingGen || [];
+    creneaux.forEach(c => Store.add('planning', c));
+    this._pendingGen = null;
+    Modal.close();
+    Toast.success(`${creneaux.length} créneau${creneaux.length > 1 ? 'x' : ''} créé${creneaux.length > 1 ? 's' : ''}`);
+    this._renderView();
+  },
+
   // =================== CRUD ===================
 
   _addShift(preselectedChId, preselectedDate) {
@@ -1204,6 +1379,7 @@ const PlanningPage = {
       { name: 'chauffeurId', label: 'Chauffeur', type: 'select', required: true, placeholder: 'Choisir un chauffeur...', options: chauffeurs.map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })), default: preselectedChId || '' },
       { name: 'date', label: 'Date', type: 'date', required: true, default: preselectedDate || new Date().toISOString().split('T')[0] },
       { type: 'row-end' },
+      { name: 'vehiculeId', label: 'Véhicule', type: 'select', placeholder: 'Voiture habituelle du chauffeur', options: (Store.get('vehicules') || []).filter(v => v.statut !== 'inactif' && v.statut !== 'vendu').map(v => ({ value: v.id, label: v.immatriculation || `${v.marque} ${v.modele}` })), default: (preselectedChId && (this._getChauffeurs().find(c => c.id === preselectedChId) || {}).vehiculeAssigne) || '' },
       { name: 'typeCreneaux', label: 'Créneau type', type: 'select', required: false, options: [
         { value: 'custom', label: 'Personnalisé' },
         { value: 'matin', label: 'Matin (6h - 14h)' },
