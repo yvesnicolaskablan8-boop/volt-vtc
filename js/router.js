@@ -16,6 +16,7 @@ const Router = {
       '/vehicules': { page: VehiculesPage, title: 'Véhicules' },
       '/vehicules/:id': { page: VehiculesPage, title: 'Détail véhicule', action: 'detail' },
       '/versements': { page: VersementsPage, title: 'Versements' },
+      '/bonus': { page: BonusPage, title: 'Bonus' },
       '/contraventions': { redirect: '/controle-conduite' },
       '/depenses': { redirect: '/comptabilite' },
       '/rentabilite': { page: RentabilitePage, title: 'Rentabilité' },

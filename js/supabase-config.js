@@ -40,7 +40,8 @@ const TABLE_MAP = {
   planningTemplates: 'fleet_planning_templates',
   zonesVitesse: 'fleet_zones_vitesse',
   infractionsVitesse: 'fleet_infractions_vitesse',
-  parcs: 'fleet_parcs'
+  parcs: 'fleet_parcs',
+  bonus: 'fleet_bonus'
 };
 
 // Field name conversion utilities (camelCase ↔ snake_case)

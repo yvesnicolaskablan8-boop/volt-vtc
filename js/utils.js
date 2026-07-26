@@ -395,6 +395,146 @@ const Utils = {
    * @param {Object} opts - { versements, chauffeurs, planning, absences, contraventions }
    * @returns {Object} { totalDettesRecettes, totalDettesContraventions, totalDettes, nbDetteDrivers, detteList, ... }
    */
+
+  // =================== MOTEUR DE BONUS HEBDOMADAIRE ===================
+
+  /** Règles par défaut, surchargeables via Paramètres (settings.bonus). */
+  bonusReglesParDefaut() {
+    return {
+      // Location : on récompense la RECETTE VERSÉE, pas le volume de courses.
+      // (le CA ne rapporte que 3 % au parc : payer un bonus dessus serait perdant)
+      location: {
+        actif: true,
+        montantSemaineComplete: 7500,   // toutes les recettes de la semaine versées
+        montantQualite: 2500,           // score de conduite au-dessus du seuil
+        seuilQualite: 80,
+        bloqueSiDette: true             // une dette en cours retient le bonus
+      },
+      // Salarié : le salaire fixe supprime la motivation, le bonus la recrée.
+      // Paliers sur le CA hebdomadaire (6 jours × objectif journalier).
+      salarie: {
+        actif: true,
+        paliers: [
+          { caMin: 420000, montant: 15000 },
+          { caMin: 480000, montant: 30000 },
+          { caMin: 540000, montant: 50000 }
+        ],
+        seuilQualite: 80,
+        montantQualite: 0
+      },
+      plafondHebdo: 50000
+    };
+  },
+
+  /** Lundi de la semaine contenant `date` (les semaines vont du lundi au dimanche). */
+  lundiDeLaSemaine(date) {
+    const d = new Date(date);
+    const dow = d.getDay();
+    d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  },
+
+  /**
+   * Calcule le bonus de la semaine pour chaque chauffeur.
+   * Fonction pure : toutes les données sont passées en paramètres.
+   *
+   * @param {string} lundi        date du lundi (YYYY-MM-DD)
+   * @param {object} caParChauffeur  { chauffeurId: caSemaine } — requis pour les salariés
+   * @param {object} dettesParChauffeur { chauffeurId: montantDette }
+   */
+  computeBonusSemaine({ lundi, chauffeurs, planning, versements, caParChauffeur = {}, dettesParChauffeur = {}, regles }) {
+    const R = regles || this.bonusReglesParDefaut();
+    const jours = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(lundi);
+      d.setDate(d.getDate() + i);
+      jours.push(this.todayISO(d));
+    }
+    const dimanche = jours[6];
+
+    // Recettes versées par chauffeur et par date (les 'supprime' comptent comme réglées)
+    const verseParCle = {};
+    (versements || []).forEach(v => {
+      if (!v.chauffeurId || !v.date) return;
+      if (v.statut === 'supprime') return;
+      const cle = `${v.chauffeurId}|${v.date}`;
+      verseParCle[cle] = (verseParCle[cle] || 0) + (v.montantVerse || 0);
+    });
+
+    return (chauffeurs || [])
+      .filter(c => c.statut !== 'inactif')
+      .map(ch => {
+        const estSalarie = ch.typeContrat === 'salarie';
+        const criteres = [];
+        let montant = 0;
+        let bloque = false;
+        let raison = '';
+
+        const creneaux = (planning || []).filter(p => p.chauffeurId === ch.id && jours.includes(p.date));
+        const dette = dettesParChauffeur[ch.id] || 0;
+
+        if (estSalarie) {
+          const cfg = R.salarie;
+          const caSemaine = caParChauffeur[ch.id] || 0;
+          const atteint = (cfg.paliers || [])
+            .filter(p => caSemaine >= p.caMin)
+            .sort((a, b) => b.montant - a.montant)[0];
+          if (!cfg.actif) { bloque = true; raison = 'Bonus salarié désactivé'; }
+          else if (atteint) {
+            montant = atteint.montant;
+            criteres.push(`CA hebdomadaire ${this.formatCurrency(caSemaine)} — palier ${this.formatCurrency(atteint.caMin)}`);
+          } else {
+            raison = `CA de ${this.formatCurrency(caSemaine)} — sous le premier palier`;
+          }
+          return { chauffeurId: ch.id, nom: `${ch.prenom} ${ch.nom}`, typeContrat: 'salarie',
+                   semaine: lundi, montant, criteres, bloque, raison,
+                   base: { caSemaine, joursPlanifies: creneaux.length } };
+        }
+
+        // --- Chauffeur en location ---
+        const cfg = R.location;
+        let joursDus = 0, joursPayes = 0, totalDu = 0, totalVerse = 0;
+        creneaux.forEach(p => {
+          const attendu = (p.redevanceOverride != null && p.redevanceOverride > 0)
+            ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+          if (attendu <= 0) return;
+          joursDus++;
+          totalDu += attendu;
+          const paye = verseParCle[`${ch.id}|${p.date}`] || 0;
+          totalVerse += paye;
+          if (paye >= attendu) joursPayes++;
+        });
+
+        if (!cfg.actif) { bloque = true; raison = 'Bonus location désactivé'; }
+        else if (joursDus === 0) { raison = 'Aucun créneau programmé cette semaine'; }
+        else if (joursPayes < joursDus) {
+          raison = `${joursPayes}/${joursDus} recettes versées`;
+        } else {
+          montant += cfg.montantSemaineComplete;
+          criteres.push(`${joursPayes}/${joursDus} recettes versées intégralement`);
+          const score = ch.scoreConduite || 0;
+          if (cfg.montantQualite > 0 && score >= cfg.seuilQualite) {
+            montant += cfg.montantQualite;
+            criteres.push(`Score de conduite ${score}/100`);
+          }
+        }
+
+        if (montant > 0 && cfg.bloqueSiDette && dette > 0) {
+          bloque = true;
+          raison = `Dette en cours de ${this.formatCurrency(dette)} — le bonus la solde d'abord`;
+        }
+
+        if (montant > (R.plafondHebdo || Infinity)) montant = R.plafondHebdo;
+
+        return { chauffeurId: ch.id, nom: `${ch.prenom} ${ch.nom}`, typeContrat: 'location',
+                 semaine: lundi, montant, criteres, bloque, raison,
+                 base: { joursDus, joursPayes, totalDu, totalVerse, dette } };
+      })
+      .filter(b => b.montant > 0 || b.base.joursDus > 0 || b.base.caSemaine > 0)
+      .sort((a, b) => b.montant - a.montant);
+  },
+
   computeDebts({ versements, chauffeurs, planning, absences, contraventions }) {
     const todayStr = this.todayISO();
     const thirtyDaysAgo = new Date();

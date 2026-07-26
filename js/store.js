@@ -415,6 +415,7 @@ const Store = {
       depenseRecurrentes: [],
       depenseCategories: [],
       versementRecurrents: [],
+      bonus: [],
       conversations: [],
       notifications: [],
       settings: { entreprise: {}, preferences: {} }
