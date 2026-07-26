@@ -460,6 +460,8 @@ const Utils = {
       if (hasAbsence(p.chauffeurId, p.date)) return;
       const ch = chauffeurById.get(p.chauffeurId);
       if (!ch || ch.statut === 'inactif') return;
+      // Un chauffeur salarié ne doit aucune recette : ne jamais lui créer de dette.
+      if (ch.typeContrat === 'salarie') return;
       const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
       if (redevance <= 0) return;
       if (paymentIndex.has(`${p.chauffeurId}|${p.date}`)) return;

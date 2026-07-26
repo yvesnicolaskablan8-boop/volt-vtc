@@ -1159,8 +1159,16 @@ const ChauffeursPage = {
       { name: 'vehiculeAssigne', label: 'Véhicule assigné', type: 'select', placeholder: 'Sélectionner...', options: vehicules.map(v => ({ value: v.id, label: `${v.marque} ${v.modele} (${v.immatriculation})` })) },
       { name: 'parcId', label: 'Parc', type: 'select', placeholder: 'Aucun parc', options: (Store.get('parcs') || []).map(p => ({ value: p.id, label: p.nom })) },
       { type: 'row-end' },
+      { name: 'typeContrat', label: 'Type de contrat', type: 'select', options: [
+        { value: 'location', label: 'Location — verse une recette quotidienne' },
+        { value: 'salarie', label: 'Salarié — payé au mois, aucune recette due' }
+      ], default: 'location' },
       { type: 'row-start' },
-      { name: 'redevanceQuotidienne', label: 'Recette quotidienne (FCFA)', type: 'number', min: 0, step: 500, placeholder: 'Montant journalier à verser', default: 0 },
+      { name: 'salaireMensuel', label: 'Salaire mensuel net (si salarié)', type: 'number', min: 0, step: 10000, placeholder: 'Ex: 200000', default: 0 },
+      { name: 'objectifCaJour', label: 'Objectif CA / jour (si salarié)', type: 'number', min: 0, step: 5000, placeholder: 'Ex: 70000', default: 0 },
+      { type: 'row-end' },
+      { type: 'row-start' },
+      { name: 'redevanceQuotidienne', label: 'Recette quotidienne (FCFA) — si location', type: 'number', min: 0, step: 500, placeholder: 'Montant journalier à verser', default: 0 },
       { name: 'objectifCA', label: 'Objectif CA Yango journalier (FCFA)', type: 'number', min: 0, step: 1000, placeholder: 'Ex: 30000', default: 0 },
       { type: 'row-end' },
       { type: 'row-start' },
