@@ -343,7 +343,7 @@ const PlanningPage = {
         const ch = chById[s.chauffeurId];
         if (!ch) return;
         chips.push(`<div class="pcal-chip" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
-          <span class="pcal-dot" style="background:${this._getShiftColor(s)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.${s.role === 'doublure' ? ' <span style="font-size:8.5px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:4px;padding:0 3px">REMPL</span>' : ''} <span class="pcal-chip-time">${s.heureDebut || ''}${s.heureFin ? '–' + s.heureFin : ''}</span></span>
+          <span class="pcal-dot" style="background:${this._getShiftColor(s)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.${this._serviceDuCreneau(s) === 'nuit' ? ' <span style="font-size:8.5px;font-weight:800;color:#e0e7ff;background:#312e81;border-radius:4px;padding:0 3px">NUIT</span>' : ''}${s.role === 'doublure' ? ' <span style="font-size:8.5px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:4px;padding:0 3px">REMPL</span>' : ''} <span class="pcal-chip-time">${s.heureDebut || ''}${s.heureFin ? '–' + s.heureFin : ''}</span></span>
         </div>`);
       });
       dayAbsences.forEach(a => {
@@ -1204,6 +1204,42 @@ const PlanningPage = {
 
   // =================== BINÔME TITULAIRE / DOUBLURE ===================
 
+  /**
+   * Services exploités par un véhicule : un seul (jour) ou deux (jour + nuit).
+   * Chaque service porte son propre titulaire, sa doublure, sa recette et ses horaires.
+   */
+  _servicesDuVehicule(v) {
+    const jour = {
+      cle: 'jour',
+      label: 'Jour',
+      titulaireId: v.chauffeurAssigne || null,
+      doublureId: v.doublureId || null,
+      recette: (v.recetteJour != null && v.recetteJour > 0) ? Number(v.recetteJour) : null,
+      heureDebut: v.heureDebutJour || '06:00',
+      heureFin: v.heureFinJour || '21:00',
+      typeCreneaux: 'journee'
+    };
+    if (v.modeExploitation !== 'double') return [jour];
+    return [jour, {
+      cle: 'nuit',
+      label: 'Nuit',
+      titulaireId: v.chauffeurNuitId || null,
+      doublureId: v.doublureNuitId || null,
+      recette: (v.recetteNuit != null && v.recetteNuit > 0) ? Number(v.recetteNuit) : null,
+      heureDebut: v.heureDebutNuit || '22:00',
+      heureFin: v.heureFinNuit || '05:00',
+      typeCreneaux: 'nuit'
+    }];
+  },
+
+  /** Service d'un créneau : colonne `service`, sinon déduit de l'horaire. */
+  _serviceDuCreneau(p) {
+    if (p.service) return p.service;
+    if (p.typeCreneaux === 'nuit') return 'nuit';
+    const h = parseInt(String(p.heureDebut || '').slice(0, 2), 10);
+    return (!isNaN(h) && (h >= 21 || h < 5)) ? 'nuit' : 'jour';
+  },
+
   /** Véhicule d'un créneau : colonne vehiculeId, sinon voiture assignée au chauffeur. */
   _vehiculeDuCreneau(p, chById) {
     if (p.vehiculeId) return p.vehiculeId;
@@ -1225,21 +1261,25 @@ const PlanningPage = {
     const occupe = new Set();
     planning.forEach(p => {
       const vId = this._vehiculeDuCreneau(p, chById);
-      if (vId) occupe.add(`${vId}|${p.date}`);
+      if (vId) occupe.add(`${vId}|${p.date}|${this._serviceDuCreneau(p)}`);
     });
 
     let couverts = 0;
     let perte = 0;
-    const total = vehicules.length * days.length;
+    let total = 0;
     vehicules.forEach(v => {
-      const titulaire = chauffeurs.find(c => c.id === v.chauffeurAssigne);
-      // Une journée sans conducteur coûte la recette non versée (location)
-      // ou le chiffre d'affaires non produit (salarié).
-      const manqueJour = !titulaire ? 0
-        : (titulaire.typeContrat === 'salarie' ? (titulaire.objectifCaJour || 0) : (titulaire.redevanceQuotidienne || 0));
-      days.forEach(d => {
-        if (occupe.has(`${v.id}|${d.date}`)) couverts++;
-        else perte += manqueJour;
+      const services = this._servicesDuVehicule(v);
+      total += services.length * days.length;
+      services.forEach(sv => {
+        const titulaire = chauffeurs.find(c => c.id === sv.titulaireId);
+        // Un service non couvert coûte sa recette (location) ou le CA non produit (salarié).
+        const manque = sv.recette != null ? sv.recette
+          : (!titulaire ? 0
+            : (titulaire.typeContrat === 'salarie' ? (titulaire.objectifCaJour || 0) : (titulaire.redevanceQuotidienne || 0)));
+        days.forEach(d => {
+          if (occupe.has(`${v.id}|${d.date}|${sv.cle}`)) couverts++;
+          else perte += manque;
+        });
       });
     });
     return { couverts, total, perte, pct: total > 0 ? Math.round((couverts / total) * 100) : 0 };
@@ -1281,46 +1321,51 @@ const PlanningPage = {
     const occupe = new Set();
     planning.forEach(p => {
       const vId = this._vehiculeDuCreneau(p, chById);
-      if (vId) occupe.add(`${vId}|${p.date}`);
+      if (vId) occupe.add(`${vId}|${p.date}|${this._serviceDuCreneau(p)}`);
     });
-    // Un chauffeur ne peut pas conduire deux voitures le même jour.
+    // Un chauffeur ne peut assurer qu'un seul service par jour.
     const chauffeurPris = new Set(planning.map(p => `${p.chauffeurId}|${p.date}`));
 
     const nouveaux = [];
     let sansDoublure = 0, sansTitulaire = 0, bloques = 0, dejaPris = 0;
 
     vehicules.forEach(v => {
-      const titulaire = chById[v.chauffeurAssigne];
-      if (!titulaire) { sansTitulaire += days.length; return; }
-      const doublure = v.doublureId ? chById[v.doublureId] : null;
-      const jourRepos = (titulaire.jourRepos === 0 || titulaire.jourRepos) ? Number(titulaire.jourRepos) : null;
+      const services = this._servicesDuVehicule(v);
+      services.forEach(sv => {
+        const titulaire = sv.titulaireId ? chById[sv.titulaireId] : null;
+        if (!titulaire) { sansTitulaire += days.length; return; }
+        const doublure = sv.doublureId ? chById[sv.doublureId] : null;
+        const jourRepos = (titulaire.jourRepos === 0 || titulaire.jourRepos) ? Number(titulaire.jourRepos) : null;
 
-      days.forEach(d => {
-        if (occupe.has(`${v.id}|${d.date}`)) return;
-        const estRepos = jourRepos !== null && d.dow === jourRepos;
-        const chauffeur = estRepos ? doublure : titulaire;
-        if (!chauffeur) { sansDoublure++; return; }
-        if (chauffeurPris.has(`${chauffeur.id}|${d.date}`)) { dejaPris++; return; }
+        days.forEach(d => {
+          if (occupe.has(`${v.id}|${d.date}|${sv.cle}`)) return;
+          const estRepos = jourRepos !== null && d.dow === jourRepos;
+          const chauffeur = estRepos ? doublure : titulaire;
+          if (!chauffeur) { sansDoublure++; return; }
+          if (chauffeurPris.has(`${chauffeur.id}|${d.date}`)) { dejaPris++; return; }
 
-        const simule = planning.concat(nouveaux);
-        if (this._joursConsecutifsAvant(chauffeur.id, d.date, simule) >= 6) { bloques++; return; }
+          const simule = planning.concat(nouveaux);
+          if (this._joursConsecutifsAvant(chauffeur.id, d.date, simule) >= 6) { bloques++; return; }
 
-        const creneau = {
-          id: Utils.generateId('PLN'),
-          chauffeurId: chauffeur.id,
-          vehiculeId: v.id,
-          role: estRepos ? 'doublure' : 'titulaire',
-          date: d.date,
-          typeCreneaux: 'journee',
-          heureDebut: '06:00',
-          heureFin: '20:00',
-          notes: estRepos ? `Remplacement — repos de ${titulaire.prenom} ${titulaire.nom}` : '',
-          redevanceOverride: null,
-          dateCreation: new Date().toISOString()
-        };
-        nouveaux.push(creneau);
-        occupe.add(`${v.id}|${d.date}`);
-        chauffeurPris.add(`${chauffeur.id}|${d.date}`);
+          const creneau = {
+            id: Utils.generateId('PLN'),
+            chauffeurId: chauffeur.id,
+            vehiculeId: v.id,
+            service: sv.cle,
+            role: estRepos ? 'doublure' : 'titulaire',
+            date: d.date,
+            typeCreneaux: sv.typeCreneaux,
+            heureDebut: sv.heureDebut,
+            heureFin: sv.heureFin,
+            notes: estRepos ? `Remplacement ${sv.label.toLowerCase()} — repos de ${titulaire.prenom} ${titulaire.nom}` : '',
+            // La recette du service prime sur celle du chauffeur (jour 25 000 / nuit 18 000)
+            redevanceOverride: sv.recette,
+            dateCreation: new Date().toISOString()
+          };
+          nouveaux.push(creneau);
+          occupe.add(`${v.id}|${d.date}|${sv.cle}`);
+          chauffeurPris.add(`${chauffeur.id}|${d.date}`);
+        });
       });
     });
 
@@ -1341,14 +1386,16 @@ const PlanningPage = {
 
     const parRole = nouveaux.filter(c => c.role === 'doublure').length;
     const recettePotentielle = nouveaux.reduce((s, c) => {
+      if (c.redevanceOverride != null && c.redevanceOverride > 0) return s + c.redevanceOverride;
       const ch = chById[c.chauffeurId];
       return s + (ch ? (ch.redevanceQuotidienne || 0) : 0);
     }, 0);
+    const nbNuit = nouveaux.filter(c => c.service === 'nuit').length;
 
     Modal.open({
       title: '<iconify-icon icon="solar:magic-stick-3-bold-duotone" style="color:var(--pilote-blue)"></iconify-icon> Compléter la semaine',
       body: `<div style="font-size:var(--font-size-sm);line-height:1.7">
-        <p><strong>${nouveaux.length} créneau(x)</strong> vont être créés — dont <strong>${parRole}</strong> en remplacement par une doublure.</p>
+        <p><strong>${nouveaux.length} créneau(x)</strong> vont être créés — dont <strong>${parRole}</strong> en remplacement par une doublure${nbNuit > 0 ? ` et <strong>${nbNuit}</strong> en service de nuit` : ''}.</p>
         <p style="padding:10px 12px;border-radius:8px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2)">Recette supplémentaire attendue : <strong style="color:#16a34a">${Utils.formatCurrency(recettePotentielle)}</strong></p>
         ${sansDoublure > 0 ? `<p style="color:#b45309">⚠ ${sansDoublure} jour(s) de repos restent non couverts : aucune doublure n'est désignée sur ces véhicules.</p>` : ''}
         ${bloques > 0 ? `<p style="color:#b45309">⚠ ${bloques} jour(s) écarté(s) : le chauffeur atteindrait 7 jours consécutifs.</p>` : ''}
