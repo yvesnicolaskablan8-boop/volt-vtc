@@ -8,37 +8,47 @@ const Router = {
 
   init() {
     // Register routes
-    this._routes = {
-      '/dashboard': { page: DashboardPage, title: 'Tableau de bord' },
-      '/yango': { page: YangoPage, title: 'Yango Fleet' },
-      '/chauffeurs': { page: ChauffeursPage, title: 'Chauffeurs' },
-      '/chauffeurs/:id': { page: ChauffeursPage, title: 'Détail chauffeur', action: 'detail' },
-      '/vehicules': { page: VehiculesPage, title: 'Véhicules' },
-      '/vehicules/:id': { page: VehiculesPage, title: 'Détail véhicule', action: 'detail' },
-      '/versements': { page: VersementsPage, title: 'Versements' },
-      '/bonus': { page: BonusPage, title: 'Bonus' },
-      '/contraventions': { redirect: '/controle-conduite' },
-      '/depenses': { redirect: '/comptabilite' },
-      '/rentabilite': { page: RentabilitePage, title: 'Rentabilité' },
-      '/gps-conduite': { page: GpsConduitePage, title: 'GPS & Conduite' },
-      '/controle-conduite': { page: ControleConduitePage, title: 'Controle de conduite' },
-      '/classement': { page: ClassementPage, title: 'Classement' },
-
-      '/rapports': { page: RapportsPage, title: 'Rapports' },
-      '/comptabilite': { page: ComptabilitePage, title: 'Comptabilité' },
-      '/planning': { page: PlanningPage, title: 'Planning' },
-      '/messagerie': { page: MessageriePage, title: 'Messagerie' },
-      '/alertes': { page: AlertesPage, title: 'Alertes' },
-      '/garage': { redirect: '/vehicules' },
-      '/taches': { page: TachesPage, title: 'Taches' },
-      '/incidents': { redirect: '/vehicules' },
-      '/activite': { page: ActivitePage, title: 'Journal d\'activite' },
-
-      '/notifications-admin': { page: NotificationsAdminPage, title: 'Notifications' },
-      '/parametres': { page: ParametresPage, title: 'Paramètres' },
-      '/mon-compte': { page: MonComptePage, title: 'Mon compte' },
-      '/menu': { page: MenuPage, title: 'Menu' }
+    // Une page dont le fichier n'a pas pu se charger ne doit jamais vider
+    // toute l'application : chaque route est resolue isolement, et seule
+    // celle-la est ignoree.
+    const routes = {};
+    const add = (chemin, getter, title, action) => {
+      let page = null;
+      try { page = getter(); } catch (e) { page = null; }
+      if (!page) { console.warn('[Router] Page non chargee, route ignoree :', chemin); return; }
+      routes[chemin] = action ? { page, title, action } : { page, title };
     };
+
+    add('/dashboard', () => DashboardPage, 'Tableau de bord');
+    add('/yango', () => YangoPage, 'Yango Fleet');
+    add('/chauffeurs', () => ChauffeursPage, 'Chauffeurs');
+    add('/chauffeurs/:id', () => ChauffeursPage, 'Détail chauffeur', 'detail');
+    add('/vehicules', () => VehiculesPage, 'Véhicules');
+    add('/vehicules/:id', () => VehiculesPage, 'Détail véhicule', 'detail');
+    add('/versements', () => VersementsPage, 'Versements');
+    add('/bonus', () => BonusPage, 'Bonus');
+    add('/rentabilite', () => RentabilitePage, 'Rentabilité');
+    add('/gps-conduite', () => GpsConduitePage, 'GPS & Conduite');
+    add('/controle-conduite', () => ControleConduitePage, 'Controle de conduite');
+    add('/classement', () => ClassementPage, 'Classement');
+    add('/rapports', () => RapportsPage, 'Rapports');
+    add('/comptabilite', () => ComptabilitePage, 'Comptabilité');
+    add('/planning', () => PlanningPage, 'Planning');
+    add('/messagerie', () => MessageriePage, 'Messagerie');
+    add('/alertes', () => AlertesPage, 'Alertes');
+    add('/taches', () => TachesPage, 'Taches');
+    add('/activite', () => ActivitePage, 'Journal d\'activite');
+    add('/notifications-admin', () => NotificationsAdminPage, 'Notifications');
+    add('/parametres', () => ParametresPage, 'Paramètres');
+    add('/mon-compte', () => MonComptePage, 'Mon compte');
+    add('/menu', () => MenuPage, 'Menu');
+
+    routes['/contraventions'] = { redirect: '/controle-conduite' };
+    routes['/depenses'] = { redirect: '/comptabilite' };
+    routes['/garage'] = { redirect: '/vehicules' };
+    routes['/incidents'] = { redirect: '/vehicules' };
+
+    this._routes = routes;
 
     // Listen for hash changes
     window.addEventListener('hashchange', () => this._handleRoute());
