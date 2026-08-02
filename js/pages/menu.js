@@ -12,6 +12,7 @@ const MenuPage = {
       { route: '/taches', icon: 'solar:checklist-bold-duotone', label: 'Taches', color: '#6366f1' },
       { route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements', color: '#22c55e' },
       { route: '/bonus', icon: 'solar:gift-bold-duotone', label: 'Bonus', color: '#a855f7' },
+      { route: '/simulateur', icon: 'solar:calculator-minimalistic-bold-duotone', label: 'Simulateur', color: '#0891b2' },
       { route: '/rentabilite', icon: 'solar:pie-chart-2-bold-duotone', label: 'Rentabilité', color: '#8b5cf6' },
       { route: '/comptabilite', icon: 'solar:calculator-bold-duotone', label: 'Comptabilité', color: '#3b82f6' },
       { route: '/messagerie', icon: 'solar:chat-round-dots-bold-duotone', label: 'Messagerie', color: '#06b6d4' },

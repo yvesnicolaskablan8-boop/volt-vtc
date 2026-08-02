@@ -396,6 +396,112 @@ const Utils = {
    * @returns {Object} { totalDettesRecettes, totalDettesContraventions, totalDettes, nbDetteDrivers, detteList, ... }
    */
 
+
+  // =================== SIMULATEUR DE PLANIFICATION ===================
+
+  /**
+   * Simule un mois de planification en binome titulaire/doublure.
+   *
+   * Regles appliquees (identiques au planning reel) :
+   *  - le titulaire conduit tous les jours sauf son jour de repos ;
+   *  - une doublure couvre ce jour de repos ;
+   *  - personne ne depasse 6 jours consecutifs ;
+   *  - un chauffeur ne peut pas conduire deux voitures le meme jour.
+   *
+   * Le parcours se fait JOUR par JOUR : voiture par voiture, le compteur de
+   * jours consecutifs repartirait en arriere a chaque changement de vehicule
+   * et la regle des 6 jours ne serait plus verifiee.
+   */
+  simulerPlanningMois({ annee, mois, titulaires, doublures }) {
+    const nbJours = new Date(annee, mois + 1, 0).getDate();
+    const tit = (titulaires || []).map(t => ({ ...t, jours: [] }));
+    const doub = (doublures || []).map(d => ({ ...d, aRecruter: false, jours: [] }));
+    const cleDe = (p) => p.id || p.nom;
+
+    const prisParJour = {}, dernier = {};
+    const consec = (cle, j) => { const d = dernier[cle]; return (d && d.jour === j - 1) ? d.consec : 0; };
+    const marquer = (cle, j) => {
+      const n = consec(cle, j) + 1;
+      dernier[cle] = { jour: j, consec: n };
+      (prisParJour[j] = prisParJour[j] || new Set()).add(cle);
+    };
+
+    const grille = tit.map(() => []);
+    let arrets = 0;
+
+    for (let j = 1; j <= nbJours; j++) {
+      const dow = new Date(annee, mois, j).getDay();
+      for (let v = 0; v < tit.length; v++) {
+        const T = tit[v];
+        if (T.repos !== dow) {
+          if (consec(cleDe(T), j) >= 6) { grille[v].push(null); arrets++; continue; }
+          marquer(cleDe(T), j); T.jours.push(j);
+          grille[v].push({ nom: T.nom, role: 'titulaire' });
+        } else {
+          let d = doub.find(x => !(prisParJour[j] && prisParJour[j].has(cleDe(x))) && consec(cleDe(x), j) < 6);
+          if (!d) {
+            d = { id: 'AUTO-' + (doub.length + 1), nom: 'Doublure ' + (doub.length + 1), aRecruter: true, jours: [] };
+            doub.push(d);
+          }
+          marquer(cleDe(d), j); d.jours.push(j);
+          grille[v].push({ nom: d.nom, role: 'doublure' });
+        }
+      }
+    }
+
+    const joursTitulaires = tit.reduce((s, t) => s + t.jours.length, 0);
+    const joursDoublures = doub.reduce((s, d) => s + d.jours.length, 0);
+    return { nbJours, grille, titulaires: tit, doublures: doub, arrets, joursTitulaires, joursDoublures };
+  },
+
+  /** Plus longue serie de jours consecutifs travailles (liste non triee acceptee). */
+  maxJoursConsecutifs(jours) {
+    let max = 0, courant = 0, precedent = -99;
+    [...(jours || [])].sort((a, b) => a - b).forEach(j => {
+      courant = (j === precedent + 1) ? courant + 1 : 1;
+      precedent = j;
+      if (courant > max) max = courant;
+    });
+    return max;
+  },
+
+  /**
+   * Projection financiere du mois simule, du chiffre d'affaires au benefice net.
+   * En doublure locataire, le CA de ses journees lui appartient : seule sa
+   * recette entre dans vos produits.
+   */
+  simulerFinanceMois(p) {
+    const nbV = p.nbVehicules || 0;
+    const joursCA = p.doublureSalariee ? (p.joursTitulaires + p.joursDoublures) : p.joursTitulaires;
+    const joursEnergie = joursCA;
+    const caBrut = joursCA * (p.objectifCA || 0);
+    const commission = caBrut * (p.commission || 0) / 100;
+    const caNet = caBrut - commission;
+    const recettesDoublures = p.doublureSalariee ? 0 : p.joursDoublures * (p.recetteDoublure || 0);
+    const nbSalaries = nbV + (p.doublureSalariee ? (p.nbDoublures || 0) : 0);
+    const masse = nbSalaries * (p.salaire || 0) * (1 + (p.charges || 0) / 100);
+    const coutEnergie = joursEnergie * (p.energie || 0);
+    const coutFixe = nbV * ((p.entretien || 0) + (p.location || 0));
+    const exploitation = caNet + recettesDoublures - masse - coutEnergie - coutFixe;
+
+    const bonus = nbSalaries * (p.bonusHebdo || 0) * 4.33;
+    const provisions = nbV * (p.provision || 0);
+    const avantImpot = exploitation - (p.fraisStructure || 0) - bonus - provisions;
+    const impot = avantImpot > 0 ? avantImpot * (p.tauxImpot || 0) / 100 : 0;
+    const net = avantImpot - impot;
+
+    // Reference : modele location actuel (recette fixe, ni salaire ni energie a votre charge)
+    const referenceExploitation = (p.refJours || 0) * (p.refRecette || 0) - nbV * (p.location || 0);
+    const denominateur = joursCA * (1 - (p.commission || 0) / 100);
+    const seuilCA = denominateur > 0
+      ? (referenceExploitation + masse + coutEnergie + coutFixe - recettesDoublures) / denominateur
+      : 0;
+
+    return { joursCA, caBrut, commission, caNet, recettesDoublures, masse, coutEnergie, coutFixe,
+             exploitation, bonus, provisions, avantImpot, impot, net, nbSalaries,
+             referenceExploitation, ecart: exploitation - referenceExploitation, seuilCA };
+  },
+
   // =================== MOTEUR DE BONUS HEBDOMADAIRE ===================
 
   /** Règles par défaut, surchargeables via Paramètres (settings.bonus). */

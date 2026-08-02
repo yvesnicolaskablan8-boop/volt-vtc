@@ -27,6 +27,7 @@ const Router = {
     add('/vehicules/:id', () => VehiculesPage, 'Détail véhicule', 'detail');
     add('/versements', () => VersementsPage, 'Versements');
     add('/bonus', () => BonusPage, 'Bonus');
+    add('/simulateur', () => SimulateurPage, 'Simulateur');
     add('/rentabilite', () => RentabilitePage, 'Rentabilité');
     add('/gps-conduite', () => GpsConduitePage, 'GPS & Conduite');
     add('/controle-conduite', () => ControleConduitePage, 'Controle de conduite');
