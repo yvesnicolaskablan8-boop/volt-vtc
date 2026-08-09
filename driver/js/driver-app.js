@@ -357,6 +357,10 @@ const DriverApp = {
   async _startLocationTracking() {
     // App native (Capacitor + Transistorsoft) : service GPS d'arrière-plan qui
     // continue même app fermée / écran verrouillé. Le web reste le fallback.
+    // Laisser d'abord l'interface s'afficher : si le plugin fait tomber
+    // l'application, l'utilisateur aura au moins vu son ecran d'accueil, et le
+    // temoin pose plus haut evitera que cela se reproduise.
+    await new Promise(r => setTimeout(r, 1500));
     if (await this._startNativeTracking()) return;
 
     if (!('geolocation' in navigator)) {
@@ -420,11 +424,23 @@ const DriverApp = {
    * Retourne true si le mode natif est actif (le fallback web est alors ignoré).
    */
   async _startNativeTracking() {
+    // Un plantage NATIF ne peut pas etre rattrape par un try/catch JavaScript :
+    // il emporte l'application entiere. On pose donc un temoin AVANT de
+    // toucher au plugin, et on ne l'efface qu'une fois le demarrage reussi.
+    // Si le temoin est encore la au lancement suivant, c'est que le plugin a
+    // fait tomber l'app : on le contourne et l'application reste utilisable.
+    const TEMOIN = 'pilote_gps_demarrage_en_cours';
     try {
       const cap = window.Capacitor;
       if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return false;
       const BG = cap.Plugins && cap.Plugins.BackgroundGeolocation;
       if (!BG) { console.log('[Geo] Plugin natif absent, fallback web'); return false; }
+
+      if (localStorage.getItem(TEMOIN)) {
+        console.warn('[Geo] Le demarrage GPS a fait tomber l application la derniere fois — desactive.');
+        localStorage.setItem('pilote_gps_bloque', '1');
+        return false;
+      }
       const ch = (typeof DriverAuth !== 'undefined' && DriverAuth.getChauffeur) ? DriverAuth.getChauffeur() : null;
       if (!ch || !ch.id) return false;
 
@@ -443,6 +459,11 @@ const DriverApp = {
         console.warn('[Geo] Pas de jeton appareil disponible, fallback web');
         return false;
       }
+
+      // Sur Android 14+, demarrer un service de localisation au premier plan
+      // sans autorisation deja accordee leve une exception native qui tue
+      // l'application. On demande donc l'autorisation d'abord.
+      localStorage.setItem(TEMOIN, '1');
 
       await BG.ready({
         reset: true,
@@ -477,10 +498,24 @@ const DriverApp = {
         maxRecordsToPersist: -1      // garde tout en file si le réseau coupe
       });
 
+      // Autorisation explicite avant tout demarrage de service.
+      if (typeof BG.requestPermission === 'function') {
+        try {
+          const statut = await BG.requestPermission();
+          console.log('[Geo] Autorisation de localisation :', statut);
+        } catch (e) {
+          console.warn('[Geo] Autorisation refusee ou indisponible :', e && e.message);
+          localStorage.removeItem(TEMOIN);
+          return false;
+        }
+      }
+
       await BG.start();
+      localStorage.removeItem(TEMOIN);   // demarrage reussi : plus de suspicion
       console.log('[Geo] Suivi natif Transistorsoft actif (arrière-plan OK)');
       return true;
     } catch (e) {
+      localStorage.removeItem(TEMOIN);   // echec propre, ce n'est pas un plantage
       console.warn('[Geo] Suivi natif indisponible, fallback web:', e && e.message);
       return false;
     }
