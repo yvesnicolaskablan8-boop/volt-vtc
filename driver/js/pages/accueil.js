@@ -39,7 +39,7 @@ const AccueilPage = {
     const creneauLabels = {
       matin: 'Matin (6h-14h)',
       apres_midi: 'Apres-midi (14h-22h)',
-      journee: 'Journee (8h-20h)',
+      journee: 'Journee',
       nuit: 'Nuit (22h-6h)'
     };
     const creneauIcons = {
@@ -65,13 +65,16 @@ const AccueilPage = {
       notes: planningJour.notes
     } : null);
     // Pour les creneaux personnalises, afficher les heures reelles
+    // Les heures reellement enregistrees sur le creneau priment toujours sur
+    // l'etiquette generique : une plage figee dans le code contredisait les
+    // horaires reels du vehicule.
+    const heures = (c) => (c && c.heureDebut && c.heureFin)
+      ? `${String(c.heureDebut).slice(0, 5)} - ${String(c.heureFin).slice(0, 5)}` : null;
     let creneauText = null;
     if (creneau) {
-      if (creneau.type === 'custom' && creneau.heureDebut && creneau.heureFin) {
-        creneauText = `Personnalise (${creneau.heureDebut}-${creneau.heureFin})`;
-      } else {
-        creneauText = creneauLabels[creneau.type] || 'Personnalise';
-      }
+      const h = heures(creneau);
+      const base = creneauLabels[creneau.type] || 'Service';
+      creneauText = h ? `${base} (${h})` : base;
     }
     const creneauIcon = creneau ? (creneauIcons[creneau.type] || 'solar:clock-circle-bold-duotone') : null;
     const creneauGrad = creneau ? (creneauGradients[creneau.type] || creneauGradients.custom) : null;

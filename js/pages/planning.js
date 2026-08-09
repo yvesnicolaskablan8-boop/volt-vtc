@@ -261,7 +261,7 @@ const PlanningPage = {
   },
 
   _shiftTypeLabel(type) {
-    const labels = { matin: 'Matin (6h-14h)', apres_midi: 'Après-midi (14h-22h)', journee: 'Journée (8h-20h)', nuit: 'Nuit (22h-6h)' };
+    const labels = { matin: 'Matin (6h-14h)', apres_midi: 'Après-midi (14h-22h)', journee: 'Journée (6h - minuit)', nuit: 'Nuit (22h-6h)' };
     return labels[type] || type;
   },
 
@@ -301,7 +301,7 @@ const PlanningPage = {
   _shiftPresets: {
     matin: ['06:00', '14:00'],
     apres_midi: ['14:00', '22:00'],
-    journee: ['08:00', '20:00'],
+    journee: ['06:00', '00:00'],
     nuit: ['22:00', '06:00']
   },
 
@@ -569,7 +569,7 @@ const PlanningPage = {
     if (shift.heureDebut && shift.heureFin) {
       return `${shift.heureDebut} - ${shift.heureFin}`;
     }
-    const presets = { matin: '06:00 - 14:00', apres_midi: '14:00 - 22:00', journee: '08:00 - 20:00', nuit: '22:00 - 06:00' };
+    const presets = { matin: '06:00 - 14:00', apres_midi: '14:00 - 22:00', journee: '06:00 - 00:00', nuit: '22:00 - 06:00' };
     return presets[shift.typeCreneaux] || '';
   },
 
@@ -1253,7 +1253,7 @@ const PlanningPage = {
       doublureId: v.doublureId || null,
       recette: (v.recetteJour != null && v.recetteJour > 0) ? Number(v.recetteJour) : null,
       heureDebut: v.heureDebutJour || '06:00',
-      heureFin: v.heureFinJour || '21:00',
+      heureFin: v.heureFinJour || (v.modeExploitation === 'double' ? '21:00' : '00:00'),
       typeCreneaux: 'journee'
     };
     if (v.modeExploitation !== 'double') return [jour];
@@ -1678,7 +1678,7 @@ const PlanningPage = {
         { value: 'custom', label: 'Personnalisé' },
         { value: 'matin', label: 'Matin (6h - 14h)' },
         { value: 'apres_midi', label: 'Après-midi (14h - 22h)' },
-        { value: 'journee', label: 'Journée complète (8h - 20h)' },
+        { value: 'journee', label: 'Journée complète (6h - minuit)' },
         { value: 'nuit', label: 'Nuit (22h - 6h)' }
       ], default: 'custom' },
       { type: 'row-start' },
@@ -1816,7 +1816,7 @@ const PlanningPage = {
         { value: 'custom', label: 'Personnalisé' },
         { value: 'matin', label: 'Matin (6h - 14h)' },
         { value: 'apres_midi', label: 'Après-midi (14h - 22h)' },
-        { value: 'journee', label: 'Journée complète (8h - 20h)' },
+        { value: 'journee', label: 'Journée complète (6h - minuit)' },
         { value: 'nuit', label: 'Nuit (22h - 6h)' }
       ]},
       { type: 'row-start' },

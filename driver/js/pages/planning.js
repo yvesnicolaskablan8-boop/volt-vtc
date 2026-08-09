@@ -206,7 +206,7 @@ const PlanningPage = {
     const creneauLabels = {
       matin: 'Matin (6h-14h)',
       apres_midi: 'Apres-midi (12h-22h)',
-      journee: 'Journee complete',
+      journee: 'Journee',
       nuit: 'Nuit (20h-6h)',
       custom: 'Personnalise'
     };
@@ -223,9 +223,12 @@ const PlanningPage = {
         ${absence.motif ? '<div class="planning-detail-row"><span>Motif</span><span>' + this._esc(absence.motif) + '</span></div>' : ''}
       `;
     } else if (planning) {
-      const crLabel = (planning.typeCreneaux === 'custom' && planning.heureDebut && planning.heureFin)
-        ? planning.heureDebut + ' - ' + planning.heureFin
-        : (creneauLabels[planning.typeCreneaux] || planning.typeCreneaux);
+      // Les heures reellement enregistrees sur le creneau priment sur
+      // l'etiquette generique, qui pouvait annoncer une plage differente.
+      const hh = (planning.heureDebut && planning.heureFin)
+        ? String(planning.heureDebut).slice(0, 5) + ' - ' + String(planning.heureFin).slice(0, 5) : null;
+      const base = creneauLabels[planning.typeCreneaux] || planning.typeCreneaux;
+      const crLabel = hh ? (base ? base + ' (' + hh + ')' : hh) : base;
       content = `
         ${planning.role === 'doublure' ? `
         <div class="planning-detail-row" style="background:#fef3c7;border-radius:8px;padding:8px 10px;margin-bottom:6px">
