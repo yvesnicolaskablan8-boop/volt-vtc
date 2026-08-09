@@ -10,12 +10,14 @@ const SimulateurPage = {
   _mois: null,
   _params: null,
   _onglet: null,
+  _nbReels: 0,
 
   _defauts() {
     return { objectifCA: 70000, commission: 18, energie: 4000, entretien: 100000,
              location: 750000, salaire: 200000, charges: 18, recetteDoublure: 35000,
              fraisStructure: 300000, bonusHebdo: 15000, provision: 50000,
-             tauxImpot: 25, refRecette: 35000, doublureSalariee: false };
+             tauxImpot: 25, refRecette: 35000, doublureSalariee: false,
+             nbVehicules: null };   // null = taille du parc reel
   },
 
   render() {
@@ -42,6 +44,11 @@ const SimulateurPage = {
       const avecObjectif = chs.find(c => c.objectifCaJour > 0);
       if (avecObjectif && !sauve) this._params.objectifCA = avecObjectif.objectifCaJour;
     }
+    // Le curseur demarre sur la taille reelle du parc, puis l'utilisateur
+    // est libre de simuler plus ou moins de voitures.
+    this._nbReels = (Store.get('vehicules') || [])
+      .filter(v => v.statut !== 'inactif' && v.statut !== 'vendu').length;
+    if (!this._params.nbVehicules) this._params.nbVehicules = this._nbReels || 5;
     container.innerHTML = this._template();
     this._bind();
     this._calculer();
@@ -53,7 +60,13 @@ const SimulateurPage = {
 
   /** Constitue les binomes a partir des vehicules et chauffeurs reels. */
   _equipes() {
-    const vehicules = (Store.get('vehicules') || []).filter(v => v.statut !== 'inactif' && v.statut !== 'vendu');
+    const reels = (Store.get('vehicules') || []).filter(v => v.statut !== 'inactif' && v.statut !== 'vendu');
+    this._nbReels = reels.length;
+    const voulu = Math.max(1, Math.round(Number(this._params.nbVehicules) || reels.length || 5));
+    const vehicules = reels.slice(0, voulu);
+    for (let i = reels.length; i < voulu; i++) {
+      vehicules.push({ id: 'SIM-' + i, immatriculation: `Voiture ${i + 1} (simulée)`, _simulee: true });
+    }
     const chauffeurs = (Store.get('chauffeurs') || []).filter(c => c.statut !== 'inactif');
     const chById = {}; chauffeurs.forEach(c => { chById[c.id] = c; });
 
@@ -144,6 +157,7 @@ const SimulateurPage = {
       <div class="d-grid sim-colonnes" style="grid-template-columns:minmax(280px,340px) 1fr;gap:var(--space-lg);align-items:start;">
         <div class="card sim-hypotheses" style="padding:var(--space-md);">
           <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:12px;">Hypothèses</div>
+          ${curseur('nbVehicules', 'Nombre de voitures', 1, 40, 1, 'Part de votre parc réel. Augmentez-le pour simuler un agrandissement.')}
           ${curseur('objectifCA', 'Objectif CA / jour', 20000, 120000, 1000)}
           ${curseur('commission', 'Commission Yango (%)', 0, 30, 1)}
           ${curseur('salaire', 'Salaire mensuel net', 100000, 400000, 10000)}
@@ -215,7 +229,7 @@ const SimulateurPage = {
   },
 
   _bind() {
-    const ids = ['objectifCA','commission','salaire','charges','recetteDoublure','energie','entretien',
+    const ids = ['nbVehicules','objectifCA','commission','salaire','charges','recetteDoublure','energie','entretien',
                  'location','fraisStructure','bonusHebdo','provision','tauxImpot','refRecette'];
     ids.forEach(id => {
       const el = document.getElementById('sim-' + id);
@@ -248,11 +262,13 @@ const SimulateurPage = {
 
   _calculer() {
     const p = this._params;
-    ['objectifCA','commission','salaire','charges','recetteDoublure','energie','entretien',
+    ['nbVehicules','objectifCA','commission','salaire','charges','recetteDoublure','energie','entretien',
      'location','fraisStructure','bonusHebdo','provision','tauxImpot','refRecette'].forEach(id => {
       const o = document.getElementById('sim-o-' + id);
-      if (o) o.textContent = (id === 'commission' || id === 'charges' || id === 'tauxImpot')
-        ? p[id] + ' %' : Utils.formatCurrency(p[id]);
+      if (!o) return;
+      if (id === 'nbVehicules') o.textContent = p[id] + (p[id] > 1 ? ' voitures' : ' voiture');
+      else if (id === 'commission' || id === 'charges' || id === 'tauxImpot') o.textContent = p[id] + ' %';
+      else o.textContent = Utils.formatCurrency(p[id]);
     });
 
     const [annee, mois] = this._mois.split('-').map(Number);
@@ -305,6 +321,8 @@ const SimulateurPage = {
     const collisions = repos.length - new Set(repos).size;
     if (collisions > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.2);color:#b45309;font-size:var(--font-size-sm);margin-bottom:10px;">${collisions} jour(s) de repos en double : plusieurs voitures se reposent le même jour, ce qui multiplie le nombre de doublures nécessaires. Décalez les jours de repos sur les fiches chauffeurs.</div>`;
     if (sim.arrets > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(185,28,28,.08);border:1px solid rgba(185,28,28,.2);color:#b91c1c;font-size:var(--font-size-sm);margin-bottom:10px;">${sim.arrets} jour(s)-voiture non couvert(s) : la règle des 6 jours consécutifs bloque. Il faut une doublure de plus.</div>`;
+    const ecartParc = titulaires.length - this._nbReels;
+    if (ecartParc !== 0 && this._nbReels > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#1d4ed8;font-size:var(--font-size-sm);margin-bottom:10px;">Simulation sur <strong>${titulaires.length} voiture${titulaires.length > 1 ? 's' : ''}</strong> alors que votre parc réel en compte <strong>${this._nbReels}</strong> — ${ecartParc > 0 ? `${ecartParc} voiture${ecartParc > 1 ? 's' : ''} ajoutée${ecartParc > 1 ? 's' : ''} pour l'hypothèse` : `${-ecartParc} voiture${-ecartParc > 1 ? 's' : ''} mise${-ecartParc > 1 ? 's' : ''} de côté`}. Ramenez le curseur sur ${this._nbReels} pour retrouver votre situation actuelle.</div>`;
     const sansRepos2 = titulaires.filter(t => t.repos2Defaut).length;
     if (sansRepos2 > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#1d4ed8;font-size:var(--font-size-sm);margin-bottom:10px;">Les salariés ont deux jours de repos par semaine. Pour ${sansRepos2} chauffeur(s), le second jour n'est pas encore renseigné : la simulation applique un jour par défaut, décalé de 3 jours du premier. Les totaux sont donc justes, mais les jours exacts sont à confirmer sur les fiches chauffeurs.</div>`;
     if (!alertes) alertes = `<div style="padding:10px 13px;border-radius:10px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);color:#15803d;font-size:var(--font-size-sm);margin-bottom:10px;">Chaque voiture roule tous les jours du mois, personne ne dépasse 6 jours consécutifs, et les repos sont décalés.</div>`;
