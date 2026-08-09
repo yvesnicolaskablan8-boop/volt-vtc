@@ -258,11 +258,27 @@ const SimulateurPage = {
     document.getElementById('sim-alerte').innerHTML = alertes;
 
     const l = (lib, val, couleur) => `<tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 8px;">${lib}</td><td style="padding:6px 8px;text-align:right;font-weight:700;${couleur ? 'color:' + couleur : ''}">${val}</td></tr>`;
+    // Base de calcul : la journee de voiture. Chaque journee est classee une
+    // fois et une seule, et le total revient toujours a voitures x jours.
+    const joursPossibles = titulaires.length * sim.nbJours;
+    const joursExploites = sim.joursTitulaires + sim.joursDoublures;
+    const pt = (couleur, txt) => `<div style="display:flex;align-items:baseline;gap:7px;margin-top:4px;"><span style="color:${couleur};font-weight:900;">&bull;</span><span>${txt}</span></div>`;
+    const libCA = p.doublureSalariee
+      ? `Journées conduites par un salarié (${fin.joursCA} j × ${F(p.objectifCA)})`
+      : `Journées conduites par le titulaire (${sim.joursTitulaires} j × ${F(p.objectifCA)})`;
     document.getElementById('sim-finance').innerHTML = `
+      <div style="padding:11px 13px;border-radius:10px;background:var(--bg-tertiary);font-size:var(--font-size-xs);line-height:1.55;margin-bottom:12px;">
+        <div style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:7px;">Base de calcul : la journée de voiture</div>
+        <div><strong>${titulaires.length} voiture${titulaires.length > 1 ? 's' : ''} × ${sim.nbJours} jours = ${joursPossibles} journées possibles</strong></div>
+        ${pt('#15803d', `<strong>${sim.joursTitulaires}</strong> conduites par le titulaire salarié → le CA vous revient (${F(p.objectifCA)}/j)`)}
+        ${sim.joursDoublures > 0 ? pt(p.doublureSalariee ? '#15803d' : '#2563eb', `<strong>${sim.joursDoublures}</strong> conduites par une doublure → ${p.doublureSalariee ? `doublure salariée, le CA vous revient aussi (${F(p.objectifCA)}/j)` : `doublure locataire : elle garde le CA et vous verse ${F(p.recetteDoublure)}/j`}`) : ''}
+        ${sim.arrets > 0 ? pt('#b91c1c', `<strong>${sim.arrets}</strong> sans conducteur → aucune recette`) : ''}
+        <div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border-color);"><strong>${joursExploites} journées exploitées</strong> sur ${joursPossibles} — parc utilisé à ${joursPossibles > 0 ? Math.round(joursExploites / joursPossibles * 100) : 0} %</div>
+      </div>
       <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);">
-        ${l(`CA produit par les salariés (${fin.joursCA} journées travaillées × ${F(p.objectifCA)})`, '+ ' + F(fin.caBrut))}
+        ${l(libCA, '+ ' + F(fin.caBrut))}
         ${l(`− Commission Yango (${p.commission} %)`, '− ' + F(fin.commission), '#b91c1c')}
-        ${!p.doublureSalariee ? l(`+ Recettes des doublures (${sim.joursDoublures} journées × ${F(p.recetteDoublure)})`, '+ ' + F(fin.recettesDoublures), '#15803d') : ''}
+        ${!p.doublureSalariee ? l(`Journées confiées à une doublure (${sim.joursDoublures} j × ${F(p.recetteDoublure)})`, '+ ' + F(fin.recettesDoublures), '#15803d') : ''}
         ${l(`− Masse salariale chargée (${fin.nbSalaries} salariés)`, '− ' + F(fin.masse), '#b91c1c')}
         ${l('− Énergie', '− ' + F(fin.coutEnergie), '#b91c1c')}
         ${l(`− Entretien, assurance, location (${titulaires.length} voitures)`, '− ' + F(fin.coutFixe), '#b91c1c')}
@@ -274,12 +290,6 @@ const SimulateurPage = {
         ${l(`− Impôts & taxes (${p.tauxImpot} %)`, '− ' + F(fin.impot), '#b91c1c')}
         <tr style="background:var(--bg-tertiary);"><td style="padding:8px;"><strong>BÉNÉFICE NET</strong></td><td style="padding:8px;text-align:right;"><strong style="font-size:1.05rem;color:${fin.net >= 0 ? '#15803d' : '#b91c1c'}">${F(fin.net)}</strong></td></tr>
       </table>
-      <div style="margin-top:10px;padding:9px 12px;border-radius:9px;background:var(--bg-tertiary);font-size:var(--font-size-xs);line-height:1.6;color:var(--text-secondary);">
-        <strong>D'où viennent ces journées ?</strong><br>
-        ${fin.joursCA} journées de salariés${p.doublureSalariee ? ' et de doublures' : ` + ${sim.joursDoublures} journées de doublures = ${fin.joursCA + sim.joursDoublures} journées`}
-        — soit ${titulaires.length} voiture${titulaires.length > 1 ? 's' : ''} × ${sim.nbJours} jours du mois${sim.arrets > 0 ? `, moins ${sim.arrets} journée${sim.arrets > 1 ? 's' : ''} sans conducteur` : ''}.<br>
-        Un salarié ne travaille pas 31 jours : avec ses 2 jours de repos par semaine il en fait environ ${titulaires.length > 0 ? Math.round(fin.joursCA / titulaires.length) : 0}. Les jours restants sont couverts par les doublures${p.doublureSalariee ? '.' : ', qui versent une recette au lieu de produire du CA — d\'où la ligne séparée.'}
-      </div>
       <div style="margin-top:12px;padding:11px 13px;border-radius:10px;background:${fin.ecart >= 0 ? 'rgba(22,163,74,.08)' : 'rgba(185,28,28,.08)'};border:1px solid ${fin.ecart >= 0 ? 'rgba(22,163,74,.2)' : 'rgba(185,28,28,.2)'};font-size:var(--font-size-sm);line-height:1.6;">
         <strong>Comparaison (résultat d'exploitation) :</strong> votre modèle de location actuel rapporterait <strong>${F(fin.referenceExploitation)}</strong>.
         Le salariat fait donc <strong>${fin.ecart >= 0 ? 'gagner' : 'perdre'} ${F(Math.abs(fin.ecart))}</strong> par mois.
