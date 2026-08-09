@@ -423,7 +423,18 @@ const DriverApp = {
    * une fois démarré, donc le suivi survit à la fermeture de l'app.
    * Retourne true si le mode natif est actif (le fallback web est alors ignoré).
    */
+  // INTERRUPTEUR : suivi GPS natif coupe le 2026-08-09.
+  // L'application se fermait juste apres la connexion. Tant que la cause exacte
+  // n'est pas etablie (il faut le journal du telephone), on ne sollicite plus
+  // du tout le plugin : mieux vaut une application sans GPS d'arriere-plan
+  // qu'une application inutilisable. Repasser a false pour reactiver.
+  _GPS_NATIF_COUPE: true,
+
   async _startNativeTracking() {
+    if (this._GPS_NATIF_COUPE) {
+      console.warn('[Geo] Suivi natif volontairement desactive — fallback web.');
+      return false;
+    }
     // Un plantage NATIF ne peut pas etre rattrape par un try/catch JavaScript :
     // il emporte l'application entiere. On pose donc un temoin AVANT de
     // toucher au plugin, et on ne l'efface qu'une fois le demarrage reussi.
