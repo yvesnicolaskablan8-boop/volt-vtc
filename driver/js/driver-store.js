@@ -17,12 +17,13 @@ const DriverStore = {
     const today = new Date().toISOString().split('T')[0];
     const monthStart = today.slice(0, 7) + '-01';
 
-    const [planningRes, versementsRes, coursesRes, signRes, chauffeurRes] = await Promise.all([
+    const [planningRes, versementsRes, coursesRes, signRes, chauffeurRes, caJourRes] = await Promise.all([
       supabase.from('fleet_planning').select('*').eq('chauffeur_id', id).eq('date', today),
       supabase.from('fleet_versements').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('date', { ascending: false }),
       supabase.from('fleet_courses').select('*').eq('chauffeur_id', id).gte('date_heure', monthStart + 'T00:00:00'),
       supabase.from('fleet_signalements').select('*').eq('chauffeur_id', id).in('statut', ['ouvert', 'en_cours']),
-      supabase.from('fleet_chauffeurs').select('prenom, nom, score_conduite, redevance_quotidienne, objectif_ca, objectif_ca_jour, type_contrat, role_flotte, jour_repos, jour_repos2, vehicule_assigne').eq('id', id).single()
+      supabase.from('fleet_chauffeurs').select('prenom, nom, score_conduite, redevance_quotidienne, objectif_ca, objectif_ca_jour, type_contrat, role_flotte, jour_repos, jour_repos2, vehicule_assigne').eq('id', id).single(),
+      supabase.from('fleet_ca_jour').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('date', { ascending: false })
     ]);
 
     const courses = (coursesRes.data || []).map(objToCamel);
@@ -30,10 +31,17 @@ const DriverStore = {
     const ch = chauffeurRes.data ? objToCamel(chauffeurRes.data) : {};
 
     // CA du jour : c'est lui qui compte pour un salarie, la ou un locataire
-    // regarde ce qu'il a verse. Les courses portent la date-heure complete.
-    const caJour = courses
-      .filter(c => String(c.dateHeure || '').slice(0, 10) === today)
-      .reduce((s, c) => s + (c.montantTtc || 0), 0);
+    // regarde ce qu'il a verse. Source de reference : fleet_ca_jour, alimentee
+    // depuis Yango. On retombe sur les courses si la synchronisation n'a pas
+    // encore tourne, plutot que d'afficher zero a un chauffeur qui a roule.
+    const caParJour = (caJourRes.data || []).map(objToCamel);
+    const ligneDuJour = caParJour.find(l => String(l.date).slice(0, 10) === today);
+    const caJour = ligneDuJour
+      ? Number(ligneDuJour.caBrut || 0)
+      : courses.filter(c => String(c.dateHeure || '').slice(0, 10) === today)
+               .reduce((s, c) => s + (c.montantTtc || 0), 0);
+    const caJourNet = ligneDuJour ? Number(ligneDuJour.caNet || 0) : null;
+    const commissionJour = ligneDuJour ? Number(ligneDuJour.commissionYango || 0) : null;
 
     return {
       planning: (planningRes.data || []).map(objToCamel),
@@ -43,10 +51,14 @@ const DriverStore = {
         courses: courses.length,
         ca: courses.reduce((s, c) => s + (c.montantTtc || 0), 0),
         caJour,
+        caJourNet,
+        commissionJour,
+        caSynchronise: !!ligneDuJour,
         versementsTotal: versements.reduce((s, v) => s + (v.montantVerse || 0), 0),
         scoreConduite: ch.scoreConduite || 0
       },
-      chauffeur: ch
+      chauffeur: ch,
+      caParJour
     };
   },
 

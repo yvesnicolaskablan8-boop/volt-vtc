@@ -246,13 +246,70 @@ async function fetchAllTransactions(from, to, maxPages = 10) {
 
 // =================== AGGREGATE TRANSACTIONS ===================
 
+const CASH_CATS = ['cash_collected', 'partner_ride_cash_collected'];
+const CARD_CATS = ['card', 'partner_ride_card', 'ewallet_payment', 'terminal_payment'];
+const YANGO_CATS = ['platform_ride_fee', 'platform_ride_vat'];
+const PARTNER_CAT = 'partner_ride_fee';
+
+/**
+ * Agrege les transactions PAR chauffeur en une seule passe.
+ * Appeler aggregateTransactions une fois par chauffeur relirait tout le
+ * tableau a chaque fois : inutilisable pour synchroniser une flotte entiere.
+ * Retourne { <yangoDriverId>: { caBrut, commissionYango, caNet, nbCourses } }.
+ */
+function aggregateParChauffeur(transactions) {
+  const parChauffeur = {};
+  const commandes = {};
+  for (const tx of transactions || []) {
+    const id = tx.driver_profile_id;
+    if (!id) continue;
+    const cat = tx.category_id || '';
+    const montant = parseFloat(tx.amount || 0);
+    const a = parChauffeur[id] || (parChauffeur[id] = { caBrut: 0, commissionYango: 0, caNet: 0, nbCourses: 0 });
+
+    if (CASH_CATS.includes(cat) || CARD_CATS.includes(cat)) {
+      a.caBrut += montant;
+      // Une course peut generer plusieurs lignes : on compte les commandes
+      // distinctes quand l'identifiant est fourni, sinon les encaissements.
+      const cmd = tx.order_id || tx.ride_id || null;
+      if (cmd) {
+        const cle = id + '|' + cmd;
+        if (!commandes[cle]) { commandes[cle] = true; a.nbCourses += 1; }
+      } else {
+        a.nbCourses += 1;
+      }
+    } else if (YANGO_CATS.includes(cat)) {
+      a.commissionYango += Math.abs(montant);
+    }
+  }
+  for (const id of Object.keys(parChauffeur)) {
+    const a = parChauffeur[id];
+    a.caNet = a.caBrut - a.commissionYango;
+  }
+  return parChauffeur;
+}
+
+/** Ecriture (upsert) dans Supabase avec le jeton de l'appelant. */
+async function supabaseUpsert(table, rows, token, conflictCols) {
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'resolution=merge-duplicates,return=minimal',
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const q = conflictCols ? `?on_conflict=${encodeURIComponent(conflictCols)}` : '';
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${q}`, {
+    method: 'POST', headers, body: JSON.stringify(rows),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase upsert ${res.status}: ${text.substring(0, 250)}`);
+  }
+  return true;
+}
+
 function aggregateTransactions(transactions, filterDriverId = null) {
   let cash = 0, card = 0, commissionYango = 0, commissionPartenaire = 0;
-
-  const CASH_CATS = ['cash_collected', 'partner_ride_cash_collected'];
-  const CARD_CATS = ['card', 'partner_ride_card', 'ewallet_payment', 'terminal_payment'];
-  const YANGO_CATS = ['platform_ride_fee', 'platform_ride_vat'];
-  const PARTNER_CAT = 'partner_ride_fee';
 
   for (const tx of transactions) {
     if (filterDriverId && tx.driver_profile_id !== filterDriverId) continue;
@@ -288,6 +345,8 @@ module.exports = {
   handleOptions,
   fetchAllTransactions,
   aggregateTransactions,
+  aggregateParChauffeur,
+  supabaseUpsert,
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   YANGO_BASE,

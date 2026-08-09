@@ -3,6 +3,7 @@
  * Routes via ?action=<name> to stay within Vercel Hobby plan limits.
  *
  * Actions:
+ *   GET  ?action=sync-ca        Ecrit le CA du jour de chaque chauffeur en base
  *   GET  ?action=test           Simple connection test
  *   GET  ?action=balance        Driver balance
  *   GET  ?action=driver-stats   Per-driver revenue + activity
@@ -33,7 +34,78 @@ const {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   YANGO_BASE,
+  aggregateParChauffeur,
+  supabaseUpsert,
 } = require('./_lib/helpers');
+
+// ---------- sync-ca : CA quotidien Yango -> base ----------
+/**
+ * Ecrit le CA du jour de CHAQUE chauffeur dans fleet_ca_jour.
+ *
+ * C'est le maillon qui manquait : l'integration Yango etait en lecture seule,
+ * donc l'application chauffeur n'avait aucune source pour l'objectif, le
+ * surplus et les bonus — elle affichait 0 F a des chauffeurs qui avaient
+ * travaille.
+ *
+ * Les transactions sont recuperees UNE fois puis agregees par chauffeur :
+ * appeler driver-stats par chauffeur relirait tout le journal a chaque fois.
+ */
+async function handleSyncCa(req, res) {
+  const user = await verifyAuth(req);
+  if (!user) return res.status(401).json({ error: 'Non autorise' });
+
+  try {
+    await assertYangoCreds();
+    const token = getToken(req);
+
+    // Journee locale d'Abidjan (UTC+0) : la date demandee, ou aujourd'hui.
+    const jour = (req.query.date || new Date().toISOString().slice(0, 10)).slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(jour)) {
+      return res.status(400).json({ error: 'Date attendue au format AAAA-MM-JJ' });
+    }
+    const from = `${jour}T00:00:00+00:00`;
+    const to   = `${jour}T23:59:59+00:00`;
+
+    const transactions = await fetchAllTransactions(from, to, 10);
+    const parYango = aggregateParChauffeur(transactions);
+
+    // Correspondance chauffeur Yango -> chauffeur Pilote
+    const chauffeurs = await supabaseQuery(
+      'fleet_chauffeurs', 'select=id,yango_driver_id&yango_driver_id=not.is.null', token);
+
+    const lignes = [];
+    for (const ch of chauffeurs || []) {
+      const a = parYango[ch.yango_driver_id];
+      if (!a) continue;                       // aucune course ce jour-la
+      lignes.push({
+        id: `CA-${ch.id}-${jour}`,            // deterministe : reexecuter ne duplique pas
+        chauffeur_id: ch.id,
+        date: jour,
+        ca_brut: Math.round(a.caBrut),
+        commission_yango: Math.round(a.commissionYango),
+        ca_net: Math.round(a.caNet),
+        nb_courses: a.nbCourses,
+        source: 'yango',
+        maj_le: new Date().toISOString(),
+      });
+    }
+
+    if (lignes.length) await supabaseUpsert('fleet_ca_jour', lignes, token, 'chauffeur_id,date');
+
+    res.json({
+      success: true,
+      date: jour,
+      chauffeursMisAJour: lignes.length,
+      chauffeursLies: (chauffeurs || []).length,
+      chauffeursActifsChezYango: Object.keys(parYango).length,
+      caTotal: lignes.reduce((s, l) => s + l.ca_brut, 0),
+      transactionsLues: transactions.length,
+    });
+  } catch (e) {
+    console.error('[sync-ca]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+}
 
 // =================== INDIVIDUAL HANDLERS ===================
 
@@ -1178,6 +1250,7 @@ const ACTION_MAP = {
   'recharge':      handleRecharge,
   'sync':          handleSync,
   'ca-report':     handleCaReport,
+  'sync-ca':       handleSyncCa,
 };
 
 module.exports = async function handler(req, res) {
