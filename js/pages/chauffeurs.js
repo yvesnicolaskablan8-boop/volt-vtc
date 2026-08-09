@@ -1172,7 +1172,11 @@ const ChauffeursPage = {
       { name: 'objectifCA', label: 'Objectif CA Yango journalier (FCFA)', type: 'number', min: 0, step: 1000, placeholder: 'Ex: 30000', default: 0 },
       { type: 'row-end' },
       { type: 'row-start' },
-      { name: 'jourRepos', label: 'Jour de repos hebdomadaire', type: 'select', placeholder: 'Aucun (roule 7j/7)', options: [
+      { name: 'jourRepos', label: '1er jour de repos hebdomadaire', type: 'select', placeholder: 'Aucun (roule 7j/7)', options: [
+        { value: '1', label: 'Lundi' }, { value: '2', label: 'Mardi' }, { value: '3', label: 'Mercredi' },
+        { value: '4', label: 'Jeudi' }, { value: '5', label: 'Vendredi' }, { value: '6', label: 'Samedi' }, { value: '0', label: 'Dimanche' }
+      ] },
+      { name: 'jourRepos2', label: '2e jour de repos (salaries)', type: 'select', placeholder: 'Aucun', options: [
         { value: '1', label: 'Lundi' }, { value: '2', label: 'Mardi' }, { value: '3', label: 'Mercredi' },
         { value: '4', label: 'Jeudi' }, { value: '5', label: 'Vendredi' }, { value: '6', label: 'Samedi' }, { value: '0', label: 'Dimanche' }
       ] },
