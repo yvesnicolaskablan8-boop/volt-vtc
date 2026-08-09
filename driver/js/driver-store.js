@@ -249,7 +249,8 @@ const DriverStore = {
       derniereMaj: modele.derniereMaj || null,
       texte: this._preremplirContrat(modele.texte || '', ch, ent, immat, modele.employeur || {}),
       chauffeur: ch,
-      entreprise: ent
+      entreprise: ent,
+      employeur: modele.employeur || {}
     };
   },
 

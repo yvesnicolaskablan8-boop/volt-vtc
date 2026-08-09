@@ -74,7 +74,8 @@ const ContratPage = {
     };
 
     // Construire les articles dynamiquement
-    const employeurNom = ent.nom || c.employeur || 'L\u2019Employeur';
+    const emp = (data.employeur) || {};
+    const employeurNom = emp.raisonSociale || ent.nom || 'L\u2019Employeur';
 
     // --- Bandeau mise a jour contrat ---
     const updateBanner = needsRevalidation ? `
@@ -155,9 +156,11 @@ const ContratPage = {
       <!-- Bandeau employeur -->
       <div style="border-radius:1.25rem;background:linear-gradient(135deg,#0f172a,#1e293b);padding:1.25rem;margin-bottom:1rem;color:white">
         <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5);margin-bottom:8px;font-weight:700">Employeur</div>
-        <div style="font-size:1rem;font-weight:800;margin-bottom:4px">${employeurNom}</div>
-        ${ent.adresse ? `<div style="font-size:0.75rem;color:rgba(255,255,255,0.7)">${ent.adresse}</div>` : ''}
-        ${ent.telephone ? `<div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin-top:4px">${ent.telephone}</div>` : ''}
+        <div style="font-size:1rem;font-weight:800;margin-bottom:4px">${this._esc(employeurNom)}</div>
+        ${emp.formeJuridique ? `<div style="font-size:0.72rem;color:rgba(255,255,255,0.7)">${this._esc(emp.formeJuridique)}${emp.capital ? ' au capital de ' + this._esc(emp.capital) : ''}</div>` : ''}
+        ${emp.rccm ? `<div style="font-size:0.72rem;color:rgba(255,255,255,0.6);margin-top:3px">RCCM ${this._esc(emp.rccm)}</div>` : ''}
+        ${(emp.siege || ent.adresse) ? `<div style="font-size:0.72rem;color:rgba(255,255,255,0.6);margin-top:3px">${this._esc(emp.siege || ent.adresse)}</div>` : ''}
+        ${emp.gerant ? `<div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:3px">Represente par ${this._esc(emp.gerant)}</div>` : ''}
       </div>
 
       <!-- Infos salarie -->
