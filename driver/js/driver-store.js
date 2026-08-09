@@ -207,15 +207,100 @@ const DriverStore = {
     return data ? objToCamel(data) : null;
   },
 
+  /**
+   * Contrat du chauffeur : le modele vient des parametres, les valeurs
+   * personnelles de sa fiche. Le texte est renvoye deja prerempli.
+   */
   async getContrat() {
-    // Contract data stored in chauffeur profile
     const id = this._chauffeurId();
-    const { data } = await supabase.from('fleet_chauffeurs').select('date_debut_contrat, date_fin_contrat, redevance_quotidienne').eq('id', id).single();
-    return data ? objToCamel(data) : null;
+    const [chRes, setRes] = await Promise.all([
+      supabase.from('fleet_chauffeurs')
+        .select('prenom, nom, telephone, sexe, date_debut_contrat, date_fin_contrat, redevance_quotidienne, salaire_mensuel, objectif_ca_jour, jour_repos, jour_repos2, vehicule_assigne, type_contrat, contrat_accepte, contrat_accepte_le, contrat_version')
+        .eq('id', id).single(),
+      supabase.from('fleet_settings').select('contrat, entreprise').limit(1).single()
+    ]);
+    if (!chRes.data) return null;
+
+    const ch = objToCamel(chRes.data);
+    const modele = (setRes.data && setRes.data.contrat) || {};
+    const ent = (setRes.data && setRes.data.entreprise) || {};
+
+    let immat = '';
+    if (ch.vehiculeAssigne) {
+      const { data: v } = await supabase.from('fleet_vehicules').select('immatriculation').eq('id', ch.vehiculeAssigne).single();
+      immat = (v && v.immatriculation) || '';
+    }
+
+    return {
+      version: modele.version || 1,
+      typeContrat: modele.typeContrat || 'CDI',
+      poste: modele.poste || 'Chauffeur VTC',
+      derniereMaj: modele.derniereMaj || null,
+      texte: this._preremplirContrat(modele.texte || '', ch, ent, immat),
+      chauffeur: ch,
+      entreprise: ent
+    };
   },
 
-  async accepterContrat() {
-    return { success: true }; // Placeholder
+  /** Remplace les {{champs}} du modele par les donnees reelles du chauffeur. */
+  _preremplirContrat(texte, ch, ent, immat) {
+    if (!texte) return '';
+    const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    const somme = (n) => Number(n || 0).toLocaleString('fr-FR');
+    const jour = (j) => (j === 0 || j) ? JOURS[Number(j)] : '__________';
+    const date = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '__________';
+    const objectif = Number(ch.objectifCaJour || 0);
+
+    const valeurs = {
+      employeur: ent.nom || ent.raisonSociale || '__________',
+      siege: ent.adresse || '__________',
+      gerant: ent.gerant || ent.representant || '__________',
+      civilite: ch.sexe === 'F' ? 'Madame' : 'Monsieur',
+      nomComplet: `${ch.prenom || ''} ${ch.nom || ''}`.trim() || '__________',
+      telephone: ch.telephone || '__________',
+      dateDebut: date(ch.dateDebutContrat),
+      plateforme: (ent.plateforme) || 'Yango',
+      repos1: jour(ch.jourRepos),
+      repos2: jour(ch.jourRepos2),
+      heureDebut: ent.heureDebutService || '6 h 00',
+      heureFin: ent.heureFinService || 'minuit',
+      salaire: somme(ch.salaireMensuel),
+      jourPaie: ent.jourPaie || '5',
+      objectif: somme(objectif),
+      objectifSemaine: somme(objectif * 5),
+      immatriculation: immat || '__________'
+    };
+    return texte.replace(/\{\{(\w+)\}\}/g, (m, cle) => (cle in valeurs) ? valeurs[cle] : m);
+  },
+
+  /**
+   * Enregistre VRAIMENT l'acceptation. Cette fonction ne faisait rien
+   * auparavant : le chauffeur signait, l'ecran confirmait, et aucune trace
+   * n'etait ecrite — la signature n'existait pas.
+   */
+  async accepterContrat(version) {
+    const id = this._chauffeurId();
+    if (!id) return { success: false, error: 'Chauffeur inconnu' };
+    const { error } = await supabase.from('fleet_chauffeurs').update({
+      contrat_accepte: true,
+      contrat_accepte_le: new Date().toISOString(),
+      contrat_version: Number(version) || 1,
+      contrat_signe: true
+    }).eq('id', id);
+    if (error) {
+      console.error('[Contrat] Acceptation non enregistree :', error.message);
+      return { success: false, error: error.message };
+    }
+    // La copie locale doit refleter la base, sinon l'ecran redemanderait
+    // la signature au prochain affichage.
+    try {
+      const cle = 'pilote_driver_chauffeur';
+      const ch = JSON.parse(localStorage.getItem(cle) || '{}');
+      ch.contratAccepte = true; ch.contratVersion = Number(version) || 1;
+      ch.contratAccepteLe = new Date().toISOString();
+      localStorage.setItem(cle, JSON.stringify(ch));
+    } catch (e) {}
+    return { success: true };
   },
 
   async getVehicule() {

@@ -23,9 +23,10 @@ const ContratPage = {
       return;
     }
 
-    const { contrat, entreprise, chauffeur } = data;
-    const c = contrat || {};
-    const ent = entreprise || {};
+    const chauffeur = data.chauffeur || {};
+    const c = data;                       // version, typeContrat, poste, derniereMaj
+    const ent = data.entreprise || {};
+    this._version = data.version || 1;    // relu au moment de l'acceptation
 
     const nom = `${chauffeur.prenom || '____'} ${chauffeur.nom || '____'}`.trim();
     const telephone = chauffeur.telephone || '____';
@@ -205,6 +206,22 @@ const ContratPage = {
         </div>
       ` : ''}
 
+      <!-- Texte integral du contrat, prerempli avec les donnees du chauffeur -->
+      ${data.texte ? `
+        <div style="border-radius:1.25rem;background:white;border:1px solid #f1f5f9;box-shadow:0 1px 6px rgba(0,0,0,0.04);padding:1.25rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:36px;height:36px;border-radius:0.75rem;background:#0f172a12;color:#0f172a;display:flex;align-items:center;justify-content:center">
+              <iconify-icon icon="solar:document-bold-duotone" style="font-size:1.2rem"></iconify-icon>
+            </div>
+            <div style="font-weight:800;font-size:0.95rem;color:#0f172a">Texte integral du contrat</div>
+          </div>
+          <div style="max-height:340px;overflow-y:auto;padding:12px;background:#f8fafc;border-radius:0.9rem;border:1px solid #e2e8f0">
+            <pre style="margin:0;white-space:pre-wrap;word-wrap:break-word;font-family:inherit;font-size:0.78rem;line-height:1.65;color:#334155">${this._esc(data.texte)}</pre>
+          </div>
+          <div style="font-size:0.7rem;color:#94a3b8;margin-top:8px;text-align:center">Faites defiler pour lire l'integralite</div>
+        </div>
+      ` : ''}
+
       <!-- Acceptation du contrat -->
       ${(!mustAccept && chauffeur.contratAccepte) ? `
         <div style="border-radius:1.25rem;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);padding:1.5rem;margin-bottom:1rem;text-align:center">
@@ -266,6 +283,12 @@ const ContratPage = {
     }
   },
 
+  /** Echappement : le texte du contrat vient de la base, jamais du code. */
+  _esc(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g,
+      c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  },
+
   async _accepter() {
     const btn = document.getElementById('btn-accepter-contrat');
     if (!btn) return;
@@ -295,7 +318,7 @@ const ContratPage = {
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
     }
 
-    const result = await DriverStore.accepterContrat();
+    const result = await DriverStore.accepterContrat(this._version);
 
     if (result && result.success) {
       DriverToast.show('Contrat accept\u00e9 avec succ\u00e8s !', 'success');
