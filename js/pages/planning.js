@@ -379,7 +379,7 @@ const PlanningPage = {
       <div class="card" style="margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);display:flex;gap:var(--space-lg);flex-wrap:wrap;font-size:var(--font-size-xs);color:var(--text-secondary);">
         <span><strong>${filledSlots}</strong> créneau${filledSlots > 1 ? 'x' : ''} programmé${filledSlots > 1 ? 's' : ''}</span>
         <span><strong>${uniqueAbsDrivers}</strong> chauffeur${uniqueAbsDrivers > 1 ? 's' : ''} absent${uniqueAbsDrivers > 1 ? 's' : ''}</span>
-        <span title="Jours-voiture couverts sur le total possible cette semaine">Couverture flotte : <strong style="color:${couv.pct >= 95 ? '#16a34a' : couv.pct >= 75 ? '#b45309' : '#b91c1c'}">${couv.couverts}/${couv.total} jours (${couv.pct}%)</strong>${couv.perte > 0 ? ` · <span style="color:#b91c1c" title="Recette non versée (location) ou CA non produit (salarié)">${Utils.formatCurrency(couv.perte)} non produits</span>` : ''}</span>
+        <span title="Journées d'exploitation assurées sur le total possible cette semaine">Couverture flotte : <strong style="color:${couv.pct >= 95 ? '#16a34a' : couv.pct >= 75 ? '#b45309' : '#b91c1c'}">${couv.couverts}/${couv.total} jours (${couv.pct}%)</strong>${couv.perte > 0 ? ` · <span style="color:#b91c1c" title="Recette non versée (location) ou CA non produit (salarié)">${Utils.formatCurrency(couv.perte)} non produits</span>` : ''}</span>
         <button class="btn btn-sm btn-primary" id="btn-gen-semaine" style="margin-left:auto;"><iconify-icon icon="solar:magic-stick-3-bold-duotone"></iconify-icon> Compléter la semaine</button>
       </div>
       <div class="card pcal-wrap" style="padding:var(--space-md);">

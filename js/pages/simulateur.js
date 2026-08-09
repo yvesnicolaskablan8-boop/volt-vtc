@@ -305,7 +305,7 @@ const SimulateurPage = {
       <div class="d-card"><div class="d-lbl">Chauffeurs nécessaires</div>
         <div class="d-val">${titulaires.length + sim.doublures.length}</div>
         <div class="d-sub">${titulaires.length} titulaires + ${sim.doublures.length} doublure${sim.doublures.length > 1 ? 's' : ''}${aRecruter > 0 ? ` · ${aRecruter} à recruter` : ''}</div></div>
-      <div class="d-card"><div class="d-lbl">Jours-voiture couverts</div>
+      <div class="d-card"><div class="d-lbl">Journées d'exploitation</div>
         <div class="d-val" style="color:${sim.arrets === 0 ? '#15803d' : '#b91c1c'}">${titulaires.length * sim.nbJours - sim.arrets}/${titulaires.length * sim.nbJours}</div>
         <div class="d-sub">${sim.arrets === 0 ? 'aucune voiture à l\'arrêt' : sim.arrets + ' non couvert(s)'}</div></div>
       <div class="d-card"><div class="d-lbl">Résultat d'exploitation</div>
@@ -338,8 +338,8 @@ const SimulateurPage = {
     const moyArr = sim.nbJours - moyTit - moyDoub;
     const pt = (couleur, txt) => `<div style="display:flex;align-items:baseline;gap:7px;margin-top:4px;"><span style="color:${couleur};font-weight:900;">&bull;</span><span>${txt}</span></div>`;
     const libCA = p.doublureSalariee
-      ? `Jours-voiture conduits par un salarié (${fin.joursCA} × ${F(p.objectifCA)})`
-      : `Jours-voiture conduits par les titulaires (${sim.joursTitulaires} × ${F(p.objectifCA)})`;
+      ? `Journées d'exploitation assurées par un salarié (${fin.joursCA} × ${F(p.objectifCA)})`
+      : `Journées d'exploitation assurées par les titulaires (${sim.joursTitulaires} × ${F(p.objectifCA)})`;
     document.getElementById('sim-finance').innerHTML = `
       <div style="padding:11px 13px;border-radius:10px;background:var(--bg-tertiary);font-size:var(--font-size-xs);line-height:1.55;margin-bottom:12px;">
         <div style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:9px;">Base de calcul</div>
@@ -349,16 +349,16 @@ const SimulateurPage = {
         ${moyArr > 0 ? pt('#b91c1c', `environ <strong>${moyArr} jours</strong> sans conducteur`) : ''}
         <div style="margin-top:3px;color:var(--text-muted);">${moyTit} + ${moyDoub}${moyArr > 0 ? ' + ' + moyArr : ''} = ${sim.nbJours} jours. Aucun chauffeur ne roule plus de ${sim.nbJours} jours.</div>
         <div style="font-weight:800;margin-top:11px;">2 — Le parc entier : on additionne les ${nbV} voiture${nbV > 1 ? 's' : ''}</div>
-        <div style="color:var(--text-muted);margin-bottom:3px;">L'unité devient le <strong>jour-voiture</strong> : une voiture qui roule un jour.</div>
-        ${pt('#15803d', `<strong>${sim.joursTitulaires} jours-voiture</strong> assurés par les titulaires → le CA vous revient (${F(p.objectifCA)}/j)`)}
-        ${sim.joursDoublures > 0 ? pt(p.doublureSalariee ? '#15803d' : '#2563eb', `<strong>${sim.joursDoublures} jours-voiture</strong> assurés par les doublures → ${p.doublureSalariee ? `doublures salariées, le CA vous revient aussi (${F(p.objectifCA)}/j)` : `doublures locataires : elles gardent le CA et vous versent ${F(p.recetteDoublure)}/j`}`) : ''}
-        ${sim.arrets > 0 ? pt('#b91c1c', `<strong>${sim.arrets} jours-voiture</strong> sans conducteur → aucune recette`) : ''}
-        <div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border-color);"><strong>${joursExploites} jours-voiture exploités</strong> sur ${joursPossibles} possibles (${nbV} × ${sim.nbJours}) — parc utilisé à ${joursPossibles > 0 ? Math.round(joursExploites / joursPossibles * 100) : 0} %</div>
+        <div style="color:var(--text-muted);margin-bottom:3px;">L'unité devient la <strong>journée d'exploitation</strong> : une voiture qui roule un jour.</div>
+        ${pt('#15803d', `<strong>${sim.joursTitulaires} journées d'exploitation</strong> assurées par les titulaires → le CA vous revient (${F(p.objectifCA)}/j)`)}
+        ${sim.joursDoublures > 0 ? pt(p.doublureSalariee ? '#15803d' : '#2563eb', `<strong>${sim.joursDoublures} journées d'exploitation</strong> assurées par les doublures → ${p.doublureSalariee ? `doublures salariées, le CA vous revient aussi (${F(p.objectifCA)}/j)` : `doublures locataires : elles gardent le CA et vous versent ${F(p.recetteDoublure)}/j`}`) : ''}
+        ${sim.arrets > 0 ? pt('#b91c1c', `<strong>${sim.arrets} journées d'exploitation</strong> perdues, sans conducteur → aucune recette`) : ''}
+        <div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border-color);"><strong>${joursExploites} journées d'exploitation</strong> sur ${joursPossibles} possibles (${nbV} × ${sim.nbJours}) — parc utilisé à ${joursPossibles > 0 ? Math.round(joursExploites / joursPossibles * 100) : 0} %</div>
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);">
         ${l(libCA, '+ ' + F(fin.caBrut))}
         ${l(`− Commission Yango (${p.commission} %)`, '− ' + F(fin.commission), '#b91c1c')}
-        ${!p.doublureSalariee ? l(`Jours-voiture confiés aux doublures (${sim.joursDoublures} × ${F(p.recetteDoublure)})`, '+ ' + F(fin.recettesDoublures), '#15803d') : ''}
+        ${!p.doublureSalariee ? l(`Journées d'exploitation confiées aux doublures (${sim.joursDoublures} × ${F(p.recetteDoublure)})`, '+ ' + F(fin.recettesDoublures), '#15803d') : ''}
         ${l(`− Masse salariale chargée (${fin.nbSalaries} salariés)`, '− ' + F(fin.masse), '#b91c1c')}
         ${l('− Énergie', '− ' + F(fin.coutEnergie), '#b91c1c')}
         ${l(`− Entretien, assurance, location (${titulaires.length} voitures)`, '− ' + F(fin.coutFixe), '#b91c1c')}
@@ -398,7 +398,7 @@ const SimulateurPage = {
       <div class="d-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;">
         ${tuile('Bénéfice net / jour', netJour, `sur ${sim.nbJours} jours`, netJour >= 0 ? vert : rouge)}
         ${tuile('Par voiture et par jour', netJourVoiture, `${titulaires.length} voiture${titulaires.length > 1 ? 's' : ''}`, netJourVoiture >= 0 ? vert : rouge)}
-        ${tuile('Par jour réellement roulé', netParJourRoule, `${joursVoiture} jours-voiture`, netParJourRoule >= 0 ? vert : rouge)}
+        ${tuile('Par jour réellement roulé', netParJourRoule, `${joursVoiture} journées d'exploitation`, netParJourRoule >= 0 ? vert : rouge)}
         ${tuile('Seuil de couverture', seuilJourVoiture, 'à couvrir / voiture / jour', 'var(--pilote-blue)')}
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);">
