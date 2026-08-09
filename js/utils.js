@@ -414,7 +414,15 @@ const Utils = {
    */
   simulerPlanningMois({ annee, mois, titulaires, doublures }) {
     const nbJours = new Date(annee, mois + 1, 0).getDate();
-    const tit = (titulaires || []).map(t => ({ ...t, jours: [] }));
+    // `repos` accepte un jour unique ou une liste (salaries : 2 jours par semaine)
+    const joursRepos = (t) => {
+      if (Array.isArray(t.repos)) return t.repos.filter(x => x === 0 || x);
+      const l = [];
+      if (t.repos === 0 || t.repos) l.push(Number(t.repos));
+      if (t.repos2 === 0 || t.repos2) l.push(Number(t.repos2));
+      return l;
+    };
+    const tit = (titulaires || []).map(t => ({ ...t, repos: joursRepos(t), jours: [] }));
     const doub = (doublures || []).map(d => ({ ...d, aRecruter: false, jours: [] }));
     const cleDe = (p) => p.id || p.nom;
 
@@ -433,12 +441,16 @@ const Utils = {
       const dow = new Date(annee, mois, j).getDay();
       for (let v = 0; v < tit.length; v++) {
         const T = tit[v];
-        if (T.repos !== dow) {
+        if (!T.repos.includes(dow)) {
           if (consec(cleDe(T), j) >= 6) { grille[v].push(null); arrets++; continue; }
           marquer(cleDe(T), j); T.jours.push(j);
           grille[v].push({ nom: T.nom, role: 'titulaire' });
         } else {
-          let d = doub.find(x => !(prisParJour[j] && prisParJour[j].has(cleDe(x))) && consec(cleDe(x), j) < 6);
+          // Repartition equitable : parmi les doublures disponibles, celle qui a
+          // travaille le moins de jours jusqu'ici. Sans ce tri, la premiere de la
+          // liste absorbe presque tous les remplacements.
+          const dispo = doub.filter(x => !(prisParJour[j] && prisParJour[j].has(cleDe(x))) && consec(cleDe(x), j) < 6);
+          let d = dispo.sort((a, b) => a.jours.length - b.jours.length)[0];
           if (!d) {
             d = { id: 'AUTO-' + (doub.length + 1), nom: 'Doublure ' + (doub.length + 1), aRecruter: true, jours: [] };
             doub.push(d);

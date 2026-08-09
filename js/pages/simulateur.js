@@ -59,6 +59,7 @@ const SimulateurPage = {
         id: ch ? ch.id : 'VIDE-' + v.id,
         nom: ch ? `${ch.prenom} ${ch.nom}` : `(sans titulaire) ${v.immatriculation || ''}`.trim(),
         repos: (ch && (ch.jourRepos === 0 || ch.jourRepos)) ? Number(ch.jourRepos) : i % 7,
+        repos2: (ch && (ch.jourRepos2 === 0 || ch.jourRepos2)) ? Number(ch.jourRepos2) : null,
         vehicule: v.immatriculation || `${v.marque || ''} ${v.modele || ''}`.trim() || v.id,
         reel: !!ch
       });
@@ -142,6 +143,10 @@ const SimulateurPage = {
           <div class="card" style="padding:var(--space-md);margin-bottom:var(--space-md);">
             <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Projection financière</div>
             <div id="sim-finance"></div>
+          </div>
+          <div class="card" style="padding:var(--space-md);margin-bottom:var(--space-md);">
+            <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Au jour le jour</div>
+            <div id="sim-jour"></div>
           </div>
           <div class="card" style="padding:var(--space-md);">
             <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Calendrier du mois</div>
@@ -270,6 +275,38 @@ const SimulateurPage = {
         </div>
       </div>`;
 
+    // --- Vue journalière : le mois ramené au jour ---
+    const joursVoiture = titulaires.length * sim.nbJours - sim.arrets;
+    const chargesTotales = fin.masse + fin.coutEnergie + fin.coutFixe + p.fraisStructure + fin.bonus + fin.provisions;
+    const netJour = fin.net / sim.nbJours;
+    const netJourVoiture = titulaires.length > 0 ? fin.net / sim.nbJours / titulaires.length : 0;
+    const netParJourRoule = joursVoiture > 0 ? fin.net / joursVoiture : 0;
+    const seuilJourVoiture = titulaires.length > 0 ? (chargesTotales / sim.nbJours) / titulaires.length : 0;
+    const tuile = (lbl, val, sous, couleur) => `
+      <div class="d-card" style="padding:12px;">
+        <div class="d-lbl" style="font-size:11px;">${lbl}</div>
+        <div style="font-size:1.25rem;font-weight:900;color:${couleur};margin-top:2px;">${F(val)}</div>
+        <div class="d-sub">${sous}</div>
+      </div>`;
+    const vert = '#15803d', rouge = '#b91c1c';
+    document.getElementById('sim-jour').innerHTML = `
+      <div class="d-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;">
+        ${tuile('Bénéfice net / jour', netJour, `sur ${sim.nbJours} jours`, netJour >= 0 ? vert : rouge)}
+        ${tuile('Par voiture et par jour', netJourVoiture, `${titulaires.length} voiture${titulaires.length > 1 ? 's' : ''}`, netJourVoiture >= 0 ? vert : rouge)}
+        ${tuile('Par jour réellement roulé', netParJourRoule, `${joursVoiture} jours-voiture`, netParJourRoule >= 0 ? vert : rouge)}
+        ${tuile('Seuil de couverture', seuilJourVoiture, 'à couvrir / voiture / jour', 'var(--pilote-blue)')}
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);">
+        ${l('Produits encaissés par jour', '+ ' + F((fin.caNet + fin.recettesDoublures) / sim.nbJours), vert)}
+        ${l('Charges totales par jour', '− ' + F(chargesTotales / sim.nbJours), rouge)}
+        ${l("<strong>= Résultat d'exploitation / jour</strong>", '<strong>' + F(fin.exploitation / sim.nbJours) + '</strong>')}
+        <tr style="background:var(--bg-tertiary);"><td style="padding:7px 8px;"><strong>= Bénéfice net / jour</strong></td><td style="padding:7px 8px;text-align:right;"><strong style="color:${netJour >= 0 ? vert : rouge}">${F(netJour)}</strong></td></tr>
+      </table>
+      <div class="d-sub" style="margin-top:8px;line-height:1.5;">
+        Le <strong>seuil de couverture</strong> est ce que chaque voiture doit rapporter chaque jour pour payer
+        l'ensemble des charges. En dessous, la journée coûte de l'argent.
+      </div>`;
+
     const JJ = ['D','L','M','M','J','V','S'];
     const NOMS_J = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
     const court = (nom) => { const m = String(nom || '').trim().split(/\s+/)[0]; return m.length > 8 ? m.slice(0, 8) : m; };
@@ -281,7 +318,7 @@ const SimulateurPage = {
     th += '</tr>';
     let rows = '';
     titulaires.forEach((t, v) => {
-      rows += `<tr><td style="position:sticky;left:0;background:var(--bg-secondary);z-index:1;padding:5px 9px;text-align:left;font-size:11px;font-weight:700;border-bottom:1px solid var(--border-color);">${Utils.escHtml(t.vehicule || ('Voiture ' + (v + 1)))}<div style="font-weight:400;font-size:9.5px;color:var(--text-muted);">${Utils.escHtml(t.nom)} · repos ${NOMS_J[t.repos]}</div></td>`;
+      rows += `<tr><td style="position:sticky;left:0;background:var(--bg-secondary);z-index:1;padding:5px 9px;text-align:left;font-size:11px;font-weight:700;border-bottom:1px solid var(--border-color);">${Utils.escHtml(t.vehicule || ('Voiture ' + (v + 1)))}<div style="font-weight:400;font-size:9.5px;color:var(--text-muted);">${Utils.escHtml(t.nom)} · repos ${[t.repos, t.repos2].filter(x => x === 0 || x).map(x => NOMS_J[x]).join(' et ')}</div></td>`;
       for (let j = 0; j < sim.nbJours; j++) {
         const c = sim.grille[v][j];
         const bg = !c ? '#f1f5f9' : (c.role === 'titulaire' ? '#dbeafe' : '#fef3c7');

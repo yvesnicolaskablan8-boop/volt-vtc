@@ -1286,6 +1286,15 @@ const PlanningPage = {
   },
 
   /** Nombre de jours consécutifs déjà travaillés par un chauffeur juste avant `dateStr`. */
+  /** Jours de repos hebdomadaires d'un chauffeur (1 ou 2 selon son contrat). */
+  _joursReposDe(ch) {
+    const l = [];
+    if (!ch) return l;
+    if (ch.jourRepos === 0 || ch.jourRepos) l.push(Number(ch.jourRepos));
+    if (ch.jourRepos2 === 0 || ch.jourRepos2) l.push(Number(ch.jourRepos2));
+    return l;
+  },
+
   _joursConsecutifsAvant(chauffeurId, dateStr, planning) {
     const datesTravaillees = new Set(planning.filter(p => p.chauffeurId === chauffeurId).map(p => p.date));
     let n = 0;
@@ -1335,11 +1344,14 @@ const PlanningPage = {
         const titulaire = sv.titulaireId ? chById[sv.titulaireId] : null;
         if (!titulaire) { sansTitulaire += days.length; return; }
         const doublure = sv.doublureId ? chById[sv.doublureId] : null;
-        const jourRepos = (titulaire.jourRepos === 0 || titulaire.jourRepos) ? Number(titulaire.jourRepos) : null;
+        // Un salarié peut avoir deux jours de repos par semaine
+        const joursRepos = [];
+        if (titulaire.jourRepos === 0 || titulaire.jourRepos) joursRepos.push(Number(titulaire.jourRepos));
+        if (titulaire.jourRepos2 === 0 || titulaire.jourRepos2) joursRepos.push(Number(titulaire.jourRepos2));
 
         days.forEach(d => {
           if (occupe.has(`${v.id}|${d.date}|${sv.cle}`)) return;
-          const estRepos = jourRepos !== null && d.dow === jourRepos;
+          const estRepos = joursRepos.includes(d.dow);
           const chauffeur = estRepos ? doublure : titulaire;
           if (!chauffeur) { sansDoublure++; return; }
           if (chauffeurPris.has(`${chauffeur.id}|${d.date}`)) { dejaPris++; return; }
