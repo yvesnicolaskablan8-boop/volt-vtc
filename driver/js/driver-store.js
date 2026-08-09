@@ -217,13 +217,17 @@ const DriverStore = {
       supabase.from('fleet_chauffeurs')
         .select('prenom, nom, telephone, sexe, date_debut_contrat, date_fin_contrat, redevance_quotidienne, salaire_mensuel, objectif_ca_jour, jour_repos, jour_repos2, vehicule_assigne, type_contrat, contrat_accepte, contrat_accepte_le, contrat_version')
         .eq('id', id).single(),
-      supabase.from('fleet_settings').select('contrat, entreprise').limit(1).single()
+      // Les regles RLS interdisent fleet_settings au chauffeur — et il ne faut
+      // surtout pas la lui ouvrir : elle contient les identifiants Yango.
+      // Ce RPC n'expose que le contrat et les mentions publiques.
+      supabase.rpc('fleet_contrat_modele')
     ]);
     if (!chRes.data) return null;
 
     const ch = objToCamel(chRes.data);
-    const modele = (setRes.data && setRes.data.contrat) || {};
-    const ent = (setRes.data && setRes.data.entreprise) || {};
+    const bloc = (setRes && setRes.data) || {};
+    const modele = bloc.contrat || {};
+    const ent = bloc.entreprise || {};
 
     let immat = '';
     if (ch.vehiculeAssigne) {
