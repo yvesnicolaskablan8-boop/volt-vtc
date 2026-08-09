@@ -82,7 +82,7 @@ const SimulateurPage = {
       const aRepos2 = !!(ch && (ch.jourRepos2 === 0 || ch.jourRepos2));
       titulaires.push({
         id: ch ? ch.id : 'VIDE-' + v.id,
-        nom: ch ? `${ch.prenom} ${ch.nom}` : `(sans titulaire) ${v.immatriculation || ''}`.trim(),
+        nom: ch ? `${ch.prenom} ${ch.nom}` : 'Titulaire à assigner',
         repos: repos1,
         repos2: aRepos2 ? Number(ch.jourRepos2) : (repos1 + 3) % 7,
         repos2Defaut: !aRepos2,
@@ -321,6 +321,7 @@ const SimulateurPage = {
     const collisions = repos.length - new Set(repos).size;
     if (collisions > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.2);color:#b45309;font-size:var(--font-size-sm);margin-bottom:10px;">${collisions} jour(s) de repos en double : plusieurs voitures se reposent le même jour, ce qui multiplie le nombre de doublures nécessaires. Décalez les jours de repos sur les fiches chauffeurs.</div>`;
     if (sim.arrets > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(185,28,28,.08);border:1px solid rgba(185,28,28,.2);color:#b91c1c;font-size:var(--font-size-sm);margin-bottom:10px;">${sim.arrets} jour(s)-voiture non couvert(s) : la règle des 6 jours consécutifs bloque. Il faut une doublure de plus.</div>`;
+    if (this._nbReels === 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.2);color:#b45309;font-size:var(--font-size-sm);margin-bottom:10px;">Aucun véhicule réel n'a été lu : la simulation tourne entièrement sur des voitures fictives. Si votre parc existe bien, actualisez la page — et reconnectez-vous si le problème persiste, votre session a pu expirer.</div>`;
     const ecartParc = titulaires.length - this._nbReels;
     if (ecartParc !== 0 && this._nbReels > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#1d4ed8;font-size:var(--font-size-sm);margin-bottom:10px;">Simulation sur <strong>${titulaires.length} voiture${titulaires.length > 1 ? 's' : ''}</strong> alors que votre parc réel en compte <strong>${this._nbReels}</strong> — ${ecartParc > 0 ? `${ecartParc} voiture${ecartParc > 1 ? 's' : ''} ajoutée${ecartParc > 1 ? 's' : ''} pour l'hypothèse` : `${-ecartParc} voiture${-ecartParc > 1 ? 's' : ''} mise${-ecartParc > 1 ? 's' : ''} de côté`}. Ramenez le curseur sur ${this._nbReels} pour retrouver votre situation actuelle.</div>`;
     const sansRepos2 = titulaires.filter(t => t.repos2Defaut).length;
@@ -413,7 +414,7 @@ const SimulateurPage = {
 
     const JJ = ['D','L','M','M','J','V','S'];
     const NOMS_J = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-    const court = (nom) => { const m = String(nom || '').trim().split(/\s+/)[0]; return m.length > 8 ? m.slice(0, 8) : m; };
+    const court = (nom) => { const m = String(nom || '').trim().split(/\s+/)[0]; return m.length > 9 ? m.slice(0, 9) : m; };
     let th = '<tr><th style="position:sticky;left:0;background:var(--bg-tertiary);z-index:2;padding:5px 9px;text-align:left;font-size:10px;min-width:165px;">Véhicule</th>';
     for (let j = 1; j <= sim.nbJours; j++) {
       const dow = new Date(annee, mois, j).getDay();
