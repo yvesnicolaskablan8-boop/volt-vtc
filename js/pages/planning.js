@@ -147,36 +147,43 @@ const PlanningPage = {
 
       // Aucun chauffeur a afficher : trois situations tres differentes, qui
       // se traduisaient jusqu'ici par le meme spinner tournant sans fin.
+      // Le message est un BANDEAU pose au-dessus de la vue : le calendrier
+      // reste visible et navigable, meme vide.
       const chauffeurs = this._getChauffeurs();
+      let avis = '';
       if (chauffeurs && chauffeurs.length) {
         this._essaisChargement = 0;
       } else if (!this._retryTimer) {
         const pret = (typeof Store.estPret === 'function') ? Store.estPret() : true;
         this._essaisChargement = (this._essaisChargement || 0) + 1;
+        const cadre = (fond, bord, couleur, contenu) => `<div style="display:flex;align-items:center;gap:12px;padding:12px 15px;border-radius:11px;background:${fond};border:1px solid ${bord};color:${couleur};font-size:var(--font-size-sm);line-height:1.55;margin-bottom:14px;">${contenu}</div>`;
 
         if (!pret && this._essaisChargement <= 8) {
-          // 1) Le premier chargement est encore en cours : on patiente, mais
-          //    pas indefiniment (8 essais x 1,5 s = 12 s au maximum).
-          ct.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:60px 20px;color:var(--text-muted);">
-            <div class="spinner" style="width:32px;height:32px;border:3px solid var(--border-color);border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite;"></div>
-            <span style="font-size:13px;">Chargement des données...</span>
-            <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-          </div>`;
+          // 1) Premier chargement en cours : on patiente, mais pas indefiniment
+          //    (8 essais x 1,5 s = 12 s au maximum).
+          avis = cadre('var(--bg-tertiary)', 'var(--border-color)', 'var(--text-secondary)',
+            `<div class="spinner" style="width:18px;height:18px;border:2px solid var(--border-color);border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite;flex:none;"></div>
+             <span>Chargement des données...</span>
+             <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`);
           this._retryTimer = setTimeout(() => { this._retryTimer = null; this._renderView(); }, 1500);
+        } else if ((typeof Store.chargementReussi === 'function') && !Store.chargementReussi()) {
+          // 2) La lecture a echoue : ce n'est pas un parc vide.
+          avis = cadre('rgba(180,83,9,.08)', 'rgba(180,83,9,.25)', '#b45309',
+            `<iconify-icon icon="solar:cloud-cross-bold-duotone" style="font-size:1.5rem;flex:none;"></iconify-icon>
+             <div style="flex:1;"><strong>Données indisponibles</strong> — la base n'a pas répondu. Vos données ne sont pas perdues : l'application n'arrive pas à les lire pour le moment. Reconnectez-vous si le problème persiste, votre session a pu expirer.</div>
+             <button class="btn btn-sm btn-primary" style="flex:none;" onclick="PlanningPage._reessayerChargement()">Réessayer</button>`);
         } else {
-          const echec = (typeof Store.chargementReussi === 'function') && !Store.chargementReussi();
-          const titre = echec ? 'Données indisponibles' : 'Aucun chauffeur enregistré';
-          const texte = echec
-            ? "La base de données n'a pas répondu. Vos données ne sont pas perdues : l'application n'arrive pas à les lire pour le moment. Actualisez la page, et reconnectez-vous si le problème persiste — votre session a pu expirer."
-            : "Ajoutez des chauffeurs pour commencer à planifier. Le planning se remplira automatiquement une fois vos titulaires et doublures créés.";
-          ct.innerHTML = `<div class="card" style="padding:40px 30px;text-align:center;max-width:520px;margin:40px auto;">
-            <iconify-icon icon="${echec ? 'solar:cloud-cross-bold-duotone' : 'solar:users-group-rounded-bold-duotone'}" style="font-size:2.6rem;color:${echec ? '#b45309' : 'var(--pilote-blue)'};"></iconify-icon>
-            <h3 style="margin:12px 0 8px;">${titre}</h3>
-            <p style="color:var(--text-muted);font-size:13px;line-height:1.6;">${texte}</p>
-            <button class="btn btn-primary" style="margin-top:14px;" onclick="PlanningPage._reessayerChargement()">${echec ? 'Réessayer' : 'Aller aux chauffeurs'}</button>
-          </div>`;
+          // 3) Parc reellement vide : etat normal, pas une panne.
+          avis = cadre('rgba(37,99,235,.07)', 'rgba(37,99,235,.2)', '#1d4ed8',
+            `<iconify-icon icon="solar:users-group-rounded-bold-duotone" style="font-size:1.5rem;flex:none;"></iconify-icon>
+             <div style="flex:1;"><strong>Aucun chauffeur enregistré</strong> — ajoutez vos titulaires et doublures, puis utilisez « Générer le mois » pour remplir ce calendrier automatiquement.</div>
+             <button class="btn btn-sm btn-primary" style="flex:none;" onclick="PlanningPage._reessayerChargement()">Aller aux chauffeurs</button>`);
         }
       }
+      // insertAdjacentHTML plutot qu'une reaffectation de innerHTML : cette
+      // derniere reconstruirait la vue et supprimerait les ecouteurs deja poses.
+      if (avis) ct.insertAdjacentHTML('afterbegin', avis);
+
     } catch (err) {
       console.error('[Planning] Render error:', err);
       ct.innerHTML = `<div class="card" style="padding:40px;text-align:center;">
