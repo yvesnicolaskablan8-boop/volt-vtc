@@ -55,11 +55,18 @@ const SimulateurPage = {
     vehicules.forEach((v, i) => {
       const ch = chById[v.chauffeurAssigne];
       if (ch) utilises.add(ch.id);
+      const repos1 = (ch && (ch.jourRepos === 0 || ch.jourRepos)) ? Number(ch.jourRepos) : i % 7;
+      // Les salaries ont DEUX jours de repos par semaine. Tant que la colonne
+      // jour_repos_2 n'existe pas en base, on applique un second jour par defaut
+      // decale de 3 jours. Sans ce defaut la simulation ne compterait qu'un seul
+      // repos et surestimerait le CA d'environ 20 %.
+      const aRepos2 = !!(ch && (ch.jourRepos2 === 0 || ch.jourRepos2));
       titulaires.push({
         id: ch ? ch.id : 'VIDE-' + v.id,
         nom: ch ? `${ch.prenom} ${ch.nom}` : `(sans titulaire) ${v.immatriculation || ''}`.trim(),
-        repos: (ch && (ch.jourRepos === 0 || ch.jourRepos)) ? Number(ch.jourRepos) : i % 7,
-        repos2: (ch && (ch.jourRepos2 === 0 || ch.jourRepos2)) ? Number(ch.jourRepos2) : null,
+        repos: repos1,
+        repos2: aRepos2 ? Number(ch.jourRepos2) : (repos1 + 3) % 7,
+        repos2Defaut: !aRepos2,
         vehicule: v.immatriculation || `${v.marque || ''} ${v.modele || ''}`.trim() || v.id,
         reel: !!ch
       });
@@ -245,15 +252,17 @@ const SimulateurPage = {
     const collisions = repos.length - new Set(repos).size;
     if (collisions > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.2);color:#b45309;font-size:var(--font-size-sm);margin-bottom:10px;">${collisions} jour(s) de repos en double : plusieurs voitures se reposent le même jour, ce qui multiplie le nombre de doublures nécessaires. Décalez les jours de repos sur les fiches chauffeurs.</div>`;
     if (sim.arrets > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(185,28,28,.08);border:1px solid rgba(185,28,28,.2);color:#b91c1c;font-size:var(--font-size-sm);margin-bottom:10px;">${sim.arrets} jour(s)-voiture non couvert(s) : la règle des 6 jours consécutifs bloque. Il faut une doublure de plus.</div>`;
+    const sansRepos2 = titulaires.filter(t => t.repos2Defaut).length;
+    if (sansRepos2 > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#1d4ed8;font-size:var(--font-size-sm);margin-bottom:10px;">Les salariés ont deux jours de repos par semaine. Pour ${sansRepos2} chauffeur(s), le second jour n'est pas encore renseigné : la simulation applique un jour par défaut, décalé de 3 jours du premier. Les totaux sont donc justes, mais les jours exacts sont à confirmer sur les fiches chauffeurs.</div>`;
     if (!alertes) alertes = `<div style="padding:10px 13px;border-radius:10px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);color:#15803d;font-size:var(--font-size-sm);margin-bottom:10px;">Chaque voiture roule tous les jours du mois, personne ne dépasse 6 jours consécutifs, et les repos sont décalés.</div>`;
     document.getElementById('sim-alerte').innerHTML = alertes;
 
     const l = (lib, val, couleur) => `<tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 8px;">${lib}</td><td style="padding:6px 8px;text-align:right;font-weight:700;${couleur ? 'color:' + couleur : ''}">${val}</td></tr>`;
     document.getElementById('sim-finance').innerHTML = `
       <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);">
-        ${l(`CA produit (${fin.joursCA} jours × ${F(p.objectifCA)})`, '+ ' + F(fin.caBrut))}
+        ${l(`CA produit par les salariés (${fin.joursCA} journées travaillées × ${F(p.objectifCA)})`, '+ ' + F(fin.caBrut))}
         ${l(`− Commission Yango (${p.commission} %)`, '− ' + F(fin.commission), '#b91c1c')}
-        ${!p.doublureSalariee ? l(`+ Recettes des doublures (${sim.joursDoublures} j × ${F(p.recetteDoublure)})`, '+ ' + F(fin.recettesDoublures), '#15803d') : ''}
+        ${!p.doublureSalariee ? l(`+ Recettes des doublures (${sim.joursDoublures} journées × ${F(p.recetteDoublure)})`, '+ ' + F(fin.recettesDoublures), '#15803d') : ''}
         ${l(`− Masse salariale chargée (${fin.nbSalaries} salariés)`, '− ' + F(fin.masse), '#b91c1c')}
         ${l('− Énergie', '− ' + F(fin.coutEnergie), '#b91c1c')}
         ${l(`− Entretien, assurance, location (${titulaires.length} voitures)`, '− ' + F(fin.coutFixe), '#b91c1c')}
@@ -265,6 +274,12 @@ const SimulateurPage = {
         ${l(`− Impôts & taxes (${p.tauxImpot} %)`, '− ' + F(fin.impot), '#b91c1c')}
         <tr style="background:var(--bg-tertiary);"><td style="padding:8px;"><strong>BÉNÉFICE NET</strong></td><td style="padding:8px;text-align:right;"><strong style="font-size:1.05rem;color:${fin.net >= 0 ? '#15803d' : '#b91c1c'}">${F(fin.net)}</strong></td></tr>
       </table>
+      <div style="margin-top:10px;padding:9px 12px;border-radius:9px;background:var(--bg-tertiary);font-size:var(--font-size-xs);line-height:1.6;color:var(--text-secondary);">
+        <strong>D'où viennent ces journées ?</strong><br>
+        ${fin.joursCA} journées de salariés${p.doublureSalariee ? ' et de doublures' : ` + ${sim.joursDoublures} journées de doublures = ${fin.joursCA + sim.joursDoublures} journées`}
+        — soit ${titulaires.length} voiture${titulaires.length > 1 ? 's' : ''} × ${sim.nbJours} jours du mois${sim.arrets > 0 ? `, moins ${sim.arrets} journée${sim.arrets > 1 ? 's' : ''} sans conducteur` : ''}.<br>
+        Un salarié ne travaille pas 31 jours : avec ses 2 jours de repos par semaine il en fait environ ${titulaires.length > 0 ? Math.round(fin.joursCA / titulaires.length) : 0}. Les jours restants sont couverts par les doublures${p.doublureSalariee ? '.' : ', qui versent une recette au lieu de produire du CA — d\'où la ligne séparée.'}
+      </div>
       <div style="margin-top:12px;padding:11px 13px;border-radius:10px;background:${fin.ecart >= 0 ? 'rgba(22,163,74,.08)' : 'rgba(185,28,28,.08)'};border:1px solid ${fin.ecart >= 0 ? 'rgba(22,163,74,.2)' : 'rgba(185,28,28,.2)'};font-size:var(--font-size-sm);line-height:1.6;">
         <strong>Comparaison (résultat d'exploitation) :</strong> votre modèle de location actuel rapporterait <strong>${F(fin.referenceExploitation)}</strong>.
         Le salariat fait donc <strong>${fin.ecart >= 0 ? 'gagner' : 'perdre'} ${F(Math.abs(fin.ecart))}</strong> par mois.
