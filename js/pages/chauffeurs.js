@@ -40,6 +40,29 @@ const ChauffeursPage = {
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:7px;">
           Communiquez ce code au chauffeur. Il pourra se connecter avec son numéro et ce PIN.
         </div>
+
+        <div style="border-top:1px solid var(--border-color);margin:15px 0 12px;"></div>
+        <div style="font-weight:700;margin-bottom:3px;">Statut du chauffeur</div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:10px;">
+          Deux réglages indépendants : une doublure peut être locataire ou salariée.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;">Type de contrat</label>
+            <select id="cmp-contrat" class="form-control" style="font-size:var(--font-size-sm);">
+              <option value="location" ${c.typeContrat !== 'salarie' ? 'selected' : ''}>Location — verse une recette</option>
+              <option value="salarie" ${c.typeContrat === 'salarie' ? 'selected' : ''}>Salarié — payé au mois</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;">Rôle dans la rotation</label>
+            <select id="cmp-role" class="form-control" style="font-size:var(--font-size-sm);">
+              <option value="" ${!c.roleFlotte ? 'selected' : ''}>Non défini</option>
+              <option value="titulaire" ${c.roleFlotte === 'titulaire' ? 'selected' : ''}>Titulaire — tient un véhicule</option>
+              <option value="doublure" ${c.roleFlotte === 'doublure' ? 'selected' : ''}>Doublure — remplace</option>
+            </select>
+          </div>
+        </div>
       </div>`;
 
     Modal.form(
@@ -50,6 +73,12 @@ const ChauffeursPage = {
         if (pin.trim().length < 6) { Toast.error('Le code PIN doit comporter au moins 6 caractères.'); return false; }
         const r = await Store.gererCompteChauffeur(id, pin.trim(), existe);
         if (r && r.success) {
+          // Le statut suit le meme geste : on accueille le chauffeur en une fois.
+          const contrat = (document.getElementById('cmp-contrat') || {}).value || 'location';
+          const role = (document.getElementById('cmp-role') || {}).value || null;
+          if (contrat !== c.typeContrat || (role || null) !== (c.roleFlotte || null)) {
+            await Store.update('chauffeurs', id, { typeContrat: contrat, roleFlotte: role });
+          }
           Toast.success(existe ? 'Code PIN modifié.' : 'Compte créé. Communiquez le PIN au chauffeur.');
           await Store.rechargerCollection('chauffeurs');
           this.renderDetail(id);
