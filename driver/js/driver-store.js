@@ -247,14 +247,20 @@ const DriverStore = {
       typeContrat: modele.typeContrat || 'CDI',
       poste: modele.poste || 'Chauffeur VTC',
       derniereMaj: modele.derniereMaj || null,
-      texte: this._preremplirContrat(modele.texte || '', ch, ent, immat),
+      texte: this._preremplirContrat(modele.texte || '', ch, ent, immat, modele.employeur || {}),
       chauffeur: ch,
       entreprise: ent
     };
   },
 
-  /** Remplace les {{champs}} du modele par les donnees reelles du chauffeur. */
-  _preremplirContrat(texte, ch, ent, immat) {
+  /**
+   * Remplace les {{champs}} du modele par les donnees reelles.
+   * L'employeur vient du bloc « contrat » des parametres : c'est la PERSONNE
+   * MORALE qui signe, distincte de la marque commerciale affichee dans
+   * l'application. Un contrat de travail doit porter ses mentions legales
+   * completes — forme, capital, RCCM, gerant.
+   */
+  _preremplirContrat(texte, ch, ent, immat, employeur) {
     if (!texte) return '';
     const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     const somme = (n) => Number(n || 0).toLocaleString('fr-FR');
@@ -262,10 +268,16 @@ const DriverStore = {
     const date = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '__________';
     const objectif = Number(ch.objectifCaJour || 0);
 
+    const emp = employeur || {};
     const valeurs = {
-      employeur: ent.nom || ent.raisonSociale || '__________',
-      siege: ent.adresse || '__________',
-      gerant: ent.gerant || ent.representant || '__________',
+      raisonSociale: emp.raisonSociale || ent.nom || '__________',
+      formeJuridique: emp.formeJuridique || '__________',
+      capital: emp.capital || '__________',
+      rccm: emp.rccm || '__________',
+      cnps: emp.cnps || '__________',
+      employeur: emp.raisonSociale || ent.nom || '__________',
+      siege: emp.siege || ent.adresse || '__________',
+      gerant: emp.gerant || '__________',
       civilite: 'Monsieur/Madame',   // aucune donnee de civilite en base
       nomComplet: `${ch.prenom || ''} ${ch.nom || ''}`.trim() || '__________',
       telephone: ch.telephone || '__________',
