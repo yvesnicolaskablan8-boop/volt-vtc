@@ -1402,19 +1402,29 @@ const PlanningPage = {
     const titIds = Object.keys(roles).filter(id => roles[id] === 'titulaire');
     const doubIds = Object.keys(roles).filter(id => roles[id] === 'doublure');
 
+    // Un POSTE = un vehicule x un service. Une voiture exploitee en deux
+    // services compte donc deux postes (jour puis nuit), chacun avec son
+    // titulaire et ses propres horaires.
+    const postes = [];
+    vehicules.forEach(v => { this._servicesDuVehicule(v).forEach(sv => postes.push({ v, sv })); });
+
     // Appariement : on respecte l'affectation deja faite sur la fiche vehicule,
-    // puis on distribue les titulaires restants sur les vehicules libres.
+    // puis on distribue les titulaires restants sur les postes libres. Un meme
+    // chauffeur ne peut tenir deux postes, meme s'il est designe deux fois.
     const dejaPlaces = new Set();
-    vehicules.forEach(v => { if (v.chauffeurAssigne && titIds.includes(v.chauffeurAssigne)) dejaPlaces.add(v.chauffeurAssigne); });
+    postes.forEach(po => {
+      const t = po.sv.titulaireId;
+      if (t && titIds.includes(t) && !dejaPlaces.has(t)) { dejaPlaces.add(t); po._titulaire = t; }
+    });
     const restants = titIds.filter(id => !dejaPlaces.has(id));
     let k = 0;
-    const titulaires = vehicules.map((v, i) => {
-      const id = (v.chauffeurAssigne && titIds.includes(v.chauffeurAssigne)) ? v.chauffeurAssigne : (restants[k++] || null);
+    const titulaires = postes.map((po, i) => {
+      const id = po._titulaire || (restants[k++] || null);
       const c = id ? chById[id] : null;
       const repos = (c && (c.jourRepos === 0 || c.jourRepos)) ? Number(c.jourRepos) : i % 7;
       const repos2 = (c && (c.jourRepos2 === 0 || c.jourRepos2)) ? Number(c.jourRepos2) : (repos + 3) % 7;
-      return { id: id || ('VIDE-' + v.id), nom: c ? `${c.prenom} ${c.nom}` : 'Titulaire a assigner',
-               repos, repos2, reel: !!c, vehiculeId: v.id };
+      return { id: id || ('VIDE-' + po.v.id + '-' + po.sv.cle), nom: c ? `${c.prenom} ${c.nom}` : 'Titulaire a assigner',
+               repos, repos2, reel: !!c, vehiculeId: po.v.id, service: po.sv.cle };
     });
     const doublures = doubIds.map(id => ({ id, nom: `${chById[id].prenom} ${chById[id].nom}` }));
 
@@ -1430,8 +1440,8 @@ const PlanningPage = {
 
     const creneaux = [];
     let sansTitulaire = 0, aRecruter = 0, dejaOccupe = 0, chauffeurPris = 0;
-    vehicules.forEach((v, vi) => {
-      const sv = this._servicesDuVehicule(v)[0];
+    postes.forEach((po, vi) => {
+      const v = po.v, sv = po.sv;
       for (let j = 1; j <= sim.nbJours; j++) {
         const cell = sim.grille[vi][j - 1];
         if (!cell) continue;
@@ -1450,7 +1460,7 @@ const PlanningPage = {
           typeCreneaux: sv.typeCreneaux,
           heureDebut: sv.heureDebut,
           heureFin: sv.heureFin,
-          notes: cell.role === 'doublure' ? `Remplacement — genere automatiquement` : '',
+          notes: cell.role === 'doublure' ? `Remplacement ${sv.label.toLowerCase()} — genere automatiquement` : '',
           redevanceOverride: sv.recette,
           dateCreation: new Date().toISOString()
         });
@@ -1458,7 +1468,8 @@ const PlanningPage = {
         pris.add(`${cell.id}|${date}`);
       }
     });
-    return { annee, mois, sim, creneaux, vehicules, titulaires, sansTitulaire, aRecruter, dejaOccupe, chauffeurPris };
+    const nbNuit = postes.filter(po => po.sv.cle === 'nuit').length;
+    return { annee, mois, sim, creneaux, vehicules, postes, nbNuit, titulaires, sansTitulaire, aRecruter, dejaOccupe, chauffeurPris };
   },
 
   _apercuGenMois() {
@@ -1481,10 +1492,11 @@ const PlanningPage = {
     zone.innerHTML = `
       <div style="padding:12px 14px;border-radius:11px;background:var(--bg-tertiary);">
         <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:${notes.length ? '10px' : '0'};">
-          ${tuile('Creneaux a creer', r.creneaux.length, `${r.vehicules.length} vehicule(s) x ${r.sim.nbJours} jours`)}
+          ${tuile('Creneaux a creer', r.creneaux.length, `${r.postes.length} poste(s) x ${r.sim.nbJours} jours`)}
           ${tuile('Par les titulaires', nbTit)}
           ${tuile('Par les doublures', nbDoub)}
           ${tuile('Doublures utilisees', r.sim.doublures.length)}
+          ${r.nbNuit > 0 ? tuile('Dont service de nuit', r.creneaux.filter(c => c.service === 'nuit').length, `${r.nbNuit} poste(s) de nuit`) : ''}
         </div>
         ${notes.length ? `<div style="font-size:var(--font-size-xs);line-height:1.7;border-top:1px solid var(--border-color);padding-top:9px;">${notes.join('')}</div>` : ''}
       </div>`;
