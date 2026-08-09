@@ -15,6 +15,53 @@ const ChauffeursPage = {
     this._bindListEvents();
   },
 
+  /**
+   * Compte d'acces a l'application chauffeur : creation, ou changement de PIN.
+   * Rien de tout cela n'existait — un chauffeur sans compte ne pouvait pas se
+   * connecter, et un PIN oublie le bloquait definitivement.
+   */
+  _gererCompte(id) {
+    const c = (Store.get('chauffeurs') || []).find(x => x.id === id);
+    if (!c) return;
+    const existe = !!c.authId;
+    const tel = (c.telephone || '').replace(/\D/g, '');
+    if (!tel) { Toast.error('Ce chauffeur n\'a pas de numéro de téléphone.'); return; }
+
+    const corps = `
+      <div style="font-size:var(--font-size-sm);line-height:1.6;">
+        <div style="padding:11px 13px;border-radius:10px;background:var(--bg-tertiary);margin-bottom:14px;">
+          <div><strong>${Utils.escHtml(c.prenom + ' ' + c.nom)}</strong></div>
+          <div style="color:var(--text-muted);">Se connecte avec le numéro <strong>${Utils.escHtml(c.telephone)}</strong></div>
+          <div style="color:var(--text-muted);margin-top:3px;">${existe ? 'Compte déjà créé' : 'Aucun compte : il ne peut pas se connecter'}</div>
+        </div>
+        <label style="font-weight:700;display:block;margin-bottom:5px;">${existe ? 'Nouveau code PIN' : 'Code PIN'}</label>
+        <input type="text" id="cmp-pin" inputmode="numeric" maxlength="10" class="form-control"
+               placeholder="6 chiffres minimum" style="font-size:1.15rem;letter-spacing:.12em;text-align:center;">
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:7px;">
+          Communiquez ce code au chauffeur. Il pourra se connecter avec son numéro et ce PIN.
+        </div>
+      </div>`;
+
+    Modal.form(
+      `<iconify-icon icon="solar:key-bold-duotone" class="text-blue"></iconify-icon> ${existe ? 'Changer le code PIN' : 'Créer le compte chauffeur'}`,
+      corps,
+      async () => {
+        const pin = (document.getElementById('cmp-pin') || {}).value || '';
+        if (pin.trim().length < 6) { Toast.error('Le code PIN doit comporter au moins 6 caractères.'); return false; }
+        const r = await Store.gererCompteChauffeur(id, pin.trim(), existe);
+        if (r && r.success) {
+          Toast.success(existe ? 'Code PIN modifié.' : 'Compte créé. Communiquez le PIN au chauffeur.');
+          await Store.rechargerCollection('chauffeurs');
+          this.renderDetail(id);
+        } else {
+          Toast.error((r && r.error) || 'Opération impossible');
+          return false;
+        }
+      },
+      'small'
+    );
+  },
+
   renderDetail(id) {
     const container = document.getElementById('page-content');
     const chauffeur = Store.findById('chauffeurs', id);
@@ -172,6 +219,7 @@ const ChauffeursPage = {
           <button class="btn btn-primary" onclick="ChauffeursPage._showBilanMensuel('${c.id}')"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Bilan mensuel</button>
           <button class="btn btn-secondary" onclick="ChauffeursPage._showHistorique('${c.id}')"><iconify-icon icon="solar:history-bold-duotone"></iconify-icon> Historique</button>
           <button class="btn btn-secondary" onclick="ChauffeursPage._showContraventions('${c.id}')" style="color:#ef4444;border-color:rgba(239,68,68,.3);"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> Contraventions${(() => { const nb = (Store.get('contraventions') || []).filter(x => x.chauffeurId === c.id && x.statut === 'impayee').length; return nb > 0 ? ` <span style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;">${nb}</span>` : ''; })()}</button>
+          <button class="btn btn-secondary" onclick="ChauffeursPage._gererCompte('${c.id}')" title="Acces a l'application chauffeur"><iconify-icon icon="solar:key-bold-duotone"></iconify-icon> ${c.authId ? 'Code PIN' : 'Créer le compte'}</button>
           <button class="btn btn-secondary" onclick="ChauffeursPage._edit('${c.id}')"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>
           <button class="btn btn-danger" onclick="ChauffeursPage._delete('${c.id}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer</button>
         </div>

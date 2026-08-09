@@ -602,6 +602,41 @@ const Store = {
     return r;
   },
 
+  /**
+   * Cree le compte d'acces d'un chauffeur, ou change son code PIN.
+   * Passe par des fonctions SECURITY DEFINER reservees aux administrateurs :
+   * une cle de service dans le code client donnerait les pleins pouvoirs a
+   * quiconque lit le JavaScript.
+   */
+  async gererCompteChauffeur(chauffeurId, pin, existeDeja) {
+    try {
+      const fn = existeDeja ? 'fleet_reinitialiser_pin' : 'fleet_creer_compte_chauffeur';
+      const { data, error } = await supabase.rpc(fn, { p_chauffeur_id: chauffeurId, p_pin: pin });
+      if (error) return { success: false, error: error.message };
+      if (data && data.success === false && data.motif === 'compte_existant') {
+        return { success: false, error: 'Un compte existe deja pour ce numero — il a ete rattache a la fiche.' };
+      }
+      await this.rechargerCollection('chauffeurs');
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  /** Recharge une seule collection depuis la base, sans tout relire. */
+  async rechargerCollection(col) {
+    try {
+      const { collection, data } = await this._fetchCollection(col, ['settings']);
+      this._cache[collection] = data;
+      this._backupToLocalStorage();
+      this._notify();
+      return data;
+    } catch (e) {
+      console.warn('Store: rechargerCollection', col, e.message);
+      return null;
+    }
+  },
+
   async getYangoSyncStatus() {
     // Sync status is now server-side only; return basic info
     try {
