@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e293b">
+<title>Installer Pilote Chauffeur</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:#f1f5f9;color:#0f172a;line-height:1.6;
+    padding:0 0 40px;-webkit-font-smoothing:antialiased;
+  }
+  .haut{background:#1e293b;color:#fff;padding:28px 20px 30px;text-align:center}
+  .logo{font-size:1.55rem;font-weight:800;letter-spacing:-.02em}
+  .logo span{color:#818cf8}
+  .sous{margin-top:6px;font-size:.95rem;color:#cbd5e1}
+  .conteneur{max-width:520px;margin:0 auto;padding:0 16px}
+
+  .telecharger{
+    display:block;margin:-20px auto 26px;max-width:488px;
+    background:#4f46e5;color:#fff;text-decoration:none;
+    padding:20px 22px;border-radius:16px;text-align:center;
+    font-size:1.15rem;font-weight:800;
+    box-shadow:0 10px 26px rgba(79,70,229,.32);
+  }
+  .telecharger:active{transform:translateY(1px)}
+  .telecharger .petit{display:block;font-size:.8rem;font-weight:600;opacity:.85;margin-top:3px}
+
+  .etape{
+    background:#fff;border-radius:16px;padding:18px 18px 20px;margin-bottom:14px;
+    border:1px solid #e2e8f0;display:flex;gap:15px;align-items:flex-start;
+  }
+  .num{
+    flex:none;width:38px;height:38px;border-radius:50%;
+    background:#e0e7ff;color:#4338ca;font-weight:800;font-size:1.15rem;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .etape h2{font-size:1.05rem;font-weight:800;margin-bottom:4px}
+  .etape p{font-size:.95rem;color:#475569}
+
+  .capital{border:2px solid #dc2626;background:#fef2f2}
+  .capital .num{background:#dc2626;color:#fff}
+  .capital h2{color:#b91c1c}
+  .encadre{
+    margin-top:12px;background:#fff;border:2px dashed #dc2626;
+    border-radius:12px;padding:14px;text-align:center;
+  }
+  .choix{display:block;padding:11px;border-radius:9px;font-weight:700;font-size:1rem;margin-bottom:7px}
+  .bon{background:#dcfce7;color:#15803d;border:2px solid #16a34a}
+  .mauvais{background:#f1f5f9;color:#94a3b8;text-decoration:line-through}
+  .bon::before{content:"\2713  "}
+
+  .verif{background:#0f172a;color:#e2e8f0;border-radius:16px;padding:20px;margin-top:22px}
+  .verif h2{color:#fff;font-size:1.05rem;margin-bottom:8px}
+  .verif p{font-size:.93rem;color:#cbd5e1}
+  .notif{
+    margin-top:12px;background:#1e293b;border:1px solid #334155;
+    border-radius:10px;padding:12px 14px;display:flex;gap:11px;align-items:center;
+  }
+  .rond{width:30px;height:30px;border-radius:8px;background:#4f46e5;flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:1rem}
+  .notif b{display:block;color:#fff;font-size:.9rem}
+  .notif small{color:#94a3b8;font-size:.82rem}
+
+  .aide{text-align:center;margin-top:24px;font-size:.9rem;color:#64748b}
+  .aide a{color:#4f46e5;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="haut">
+  <div class="logo">PILOTE <span>Chauffeur</span></div>
+  <div class="sous">Installation sur votre telephone Android</div>
+</div>
+
+<div class="conteneur">
+
+  <a class="telecharger" href="/pilote-chauffeur.apk" download>
+    Telecharger l'application
+    <span class="petit">10 Mo &middot; Android</span>
+  </a>
+
+  <div class="etape">
+    <div class="num">1</div>
+    <div>
+      <h2>Appuyez sur le bouton bleu</h2>
+      <p>Le telechargement demarre. Attendez qu'il se termine, puis ouvrez le fichier.</p>
+    </div>
+  </div>
+
+  <div class="etape">
+    <div class="num">2</div>
+    <div>
+      <h2>Acceptez l'installation</h2>
+      <p>Le telephone affiche un avertissement parce que l'application ne vient pas du Play Store. Appuyez sur <b>Parametres</b>, puis autorisez l'installation, et revenez en arriere.</p>
+    </div>
+  </div>
+
+  <div class="etape">
+    <div class="num">3</div>
+    <div>
+      <h2>Connectez-vous</h2>
+      <p>Avec votre <b>numero de telephone</b> et votre <b>code PIN</b> habituels. Les memes que sur le site.</p>
+    </div>
+  </div>
+
+  <div class="etape capital">
+    <div class="num">4</div>
+    <div>
+      <h2>Choisissez &laquo;&nbsp;Toujours autoriser&nbsp;&raquo;</h2>
+      <p>L'application demande votre position. C'est l'etape la plus importante&nbsp;: choisissez bien <b>Toujours</b>.</p>
+      <div class="encadre">
+        <span class="choix bon">Toujours autoriser</span>
+        <span class="choix mauvais">Uniquement pendant l'utilisation</span>
+        <span class="choix mauvais">Refuser</span>
+      </div>
+      <p style="margin-top:11px"><b>Pourquoi&nbsp;?</b> Si vous choisissez &laquo;&nbsp;pendant l'utilisation&nbsp;&raquo;, le suivi s'arrete des que vous fermez l'application ou que l'ecran s'eteint. Le vehicule n'est alors plus localise.</p>
+    </div>
+  </div>
+
+  <div class="verif">
+    <h2>Comment savoir que ca marche</h2>
+    <p>Une notification reste affichee en permanence dans la barre du haut de votre telephone&nbsp;:</p>
+    <div class="notif">
+      <div class="rond">&#128663;</div>
+      <div>
+        <b>Pilote Chauffeur</b>
+        <small>Suivi GPS actif</small>
+      </div>
+    </div>
+    <p style="margin-top:12px">Tant que cette notification est la, tout fonctionne&nbsp;: vous pouvez fermer l'application, le suivi continue. Ne la supprimez pas.</p>
+  </div>
+
+  <div class="aide">
+    Un probleme&nbsp;? Contactez l'administration.<br>
+    <a href="/driver/">Ouvrir la version web</a>
+  </div>
+
+</div>
+</body>
+</html>

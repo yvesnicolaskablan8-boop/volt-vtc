@@ -3,31 +3,86 @@
   "outputDirectory": ".",
   "framework": null,
   "rewrites": [
-    { "source": "/driver/(.*)", "destination": "/driver/index.html" },
-    { "source": "/monitor/(.*)", "destination": "/monitor/index.html" },
-    { "source": "/.well-known/(.*)", "destination": "/.well-known/$1" },
-    { "source": "/app", "destination": "/app.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/driver/(.*)",
+      "destination": "/driver/index.html"
+    },
+    {
+      "source": "/monitor/(.*)",
+      "destination": "/monitor/index.html"
+    },
+    {
+      "source": "/.well-known/(.*)",
+      "destination": "/.well-known/$1"
+    },
+    {
+      "source": "/app",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/installer",
+      "destination": "/installer.html"
+    },
+    {
+      "source": "/pilote-chauffeur.apk",
+      "destination": "/pilote-chauffeur.apk"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
+      "source": "/pilote-chauffeur.apk",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/vnd.android.package-archive"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment; filename=\"pilote-chauffeur.apk\""
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
       "source": "/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
-        { "key": "Service-Worker-Allowed", "value": "/" }
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
       ]
     },
     {
       "source": "/monitor/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
-        { "key": "Service-Worker-Allowed", "value": "/monitor/" }
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/monitor/"
+        }
       ]
     },
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
       ]
     }
   ]
