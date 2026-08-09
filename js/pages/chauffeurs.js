@@ -1163,6 +1163,10 @@ const ChauffeursPage = {
         { value: 'location', label: 'Location — verse une recette quotidienne' },
         { value: 'salarie', label: 'Salarié — payé au mois, aucune recette due' }
       ], default: 'location' },
+      { name: 'roleFlotte', label: 'Rôle dans la rotation', type: 'select', placeholder: 'Non défini', options: [
+        { value: 'titulaire', label: 'Titulaire — tient un véhicule' },
+        { value: 'doublure', label: 'Doublure — remplace pendant les repos' }
+      ] },
       { type: 'row-start' },
       { name: 'salaireMensuel', label: 'Salaire mensuel net (si salarié)', type: 'number', min: 0, step: 10000, placeholder: 'Ex: 200000', default: 0 },
       { name: 'objectifCaJour', label: 'Objectif CA / jour (si salarié)', type: 'number', min: 0, step: 5000, placeholder: 'Ex: 70000', default: 0 },

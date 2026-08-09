@@ -380,7 +380,8 @@ const PlanningPage = {
         <span><strong>${filledSlots}</strong> créneau${filledSlots > 1 ? 'x' : ''} programmé${filledSlots > 1 ? 's' : ''}</span>
         <span><strong>${uniqueAbsDrivers}</strong> chauffeur${uniqueAbsDrivers > 1 ? 's' : ''} absent${uniqueAbsDrivers > 1 ? 's' : ''}</span>
         <span title="Journées d'exploitation assurées sur le total possible cette semaine">Couverture flotte : <strong style="color:${couv.pct >= 95 ? '#16a34a' : couv.pct >= 75 ? '#b45309' : '#b91c1c'}">${couv.couverts}/${couv.total} jours (${couv.pct}%)</strong>${couv.perte > 0 ? ` · <span style="color:#b91c1c" title="Recette non versée (location) ou CA non produit (salarié)">${Utils.formatCurrency(couv.perte)} non produits</span>` : ''}</span>
-        <button class="btn btn-sm btn-primary" id="btn-gen-semaine" style="margin-left:auto;"><iconify-icon icon="solar:magic-stick-3-bold-duotone"></iconify-icon> Compléter la semaine</button>
+        <button class="btn btn-sm btn-secondary" id="btn-gen-mois" style="margin-left:auto;"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Générer le mois</button>
+        <button class="btn btn-sm btn-primary" id="btn-gen-semaine"><iconify-icon icon="solar:magic-stick-3-bold-duotone"></iconify-icon> Compléter la semaine</button>
       </div>
       <div class="card pcal-wrap" style="padding:var(--space-md);">
         <div class="pcal">
@@ -778,6 +779,8 @@ const PlanningPage = {
   _bindWeekEvents() {
     const genBtn = document.getElementById('btn-gen-semaine');
     if (genBtn) genBtn.addEventListener('click', () => this._genererSemaine());
+    const genMois = document.getElementById('btn-gen-mois');
+    if (genMois) genMois.addEventListener('click', () => this._genererMois());
     document.querySelectorAll('.planning-empty-cell').forEach(cell => {
       cell.addEventListener('click', () => {
         const chId = cell.dataset.chauffeur;
@@ -1313,6 +1316,189 @@ const PlanningPage = {
    * Ne touche jamais aux créneaux déjà saisis et respecte la règle des 6 jours
    * consécutifs maximum par chauffeur.
    */
+  /**
+   * Assistant de generation automatique du planning sur un mois complet.
+   * Reutilise le moteur du simulateur (Utils.simulerPlanningMois) : rotation
+   * equitable des doublures, 6 jours consecutifs maximum, deux jours de repos.
+   * N'ecrase jamais un creneau existant.
+   */
+  _genererMois() {
+    const vehicules = (Store.get('vehicules') || []).filter(v => v.statut !== 'inactif' && v.statut !== 'vendu');
+    const chauffeurs = (Store.get('chauffeurs') || []).filter(c => c.statut !== 'inactif');
+    if (!vehicules.length) { Toast.warning('Aucun vehicule actif : ajoutez des vehicules avant de generer.'); return; }
+    if (!chauffeurs.length) { Toast.warning('Aucun chauffeur actif : ajoutez des chauffeurs avant de generer.'); return; }
+
+    // Role par defaut : celui de la fiche ; a defaut, deduit des affectations vehicule.
+    const titAff = new Set(vehicules.map(v => v.chauffeurAssigne).filter(Boolean));
+    const doubAff = new Set(vehicules.map(v => v.doublureId).filter(Boolean));
+    const roleDe = (c) => c.roleFlotte || (titAff.has(c.id) ? 'titulaire' : (doubAff.has(c.id) ? 'doublure' : ''));
+
+    const now = new Date();
+    let optsMois = '';
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      optsMois += `<option value="${d.getFullYear()}-${d.getMonth()}">${d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</option>`;
+    }
+
+    const lignesCh = chauffeurs.map(c => {
+      const r = roleDe(c);
+      return `<tr style="border-bottom:1px solid var(--border-color);">
+        <td style="padding:5px 7px;font-weight:600;">${Utils.escHtml(`${c.prenom} ${c.nom}`)}</td>
+        <td style="padding:5px 7px;color:var(--text-muted);font-size:var(--font-size-xs);">${c.typeContrat === 'salarie' ? 'Salarie' : 'Location'}</td>
+        <td style="padding:4px 7px;">
+          <select class="gm-role form-control" data-ch="${c.id}" style="font-size:var(--font-size-xs);padding:4px 6px;">
+            <option value="" ${!r ? 'selected' : ''}>Ne pas utiliser</option>
+            <option value="titulaire" ${r === 'titulaire' ? 'selected' : ''}>Titulaire</option>
+            <option value="doublure" ${r === 'doublure' ? 'selected' : ''}>Doublure</option>
+          </select></td></tr>`;
+    }).join('');
+
+    const casesVeh = vehicules.map(v => `<label style="display:flex;align-items:center;gap:7px;padding:4px 0;font-size:var(--font-size-sm);">
+      <input type="checkbox" class="gm-veh" value="${v.id}" checked>
+      <span>${Utils.escHtml(v.immatriculation || `${v.marque || ''} ${v.modele || ''}`.trim() || v.id)}</span></label>`).join('');
+
+    Modal.open({
+      title: '<iconify-icon icon="solar:calendar-add-bold-duotone" style="color:var(--pilote-blue)"></iconify-icon> Generer le planning du mois',
+      size: 'large',
+      body: `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+          <div>
+            <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Mois</label>
+            <select id="gm-mois" class="form-control" style="margin-bottom:14px;">${optsMois}</select>
+            <div style="font-size:var(--font-size-xs);font-weight:700;margin-bottom:5px;">Vehicules a planifier</div>
+            <div style="max-height:190px;overflow-y:auto;border:1px solid var(--border-color);border-radius:9px;padding:7px 10px;">${casesVeh}</div>
+          </div>
+          <div>
+            <div style="font-size:var(--font-size-xs);font-weight:700;margin-bottom:5px;">Role de chaque chauffeur</div>
+            <div style="max-height:260px;overflow-y:auto;border:1px solid var(--border-color);border-radius:9px;">
+              <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);">${lignesCh}</table>
+            </div>
+          </div>
+        </div>
+        <div id="gm-apercu" style="margin-top:14px;"></div>`,
+      footer: `<button class="btn btn-secondary" onclick="Modal.close()">Annuler</button>
+               <button class="btn btn-primary" id="gm-appliquer">Ecrire dans le planning</button>`
+    });
+
+    const rafraichir = () => this._apercuGenMois();
+    setTimeout(() => {
+      document.getElementById('gm-mois').addEventListener('change', rafraichir);
+      document.querySelectorAll('.gm-veh, .gm-role').forEach(e => e.addEventListener('change', rafraichir));
+      document.getElementById('gm-appliquer').addEventListener('click', () => this._appliquerGenMois());
+      rafraichir();
+    }, 30);
+  },
+
+  /** Calcule le planning du mois sans rien ecrire. */
+  _calculerGenMois() {
+    const [annee, mois] = document.getElementById('gm-mois').value.split('-').map(Number);
+    const vIds = [...document.querySelectorAll('.gm-veh:checked')].map(e => e.value);
+    const roles = {};
+    document.querySelectorAll('.gm-role').forEach(sel => { if (sel.value) roles[sel.dataset.ch] = sel.value; });
+
+    const chById = {};
+    (Store.get('chauffeurs') || []).forEach(c => { chById[c.id] = c; });
+    const vehicules = (Store.get('vehicules') || []).filter(v => vIds.includes(v.id));
+    const titIds = Object.keys(roles).filter(id => roles[id] === 'titulaire');
+    const doubIds = Object.keys(roles).filter(id => roles[id] === 'doublure');
+
+    // Appariement : on respecte l'affectation deja faite sur la fiche vehicule,
+    // puis on distribue les titulaires restants sur les vehicules libres.
+    const dejaPlaces = new Set();
+    vehicules.forEach(v => { if (v.chauffeurAssigne && titIds.includes(v.chauffeurAssigne)) dejaPlaces.add(v.chauffeurAssigne); });
+    const restants = titIds.filter(id => !dejaPlaces.has(id));
+    let k = 0;
+    const titulaires = vehicules.map((v, i) => {
+      const id = (v.chauffeurAssigne && titIds.includes(v.chauffeurAssigne)) ? v.chauffeurAssigne : (restants[k++] || null);
+      const c = id ? chById[id] : null;
+      const repos = (c && (c.jourRepos === 0 || c.jourRepos)) ? Number(c.jourRepos) : i % 7;
+      const repos2 = (c && (c.jourRepos2 === 0 || c.jourRepos2)) ? Number(c.jourRepos2) : (repos + 3) % 7;
+      return { id: id || ('VIDE-' + v.id), nom: c ? `${c.prenom} ${c.nom}` : 'Titulaire a assigner',
+               repos, repos2, reel: !!c, vehiculeId: v.id };
+    });
+    const doublures = doubIds.map(id => ({ id, nom: `${chById[id].prenom} ${chById[id].nom}` }));
+
+    const sim = Utils.simulerPlanningMois({ annee, mois, titulaires, doublures });
+
+    const planning = Store.get('planning') || [];
+    const occupe = new Set();
+    planning.forEach(p => {
+      const vId = this._vehiculeDuCreneau(p, chById);
+      if (vId) occupe.add(`${vId}|${p.date}|${this._serviceDuCreneau(p)}`);
+    });
+    const pris = new Set(planning.map(p => `${p.chauffeurId}|${p.date}`));
+
+    const creneaux = [];
+    let sansTitulaire = 0, aRecruter = 0, dejaOccupe = 0, chauffeurPris = 0;
+    vehicules.forEach((v, vi) => {
+      const sv = this._servicesDuVehicule(v)[0];
+      for (let j = 1; j <= sim.nbJours; j++) {
+        const cell = sim.grille[vi][j - 1];
+        if (!cell) continue;
+        if (String(cell.id).startsWith('VIDE-')) { sansTitulaire++; continue; }
+        if (cell.aRecruter) { aRecruter++; continue; }
+        const date = `${annee}-${String(mois + 1).padStart(2, '0')}-${String(j).padStart(2, '0')}`;
+        if (occupe.has(`${v.id}|${date}|${sv.cle}`)) { dejaOccupe++; continue; }
+        if (pris.has(`${cell.id}|${date}`)) { chauffeurPris++; continue; }
+        creneaux.push({
+          id: Utils.generateId('PLN'),
+          chauffeurId: cell.id,
+          vehiculeId: v.id,
+          service: sv.cle,
+          role: cell.role,
+          date,
+          typeCreneaux: sv.typeCreneaux,
+          heureDebut: sv.heureDebut,
+          heureFin: sv.heureFin,
+          notes: cell.role === 'doublure' ? `Remplacement — genere automatiquement` : '',
+          redevanceOverride: sv.recette,
+          dateCreation: new Date().toISOString()
+        });
+        occupe.add(`${v.id}|${date}|${sv.cle}`);
+        pris.add(`${cell.id}|${date}`);
+      }
+    });
+    return { annee, mois, sim, creneaux, vehicules, titulaires, sansTitulaire, aRecruter, dejaOccupe, chauffeurPris };
+  },
+
+  _apercuGenMois() {
+    const zone = document.getElementById('gm-apercu');
+    if (!zone) return;
+    let r;
+    try { r = this._calculerGenMois(); } catch (e) { zone.textContent = 'Calcul impossible : ' + e.message; return; }
+    this._dernierGenMois = r;
+
+    const notes = [];
+    if (r.sansTitulaire > 0) notes.push(`<div style="color:#b45309;">${r.sansTitulaire} jour(s) sans titulaire : il manque des chauffeurs marques « Titulaire » pour couvrir tous les vehicules.</div>`);
+    if (r.aRecruter > 0) notes.push(`<div style="color:#b91c1c;">${r.aRecruter} jour(s) de repos sans doublure disponible — ${r.sim.doublures.filter(d => d.aRecruter).length} doublure(s) a recruter.</div>`);
+    if (r.dejaOccupe > 0) notes.push(`<div style="color:var(--text-muted);">${r.dejaOccupe} creneau(x) deja planifie(s) — conserves tels quels, rien n'est ecrase.</div>`);
+    if (r.chauffeurPris > 0) notes.push(`<div style="color:var(--text-muted);">${r.chauffeurPris} jour(s) ou le chauffeur conduisait deja une autre voiture.</div>`);
+
+    const tuile = (lbl, val, sous) => `<div style="flex:1;min-width:120px;"><div style="font-size:var(--font-size-xs);color:var(--text-muted);font-weight:700;">${lbl}</div><div style="font-size:1.3rem;font-weight:900;">${val}</div>${sous ? `<div style="font-size:11px;color:var(--text-muted);">${sous}</div>` : ''}</div>`;
+    const nbTit = r.creneaux.filter(c => c.role === 'titulaire').length;
+    const nbDoub = r.creneaux.filter(c => c.role === 'doublure').length;
+
+    zone.innerHTML = `
+      <div style="padding:12px 14px;border-radius:11px;background:var(--bg-tertiary);">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:${notes.length ? '10px' : '0'};">
+          ${tuile('Creneaux a creer', r.creneaux.length, `${r.vehicules.length} vehicule(s) x ${r.sim.nbJours} jours`)}
+          ${tuile('Par les titulaires', nbTit)}
+          ${tuile('Par les doublures', nbDoub)}
+          ${tuile('Doublures utilisees', r.sim.doublures.length)}
+        </div>
+        ${notes.length ? `<div style="font-size:var(--font-size-xs);line-height:1.7;border-top:1px solid var(--border-color);padding-top:9px;">${notes.join('')}</div>` : ''}
+      </div>`;
+  },
+
+  _appliquerGenMois() {
+    const r = this._dernierGenMois;
+    if (!r || !r.creneaux.length) { Toast.warning('Aucun creneau a creer.'); return; }
+    r.creneaux.forEach(c => Store.add('planning', c));
+    Modal.close();
+    Toast.success(`${r.creneaux.length} creneaux crees pour le mois.`);
+    this.render();
+  },
+
   _genererSemaine() {
     const vehicules = (Store.get('vehicules') || []).filter(v => v.statut !== 'inactif' && v.statut !== 'vendu');
     const chauffeurs = Store.get('chauffeurs') || [];

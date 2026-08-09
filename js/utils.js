@@ -444,7 +444,7 @@ const Utils = {
         if (!T.repos.includes(dow)) {
           if (consec(cleDe(T), j) >= 6) { grille[v].push(null); arrets++; continue; }
           marquer(cleDe(T), j); T.jours.push(j);
-          grille[v].push({ nom: T.nom, role: 'titulaire' });
+          grille[v].push({ id: cleDe(T), nom: T.nom, role: 'titulaire' });
         } else {
           // Repartition equitable : parmi les doublures disponibles, celle qui a
           // travaille le moins de jours jusqu'ici. Sans ce tri, la premiere de la
@@ -456,7 +456,7 @@ const Utils = {
             doub.push(d);
           }
           marquer(cleDe(d), j); d.jours.push(j);
-          grille[v].push({ nom: d.nom, role: 'doublure' });
+          grille[v].push({ id: cleDe(d), nom: d.nom, role: 'doublure', aRecruter: !!d.aRecruter });
         }
       }
     }
