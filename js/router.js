@@ -139,14 +139,66 @@ const Router = {
     const container = document.getElementById('page-content');
     container.innerHTML = '';
 
-    if (config.action === 'detail' && typeof config.page.renderDetail === 'function') {
-      config.page.renderDetail(params.id);
-    } else {
-      config.page.render();
+    try {
+      if (config.action === 'detail' && typeof config.page.renderDetail === 'function') {
+        config.page.renderDetail(params.id);
+      } else {
+        config.page.render();
+      }
+    } catch (err) {
+      console.error('[Router] La page a leve une exception :', hash, err);
+      this._afficherErreurPage(container, config.title, err);
     }
 
     // Force dynamic iconify-icon elements to render
     this._refreshIcons();
+  },
+
+  /**
+   * Affiche une erreur lisible a la place d un ecran blanc.
+   * Distingue la perte de connexion a la base d un veritable bug : jusqu ici
+   * les deux se traduisaient par exactement la meme page vide, sans message.
+   */
+  _afficherErreurPage(container, titre, err) {
+    const msg = String((err && err.message) || err || '');
+    const horsLigne = (typeof navigator !== 'undefined' && navigator.onLine === false)
+      || /Failed to fetch|NetworkError|ERR_NAME_NOT_RESOLVED|fetch failed|Load failed/i.test(msg);
+
+    container.textContent = '';
+    const boite = document.createElement('div');
+    boite.style.cssText = 'max-width:640px;margin:48px auto;padding:26px 28px;border-radius:16px;background:var(--bg-secondary);border:1px solid var(--border-color);text-align:left;';
+
+    const h = document.createElement('h2');
+    h.style.cssText = 'margin:0 0 10px;font-size:1.15rem;';
+    h.textContent = horsLigne ? 'Donnees indisponibles' : "Cette page n'a pas pu s'afficher";
+    boite.appendChild(h);
+
+    const p1 = document.createElement('p');
+    p1.style.cssText = 'margin:0 0 16px;color:var(--text-secondary);line-height:1.6;';
+    p1.textContent = horsLigne
+      ? "La base de donnees ne repond pas. Vos donnees ne sont pas perdues : l'application ne parvient simplement pas a les lire pour le moment. Verifiez votre connexion, puis reessayez."
+      : "Une erreur est survenue pendant l'affichage de \u00ab\u00a0" + (titre || 'cette page') + "\u00a0\u00bb. Le reste de l'application reste utilisable.";
+    boite.appendChild(p1);
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = 'Reessayer';
+    btn.addEventListener('click', () => this._handleRoute());
+    boite.appendChild(btn);
+
+    const det = document.createElement('details');
+    det.style.cssText = 'margin-top:18px;';
+    const sum = document.createElement('summary');
+    sum.style.cssText = 'cursor:pointer;color:var(--text-muted);font-size:var(--font-size-sm);';
+    sum.textContent = 'Detail technique';
+    const pre = document.createElement('pre');
+    pre.style.cssText = 'white-space:pre-wrap;margin-top:10px;padding:12px;border-radius:10px;background:var(--bg-tertiary);font-size:12px;overflow-x:auto;';
+    pre.textContent = String((err && err.stack) || msg);
+    det.appendChild(sum);
+    det.appendChild(pre);
+    boite.appendChild(det);
+
+    container.appendChild(boite);
   },
 
   /**
