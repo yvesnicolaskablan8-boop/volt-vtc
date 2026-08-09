@@ -65,6 +65,8 @@ const DriverApp = {
     // Setup login form
     this._setupLoginForm();
 
+    this._setupTirerPourActualiser();
+
     // Setup refresh button
     const refreshBtn = document.getElementById('btn-refresh');
     if (refreshBtn) {
@@ -687,6 +689,72 @@ const DriverApp = {
         : 'Pour installer : ouvrez le menu du navigateur (⋮) puis <strong>Installer l\'application</strong> ou <strong>Ajouter à l\'écran d\'accueil</strong>';
       DriverToast.show(msg, 'info');
     }
+  },
+
+  /** Recharge la page courante, comme le bouton d'actualisation. */
+  _rechargerPageCourante() {
+    const route = DriverRouter.getCurrentRoute();
+    if (!route) return;
+    const page = DriverRouter._routes[route];
+    const content = document.getElementById('app-content');
+    if (page && content) page.render(content);
+  },
+
+  /**
+   * Tirer vers le bas pour actualiser.
+   * Ne se declenche QUE si la page est deja tout en haut, sinon le geste
+   * entrerait en conflit avec le defilement normal.
+   */
+  _setupTirerPourActualiser() {
+    const zone = document.getElementById('app-content');
+    if (!zone || zone._ptrPose) return;
+    zone._ptrPose = true;
+
+    const SEUIL = 70;      // distance a parcourir avant declenchement
+    const MAX = 110;       // au-dela, l'indicateur ne descend plus
+    let depart = null, tire = 0, enCours = false;
+
+    const ind = document.createElement('div');
+    ind.style.cssText = 'position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:center;height:0;overflow:hidden;color:var(--text-muted);font-size:.85rem;font-weight:700;pointer-events:none;transition:height .18s;z-index:5';
+    ind.innerHTML = '<span data-ptr-texte>Tirez pour actualiser</span>';
+    if (getComputedStyle(zone).position === 'static') zone.style.position = 'relative';
+    zone.insertBefore(ind, zone.firstChild);
+    const texte = () => ind.querySelector('[data-ptr-texte]');
+
+    zone.addEventListener('touchstart', (e) => {
+      if (enCours || zone.scrollTop > 0 || e.touches.length !== 1) { depart = null; return; }
+      depart = e.touches[0].clientY;
+      tire = 0;
+      ind.style.transition = 'none';
+    }, { passive: true });
+
+    zone.addEventListener('touchmove', (e) => {
+      if (depart === null || enCours) return;
+      const delta = e.touches[0].clientY - depart;
+      if (delta <= 0) { tire = 0; ind.style.height = '0px'; return; }
+      // resistance : le geste ralentit a mesure qu'on tire
+      tire = Math.min(MAX, delta * 0.5);
+      ind.style.height = tire + 'px';
+      texte().textContent = tire >= SEUIL ? 'Relachez pour actualiser' : 'Tirez pour actualiser';
+    }, { passive: true });
+
+    const relacher = async () => {
+      if (depart === null || enCours) { depart = null; return; }
+      depart = null;
+      ind.style.transition = 'height .18s';
+      if (tire < SEUIL) { ind.style.height = '0px'; return; }
+      enCours = true;
+      ind.style.height = '46px';
+      texte().textContent = 'Actualisation...';
+      try { this._rechargerPageCourante(); } catch (err) { console.warn('[PTR]', err); }
+      setTimeout(() => {
+        ind.style.height = '0px';
+        texte().textContent = 'Tirez pour actualiser';
+        enCours = false;
+      }, 700);
+    };
+    zone.addEventListener('touchend', relacher, { passive: true });
+    zone.addEventListener('touchcancel', () => { depart = null; ind.style.height = '0px'; }, { passive: true });
   },
 
   _setupLoginForm() {
