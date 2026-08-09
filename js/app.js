@@ -188,7 +188,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 442;
+      const SW_VERSION = 443;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
@@ -286,6 +286,11 @@ const App = {
         Auth.createSession(authResult.user);
         await Store.initialize();
         this._showApp();
+        // En arriere-plan : ne jamais retarder l'affichage pour une
+        // synchronisation, et ne jamais laisser son echec bloquer l'app.
+        setTimeout(() => {
+          try { Store.synchroniserCaSiNecessaire(); } catch (e) { console.warn('[CA]', e); }
+        }, 3000);
       } else if (Auth.getSession()) {
         // Supabase session expired but local session exists — try offline
         console.warn('Session Supabase expirée — mode local');

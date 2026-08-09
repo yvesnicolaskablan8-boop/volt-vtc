@@ -563,6 +563,45 @@ const Store = {
     }
   },
 
+  /**
+   * Ecrit le CA Yango du jour dans fleet_ca_jour.
+   * Sans cet appel, rien ne remplit la table : les chauffeurs verraient 0 F.
+   */
+  async synchroniserCaJour(date = null) {
+    try {
+      return await this._yangoApi('sync-ca', { query: date ? `?date=${encodeURIComponent(date)}` : '' });
+    } catch (e) {
+      console.warn('Store: synchroniserCaJour error:', e.message);
+      return { error: 'Non disponible', details: e.message };
+    }
+  },
+
+  /**
+   * Declenchement automatique, limite a une fois par quart d'heure.
+   * L'application admin etant ouverte dans la journee, elle sert de
+   * declencheur : les chauffeurs voient leur progression avec un retard
+   * maximum de 15 minutes, sans aucune infrastructure payante.
+   * L'horodatage n'est enregistre QU'EN CAS DE SUCCES, pour qu'un echec
+   * soit retente au chargement suivant au lieu d'attendre 15 minutes.
+   */
+  async synchroniserCaSiNecessaire(intervalleMinutes = 15) {
+    const CLE = 'pilote_derniere_sync_ca';
+    let dernier = 0;
+    try { dernier = parseInt(localStorage.getItem(CLE) || '0', 10) || 0; } catch (e) {}
+    const ecoule = Date.now() - dernier;
+    if (ecoule < intervalleMinutes * 60 * 1000) {
+      return { ignore: true, prochaineDansMinutes: Math.ceil((intervalleMinutes * 60 * 1000 - ecoule) / 60000) };
+    }
+    const r = await this.synchroniserCaJour(null);
+    if (r && !r.error) {
+      try { localStorage.setItem(CLE, String(Date.now())); } catch (e) {}
+      console.log('[CA] Synchronisation Yango :', r.chauffeursMisAJour, 'chauffeur(s),', r.caTotal, 'FCFA');
+    } else {
+      console.warn('[CA] Synchronisation echouee, nouvel essai au prochain chargement :', r && r.error);
+    }
+    return r;
+  },
+
   async getYangoSyncStatus() {
     // Sync status is now server-side only; return basic info
     try {
