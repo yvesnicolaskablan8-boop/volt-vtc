@@ -58,6 +58,7 @@ const PlanningPage = {
       <div class="planning-legend">
         <div class="planning-legend-item"><div class="planning-legend-dot green"></div>Programme</div>
         <div class="planning-legend-item"><div class="planning-legend-dot gray"></div>Repos</div>
+        <div class="planning-legend-item"><div class="planning-legend-dot" style="background:#f59e0b"></div>Remplacement</div>
         <div class="planning-legend-item"><div class="planning-legend-dot red"></div>Absence</div>
       </div>
       <button class="planning-fab" id="plan-fab"><i class="fas fa-calendar-minus"></i></button>
@@ -87,6 +88,9 @@ const PlanningPage = {
       });
     }
 
+    const ch = (typeof DriverAuth !== 'undefined' && DriverAuth.getChauffeur) ? (DriverAuth.getChauffeur() || {}) : {};
+    const joursRepos = [ch.jourRepos, ch.jourRepos2].filter(j => j === 0 || j).map(Number);
+
     const todayStr = this._dateStr(new Date());
     const dayAbbrs = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'];
 
@@ -99,11 +103,15 @@ const PlanningPage = {
       const isToday = dStr === todayStr;
       const p = planningMap[dStr];
       const absence = absenceMap[dStr];
+      const estRepos = !p && !absence && joursRepos.includes(d.getDay());
+      const estRemplacement = !!(p && p.role === 'doublure');
 
       gridHTML += '<div class="planning-col ' + (isToday ? 'today' : '') + '" data-date="' + dStr + '">';
       gridHTML += '<div class="planning-col-header">';
       gridHTML += '<div class="planning-day-abbr">' + dayAbbrs[d.getDay()] + '</div>';
       gridHTML += '<div class="planning-day-num">' + d.getDate() + '</div>';
+      if (estRepos) gridHTML += '<div style="font-size:9px;font-weight:800;color:#64748b;letter-spacing:.04em">REPOS</div>';
+      else if (estRemplacement) gridHTML += '<div style="font-size:9px;font-weight:800;color:#b45309;letter-spacing:.04em">REMPL.</div>';
       gridHTML += '</div>';
       gridHTML += '<div class="planning-slots">';
 
@@ -111,9 +119,12 @@ const PlanningPage = {
       const activeSlots = this._getActiveSlots(p, absence);
 
       for (let s = 0; s < this._SLOTS.length; s++) {
-        const slotStatus = activeSlots[s];
+        let slotStatus = activeSlots[s];
+        if (estRepos) slotStatus = 'repos';
         if (slotStatus === 'active') {
-          gridHTML += '<div class="planning-slot active"><span class="slot-check"><i class="fas fa-check"></i></span></div>';
+          gridHTML += estRemplacement
+            ? '<div class="planning-slot active" style="background:#fef3c7;border-color:#f59e0b"><span class="slot-check" style="color:#b45309"><i class="fas fa-user-clock"></i></span></div>'
+            : '<div class="planning-slot active"><span class="slot-check"><i class="fas fa-check"></i></span></div>';
         } else if (slotStatus === 'absence') {
           gridHTML += '<div class="planning-slot absence"><span class="slot-icon"><i class="fas fa-times"></i></span></div>';
         } else if (slotStatus === 'repos') {
@@ -216,6 +227,11 @@ const PlanningPage = {
         ? planning.heureDebut + ' - ' + planning.heureFin
         : (creneauLabels[planning.typeCreneaux] || planning.typeCreneaux);
       content = `
+        ${planning.role === 'doublure' ? `
+        <div class="planning-detail-row" style="background:#fef3c7;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+          <span style="font-weight:700;color:#b45309"><i class="fas fa-user-clock"></i> Remplacement</span>
+          <span style="color:#92400e;font-size:.85rem">Vous remplacez le titulaire</span>
+        </div>` : ''}
         <div class="planning-detail-row">
           <span>Creneau</span>
           <span style="font-weight:600;color:#22c55e">${crLabel}</span>
