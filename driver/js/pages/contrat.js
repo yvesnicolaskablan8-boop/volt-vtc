@@ -153,6 +153,15 @@ const ContratPage = {
 
       ${updateBanner}
 
+      ${chauffeur.typeContrat && chauffeur.typeContrat !== 'salarie' ? `
+        <div style="border-radius:1rem;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.25);padding:1rem 1.1rem;margin-bottom:1rem;display:flex;gap:11px;align-items:flex-start">
+          <iconify-icon icon="solar:info-circle-bold-duotone" style="font-size:1.4rem;color:#b45309;flex:none"></iconify-icon>
+          <div style="font-size:0.82rem;color:#92400e;line-height:1.55">
+            <strong>Ce contrat concerne les chauffeurs salariés.</strong><br>
+            Votre situation est enregistrée comme <strong>location</strong>. Rapprochez-vous de l'administration avant toute signature.
+          </div>
+        </div>` : ''}
+
       <!-- Bandeau employeur -->
       <div style="border-radius:1.25rem;background:linear-gradient(135deg,#0f172a,#1e293b);padding:1.25rem;margin-bottom:1rem;color:white">
         <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5);margin-bottom:8px;font-weight:700">Employeur</div>

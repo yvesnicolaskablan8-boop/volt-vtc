@@ -264,7 +264,8 @@ const DriverStore = {
   _preremplirContrat(texte, ch, ent, immat, employeur) {
     if (!texte) return '';
     const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-    const somme = (n) => Number(n || 0).toLocaleString('fr-FR');
+    const somme = (n) => (n === 0 || n) && Number(n) > 0
+      ? Number(n).toLocaleString('fr-FR') : '__________';
     const jour = (j) => (j === 0 || j) ? JOURS[Number(j)] : '__________';
     const date = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '__________';
     const objectif = Number(ch.objectifCaJour || 0);
@@ -291,7 +292,7 @@ const DriverStore = {
       salaire: somme(ch.salaireMensuel),
       jourPaie: ent.jourPaie || '5',
       objectif: somme(objectif),
-      objectifSemaine: somme(objectif * 5),
+      objectifSemaine: objectif > 0 ? somme(objectif * 5) : '__________',
       immatriculation: immat || '__________'
     };
     return texte.replace(/\{\{(\w+)\}\}/g, (m, cle) => (cle in valeurs) ? valeurs[cle] : m);
