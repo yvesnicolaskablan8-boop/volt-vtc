@@ -159,9 +159,58 @@ const AccueilPage = {
     const aPaye = redevanceJour > 0 ? totalVerseJour >= redevanceJour : totalVerseJour > 0;
     const resteAPayer = Math.max(0, redevanceJour - totalVerseJour);
 
-    // Carte argent : verte = payé, orange = à payer (montant énorme + bouton géant)
+    // === SALARIE : il ne doit AUCUNE recette. Lui reclamer de l'argent serait
+    // faux. Ce qui compte pour lui, c'est son objectif de CA et le surplus qui
+    // lui revient au-dela. ===
+    const estSalarie = chauffeur.typeContrat === 'salarie';
+    const objectifJour = Number(chauffeur.objectifCaJour || chauffeur.objectifCa || 0);
+    const caJour = Number((data.stats && data.stats.caJour) || 0);
+    const joursRepos = [chauffeur.jourRepos, chauffeur.jourRepos2]
+      .filter(j => j === 0 || j).map(Number);
+    const estJourRepos = joursRepos.includes(today.getDay());
+
     let carteArgentHTML = '';
-    if (redevanceJour > 0 && !aPaye) {
+    if (estSalarie) {
+      if (estJourRepos) {
+        carteArgentHTML = `
+        <div style="border-radius:1.5rem;background:linear-gradient(150deg,#334155,#475569);padding:1.75rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(51,65,85,0.3);text-align:center">
+          <div style="width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+            <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:2.6rem"></iconify-icon>
+          </div>
+          <div style="font-size:1.5rem;font-weight:900">Repos aujourd'hui</div>
+          <div style="font-size:1rem;font-weight:700;opacity:0.9;margin-top:6px">Bonne journée, ${prenomSafe} 👋</div>
+        </div>`;
+      } else {
+        const pct = objectifJour > 0 ? Math.min(100, Math.round(caJour / objectifJour * 100)) : 0;
+        const atteint = objectifJour > 0 && caJour >= objectifJour;
+        const surplus = Math.max(0, caJour - objectifJour);
+        const reste = Math.max(0, objectifJour - caJour);
+        const fond = atteint ? 'linear-gradient(150deg,#14532d,#166534)' : 'linear-gradient(150deg,#172554,#1e3a8a)';
+        carteArgentHTML = `
+        <div style="border-radius:1.5rem;background:${fond};padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(30,58,138,0.32);text-align:center">
+          <div style="font-size:1.05rem;font-weight:800;opacity:0.95;display:flex;align-items:center;justify-content:center;gap:8px">
+            <iconify-icon icon="solar:target-bold-duotone" style="font-size:1.5rem"></iconify-icon>
+            ${atteint ? 'OBJECTIF ATTEINT' : "OBJECTIF DU JOUR"}
+          </div>
+          <div style="font-size:3rem;font-weight:900;letter-spacing:-0.02em;margin:10px 0 2px;line-height:1">${caJour.toLocaleString('fr-FR')}</div>
+          <div style="font-size:1.1rem;font-weight:800;opacity:0.9;margin-bottom:14px">FCFA gagnés aujourd'hui</div>
+          ${objectifJour > 0 ? `
+            <div style="height:14px;background:rgba(255,255,255,0.22);border-radius:7px;overflow:hidden;margin-bottom:8px">
+              <div style="height:100%;width:${pct}%;background:${atteint ? '#4ade80' : '#facc15'};border-radius:7px;transition:width .5s"></div>
+            </div>
+            <div style="font-size:0.95rem;font-weight:700;opacity:0.92">
+              ${atteint ? 'Objectif de ' + objectifJour.toLocaleString('fr-FR') + ' FCFA dépassé 🎉'
+                        : 'Encore ' + reste.toLocaleString('fr-FR') + ' FCFA pour atteindre ' + objectifJour.toLocaleString('fr-FR')}
+            </div>` : ''}
+          ${surplus > 0 ? `
+            <div style="margin-top:14px;background:rgba(255,255,255,0.20);border-radius:14px;padding:12px">
+              <div style="font-size:0.9rem;font-weight:700;opacity:0.9">CE QUI VOUS REVIENT</div>
+              <div style="font-size:1.8rem;font-weight:900;margin-top:2px">${surplus.toLocaleString('fr-FR')} FCFA</div>
+              <div style="font-size:0.82rem;font-weight:600;opacity:0.85">versé avec le bonus de la semaine</div>
+            </div>` : ''}
+        </div>`;
+      }
+    } else if (redevanceJour > 0 && !aPaye) {
       carteArgentHTML = `
       <div style="border-radius:1.5rem;background:linear-gradient(150deg,#172554,#1e3a8a);padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(30,58,138,0.35);text-align:center">
         <div style="font-size:1.05rem;font-weight:800;opacity:0.95;display:flex;align-items:center;justify-content:center;gap:8px">
@@ -203,7 +252,7 @@ const AccueilPage = {
 
     container.innerHTML = `
       <!-- Salutation (simple, grosse) -->
-      ${redevanceJour > 0 || aPaye ? `<div style="font-size:1.15rem;font-weight:800;color:var(--text-primary);margin:2px 0 10px">${greeting} ${prenomSafe} 👋</div>` : ''}
+      ${(estSalarie && !estJourRepos) || redevanceJour > 0 || aPaye ? `<div style="font-size:1.15rem;font-weight:800;color:var(--text-primary);margin:2px 0 10px">${greeting} ${prenomSafe} 👋</div>` : ''}
 
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
@@ -218,7 +267,9 @@ const AccueilPage = {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
         ${tuile('planning', 'solar:calendar-date-bold-duotone', 'Planning', '#eff6ff', '#1e40af')}
         ${tuile('messagerie', 'solar:chat-round-dots-bold-duotone', 'Messages', '#eff6ff', '#1e40af')}
-        ${tuile('dettes', 'solar:hand-money-bold-duotone', 'Mes dettes', '#fef3c7', '#b45309', nbContraventionsImpayees)}
+        ${estSalarie
+          ? tuile('contraventions', 'solar:document-text-bold-duotone', 'Amendes', '#fef3c7', '#b45309', nbContraventionsImpayees)
+          : tuile('dettes', 'solar:hand-money-bold-duotone', 'Mes dettes', '#fef3c7', '#b45309', nbContraventionsImpayees)}
         ${tuile('signalements', 'solar:danger-triangle-bold-duotone', 'Un problème ?', '#fee2e2', '#b91c1c')}
       </div>
 

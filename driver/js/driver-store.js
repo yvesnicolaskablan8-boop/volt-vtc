@@ -22,12 +22,18 @@ const DriverStore = {
       supabase.from('fleet_versements').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('date', { ascending: false }),
       supabase.from('fleet_courses').select('*').eq('chauffeur_id', id).gte('date_heure', monthStart + 'T00:00:00'),
       supabase.from('fleet_signalements').select('*').eq('chauffeur_id', id).in('statut', ['ouvert', 'en_cours']),
-      supabase.from('fleet_chauffeurs').select('score_conduite, redevance_quotidienne, objectif_ca, vehicule_assigne').eq('id', id).single()
+      supabase.from('fleet_chauffeurs').select('prenom, nom, score_conduite, redevance_quotidienne, objectif_ca, objectif_ca_jour, type_contrat, role_flotte, jour_repos, jour_repos2, vehicule_assigne').eq('id', id).single()
     ]);
 
     const courses = (coursesRes.data || []).map(objToCamel);
     const versements = (versementsRes.data || []).map(objToCamel);
     const ch = chauffeurRes.data ? objToCamel(chauffeurRes.data) : {};
+
+    // CA du jour : c'est lui qui compte pour un salarie, la ou un locataire
+    // regarde ce qu'il a verse. Les courses portent la date-heure complete.
+    const caJour = courses
+      .filter(c => String(c.dateHeure || '').slice(0, 10) === today)
+      .reduce((s, c) => s + (c.montantTtc || 0), 0);
 
     return {
       planning: (planningRes.data || []).map(objToCamel),
@@ -36,6 +42,7 @@ const DriverStore = {
       stats: {
         courses: courses.length,
         ca: courses.reduce((s, c) => s + (c.montantTtc || 0), 0),
+        caJour,
         versementsTotal: versements.reduce((s, v) => s + (v.montantVerse || 0), 0),
         scoreConduite: ch.scoreConduite || 0
       },
