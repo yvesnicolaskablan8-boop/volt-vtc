@@ -20,6 +20,13 @@ const Store = {
    * Called once at app startup after authentication.
    * Fetches every collection in parallel via Promise.all.
    */
+  // Etat du premier chargement. Sans lui, une page ne peut pas distinguer
+  // « les donnees ne sont pas encore arrivees » de « il n'y a rien a afficher »,
+  // et se contente de tourner indefiniment.
+  _phase1: 'en-cours',   // 'en-cours' | 'ok' | 'echec'
+  estPret() { return this._phase1 !== 'en-cours'; },
+  chargementReussi() { return this._phase1 === 'ok'; },
+
   async initialize() {
     // Phase 1: load critical collections first (dashboard needs these)
     const CRITICAL = ['chauffeurs', 'vehicules', 'versements', 'planning', 'settings'];
@@ -35,6 +42,7 @@ const Store = {
         this._cache[collection] = data;
       }
       this._backupToLocalStorage();
+      this._phase1 = 'ok';
       this._notify();
       console.log('Store: Phase 1 loaded (critical collections)');
 
@@ -58,7 +66,9 @@ const Store = {
         .catch(e => console.warn('Store: Phase 2 partial failure:', e.message));
 
     } catch (e) {
+      this._phase1 = 'echec';
       console.warn('Store: Supabase unreachable — using local backup:', e.message);
+      this._notify();
     }
   },
 
