@@ -657,15 +657,12 @@ const DriverApp = {
 
   // =================== PWA INSTALL ===================
 
+  // Bouton « Installer » retire de l'en-tete a la demande de l'utilisateur.
+  // L'invite du navigateur reste captee ailleurs (preventDefault) pour
+  // qu'aucune banniere ne s'affiche a sa place. _installPWA() est conservee :
+  // le retablissement tiendrait a remettre le bouton dans index.html.
   _setupInstallButton() {
-    const btn = document.getElementById('btn-install-pwa');
-    if (!btn) return;
-    btn.addEventListener('click', () => this._installPWA());
-
-    // Masquer si déjà installé (mode standalone)
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-      btn.style.display = 'none';
-    }
+    this._hideInstallButton();
   },
 
   _hideInstallButton() {

@@ -25,7 +25,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 31;
+    var APP_VERSION = 32;
     var stored = parseInt(localStorage.getItem('pilote_driver_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_driver_version', APP_VERSION);
@@ -59,7 +59,7 @@
   <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="/driver/css/driver.css?v=50">
+  <link rel="stylesheet" href="/driver/css/driver.css?v=51">
 </head>
 <body>
   <!-- Login Screen -->
@@ -113,9 +113,6 @@
         <h2 id="page-title">Accueil</h2>
       </div>
       <div class="header-actions">
-        <button id="btn-install-pwa" class="header-btn" title="Installer l'application">
-          <iconify-icon icon="solar:download-minimalistic-bold-duotone" style="font-size:1rem;"></iconify-icon> Installer
-        </button>
         <button id="btn-notifications" class="header-btn notif-bell-btn" title="Notifications">
           <iconify-icon icon="solar:bell-bing-bold-duotone" style="font-size:1.25rem"></iconify-icon>
           <span id="notif-badge" class="notif-badge" style="display:none">0</span>
@@ -165,33 +162,33 @@
   <script src="/js/supabase-config.js"></script>
 
   <!-- Scripts -->
-  <script src="/driver/js/driver-store.js?v=50"></script>
-  <script src="/driver/js/driver-behavior.js?v=50"></script>
-  <script src="/driver/js/components/driver-toast.js?v=50"></script>
-  <script src="/driver/js/components/driver-modal.js?v=50"></script>
-  <script src="/driver/js/components/driver-nav.js?v=50"></script>
-  <script src="/driver/js/components/driver-countdown.js?v=50"></script>
-  <script src="/driver/js/components/driver-trip-tracker.js?v=50"></script>
-  <script src="/driver/js/pages/accueil.js?v=50"></script>
-  <script src="/driver/js/pages/planning.js?v=50"></script>
-  <script src="/driver/js/pages/versements.js?v=50"></script>
-  <script src="/driver/js/pages/dettes.js?v=50"></script>
-  <script src="/driver/js/pages/signalements.js?v=50"></script>
-  <script src="/driver/js/pages/profil.js?v=50"></script>
-  <script src="/driver/js/pages/notifications.js?v=50"></script>
-  <script src="/driver/js/pages/messagerie.js?v=50"></script>
-  <script src="/driver/js/pages/maintenance.js?v=50"></script>
-  <script src="/driver/js/pages/etat-lieux.js?v=50"></script>
-  <script src="/driver/js/pages/documents.js?v=50"></script>
-  <script src="/driver/js/pages/support.js?v=50"></script>
-  <script src="/driver/js/pages/plus.js?v=50"></script>
-  <script src="/driver/js/pages/trajets.js?v=50"></script>
-  <script src="/driver/js/pages/checklist.js?v=50"></script>
-  <script src="/driver/js/pages/classement.js?v=50"></script>
-  <script src="/driver/js/pages/contraventions.js?v=50"></script>
-  <script src="/driver/js/pages/contrat.js?v=50"></script>
-  <script src="/driver/js/driver-auth.js?v=50"></script>
-  <script src="/driver/js/driver-router.js?v=50"></script>
-  <script src="/driver/js/driver-app.js?v=50"></script>
+  <script src="/driver/js/driver-store.js?v=51"></script>
+  <script src="/driver/js/driver-behavior.js?v=51"></script>
+  <script src="/driver/js/components/driver-toast.js?v=51"></script>
+  <script src="/driver/js/components/driver-modal.js?v=51"></script>
+  <script src="/driver/js/components/driver-nav.js?v=51"></script>
+  <script src="/driver/js/components/driver-countdown.js?v=51"></script>
+  <script src="/driver/js/components/driver-trip-tracker.js?v=51"></script>
+  <script src="/driver/js/pages/accueil.js?v=51"></script>
+  <script src="/driver/js/pages/planning.js?v=51"></script>
+  <script src="/driver/js/pages/versements.js?v=51"></script>
+  <script src="/driver/js/pages/dettes.js?v=51"></script>
+  <script src="/driver/js/pages/signalements.js?v=51"></script>
+  <script src="/driver/js/pages/profil.js?v=51"></script>
+  <script src="/driver/js/pages/notifications.js?v=51"></script>
+  <script src="/driver/js/pages/messagerie.js?v=51"></script>
+  <script src="/driver/js/pages/maintenance.js?v=51"></script>
+  <script src="/driver/js/pages/etat-lieux.js?v=51"></script>
+  <script src="/driver/js/pages/documents.js?v=51"></script>
+  <script src="/driver/js/pages/support.js?v=51"></script>
+  <script src="/driver/js/pages/plus.js?v=51"></script>
+  <script src="/driver/js/pages/trajets.js?v=51"></script>
+  <script src="/driver/js/pages/checklist.js?v=51"></script>
+  <script src="/driver/js/pages/classement.js?v=51"></script>
+  <script src="/driver/js/pages/contraventions.js?v=51"></script>
+  <script src="/driver/js/pages/contrat.js?v=51"></script>
+  <script src="/driver/js/driver-auth.js?v=51"></script>
+  <script src="/driver/js/driver-router.js?v=51"></script>
+  <script src="/driver/js/driver-app.js?v=51"></script>
 </body>
 </html>
