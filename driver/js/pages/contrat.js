@@ -18,8 +18,15 @@ const ContratPage = {
 
     const data = await DriverStore.getContrat();
 
-    if (!data || !data.chauffeur) {
-      container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Impossible de charger le contrat</p></div>';
+    if (!data || data.erreur || !data.chauffeur) {
+      const detail = (data && data.erreur) ? data.erreur : 'Donnees indisponibles';
+      container.innerHTML = `<div style="padding:2rem 1.25rem;text-align:center">
+        <iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size:2.6rem;color:#b45309"></iconify-icon>
+        <h3 style="margin:12px 0 6px;font-size:1.05rem;color:#0f172a">Contrat indisponible</h3>
+        <p style="color:#64748b;font-size:.86rem;line-height:1.6">Impossible de charger votre contrat pour le moment. Reessayez, et prevenez l'administration si cela persiste.</p>
+        <details style="margin-top:14px;text-align:left"><summary style="cursor:pointer;color:#94a3b8;font-size:.78rem">Detail technique</summary>
+          <pre style="white-space:pre-wrap;font-size:.72rem;color:#64748b;background:#f8fafc;padding:10px;border-radius:8px;margin-top:8px">${this._esc(detail)}</pre></details>
+      </div>`;
       return;
     }
 

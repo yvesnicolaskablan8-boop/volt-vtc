@@ -215,14 +215,21 @@ const DriverStore = {
     const id = this._chauffeurId();
     const [chRes, setRes] = await Promise.all([
       supabase.from('fleet_chauffeurs')
-        .select('prenom, nom, telephone, sexe, date_debut_contrat, date_fin_contrat, redevance_quotidienne, salaire_mensuel, objectif_ca_jour, jour_repos, jour_repos2, vehicule_assigne, type_contrat, contrat_accepte, contrat_accepte_le, contrat_version')
+        .select('prenom, nom, telephone, date_debut_contrat, date_fin_contrat, redevance_quotidienne, salaire_mensuel, objectif_ca_jour, jour_repos, jour_repos2, vehicule_assigne, type_contrat, contrat_accepte, contrat_accepte_le, contrat_version')
         .eq('id', id).single(),
       // Les regles RLS interdisent fleet_settings au chauffeur — et il ne faut
       // surtout pas la lui ouvrir : elle contient les identifiants Yango.
       // Ce RPC n'expose que le contrat et les mentions publiques.
       supabase.rpc('fleet_contrat_modele')
     ]);
-    if (!chRes.data) return null;
+    if (chRes.error) {
+      console.error('[Contrat] Lecture du chauffeur impossible :', chRes.error.message);
+      return { erreur: chRes.error.message };
+    }
+    if (setRes && setRes.error) {
+      console.error('[Contrat] Lecture du modele impossible :', setRes.error.message);
+    }
+    if (!chRes.data) return { erreur: 'Profil chauffeur introuvable' };
 
     const ch = objToCamel(chRes.data);
     const bloc = (setRes && setRes.data) || {};
@@ -259,7 +266,7 @@ const DriverStore = {
       employeur: ent.nom || ent.raisonSociale || '__________',
       siege: ent.adresse || '__________',
       gerant: ent.gerant || ent.representant || '__________',
-      civilite: ch.sexe === 'F' ? 'Madame' : 'Monsieur',
+      civilite: 'Monsieur/Madame',   // aucune donnee de civilite en base
       nomComplet: `${ch.prenom || ''} ${ch.nom || ''}`.trim() || '__________',
       telephone: ch.telephone || '__________',
       dateDebut: date(ch.dateDebutContrat),
