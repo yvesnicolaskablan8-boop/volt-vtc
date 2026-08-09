@@ -9,6 +9,7 @@
 const SimulateurPage = {
   _mois: null,
   _params: null,
+  _onglet: null,
 
   _defauts() {
     return { objectifCA: 70000, commission: 18, energie: 4000, entretien: 100000,
@@ -20,6 +21,11 @@ const SimulateurPage = {
   render() {
     const container = document.getElementById('page-content');
     if (!this._mois) { const n = new Date(); this._mois = `${n.getFullYear()}-${n.getMonth()}`; }
+    if (!this._onglet) {
+      let o = null;
+      try { o = localStorage.getItem('pilote_simulateur_onglet'); } catch (e) {}
+      this._onglet = ['finance', 'jour', 'cal', 'effectif'].includes(o) ? o : 'finance';
+    }
     if (!this._params) {
       let sauve = null;
       try { sauve = JSON.parse(localStorage.getItem('pilote_simulateur') || 'null'); } catch (e) {}
@@ -89,6 +95,7 @@ const SimulateurPage = {
 
   _template() {
     const now = new Date();
+    const ongletActif = this._onglet || 'finance';
     let opts = '';
     for (let i = 0; i < 12; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
@@ -106,6 +113,22 @@ const SimulateurPage = {
       </div>`;
 
     return `
+      <style>
+        .sim-onglets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:var(--space-md);}
+        .sim-onglet{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;
+          border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-secondary);
+          font-size:var(--font-size-sm);font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+        .sim-onglet:hover{border-color:var(--pilote-blue);color:var(--pilote-blue);}
+        .sim-onglet.actif{background:var(--pilote-blue);border-color:var(--pilote-blue);color:#fff;}
+        .sim-panneau{display:none;}
+        .sim-panneau.actif{display:block;}
+        @media (min-width:1100px){
+          .sim-hypotheses{position:sticky;top:12px;max-height:calc(100vh - 90px);overflow-y:auto;}
+        }
+        @media (max-width:1099px){
+          .sim-colonnes{grid-template-columns:1fr !important;}
+        }
+      </style>
       <div class="page-header">
         <h1><iconify-icon icon="solar:calculator-minimalistic-bold-duotone"></iconify-icon> Simulateur salariat</h1>
         <div class="page-actions">
@@ -118,8 +141,8 @@ const SimulateurPage = {
         jours de repos décalés, 6 jours consécutifs maximum. Modifiez les hypothèses, tout se recalcule.
       </div>
 
-      <div class="d-grid" style="grid-template-columns:minmax(280px,340px) 1fr;gap:var(--space-lg);align-items:start;">
-        <div class="card" style="padding:var(--space-md);">
+      <div class="d-grid sim-colonnes" style="grid-template-columns:minmax(280px,340px) 1fr;gap:var(--space-lg);align-items:start;">
+        <div class="card sim-hypotheses" style="padding:var(--space-md);">
           <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:12px;">Hypothèses</div>
           ${curseur('objectifCA', 'Objectif CA / jour', 20000, 120000, 1000)}
           ${curseur('commission', 'Commission Yango (%)', 0, 30, 1)}
@@ -147,14 +170,28 @@ const SimulateurPage = {
         <div>
           <div id="sim-kpis" class="d-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:var(--space-md);"></div>
           <div id="sim-alerte"></div>
-          <div class="card" style="padding:var(--space-md);margin-bottom:var(--space-md);">
-            <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Projection financière</div>
-            <div id="sim-finance"></div>
+          <div class="sim-onglets" id="sim-onglets">
+            <button class="sim-onglet${ongletActif === 'finance' ? ' actif' : ''}" data-onglet="finance"><iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon> Finances</button>
+            <button class="sim-onglet${ongletActif === 'jour' ? ' actif' : ''}" data-onglet="jour"><iconify-icon icon="solar:sun-2-bold-duotone"></iconify-icon> Au jour le jour</button>
+            <button class="sim-onglet${ongletActif === 'cal' ? ' actif' : ''}" data-onglet="cal"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Calendrier</button>
+            <button class="sim-onglet${ongletActif === 'effectif' ? ' actif' : ''}" data-onglet="effectif"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon> Effectif</button>
           </div>
-          <div class="card" style="padding:var(--space-md);margin-bottom:var(--space-md);">
-            <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Au jour le jour</div>
-            <div id="sim-jour"></div>
+
+          <div class="sim-panneau${ongletActif === 'finance' ? ' actif' : ''}" data-panneau="finance">
+            <div class="card" style="padding:var(--space-md);">
+              <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Projection financière</div>
+              <div id="sim-finance"></div>
+            </div>
           </div>
+
+          <div class="sim-panneau${ongletActif === 'jour' ? ' actif' : ''}" data-panneau="jour">
+            <div class="card" style="padding:var(--space-md);">
+              <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Au jour le jour</div>
+              <div id="sim-jour"></div>
+            </div>
+          </div>
+
+          <div class="sim-panneau${ongletActif === 'cal' ? ' actif' : ''}" data-panneau="cal">
           <div class="card" style="padding:var(--space-md);">
             <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Calendrier du mois</div>
             <div id="sim-cal" style="overflow-x:auto;"></div>
@@ -164,9 +201,13 @@ const SimulateurPage = {
               <span><span style="display:inline-block;width:13px;height:13px;border-radius:4px;background:#f1f5f9;vertical-align:-2px;margin-right:5px;"></span>Voiture à l'arrêt</span>
             </div>
           </div>
-          <div class="card" style="padding:var(--space-md);margin-top:var(--space-md);">
-            <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Effectif</div>
-            <div id="sim-effectif" style="overflow-x:auto;"></div>
+          </div>
+
+          <div class="sim-panneau${ongletActif === 'effectif' ? ' actif' : ''}" data-panneau="effectif">
+            <div class="card" style="padding:var(--space-md);">
+              <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Effectif</div>
+              <div id="sim-effectif" style="overflow-x:auto;"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -191,6 +232,18 @@ const SimulateurPage = {
     if (m) m.addEventListener('change', () => { this._mois = m.value; this._calculer(); });
     const r = document.getElementById('sim-reset');
     if (r) r.addEventListener('click', () => { this._params = this._defauts(); this._sauver(); this.render(); });
+
+    // Onglets : on bascule l'affichage sans recalculer, les panneaux sont deja remplis.
+    const barre = document.getElementById('sim-onglets');
+    if (barre) barre.addEventListener('click', (e) => {
+      const btn = e.target.closest('.sim-onglet');
+      if (!btn) return;
+      const cible = btn.dataset.onglet;
+      this._onglet = cible;
+      try { localStorage.setItem('pilote_simulateur_onglet', cible); } catch (err) {}
+      barre.querySelectorAll('.sim-onglet').forEach(b => b.classList.toggle('actif', b.dataset.onglet === cible));
+      document.querySelectorAll('.sim-panneau').forEach(pn => pn.classList.toggle('actif', pn.dataset.panneau === cible));
+    });
   },
 
   _calculer() {
