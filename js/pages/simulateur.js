@@ -440,6 +440,7 @@ const SimulateurPage = {
       <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);min-width:520px;">
         <tr style="background:var(--bg-tertiary);">
           <th style="padding:7px 8px;text-align:left;font-size:var(--font-size-xs);color:var(--text-secondary);">Chauffeur</th>
+          <th style="padding:7px 8px;text-align:left;font-size:var(--font-size-xs);color:var(--text-secondary);">Véhicule</th>
           <th style="padding:7px 8px;text-align:left;font-size:var(--font-size-xs);color:var(--text-secondary);">Rôle</th>
           <th style="padding:7px 8px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">Jours</th>
           <th style="padding:7px 8px;text-align:right;font-size:var(--font-size-xs);color:var(--text-secondary);">Repos</th>
@@ -447,6 +448,7 @@ const SimulateurPage = {
         </tr>
         ${tous.map(x => { const mc = Utils.maxJoursConsecutifs(x.jours); return `<tr style="border-bottom:1px solid var(--border-color);">
           <td style="padding:6px 8px;font-weight:600;">${Utils.escHtml(x.nom)}</td>
+          <td style="padding:6px 8px;color:var(--text-secondary);">${x.vehicule ? Utils.escHtml(x.vehicule) : 'Remplacements'}</td>
           <td style="padding:6px 8px;${x.aRecruter ? 'color:#b91c1c;font-weight:700;' : ''}">${x.role}</td>
           <td style="padding:6px 8px;text-align:right;">${x.jours.length}</td>
           <td style="padding:6px 8px;text-align:right;">${sim.nbJours - x.jours.length}</td>
