@@ -188,7 +188,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 439;
+      const SW_VERSION = 440;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
@@ -1200,17 +1200,13 @@ const App = {
   // PWA Install
   _deferredPrompt: null,
 
+  // Bouton « Installer » retire de l'en-tete a la demande de l'utilisateur :
+  // il clignotait en permanence sans rendre de service, l'application etant
+  // consultee au navigateur. L'invite du navigateur reste captee ci-dessus
+  // (preventDefault) pour qu'aucune banniere ne s'affiche non plus.
+  // Pour le retablir : recreer le bouton ici et appeler _installPWA().
   _showInstallButton() {
-    const headerRight = document.querySelector('.header-right');
-    if (!headerRight || document.getElementById('btn-install-pwa')) return;
-    const btn = document.createElement('button');
-    btn.id = 'btn-install-pwa';
-    btn.className = 'btn btn-primary';
-    btn.title = 'Installer Pilote';
-    btn.style.cssText = 'font-size:12px;padding:6px 12px;gap:4px;animation:pulse-dot 2s infinite;';
-    btn.innerHTML = '<iconify-icon icon="solar:download-minimalistic-bold-duotone"></iconify-icon> Installer';
-    btn.addEventListener('click', () => this._installPWA());
-    headerRight.insertBefore(btn, headerRight.firstChild);
+    this._hideInstallButton();
   },
 
   _hideInstallButton() {
