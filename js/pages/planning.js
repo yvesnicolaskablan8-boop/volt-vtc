@@ -458,7 +458,10 @@ const PlanningPage = {
         .pm-head.today { color:#6366f1; background:rgba(99,102,241,.08); border-radius:8px 8px 0 0; border-bottom:2px solid #6366f1; }
         .pm-head .pm-daynum { display:block; font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px; }
         .pm-head.today .pm-daynum { color:#6366f1; }
-        .pm-driver { display:flex; align-items:center; padding:4px 0; overflow:hidden; }
+        .pm-driver { display:flex; align-items:center; padding:4px 6px; margin:0 -6px; overflow:hidden;
+          border-radius:7px; border:1px solid transparent; transition:background .12s, color .12s, border-color .12s; }
+        .pm-driver:hover { background:var(--pilote-blue); border-color:var(--pilote-blue); }
+        .pm-driver:hover .pm-driver-name, .pm-driver:hover .pm-driver-plaque { color:#fff !important; }
         .pm-driver-name { font-size:12px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
         .pm-driver-plaque { font-size:9px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
         .pm-cell { height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; font-size:11px; font-weight:700; }
@@ -602,7 +605,11 @@ const PlanningPage = {
           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:4px 0;
           text-decoration:none; cursor:pointer;
         }
-        .pg-driver:hover { opacity:.8; }
+        .pg-driver { border-radius:7px; padding:2px 5px; margin:0 -5px; border:1px solid transparent;
+          transition:background .12s, color .12s, border-color .12s; }
+        .pg-driver:hover { background:var(--pilote-blue); color:#fff !important; border-color:var(--pilote-blue);
+          box-shadow:0 2px 8px rgba(79,70,229,.35); }
+        .pg-driver:hover * { color:#fff !important; }
         [data-theme="dark"] .pg-driver { color:#d1d5db; }
         .pg-avatar {
           width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
@@ -986,8 +993,16 @@ const PlanningPage = {
       .pcal-num-out { color:var(--text-muted); }
       .pcal-today { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--text-primary); color:var(--bg-secondary); font-weight:800; }
       .pcal-chips { display:flex; flex-direction:column; gap:3px; overflow:hidden; }
-      .pcal-chip { display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:var(--text-secondary); background:var(--bg-tertiary); border-radius:6px; padding:2px 6px; white-space:nowrap; overflow:hidden; }
-      .pcal-chip:hover { background:var(--border-color); }
+      .pcal-chip { display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:var(--text-secondary); background:var(--bg-tertiary); border-radius:6px; padding:2px 6px; white-space:nowrap; overflow:hidden; cursor:pointer;
+        border:1px solid transparent; transition:background .12s, color .12s, border-color .12s, transform .12s; }
+      /* Survol franc : le chip est cliquable et ouvre le creneau. Un simple
+         changement de fond se remarquait a peine sur fond sombre. */
+      .pcal-chip:hover { background:var(--pilote-blue); color:#fff; border-color:var(--pilote-blue);
+        transform:translateX(2px); box-shadow:0 2px 8px rgba(79,70,229,.35); }
+      .pcal-chip:hover .pcal-chip-txt { opacity:1; }
+      .pcal-chip:hover .pcal-chip-time { color:rgba(255,255,255,.85); }
+      .pcal-chip:hover .pcal-dot { box-shadow:0 0 0 2px rgba(255,255,255,.65); }
+      .pcal-chip:active { transform:translateX(2px) scale(.98); }
       .pcal-chip-abs .pcal-chip-txt { opacity:.75; }
       .pcal-chip-txt { overflow:hidden; text-overflow:ellipsis; }
       .pcal-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
