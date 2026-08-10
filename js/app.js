@@ -188,7 +188,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 445;
+      const SW_VERSION = 446;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
@@ -291,6 +291,9 @@ const App = {
         setTimeout(() => {
           try { Store.synchroniserCaSiNecessaire(); } catch (e) { console.warn('[CA]', e); }
         }, 3000);
+        // Session perdue : le dire clairement plutot que d'afficher des ecrans
+        // vides que l'utilisateur prendrait pour une perte de donnees.
+        setTimeout(() => this._avertirSessionExpiree(), 1200);
       } else if (Auth.getSession()) {
         // Supabase session expired but local session exists — try offline
         console.warn('Session Supabase expirée — mode local');
@@ -1200,6 +1203,24 @@ const App = {
     }
     this._showLogin();
     Toast.show('Déconnexion réussie.', 'info');
+  },
+
+  /** Bandeau explicite quand la session est perdue : les donnees sont intactes. */
+  _avertirSessionExpiree() {
+    if (typeof Store.sessionExpiree !== 'function' || !Store.sessionExpiree()) return;
+    if (document.getElementById('bandeau-session')) return;
+    const b = document.createElement('div');
+    b.id = 'bandeau-session';
+    b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#b45309;color:#fff;padding:13px 16px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;font-size:14px;box-shadow:0 -4px 16px rgba(0,0,0,.18);';
+    const t = document.createElement('span');
+    t.textContent = 'Votre session a expiré. Vos données ne sont pas perdues — reconnectez-vous pour les revoir.';
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm';
+    btn.style.cssText = 'background:#fff;color:#b45309;font-weight:800;';
+    btn.textContent = 'Se reconnecter';
+    btn.addEventListener('click', () => { try { App.logout(); } catch (e) { location.reload(); } });
+    b.appendChild(t); b.appendChild(btn);
+    document.body.appendChild(b);
   },
 
   // PWA Install

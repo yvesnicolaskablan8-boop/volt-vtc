@@ -23,9 +23,23 @@ const Store = {
   // Etat du premier chargement. Sans lui, une page ne peut pas distinguer
   // « les donnees ne sont pas encore arrivees » de « il n'y a rien a afficher »,
   // et se contente de tourner indefiniment.
-  _phase1: 'en-cours',   // 'en-cours' | 'ok' | 'echec'
+  _phase1: 'en-cours',   // 'en-cours' | 'ok' | 'echec' | 'session'
   estPret() { return this._phase1 !== 'en-cours'; },
   chargementReussi() { return this._phase1 === 'ok'; },
+  sessionExpiree() { return this._phase1 === 'session'; },
+
+  /**
+   * Sans session valide, PostgREST renvoie un tableau vide avec un code 200 :
+   * aucune erreur, juste le neant. L'application croyait alors avoir charge
+   * avec succes zero chauffeur et affichait « Aucune donnee » partout, alors
+   * que la base etait pleine. On distingue donc explicitement les deux cas.
+   */
+  async _verifierSession() {
+    try {
+      const { data } = await supabase.auth.getSession();
+      return !!(data && data.session && data.session.access_token);
+    } catch (e) { return false; }
+  },
 
   async initialize() {
     // Phase 1: load critical collections first (dashboard needs these)
@@ -41,10 +55,17 @@ const Store = {
       for (const { collection, data } of criticalResults) {
         this._cache[collection] = data;
       }
-      this._backupToLocalStorage();
-      this._phase1 = 'ok';
+      // Tout vide ? Ce n'est un resultat legitime que si la session est valide.
+      const totalCritique = CRITICAL.reduce((n, col) => n + ((this._cache[col] || []).length || 0), 0);
+      if (totalCritique === 0 && !(await this._verifierSession())) {
+        this._phase1 = 'session';
+        console.warn('Store: aucune donnee ET aucune session valide — session expiree.');
+      } else {
+        this._backupToLocalStorage();
+        this._phase1 = 'ok';
+        console.log('Store: Phase 1 loaded (critical collections)');
+      }
       this._notify();
-      console.log('Store: Phase 1 loaded (critical collections)');
 
       // Phase 2: fetch remaining collections in background (non-blocking)
       const allCollections = Object.keys(this._emptyData());
