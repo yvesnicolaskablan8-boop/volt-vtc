@@ -273,7 +273,7 @@ const Store = {
       return;
     }
     try {
-      const row = objToSnake(item);
+      const row = this._normaliserEcriture(objToSnake(item));
       const { error } = await supabase.from(table).insert(row);
       if (error) {
         console.error(`Store: Supabase insert ${collection} failed:`, error.message);
@@ -294,7 +294,7 @@ const Store = {
       return;
     }
     try {
-      const row = objToSnake(updates);
+      const row = this._normaliserEcriture(objToSnake(updates));
       const { error } = await supabase.from(table).update(row).eq('id', id);
       if (error) {
         console.error(`Store: Supabase update ${collection}/${id} failed:`, error.message);
@@ -332,7 +332,7 @@ const Store = {
     const table = TABLE_MAP.settings;
     if (!table) return;
     try {
-      const row = objToSnake(data);
+      const row = this._normaliserEcriture(objToSnake(data));
       const { error } = await supabase.from(table).upsert(row, { onConflict: 'id' });
       if (error) {
         console.error('Store: Supabase upsert settings failed:', error.message);
@@ -370,7 +370,7 @@ const Store = {
 
       // Insert all new rows (if any)
       if (Array.isArray(items) && items.length > 0) {
-        const rows = items.map(item => objToSnake(item));
+        const rows = items.map(item => this._normaliserEcriture(objToSnake(item)));
         const { error: insError } = await supabase.from(table).insert(rows);
         if (insError) {
           console.error(`Store: Supabase bulk insert ${collection} failed:`, insError.message);
@@ -385,6 +385,25 @@ const Store = {
   /**
    * Show a toast notification for sync errors (if Toast is available).
    */
+  /**
+   * Un champ de formulaire vide vaut '' et non null. Envoye tel quel a une
+   * colonne date ou numerique, PostgreSQL rejette la requete ENTIERE
+   * (22007 : invalid input syntax for type date: ""), donc rien n'est
+   * enregistre — alors que l'ecran annonce « modifie avec succes », le cache
+   * local ayant deja ete mis a jour.
+   * On convertit donc toute chaine vide en null avant l'ecriture : pour une
+   * colonne texte, les deux ont le meme sens ; pour une date ou un nombre,
+   * seul null est accepte.
+   */
+  _normaliserEcriture(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      out[k] = (typeof v === 'string' && v.trim() === '') ? null : v;
+    }
+    return out;
+  },
+
   _showSyncError(detail, contexte) {
     const msg = String((detail && detail.message) || detail || '');
     // Un message generique obligeait a fouiller la console pour savoir ce qui
