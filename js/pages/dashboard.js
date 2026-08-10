@@ -482,7 +482,18 @@ const DashboardPage = {
       const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       heatmapWeekDays.push({ date: ds, label: dayLabels[i], dayNum: d.getDate(), isToday: ds === hmToday });
     }
-    const activeDrivers = chauffeurs.filter(c => c.statut === 'actif').sort((a, b) => (a.prenom || '').localeCompare(b.prenom || ''));
+    // Ce bloc s'appelle « Planning semaine » : il doit montrer qui est
+    // PROGRAMME. Ne garder que le statut « actif » en excluait des chauffeurs
+    // ayant pourtant un creneau — « repos » decrit l'etat du JOUR, pas une
+    // indisponibilite pour la semaine. Le tableau de bord annoncait alors deux
+    // chauffeurs la ou le planning en montrait trois.
+    const joursSemaine = new Set(heatmapWeekDays.map(d => d.date));
+    const programmesSemaine = new Set(
+      (planning || []).filter(p => joursSemaine.has(p.date)).map(p => p.chauffeurId)
+    );
+    const activeDrivers = chauffeurs
+      .filter(c => c.statut === 'actif' || programmesSemaine.has(c.id))
+      .sort((a, b) => (a.prenom || '').localeCompare(b.prenom || ''));
     const heatmapDrivers = activeDrivers.map(c => {
       const cells = heatmapWeekDays.map(wd => {
         // Check absence
