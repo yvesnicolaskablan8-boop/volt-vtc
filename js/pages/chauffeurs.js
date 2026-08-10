@@ -143,11 +143,129 @@ const ChauffeursPage = {
         <div class="kpi-card yellow"><div class="kpi-value">${stats.suspendus}</div><div class="kpi-label">Suspendus</div></div>
       </div>
 
+      <div class="card" style="padding:12px 14px;margin-bottom:var(--space-md);display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
+        <div style="flex:1;min-width:190px;">
+          <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Rechercher</label>
+          <input type="search" id="flt-nom" class="form-control" placeholder="Nom, prénom ou téléphone" value="${Utils.escHtml(this._filtres.texte || '')}">
+        </div>
+        <div style="min-width:150px;">
+          <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Statut</label>
+          <select id="flt-statut" class="form-control">
+            <option value="">Tous</option>
+            <option value="actif">Actif</option>
+            <option value="repos">Repos</option>
+            <option value="inactif">Inactif</option>
+            <option value="suspendu">Suspendu</option>
+          </select>
+        </div>
+        <div style="min-width:160px;">
+          <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Contrat</label>
+          <select id="flt-contrat" class="form-control">
+            <option value="">Tous</option>
+            <option value="salarie">Salarié</option>
+            <option value="location">Location</option>
+          </select>
+        </div>
+        <div style="min-width:150px;">
+          <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Rôle</label>
+          <select id="flt-role" class="form-control">
+            <option value="">Tous</option>
+            <option value="titulaire">Titulaire</option>
+            <option value="doublure">Doublure</option>
+          </select>
+        </div>
+        <div style="min-width:170px;">
+          <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Trier par</label>
+          <select id="flt-tri" class="form-control">
+            <option value="nom">Nom (A → Z)</option>
+            <option value="nom-desc">Nom (Z → A)</option>
+            <option value="score">Score décroissant</option>
+            <option value="statut">Statut</option>
+          </select>
+        </div>
+        <button class="btn btn-sm btn-secondary" id="flt-reset">Réinitialiser</button>
+        <div id="flt-compte" style="width:100%;font-size:var(--font-size-xs);color:var(--text-muted);"></div>
+      </div>
+
       <div id="chauffeurs-table"></div>
     `;
   },
 
+  _filtres: { texte: '', statut: '', contrat: '', role: '', tri: 'nom' },
+
+  /** Relie la barre de filtres : chaque changement redessine le tableau. */
+  _bindFiltres() {
+    const relier = (id, cle, evt) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (cle !== 'texte') el.value = this._filtres[cle] || '';
+      el.addEventListener(evt, () => {
+        this._filtres[cle] = el.value;
+        this._redessinerTableau();
+      });
+    };
+    relier('flt-nom', 'texte', 'input');
+    relier('flt-statut', 'statut', 'change');
+    relier('flt-contrat', 'contrat', 'change');
+    relier('flt-role', 'role', 'change');
+    relier('flt-tri', 'tri', 'change');
+
+    const reset = document.getElementById('flt-reset');
+    if (reset) reset.addEventListener('click', () => {
+      this._filtres = { texte: '', statut: '', contrat: '', role: '', tri: 'nom' };
+      ['flt-nom', 'flt-statut', 'flt-contrat', 'flt-role'].forEach(i => {
+        const e = document.getElementById(i); if (e) e.value = '';
+      });
+      const t = document.getElementById('flt-tri'); if (t) t.value = 'nom';
+      this._redessinerTableau();
+    });
+    this._majCompteFiltre();
+  },
+
+  /** Redessine uniquement le tableau, sans reconstruire la page ni la saisie. */
+  _redessinerTableau() {
+    const tous = Store.get('chauffeurs') || [];
+    const filtres = this._appliquerFiltres(tous);
+    // Table.create expose refresh(), pas update()
+    if (this._table && typeof this._table.refresh === 'function') this._table.refresh(filtres);
+    else this._bindListEvents();
+    this._majCompteFiltre();
+  },
+
+  _majCompteFiltre() {
+    const zone = document.getElementById('flt-compte');
+    if (!zone) return;
+    const tous = (Store.get('chauffeurs') || []).length;
+    const vus = this._appliquerFiltres(Store.get('chauffeurs') || []).length;
+    zone.textContent = vus === tous
+      ? `${tous} chauffeur${tous > 1 ? 's' : ''}`
+      : `${vus} chauffeur${vus > 1 ? 's' : ''} sur ${tous}`;
+  },
+
+  /** Applique recherche, filtres et tri sur la liste. */
+  _appliquerFiltres(liste) {
+    const f = this._filtres;
+    let r = (liste || []).slice();
+
+    if (f.texte) {
+      const q = f.texte.toLowerCase().trim();
+      r = r.filter(c => `${c.prenom || ''} ${c.nom || ''} ${c.telephone || ''}`.toLowerCase().includes(q));
+    }
+    if (f.statut)  r = r.filter(c => (c.statut || '') === f.statut);
+    if (f.contrat) r = r.filter(c => (c.typeContrat || 'location') === f.contrat);
+    // « Non défini » ne doit pas etre confondu avec un role choisi
+    if (f.role)    r = r.filter(c => (c.roleFlotte || '') === f.role);
+
+    const nom = (c) => `${c.nom || ''} ${c.prenom || ''}`.toLowerCase();
+    if (f.tri === 'nom')       r.sort((a, b) => nom(a).localeCompare(nom(b)));
+    else if (f.tri === 'nom-desc') r.sort((a, b) => nom(b).localeCompare(nom(a)));
+    else if (f.tri === 'score')    r.sort((a, b) => (b.scoreConduite || 0) - (a.scoreConduite || 0));
+    else if (f.tri === 'statut')   r.sort((a, b) => (a.statut || '').localeCompare(b.statut || '') || nom(a).localeCompare(nom(b)));
+    return r;
+  },
+
   _bindListEvents() {
+    this._bindFiltres();
     const chauffeurs = Store.get('chauffeurs');
     const vehicules = Store.get('vehicules');
     const today = new Date().toISOString().split('T')[0];
@@ -196,7 +314,7 @@ const ChauffeursPage = {
           }
         }
       ],
-      data: chauffeurs,
+      data: this._appliquerFiltres(chauffeurs),
       pageSize: 10,
       initialPage: this._currentPage,
       onPageChange: (page) => { this._currentPage = page; },
