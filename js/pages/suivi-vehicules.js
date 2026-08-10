@@ -1,0 +1,171 @@
+/**
+ * SuiviVehiculesPage — position en direct des vehicules equipes d'un boitier GPS.
+ *
+ * La source est le boitier pose sur la voiture, pas le telephone du chauffeur :
+ * le suivi ne depend ni de la batterie du telephone, ni de l'application
+ * ouverte, ni d'une autorisation accordee.
+ */
+const SuiviVehiculesPage = {
+  _map: null,
+  _marqueurs: {},
+  _minuteur: null,
+
+  render() {
+    const container = document.getElementById('page-content');
+    container.innerHTML = this._template();
+    this._initCarte();
+    this._rafraichir();
+    // Meme rythme que la synchronisation : inutile d'aller plus vite, les
+    // boitiers eux-memes n'emettent pas en continu.
+    if (this._minuteur) clearInterval(this._minuteur);
+    this._minuteur = setInterval(() => this._rafraichir(), 60 * 1000);
+    const btn = document.getElementById('sv-actualiser');
+    if (btn) btn.addEventListener('click', () => this._forcer(btn));
+  },
+
+  destroy() {
+    if (this._minuteur) { clearInterval(this._minuteur); this._minuteur = null; }
+    if (this._map) { this._map.remove(); this._map = null; this._marqueurs = {}; }
+  },
+
+  _template() {
+    return `
+      <div class="page-header">
+        <h1><iconify-icon icon="solar:map-point-wave-bold-duotone"></iconify-icon> Suivi des véhicules</h1>
+        <div class="page-actions">
+          <button class="btn btn-sm btn-primary" id="sv-actualiser">
+            <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser
+          </button>
+        </div>
+      </div>
+      <div class="d-sub" style="margin-bottom:var(--space-md);">
+        Position transmise par le boîtier posé sur le véhicule. Actualisée automatiquement chaque minute.
+      </div>
+      <div id="sv-alerte"></div>
+      <div class="d-grid" style="grid-template-columns:minmax(260px,340px) 1fr;gap:var(--space-lg);align-items:start;">
+        <div id="sv-liste"></div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div id="sv-map" style="height:520px;width:100%;"></div>
+        </div>
+      </div>`;
+  },
+
+  async _initCarte() {
+    const el = document.getElementById('sv-map');
+    if (!el || this._map) return;
+    if (typeof L === 'undefined' && typeof LazyLibs !== 'undefined') await LazyLibs.leaflet();
+    if (typeof L === 'undefined') return;
+    this._map = L.map(el).setView([5.3600, -4.0083], 12);   // Abidjan
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap', maxZoom: 19
+    }).addTo(this._map);
+  },
+
+  async _forcer(btn) {
+    const avant = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualisation...';
+    const r = await Store.synchroniserPositions();
+    if (r && !r.error) { await Store.rechargerCollection('vehicules'); }
+    btn.disabled = false; btn.innerHTML = avant;
+    this._rafraichir(r && r.error ? r.error : null);
+  },
+
+  _equipes() {
+    return (Store.get('vehicules') || []).filter(v => v.gpsCarId);
+  },
+
+  _rafraichir(erreur) {
+    const equipes = this._equipes();
+    const alerte = document.getElementById('sv-alerte');
+    if (alerte) {
+      if (erreur) {
+        alerte.innerHTML = `<div style="padding:11px 13px;border-radius:10px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.25);color:#b45309;font-size:var(--font-size-sm);margin-bottom:12px;">Impossible de joindre le service GPS : ${Utils.escHtml(String(erreur))}</div>`;
+      } else if (!equipes.length) {
+        alerte.innerHTML = `<div style="padding:11px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#1d4ed8;font-size:var(--font-size-sm);margin-bottom:12px;">Aucun véhicule n'est encore relié à un boîtier GPS. Renseignez l'identifiant du boîtier sur la fiche du véhicule.</div>`;
+      } else {
+        alerte.innerHTML = '';
+      }
+    }
+    this._rendreListe(equipes);
+    this._placerMarqueurs(equipes);
+  },
+
+  /** Un boitier peut etre en ligne sans avoir bouge : on distingue les deux. */
+  _etat(v) {
+    const p = v.gpsPosition || null;
+    if (!p) return { libelle: 'Aucun signal', couleur: '#94a3b8', roule: false };
+    if (!p.enLigne) return { libelle: 'Hors ligne', couleur: '#b91c1c', roule: false };
+    if (p.contact && (p.vitesse || 0) > 3) return { libelle: 'En route', couleur: '#15803d', roule: true };
+    if (p.contact) return { libelle: 'Moteur tournant, à l\'arrêt', couleur: '#b45309', roule: false };
+    return { libelle: 'À l\'arrêt', couleur: '#2563eb', roule: false };
+  },
+
+  _depuis(iso) {
+    if (!iso) return 'jamais';
+    const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (min < 1) return 'à l\'instant';
+    if (min < 60) return `il y a ${min} min`;
+    const h = Math.round(min / 60);
+    if (h < 24) return `il y a ${h} h`;
+    return `il y a ${Math.round(h / 24)} j`;
+  },
+
+  _rendreListe(equipes) {
+    const zone = document.getElementById('sv-liste');
+    if (!zone) return;
+    if (!equipes.length) { zone.innerHTML = ''; return; }
+    zone.innerHTML = equipes.map(v => {
+      const p = v.gpsPosition || {};
+      const e = this._etat(v);
+      return `<div class="card" style="padding:13px 15px;margin-bottom:10px;cursor:pointer;" onclick="SuiviVehiculesPage._centrer('${v.id}')">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:${e.couleur};flex:none;"></span>
+          <strong style="flex:1;">${Utils.escHtml(v.immatriculation || v.id)}</strong>
+          <span style="font-size:var(--font-size-xs);font-weight:700;color:${e.couleur};">${e.libelle}</span>
+        </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:6px;line-height:1.6;">
+          ${e.roule ? `<strong>${Math.round(p.vitesse || 0)} km/h</strong> · ` : ''}Vu ${this._depuis(p.vuLe)}
+          ${p.lat != null ? `<br>${Number(p.lat).toFixed(5)}, ${Number(p.lng).toFixed(5)}` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  },
+
+  _placerMarqueurs(equipes) {
+    if (!this._map || typeof L === 'undefined') return;
+    const points = [];
+    equipes.forEach(v => {
+      const p = v.gpsPosition;
+      if (!p || p.lat == null || p.lng == null) return;
+      const e = this._etat(v);
+      const icone = L.divIcon({
+        className: '',
+        html: `<div style="background:${e.couleur};color:#fff;border-radius:9px;padding:3px 7px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;">${Utils.escHtml(v.immatriculation || '')}</div>`,
+        iconSize: null
+      });
+      if (this._marqueurs[v.id]) {
+        this._marqueurs[v.id].setLatLng([p.lat, p.lng]).setIcon(icone);
+      } else {
+        this._marqueurs[v.id] = L.marker([p.lat, p.lng], { icon: icone }).addTo(this._map);
+      }
+      this._marqueurs[v.id].bindPopup(
+        `<strong>${Utils.escHtml(v.immatriculation || '')}</strong><br>${e.libelle}<br>Vu ${this._depuis(p.vuLe)}`);
+      points.push([p.lat, p.lng]);
+    });
+    // On ne recadre qu'au premier affichage, pour ne pas deplacer la carte
+    // sous les yeux de l'utilisateur a chaque rafraichissement.
+    if (points.length && !this._cadre) {
+      this._cadre = true;
+      if (points.length === 1) this._map.setView(points[0], 15);
+      else this._map.fitBounds(points, { padding: [40, 40] });
+    }
+  },
+
+  _centrer(id) {
+    const v = this._equipes().find(x => x.id === id);
+    if (!v || !v.gpsPosition || v.gpsPosition.lat == null || !this._map) return;
+    this._map.setView([v.gpsPosition.lat, v.gpsPosition.lng], 16);
+    if (this._marqueurs[id]) this._marqueurs[id].openPopup();
+  }
+};

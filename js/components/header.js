@@ -431,6 +431,7 @@ const Header = {
         { label: 'Versements', route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone' },
         { label: 'Planning', route: '/planning', icon: 'solar:calendar-bold-duotone' },
         { label: 'Messagerie', route: '/messagerie', icon: 'solar:chat-round-dots-bold-duotone' },
+        { label: 'Suivi véhicules', route: '/suivi-vehicules', icon: 'solar:map-point-wave-bold-duotone' },
         { label: 'GPS & Conduite', route: '/gps-conduite', icon: 'solar:map-arrow-right-bold-duotone' },
         { label: 'Alertes', route: '/alertes', icon: 'solar:bell-bing-bold-duotone' },
         { label: 'Rapports', route: '/rapports', icon: 'solar:chart-bold-duotone' },

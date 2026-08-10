@@ -29,6 +29,7 @@ const Router = {
     add('/bonus', () => BonusPage, 'Bonus');
     add('/simulateur', () => SimulateurPage, 'Simulateur');
     add('/rentabilite', () => RentabilitePage, 'Rentabilité');
+    add('/suivi-vehicules', () => SuiviVehiculesPage, 'Suivi des véhicules');
     add('/gps-conduite', () => GpsConduitePage, 'GPS & Conduite');
     add('/controle-conduite', () => ControleConduitePage, 'Controle de conduite');
     add('/classement', () => ClassementPage, 'Classement');
