@@ -277,7 +277,7 @@ const Store = {
       const { error } = await supabase.from(table).insert(row);
       if (error) {
         console.error(`Store: Supabase insert ${collection} failed:`, error.message);
-        this._showSyncError();
+        this._showSyncError(error, 'insert');
       }
     } catch (e) {
       console.warn(`Store: Supabase insert ${collection} failed (offline):`, e.message);
@@ -298,7 +298,7 @@ const Store = {
       const { error } = await supabase.from(table).update(row).eq('id', id);
       if (error) {
         console.error(`Store: Supabase update ${collection}/${id} failed:`, error.message);
-        this._showSyncError();
+        this._showSyncError(error, 'update');
       }
     } catch (e) {
       console.warn(`Store: Supabase update ${collection}/${id} failed (offline):`, e.message);
@@ -318,7 +318,7 @@ const Store = {
       const { error } = await supabase.from(table).delete().eq('id', id);
       if (error) {
         console.error(`Store: Supabase delete ${collection}/${id} failed:`, error.message);
-        this._showSyncError();
+        this._showSyncError(error, 'delete');
       }
     } catch (e) {
       console.warn(`Store: Supabase delete ${collection}/${id} failed (offline):`, e.message);
@@ -336,7 +336,7 @@ const Store = {
       const { error } = await supabase.from(table).upsert(row, { onConflict: 'id' });
       if (error) {
         console.error('Store: Supabase upsert settings failed:', error.message);
-        this._showSyncError();
+        this._showSyncError(error, 'settings');
       }
     } catch (e) {
       console.warn('Store: Supabase upsert settings failed (offline):', e.message);
@@ -364,7 +364,7 @@ const Store = {
 
       if (delError) {
         console.error(`Store: Supabase bulk delete ${collection} failed:`, delError.message);
-        this._showSyncError();
+        this._showSyncError(delError, 'bulk-delete');
         return;
       }
 
@@ -374,7 +374,7 @@ const Store = {
         const { error: insError } = await supabase.from(table).insert(rows);
         if (insError) {
           console.error(`Store: Supabase bulk insert ${collection} failed:`, insError.message);
-          this._showSyncError();
+          this._showSyncError(insError, 'bulk-insert');
         }
       }
     } catch (e) {
@@ -385,10 +385,27 @@ const Store = {
   /**
    * Show a toast notification for sync errors (if Toast is available).
    */
-  _showSyncError() {
-    if (typeof Toast !== 'undefined') {
-      Toast.show('Erreur de synchronisation avec le serveur', 'error');
+  _showSyncError(detail, contexte) {
+    const msg = String((detail && detail.message) || detail || '');
+    // Un message generique obligeait a fouiller la console pour savoir ce qui
+    // avait echoue. On nomme la cause, en clair quand on sait la traduire.
+    let lisible = 'Erreur de synchronisation avec le serveur';
+    if (/PGRST204|schema cache|does not exist/i.test(msg)) {
+      const champ = (msg.match(/'([a-z0-9_]+)' column/i) || msg.match(/column [\w.]*\.?([a-z0-9_]+)/i) || [])[1];
+      lisible = champ
+        ? `Champ inconnu en base : « ${champ} ». Rien n'a été enregistré.`
+        : 'Un champ envoyé n\'existe pas en base. Rien n\'a été enregistré.';
+    } else if (/row-level security|permission denied|42501/i.test(msg)) {
+      lisible = 'Enregistrement refusé : droits insuffisants, ou session expirée. Reconnectez-vous.';
+    } else if (/JWT|401|expired/i.test(msg)) {
+      lisible = 'Session expirée. Reconnectez-vous pour enregistrer.';
+    } else if (/duplicate key|23505/i.test(msg)) {
+      lisible = 'Cet enregistrement existe déjà.';
+    } else if (msg) {
+      lisible = 'Enregistrement refusé : ' + msg.slice(0, 120);
     }
+    console.error('[Sync]', contexte || '', msg);
+    if (typeof Toast !== 'undefined') Toast.show(lisible, 'error');
   },
 
   // =================== INTERNAL: localStorage Backup ===================
