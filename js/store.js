@@ -694,6 +694,49 @@ const Store = {
     }
   },
 
+  /** Appelle l'API GPS (WhatsGPS) avec le jeton de l'administrateur connecte. */
+  async _gpsApi(action, query = '') {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session && session.access_token;
+    if (!token) throw new Error('Non authentifie');
+    const res = await fetch(`/api/gps?action=${encodeURIComponent(action)}${query}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return res.json();
+  },
+
+  /** Ecrit la position de chaque vehicule equipe d'un boitier. */
+  async synchroniserPositions() {
+    try { return await this._gpsApi('positions'); }
+    catch (e) { return { error: e.message }; }
+  },
+
+  /** Liste les boitiers du compte, pour les rattacher aux vehicules. */
+  async listerBoitiersGps() {
+    try { return await this._gpsApi('boitiers'); }
+    catch (e) { return { error: e.message }; }
+  },
+
+  /**
+   * Positions rafraichies au maximum toutes les 2 minutes. Plus court serait
+   * inutile : les boitiers eux-memes n'emettent pas en continu.
+   */
+  async synchroniserPositionsSiNecessaire(intervalleMinutes = 2) {
+    const CLE = 'pilote_derniere_sync_gps';
+    let dernier = 0;
+    try { dernier = parseInt(localStorage.getItem(CLE) || '0', 10) || 0; } catch (e) {}
+    if (Date.now() - dernier < intervalleMinutes * 60 * 1000) return { ignore: true };
+    const r = await this.synchroniserPositions();
+    if (r && !r.error) {
+      try { localStorage.setItem(CLE, String(Date.now())); } catch (e) {}
+      await this.rechargerCollection('vehicules');
+      console.log('[GPS]', r.positionsMisesAJour, 'position(s) sur', r.vehiculesEquipes, 'vehicule(s) equipe(s)');
+    } else {
+      console.warn('[GPS] Synchronisation echouee :', r && r.error);
+    }
+    return r;
+  },
+
   async getYangoSyncStatus() {
     // Sync status is now server-side only; return basic info
     try {

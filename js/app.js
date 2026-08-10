@@ -188,7 +188,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 449;
+      const SW_VERSION = 450;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
@@ -294,6 +294,14 @@ const App = {
         // Session perdue : le dire clairement plutot que d'afficher des ecrans
         // vides que l'utilisateur prendrait pour une perte de donnees.
         setTimeout(() => this._avertirSessionExpiree(), 1200);
+        // Positions des boitiers : rafraichies a l'ouverture, puis toutes les
+        // 2 minutes tant que Pilote reste ouvert.
+        setTimeout(() => {
+          try {
+            Store.synchroniserPositionsSiNecessaire();
+            setInterval(() => Store.synchroniserPositionsSiNecessaire(), 2 * 60 * 1000);
+          } catch (e) { console.warn('[GPS]', e); }
+        }, 4500);
       } else if (Auth.getSession()) {
         // Supabase session expired but local session exists — try offline
         console.warn('Session Supabase expirée — mode local');
