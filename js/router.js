@@ -30,7 +30,9 @@ const Router = {
     add('/simulateur', () => SimulateurPage, 'Simulateur');
     add('/rentabilite', () => RentabilitePage, 'Rentabilité');
     add('/suivi-vehicules', () => SuiviVehiculesPage, 'Suivi des véhicules');
-    add('/gps-conduite', () => GpsConduitePage, 'GPS & Conduite');
+    // Le suivi par telephone est supprime : cette adresse mene desormais
+    // au suivi par boitier, pour ne pas casser les liens deja enregistres.
+    routes['/gps-conduite'] = { redirect: '/suivi-vehicules' };
     add('/controle-conduite', () => ControleConduitePage, 'Controle de conduite');
     add('/classement', () => ClassementPage, 'Classement');
     add('/rapports', () => RapportsPage, 'Rapports');
