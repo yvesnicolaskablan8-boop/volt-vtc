@@ -30,6 +30,33 @@ async function verifyAuth(req) {
   }
 }
 
+/**
+ * Verifie que l'appelant est ADMINISTRATEUR, pas seulement authentifie.
+ * verifyAuth ne controle que la validite du jeton : un chauffeur connecte
+ * passait donc toutes les fonctions Yango, y compris « recharge », qui
+ * deplace de l'argent.
+ * S'appuie sur fleet_is_admin() cote base, deja utilisee par les regles RLS.
+ */
+async function isAdmin(req) {
+  const token = getToken(req);
+  if (!token) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/fleet_is_admin`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: '{}',
+    });
+    if (!res.ok) return false;
+    return (await res.json()) === true;
+  } catch {
+    return false;
+  }
+}
+
 function getToken(req) {
   return req.headers.authorization?.replace('Bearer ', '') || '';
 }
@@ -334,6 +361,7 @@ function aggregateTransactions(transactions, filterDriverId = null) {
 
 module.exports = {
   verifyAuth,
+  isAdmin,
   getToken,
   setRequestToken,
   supabaseQuery,

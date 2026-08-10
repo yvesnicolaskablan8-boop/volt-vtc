@@ -36,6 +36,7 @@ const {
   YANGO_BASE,
   aggregateParChauffeur,
   supabaseUpsert,
+  isAdmin,
 } = require('./_lib/helpers');
 
 // ---------- sync-ca : CA quotidien Yango -> base ----------
@@ -1268,6 +1269,13 @@ module.exports = async function handler(req, res) {
       error: 'Parametre "action" manquant',
       actions: Object.keys(ACTION_MAP)
     });
+  }
+
+  // Toutes les fonctions Yango relevent de l'administration : donnees de la
+  // flotte entiere, statistiques de revenus, et « recharge » qui engage de
+  // l'argent. Un chauffeur authentifie ne doit atteindre aucune d'elles.
+  if (!(await isAdmin(req))) {
+    return res.status(403).json({ error: 'Reserve a l\'administration' });
   }
 
   const handlerFn = ACTION_MAP[action];
