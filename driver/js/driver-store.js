@@ -62,6 +62,21 @@ const DriverStore = {
     };
   },
 
+  /**
+   * Le chauffeur marque SON vehicule comme recharge. Passe par un RPC :
+   * les regles RLS lui interdisent d'ecrire dans fleet_vehicules, et le
+   * serveur ne l'autorise que sur le vehicule qui lui est assigne.
+   */
+  async marquerVehiculeCharge() {
+    try {
+      const { data, error } = await supabase.rpc('fleet_marquer_charge');
+      if (error) return { success: false, error: error.message };
+      return objToCamel(data || {});
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
   // ===== PLANNING =====
 
   async getPlanning(from, to) {

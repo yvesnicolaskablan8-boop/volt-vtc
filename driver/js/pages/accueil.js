@@ -2,6 +2,33 @@
  * AccueilPage — Tableau de bord chauffeur (enhanced)
  */
 const AccueilPage = {
+  _marquerCharge() {
+    DriverModal.show(
+      'Recharge effectuée ?',
+      `<div style="text-align:center;padding:0.5rem 0">
+        <iconify-icon icon="solar:bolt-circle-bold-duotone" style="font-size:3rem;color:#16a34a;display:block;margin-bottom:12px"></iconify-icon>
+        <p style="font-size:0.92rem;color:var(--text-secondary);line-height:1.6">
+          Confirmez que vous venez de <strong>recharger le véhicule</strong>.<br>
+          Le suivi de batterie repartira de 100&nbsp;%.
+        </p>
+      </div>`,
+      [
+        { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
+        { label: 'Oui, rechargé', class: 'btn btn-primary', onclick: 'AccueilPage._confirmerCharge()' }
+      ]
+    );
+  },
+
+  async _confirmerCharge() {
+    DriverModal.close();
+    const r = await DriverStore.marquerVehiculeCharge();
+    if (r && r.success) {
+      DriverToast.show(`${r.vehicule || 'Véhicule'} marqué rechargé — batterie 100 %`, 'success');
+    } else {
+      DriverToast.show((r && r.error) || 'Impossible d\'enregistrer la recharge', 'error');
+    }
+  },
+
   async render(container) {
     // Skeleton loading moderne
     container.innerHTML = '<div style="padding:8px 0"><div class="skeleton skeleton-line w-50" style="height:24px;margin-bottom:16px"></div><div class="skeleton skeleton-line w-75" style="height:14px;margin-bottom:20px"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card" style="height:80px"></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px"><div class="skeleton" style="height:100px;border-radius:1.25rem"></div><div class="skeleton" style="height:100px;border-radius:1.25rem"></div><div class="skeleton" style="height:100px;border-radius:1.25rem"></div></div></div>';
@@ -269,6 +296,13 @@ const AccueilPage = {
            par l'administration via le planning) -->
       ${todayShiftHTML}
       ${nextShiftHTML}
+
+      <!-- Recharge du vehicule : c'est le chauffeur qui branche, c'est lui qui sait.
+           Sans vehicule assigne, le bouton n'a pas de sens et n'apparait pas. -->
+      ${chauffeur.vehiculeAssigne ? `
+      <button onclick="AccueilPage._marquerCharge()" class="tap-scale" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;border-radius:1.25rem;border:2px solid rgba(22,163,74,.35);background:rgba(22,163,74,.08);color:#15803d;font-size:1.02rem;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:12px">
+        <iconify-icon icon="solar:bolt-circle-bold-duotone" style="font-size:1.6rem"></iconify-icon> J'ai rechargé le véhicule
+      </button>` : ''}
 
       <!-- 3. QUATRE GRANDES TUILES, un mot chacune -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">

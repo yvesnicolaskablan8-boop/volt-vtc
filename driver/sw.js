@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-chauffeur-v58';
+const CACHE_NAME = 'pilote-chauffeur-v59';
 
 const STATIC_ASSETS = [
   '/driver/',

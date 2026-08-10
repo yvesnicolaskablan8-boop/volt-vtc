@@ -14,3 +14,9 @@ ALTER TABLE public.fleet_vehicules
   ADD COLUMN IF NOT EXISTS derniere_charge_le  timestamptz,
   ADD COLUMN IF NOT EXISTS autonomie_reelle_km numeric DEFAULT 250,
   ADD COLUMN IF NOT EXISTS km_depuis_charge    numeric;
+
+-- Troisieme volet : le chauffeur marque sa recharge depuis son application.
+-- RPC fleet_marquer_charge (SECURITY DEFINER) : uniquement SON vehicule
+-- assigne, avec tracabilite (charge_marquee_par).
+ALTER TABLE public.fleet_vehicules
+  ADD COLUMN IF NOT EXISTS charge_marquee_par text;

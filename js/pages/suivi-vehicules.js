@@ -130,7 +130,7 @@ const SuiviVehiculesPage = {
       'Recharge effectuée ?',
       `Confirmer que <strong>${Utils.escHtml(v.immatriculation || id)}</strong> vient d'être rechargée. Le compteur d'autonomie repartira de 100 %.`,
       () => {
-        Store.update('vehicules', id, { derniereChargeLe: new Date().toISOString(), kmDepuisCharge: 0 });
+        Store.update('vehicules', id, { derniereChargeLe: new Date().toISOString(), kmDepuisCharge: 0, chargeMarqueePar: 'Administration' });
         Toast.success(`${v.immatriculation || id} marquée comme rechargée.`);
         this._rafraichir();
       }
@@ -179,11 +179,40 @@ const SuiviVehiculesPage = {
             <div style="height:7px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden;margin-top:6px;">
               <div style="height:100%;width:${a.pct}%;background:${a.couleur};border-radius:4px;transition:width .4s;"></div>
             </div>
-            <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">${a.km.toFixed(1).replace('.', ',')} km depuis la charge du ${new Date(v.derniereChargeLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} — estimation</div>
+            <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">${a.km.toFixed(1).replace('.', ',')} km depuis la charge du ${new Date(v.derniereChargeLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}${v.chargeMarqueePar ? ' (' + Utils.escHtml(v.chargeMarqueePar) + ')' : ''} — estimation</div>
           </div>`;
         })()}
       </div>`;
     }).join('');
+  },
+
+  /**
+   * Voiture vue de dessus, colorée selon l'état et orientée selon la
+   * direction transmise par le boîtier (0° = nord). L'immatriculation reste
+   * en étiquette sous la voiture : sur une carte, la plaque est le seul
+   * moyen de savoir de quel véhicule il s'agit.
+   */
+  _iconeVoiture(v, e, p) {
+    const rot = Number(p && p.direction) || 0;
+    const plaque = Utils.escHtml(v.immatriculation || '');
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+      <div style="transform:rotate(${rot}deg);transition:transform .5s ease;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));">
+        <svg width="26" height="40" viewBox="0 0 24 40" xmlns="http://www.w3.org/2000/svg">
+          <!-- roues -->
+          <rect x="1.2" y="6.5"  width="4" height="7" rx="2" fill="#1e293b"/>
+          <rect x="18.8" y="6.5" width="4" height="7" rx="2" fill="#1e293b"/>
+          <rect x="1.2" y="26.5" width="4" height="7" rx="2" fill="#1e293b"/>
+          <rect x="18.8" y="26.5" width="4" height="7" rx="2" fill="#1e293b"/>
+          <!-- carrosserie -->
+          <path d="M5 7 C5 2.8 8.2 1 12 1 C15.8 1 19 2.8 19 7 L19 33 C19 37.2 15.8 39 12 39 C8.2 39 5 37.2 5 33 Z"
+                fill="${e.couleur}" stroke="#ffffff" stroke-width="1.6"/>
+          <!-- pare-brise et lunette -->
+          <path d="M7 10.5 L17 10.5 L15.8 16 L8.2 16 Z" fill="rgba(255,255,255,.85)"/>
+          <path d="M8.2 28 L15.8 28 L16.6 32.5 L7.4 32.5 Z" fill="rgba(255,255,255,.6)"/>
+        </svg>
+      </div>
+      <div style="background:${e.couleur};color:#fff;border-radius:7px;padding:1px 6px;font-size:10px;font-weight:800;white-space:nowrap;border:1.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);">${plaque}</div>
+    </div>`;
   },
 
   _placerMarqueurs(equipes) {
@@ -195,8 +224,10 @@ const SuiviVehiculesPage = {
       const e = this._etat(v);
       const icone = L.divIcon({
         className: '',
-        html: `<div style="background:${e.couleur};color:#fff;border-radius:9px;padding:3px 7px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;">${Utils.escHtml(v.immatriculation || '')}</div>`,
-        iconSize: null
+        html: this._iconeVoiture(v, e, p),
+        iconSize: [64, 62],
+        iconAnchor: [32, 21],     // la pointe du reticule = le centre de la voiture
+        popupAnchor: [0, -16]
       });
       if (this._marqueurs[v.id]) {
         this._marqueurs[v.id].setLatLng([p.lat, p.lng]).setIcon(icone);
