@@ -20,3 +20,13 @@ ALTER TABLE public.fleet_vehicules
 -- assigne, avec tracabilite (charge_marquee_par).
 ALTER TABLE public.fleet_vehicules
   ADD COLUMN IF NOT EXISTS charge_marquee_par text;
+
+-- Quatrieme volet : detection AUTOMATIQUE des recharges.
+--  - par zone declaree (depot, borne) : immobile >= dureeMin dans le rayon ;
+--  - par signature de tension, valable partout : moteur eteint + immobile +
+--    tension 12 V qui MONTE d'au moins 0,4 V (le convertisseur s'active au
+--    branchement). La montee est exigee, pas un niveau absolu : certains
+--    vehicules flottent a 13 V a l'arret.
+ALTER TABLE public.fleet_settings  ADD COLUMN IF NOT EXISTS zones_recharge jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE public.fleet_vehicules ADD COLUMN IF NOT EXISTS charge_zone_entree_le timestamptz,
+                                   ADD COLUMN IF NOT EXISTS charge_zone_id text;

@@ -21,6 +21,15 @@ const SuiviVehiculesPage = {
     this._minuteur = setInterval(() => this._rafraichir(), 60 * 1000);
     const btn = document.getElementById('sv-actualiser');
     if (btn) btn.addEventListener('click', () => this._forcer(btn));
+    const az = document.getElementById('sv-ajouter-zone');
+    if (az) az.addEventListener('click', () => {
+      this._modeAjoutZone = !this._modeAjoutZone;
+      az.classList.toggle('btn-primary', this._modeAjoutZone);
+      az.innerHTML = this._modeAjoutZone
+        ? '<iconify-icon icon="solar:cursor-bold-duotone"></iconify-icon> Cliquez sur la carte à l\'emplacement de la borne...'
+        : '<iconify-icon icon="solar:map-point-add-bold-duotone"></iconify-icon> Ajouter — puis cliquez sur la carte';
+    });
+    this._rendreZones();
   },
 
   destroy() {
@@ -43,7 +52,19 @@ const SuiviVehiculesPage = {
       </div>
       <div id="sv-alerte"></div>
       <div class="d-grid" style="grid-template-columns:minmax(260px,340px) 1fr;gap:var(--space-lg);align-items:start;">
-        <div id="sv-liste"></div>
+        <div>
+          <div id="sv-liste"></div>
+          <div class="card" style="padding:13px 15px;">
+            <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px;">Zones de recharge</div>
+            <div style="font-size:var(--font-size-xs);color:var(--text-muted);line-height:1.55;margin-bottom:10px;">
+              Une voiture immobile assez longtemps dans une zone est marquée rechargée automatiquement.
+            </div>
+            <div id="sv-zones"></div>
+            <button class="btn btn-sm btn-secondary" id="sv-ajouter-zone" style="width:100%;margin-top:8px;">
+              <iconify-icon icon="solar:map-point-add-bold-duotone"></iconify-icon> Ajouter — puis cliquez sur la carte
+            </button>
+          </div>
+        </div>
         <div class="card" style="padding:0;overflow:hidden;">
           <div id="sv-map" style="height:520px;width:100%;"></div>
         </div>
@@ -59,6 +80,95 @@ const SuiviVehiculesPage = {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap', maxZoom: 19
     }).addTo(this._map);
+    this._map.on('click', (ev) => {
+      if (this._modeAjoutZone) this._creerZone(ev.latlng.lat, ev.latlng.lng);
+    });
+    this._dessinerZones();
+  },
+
+  _zones() {
+    const st = Store.get('settings') || {};
+    return Array.isArray(st.zonesRecharge) ? st.zonesRecharge : [];
+  },
+
+  _sauverZones(zones) {
+    const st = Store.get('settings') || {};
+    Store.set('settings', { ...st, zonesRecharge: zones });
+    this._rendreZones();
+    this._dessinerZones();
+  },
+
+  _creerZone(lat, lng) {
+    this._modeAjoutZone = false;
+    const az = document.getElementById('sv-ajouter-zone');
+    if (az) { az.classList.remove('btn-primary'); az.innerHTML = '<iconify-icon icon="solar:map-point-add-bold-duotone"></iconify-icon> Ajouter — puis cliquez sur la carte'; }
+    Modal.form(
+      '<iconify-icon icon="solar:map-point-add-bold-duotone" class="text-blue"></iconify-icon> Nouvelle zone de recharge',
+      `<div style="font-size:var(--font-size-sm);">
+        <label style="font-weight:700;display:block;margin-bottom:4px;">Nom de la zone</label>
+        <input id="zn-nom" class="form-control" placeholder="Ex : Dépôt Riviera" style="margin-bottom:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;">Rayon (mètres)</label>
+            <input id="zn-rayon" class="form-control" type="number" value="120" min="30" step="10"></div>
+          <div><label style="font-size:var(--font-size-xs);font-weight:600;display:block;margin-bottom:4px;">Durée minimale (min)</label>
+            <input id="zn-duree" class="form-control" type="number" value="45" min="10" step="5"></div>
+        </div>
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:9px;line-height:1.5;">
+          Position : ${lat.toFixed(5)}, ${lng.toFixed(5)}. Une voiture immobile plus de cette durée dans le rayon sera marquée rechargée.
+        </div>
+      </div>`,
+      () => {
+        const nom = ((document.getElementById('zn-nom') || {}).value || '').trim();
+        if (!nom) { Toast.error('Donnez un nom à la zone.'); return false; }
+        const zones = this._zones().concat([{
+          id: 'ZN-' + Date.now().toString(36),
+          nom,
+          lat, lng,
+          rayon: Math.max(30, parseInt((document.getElementById('zn-rayon') || {}).value, 10) || 120),
+          dureeMin: Math.max(10, parseInt((document.getElementById('zn-duree') || {}).value, 10) || 45),
+        }]);
+        this._sauverZones(zones);
+        Toast.success(`Zone « ${nom} » créée.`);
+      },
+      'small'
+    );
+  },
+
+  _supprimerZone(id) {
+    const z = this._zones().find(x => x.id === id);
+    if (!z) return;
+    Modal.confirm('Supprimer la zone',
+      `Supprimer « ${Utils.escHtml(z.nom)} » ? Les recharges n'y seront plus détectées automatiquement.`,
+      () => { this._sauverZones(this._zones().filter(x => x.id !== id)); });
+  },
+
+  _rendreZones() {
+    const zone = document.getElementById('sv-zones');
+    if (!zone) return;
+    const zs = this._zones();
+    zone.innerHTML = zs.length ? zs.map(z => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:var(--font-size-sm);">
+        <iconify-icon icon="solar:bolt-circle-bold-duotone" style="color:#16a34a;flex:none;"></iconify-icon>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;">${Utils.escHtml(z.nom)}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${z.rayon} m · ${z.dureeMin} min</div>
+        </div>
+        <button class="btn btn-sm btn-secondary" title="Supprimer" onclick="SuiviVehiculesPage._supprimerZone('${z.id}')" style="color:#b91c1c;">
+          <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+        </button>
+      </div>`).join('')
+      : '<div style="font-size:var(--font-size-xs);color:var(--text-muted);">Aucune zone. Déclarez le dépôt ou la borne où les voitures se rechargent.</div>';
+  },
+
+  _dessinerZones() {
+    if (!this._map || typeof L === 'undefined') return;
+    (this._cerclesZones || []).forEach(c => { try { this._map.removeLayer(c); } catch (e) {} });
+    this._cerclesZones = this._zones().map(z =>
+      L.circle([z.lat, z.lng], {
+        radius: z.rayon || 120,
+        color: '#16a34a', weight: 2, fillColor: '#16a34a', fillOpacity: 0.12,
+      }).addTo(this._map).bindTooltip(`⚡ ${z.nom}`)
+    );
   },
 
   async _forcer(btn) {
@@ -161,7 +271,7 @@ const SuiviVehiculesPage = {
           <span style="font-size:var(--font-size-xs);font-weight:700;color:${e.couleur};">${e.libelle}</span>
         </div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:6px;line-height:1.6;">
-          ${e.roule ? `<strong>${Math.round(p.vitesse || 0)} km/h</strong> · ` : ''}Vu ${this._depuis(p.vuLe)}
+          ${e.roule ? `<strong>${Math.round(p.vitesse || 0)} km/h</strong> · ` : ''}Vu ${this._depuis(p.vuLe)}${p.tension != null ? ` · ${Number(p.tension).toFixed(1).replace('.', ',')} V` : ''}
           ${p.lat != null ? `<br>${Number(p.lat).toFixed(5)}, ${Number(p.lng).toFixed(5)}` : ''}
         </div>
         ${(() => {
