@@ -101,6 +101,42 @@ const SuiviVehiculesPage = {
     return { libelle: 'À l\'arrêt', couleur: '#2563eb', roule: false };
   },
 
+  /**
+   * Autonomie ESTIMEE : autonomie reelle - km parcourus depuis la charge.
+   * Le boitier ne lit pas la batterie de traction ; cette estimation repond
+   * neanmoins a la question utile — la voiture tiendra-t-elle la journee ?
+   * Marge d'erreur ~10 % (climatisation, trafic).
+   */
+  _autonomie(v) {
+    if (!v.derniereChargeLe || v.kmDepuisCharge == null) return null;
+    const capacite = Number(v.autonomieReelleKm) > 0 ? Number(v.autonomieReelleKm) : 250;
+    const km = Math.max(0, Number(v.kmDepuisCharge) || 0);
+    const reste = Math.max(0, capacite - km);
+    const pct = Math.round(reste / capacite * 100);
+    return {
+      km, reste: Math.round(reste), pct,
+      couleur: pct > 40 ? '#15803d' : pct > 15 ? '#b45309' : '#b91c1c',
+      libelle: pct > 40 ? 'Batterie estimée' : pct > 15 ? 'À recharger bientôt' : 'À recharger',
+    };
+  },
+
+  /** Marque le vehicule comme recharge : le compteur repart de zero. */
+  _marquerChargee(id) {
+    const v = (Store.get('vehicules') || []).find(x => x.id === id);
+    if (!v) return;
+    // Confirmation : un clic par erreur remettrait le compteur a zero et
+    // afficherait une batterie pleine sur une voiture a plat.
+    Modal.confirm(
+      'Recharge effectuée ?',
+      `Confirmer que <strong>${Utils.escHtml(v.immatriculation || id)}</strong> vient d'être rechargée. Le compteur d'autonomie repartira de 100 %.`,
+      () => {
+        Store.update('vehicules', id, { derniereChargeLe: new Date().toISOString(), kmDepuisCharge: 0 });
+        Toast.success(`${v.immatriculation || id} marquée comme rechargée.`);
+        this._rafraichir();
+      }
+    );
+  },
+
   _depuis(iso) {
     if (!iso) return 'jamais';
     const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -128,6 +164,24 @@ const SuiviVehiculesPage = {
           ${e.roule ? `<strong>${Math.round(p.vitesse || 0)} km/h</strong> · ` : ''}Vu ${this._depuis(p.vuLe)}
           ${p.lat != null ? `<br>${Number(p.lat).toFixed(5)}, ${Number(p.lng).toFixed(5)}` : ''}
         </div>
+        ${(() => {
+          const a = this._autonomie(v);
+          if (!a) return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
+            <span style="flex:1;">Autonomie non suivie — marquez la prochaine recharge.</span>
+            <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();SuiviVehiculesPage._marquerChargee('${v.id}')">Chargée</button>
+          </div>`;
+          return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);">
+            <div style="display:flex;align-items:center;gap:8px;font-size:var(--font-size-xs);">
+              <span style="font-weight:800;color:${a.couleur};">${a.libelle} ~${a.pct} %</span>
+              <span style="flex:1;color:var(--text-muted);">reste ~${a.reste} km</span>
+              <button class="btn btn-sm btn-secondary" title="Recharge effectuée" onclick="event.stopPropagation();SuiviVehiculesPage._marquerChargee('${v.id}')">Chargée</button>
+            </div>
+            <div style="height:7px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden;margin-top:6px;">
+              <div style="height:100%;width:${a.pct}%;background:${a.couleur};border-radius:4px;transition:width .4s;"></div>
+            </div>
+            <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">${a.km.toFixed(1).replace('.', ',')} km depuis la charge du ${new Date(v.derniereChargeLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} — estimation</div>
+          </div>`;
+        })()}
       </div>`;
     }).join('');
   },

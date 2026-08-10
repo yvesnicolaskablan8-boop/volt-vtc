@@ -65,7 +65,8 @@ async function handlePositions(req, res) {
   (etats || []).forEach(e => { parBoitier[String(e.carId)] = e; });
 
   const vehicules = await supabaseQuery(
-    'fleet_vehicules', 'select=id,immatriculation,gps_car_id&gps_car_id=not.is.null', token);
+    'fleet_vehicules',
+    'select=id,immatriculation,gps_car_id,derniere_charge_le&gps_car_id=not.is.null', token);
 
   const lignes = [];
   let horsLigne = 0, sansSignal = 0;
@@ -87,14 +88,38 @@ async function handlePositions(req, res) {
     });
   }
 
+  // Kilometres parcourus depuis la derniere charge : somme des trajets
+  // WhatsGPS depuis cette date. Le champ mileage est en METRES.
+  // Echec tolere vehicule par vehicule : une erreur sur l'un ne doit ni
+  // bloquer les autres ni ecraser une valeur deja calculee.
+  const fmtWg = (d) => new Date(d).toISOString().slice(0, 19).replace('T', ' ');
+  const lignesKm = [];
+  for (const v of vehicules || []) {
+    if (!v.derniere_charge_le) continue;
+    try {
+      const trajets = await appel(creds, jeton, '/position/distanceSta.do', {
+        carId: v.gps_car_id,
+        startTime: fmtWg(v.derniere_charge_le),
+        endTime: fmtWg(Date.now()),
+      });
+      const metres = (trajets || []).reduce((s2, t) => s2 + (parseFloat(t.mileage) || 0), 0);
+      lignesKm.push({ id: v.id, km_depuis_charge: Math.round(metres / 100) / 10 });
+    } catch (e) {
+      console.warn('[gps] distance', v.immatriculation, ':', e.message);
+    }
+  }
+
   // On n'ecrit QUE les colonnes GPS : un upsert complet effacerait le reste
-  // de la fiche vehicule, qui n'est pas relue ici.
+  // de la fiche vehicule, qui n'est pas relue ici. Deux lots separes : les
+  // lignes d'un meme upsert doivent porter les memes colonnes.
   if (lignes.length) await supabaseUpsert('fleet_vehicules', lignes, token, 'id');
+  if (lignesKm.length) await supabaseUpsert('fleet_vehicules', lignesKm, token, 'id');
 
   res.json({
     success: true,
     vehiculesEquipes: (vehicules || []).length,
     positionsMisesAJour: lignes.length,
+    kmDepuisChargeCalcules: lignesKm.length,
     horsLigne,
     sansSignal,
     boitiersDuCompte: (etats || []).length,
