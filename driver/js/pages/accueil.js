@@ -197,6 +197,10 @@ const AccueilPage = {
           </div>
           <div style="font-size:3rem;font-weight:900;letter-spacing:-0.02em;margin:10px 0 2px;line-height:1">${caJour.toLocaleString('fr-FR')}</div>
           <div style="font-size:1.1rem;font-weight:800;opacity:0.9;margin-bottom:14px">FCFA gagnés aujourd'hui</div>
+          ${(!data.stats || !data.stats.caSynchronise) && caJour === 0 ? `
+            <div style="background:rgba(255,255,255,0.18);border-radius:12px;padding:10px;margin-bottom:12px;font-size:0.82rem;font-weight:600;line-height:1.45">
+              Vos courses du jour ne sont pas encore remontees. Ce montant sera mis a jour des que la liaison avec la plateforme fonctionne.
+            </div>` : ''}
           ${objectifJour > 0 ? `
             <div style="height:14px;background:rgba(255,255,255,0.22);border-radius:7px;overflow:hidden;margin-bottom:8px">
               <div style="height:100%;width:${pct}%;background:${atteint ? '#4ade80' : '#facc15'};border-radius:7px;transition:width .5s"></div>
