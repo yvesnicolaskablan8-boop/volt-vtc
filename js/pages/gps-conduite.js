@@ -25,6 +25,26 @@ const GpsConduitePage = {
     this._selectedDriver = chauffeurs[0]?.id || null;
 
     container.innerHTML = this._pageShell(chauffeurs);
+    // Ce suivi repose sur le telephone des chauffeurs, desactive depuis que le
+    // plugin natif faisait planter l'application. Les positions affichees ici
+    // ne bougeront donc plus. Sans cet avertissement, un « signal ancien » se
+    // lit comme une panne passagere alors que la source est tarie.
+    const zone = document.getElementById('page-content');
+    if (zone && !document.getElementById('gps-avis-boitiers')) {
+      const avis = document.createElement('div');
+      avis.id = 'gps-avis-boitiers';
+      avis.style.cssText = 'padding:12px 15px;border-radius:11px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.25);color:#b45309;font-size:var(--font-size-sm);line-height:1.55;margin-bottom:14px;display:flex;gap:11px;align-items:flex-start;';
+      const txt = document.createElement('div');
+      txt.style.cssText = 'flex:1;';
+      txt.innerHTML = '<strong>Ces positions ne sont plus mises à jour.</strong> Cet écran suit le téléphone des chauffeurs, un suivi désactivé car il faisait fermer leur application. Les véhicules équipés d\'un boîtier GPS sont désormais suivis en direct sur l\'écran « Suivi véhicules ».';
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-sm btn-primary';
+      btn.style.cssText = 'flex:none;';
+      btn.textContent = 'Ouvrir le suivi';
+      btn.addEventListener('click', () => Router.navigate('/suivi-vehicules'));
+      avis.appendChild(txt); avis.appendChild(btn);
+      zone.insertBefore(avis, zone.firstChild);
+    }
     this._bindTabEvents();
     this._renderActiveTab(chauffeurs);
   },
