@@ -66,7 +66,7 @@ async function handlePositions(req, res) {
 
   const vehicules = await supabaseQuery(
     'fleet_vehicules',
-    'select=id,immatriculation,gps_car_id,derniere_charge_le,charge_zone_entree_le,charge_zone_id,gps_position&gps_car_id=not.is.null', token);
+    'select=id,immatriculation,gps_car_id,derniere_charge_le,charge_zone_entree_le,charge_zone_id,gps_position,km_offset_charge&gps_car_id=not.is.null', token);
 
   let zones = [];
   try {
@@ -164,6 +164,7 @@ async function handlePositions(req, res) {
         id: v.id,
         derniere_charge_le: new Date().toISOString(),
         km_depuis_charge: 0,
+        km_offset_charge: 0,
         charge_marquee_par: zone.id === 'TENSION' ? zone.nom : 'Zone : ' + (zone.nom || 'recharge'),
       });
     }
@@ -217,6 +218,7 @@ async function handlePositions(req, res) {
           id: v.id,
           derniere_charge_le: ancre.toISOString(),
           km_depuis_charge: Math.round(metresApres / 100) / 10,
+          km_offset_charge: 0,
           charge_marquee_par: etiquette,
         });
         ancres.add(v.id);
@@ -225,8 +227,11 @@ async function handlePositions(req, res) {
       }
 
       if (!v.derniere_charge_le) continue;
+      // Le decalage vient d'un releve manuel : « km deja consommes » au moment
+      // du releve, auxquels s'ajoutent les trajets faits depuis.
       const metres = trajets.reduce((s2, t) => s2 + (parseFloat(t.mileage) || 0), 0);
-      lignesKm.push({ id: v.id, km_depuis_charge: Math.round(metres / 100) / 10 });
+      const decalage = Number(v.km_offset_charge) || 0;
+      lignesKm.push({ id: v.id, km_depuis_charge: Math.round(decalage * 10 + metres / 100) / 10 });
     } catch (e) {
       console.warn('[gps] distance', v.immatriculation, ':', e.message);
     }

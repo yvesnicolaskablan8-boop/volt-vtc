@@ -209,7 +209,11 @@ const SuiviVehiculesPage = {
     const p = v.gpsPosition || null;
     if (!p) return { libelle: 'Aucun signal', couleur: '#94a3b8', roule: false };
     if (!p.enLigne) return { libelle: 'Hors ligne', couleur: '#b91c1c', roule: false };
-    if (p.contact && (p.vitesse || 0) > 3) return { libelle: 'En route', couleur: '#15803d', roule: true };
+    const ageMin = p.vuLe ? (Date.now() - new Date(p.vuLe).getTime()) / 60000 : Infinity;
+    if (p.contact && (p.vitesse || 0) > 3) {
+      if (ageMin > 20) return { libelle: 'Dernier signal en mouvement', couleur: '#64748b', roule: false };
+      return { libelle: 'En route', couleur: '#15803d', roule: true };
+    }
     if (p.contact) return { libelle: 'Moteur tournant, à l\'arrêt', couleur: '#b45309', roule: false };
     return { libelle: 'À l\'arrêt', couleur: '#2563eb', roule: false };
   },
@@ -233,6 +237,63 @@ const SuiviVehiculesPage = {
     };
   },
 
+  /**
+   * Releve manuel du pourcentage affiche au tableau de bord du vehicule.
+   * C'est la verite terrain : elle se traduit en « km deja consommes »
+   * (decalage), et sert a CALIBRER l'autonomie reelle quand l'ecart entre
+   * l'estimation et le releve est significatif.
+   */
+  _saisirPourcentage(id) {
+    const v = (Store.get('vehicules') || []).find(x => x.id === id);
+    if (!v) return;
+    Modal.form(
+      '<iconify-icon icon="solar:battery-half-bold-duotone" class="text-blue"></iconify-icon> Batterie réelle — ' + Utils.escHtml(v.immatriculation || id),
+      `<div style="font-size:var(--font-size-sm);">
+        <label style="font-weight:700;display:block;margin-bottom:5px;">Pourcentage affiché au tableau de bord</label>
+        <input id="bat-pct" type="number" min="0" max="100" step="1" class="form-control"
+               placeholder="Ex : 62" style="font-size:1.3rem;text-align:center;">
+        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:8px;line-height:1.5;">
+          Recopiez simplement le chiffre du tableau de bord. L'estimation repartira de cette valeur.
+        </div>
+      </div>`,
+      () => {
+        const pct = parseInt((document.getElementById('bat-pct') || {}).value, 10);
+        if (!(pct >= 0 && pct <= 100)) { Toast.error('Entrez un pourcentage entre 0 et 100.'); return false; }
+        const capacite = Number(v.autonomieReelleKm) > 0 ? Number(v.autonomieReelleKm) : 250;
+        const decalage = Math.round(capacite * (100 - pct)) / 100;
+        const maj = {
+          derniereChargeLe: new Date().toISOString(),
+          kmDepuisCharge: decalage,
+          kmOffsetCharge: decalage,
+          chargeMarqueePar: 'Relevé manuel (' + pct + ' %)',
+        };
+
+        // Calibrage : l'ancre precedente venait d'une charge pleine et des
+        // kilometres ont ete roules — le releve revele la consommation REELLE.
+        const kmRoules = Number(v.kmDepuisCharge) || 0;
+        const source = v.chargeMarqueePar || '';
+        const calibrable = kmRoules >= 30 && pct < 95 && !/Relevé manuel/.test(source);
+        const implique = calibrable ? Math.round(kmRoules * 100 / (100 - pct)) : null;
+        const ecartRelatif = implique ? Math.abs(implique - capacite) / capacite : 0;
+
+        Store.update('vehicules', id, maj);
+        Toast.success(`Batterie de ${v.immatriculation || id} relevée à ${pct} %.`);
+        this._rafraichir();
+
+        if (implique && ecartRelatif > 0.1 && implique >= 120 && implique <= 500) {
+          Modal.confirm('Ajuster l\'autonomie réelle ?',
+            `Sur cette charge : <strong>${kmRoules.toFixed(0)} km</strong> ont consommé <strong>${100 - pct} %</strong>, soit une autonomie réelle d'environ <strong>${implique} km</strong> (réglage actuel : ${capacite} km).<br><br>Utiliser ${implique} km pour les prochaines estimations ?`,
+            () => {
+              Store.update('vehicules', id, { autonomieReelleKm: implique });
+              Toast.success(`Autonomie de ${v.immatriculation || id} calibrée à ${implique} km.`);
+              this._rafraichir();
+            });
+        }
+      },
+      'small'
+    );
+  },
+
   /** Marque le vehicule comme recharge : le compteur repart de zero. */
   _marquerChargee(id) {
     const v = (Store.get('vehicules') || []).find(x => x.id === id);
@@ -243,7 +304,7 @@ const SuiviVehiculesPage = {
       'Recharge effectuée ?',
       `Confirmer que <strong>${Utils.escHtml(v.immatriculation || id)}</strong> vient d'être rechargée. Le compteur d'autonomie repartira de 100 %.`,
       () => {
-        Store.update('vehicules', id, { derniereChargeLe: new Date().toISOString(), kmDepuisCharge: 0, chargeMarqueePar: 'Administration' });
+        Store.update('vehicules', id, { derniereChargeLe: new Date().toISOString(), kmDepuisCharge: 0, kmOffsetCharge: 0, chargeMarqueePar: 'Administration' });
         Toast.success(`${v.immatriculation || id} marquée comme rechargée.`);
         this._rafraichir();
       }
@@ -287,6 +348,7 @@ const SuiviVehiculesPage = {
             <div style="display:flex;align-items:center;gap:8px;font-size:var(--font-size-xs);">
               <span style="font-weight:800;color:${a.couleur};">${a.libelle} ~${a.pct} %</span>
               <span style="flex:1;color:var(--text-muted);">reste ~${a.reste} km</span>
+              <button class="btn btn-sm btn-secondary" title="Recopier le pourcentage du tableau de bord" onclick="event.stopPropagation();SuiviVehiculesPage._saisirPourcentage('${v.id}')">% réel</button>
               <button class="btn btn-sm btn-secondary" title="Recharge effectuée" onclick="event.stopPropagation();SuiviVehiculesPage._marquerChargee('${v.id}')">Chargée</button>
             </div>
             <div style="height:7px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden;margin-top:6px;">
