@@ -316,6 +316,29 @@ function aggregateParChauffeur(transactions) {
   return parChauffeur;
 }
 
+/**
+ * Mise a jour d'une ligne EXISTANTE (PATCH).
+ * A ne pas confondre avec l'upsert : un upsert partiel echoue sur toute table
+ * portant des colonnes NOT NULL absentes du corps (PostgreSQL verifie le
+ * NOT NULL sur la ligne proposee AVANT de resoudre le conflit — 23502).
+ */
+async function supabasePatch(table, id, row, token) {
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal',
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH', headers, body: JSON.stringify(row),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase patch ${res.status}: ${text.substring(0, 250)}`);
+  }
+  return true;
+}
+
 /** Ecriture (upsert) dans Supabase avec le jeton de l'appelant. */
 async function supabaseUpsert(table, rows, token, conflictCols) {
   const headers = {

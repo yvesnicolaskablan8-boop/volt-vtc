@@ -10,7 +10,7 @@
  *   GET ?action=boitiers    Liste les boitiers du compte (pour rattachement)
  */
 const {
-  verifyAuth, isAdmin, getToken, supabaseQuery, supabaseUpsert,
+  verifyAuth, isAdmin, getToken, supabaseQuery, supabasePatch,
   setCors, handleOptions, setRequestToken,
 } = require('./_lib/helpers');
 
@@ -240,10 +240,15 @@ async function handlePositions(req, res) {
   // On n'ecrit QUE les colonnes GPS : un upsert complet effacerait le reste
   // de la fiche vehicule, qui n'est pas relue ici. Deux lots separes : les
   // lignes d'un meme upsert doivent porter les memes colonnes.
-  if (lignes.length) await supabaseUpsert('fleet_vehicules', lignes, token, 'id');
-  if (lignesZone.length) await supabaseUpsert('fleet_vehicules', lignesZone, token, 'id');
-  if (lignesCharge.length) await supabaseUpsert('fleet_vehicules', lignesCharge, token, 'id');
-  if (lignesKm.length) await supabaseUpsert('fleet_vehicules', lignesKm, token, 'id');
+  // PATCH ligne a ligne : ces vehicules existent, on les MET A JOUR.
+  // L'upsert echouait systematiquement (23502) : les colonnes NOT NULL
+  // absentes du corps (marque...) sont verifiees avant le conflit.
+  for (const lot of [lignes, lignesZone, lignesCharge, lignesKm]) {
+    for (const l of lot) {
+      const { id, ...reste } = l;
+      await supabasePatch('fleet_vehicules', id, reste, token);
+    }
+  }
 
   res.json({
     success: true,
