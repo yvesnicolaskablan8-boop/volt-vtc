@@ -104,7 +104,7 @@ const SuiviVehiculesPage = {
       if (ageMin > 20) return { libelle: 'Dernier signal en mouvement', couleur: '#64748b', roule: false };
       return { libelle: 'En route', couleur: '#15803d', roule: true };
     }
-    if (p.contact) return { libelle: 'Moteur tournant, à l\'arrêt', couleur: '#b45309', roule: false };
+    if (p.contact) return { libelle: 'Allumée, à l\'arrêt', couleur: '#b45309', roule: false };
     return { libelle: 'À l\'arrêt', couleur: '#2563eb', roule: false };
   },
 
