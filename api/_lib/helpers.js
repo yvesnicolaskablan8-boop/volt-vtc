@@ -398,6 +398,7 @@ module.exports = {
   aggregateTransactions,
   aggregateParChauffeur,
   supabaseUpsert,
+  supabasePatch,
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   YANGO_BASE,
