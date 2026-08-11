@@ -13,8 +13,11 @@ const SuiviVehiculesPage = {
   render() {
     const container = document.getElementById('page-content');
     container.innerHTML = this._template();
-    this._initCarte();
+    // La liste s'affiche tout de suite ; les marqueurs attendent que la carte
+    // soit REELLEMENT prete. Sans cela, le premier trace partait avant la fin
+    // du chargement de Leaflet et la carte restait vide une minute entiere.
     this._rafraichir();
+    this._initCarte().then(() => this._rafraichir());
     // Meme rythme que la synchronisation : inutile d'aller plus vite, les
     // boitiers eux-memes n'emettent pas en continu.
     if (this._minuteur) clearInterval(this._minuteur);

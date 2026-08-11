@@ -185,7 +185,9 @@ async function handlePositions(req, res) {
     try {
       // Fenetre : depuis la derniere charge connue, sinon 48 h en arriere.
       // Un vehicule jamais ancre obtient ainsi sa premiere estimation seul.
-      const depuis = v.derniere_charge_le || new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+      // 72 h de fenetre : avec 48 h, un vehicule peu utilise n'avait que
+      // deux trajets rapproches et son long arret restait hors champ.
+      const depuis = v.derniere_charge_le || new Date(Date.now() - 72 * 3600 * 1000).toISOString();
       const trajets = (await appel(creds, jeton, '/position/distanceSta.do', {
         carId: v.gps_car_id, startTime: fmtWg(depuis), endTime: fmtWg(Date.now()),
       }) || []).slice().sort((a, b) => versDate(a.startTime) - versDate(b.startTime));
@@ -198,6 +200,14 @@ async function handlePositions(req, res) {
         const h = (versDate(trajets[i + 1].startTime) - versDate(trajets[i].endTime)) / 3600000;
         if (h >= SEUIL_ARRET_H) { ancre = versDate(trajets[i + 1].startTime); dureeH = h; }
       }
+      // Premiere mise en service : aucun arret mesurable, mais des trajets.
+      // On ancre au premier depart observe — mieux vaut une estimation
+      // prudente (elle compte TOUS les km vus) que pas d'estimation.
+      let etiquette = ancre ? 'Arrêt prolongé (' + Math.round(dureeH) + ' h) — recharge supposée' : null;
+      if (!ancre && !v.derniere_charge_le && trajets.length) {
+        ancre = versDate(trajets[0].startTime);
+        etiquette = 'Premier départ observé — recharge supposée';
+      }
       const dejaPlusRecent = v.derniere_charge_le && ancre && new Date(v.derniere_charge_le) >= ancre;
       if (ancre && !dejaPlusRecent) {
         const metresApres = trajets
@@ -207,7 +217,7 @@ async function handlePositions(req, res) {
           id: v.id,
           derniere_charge_le: ancre.toISOString(),
           km_depuis_charge: Math.round(metresApres / 100) / 10,
-          charge_marquee_par: 'Arrêt prolongé (' + Math.round(dureeH) + ' h) — recharge supposée',
+          charge_marquee_par: etiquette,
         });
         ancres.add(v.id);
         chargesDetectees++;

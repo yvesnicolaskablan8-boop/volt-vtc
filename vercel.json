@@ -85,5 +85,13 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/gps.js": {
+      "maxDuration": 30
+    },
+    "api/yango.js": {
+      "maxDuration": 60
+    }
+  }
 }
