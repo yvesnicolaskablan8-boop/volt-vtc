@@ -68,11 +68,6 @@ async function handlePositions(req, res) {
     'fleet_vehicules',
     'select=id,immatriculation,gps_car_id,derniere_charge_le,charge_zone_entree_le,charge_zone_id,gps_position,km_offset_charge&gps_car_id=not.is.null', token);
 
-  let zones = [];
-  try {
-    const st = await supabaseQuery('fleet_settings', 'select=zones_recharge&limit=1', token);
-    zones = (st && st[0] && st[0].zones_recharge) || [];
-  } catch (e) { console.warn('[gps] zones illisibles :', e.message); }
 
   // Tension du circuit 12 V, transmise dans exData (« s=1;v=13000;st=... »,
   // v en millivolts). C'est elle qui trahit un branchement : le convertisseur
@@ -107,13 +102,6 @@ async function handlePositions(req, res) {
   // dans une zone declaree est consideree rechargee, sans geste humain.
   // Le suivi n'a pas besoin d'etre continu : on note l'heure d'ENTREE en
   // zone immobile, et on compare a chaque passage de la synchronisation.
-  const R_TERRE = 6371000;
-  const distanceM = (a1, o1, a2, o2) => {
-    const r = Math.PI / 180;
-    const dA = (a2 - a1) * r, dO = (o2 - o1) * r;
-    const h = Math.sin(dA / 2) ** 2 + Math.cos(a1 * r) * Math.cos(a2 * r) * Math.sin(dO / 2) ** 2;
-    return 2 * R_TERRE * Math.asin(Math.sqrt(h));
-  };
   const lignesZone = [];
   const lignesCharge = [];
   let chargesDetectees = 0;
@@ -121,10 +109,9 @@ async function handlePositions(req, res) {
     const e = parBoitier[String(v.gps_car_id)];
     if (!e || !e.online || e.lat == null) continue;      // hors ligne : etat gele
     const immobile = (e.speed || 0) < 3;
-    let zone = zones.find(z => z && z.lat != null &&
-      distanceM(e.lat, e.lon, Number(z.lat), Number(z.lng)) <= (Number(z.rayon) || 120));
+    let zone = null;
 
-    // Second detecteur, valable PARTOUT : la signature du branchement.
+    // Detecteur de branchement, valable PARTOUT : la signature de tension.
     // Moteur eteint + immobile + tension qui MONTE d'au moins 0,4 V vers un
     // niveau de charge (>= 12,9 V) : le convertisseur vient de s'activer.
     // On exige la montee, pas un simple niveau absolu : certains vehicules
@@ -165,7 +152,7 @@ async function handlePositions(req, res) {
         derniere_charge_le: new Date().toISOString(),
         km_depuis_charge: 0,
         km_offset_charge: 0,
-        charge_marquee_par: zone.id === 'TENSION' ? zone.nom : 'Zone : ' + (zone.nom || 'recharge'),
+        charge_marquee_par: zone.nom,
       });
     }
   }
@@ -256,7 +243,6 @@ async function handlePositions(req, res) {
     positionsMisesAJour: lignes.length,
     kmDepuisChargeCalcules: lignesKm.length,
     chargesDetectees,
-    zonesDeclarees: zones.length,
     horsLigne,
     sansSignal,
     boitiersDuCompte: (etats || []).length,
