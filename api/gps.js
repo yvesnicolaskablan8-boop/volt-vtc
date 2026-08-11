@@ -133,9 +133,13 @@ async function handlePositions(req, res) {
       const tension = tensionDe(e);
       const precedente = (v.gps_position && v.gps_position.tension != null)
         ? Number(v.gps_position.tension) : null;
-      const monte = tension != null && precedente != null && (tension - precedente) >= 0.4;
-      const enCours = v.charge_zone_id === 'TENSION' && tension != null && tension >= 12.9;
-      if (immobile && e.accStatus !== 1 && (monte && tension >= 12.9 || enCours)) {
+      // Seuils etablis sur les releves reels des boitiers (2026-08-10) : la
+      // tension n'est donnee qu'au volt pres et oscille entre 12 et 13 V,
+      // meme en roulant. On exige donc une montee d'au moins 1,5 V vers un
+      // niveau >= 13,5 V — hors de portee du bruit de mesure.
+      const monte = tension != null && precedente != null && (tension - precedente) >= 1.5;
+      const enCours = v.charge_zone_id === 'TENSION' && tension != null && tension >= 13.5;
+      if (immobile && e.accStatus !== 1 && (monte && tension >= 13.5 || enCours)) {
         zone = { id: 'TENSION', nom: 'Détection tension (' + tension.toFixed(1).replace('.', ',') + ' V)', dureeMin: 30 };
       }
     }
@@ -170,16 +174,48 @@ async function handlePositions(req, res) {
   // Echec tolere vehicule par vehicule : une erreur sur l'un ne doit ni
   // bloquer les autres ni ecraser une valeur deja calculee.
   const fmtWg = (d) => new Date(d).toISOString().slice(0, 19).replace('T', ' ');
+  const versDate = (t) => new Date(String(t).replace(' ', 'T') + 'Z');
   const lignesKm = [];
+  const ancres = new Set();
+  const SEUIL_ARRET_H = 4;   // un VTC electrique en service se recharge a l'arret long
   for (const v of vehicules || []) {
-    if (!v.derniere_charge_le) continue;
+    // Deja marque recharge par la detection en direct (zone ou tension) :
+    // deux lignes pour le meme id dans un upsert font echouer l'ecriture.
+    if (lignesCharge.some(l => l.id === v.id)) continue;
     try {
-      const trajets = await appel(creds, jeton, '/position/distanceSta.do', {
-        carId: v.gps_car_id,
-        startTime: fmtWg(v.derniere_charge_le),
-        endTime: fmtWg(Date.now()),
-      });
-      const metres = (trajets || []).reduce((s2, t) => s2 + (parseFloat(t.mileage) || 0), 0);
+      // Fenetre : depuis la derniere charge connue, sinon 48 h en arriere.
+      // Un vehicule jamais ancre obtient ainsi sa premiere estimation seul.
+      const depuis = v.derniere_charge_le || new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+      const trajets = (await appel(creds, jeton, '/position/distanceSta.do', {
+        carId: v.gps_car_id, startTime: fmtWg(depuis), endTime: fmtWg(Date.now()),
+      }) || []).slice().sort((a, b) => versDate(a.startTime) - versDate(b.startTime));
+
+      // Ancrage autonome : un arret de plus de SEUIL_ARRET_H entre deux trajets
+      // vaut recharge SUPPOSEE, ancree au REDEMARRAGE (la batterie est pleine
+      // quand on repart, pas quand on se gare). On prend le dernier arret long.
+      let ancre = null, dureeH = 0;
+      for (let i = 0; i + 1 < trajets.length; i++) {
+        const h = (versDate(trajets[i + 1].startTime) - versDate(trajets[i].endTime)) / 3600000;
+        if (h >= SEUIL_ARRET_H) { ancre = versDate(trajets[i + 1].startTime); dureeH = h; }
+      }
+      const dejaPlusRecent = v.derniere_charge_le && ancre && new Date(v.derniere_charge_le) >= ancre;
+      if (ancre && !dejaPlusRecent) {
+        const metresApres = trajets
+          .filter(t => versDate(t.startTime) >= ancre)
+          .reduce((s2, t) => s2 + (parseFloat(t.mileage) || 0), 0);
+        lignesCharge.push({
+          id: v.id,
+          derniere_charge_le: ancre.toISOString(),
+          km_depuis_charge: Math.round(metresApres / 100) / 10,
+          charge_marquee_par: 'Arrêt prolongé (' + Math.round(dureeH) + ' h) — recharge supposée',
+        });
+        ancres.add(v.id);
+        chargesDetectees++;
+        continue;   // le compteur vient d'etre ecrit avec l'ancre, ne pas le recouvrir
+      }
+
+      if (!v.derniere_charge_le) continue;
+      const metres = trajets.reduce((s2, t) => s2 + (parseFloat(t.mileage) || 0), 0);
       lignesKm.push({ id: v.id, km_depuis_charge: Math.round(metres / 100) / 10 });
     } catch (e) {
       console.warn('[gps] distance', v.immatriculation, ':', e.message);
