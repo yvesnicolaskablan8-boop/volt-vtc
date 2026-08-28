@@ -35,6 +35,8 @@ const {
   SUPABASE_ANON_KEY,
   YANGO_BASE,
   aggregateParChauffeur,
+  orderDriverId,
+  orderDurationMin,
   supabaseUpsert,
   isAdmin,
 } = require('./_lib/helpers');
@@ -243,8 +245,7 @@ async function handleDriverStats(req, res) {
         });
 
         const orders = (ordersData.orders || []).filter(o => {
-          const driverId = o.driver?.id || o.performer?.driver_id;
-          if (driverId !== yangoDriverId) return false;
+          if (orderDriverId(o) !== yangoDriverId) return false;
           const bookedAt = o.booked_at || '';
           return bookedAt >= from && bookedAt <= to;
         });
@@ -257,12 +258,7 @@ async function handleDriverStats(req, res) {
 
         // Sum activity time
         for (const o of completed) {
-          if (o.started_at && o.ended_at) {
-            const dur = (new Date(o.ended_at) - new Date(o.started_at)) / 60000;
-            if (dur > 0 && dur < 480) { // cap at 8h
-              tempsActiviteMinutes += dur;
-            }
-          }
+          tempsActiviteMinutes += orderDurationMin(o);
         }
 
         // Fallback: if transactions gave 0 revenue, use order prices
@@ -496,15 +492,13 @@ async function handleOrders(req, res) {
     });
 
     const orders = (data.orders || []).map(o => {
-      const started = o.started_at ? new Date(o.started_at) : null;
-      const ended = o.ended_at ? new Date(o.ended_at) : null;
-      const dureeMinutes = (started && ended) ? Math.round((ended - started) / 60000) : 0;
+      const dureeMinutes = Math.round(orderDurationMin(o));
 
       return {
         id: o.id,
         statut: o.status || 'unknown',
-        chauffeurId: o.driver?.id || o.performer?.driver_id || '',
-        chauffeurNom: [o.driver?.first_name, o.driver?.last_name].filter(Boolean).join(' ') || '',
+        chauffeurId: orderDriverId(o) || '',
+        chauffeurNom: (o.driver_profile && o.driver_profile.name) || [o.driver?.first_name, o.driver?.last_name].filter(Boolean).join(' ') || '',
         montant: parseFloat(o.price || 0),
         depart: o.route?.[0]?.fullname || o.source || '',
         arrivee: o.route?.[1]?.fullname || o.destination || '',
@@ -1005,17 +999,11 @@ async function handleSync(req, res) {
       const agg = aggregateTransactions(transactions, yangoId);
 
       // Count orders and activity time
-      const driverOrders = allOrders.filter(o => {
-        const dId = o.driver?.id || o.performer?.driver_id;
-        return dId === yangoId;
-      });
+      const driverOrders = allOrders.filter(o => orderDriverId(o) === yangoId);
       const completed = driverOrders.filter(o => ['complete', 'finished'].includes(o.status));
       let activiteMinutes = 0;
       for (const o of completed) {
-        if (o.started_at && o.ended_at) {
-          const dur = (new Date(o.ended_at) - new Date(o.started_at)) / 60000;
-          if (dur > 0 && dur < 480) activiteMinutes += dur;
-        }
+        activiteMinutes += orderDurationMin(o);
       }
 
       if (agg.totalCA > 0 || completed.length > 0) {

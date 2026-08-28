@@ -339,6 +339,34 @@ async function supabasePatch(table, id, row, token) {
   return true;
 }
 
+/**
+ * Identifiant du chauffeur d'une COMMANDE Yango. Piege : contrairement aux
+ * transactions (driver_profile_id a plat), les commandes le nichent dans
+ * driver_profile.id. Lire au mauvais endroit renvoyait undefined et AUCUNE
+ * commande n'etait attribuee -> temps en ligne et nombre de courses a zero.
+ */
+function orderDriverId(o) {
+  return (o && o.driver_profile && o.driver_profile.id)
+      || (o && o.driver && o.driver.id)
+      || (o && o.performer && o.performer.driver_id)
+      || null;
+}
+
+/**
+ * Duree d'une commande en minutes. Les commandes n'ont pas de started_at :
+ * on va de driving_at (debut de prise en charge) a ended_at, avec repli sur
+ * booked_at. Bornee a 8 h pour ecarter une course jamais cloturee.
+ */
+function orderDurationMin(o) {
+  if (!o) return 0;
+  const fin = o.ended_at ? new Date(o.ended_at) : null;
+  const debut = o.driving_at ? new Date(o.driving_at)
+              : (o.booked_at ? new Date(o.booked_at) : null);
+  if (!fin || !debut) return 0;
+  const min = (fin - debut) / 60000;
+  return (min > 0 && min < 480) ? min : 0;
+}
+
 /** Ecriture (upsert) dans Supabase avec le jeton de l'appelant. */
 async function supabaseUpsert(table, rows, token, conflictCols) {
   const headers = {
@@ -397,6 +425,8 @@ module.exports = {
   fetchAllTransactions,
   aggregateTransactions,
   aggregateParChauffeur,
+  orderDriverId,
+  orderDurationMin,
   supabaseUpsert,
   supabasePatch,
   SUPABASE_URL,
