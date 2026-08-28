@@ -689,6 +689,14 @@ const Utils = {
         versementSumIndex.set(k, (versementSumIndex.get(k) || 0) + (Number(v.montantVerse) || 0));
       }
     });
+    // Annulation d'une dette salariee : un versement « supprime » (bouton
+    // Annuler) ou un traitement « perte » neutralise le jour entier.
+    const annulationIndex = new Set();
+    versements.forEach(v => {
+      if (v.statut === 'supprime' || v.traitementManquant === 'perte') {
+        annulationIndex.add(`${v.chauffeurId}|${v.date}`);
+      }
+    });
     // CA brut Yango par chauffeur et par jour (source du du salarie).
     const caIndex = new Map();
     (caJour || []).forEach(e => { caIndex.set(`${e.chauffeurId}|${e.date}`, Number(e.caBrut) || 0); });
@@ -764,6 +772,7 @@ const Utils = {
       const du = caBrut - charge;
       if (du <= 0) return;
       if (explicitDebtIndex.has(`${ch.id}|${date}`)) return;   // dette deja saisie a la main
+      if (annulationIndex.has(`${ch.id}|${date}`)) return;    // dette annulee ou passee en perte
       const verse = versementSumIndex.get(`${ch.id}|${date}`) || 0;
       const manquant = Math.round(du - verse);
       if (manquant <= 0) return;

@@ -2342,7 +2342,7 @@ const VersementsPage = {
             <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;" onclick="event.stopPropagation();VersementsPage.${isImplicit ? `_modifierDetteImplicite('${v.chauffeurId}','${v.date}',${v.manquant})` : `_modifierDette('${v.id}')`}">
               <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier
             </button>
-            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;color:#ef4444;border-color:#ef4444;" onclick="event.stopPropagation();VersementsPage.${isImplicit ? `_annulerDetteImplicite('${v.chauffeurId}','${v.date}')` : `_annulerDette('${v.id}')`}">
+            <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;color:#ef4444;border-color:#ef4444;" onclick="event.stopPropagation();VersementsPage.${isImplicit ? `_annulerDetteImplicite('${v.chauffeurId}','${v.date}',${v.manquant || 0})` : `_annulerDette('${v.id}')`}">
               <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon> Annuler
             </button>
           </div>
@@ -2762,11 +2762,14 @@ const VersementsPage = {
     setTimeout(() => this._showDetteDetail(chauffeurId), 300);
   },
 
-  _annulerDetteImplicite(chauffeurId, date) {
+  _annulerDetteImplicite(chauffeurId, date, montant) {
     const chauffeurs = Store.get('chauffeurs') || [];
     const ch = chauffeurs.find(c => c.id === chauffeurId);
     const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : chauffeurId;
-    const redevance = ch ? (ch.redevanceQuotidienne || 0) : 0;
+    // Montant reel de la dette du jour (redevance pour un locataire, CA-charges
+    // pour un salarie) : la redevance seule affichait « 0 F » aux salaries.
+    const redevance = (montant != null && montant > 0)
+      ? montant : (ch ? (ch.redevanceQuotidienne || 0) : 0);
 
     Modal.open({
       title: '<iconify-icon icon="solar:close-circle-bold-duotone" style="color:#ef4444;"></iconify-icon> Annuler cette dette ?',
