@@ -588,6 +588,44 @@ const DriverStore = {
   async getBehaviorStatus() { return null; },
   async getClassement() { return null; },
   async getResumeHebdo() { return null; },
-  async createWaveCheckout(data) { return { error: 'Non configure' }; },
+  /**
+   * Paiement via le lien Wave Business (statique).
+   * Ce lien ne renvoie aucune confirmation : on enregistre un versement
+   * « en_attente » que l'administration valide ensuite contre le tableau de
+   * bord Wave. L'auto-confirmation demanderait l'API Checkout (cle API Wave).
+   */
+  async createWaveCheckout(data) {
+    const id = this._chauffeurId();
+    if (!id) return { error: 'Chauffeur inconnu' };
+    const montant = Math.round(Number(data && data.montantBrut) || 0);
+    if (montant <= 0) return { error: 'Montant invalide' };
+
+    // Recuperer le lien (RPC : n'expose que le lien, pas les autres secrets).
+    let lien = '';
+    try {
+      const { data: l } = await supabase.rpc('fleet_lien_wave');
+      lien = l || '';
+    } catch (e) { /* on tentera sans */ }
+    if (!lien) return { error: 'Le paiement Wave n\'est pas encore configuré. Prévenez l\'administration.' };
+
+    // Versement declare, en attente de validation par l'administration.
+    const { error } = await supabase.from('fleet_versements').insert(objToSnake({
+      id: 'VRS-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      chauffeurId: id,
+      date: (data && data.date) || new Date().toISOString().split('T')[0],
+      montantVerse: montant,
+      moyenPaiement: 'wave',
+      statut: 'en_attente',
+      soumisParChauffeur: true,
+      commentaire: ((data && data.commentaire) ? data.commentaire + ' · ' : '') + 'Paiement Wave déclaré — à confirmer',
+      reference: (data && data.periode) || null,
+    }));
+    if (error) return { error: error.message };
+
+    // Montant preremli sur la page Wave.
+    const url = lien + (lien.includes('?') ? '&' : '?') + 'amount=' + montant;
+    return { waveLaunchUrl: url, declare: true };
+  },
+
   async getWaveStatus(id) { return null; }
 };
