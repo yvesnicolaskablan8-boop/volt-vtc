@@ -438,7 +438,9 @@ const DashboardPage = {
     // Utilise la fonction partagée Utils.computeDebts() pour cohérence avec VersementsPage
     const debtData = Utils.computeDebts({
       versements, chauffeurs, planning, absences,
-      contraventions: Store.get('contraventions') || []
+      contraventions: Store.get('contraventions') || [],
+      caJour: Store.get('caJour') || [],
+      charges: Store.get('charges') || []
     });
     const totalDettes = debtData.totalDettes;
     const totalPertes = debtData.totalPertes;
@@ -598,7 +600,37 @@ const DashboardPage = {
     });
     expiringDocs.sort((a, b) => a.daysLeft - b.daysLeft);
 
+    // Montant ATTENDU en versement aujourd'hui : ce que la flotte doit verser.
+    //  - locataire programmé : sa redevance du jour ;
+    //  - salarié : son CA brut Yango du jour moins ses charges (>0).
+    const jourAtt = now.toISOString().split('T')[0];
+    const _plan = Store.get('planning') || [];
+    const _caj = Store.get('caJour') || [];
+    const _chg = Store.get('charges') || [];
+    const _abs = Store.get('absences') || [];
+    const chById2 = new Map((chauffeurs || []).map(c => [c.id, c]));
+    const absentCe = (id) => _abs.some(a => a.chauffeurId === id && jourAtt >= a.dateDebut && jourAtt <= a.dateFin);
+    const chargesJ = {};
+    _chg.filter(c => String(c.date).slice(0, 10) === jourAtt)
+        .forEach(c => { chargesJ[c.chauffeurId] = (chargesJ[c.chauffeurId] || 0) + (Number(c.montant) || 0); });
+    let versementAttenduJour = 0;
+    const dejaComptes = new Set();
+    _plan.filter(p => p.date === jourAtt).forEach(p => {
+      const ch = chById2.get(p.chauffeurId);
+      if (!ch || ch.statut === 'inactif' || ch.typeContrat === 'salarie' || absentCe(ch.id)) return;
+      if (dejaComptes.has(ch.id)) return; dejaComptes.add(ch.id);
+      const r = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+      versementAttenduJour += r;
+    });
+    _caj.filter(e => String(e.date).slice(0, 10) === jourAtt).forEach(e => {
+      const ch = chById2.get(e.chauffeurId);
+      if (!ch || ch.statut === 'inactif' || ch.typeContrat !== 'salarie' || absentCe(ch.id)) return;
+      const du = (Number(e.caBrut) || 0) - (chargesJ[ch.id] || 0);
+      if (du > 0) versementAttenduJour += du;
+    });
+
     return {
+      versementAttenduJour,
       caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount, totalDettes, totalPertes, nbDetteDrivers, nbPerteDrivers,
       nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
@@ -1094,8 +1126,9 @@ const DashboardPage = {
             </div>
             <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Versements</div>
           </div>
-          <div class="d-val xl" style="color:#fff;">${d.nbVersementsPeriode}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.65);">${Utils.formatCurrency(d.caMoyenJour)} / jour en moy.</div>
+          <div class="d-val xl" style="color:#fff;">${Utils.formatCurrency(d.versementAttenduJour)}</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.85);font-weight:600;">attendu aujourd'hui</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.6);font-size:11px;">${d.nbVersementsPeriode} versement${d.nbVersementsPeriode > 1 ? 's' : ''} · ${Utils.formatCurrency(d.caMoyenJour)}/j moy.</div>
           <div style="margin-top:10px;">
             <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);font-size:11px;font-weight:700;color:#fff;">${d.retardCount} en retard</span>
           </div>

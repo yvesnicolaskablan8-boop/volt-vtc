@@ -2185,7 +2185,9 @@ const VersementsPage = {
       chauffeurs: Store.get('chauffeurs') || [],
       planning: Store.get('planning') || [],
       absences: Store.get('absences') || [],
-      contraventions: Store.get('contraventions') || []
+      contraventions: Store.get('contraventions') || [],
+      caJour: Store.get('caJour') || [],
+      charges: Store.get('charges') || []
     });
   },
 

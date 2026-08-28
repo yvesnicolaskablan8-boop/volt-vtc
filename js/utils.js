@@ -653,7 +653,7 @@ const Utils = {
       .sort((a, b) => b.montant - a.montant);
   },
 
-  computeDebts({ versements, chauffeurs, planning, absences, contraventions }) {
+  computeDebts({ versements, chauffeurs, planning, absences, contraventions, caJour = [], charges = [] }) {
     const todayStr = this.todayISO();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -679,6 +679,25 @@ const Utils = {
       if (!driverAbsences) return false;
       return driverAbsences.some(a => date >= a.dateDebut && date <= a.dateFin);
     };
+
+    // Pour les salaries, le du est variable (CA brut - charges) : il faut le
+    // MONTANT verse, pas seulement savoir s'il y a eu un versement.
+    const versementSumIndex = new Map();
+    versements.forEach(v => {
+      if (v.statut === 'valide' || v.statut === 'partiel') {
+        const k = `${v.chauffeurId}|${v.date}`;
+        versementSumIndex.set(k, (versementSumIndex.get(k) || 0) + (Number(v.montantVerse) || 0));
+      }
+    });
+    // CA brut Yango par chauffeur et par jour (source du du salarie).
+    const caIndex = new Map();
+    (caJour || []).forEach(e => { caIndex.set(`${e.chauffeurId}|${e.date}`, Number(e.caBrut) || 0); });
+    // Charges saisies (recharge, lavage, autres), sommees par chauffeur et jour.
+    const chargesIndex = new Map();
+    (charges || []).forEach(c => {
+      const k = `${c.chauffeurId}|${c.date}`;
+      chargesIndex.set(k, (chargesIndex.get(k) || 0) + (Number(c.montant) || 0));
+    });
 
     // 1. Explicit debts
     // The contraventions table is the single source of truth for contravention debts
@@ -727,6 +746,31 @@ const Utils = {
       implicitDettes.push({
         id: `implicit_${p.chauffeurId}_${p.date}`, chauffeurId: p.chauffeurId, date: p.date,
         manquant: redevance, traitementManquant: 'dette', implicit: true, source: 'recette'
+      });
+    });
+
+    // 3bis. Dette du chauffeur SALARIE : il doit verser, chaque jour travaille,
+    // son CA brut Yango diminue de ses charges. Ce qu'il n'a pas verse est du.
+    // (Decision du 2026-08-28 : remplace l'ancienne regle « le salarie ne doit
+    //  aucune recette ». Voir [[volt-modele-salariat]].)
+    (caJour || []).forEach(e => {
+      const date = e.date;
+      if (!date || date < thirtyDaysAgoStr || date >= todayStr) return;
+      const ch = chauffeurById.get(e.chauffeurId);
+      if (!ch || ch.statut === 'inactif' || ch.typeContrat !== 'salarie') return;
+      if (hasAbsence(ch.id, date)) return;
+      const caBrut = Number(e.caBrut) || 0;
+      const charge = chargesIndex.get(`${ch.id}|${date}`) || 0;
+      const du = caBrut - charge;
+      if (du <= 0) return;
+      if (explicitDebtIndex.has(`${ch.id}|${date}`)) return;   // dette deja saisie a la main
+      const verse = versementSumIndex.get(`${ch.id}|${date}`) || 0;
+      const manquant = Math.round(du - verse);
+      if (manquant <= 0) return;
+      implicitDettes.push({
+        id: `salarie_${ch.id}_${date}`, chauffeurId: ch.id, date,
+        manquant, traitementManquant: 'dette', implicit: true, source: 'recette',
+        detailSalarie: { caBrut, charge, du, verse }
       });
     });
 

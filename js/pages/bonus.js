@@ -80,7 +80,9 @@ const BonusPage = {
     const detteData = Utils.computeDebts({
       versements, chauffeurs, planning,
       absences: Store.get('absences') || [],
-      contraventions: Store.get('contraventions') || []
+      contraventions: Store.get('contraventions') || [],
+      caJour: Store.get('caJour') || [],
+      charges: Store.get('charges') || []
     });
     const dettesParChauffeur = {};
     (detteData.detteListRecettes || []).forEach(d => { dettesParChauffeur[d.chauffeurId] = d.total; });

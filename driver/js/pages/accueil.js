@@ -29,6 +29,57 @@ const AccueilPage = {
     }
   },
 
+  // ===== CHARGES DU JOUR (salarie : deduites de ce qu'il verse) =====
+  _ajouterCharge() {
+    DriverModal.show(
+      'Ajouter une charge',
+      `<div style="padding:0.25rem 0">
+        <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;line-height:1.5">
+          Ce que vous avez dépensé aujourd'hui (recharge, lavage…). Ce montant sera déduit de ce que vous devez verser.
+        </div>
+        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Type</label>
+        <select id="chg-type" class="form-control" style="margin-bottom:12px;font-size:1rem">
+          <option value="recharge">Recharge du véhicule</option>
+          <option value="lavage">Lavage</option>
+          <option value="autre">Autre</option>
+        </select>
+        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Montant (FCFA)</label>
+        <input id="chg-montant" type="number" inputmode="numeric" min="0" step="500" class="form-control" placeholder="Ex : 5000" style="font-size:1.3rem;text-align:center;margin-bottom:12px">
+        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Détail (facultatif)</label>
+        <input id="chg-libelle" type="text" class="form-control" placeholder="Ex : station Cocody" style="font-size:0.95rem">
+      </div>`,
+      [
+        { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
+        { label: 'Enregistrer', class: 'btn btn-primary', onclick: 'AccueilPage._validerCharge()' }
+      ]
+    );
+  },
+
+  async _validerCharge() {
+    const type = (document.getElementById('chg-type') || {}).value || 'autre';
+    const montant = parseInt((document.getElementById('chg-montant') || {}).value, 10);
+    const libelle = ((document.getElementById('chg-libelle') || {}).value || '').trim();
+    if (!(montant > 0)) { DriverToast.show('Entrez un montant valide', 'error'); return; }
+    DriverModal.close();
+    const r = await DriverStore.ajouterCharge({ type, montant, libelle });
+    if (r && r.success) {
+      DriverToast.show('Charge enregistrée', 'success');
+      this.render(document.getElementById('app-content'));
+    } else {
+      DriverToast.show((r && r.error) || 'Impossible d\'enregistrer la charge', 'error');
+    }
+  },
+
+  async _supprimerCharge(id) {
+    const r = await DriverStore.supprimerCharge(id);
+    if (r && r.success) {
+      DriverToast.show('Charge supprimée', 'success');
+      this.render(document.getElementById('app-content'));
+    } else {
+      DriverToast.show((r && r.error) || 'Suppression impossible', 'error');
+    }
+  },
+
   async render(container) {
     // Skeleton loading moderne
     container.innerHTML = '<div style="padding:8px 0"><div class="skeleton skeleton-line w-50" style="height:24px;margin-bottom:16px"></div><div class="skeleton skeleton-line w-75" style="height:14px;margin-bottom:20px"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card" style="height:80px"></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px"><div class="skeleton" style="height:100px;border-radius:1.25rem"></div><div class="skeleton" style="height:100px;border-radius:1.25rem"></div><div class="skeleton" style="height:100px;border-radius:1.25rem"></div></div></div>';
@@ -189,9 +240,9 @@ const AccueilPage = {
     const aPaye = redevanceJour > 0 ? totalVerseJour >= redevanceJour : totalVerseJour > 0;
     const resteAPayer = Math.max(0, redevanceJour - totalVerseJour);
 
-    // === SALARIE : il ne doit AUCUNE recette. Lui reclamer de l'argent serait
-    // faux. Ce qui compte pour lui, c'est son objectif de CA et le surplus qui
-    // lui revient au-dela. ===
+    // === SALARIE : il verse chaque jour son CA brut Yango MOINS ses charges
+    // (recharge, lavage, autres) qu'il saisit lui-meme. Modele arrete le
+    // 2026-08-28. Il touche par ailleurs un salaire mensuel fixe. ===
     const estSalarie = chauffeur.typeContrat === 'salarie';
     const objectifJour = Number(chauffeur.objectifCaJour || chauffeur.objectifCa || 0);
     const caJour = Number((data.stats && data.stats.caJour) || 0);
@@ -211,40 +262,51 @@ const AccueilPage = {
           <div style="font-size:1rem;font-weight:700;opacity:0.9;margin-top:6px">Bonne journée, ${prenomSafe} 👋</div>
         </div>`;
       } else {
-        const pct = objectifJour > 0 ? Math.min(100, Math.round(caJour / objectifJour * 100)) : 0;
-        const atteint = objectifJour > 0 && caJour >= objectifJour;
-        const surplus = Math.max(0, caJour - objectifJour);
-        const reste = Math.max(0, objectifJour - caJour);
-        const fond = atteint ? 'linear-gradient(150deg,#14532d,#166534)' : 'linear-gradient(150deg,#172554,#1e3a8a)';
+        const chargesJour = Number((data.stats && data.stats.chargesJour) || 0);
+        const listeCharges = data.chargesJour || [];
+        const du = Math.max(0, caJour - chargesJour);
+        const reste = Math.max(0, du - totalVerseJour);
+        const regle = caJour > 0 && reste <= 0;
+        const caPasSync = (!data.stats || !data.stats.caSynchronise) && caJour === 0;
+        const fond = regle ? 'linear-gradient(150deg,#14532d,#166534)' : 'linear-gradient(150deg,#172554,#1e3a8a)';
+        const lig = (label, val, signe, opt) => `<div style="display:flex;justify-content:space-between;font-size:0.9rem;${opt||''}"><span style="opacity:.85">${label}</span><span style="font-weight:800">${signe||''}${Number(val).toLocaleString('fr-FR')}</span></div>`;
         carteArgentHTML = `
-        <div style="border-radius:1.5rem;background:${fond};padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(30,58,138,0.32);text-align:center">
-          <div style="font-size:1.05rem;font-weight:800;opacity:0.95;display:flex;align-items:center;justify-content:center;gap:8px">
-            <iconify-icon icon="solar:target-bold-duotone" style="font-size:1.5rem"></iconify-icon>
-            ${atteint ? 'OBJECTIF ATTEINT' : "OBJECTIF DU JOUR"}
-          </div>
-          <div style="font-size:3rem;font-weight:900;letter-spacing:-0.02em;margin:10px 0 2px;line-height:1">${caJour.toLocaleString('fr-FR')}</div>
-          <div style="font-size:1.1rem;font-weight:800;opacity:0.9;margin-bottom:14px">FCFA gagnés aujourd'hui</div>
-          ${(!data.stats || !data.stats.caSynchronise) && caJour === 0 ? `
-            <div style="background:rgba(255,255,255,0.18);border-radius:12px;padding:10px;margin-bottom:12px;font-size:0.82rem;font-weight:600;line-height:1.45">
-              Vos courses du jour ne sont pas encore remontees. Ce montant sera mis a jour des que la liaison avec la plateforme fonctionne.
-            </div>` : ''}
-          ${objectifJour > 0 ? `
-            <div style="height:14px;background:rgba(255,255,255,0.22);border-radius:7px;overflow:hidden;margin-bottom:8px">
-              <div style="height:100%;width:${pct}%;background:${atteint ? '#4ade80' : '#facc15'};border-radius:7px;transition:width .5s"></div>
+        <div style="border-radius:1.5rem;background:${fond};padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(30,58,138,0.32)">
+          <div style="text-align:center">
+            <div style="font-size:1.05rem;font-weight:800;opacity:0.95;display:flex;align-items:center;justify-content:center;gap:8px">
+              <iconify-icon icon="solar:${regle ? 'check-circle-bold' : 'wallet-money-bold-duotone'}" style="font-size:1.5rem"></iconify-icon>
+              ${regle ? 'TOUT EST VERSÉ' : "À VERSER AUJOURD'HUI"}
             </div>
-            <div style="font-size:0.95rem;font-weight:700;opacity:0.92">
-              ${atteint ? 'Objectif de ' + objectifJour.toLocaleString('fr-FR') + ' FCFA dépassé 🎉'
-                        : 'Encore ' + reste.toLocaleString('fr-FR') + ' FCFA pour atteindre ' + objectifJour.toLocaleString('fr-FR')}
-            </div>` : ''}
-          ${surplus > 0 ? `
-            <div style="margin-top:14px;background:rgba(255,255,255,0.20);border-radius:14px;padding:12px">
-              <div style="font-size:0.9rem;font-weight:700;opacity:0.9">CE QUI VOUS REVIENT</div>
-              <div style="font-size:1.8rem;font-weight:900;margin-top:2px">${surplus.toLocaleString('fr-FR')} FCFA</div>
-              <div style="font-size:0.82rem;font-weight:600;opacity:0.85">versé avec le bonus de la semaine</div>
-            </div>` : ''}
+            <div style="font-size:3rem;font-weight:900;letter-spacing:-0.02em;margin:8px 0 2px;line-height:1">${(regle ? 0 : reste).toLocaleString('fr-FR')}</div>
+            <div style="font-size:1.05rem;font-weight:800;opacity:0.9;margin-bottom:14px">FCFA</div>
+          </div>
+          ${caPasSync ? `<div style="background:rgba(255,255,255,0.18);border-radius:12px;padding:10px;font-size:0.82rem;font-weight:600;line-height:1.45">Vos courses du jour ne sont pas encore remontées. Le montant sera mis à jour dès que la liaison Yango fonctionne.</div>`
+          : `<div style="background:rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:5px">
+              ${lig('Gagné sur Yango', caJour, '')}
+              ${lig('Mes charges', chargesJour, '− ', 'color:#fcd34d')}
+              <div style="height:1px;background:rgba(255,255,255,.2);margin:3px 0"></div>
+              ${lig('À verser', du, '', 'font-size:1rem')}
+              ${totalVerseJour > 0 ? lig('Déjà versé', totalVerseJour, '− ', 'color:#86efac') : ''}
+            </div>`}
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button onclick="AccueilPage._ajouterCharge()" class="tap-scale" style="flex:1;min-height:52px;border-radius:1rem;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
+              <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:1.3rem"></iconify-icon> Charge
+            </button>
+            ${!regle ? `<button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="flex:2;min-height:52px;border-radius:1rem;border:none;background:#15803d;color:white;font-size:1.05rem;font-weight:900;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+              <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:1.5rem"></iconify-icon> VERSER
+            </button>` : ''}
+          </div>
+          ${listeCharges.length ? `<div style="margin-top:10px;display:flex;flex-direction:column;gap:5px">
+            ${listeCharges.map(c => `<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);border-radius:10px;padding:7px 11px;font-size:0.85rem">
+              <iconify-icon icon="${c.type === 'recharge' ? 'solar:bolt-circle-bold-duotone' : c.type === 'lavage' ? 'solar:waterdrops-bold-duotone' : 'solar:tag-bold-duotone'}" style="font-size:1.1rem;flex:none"></iconify-icon>
+              <span style="flex:1;text-transform:capitalize">${esc(c.type)}${c.libelle ? ' · ' + esc(c.libelle) : ''}</span>
+              <strong>${Number(c.montant).toLocaleString('fr-FR')}</strong>
+              <button onclick="AccueilPage._supprimerCharge('${esc(c.id)}')" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;padding:2px"><iconify-icon icon="solar:trash-bin-minimalistic-bold" style="font-size:1.1rem"></iconify-icon></button>
+            </div>`).join('')}
+          </div>` : ''}
         </div>`;
       }
-    } else if (redevanceJour > 0 && !aPaye) {
+        } else if (redevanceJour > 0 && !aPaye) {
       carteArgentHTML = `
       <div style="border-radius:1.5rem;background:linear-gradient(150deg,#172554,#1e3a8a);padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(30,58,138,0.35);text-align:center">
         <div style="font-size:1.05rem;font-weight:800;opacity:0.95;display:flex;align-items:center;justify-content:center;gap:8px">

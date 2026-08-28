@@ -42,7 +42,8 @@ const TABLE_MAP = {
   infractionsVitesse: 'fleet_infractions_vitesse',
   parcs: 'fleet_parcs',
   bonus: 'fleet_bonus',
-  caJour: 'fleet_ca_jour'
+  caJour: 'fleet_ca_jour',
+  charges: 'fleet_charges'
 };
 
 // Field name conversion utilities (camelCase ↔ snake_case)

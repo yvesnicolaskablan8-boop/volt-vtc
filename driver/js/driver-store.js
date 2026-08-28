@@ -17,13 +17,14 @@ const DriverStore = {
     const today = new Date().toISOString().split('T')[0];
     const monthStart = today.slice(0, 7) + '-01';
 
-    const [planningRes, versementsRes, coursesRes, signRes, chauffeurRes, caJourRes] = await Promise.all([
+    const [planningRes, versementsRes, coursesRes, signRes, chauffeurRes, caJourRes, chargesRes] = await Promise.all([
       supabase.from('fleet_planning').select('*').eq('chauffeur_id', id).eq('date', today),
       supabase.from('fleet_versements').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('date', { ascending: false }),
       supabase.from('fleet_courses').select('*').eq('chauffeur_id', id).gte('date_heure', monthStart + 'T00:00:00'),
       supabase.from('fleet_signalements').select('*').eq('chauffeur_id', id).in('statut', ['ouvert', 'en_cours']),
-      supabase.from('fleet_chauffeurs').select('prenom, nom, score_conduite, redevance_quotidienne, objectif_ca, objectif_ca_jour, type_contrat, role_flotte, jour_repos, jour_repos2, vehicule_assigne').eq('id', id).single(),
-      supabase.from('fleet_ca_jour').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('date', { ascending: false })
+      supabase.from('fleet_chauffeurs').select('prenom, nom, score_conduite, redevance_quotidienne, objectif_ca, objectif_ca_jour, salaire_mensuel, type_contrat, role_flotte, jour_repos, jour_repos2, vehicule_assigne').eq('id', id).single(),
+      supabase.from('fleet_ca_jour').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('date', { ascending: false }),
+      supabase.from('fleet_charges').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('created_at', { ascending: false })
     ]);
 
     const courses = (coursesRes.data || []).map(objToCamel);
@@ -43,9 +44,15 @@ const DriverStore = {
     const caJourNet = ligneDuJour ? Number(ligneDuJour.caNet || 0) : null;
     const commissionJour = ligneDuJour ? Number(ligneDuJour.commissionYango || 0) : null;
 
+    // Charges du jour : ce que le salarie deduit de ce qu'il verse.
+    const charges = (chargesRes.data || []).map(objToCamel);
+    const chargesJour = charges.filter(c => String(c.date).slice(0, 10) === today);
+    const totalChargesJour = chargesJour.reduce((s, c) => s + (Number(c.montant) || 0), 0);
+
     return {
       planning: (planningRes.data || []).map(objToCamel),
       versements,
+      charges, chargesJour,
       alertes: (signRes.data || []).map(objToCamel),
       stats: {
         courses: courses.length,
@@ -53,6 +60,7 @@ const DriverStore = {
         caJour,
         caJourNet,
         commissionJour,
+        chargesJour: totalChargesJour,
         caSynchronise: !!ligneDuJour,
         versementsTotal: versements.reduce((s, v) => s + (v.montantVerse || 0), 0),
         scoreConduite: ch.scoreConduite || 0
@@ -75,6 +83,32 @@ const DriverStore = {
     } catch (e) {
       return { success: false, error: e.message };
     }
+  },
+
+  /** Le chauffeur ajoute une charge du jour (recharge, lavage, autre). */
+  async ajouterCharge({ type, montant, libelle, date }) {
+    const id = this._chauffeurId();
+    if (!id) return { success: false, error: 'Chauffeur inconnu' };
+    const m = Math.round(Number(montant) || 0);
+    if (m <= 0) return { success: false, error: 'Montant invalide' };
+    const ligne = {
+      id: 'CHG-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      chauffeur_id: id,
+      date: date || new Date().toISOString().split('T')[0],
+      type: ['recharge', 'lavage', 'autre'].includes(type) ? type : 'autre',
+      montant: m,
+      libelle: libelle || null,
+      saisi_par: 'chauffeur',
+    };
+    const { error } = await supabase.from('fleet_charges').insert(ligne);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  async supprimerCharge(chargeId) {
+    const { error } = await supabase.from('fleet_charges').delete().eq('id', chargeId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   },
 
   // ===== PLANNING =====
