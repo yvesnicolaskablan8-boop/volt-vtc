@@ -626,9 +626,13 @@ const Store = {
    * Ecrit le CA Yango du jour dans fleet_ca_jour.
    * Sans cet appel, rien ne remplit la table : les chauffeurs verraient 0 F.
    */
-  async synchroniserCaJour(date = null) {
+  async synchroniserCaJour(date = null, jours = 1) {
     try {
-      return await this._yangoApi('sync-ca', { query: date ? `?date=${encodeURIComponent(date)}` : '' });
+      const params = [];
+      if (date) params.push(`date=${encodeURIComponent(date)}`);
+      if (jours && jours > 1) params.push(`days=${jours}`);
+      const query = params.length ? `?${params.join('&')}` : '';
+      return await this._yangoApi('sync-ca', { query });
     } catch (e) {
       console.warn('Store: synchroniserCaJour error:', e.message);
       return { error: 'Non disponible', details: e.message };
@@ -651,7 +655,10 @@ const Store = {
     if (ecoule < intervalleMinutes * 60 * 1000) {
       return { ignore: true, prochaineDansMinutes: Math.ceil((intervalleMinutes * 60 * 1000 - ecoule) / 60000) };
     }
-    const r = await this.synchroniserCaJour(null);
+    // Backfill glissant : on resynchronise aussi les jours recents pour rattraper
+    // les courses du soir qui n'existaient pas lors de la derniere synchro d'un
+    // jour deja passe (sinon le CA reste fige sur un instantane partiel).
+    const r = await this.synchroniserCaJour(null, 4);
     if (r && !r.error) {
       try { localStorage.setItem(CLE, String(Date.now())); } catch (e) {}
       console.log('[CA] Synchronisation Yango :', r.chauffeursMisAJour, 'chauffeur(s),', r.caTotal, 'FCFA');

@@ -390,9 +390,14 @@ const VersementsPage = {
     if (searchInput) {
       searchInput.addEventListener('input', () => {
         const q = searchInput.value.toLowerCase().trim();
-        const items = document.querySelectorAll('#versements-list [data-name]');
-        items.forEach(item => {
-          item.style.display = item.dataset.name.includes(q) ? '' : 'none';
+        const list = document.getElementById('versements-list');
+        if (!list) return;
+        list.querySelectorAll('[data-name]').forEach(item => {
+          item.style.display = (item.dataset.name || '').includes(q) ? '' : 'none';
+        });
+        list.querySelectorAll('.versement-date-group').forEach(group => {
+          const anyVisible = Array.from(group.querySelectorAll('[data-name]')).some(r => r.style.display !== 'none');
+          group.style.display = anyVisible ? '' : 'none';
         });
       });
     }
@@ -403,15 +408,18 @@ const VersementsPage = {
       const dateInput = document.querySelector(`.dette-date-filter[data-target="${targetId}"]`);
       const q = (searchInput?.value || '').toLowerCase().trim();
       const selectedDate = dateInput?.value || '';
-      const rows = document.querySelectorAll(`#${targetId} .dette-row`);
-      rows.forEach(row => {
+      const container = document.getElementById(targetId);
+      if (!container) return;
+      container.querySelectorAll('.dette-row').forEach(row => {
         let show = true;
-        if (q && !row.dataset.nom.includes(q)) show = false;
-        if (show && selectedDate) {
-          const dateStr = row.dataset.date || '';
-          show = dateStr === selectedDate;
-        }
+        if (q && !(row.dataset.nom || '').includes(q)) show = false;
+        if (show && selectedDate) show = (row.dataset.date || '') === selectedDate;
         row.style.display = show ? '' : 'none';
+      });
+      // Masque l'en-tête d'un jour dont toutes les lignes sont filtrées
+      container.querySelectorAll('.dette-date-group').forEach(group => {
+        const anyVisible = Array.from(group.querySelectorAll('.dette-row')).some(r => r.style.display !== 'none');
+        group.style.display = anyVisible ? '' : 'none';
       });
     };
     document.querySelectorAll('.dette-search-input, .dette-date-filter').forEach(el => {
@@ -466,12 +474,35 @@ const VersementsPage = {
   },
 
   _renderVersementRows(versements, chauffeurs) {
-    return versements.map(v => {
+    // Index CA Yango / charges par (chauffeur|date) pour détecter les anomalies salariées.
+    const caIdx = {}; (Store.get('caJour') || []).forEach(e => { caIdx[`${e.chauffeurId}|${e.date}`] = Number(e.caBrut) || 0; });
+    const chgIdx = {}; (Store.get('charges') || []).forEach(e => { const k = `${e.chauffeurId}|${e.date}`; chgIdx[k] = (chgIdx[k] || 0) + (Number(e.montant) || 0); });
+    // Total réellement versé par (chauffeur|date) — pour comparer au dû, pas versement par versement.
+    const verseIdx = {}; versements.forEach(v => { if (v.statut === 'valide' || v.statut === 'partiel') { const k = `${v.chauffeurId}|${v.dateService || v.date}`; verseIdx[k] = (verseIdx[k] || 0) + (Number(v.montantVerse) || 0); } });
+
+    const renderOne = (v) => {
       const c = chauffeurs.find(x => x.id === v.chauffeurId);
       const name = c ? `${c.prenom} ${c.nom}` : v.chauffeurId;
       const isDeleted = v.statut === 'supprime';
       const dateLabel = Utils.formatDate(v.dateService || v.date);
       const paidLabel = v.dateCreation && v.dateCreation.split('T')[0] !== (v.dateService || v.date) ? `Payé le ${Utils.formatDate(v.dateCreation.split('T')[0])}` : '';
+      const metaBits = [paidLabel, v.periode].filter(Boolean).join(' • ');
+
+      // Anomalie salarié : ce qu'il a versé ne colle pas au CA Yango du jour − charges.
+      let anomalieHtml = '';
+      if (c && c.typeContrat === 'salarie' && !isDeleted) {
+        const ds = v.dateService || v.date;
+        const caB = caIdx[`${v.chauffeurId}|${ds}`];
+        if (caB != null && caB > 0) {
+          const du = Math.max(0, caB - (chgIdx[`${v.chauffeurId}|${ds}`] || 0));
+          const verseJour = verseIdx[`${v.chauffeurId}|${ds}`] || 0;
+          const ecart = du - verseJour;
+          if (Math.abs(ecart) > 500) {
+            const manque = ecart > 0;
+            anomalieHtml = `<span title="Yango ${Utils.formatCurrency(caB)} − charges ⇒ ${Utils.formatCurrency(du)} attendu, ${Utils.formatCurrency(verseJour)} versé" style="font-size:10px;font-weight:700;background:rgba(239,68,68,0.15);color:#dc2626;padding:2px 7px;border-radius:4px;"><iconify-icon icon="solar:danger-triangle-bold"></iconify-icon> Anomalie ${manque ? '−' : '+'}${Utils.formatCurrency(Math.abs(ecart))}</span>`;
+          }
+        }
+      }
 
       // Statut badge
       let statutHtml = '';
@@ -526,13 +557,22 @@ const VersementsPage = {
       return `<div data-name="${name.toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:${rowBg};${rowBorder}gap:8px;${isDeleted ? 'opacity:0.5;' : ''}">
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;">${name}</div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${dateLabel}${paidLabel ? ' • ' + paidLabel : ''}${v.periode ? ' • ' + v.periode : ''}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">${statutHtml} ${sourceHtml} ${manquantHtml} ${methodHtml} ${coursesHtml}</div>
+          ${metaBits ? `<div style="font-size:var(--font-size-xs);color:var(--text-muted);">${metaBits}</div>` : ''}
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">${statutHtml} ${sourceHtml} ${manquantHtml} ${anomalieHtml} ${methodHtml} ${coursesHtml}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:var(--font-size-sm);font-weight:700;color:${isDeleted ? 'var(--text-muted)' : isPerte ? '#ef4444' : isDette ? '#d97706' : v.statut === 'en_attente' ? '#f59e0b' : '#22c55e'};${isDeleted ? 'text-decoration:line-through;' : ''}">${Utils.formatCurrency((v.montantVerse || 0) > 0 ? v.montantVerse : (v.montantBrut || 0))}</div>
           ${actionsHtml}
         </div>
+      </div>`;
+    };
+
+    // Regroupe les versements par date de service (jour le plus récent en premier)
+    return this._groupItemsByDate(versements, v => v.dateService || v.date).map(g => {
+      const sub = g.items.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
+      return `<div class="versement-date-group" data-date="${g.date}">
+        ${this._dateHeaderHtml(g.date, `<span style="font-size:var(--font-size-xs);font-weight:700;color:#22c55e;">${Utils.formatCurrency(sub)}</span>`)}
+        <div style="display:flex;flex-direction:column;gap:6px;">${g.items.map(renderOne).join('')}</div>
       </div>`;
     }).join('');
   },
@@ -2191,6 +2231,90 @@ const VersementsPage = {
     });
   },
 
+  // Force la récupération du CA réel depuis Yango sur les 30 derniers jours.
+  // Corrige les jours passés restés figés sur un instantané partiel.
+  async _resyncCaYango(btn) {
+    const icon = btn && btn.querySelector('iconify-icon');
+    if (icon) icon.classList.add('spin-icon');
+    if (btn) btn.disabled = true;
+    Toast.info('Récupération du CA Yango en cours…');
+    try {
+      const r = await Store.synchroniserCaJour(null, 30);
+      if (!r || r.error) {
+        Toast.error('Synchronisation impossible : ' + ((r && (r.details || r.error)) || 'erreur'));
+        return;
+      }
+      await Store.rechargerCollection('caJour');
+      Toast.success(`CA Yango à jour : ${Utils.formatCurrency(r.caTotal || 0)} sur ${r.jours || 1} jour(s)`);
+      this.render();
+    } catch (e) {
+      Toast.error('Erreur : ' + e.message);
+    } finally {
+      if (icon) icon.classList.remove('spin-icon');
+      if (btn) btn.disabled = false;
+    }
+  },
+
+  // Regroupe une liste d'éléments par date (jour le plus récent en premier)
+  _groupItemsByDate(items, getDate) {
+    const map = {};
+    items.forEach(it => {
+      const dk = getDate(it) || '';
+      (map[dk] = map[dk] || []).push(it);
+    });
+    return Object.keys(map)
+      .sort((a, b) => b.localeCompare(a))
+      .map(dk => ({ date: dk, items: map[dk] }));
+  },
+
+  // En-tête d'un groupe « par date » (reste collé en haut du conteneur qui défile)
+  _dateHeaderHtml(dateStr, rightHtml) {
+    return `<div class="date-group-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px;margin:6px 0 2px;position:sticky;top:0;z-index:1;background:var(--bg-secondary);border-radius:var(--radius-sm);">
+      <span style="font-size:var(--font-size-xs);font-weight:700;color:var(--text-secondary);text-transform:capitalize;">
+        <iconify-icon icon="solar:calendar-mark-bold-duotone" style="color:var(--text-muted);vertical-align:-2px;"></iconify-icon> ${dateStr ? Utils.formatDate(dateStr) : 'Date inconnue'}
+      </span>
+      ${rightHtml || ''}
+    </div>`;
+  },
+
+  // Rendu des dettes (recettes ou contraventions) regroupées par jour
+  _renderDettesByDate(driverList, color, typeKey) {
+    const flat = [];
+    driverList.forEach(drv => {
+      (drv.items || []).forEach(it => flat.push({ ...it, _nom: drv.nom, _chauffeurId: drv.chauffeurId }));
+    });
+    if (flat.length === 0) return '';
+    return this._groupItemsByDate(flat, it => it.date).map(g => {
+      const sub = g.items.reduce((s, it) => s + (it.manquant || 0), 0);
+      const rows = g.items
+        .sort((a, b) => (b.manquant || 0) - (a.manquant || 0))
+        .map(it => {
+          const isImplicit = !!it.implicit;
+          const note = it.source === 'contravention'
+            ? (it.commentaire || 'Contravention')
+            : isImplicit ? 'Non versé (redevance due)'
+            : ('Versé : ' + Utils.formatCurrency(it.montantVerse || 0));
+          return `<div class="dette-row" data-nom="${(it._nom || '').toLowerCase()}" data-date="${it.date || ''}" style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:var(--font-size-sm);font-weight:600;">${it._nom}</div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${note}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:var(--font-size-sm);font-weight:700;color:${color};">${Utils.formatCurrency(it.manquant)}</div>
+              <div style="display:flex;gap:4px;margin-top:4px;">
+                <button class="btn btn-sm btn-success" onclick="event.stopPropagation();VersementsPage._encaisserDetteIndividuelle('${it._chauffeurId}','${it.date}',${it.manquant},${isImplicit},'${isImplicit ? '' : it.id}','${it.source || ''}')"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser</button>
+                <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();VersementsPage._showDetteDetail('${it._chauffeurId}','${typeKey}')" title="Voir tout le chauffeur"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></button>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+      return `<div class="dette-date-group" data-date="${g.date}">
+        ${this._dateHeaderHtml(g.date, `<span style="font-size:var(--font-size-xs);font-weight:700;color:${color};">${Utils.formatCurrency(sub)}</span>`)}
+        <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
+      </div>`;
+    }).join('');
+  },
+
   _renderDetteSection(d) {
     const detteData = this._getDetteData();
     if (detteData.detteList.length === 0 && detteData.totalPertes === 0) return '';
@@ -2231,39 +2355,9 @@ const VersementsPage = {
         </div>
       </div>` : '';
 
-    // Section Dettes Recettes
-    const recetteRows = detteData.detteListRecettes.map(item => {
-      return `<div class="dette-row" data-nom="${(item.nom || '').toLowerCase()}" data-date="${item.lastDate || ''}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:600;">${item.nom}</div>
-          <div style="font-size:10px;color:var(--text-muted);">${item.count} recette${item.count > 1 ? 's' : ''} \u2022 Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:700;color:#f59e0b;">${Utils.formatCurrency(item.total)}</div>
-          <div style="display:flex;gap:4px;margin-top:4px;">
-            <button class="btn btn-sm btn-success" onclick="event.stopPropagation();VersementsPage._encaisserDette('${item.chauffeurId}','recette')"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser</button>
-            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();VersementsPage._showDetteDetail('${item.chauffeurId}','recette')"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon> D\u00e9tail</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-
-    // Section Dettes Contraventions
-    const contraRows = detteData.detteListContraventions.map(item => {
-      return `<div class="dette-row" data-nom="${(item.nom || '').toLowerCase()}" data-date="${item.lastDate || ''}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:600;">${item.nom}</div>
-          <div style="font-size:10px;color:var(--text-muted);">${item.count} contravention${item.count > 1 ? 's' : ''} \u2022 Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:700;color:#ef4444;">${Utils.formatCurrency(item.total)}</div>
-          <div style="display:flex;gap:4px;margin-top:4px;">
-            <button class="btn btn-sm btn-success" onclick="event.stopPropagation();VersementsPage._encaisserDette('${item.chauffeurId}','contravention')"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser</button>
-            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();VersementsPage._showDetteDetail('${item.chauffeurId}','contravention')"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon> D\u00e9tail</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
+    // Sections dettes regroup\u00e9es PAR DATE (jour le plus r\u00e9cent en premier)
+    const recetteRows = this._renderDettesByDate(detteData.detteListRecettes, '#f59e0b', 'recette');
+    const contraRows = this._renderDettesByDate(detteData.detteListContraventions, '#ef4444', 'contravention');
 
     let html = '';
 
@@ -2282,6 +2376,9 @@ const VersementsPage = {
         <div class="card-header">
           <span class="card-title"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#f59e0b;"></iconify-icon> Dettes recettes (${detteData.detteListRecettes.length} chauffeur${detteData.detteListRecettes.length > 1 ? 's' : ''})</span>
           <div style="display:flex;align-items:center;gap:12px;">
+            <button class="btn btn-sm" style="background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border-color);display:flex;align-items:center;gap:4px;padding:4px 10px;font-size:var(--font-size-xs);" onclick="VersementsPage._resyncCaYango(this)" title="Récupérer le CA réel depuis Yango (30 derniers jours)">
+              <iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon> Resync Yango
+            </button>
             <button class="btn btn-sm" style="background:#f59e0b;color:white;border:none;display:flex;align-items:center;gap:4px;padding:4px 10px;font-size:var(--font-size-xs);" onclick="VersementsPage._ajouterDette()">
               <iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter
             </button>

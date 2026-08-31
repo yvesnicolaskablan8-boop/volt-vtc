@@ -61,48 +61,67 @@ async function handleSyncCa(req, res) {
     await assertYangoCreds();
     const token = getToken(req);
 
-    // Journee locale d'Abidjan (UTC+0) : la date demandee, ou aujourd'hui.
-    const jour = (req.query.date || new Date().toISOString().slice(0, 10)).slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(jour)) {
+    // Jour de reference : la date demandee, ou aujourd'hui (Abidjan = UTC+0).
+    const jourRef = (req.query.date || new Date().toISOString().slice(0, 10)).slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(jourRef)) {
       return res.status(400).json({ error: 'Date attendue au format AAAA-MM-JJ' });
     }
-    const from = `${jour}T00:00:00+00:00`;
-    const to   = `${jour}T23:59:59+00:00`;
+    // Nombre de jours a resynchroniser en remontant depuis jourRef (defaut 1).
+    // INDISPENSABLE : une synchro « aujourd'hui » ne rattrape jamais les courses
+    // du soir d'un jour deja ecoule. Sans backfill, le CA d'un jour passe restait
+    // fige sur l'instantane partiel de la derniere synchro (ex. 41 000 a 14h52
+    // au lieu des 77 800 reels en fin de journee) et sous-estimait la dette.
+    const nbJours = Math.min(Math.max(parseInt(req.query.days || '1', 10) || 1, 1), 31);
 
-    const transactions = await fetchAllTransactions(from, to, 10);
-    const parYango = aggregateParChauffeur(transactions);
-
-    // Correspondance chauffeur Yango -> chauffeur Pilote
+    // Correspondance chauffeur Yango -> chauffeur Pilote (une seule fois).
     const chauffeurs = await supabaseQuery(
       'fleet_chauffeurs', 'select=id,yango_driver_id&yango_driver_id=not.is.null', token);
 
-    const lignes = [];
-    for (const ch of chauffeurs || []) {
-      const a = parYango[ch.yango_driver_id];
-      if (!a) continue;                       // aucune course ce jour-la
-      lignes.push({
-        id: `CA-${ch.id}-${jour}`,            // deterministe : reexecuter ne duplique pas
-        chauffeur_id: ch.id,
-        date: jour,
-        ca_brut: Math.round(a.caBrut),
-        commission_yango: Math.round(a.commissionYango),
-        ca_net: Math.round(a.caNet),
-        nb_courses: a.nbCourses,
-        source: 'yango',
-        maj_le: new Date().toISOString(),
-      });
-    }
+    const detailJours = [];
+    let totalLignes = 0;
+    let totalTransactions = 0;
 
-    if (lignes.length) await supabaseUpsert('fleet_ca_jour', lignes, token, 'chauffeur_id,date');
+    for (let i = 0; i < nbJours; i++) {
+      const d = new Date(`${jourRef}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() - i);
+      const jour = d.toISOString().slice(0, 10);
+      const from = `${jour}T00:00:00+00:00`;
+      const to   = `${jour}T23:59:59+00:00`;
+
+      const transactions = await fetchAllTransactions(from, to, 10);
+      totalTransactions += transactions.length;
+      const parYango = aggregateParChauffeur(transactions);
+
+      const lignes = [];
+      for (const ch of chauffeurs || []) {
+        const a = parYango[ch.yango_driver_id];
+        if (!a) continue;                       // aucune course ce jour-la
+        lignes.push({
+          id: `CA-${ch.id}-${jour}`,            // deterministe : reexecuter ne duplique pas
+          chauffeur_id: ch.id,
+          date: jour,
+          ca_brut: Math.round(a.caBrut),
+          commission_yango: Math.round(a.commissionYango),
+          ca_net: Math.round(a.caNet),
+          nb_courses: a.nbCourses,
+          source: 'yango',
+          maj_le: new Date().toISOString(),
+        });
+      }
+      if (lignes.length) await supabaseUpsert('fleet_ca_jour', lignes, token, 'chauffeur_id,date');
+      totalLignes += lignes.length;
+      detailJours.push({ date: jour, chauffeurs: lignes.length, caTotal: lignes.reduce((s, l) => s + l.ca_brut, 0) });
+    }
 
     res.json({
       success: true,
-      date: jour,
-      chauffeursMisAJour: lignes.length,
+      date: jourRef,
+      jours: nbJours,
+      detailJours,
+      chauffeursMisAJour: totalLignes,
       chauffeursLies: (chauffeurs || []).length,
-      chauffeursActifsChezYango: Object.keys(parYango).length,
-      caTotal: lignes.reduce((s, l) => s + l.ca_brut, 0),
-      transactionsLues: transactions.length,
+      caTotal: detailJours.reduce((s, j) => s + j.caTotal, 0),
+      transactionsLues: totalTransactions,
     });
   } catch (e) {
     console.error('[sync-ca]', e.message);
