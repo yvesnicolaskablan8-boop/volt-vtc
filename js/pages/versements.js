@@ -464,6 +464,7 @@ const VersementsPage = {
           <option value="en_attente">En attente</option>
           <option value="retard">En retard</option>
           <option value="partiel">Partiel</option>
+          <option value="conteste">Contesté</option>
         </select>
         <input type="date" class="form-control" id="filter-date-paiement" style="width:160px;font-size:var(--font-size-xs);" title="Filtrer par date de paiement">
       </div>
@@ -477,8 +478,9 @@ const VersementsPage = {
     // Index CA Yango / charges par (chauffeur|date) pour détecter les anomalies salariées.
     const caIdx = {}; (Store.get('caJour') || []).forEach(e => { caIdx[`${e.chauffeurId}|${e.date}`] = Number(e.caBrut) || 0; });
     const chgIdx = {}; (Store.get('charges') || []).forEach(e => { const k = `${e.chauffeurId}|${e.date}`; chgIdx[k] = (chgIdx[k] || 0) + (Number(e.montant) || 0); });
-    // Total réellement versé par (chauffeur|date) — pour comparer au dû, pas versement par versement.
-    const verseIdx = {}; versements.forEach(v => { if (v.statut === 'valide' || v.statut === 'partiel') { const k = `${v.chauffeurId}|${v.dateService || v.date}`; verseIdx[k] = (verseIdx[k] || 0) + (Number(v.montantVerse) || 0); } });
+    // Montant remis/déclaré par (chauffeur|date) — tout versement non supprimé
+    // (déclaré, en attente, validé ou contesté), pour comparer au dû Yango du jour.
+    const verseIdx = {}; versements.forEach(v => { if (v.statut !== 'supprime') { const k = `${v.chauffeurId}|${v.dateService || v.date}`; verseIdx[k] = (verseIdx[k] || 0) + (Number(v.montantVerse) || 0); } });
 
     const renderOne = (v) => {
       const c = chauffeurs.find(x => x.id === v.chauffeurId);
@@ -511,6 +513,7 @@ const VersementsPage = {
       else if (v.statut === 'en_attente') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#f59e0b;"><iconify-icon icon="solar:clock-circle-bold"></iconify-icon> En attente</span>';
       else if (v.statut === 'retard') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;"><iconify-icon icon="solar:alarm-bold"></iconify-icon> Retard</span>';
       else if (v.statut === 'supprime') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:var(--text-muted);"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon> Supprimé</span>';
+      else if (v.statut === 'conteste') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;"><iconify-icon icon="solar:shield-warning-bold"></iconify-icon> Contesté</span>';
 
       // Debt/loss badge — use redevance as fallback for expected amount
       let manquantHtml = '';
@@ -540,6 +543,9 @@ const VersementsPage = {
       let actionsHtml = '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">';
       if (v.statut === 'en_attente' || v.statut === 'retard') {
         actionsHtml += `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();VersementsPage._validate('${v.id}')" title="Valider"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button>`;
+        if (v.soumisParChauffeur) {
+          actionsHtml += `<button class="btn btn-sm btn-outline" style="color:#ef4444;border-color:#ef4444;" onclick="event.stopPropagation();VersementsPage._contester('${v.id}')" title="Contester le montant déclaré"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></button>`;
+        }
       }
       actionsHtml += `<button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();VersementsPage._edit('${v.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>`;
       if (v.statut === 'valide') {
@@ -1058,6 +1064,39 @@ const VersementsPage = {
     Toast.success('Versement valid\u00e9');
     this.render();
     Header.refreshNotifications();
+  },
+
+  // L'admin conteste le montant d\u00e9clar\u00e9 par le chauffeur (apr\u00e8s v\u00e9rification
+  // du CA Yango). Le versement n'est PAS valid\u00e9 : la dette du jour subsiste.
+  _contester(id) {
+    const v = Store.findById('versements', id);
+    if (!v) return;
+    const ch = Store.findById('chauffeurs', v.chauffeurId);
+    const nom = ch ? `${ch.prenom} ${ch.nom}` : v.chauffeurId;
+    const ds = v.dateService || v.date;
+    const caRow = (Store.get('caJour') || []).find(e => e.chauffeurId === v.chauffeurId && e.date === ds);
+    const caBrut = caRow ? (Number(caRow.caBrut) || 0) : 0;
+    const charges = (Store.get('charges') || []).filter(e => e.chauffeurId === v.chauffeurId && e.date === ds).reduce((s, e) => s + (Number(e.montant) || 0), 0);
+    const du = Math.max(0, caBrut - charges);
+    const infoYango = caBrut > 0
+      ? `<div style="padding:8px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:var(--font-size-xs);margin-bottom:10px;line-height:1.5;">CA Yango <strong>${Utils.formatCurrency(caBrut)}</strong> \u2212 charges <strong>${Utils.formatCurrency(charges)}</strong> \u21d2 <strong style="color:#f59e0b;">${Utils.formatCurrency(du)}</strong> attendu.<br>D\u00e9clar\u00e9 par le chauffeur : <strong style="color:#22c55e;">${Utils.formatCurrency(v.montantVerse || 0)}</strong></div>`
+      : '';
+    const fields = [{ name: 'motif', label: 'Motif de la contestation', type: 'textarea', required: true, placeholder: 'ex. montant inf\u00e9rieur au CA Yango, charges non justifi\u00e9es\u2026' }];
+    Modal.form('<iconify-icon icon="solar:shield-warning-bold-duotone" style="color:#ef4444;"></iconify-icon> Contester \u2014 ' + nom, infoYango + FormBuilder.build(fields), () => {
+      const body = document.getElementById('modal-body');
+      if (!FormBuilder.validate(body, fields)) return;
+      const motif = (FormBuilder.getValues(body).motif || '').trim();
+      if (!motif) { Toast.error('Indiquez un motif'); return; }
+      const prefix = v.commentaire ? v.commentaire + ' | ' : '';
+      Store.update('versements', id, {
+        statut: 'conteste',
+        commentaire: prefix + 'Contest\u00e9 par admin : ' + motif
+      });
+      Modal.close();
+      Toast.warning('Versement contest\u00e9 \u2014 la dette du jour reste due');
+      this.render();
+      if (typeof Header !== 'undefined' && Header.refreshNotifications) Header.refreshNotifications();
+    });
   },
 
   // =================== KPI DETAIL MODALS ===================
@@ -2255,6 +2294,95 @@ const VersementsPage = {
     }
   },
 
+  // Écran admin de déduction des charges d'un salarié pour un jour donné.
+  // Le chauffeur saisit ses charges dans son app ; l'admin peut en ajouter/retirer.
+  _gererCharges(chauffeurId, date) {
+    const ch = (Store.get('chauffeurs') || []).find(c => c.id === chauffeurId);
+    const nom = ch ? `${ch.prenom} ${ch.nom}` : chauffeurId;
+    const caRow = (Store.get('caJour') || []).find(e => e.chauffeurId === chauffeurId && e.date === date);
+    const caBrut = caRow ? (Number(caRow.caBrut) || 0) : 0;
+    const charges = (Store.get('charges') || []).filter(e => e.chauffeurId === chauffeurId && e.date === date);
+    const totalCharges = charges.reduce((s, e) => s + (Number(e.montant) || 0), 0);
+    const verse = (Store.get('versements') || [])
+      .filter(v => v.chauffeurId === chauffeurId && (v.dateService || v.date) === date && (v.statut === 'valide' || v.statut === 'partiel'))
+      .reduce((s, v) => s + (Number(v.montantVerse) || 0), 0);
+    const du = Math.max(0, caBrut - totalCharges);
+    const reste = Math.max(0, du - verse);
+    const typeLabel = { recharge: 'Recharge', lavage: 'Lavage', autre: 'Autre' };
+
+    const chargeRows = charges.length ? charges.map(e => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:var(--font-size-sm);font-weight:600;">${typeLabel[e.type] || e.type}${e.libelle ? ' — ' + Utils.escHtml(e.libelle) : ''}</div>
+          <div style="font-size:10px;color:var(--text-muted);">${e.saisiPar === 'chauffeur' ? '<iconify-icon icon="solar:smartphone-bold-duotone"></iconify-icon> Saisi par le chauffeur' : '<iconify-icon icon="solar:user-bold-duotone"></iconify-icon> Saisi par l’admin'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <span style="font-weight:700;color:#ef4444;">− ${Utils.formatCurrency(e.montant)}</span>
+          <button class="btn btn-sm btn-outline" style="color:#ef4444;border-color:#ef4444;padding:2px 6px;" onclick="VersementsPage._supprimerChargeAdmin('${e.id}','${chauffeurId}','${date}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+        </div>
+      </div>`).join('') : '<div style="text-align:center;color:var(--text-muted);padding:8px;font-size:var(--font-size-sm);">Aucune charge ce jour</div>';
+
+    Modal.open({
+      title: `<iconify-icon icon="solar:gas-station-bold-duotone" style="color:#f59e0b;"></iconify-icon> Charges — ${nom} · ${Utils.formatDate(date)}`,
+      body: `
+        <div style="display:flex;flex-direction:column;gap:5px;padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:12px;font-size:var(--font-size-sm);">
+          <div style="display:flex;justify-content:space-between;"><span>CA Yango (brut)</span><strong>${Utils.formatCurrency(caBrut)}</strong></div>
+          <div style="display:flex;justify-content:space-between;color:#ef4444;"><span>− Charges</span><strong>− ${Utils.formatCurrency(totalCharges)}</strong></div>
+          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border-color);padding-top:5px;"><span>= À verser</span><strong style="color:#f59e0b;">${Utils.formatCurrency(du)}</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Déjà versé</span><strong style="color:#22c55e;">${Utils.formatCurrency(verse)}</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Reste dû</span><strong style="color:${reste > 0 ? '#ef4444' : '#22c55e'};">${Utils.formatCurrency(reste)}</strong></div>
+        </div>
+        <div style="font-weight:600;font-size:var(--font-size-sm);margin-bottom:6px;">Charges du jour</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">${chargeRows}</div>
+        <div style="font-weight:600;font-size:var(--font-size-sm);margin-bottom:6px;">Ajouter une charge</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;">
+          <div style="flex:1;min-width:100px;">
+            <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Type</label>
+            <select id="charge-type" class="form-control" style="font-size:var(--font-size-xs);">
+              <option value="recharge">Recharge</option>
+              <option value="lavage">Lavage</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+          <div style="width:110px;">
+            <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Montant</label>
+            <input id="charge-montant" type="number" min="0" class="form-control" placeholder="0" style="font-size:var(--font-size-xs);">
+          </div>
+          <div style="flex:1;min-width:110px;">
+            <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Libellé (option.)</label>
+            <input id="charge-libelle" type="text" class="form-control" placeholder="ex. station Shell" style="font-size:var(--font-size-xs);">
+          </div>
+          <button class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none;" onclick="VersementsPage._ajouterChargeAdmin('${chauffeurId}','${date}')"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter</button>
+        </div>
+      `,
+      footer: `<button class="btn btn-secondary" data-action="cancel">Fermer</button>`,
+      size: 'medium'
+    });
+  },
+
+  _ajouterChargeAdmin(chauffeurId, date) {
+    const type = document.getElementById('charge-type')?.value || 'autre';
+    const montant = Math.round(Number(document.getElementById('charge-montant')?.value) || 0);
+    const libelle = (document.getElementById('charge-libelle')?.value || '').trim();
+    if (montant <= 0) { Toast.error('Montant invalide'); return; }
+    Store.add('charges', {
+      id: 'CHG-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      chauffeurId, date,
+      type: ['recharge', 'lavage', 'autre'].includes(type) ? type : 'autre',
+      montant, libelle: libelle || null, saisiPar: 'admin'
+    });
+    Toast.success('Charge ajoutée');
+    this._gererCharges(chauffeurId, date);
+    this.render();
+  },
+
+  _supprimerChargeAdmin(chargeId, chauffeurId, date) {
+    Store.delete('charges', chargeId);
+    Toast.success('Charge supprimée');
+    this._gererCharges(chauffeurId, date);
+    this.render();
+  },
+
   // Regroupe une liste d'éléments par date (jour le plus récent en premier)
   _groupItemsByDate(items, getDate) {
     const map = {};
@@ -2290,10 +2418,13 @@ const VersementsPage = {
         .sort((a, b) => (b.manquant || 0) - (a.manquant || 0))
         .map(it => {
           const isImplicit = !!it.implicit;
+          const ds = it.detailSalarie;   // présent uniquement pour un salarié
           const note = it.source === 'contravention'
             ? (it.commentaire || 'Contravention')
+            : ds ? `Yango ${Utils.formatCurrency(ds.caBrut)} − charges ${Utils.formatCurrency(ds.charge)}${ds.verse ? ' − versé ' + Utils.formatCurrency(ds.verse) : ''}`
             : isImplicit ? 'Non versé (redevance due)'
             : ('Versé : ' + Utils.formatCurrency(it.montantVerse || 0));
+          const chargesBtn = ds ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();VersementsPage._gererCharges('${it._chauffeurId}','${it.date}')" title="Déduire / gérer les charges"><iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon></button>` : '';
           return `<div class="dette-row" data-nom="${(it._nom || '').toLowerCase()}" data-date="${it.date || ''}" style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
             <div style="flex:1;min-width:0;">
               <div style="font-size:var(--font-size-sm);font-weight:600;">${it._nom}</div>
@@ -2303,6 +2434,7 @@ const VersementsPage = {
               <div style="font-size:var(--font-size-sm);font-weight:700;color:${color};">${Utils.formatCurrency(it.manquant)}</div>
               <div style="display:flex;gap:4px;margin-top:4px;">
                 <button class="btn btn-sm btn-success" onclick="event.stopPropagation();VersementsPage._encaisserDetteIndividuelle('${it._chauffeurId}','${it.date}',${it.manquant},${isImplicit},'${isImplicit ? '' : it.id}','${it.source || ''}')"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser</button>
+                ${chargesBtn}
                 <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();VersementsPage._showDetteDetail('${it._chauffeurId}','${typeKey}')" title="Voir tout le chauffeur"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></button>
               </div>
             </div>
