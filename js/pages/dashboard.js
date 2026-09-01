@@ -55,7 +55,7 @@ const DashboardPage = {
         console.error('DashboardPage._loadCharts() error:', chartErr);
       }
       this._bindPeriodSelector();
-      if (this._isToday()) this._startAutoRefresh(); else this._stopAutoRefresh();
+      if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
       this._autoGenerateVersements();
     } catch (err) {
@@ -93,7 +93,8 @@ const DashboardPage = {
   _startAutoRefresh() {
     this._stopAutoRefresh();
     this._refreshInterval = setInterval(() => {
-      this._silentRefresh();
+      this._maybeRefreshCa();  // re-synchronise le CA Yango (auto-throttlé)
+      this._silentRefresh();   // ré-affiche depuis le cache
     }, 30000);
   },
 
@@ -102,6 +103,23 @@ const DashboardPage = {
       clearInterval(this._refreshInterval);
       this._refreshInterval = null;
     }
+  },
+
+  // Re-synchronise le CA Yango du jour pour que la « recette du jour » suive
+  // l'activité en temps quasi réel. Auto-throttlé (2 min) pour ménager l'API.
+  async _maybeRefreshCa() {
+    if (!this._isToday()) return;
+    const now = Date.now();
+    if (this._lastCaLiveSync && (now - this._lastCaLiveSync) < 120000) return;
+    this._lastCaLiveSync = now;
+    try {
+      const r = await Store.synchroniserCaJour(null, 1); // aujourd'hui seulement (léger)
+      if (!this._refreshInterval) return; // tableau de bord quitté pendant la synchro
+      if (r && !r.error) {
+        await Store.rechargerCollection('caJour');
+        if (this._refreshInterval) this._silentRefresh(); // réaffiche avec le CA frais
+      }
+    } catch (e) { /* silencieux : réessai au prochain tick */ }
   },
 
   _isCurrentMonth() {
@@ -614,6 +632,7 @@ const DashboardPage = {
     _chg.filter(c => String(c.date).slice(0, 10) === jourAtt)
         .forEach(c => { chargesJ[c.chauffeurId] = (chargesJ[c.chauffeurId] || 0) + (Number(c.montant) || 0); });
     let versementAttenduJour = 0;
+    let nbActifsJour = 0;   // salariés ayant roulé aujourd'hui (activité en cours)
     const dejaComptes = new Set();
     _plan.filter(p => p.date === jourAtt).forEach(p => {
       const ch = chById2.get(p.chauffeurId);
@@ -626,11 +645,11 @@ const DashboardPage = {
       const ch = chById2.get(e.chauffeurId);
       if (!ch || ch.statut === 'inactif' || ch.typeContrat !== 'salarie' || absentCe(ch.id)) return;
       const du = (Number(e.caBrut) || 0) - (chargesJ[ch.id] || 0);
-      if (du > 0) versementAttenduJour += du;
+      if (du > 0) { versementAttenduJour += du; nbActifsJour++; }
     });
 
     return {
-      versementAttenduJour,
+      versementAttenduJour, nbActifsJour,
       caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount, totalDettes, totalPertes, nbDetteDrivers, nbPerteDrivers,
       nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
@@ -1127,8 +1146,8 @@ const DashboardPage = {
             <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Versements</div>
           </div>
           <div class="d-val xl" style="color:#fff;">${Utils.formatCurrency(d.versementAttenduJour)}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.85);font-weight:600;">attendu aujourd'hui</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.6);font-size:11px;">${d.nbVersementsPeriode} versement${d.nbVersementsPeriode > 1 ? 's' : ''} · ${Utils.formatCurrency(d.caMoyenJour)}/j moy.</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.85);font-weight:600;">recette du jour · à verser</div>
+          <div class="d-sub" style="color:rgba(255,255,255,.6);font-size:11px;">${d.nbActifsJour} chauffeur${d.nbActifsJour > 1 ? 's' : ''} en activité${d.nbActifsJour > 0 ? " · s'actualise en direct" : ''}</div>
           <div style="margin-top:10px;">
             <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);font-size:11px;font-weight:700;color:#fff;">${d.retardCount} en retard</span>
           </div>
