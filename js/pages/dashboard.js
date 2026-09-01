@@ -1205,8 +1205,8 @@ const DashboardPage = {
           </div>
         </a>
 
-        <!-- Pertes (fond rouge) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:linear-gradient(135deg,#ef4444,#f87171);border:none;box-shadow:0 4px 20px rgba(239,68,68,.25);">
+        <!-- Pertes (rouge s'il y en a, neutre à 0) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:${d.totalPertes > 0 ? 'linear-gradient(135deg,#ef4444,#f87171)' : 'linear-gradient(135deg,#64748b,#94a3b8)'};border:none;box-shadow:0 4px 20px ${d.totalPertes > 0 ? 'rgba(239,68,68,.25)' : 'rgba(100,116,139,.22)'};">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
               <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
