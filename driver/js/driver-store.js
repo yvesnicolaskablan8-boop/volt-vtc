@@ -14,7 +14,12 @@ const DriverStore = {
     const id = this._chauffeurId();
     if (!id) return null;
 
-    const today = new Date().toISOString().split('T')[0];
+    // Journee d'exploitation : avant 05h00 (creux nocturne), on est encore dans
+    // la nuit de travail de la veille. On rattache donc CA / planning / charges
+    // a cette journee-la, en coherence avec l'agregation Yango cote serveur.
+    const _now = new Date();
+    if (_now.getUTCHours() < 5) _now.setUTCDate(_now.getUTCDate() - 1);
+    const today = _now.toISOString().split('T')[0];
     const monthStart = today.slice(0, 7) + '-01';
 
     const [planningRes, versementsRes, coursesRes, signRes, chauffeurRes, caJourRes, chargesRes] = await Promise.all([

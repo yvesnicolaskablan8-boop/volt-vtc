@@ -77,6 +77,12 @@ async function handleSyncCa(req, res) {
     const chauffeurs = await supabaseQuery(
       'fleet_chauffeurs', 'select=id,yango_driver_id&yango_driver_id=not.is.null', token);
 
+    // Heure de bascule de la journee d'exploitation (Abidjan = UTC+0).
+    // Les chauffeurs roulent au-dela de minuit : la journee du jour D couvre
+    // [D 05h00, D+1 05h00). Une course a 2h du matin le lendemain appartient
+    // donc a la nuit de travail de D. 05h00 = creux ou personne ne roule.
+    const HEURE_BASCULE_JOUR = 5;
+
     const detailJours = [];
     let totalLignes = 0;
     let totalTransactions = 0;
@@ -85,8 +91,14 @@ async function handleSyncCa(req, res) {
       const d = new Date(`${jourRef}T00:00:00Z`);
       d.setUTCDate(d.getUTCDate() - i);
       const jour = d.toISOString().slice(0, 10);
-      const from = `${jour}T00:00:00+00:00`;
-      const to   = `${jour}T23:59:59+00:00`;
+      // Fenetre = journee d'exploitation, pas journee calendaire.
+      const debutJour = new Date(`${jour}T00:00:00Z`);
+      debutJour.setUTCHours(HEURE_BASCULE_JOUR, 0, 0, 0);
+      const finJour = new Date(debutJour);
+      finJour.setUTCDate(finJour.getUTCDate() + 1);
+      finJour.setUTCSeconds(finJour.getUTCSeconds() - 1); // 04:59:59 le lendemain (exclut la bascule suivante, pas de double comptage)
+      const from = debutJour.toISOString().slice(0, 19) + '+00:00';
+      const to   = finJour.toISOString().slice(0, 19) + '+00:00';
 
       const transactions = await fetchAllTransactions(from, to, 10);
       totalTransactions += transactions.length;
