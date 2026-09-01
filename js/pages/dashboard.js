@@ -648,8 +648,39 @@ const DashboardPage = {
       if (du > 0) { versementAttenduJour += du; nbActifsJour++; }
     });
 
+    // === ACTIVITÉ DU JOUR (CA en direct) + rythme (alerte si anormalement bas) ===
+    const estSalarieActif = (id) => { const ch = chById2.get(id); return ch && ch.statut !== 'inactif' && ch.typeContrat === 'salarie' && !absentCe(id); };
+    const _cajToday = _caj.filter(e => String(e.date).slice(0, 10) === jourAtt && estSalarieActif(e.chauffeurId));
+    const caBrutJour = _cajToday.reduce((s, e) => s + (Number(e.caBrut) || 0), 0);
+    const chauffeursActifsJour = _cajToday
+      .filter(e => (Number(e.caBrut) || 0) > 0)
+      .map(e => { const ch = chById2.get(e.chauffeurId); return { prenom: ch.prenom, nom: ch.nom, ca: Number(e.caBrut) || 0, courses: Number(e.nbCourses) || 0 }; })
+      .sort((a, b) => b.ca - a.ca);
+    // CA réel du mois (source : fleet_ca_jour), pour remplacer l'ancien « versé = 0 »
+    const _moisPrefix = jourAtt.slice(0, 7);
+    const caReelMois = _caj.filter(e => String(e.date).slice(0, 7) === _moisPrefix).reduce((s, e) => s + (Number(e.caBrut) || 0), 0);
+    // Référence : CA médian d'une journée travaillée récente (jours échus, 21 j glissants)
+    const _refDebut = (() => { const dd = new Date(now); dd.setDate(dd.getDate() - 21); return dd.toISOString().slice(0, 10); })();
+    const _refVals = _caj.filter(e => { const dt = String(e.date).slice(0, 10); return dt >= _refDebut && dt < jourAtt && (Number(e.caBrut) || 0) > 0; })
+      .map(e => Number(e.caBrut) || 0).sort((a, b) => a - b);
+    const refParChauffeur = _refVals.length ? _refVals[Math.floor(_refVals.length / 2)] : 65000;
+    const _heureDec = now.getUTCHours() + now.getUTCMinutes() / 60; // Abidjan = UTC
+    const _baseFrac = Math.max(0, Math.min(1, (_heureDec - 6) / 16)); // fenêtre d'activité 06h→22h
+    // Recettes VTC concentrées le soir : on n'attend pas 50 % du CA à midi.
+    const fractionJour = Math.pow(_baseFrac, 1.4);
+    const attenduMaintenant = Math.round(refParChauffeur * nbActifsJour * fractionJour);
+    const paceRatio = attenduMaintenant > 0 ? (caBrutJour / attenduMaintenant) : 1;
+    let paceState = 'neutre', paceLabel = 'En attente d’activité';
+    if (nbActifsJour > 0) {
+      if (fractionJour < 0.12) { paceState = 'demarrage'; paceLabel = 'Début de journée'; }
+      else if (paceRatio >= 0.75) { paceState = 'bon'; paceLabel = 'Bon rythme'; }
+      else if (paceRatio >= 0.45 || fractionJour < 0.4) { paceState = 'modere'; paceLabel = 'Rythme sous la moyenne'; }
+      else { paceState = 'faible'; paceLabel = 'CA anormalement bas'; } // rouge seulement l'après-midi et au-delà
+    }
+
     return {
       versementAttenduJour, nbActifsJour,
+      caBrutJour, caReelMois, chauffeursActifsJour, refParChauffeur, attenduMaintenant, paceRatio, paceState, paceLabel,
       caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount, totalDettes, totalPertes, nbDetteDrivers, nbPerteDrivers,
       nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
@@ -844,6 +875,8 @@ const DashboardPage = {
     return `
       <style>
         @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+        @keyframes livePulse { 0%{box-shadow:0 0 0 0 rgba(255,255,255,.55)} 70%{box-shadow:0 0 0 9px rgba(255,255,255,0)} 100%{box-shadow:0 0 0 0 rgba(255,255,255,0)} }
+        .live-chip { animation: dSlide .4s ease both; }
         @keyframes dSlide { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         #live-indicator.pulse { animation:flash-indicator 1.5s }
         @keyframes flash-indicator { 0%{background:rgba(99,102,241,.3)} 100%{background:rgba(99,102,241,.08)} }
@@ -1104,52 +1137,54 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Row 1: Hero CA + Versements + Dettes + Pertes -->
-      <div class="d-grid d-g4" style="grid-template-columns:1.6fr 1fr 1fr 1fr;">
+      <!-- Row 1: Activité en direct (fusion CA + Versements) + Dettes + Pertes -->
+      <div class="d-grid d-g4" style="grid-template-columns:2.2fr 1fr 1fr;">
 
-        <!-- CA Hero Card -->
-        <a href="#/versements" class="d-card hero" style="text-decoration:none;color:#fff;grid-row:span 1;">
+        <!-- Hero — Activité du jour : CA salariés EN DIRECT + alerte rythme -->
+        <a href="#/versements" class="d-card hero" style="text-decoration:none;color:#fff;grid-row:span 1;${d.paceState === 'faible' ? 'background:linear-gradient(135deg,#991b1b,#dc2626,#f87171);background-size:200% 200%;box-shadow:0 4px 30px rgba(220,38,38,.42),0 0 70px rgba(239,68,68,.28);' : d.paceState === 'modere' ? 'background:linear-gradient(135deg,#92400e,#d97706,#fbbf24);background-size:200% 200%;' : ''}">
           <div class="hero-glass-overlay"></div>
           <div class="hero-shimmer"></div>
-          <div class="hero-content">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <div>
-                <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1.2px;">Chiffre d'affaires</div>
-                <div class="d-val hero" style="margin-top:8px;">${Utils.formatCurrency(d.caThisMonth)}</div>
-              </div>
-              <div style="width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;">
-                <iconify-icon icon="solar:graph-new-up-bold" style="font-size:20px;color:#fff;"></iconify-icon>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
-              <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:${d.caTrend >= 0 ? 'rgba(52,211,153,.2)' : 'rgba(248,113,113,.2)'};backdrop-filter:blur(6px);border:1px solid ${d.caTrend >= 0 ? 'rgba(52,211,153,.25)' : 'rgba(248,113,113,.25)'};font-size:11px;font-weight:700;color:#fff;">
-                <iconify-icon icon="${d.caTrend >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}" style="font-size:10px;"></iconify-icon>
-                ${caTrendSign}${Math.abs(Math.round(d.caTrend))}%
-              </span>
-              <span style="font-size:11px;color:rgba(255,255,255,.45);font-weight:500;">vs période préc.</span>
-            </div>
-            <div style="margin-top:14px;height:60px;position:relative;">
-              <canvas id="hero-ca-chart" style="width:100%;height:60px;"></canvas>
-            </div>
-            <div style="display:flex;justify-content:space-between;margin-top:6px;">
-              ${(d.forecastChartData || []).map(m => `<span style="font-size:9px;color:rgba(255,255,255,.35);font-weight:500;">${m.label}</span>`).join('')}
-            </div>
-          </div>
-        </a>
+          <div class="hero-content" style="display:flex;flex-direction:column;gap:13px;">
 
-        <!-- Versements (fond vert) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:linear-gradient(135deg,#10b981,#34d399);border:none;box-shadow:0 4px 20px rgba(16,185,129,.25);">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
-              <iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div style="min-width:0;">
+                <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:livePulse 1.6s infinite;"></span>
+                  Activité du jour · en direct
+                </div>
+                <div class="d-val hero" style="margin-top:8px;">${Utils.formatCurrency(d.caBrutJour)}</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.78);font-weight:600;margin-top:2px;">recette à verser${d.caBrutJour !== d.versementAttenduJour ? ` · net ${Utils.formatCurrency(d.versementAttenduJour)}` : ''}</div>
+              </div>
+              <div style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <iconify-icon icon="solar:wheel-angle-bold-duotone" style="font-size:22px;color:#fff;"></iconify-icon>
+              </div>
             </div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Versements</div>
-          </div>
-          <div class="d-val xl" style="color:#fff;">${Utils.formatCurrency(d.versementAttenduJour)}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.85);font-weight:600;">recette du jour · à verser</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.6);font-size:11px;">${d.nbActifsJour} chauffeur${d.nbActifsJour > 1 ? 's' : ''} en activité${d.nbActifsJour > 0 ? " · s'actualise en direct" : ''}</div>
-          <div style="margin-top:10px;">
-            <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);font-size:11px;font-weight:700;color:#fff;">${d.retardCount} en retard</span>
+
+            <!-- Rythme / alerte -->
+            <div style="display:inline-flex;align-items:center;gap:7px;align-self:flex-start;padding:6px 13px;border-radius:20px;background:${d.paceState === 'faible' ? 'rgba(0,0,0,.28)' : d.paceState === 'bon' ? 'rgba(52,211,153,.28)' : 'rgba(255,255,255,.18)'};border:1px solid rgba(255,255,255,.22);font-size:12px;font-weight:700;">
+              <iconify-icon icon="${d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>
+              ${d.paceLabel}${d.nbActifsJour > 0 && d.attenduMaintenant > 0 ? ` · ${Math.round(d.paceRatio * 100)}% du rythme habituel` : ''}
+            </div>
+
+            <!-- Chauffeurs en activité (dynamisme) -->
+            <div>
+              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.nbActifsJour} chauffeur${d.nbActifsJour > 1 ? 's' : ''} en activité</div>
+              ${d.chauffeursActifsJour.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;">${d.chauffeursActifsJour.map(c => `
+                <div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:7px 11px 7px 8px;">
+                  <div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
+                  <div style="line-height:1.15;">
+                    <div style="font-size:12px;font-weight:700;white-space:nowrap;">${Utils.escHtml(c.prenom)}</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,.82);white-space:nowrap;">${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}</div>
+                  </div>
+                </div>`).join('')}</div>` : '<div style="font-size:12px;color:rgba(255,255,255,.6);padding:6px 0;">Aucun chauffeur n’a encore roulé aujourd’hui.</div>'}
+            </div>
+
+            <!-- CA du mois (réel) -->
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,.15);padding-top:10px;font-size:12px;color:rgba(255,255,255,.78);">
+              <span style="display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> CA du mois</span>
+              <strong style="color:#fff;font-size:14px;">${Utils.formatCurrency(d.caReelMois)}</strong>
+            </div>
+
           </div>
         </a>
 
