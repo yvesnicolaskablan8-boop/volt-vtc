@@ -2,14 +2,21 @@
  * ThemeManager - Dark/Light theme toggle with persistence
  */
 const ThemeManager = {
-  _current: 'dark',
+  _current: 'light',
 
   init() {
-    // Read saved theme or detect system preference
     const saved = localStorage.getItem('pilote_theme');
-    if (saved) {
+    // Bascule unique vers le thème Spike (clair). Les utilisateurs existants
+    // passent au clair une fois ; ils peuvent re-basculer en sombre ensuite.
+    if (!localStorage.getItem('pilote_theme_spike')) {
+      localStorage.setItem('pilote_theme_spike', '1');
+      localStorage.setItem('pilote_theme', 'light');
+      this._current = 'light';
+    } else if (saved) {
       this._current = saved;
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      this._current = 'dark';
+    } else {
       this._current = 'light';
     }
     this._applyTheme(this._current, false);
@@ -188,7 +195,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 476;
+      const SW_VERSION = 477;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);

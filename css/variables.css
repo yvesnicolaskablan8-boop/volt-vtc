@@ -50,52 +50,68 @@
 
 /* ========== THEME: LIGHT ========== */
 [data-theme="light"] {
-  /* Background layers — pastel gradient */
-  --bg-primary: #f0f4ff;
+  /* ===== Thème SPIKE (clair) — cartes blanches, fond gris-bleu, accent bleu ===== */
+  /* Background layers */
+  --bg-primary: #F5F7FB;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f3f4f6;
-  --bg-sidebar: rgba(255, 255, 255, 0.85);
+  --bg-tertiary: #F1F5F9;
+  --bg-sidebar: #ffffff;
 
   /* Text */
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-muted: #9ca3af;
+  --text-primary: #2A3547;
+  --text-secondary: #5A6A85;
+  --text-muted: #7C8FAC;
 
   /* Borders & Dividers */
-  --border-color: rgba(255, 255, 255, 0.6);
-  --border-accent: rgba(99, 102, 241, 0.15);
+  --border-color: #EBF1F6;
+  --border-accent: rgba(93, 135, 255, 0.18);
 
-  /* Shadows — soft, modern */
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 8px 32px rgba(0, 0, 0, 0.04);
-  --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.12);
-  --shadow-glow: 0 8px 40px rgba(99, 102, 241, 0.1);
+  /* Shadows — ombre bleutée signature de Spike */
+  --shadow-card: 0 2px 6px rgba(37, 83, 185, 0.10);
+  --shadow-modal: 0 12px 40px rgba(37, 83, 185, 0.14);
+  --shadow-glow: 0 4px 20px rgba(93, 135, 255, 0.14);
 
-  /* Glassmorphism — translucent with blur */
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  --glass-bg-heavy: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.6);
-  --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 8px 32px rgba(0, 0, 0, 0.04);
+  /* Cartes blanches nettes (plus de glassmorphism) */
+  --glass-bg: #ffffff;
+  --glass-bg-heavy: #ffffff;
+  --glass-border: #EBF1F6;
+  --glass-shadow: 0 2px 6px rgba(37, 83, 185, 0.10);
 
-  /* Sidebar solid */
-  --bg-sidebar-solid: rgba(255, 255, 255, 0.82);
+  /* Sidebar solide blanche */
+  --bg-sidebar-solid: #ffffff;
 
   /* Card hover */
-  --card-hover-bg: rgba(99, 102, 241, 0.04);
+  --card-hover-bg: rgba(93, 135, 255, 0.05);
 
   /* Accent subtle */
-  --accent-subtle: rgba(99, 102, 241, 0.12);
+  --accent-subtle: rgba(93, 135, 255, 0.12);
 
-  /* Glow — indigo based */
-  --glow-primary: 0 0 12px rgba(99, 102, 241, 0.12);
-  --glow-success: 0 0 12px rgba(16, 185, 129, 0.12);
-  --glow-danger: 0 0 12px rgba(239, 68, 68, 0.12);
-  --glow-warning: 0 0 12px rgba(249, 115, 22, 0.12);
-  --glow-cyan: 0 0 12px rgba(6, 182, 212, 0.12);
+  /* Accent Spike (surcharge du brand, thème clair uniquement) */
+  --pilote-blue: #5D87FF;
+  --pilote-blue-dim: #4570EA;
+  --pilote-blue-glow: rgba(93, 135, 255, 0.14);
+  --pilote-cyan: #49BEFF;
 
-  /* Background mesh — pastel gradient */
-  --mesh-color-1: rgba(99, 102, 241, 0.06);
-  --mesh-color-2: rgba(168, 85, 247, 0.04);
-  --mesh-color-3: rgba(249, 115, 22, 0.03);
+  /* Sémantique Spike */
+  --success: #13DEB9;
+  --success-dim: #02b3a9;
+  --danger: #FA896B;
+  --danger-dim: #E8603C;
+  --warning: #FFAE1F;
+  --warning-dim: #D99000;
+  --info: #5D87FF;
+
+  /* Glow */
+  --glow-primary: 0 0 12px rgba(93, 135, 255, 0.14);
+  --glow-success: 0 0 12px rgba(19, 222, 185, 0.14);
+  --glow-danger: 0 0 12px rgba(250, 137, 107, 0.14);
+  --glow-warning: 0 0 12px rgba(255, 174, 31, 0.14);
+  --glow-cyan: 0 0 12px rgba(73, 190, 255, 0.14);
+
+  /* Fond quasi plat (Spike n'a pas de mesh) */
+  --mesh-color-1: rgba(93, 135, 255, 0.04);
+  --mesh-color-2: rgba(19, 222, 185, 0.02);
+  --mesh-color-3: rgba(255, 174, 31, 0.02);
 }
 
 /* ========== SHARED VARIABLES (both themes) ========== */
@@ -132,7 +148,7 @@
   --radius-xl: 32px;
 
   /* Typography */
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
