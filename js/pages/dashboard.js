@@ -653,11 +653,25 @@ const DashboardPage = {
     const _cajToday = _caj.filter(e => String(e.date).slice(0, 10) === jourAtt && estSalarieActif(e.chauffeurId));
     const caBrutJour = _cajToday.reduce((s, e) => s + (Number(e.caBrut) || 0), 0);
     const programmesJourSet = new Set(_plan.filter(p => p.date === jourAtt).map(p => p.chauffeurId));
-    const chauffeursActifsJour = _cajToday
-      .filter(e => (Number(e.caBrut) || 0) > 0)
-      .map(e => { const ch = chById2.get(e.chauffeurId); return { prenom: ch.prenom, nom: ch.nom, ca: Number(e.caBrut) || 0, courses: Number(e.nbCourses) || 0, programme: programmesJourSet.has(e.chauffeurId) }; })
+    // Activité par chauffeur (CA du jour), pour les chips
+    const caParChJour = {}; _cajToday.forEach(e => { caParChJour[e.chauffeurId] = { ca: Number(e.caBrut) || 0, courses: Number(e.nbCourses) || 0 }; });
+    // Chauffeurs PROGRAMMÉS aujourd'hui (planning) + leur activité
+    const _progMap = new Map();
+    _plan.filter(p => p.date === jourAtt).forEach(p => {
+      const ch = chById2.get(p.chauffeurId);
+      if (!ch || ch.statut === 'inactif' || absentCe(ch.id) || _progMap.has(ch.id)) return;
+      const a = caParChJour[ch.id] || { ca: 0, courses: 0 };
+      _progMap.set(ch.id, { prenom: ch.prenom, nom: ch.nom, ca: a.ca, courses: a.courses, actif: a.ca > 0 });
+    });
+    const chauffeursProgrammes = [..._progMap.values()].sort((a, b) => b.ca - a.ca);
+    const nbProgrammesJour = chauffeursProgrammes.length;
+    const nbProgrammesActifs = chauffeursProgrammes.filter(c => c.actif).length;
+    // Chauffeurs qui roulent SANS être au planning (anomalie → alerte)
+    const chauffeursHorsPlanning = _cajToday
+      .filter(e => (Number(e.caBrut) || 0) > 0 && !programmesJourSet.has(e.chauffeurId))
+      .map(e => { const ch = chById2.get(e.chauffeurId); return { prenom: ch.prenom, nom: ch.nom, ca: Number(e.caBrut) || 0 }; })
       .sort((a, b) => b.ca - a.ca);
-    const nbHorsPlanning = chauffeursActifsJour.filter(c => !c.programme).length; // roulent sans être au planning
+    const nbHorsPlanning = chauffeursHorsPlanning.length;
     // CA réel du mois (source : fleet_ca_jour), pour remplacer l'ancien « versé = 0 »
     const _moisPrefix = jourAtt.slice(0, 7);
     const caReelMois = _caj.filter(e => String(e.date).slice(0, 7) === _moisPrefix).reduce((s, e) => s + (Number(e.caBrut) || 0), 0);
@@ -666,23 +680,24 @@ const DashboardPage = {
     const _refVals = _caj.filter(e => { const dt = String(e.date).slice(0, 10); return dt >= _refDebut && dt < jourAtt && (Number(e.caBrut) || 0) > 0; })
       .map(e => Number(e.caBrut) || 0).sort((a, b) => a - b);
     const refParChauffeur = _refVals.length ? _refVals[Math.floor(_refVals.length / 2)] : 65000;
+    // « Journée type » = CA médian d'un chauffeur × nombre en activité. On ne juge le
+    // CA « bas » que le SOIR : la recette VTC se fait surtout la nuit, donc à 15h être
+    // à 20 % d'une journée type est NORMAL (la journée n'est pas finie), pas anormal.
+    const objectifJourActifs = Math.round(refParChauffeur * nbActifsJour);
+    const pctJourType = objectifJourActifs > 0 ? (caBrutJour / objectifJourActifs) : 0;
     const _heureDec = now.getUTCHours() + now.getUTCMinutes() / 60; // Abidjan = UTC
-    const _baseFrac = Math.max(0, Math.min(1, (_heureDec - 6) / 16)); // fenêtre d'activité 06h→22h
-    // Recettes VTC concentrées le soir : on n'attend pas 50 % du CA à midi.
-    const fractionJour = Math.pow(_baseFrac, 1.4);
-    const attenduMaintenant = Math.round(refParChauffeur * nbActifsJour * fractionJour);
-    const paceRatio = attenduMaintenant > 0 ? (caBrutJour / attenduMaintenant) : 1;
+    const _soir = _heureDec >= 19 || _heureDec < 5; // soirée/nuit : la journée de travail est faite
     let paceState = 'neutre', paceLabel = 'En attente d’activité';
     if (nbActifsJour > 0) {
-      if (fractionJour < 0.12) { paceState = 'demarrage'; paceLabel = 'Début de journée'; }
-      else if (paceRatio >= 0.75) { paceState = 'bon'; paceLabel = 'Bon rythme'; }
-      else if (paceRatio >= 0.45 || fractionJour < 0.4) { paceState = 'modere'; paceLabel = 'Rythme sous la moyenne'; }
-      else { paceState = 'faible'; paceLabel = 'CA anormalement bas'; } // rouge seulement l'après-midi et au-delà
+      if (pctJourType >= 0.85) { paceState = 'bon'; paceLabel = 'Journée type atteinte'; }
+      else if (_soir && pctJourType < 0.5) { paceState = 'faible'; paceLabel = 'CA anormalement bas'; }
+      else if (_soir && pctJourType < 0.75) { paceState = 'modere'; paceLabel = 'Journée sous la moyenne'; }
+      else { paceState = 'demarrage'; paceLabel = 'Journée en cours'; }
     }
 
     return {
       versementAttenduJour, nbActifsJour,
-      caBrutJour, caReelMois, chauffeursActifsJour, nbHorsPlanning, refParChauffeur, attenduMaintenant, paceRatio, paceState, paceLabel,
+      caBrutJour, caReelMois, chauffeursProgrammes, nbProgrammesJour, nbProgrammesActifs, chauffeursHorsPlanning, nbHorsPlanning, refParChauffeur, objectifJourActifs, pctJourType, paceState, paceLabel,
       caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount, totalDettes, totalPertes, nbDetteDrivers, nbPerteDrivers,
       nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
@@ -1162,23 +1177,27 @@ const DashboardPage = {
               </div>
             </div>
 
-            <!-- Rythme / alerte -->
+            <!-- Rythme (jugé « bas » seulement le soir) -->
             <div style="display:inline-flex;align-items:center;gap:7px;align-self:flex-start;padding:6px 13px;border-radius:20px;background:${d.paceState === 'faible' ? 'rgba(0,0,0,.28)' : d.paceState === 'bon' ? 'rgba(52,211,153,.28)' : 'rgba(255,255,255,.18)'};border:1px solid rgba(255,255,255,.22);font-size:12px;font-weight:700;">
               <iconify-icon icon="${d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>
-              ${d.paceLabel}${d.nbActifsJour > 0 && d.attenduMaintenant > 0 ? ` · ${Math.round(d.paceRatio * 100)}% du rythme habituel` : ''}
+              ${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% d'une journée type` : ''}
             </div>
 
-            <!-- Chauffeurs en activité (dynamisme) -->
+            <!-- Chauffeurs programmés + activité (alerte si non programmé) -->
             <div>
-              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.nbActifsJour} chauffeur${d.nbActifsJour > 1 ? 's' : ''} en activité${d.nbHorsPlanning > 0 ? ` · <span style="color:#fde68a;">${d.nbHorsPlanning} hors planning</span>` : ''}</div>
-              ${d.chauffeursActifsJour.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;">${d.chauffeursActifsJour.map(c => `
-                <div class="live-chip" ${c.programme ? '' : 'title="Roule sans être au planning — à ajouter au planning"'} style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);backdrop-filter:blur(6px);border:1px solid ${c.programme ? 'rgba(255,255,255,.16)' : 'rgba(253,230,138,.7)'};border-radius:12px;padding:7px 11px 7px 8px;">
-                  <div style="position:relative;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}${c.programme ? '' : '<span style="position:absolute;top:-3px;right:-3px;width:13px;height:13px;border-radius:50%;background:#f59e0b;border:2px solid rgba(80,20,0,.35);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;line-height:1;">!</span>'}</div>
+              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.nbProgrammesJour} chauffeur${d.nbProgrammesJour > 1 ? 's' : ''} programmé${d.nbProgrammesJour > 1 ? 's' : ''}${d.nbProgrammesActifs !== d.nbProgrammesJour ? ` · ${d.nbProgrammesActifs} en activité` : ''}</div>
+              ${d.chauffeursProgrammes.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;">${d.chauffeursProgrammes.map(c => `
+                <div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:7px 11px 7px 8px;${c.actif ? '' : 'opacity:.55;'}">
+                  <div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
                   <div style="line-height:1.15;">
-                    <div style="font-size:12px;font-weight:700;white-space:nowrap;">${Utils.escHtml(c.prenom)}${c.programme ? '' : ' <span style="font-size:9px;font-weight:700;color:#fde68a;">hors planning</span>'}</div>
-                    <div style="font-size:11px;color:rgba(255,255,255,.82);white-space:nowrap;">${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}</div>
+                    <div style="font-size:12px;font-weight:700;white-space:nowrap;">${Utils.escHtml(c.prenom)}</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,.82);white-space:nowrap;">${c.actif ? `${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}` : 'pas encore parti'}</div>
                   </div>
-                </div>`).join('')}</div>` : '<div style="font-size:12px;color:rgba(255,255,255,.6);padding:6px 0;">Aucun chauffeur n’a encore roulé aujourd’hui.</div>'}
+                </div>`).join('')}</div>` : '<div style="font-size:12px;color:rgba(255,255,255,.6);padding:6px 0;">Aucun chauffeur programmé aujourd’hui.</div>'}
+              ${d.nbHorsPlanning > 0 ? `<div style="margin-top:9px;display:flex;align-items:center;gap:8px;background:rgba(245,158,11,.24);border:1px solid rgba(253,230,138,.6);border-radius:12px;padding:8px 11px;font-size:12px;font-weight:600;">
+                <iconify-icon icon="solar:danger-triangle-bold" style="color:#fde68a;font-size:15px;flex-shrink:0;"></iconify-icon>
+                <span><strong>${d.chauffeursHorsPlanning.map(c => Utils.escHtml(c.prenom)).join(', ')}</strong> roule${d.nbHorsPlanning > 1 ? 'nt' : ''} hors planning — à ajouter</span>
+              </div>` : ''}
             </div>
 
             <!-- CA du mois (réel) -->
@@ -1190,8 +1209,8 @@ const DashboardPage = {
           </div>
         </a>
 
-        <!-- Dettes (fond orange vif) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:linear-gradient(135deg,#f97316,#fb923c);border:none;box-shadow:0 4px 20px rgba(249,115,22,.25);">
+        <!-- Dettes (orange s'il y en a, neutre à 0) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:${d.totalDettes > 0 ? 'linear-gradient(135deg,#f97316,#fb923c)' : 'linear-gradient(135deg,#64748b,#94a3b8)'};border:none;box-shadow:0 4px 20px ${d.totalDettes > 0 ? 'rgba(249,115,22,.25)' : 'rgba(100,116,139,.22)'};">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
               <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
