@@ -122,6 +122,122 @@ const DashboardPage = {
     } catch (e) { /* silencieux : réessai au prochain tick */ }
   },
 
+  // Page de détail « Activité du jour » (style Spike : thème clair, cartes blanches
+  // arrondies, accent bleu, pastilles pastel). S'ouvre au clic sur le hero.
+  // Le contenu dynamique (noms) est échappé via Utils.escHtml.
+  _showActiviteDetail() {
+    const jour = new Date().toISOString().split('T')[0];
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const chById = new Map(chauffeurs.map(c => [c.id, c]));
+    const caJour = (Store.get('caJour') || []).filter(e => String(e.date).slice(0, 10) === jour);
+    const caById = {}; caJour.forEach(e => { caById[e.chauffeurId] = e; });
+    const planningSet = new Set((Store.get('planning') || []).filter(p => p.date === jour).map(p => p.chauffeurId));
+    const chargesJour = {}; (Store.get('charges') || []).filter(c => String(c.date).slice(0, 10) === jour).forEach(c => { chargesJour[c.chauffeurId] = (chargesJour[c.chauffeurId] || 0) + (Number(c.montant) || 0); });
+    const verseJour = {}; (Store.get('versements') || []).filter(v => (v.dateService || v.date) === jour && v.statut !== 'supprime').forEach(v => { verseJour[v.chauffeurId] = (verseJour[v.chauffeurId] || 0) + (Number(v.montantVerse) || 0); });
+
+    const ids = new Set();
+    caJour.forEach(e => { const ch = chById.get(e.chauffeurId); if (ch && ch.statut !== 'inactif' && ch.typeContrat === 'salarie') ids.add(e.chauffeurId); });
+    planningSet.forEach(id => { const ch = chById.get(id); if (ch && ch.statut !== 'inactif') ids.add(id); });
+    const lignes = [...ids].map(id => {
+      const ch = chById.get(id); const e = caById[id];
+      const ca = e ? Number(e.caBrut) || 0 : 0;
+      const charges = chargesJour[id] || 0;
+      return { prenom: ch.prenom, nom: ch.nom, ca, courses: e ? Number(e.nbCourses) || 0 : 0, programme: planningSet.has(id), roule: ca > 0, charges, verse: verseJour[id] || 0, du: Math.max(0, ca - charges) };
+    }).sort((a, b) => b.ca - a.ca);
+
+    const caBrutJour = lignes.reduce((s, l) => s + l.ca, 0);
+    const totalCharges = lignes.reduce((s, l) => s + l.charges, 0);
+    const totalVerse = lignes.reduce((s, l) => s + l.verse, 0);
+    const totalDu = lignes.reduce((s, l) => s + l.du, 0);
+    const reste = Math.max(0, totalDu - totalVerse);
+    const caMois = (Store.get('caJour') || []).filter(e => String(e.date).slice(0, 7) === jour.slice(0, 7)).reduce((s, e) => s + (Number(e.caBrut) || 0), 0);
+    const nbProg = lignes.filter(l => l.programme).length;
+    const nbActifs = lignes.filter(l => l.roule).length;
+    const nbHors = lignes.filter(l => l.roule && !l.programme).length;
+
+    // Palette Spike
+    const C = { bg: '#F4F7FB', card: '#fff', head: '#2A3547', mut: '#5A6A85', mut2: '#7C8FAC', bd: '#EAEFF4', blue: '#5D87FF', blueS: 'rgba(93,135,255,.13)', green: '#00B37E', greenS: 'rgba(19,222,185,.15)', amber: '#C77700', amberS: 'rgba(255,174,31,.18)', red: '#E8603C' };
+    const money = (n) => Utils.formatCurrency(n);
+    const stat = (icon, iconColor, iconBg, label, value, sub) => `
+      <div style="background:${C.card};border:1px solid ${C.bd};border-radius:16px;padding:18px;box-shadow:0 2px 12px rgba(45,53,71,.05);">
+        <div style="width:44px;height:44px;border-radius:12px;background:${iconBg};color:${iconColor};display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px;"><iconify-icon icon="${icon}"></iconify-icon></div>
+        <div style="font-size:22px;font-weight:800;color:${C.head};letter-spacing:-.4px;">${value}</div>
+        <div style="font-size:13px;color:${C.mut};font-weight:500;margin-top:2px;">${label}</div>
+        ${sub ? `<div style="font-size:12px;color:${C.mut2};margin-top:2px;">${sub}</div>` : ''}
+      </div>`;
+    const pill = (txt, color, bgc) => `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 11px;border-radius:20px;background:${bgc};color:${color};font-size:12px;font-weight:700;">${txt}</span>`;
+    const totalLine = (label, value, color, strong) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;${strong ? `border-top:1px solid ${C.bd};margin-top:2px;padding-top:12px;` : ''}"><span style="font-size:13.5px;color:${C.mut};font-weight:${strong ? 700 : 500};">${label}</span><strong style="font-size:${strong ? 17 : 15}px;color:${color || C.head};">${value}</strong></div>`;
+
+    const rows = lignes.map(l => {
+      const statutPill = l.roule ? (l.programme ? pill('En activité', C.green, C.greenS) : pill('⚠ Hors planning', C.amber, C.amberS)) : pill('Pas encore parti', C.mut2, 'rgba(124,143,172,.12)');
+      const detail = [];
+      if (l.charges > 0) detail.push(`charges ${money(l.charges)}`);
+      if (l.verse > 0) detail.push(`versé ${money(l.verse)}`);
+      return `<div style="display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid ${C.bd};">
+        <div style="width:42px;height:42px;flex-shrink:0;border-radius:50%;background:${l.programme ? C.blueS : C.amberS};color:${l.programme ? C.blue : C.amber};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;">${Utils.escHtml((l.prenom || '?').charAt(0))}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:700;color:${C.head};">${Utils.escHtml(l.prenom)} ${Utils.escHtml(l.nom)}</div>
+          <div style="font-size:12.5px;color:${C.mut2};margin-top:1px;">${l.roule ? `${l.courses} course${l.courses > 1 ? 's' : ''}` : 'aucune course'}${detail.length ? ' · ' + detail.join(' · ') : ''}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:16px;font-weight:800;color:${C.head};">${money(l.ca)}</div>
+          <div style="margin-top:4px;">${statutPill}</div>
+        </div>
+      </div>`;
+    }).join('') || `<div style="text-align:center;color:${C.mut2};padding:30px;">Aucune activité aujourd'hui.</div>`;
+
+    const html = `
+      <div style="background:${C.bg};min-height:100%;padding:0 0 24px;">
+        <div style="background:${C.card};border-bottom:1px solid ${C.bd};padding:20px 26px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2;border-radius:20px 20px 0 0;">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="font-size:20px;font-weight:800;color:${C.head};">Activité du jour</div>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:${C.red};background:rgba(232,96,60,.12);padding:4px 11px;border-radius:20px;font-weight:800;"><span style="width:7px;height:7px;border-radius:50%;background:${C.red};animation:livePulse 1.6s infinite;"></span>EN DIRECT</span>
+            </div>
+            <div style="font-size:13px;color:${C.mut};margin-top:3px;">${Utils.formatDate(jour)}</div>
+          </div>
+          <button onclick="document.getElementById('activite-detail-overlay').remove()" style="background:${C.bg};border:1px solid ${C.bd};width:38px;height:38px;border-radius:50%;font-size:20px;cursor:pointer;color:${C.mut};display:flex;align-items:center;justify-content:center;">&times;</button>
+        </div>
+        <div style="padding:22px 26px;display:flex;flex-direction:column;gap:20px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;">
+            ${stat('solar:wallet-money-bold-duotone', C.blue, C.blueS, 'Recette du jour', money(caBrutJour), 'à verser')}
+            ${stat('solar:users-group-rounded-bold-duotone', C.green, C.greenS, 'Programmés', String(nbProg), nbActifs + ' en activité')}
+            ${stat('solar:wheel-angle-bold-duotone', '#8b5cf6', 'rgba(139,92,246,.13)', 'En activité', String(nbActifs), nbHors > 0 ? nbHors + ' hors planning' : 'tous programmés')}
+            ${stat('solar:calendar-bold-duotone', C.amber, C.amberS, 'CA du mois', money(caMois))}
+          </div>
+          ${nbHors > 0 ? `<div style="display:flex;align-items:center;gap:12px;background:${C.amberS};border:1px solid rgba(255,174,31,.35);border-radius:14px;padding:14px 18px;">
+            <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:${C.amber};font-size:24px;flex-shrink:0;"></iconify-icon>
+            <div style="font-size:13.5px;color:${C.head};font-weight:600;"><strong>${lignes.filter(l => l.roule && !l.programme).map(l => Utils.escHtml(l.prenom)).join(', ')}</strong> roule${nbHors > 1 ? 'nt' : ''} sans être au planning. Pensez à corriger le planning du jour.</div>
+          </div>` : ''}
+          <div style="background:${C.card};border:1px solid ${C.bd};border-radius:16px;padding:8px 20px 14px;box-shadow:0 2px 12px rgba(45,53,71,.05);">
+            <div style="font-size:15px;font-weight:800;color:${C.head};padding:14px 0 6px;">Chauffeurs du jour</div>
+            ${rows}
+          </div>
+          <div style="background:${C.card};border:1px solid ${C.bd};border-radius:16px;padding:18px 22px;box-shadow:0 2px 12px rgba(45,53,71,.05);">
+            <div style="font-size:15px;font-weight:800;color:${C.head};margin-bottom:6px;">Récapitulatif</div>
+            ${totalLine('CA brut Yango', money(caBrutJour), C.head)}
+            ${totalLine('− Charges', totalCharges > 0 ? '− ' + money(totalCharges) : money(0), C.red)}
+            ${totalLine('= À verser', money(totalDu), C.head, true)}
+            ${totalLine('Déjà versé', money(totalVerse), C.green)}
+            ${totalLine('Reste dû', money(reste), reste > 0 ? C.red : C.green)}
+          </div>
+        </div>
+      </div>`;
+
+    const existing = document.getElementById('activite-detail-overlay');
+    if (existing) existing.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'activite-detail-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(20,26,44,.55);z-index:3000;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;';
+    const page = document.createElement('div');
+    page.style.cssText = 'max-width:880px;width:100%;background:#F4F7FB;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden;margin:auto;';
+    page.insertAdjacentHTML('beforeend', html);
+    overlay.appendChild(page);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    document.addEventListener('keydown', function handler(e) { if (e.key === 'Escape') { const o = document.getElementById('activite-detail-overlay'); if (o) o.remove(); document.removeEventListener('keydown', handler); } });
+    document.body.appendChild(overlay);
+  },
+
   _isCurrentMonth() {
     if (!this._selectedPeriod) return true;
     const now = new Date();
@@ -1158,7 +1274,7 @@ const DashboardPage = {
       <div class="d-grid d-g4" style="grid-template-columns:2.2fr 1fr 1fr;">
 
         <!-- Hero — Activité du jour : CA salariés EN DIRECT + alerte rythme -->
-        <a href="#/versements" class="d-card hero" style="text-decoration:none;color:#fff;grid-row:span 1;${d.paceState === 'faible' ? 'background:linear-gradient(135deg,#991b1b,#dc2626,#f87171);background-size:200% 200%;box-shadow:0 4px 30px rgba(220,38,38,.42),0 0 70px rgba(239,68,68,.28);' : d.paceState === 'modere' ? 'background:linear-gradient(135deg,#92400e,#d97706,#fbbf24);background-size:200% 200%;' : ''}">
+        <div onclick="DashboardPage._showActiviteDetail()" class="d-card hero" style="cursor:pointer;text-decoration:none;color:#fff;grid-row:span 1;${d.paceState === 'faible' ? 'background:linear-gradient(135deg,#991b1b,#dc2626,#f87171);background-size:200% 200%;box-shadow:0 4px 30px rgba(220,38,38,.42),0 0 70px rgba(239,68,68,.28);' : d.paceState === 'modere' ? 'background:linear-gradient(135deg,#92400e,#d97706,#fbbf24);background-size:200% 200%;' : ''}">
           <div class="hero-glass-overlay"></div>
           <div class="hero-shimmer"></div>
           <div class="hero-content" style="display:flex;flex-direction:column;gap:13px;">
@@ -1207,7 +1323,7 @@ const DashboardPage = {
             </div>
 
           </div>
-        </a>
+        </div>
 
         <!-- Dettes (orange s'il y en a, neutre à 0) -->
         <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:${d.totalDettes > 0 ? 'linear-gradient(135deg,#f97316,#fb923c)' : 'linear-gradient(135deg,#64748b,#94a3b8)'};border:none;box-shadow:0 4px 20px ${d.totalDettes > 0 ? 'rgba(249,115,22,.25)' : 'rgba(100,116,139,.22)'};">
