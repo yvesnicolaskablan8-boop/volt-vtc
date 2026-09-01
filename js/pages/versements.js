@@ -102,21 +102,44 @@ const VersementsPage = {
     });
 
     let totalAttendu = 0;
-    const detailProgrammes = [];
-    const detailRetard = [];
+    const detailProgrammes = [];   // chauffeurs planifiés (planning) — carte « programmés »
+    const detailAttendu = [];      // ce qui doit être versé le jour J — carte « attendu »
+    const detailRetard = [];       // conservé (vide) pour compatibilité
+
+    // Modèle salarié : ce qui doit être versé = CA brut Yango du jour − charges.
+    const caJourAll = Store.get('caJour') || [];
+    const chargesAll = Store.get('charges') || [];
+    const chargeJourIdx = {};
+    chargesAll.forEach(e => { if (e.date === selectedDay) chargeJourIdx[e.chauffeurId] = (chargeJourIdx[e.chauffeurId] || 0) + (Number(e.montant) || 0); });
+
+    // Attendu salarié du jour, par chauffeur (basé sur le CA Yango, plus la redevance)
+    const attenduSalarieParCh = {};
+    caJourAll.filter(e => e.date === selectedDay).forEach(e => {
+      const ch = chauffeurs.find(c => c.id === e.chauffeurId);
+      if (!ch || ch.statut === 'inactif' || ch.typeContrat !== 'salarie') return;
+      const caBrut = Number(e.caBrut) || 0;
+      const charge = chargeJourIdx[e.chauffeurId] || 0;
+      const du = Math.max(0, caBrut - charge);
+      if (du <= 0) return;
+      attenduSalarieParCh[e.chauffeurId] = { du, caBrut, charge };
+      totalAttendu += du;
+      detailAttendu.push({ chauffeurId: e.chauffeurId, nom: ch.nom, prenom: ch.prenom, date: selectedDay, montant: du, salarie: true, caBrut, charge });
+    });
+
+    // Chauffeurs planifiés (tous contrats) + attendu location (redevance)
     scheduledDays.forEach((p) => {
       const hasAbsence = absences.some(a => a.chauffeurId === p.chauffeurId && p.date >= a.dateDebut && p.date <= a.dateFin);
       if (hasAbsence) return;
       const ch = chauffeurs.find(c => c.id === p.chauffeurId);
       if (!ch || ch.statut === 'inactif') return;
       const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
-      if (redevance <= 0) return;
-      detailProgrammes.push({ chauffeurId: p.chauffeurId, nom: ch.nom, prenom: ch.prenom, redevance, date: p.date });
-      totalAttendu += redevance;
-      const hasValidOrDismissed = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime'));
-      if (!hasValidOrDismissed) {
-        byStatus.retard++;
-        detailRetard.push({ chauffeurId: p.chauffeurId, nom: ch.nom, prenom: ch.prenom, redevance, date: p.date });
+      const montant = ch.typeContrat === 'salarie'
+        ? (attenduSalarieParCh[p.chauffeurId] ? attenduSalarieParCh[p.chauffeurId].du : 0)
+        : redevance;
+      detailProgrammes.push({ chauffeurId: p.chauffeurId, nom: ch.nom, prenom: ch.prenom, redevance: montant, date: p.date });
+      if (ch.typeContrat !== 'salarie' && redevance > 0) {
+        totalAttendu += redevance;
+        detailAttendu.push({ chauffeurId: p.chauffeurId, nom: ch.nom, prenom: ch.prenom, date: p.date, montant: redevance, salarie: false });
       }
     });
 
@@ -224,7 +247,38 @@ const VersementsPage = {
     const totalPertes = detteData.totalPertes;
     const nbDetteDrivers = detteData.detteList.length;
 
-    return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay, detailProgrammes, detailRetard, detailVerse, nbChauffeursProgrammes, unpaidItems, totalUnpaid, totalPenalites, totalDettes, totalPertes, nbDetteDrivers, detteData };
+    // === ANOMALIES (modèle salarié) — centralisées dans la carte dédiée ===
+    const chargeAllIdx = {};
+    chargesAll.forEach(e => { const k = `${e.chauffeurId}|${e.date}`; chargeAllIdx[k] = (chargeAllIdx[k] || 0) + (Number(e.montant) || 0); });
+    // (1) Chauffeur qui roule sur Yango aujourd'hui sans être au planning → corriger le planning
+    const scheduledTodaySet = new Set([...scheduledDays.values()].map(p => p.chauffeurId));
+    const anomWorking = [];
+    caJourAll.filter(e => e.date === selectedDay && (Number(e.caBrut) || 0) > 0).forEach(e => {
+      const ch = chauffeurs.find(c => c.id === e.chauffeurId);
+      if (!ch || ch.statut === 'inactif' || ch.typeContrat !== 'salarie') return;
+      if (scheduledTodaySet.has(e.chauffeurId)) return;
+      if (absences.some(a => a.chauffeurId === e.chauffeurId && e.date >= a.dateDebut && e.date <= a.dateFin)) return;
+      anomWorking.push({ chauffeurId: e.chauffeurId, nom: `${ch.prenom} ${ch.nom}`, date: e.date, caBrut: Number(e.caBrut) || 0 });
+    });
+    // (2) Versement salarié dont le montant remis ≠ CA Yango − charges (jours échus avec un versement)
+    const verseKeyIdx = {}, hasVerseKey = {};
+    versements.forEach(v => { if (v.statut !== 'supprime') { const k = `${v.chauffeurId}|${v.dateService || v.date}`; verseKeyIdx[k] = (verseKeyIdx[k] || 0) + (Number(v.montantVerse) || 0); hasVerseKey[k] = true; } });
+    const anomMismatch = [];
+    caJourAll.forEach(e => {
+      if (!e.date || e.date >= todayStr) return;
+      const ch = chauffeurs.find(c => c.id === e.chauffeurId);
+      if (!ch || ch.statut === 'inactif' || ch.typeContrat !== 'salarie') return;
+      const k = `${e.chauffeurId}|${e.date}`;
+      if (!hasVerseKey[k]) return;
+      const du = Math.max(0, (Number(e.caBrut) || 0) - (chargeAllIdx[k] || 0));
+      const verse = verseKeyIdx[k] || 0;
+      const ecart = du - verse;
+      if (Math.abs(ecart) > 500) anomMismatch.push({ chauffeurId: e.chauffeurId, nom: `${ch.prenom} ${ch.nom}`, date: e.date, caBrut: Number(e.caBrut) || 0, charge: chargeAllIdx[k] || 0, du, verse, ecart });
+    });
+    anomMismatch.sort((a, b) => b.date.localeCompare(a.date));
+    const anomalies = { workingNotScheduled: anomWorking, versementMismatch: anomMismatch, total: anomWorking.length + anomMismatch.length };
+
+    return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay, detailProgrammes, detailAttendu, detailRetard, detailVerse, nbChauffeursProgrammes, unpaidItems, totalUnpaid, totalPenalites, totalDettes, totalPertes, nbDetteDrivers, detteData, anomalies };
   },
 
   _template(d) {
@@ -257,8 +311,8 @@ const VersementsPage = {
         </div>
       </div>
 
-      <!-- KPIs — Row 1 : Montant attendu + Versé + Taux + Programmés -->
-      <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+      <!-- KPIs — Row 1 : Montant attendu + Versé + Programmés -->
+      <div class="d-grid d-g4" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
         <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#6366f1,#818cf8);border:none;box-shadow:0 4px 20px rgba(99,102,241,.25);" onclick="VersementsPage._showKpiDetail('attendu')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
@@ -275,16 +329,6 @@ const VersementsPage = {
           <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalVerse)}</div>
           <div class="d-sub" style="color:rgba(255,255,255,.6);">${d.periodLabel}</div>
         </div>
-        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,${d.tauxRecouvrement >= 80 ? '#10b981,#34d399' : d.tauxRecouvrement >= 50 ? '#f97316,#fb923c' : '#ef4444,#f87171'});border:none;box-shadow:0 4px 20px ${d.tauxRecouvrement >= 80 ? 'rgba(16,185,129,.25)' : d.tauxRecouvrement >= 50 ? 'rgba(249,115,22,.25)' : 'rgba(239,68,68,.25)'};" onclick="VersementsPage._showKpiDetail('taux')">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Taux recouvrement</div>
-          </div>
-          <div class="d-val" style="color:#fff;">${d.tauxRecouvrement.toFixed(1)}%</div>
-          <div class="d-bar-track" style="margin-top:10px;background:rgba(255,255,255,.15);">
-            <div class="d-bar-fill" style="width:${Math.min(d.tauxRecouvrement,100)}%;background:rgba(255,255,255,.5);"></div>
-          </div>
-        </div>
         <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#3b82f6,#60a5fa);border:none;box-shadow:0 4px 20px rgba(59,130,246,.25);" onclick="VersementsPage._showKpiDetail('programmes')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
@@ -294,16 +338,16 @@ const VersementsPage = {
         </div>
       </div>
 
-      <!-- KPIs — Row 2 : En retard + Dettes recettes + Dettes contraventions + Pertes -->
+      <!-- KPIs — Row 2 : Anomalies + Dettes recettes + Dettes contraventions + Pertes -->
       <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
-        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;box-shadow:0 4px 20px rgba(139,92,246,.25);" onclick="VersementsPage._showKpiDetail('retard')">
+        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;box-shadow:0 4px 20px rgba(139,92,246,.25);" onclick="VersementsPage._showAnomalies()">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">En retard</div>
+            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Anomalies</div>
           </div>
-          <div class="d-val" style="color:#fff;">${d.byStatus.retard}</div>
+          <div class="d-val" style="color:#fff;">${d.anomalies.total}</div>
           <div style="margin-top:10px;">
-            <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);font-size:11px;font-weight:700;color:#fff;">${d.byStatus.retard > 0 ? 'Action requise' : 'Tout est OK'}</span>
+            <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);font-size:11px;font-weight:700;color:#fff;">${d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK'}</span>
           </div>
         </div>
         <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#f97316,#fb923c);border:none;box-shadow:0 4px 20px rgba(249,115,22,.25);" onclick="document.getElementById('dette-section-recettes')?.scrollIntoView({behavior:'smooth'})">
@@ -336,9 +380,6 @@ const VersementsPage = {
           </div>
         </div>
       </div>
-
-      <!-- Recettes impayées -->
-      ${this._renderUnpaidSection(d)}
 
       <!-- Suivi des dettes -->
       ${this._renderDetteSection(d)}
@@ -1113,32 +1154,24 @@ const VersementsPage = {
     switch(type) {
       case 'attendu': {
         title = '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Détail — Montant attendu';
-        const byDriver = {};
-        d.detailProgrammes.forEach(p => {
-          if (!byDriver[p.chauffeurId]) byDriver[p.chauffeurId] = { nom: p.nom, prenom: p.prenom, total: 0, jours: 0, redevance: p.redevance };
-          byDriver[p.chauffeurId].total += p.redevance;
-          byDriver[p.chauffeurId].jours++;
-        });
-        const rows = Object.values(byDriver).sort((a,b) => b.total - a.total);
-        html = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Basé sur le planning et la redevance quotidienne de chaque chauffeur pour <strong>${d.periodLabel}</strong></p>
+        const rows = [...(d.detailAttendu || [])].sort((a, b) => b.montant - a.montant);
+        html = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Ce que chaque chauffeur doit verser pour <strong>${d.periodLabel}</strong> — pour un salarié : CA Yango − charges du jour.</p>
         <table style="width:100%;border-collapse:collapse;">
           <thead><tr style="border-bottom:2px solid var(--border-color);">
             <th style="${thStyle}">Chauffeur</th>
-            <th style="${thStyle}text-align:center;">Jours</th>
-            <th style="${thStyle}text-align:right;">Redevance/jour</th>
-            <th style="${thStyle}text-align:right;">Total</th>
+            <th style="${thStyle}text-align:right;">CA Yango</th>
+            <th style="${thStyle}text-align:right;">Charges</th>
+            <th style="${thStyle}text-align:right;">À verser</th>
           </tr></thead><tbody>
-          ${rows.map(r => `<tr>
+          ${rows.length ? rows.map(r => `<tr>
             <td style="${tdStyle}font-weight:500;">${r.prenom} ${r.nom}</td>
-            <td style="${tdStyle}text-align:center;">${r.jours}</td>
-            <td style="${tdStyle}text-align:right;">${Utils.formatCurrency(r.redevance)}</td>
-            <td style="${tdStyle}text-align:right;font-weight:600;">${Utils.formatCurrency(r.total)}</td>
-          </tr>`).join('')}
+            <td style="${tdStyle}text-align:right;">${r.salarie ? Utils.formatCurrency(r.caBrut) : '<span style="color:var(--text-muted);">redevance</span>'}</td>
+            <td style="${tdStyle}text-align:right;color:#ef4444;">${r.salarie && r.charge ? '− ' + Utils.formatCurrency(r.charge) : '—'}</td>
+            <td style="${tdStyle}text-align:right;font-weight:600;">${Utils.formatCurrency(r.montant)}</td>
+          </tr>`).join('') : `<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted);">Aucun montant attendu ce jour</td></tr>`}
           </tbody>
           <tfoot><tr style="border-top:2px solid var(--border-color);">
-            <td style="padding:10px 12px;font-weight:700;">Total</td>
-            <td style="padding:10px 12px;text-align:center;font-weight:700;">${d.detailProgrammes.length} jour${d.detailProgrammes.length > 1 ? 's' : ''}</td>
-            <td></td>
+            <td colspan="3" style="padding:10px 12px;font-weight:700;">${rows.length} chauffeur${rows.length > 1 ? 's' : ''}</td>
             <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:1.05rem;">${Utils.formatCurrency(d.totalAttendu)}</td>
           </tr></tfoot>
         </table>`;
@@ -1309,6 +1342,53 @@ const VersementsPage = {
       if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); }
     });
     document.body.appendChild(overlay);
+  },
+
+  // Centralise les anomalies : chauffeur qui roule sans être programmé,
+  // et versement salarié dont le montant ne colle pas au CA Yango − charges.
+  _showAnomalies() {
+    const d = this._kpiData;
+    if (!d) return;
+    const a = d.anomalies || { workingNotScheduled: [], versementMismatch: [], total: 0 };
+    const thStyle = 'padding:10px 12px;text-align:left;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);';
+    const tdStyle = 'padding:10px 12px;border-bottom:1px solid var(--border-color);';
+
+    const workingRows = a.workingNotScheduled.map(w => `<tr>
+      <td style="${tdStyle}font-weight:500;">${w.nom}</td>
+      <td style="${tdStyle}">${Utils.formatDate(w.date)}</td>
+      <td style="${tdStyle}text-align:right;">${Utils.formatCurrency(w.caBrut)}</td>
+    </tr>`).join('');
+
+    const mismatchRows = a.versementMismatch.map(m => {
+      const manque = m.ecart > 0;
+      return `<tr>
+        <td style="${tdStyle}font-weight:500;">${m.nom}</td>
+        <td style="${tdStyle}">${Utils.formatDate(m.date)}</td>
+        <td style="${tdStyle}text-align:right;">${Utils.formatCurrency(m.du)}</td>
+        <td style="${tdStyle}text-align:right;">${Utils.formatCurrency(m.verse)}</td>
+        <td style="${tdStyle}text-align:right;font-weight:700;color:${manque ? '#ef4444' : '#f59e0b'};">${manque ? '−' : '+'}${Utils.formatCurrency(Math.abs(m.ecart))}</td>
+        <td style="${tdStyle}text-align:right;"><button class="btn btn-sm btn-outline" onclick="document.getElementById('kpi-detail-overlay')?.remove();VersementsPage._gererCharges('${m.chauffeurId}','${m.date}')"><iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon> Charges</button></td>
+      </tr>`;
+    }).join('');
+
+    const html = `
+      ${a.total === 0 ? '<div style="text-align:center;color:var(--text-muted);padding:24px;">Aucune anomalie détectée 🎉</div>' : ''}
+      ${a.workingNotScheduled.length ? `
+        <div style="font-weight:700;font-size:0.95rem;margin:4px 0 6px;display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:user-cross-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Roule sans être au planning (${a.workingNotScheduled.length})</div>
+        <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:8px;">Travaillent aujourd'hui sur Yango sans être programmés — corrigez le planning.</p>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+          <thead><tr style="border-bottom:2px solid var(--border-color);"><th style="${thStyle}">Chauffeur</th><th style="${thStyle}">Jour</th><th style="${thStyle}text-align:right;">CA Yango</th></tr></thead>
+          <tbody>${workingRows}</tbody>
+        </table>` : ''}
+      ${a.versementMismatch.length ? `
+        <div style="font-weight:700;font-size:0.95rem;margin:4px 0 6px;display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Versement ≠ CA Yango − charges (${a.versementMismatch.length})</div>
+        <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:8px;">Le montant remis ne correspond pas à ce qui a été gagné sur Yango (net de charges).</p>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="border-bottom:2px solid var(--border-color);"><th style="${thStyle}">Chauffeur</th><th style="${thStyle}">Jour</th><th style="${thStyle}text-align:right;">Attendu</th><th style="${thStyle}text-align:right;">Versé</th><th style="${thStyle}text-align:right;">Écart</th><th style="${thStyle}"></th></tr></thead>
+          <tbody>${mismatchRows}</tbody>
+        </table>` : ''}
+    `;
+    this._showKpiModal('<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Anomalies', html);
   },
 
   _exportReceipt(id) {
