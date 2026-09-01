@@ -652,10 +652,12 @@ const DashboardPage = {
     const estSalarieActif = (id) => { const ch = chById2.get(id); return ch && ch.statut !== 'inactif' && ch.typeContrat === 'salarie' && !absentCe(id); };
     const _cajToday = _caj.filter(e => String(e.date).slice(0, 10) === jourAtt && estSalarieActif(e.chauffeurId));
     const caBrutJour = _cajToday.reduce((s, e) => s + (Number(e.caBrut) || 0), 0);
+    const programmesJourSet = new Set(_plan.filter(p => p.date === jourAtt).map(p => p.chauffeurId));
     const chauffeursActifsJour = _cajToday
       .filter(e => (Number(e.caBrut) || 0) > 0)
-      .map(e => { const ch = chById2.get(e.chauffeurId); return { prenom: ch.prenom, nom: ch.nom, ca: Number(e.caBrut) || 0, courses: Number(e.nbCourses) || 0 }; })
+      .map(e => { const ch = chById2.get(e.chauffeurId); return { prenom: ch.prenom, nom: ch.nom, ca: Number(e.caBrut) || 0, courses: Number(e.nbCourses) || 0, programme: programmesJourSet.has(e.chauffeurId) }; })
       .sort((a, b) => b.ca - a.ca);
+    const nbHorsPlanning = chauffeursActifsJour.filter(c => !c.programme).length; // roulent sans être au planning
     // CA réel du mois (source : fleet_ca_jour), pour remplacer l'ancien « versé = 0 »
     const _moisPrefix = jourAtt.slice(0, 7);
     const caReelMois = _caj.filter(e => String(e.date).slice(0, 7) === _moisPrefix).reduce((s, e) => s + (Number(e.caBrut) || 0), 0);
@@ -680,7 +682,7 @@ const DashboardPage = {
 
     return {
       versementAttenduJour, nbActifsJour,
-      caBrutJour, caReelMois, chauffeursActifsJour, refParChauffeur, attenduMaintenant, paceRatio, paceState, paceLabel,
+      caBrutJour, caReelMois, chauffeursActifsJour, nbHorsPlanning, refParChauffeur, attenduMaintenant, paceRatio, paceState, paceLabel,
       caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount, totalDettes, totalPertes, nbDetteDrivers, nbPerteDrivers,
       nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
@@ -1168,12 +1170,12 @@ const DashboardPage = {
 
             <!-- Chauffeurs en activité (dynamisme) -->
             <div>
-              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.nbActifsJour} chauffeur${d.nbActifsJour > 1 ? 's' : ''} en activité</div>
+              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.nbActifsJour} chauffeur${d.nbActifsJour > 1 ? 's' : ''} en activité${d.nbHorsPlanning > 0 ? ` · <span style="color:#fde68a;">${d.nbHorsPlanning} hors planning</span>` : ''}</div>
               ${d.chauffeursActifsJour.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;">${d.chauffeursActifsJour.map(c => `
-                <div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:7px 11px 7px 8px;">
-                  <div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
+                <div class="live-chip" ${c.programme ? '' : 'title="Roule sans être au planning — à ajouter au planning"'} style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);backdrop-filter:blur(6px);border:1px solid ${c.programme ? 'rgba(255,255,255,.16)' : 'rgba(253,230,138,.7)'};border-radius:12px;padding:7px 11px 7px 8px;">
+                  <div style="position:relative;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}${c.programme ? '' : '<span style="position:absolute;top:-3px;right:-3px;width:13px;height:13px;border-radius:50%;background:#f59e0b;border:2px solid rgba(80,20,0,.35);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;line-height:1;">!</span>'}</div>
                   <div style="line-height:1.15;">
-                    <div style="font-size:12px;font-weight:700;white-space:nowrap;">${Utils.escHtml(c.prenom)}</div>
+                    <div style="font-size:12px;font-weight:700;white-space:nowrap;">${Utils.escHtml(c.prenom)}${c.programme ? '' : ' <span style="font-size:9px;font-weight:700;color:#fde68a;">hors planning</span>'}</div>
                     <div style="font-size:11px;color:rgba(255,255,255,.82);white-space:nowrap;">${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}</div>
                   </div>
                 </div>`).join('')}</div>` : '<div style="font-size:12px;color:rgba(255,255,255,.6);padding:6px 0;">Aucun chauffeur n’a encore roulé aujourd’hui.</div>'}
