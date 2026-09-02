@@ -1323,7 +1323,7 @@ const DashboardPage = {
       <!-- Style Dashboard 2 (Spike) : hero d'accueil + trio KPI + barres + line + donut -->
       <style>
         .d2-r1{grid-template-columns:1.7fr 1.15fr;align-items:stretch;}
-        .d2-r2{grid-template-columns:1fr;align-items:stretch;}
+        .d2-r2{grid-template-columns:1.7fr 1fr;align-items:stretch;}
         .d2-r3{grid-template-columns:1.15fr 1fr 1fr;align-items:stretch;}
         .d2-kpis{display:flex;flex-direction:column;gap:16px;}
         .d2-kpi{border-radius:16px;padding:15px 17px;display:flex;flex-direction:column;gap:10px;flex:1;justify-content:center;border:1px solid var(--border-color);text-decoration:none;color:inherit;transition:transform .15s, box-shadow .15s;}
@@ -1339,18 +1339,6 @@ const DashboardPage = {
 
         <!-- Hero d'accueil (accueil + activité en direct) -->
         <div onclick="DashboardPage._showActiviteDetail()" class="d-card" style="cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:14px;">
-          <div style="position:absolute;top:-50px;right:-40px;width:230px;height:230px;border-radius:50%;background:radial-gradient(circle at 35% 35%, rgba(93,135,255,.16), rgba(93,135,255,0) 70%);pointer-events:none;"></div>
-
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;position:relative;">
-            <div style="min-width:0;">
-              <div style="font-size:23px;font-weight:800;color:var(--text-primary);letter-spacing:-.4px;">${(() => { const h = new Date().getHours(); const g = h < 12 ? 'Bonjour' : (h < 18 ? 'Bon après-midi' : 'Bonsoir'); let p = ''; try { p = (typeof Auth !== 'undefined' && Auth.getSession && (Auth.getSession() || {}).prenom) || ''; } catch (e) {} return g + (p ? ', ' + Utils.escHtml(p) : ''); })()} <span style="font-size:20px;">👋</span></div>
-              <div style="font-size:13px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Voici l'activité de votre flotte aujourd'hui.</div>
-            </div>
-            <div style="width:46px;height:46px;border-radius:13px;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:23px;">
-              <iconify-icon icon="solar:wheel-angle-bold-duotone"></iconify-icon>
-            </div>
-          </div>
-
           <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;position:relative;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
@@ -1383,15 +1371,13 @@ const DashboardPage = {
           <div style="border-top:1px solid var(--border-color);padding-top:14px;position:relative;">
             ${(() => {
               const weeks = (d.weeklyPayments || []).slice(-8);
-              const maxV = Math.max(1, ...weeks.map(w => Math.max(w.verse || 0, w.attendu || 0)));
+              const maxV = Math.max(1, ...weeks.map(w => w.verse || 0));
               const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
-              const sumA = weeks.reduce((s, w) => s + (w.attendu || 0), 0);
               const bars = weeks.map(w => {
-                const vH = (w.verse || 0) / maxV * 100, aH = (w.attendu || 0) / maxV * 100;
-                return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;">
-                  <div style="width:100%;max-width:30px;display:flex;gap:3px;align-items:flex-end;height:96px;">
-                    <div title="Versé ${Utils.formatCurrency(w.verse || 0)}" style="flex:1;background:#5D87FF;border-radius:5px 5px 0 0;height:${vH.toFixed(1)}%;min-height:3px;"></div>
-                    <div title="Attendu ${Utils.formatCurrency(w.attendu || 0)}" style="flex:1;background:rgba(93,135,255,.22);border-radius:5px 5px 0 0;height:${aH.toFixed(1)}%;min-height:3px;"></div>
+                const vH = (w.verse || 0) / maxV * 100;
+                return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;">
+                  <div style="width:100%;max-width:26px;display:flex;align-items:flex-end;height:100px;">
+                    <div title="${Utils.escHtml(w.label || '')} : ${Utils.formatCurrency(w.verse || 0)}" style="width:100%;background:linear-gradient(180deg,#5D87FF,#8AA8FF);border-radius:6px 6px 0 0;height:${vH.toFixed(1)}%;min-height:3px;"></div>
                   </div>
                   <div style="font-size:9px;color:var(--text-muted);font-weight:600;white-space:nowrap;">${Utils.escHtml(w.label || '')}</div>
                 </div>`;
@@ -1399,14 +1385,11 @@ const DashboardPage = {
               return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
                 <div style="display:flex;align-items:center;gap:9px;">
                   <div class="d-icon" style="width:38px;height:38px;font-size:1.05rem;background:rgba(93,135,255,.12);color:#5D87FF;"><iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon></div>
-                  <div><div class="d-lbl" style="margin:0;">Recette vs attendu</div><div class="d-sub" style="margin:0;">8 dernières semaines</div></div>
+                  <div><div class="d-lbl" style="margin:0;">Recette encaissée</div><div class="d-sub" style="margin:0;">8 dernières semaines</div></div>
                 </div>
-                <div style="display:flex;gap:18px;align-items:flex-end;">
-                  <div style="text-align:right;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;display:flex;align-items:center;gap:5px;justify-content:flex-end;"><span style="width:9px;height:9px;border-radius:3px;background:#5D87FF;"></span>Versé</div><div style="font-size:16px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(sumV)}</div></div>
-                  <div style="text-align:right;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;display:flex;align-items:center;gap:5px;justify-content:flex-end;"><span style="width:9px;height:9px;border-radius:3px;background:rgba(93,135,255,.30);"></span>Attendu</div><div style="font-size:16px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(sumA)}</div></div>
-                </div>
+                <div style="text-align:right;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;">Total encaissé</div><div style="font-size:17px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(sumV)}</div></div>
               </div>
-              <div style="display:flex;align-items:flex-end;gap:6px;">${bars}</div>`;
+              <div style="display:flex;align-items:flex-end;gap:7px;">${bars}</div>`;
             })()}
           </div>
 
@@ -1433,108 +1416,37 @@ const DashboardPage = {
                   <strong style="font-size:12px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${fmtK(val)} F</strong>
                 </div>`;
               };
-              return `<div style="display:flex;gap:6px;margin-top:2px;">${w('solar:check-circle-bold', 'Versé', d.totalVerseMonth, 'success')}</div>`;
+              return `<div style="display:flex;gap:6px;margin-top:2px;">${w('solar:check-circle-bold', 'Versé', d.totalVerseMonth, 'success')}${w('solar:danger-triangle-bold', 'Dettes', d.totalDettes, 'warning')}${w('solar:arrow-down-bold', 'Pertes', d.totalPertes, 'danger')}</div>`;
             })()}
           </a>
-          <a href="#/versements" class="d2-kpi" style="background:rgba(19,222,185,.12);">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="width:40px;height:40px;border-radius:12px;background:#13DEB9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(19,222,185,.35);"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-              <span class="d2-pill" style="background:rgba(2,179,169,.16);color:#02b3a9;"><iconify-icon icon="solar:shield-check-bold"></iconify-icon>${d.tauxRecouvrement}%</span>
-            </div>
-            <div><div class="d2-num">${Utils.formatCurrency(d.totalVerseMonth)}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Versé ce mois</div></div>
+          <a href="#/taches" class="d2-kpi" style="background:rgba(255,174,31,.12);">
+            ${(() => {
+              const s = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : null;
+              const uid = s ? s.userId : ''; const admin = s && s.role === 'Administrateur';
+              const all = Store.get('taches') || [];
+              const mine = (admin ? all.filter(t => t.creePar === uid) : all.filter(t => t.assigneA === uid)).filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
+              const today = new Date().toISOString().split('T')[0];
+              const urg = mine.filter(t => t.priorite === 'urgente' || (t.dateEcheance && t.dateEcheance < today)).length;
+              return `<div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="width:40px;height:40px;border-radius:12px;background:#FFAE1F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(255,174,31,.35);"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></div>
+                ${urg > 0 ? `<span class="d2-pill" style="background:rgba(217,88,59,.14);color:#D9583B;"><iconify-icon icon="solar:alarm-bold"></iconify-icon>${urg} urgent${urg > 1 ? 's' : ''}</span>` : ''}
+              </div>
+              <div><div class="d2-num">${mine.length}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Tâche${mine.length > 1 ? 's' : ''} en cours</div></div>`;
+            })()}
           </a>
-          <a href="#/rentabilite" class="d2-kpi" style="background:rgba(255,174,31,.12);">
+          <a href="#/alertes" class="d2-kpi" style="background:rgba(250,137,107,.12);">
             <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="width:40px;height:40px;border-radius:12px;background:#FFAE1F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(255,174,31,.35);"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon></div>
-              <span class="d2-pill" style="background:rgba(217,144,0,.16);color:#D99000;"><iconify-icon icon="solar:calendar-bold"></iconify-icon>${d.joursRestants}j</span>
+              <div style="width:40px;height:40px;border-radius:12px;background:#FA896B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(250,137,107,.35);"><iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon></div>
+              ${d.alertesCritiques > 0 ? `<span class="d2-pill" style="background:rgba(217,88,59,.14);color:#D9583B;">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>` : (d.alertesTotal === 0 ? `<span class="d2-pill" style="background:rgba(2,179,169,.16);color:#02b3a9;">OK</span>` : '')}
             </div>
-            <div><div class="d2-num">${d.progressionObjectif}%</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Objectif · ${Utils.formatCurrency(d.objectifMensuel)}</div></div>
+            <div><div class="d2-num">${d.alertesTotal}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Alerte${d.alertesTotal > 1 ? 's' : ''}</div></div>
           </a>
         </div>
       </div>
 
-      <!-- Row 2 : Évolution du CA (pleine largeur) -->
+      <!-- Row 2 : Planning + Répartition chauffeurs -->
       <div class="d-grid d2-r2">
-
-        <!-- Évolution du CA (aire lissée) -->
-        <div class="d-card" style="display:flex;flex-direction:column;">
-          ${(() => {
-            const series = (d.monthlyRevenue || []).slice(-12);
-            const vals = series.map(s => s.revenue || 0);
-            const last = vals.length ? vals[vals.length - 1] : 0;
-            const prev = vals.length > 1 ? vals[vals.length - 2] : 0;
-            const t = prev > 0 ? Math.round((last - prev) / prev * 100) : (last > 0 ? 100 : 0);
-            const up = t >= 0;
-            const tColor = up ? '#02b3a9' : '#D9583B';
-            const tIcon = up ? 'solar:arrow-right-up-linear' : 'solar:arrow-right-down-linear';
-            const W = 640, H = 150, padB = 22, padT = 14, chartH = H - padB - padT;
-            const max = Math.max(...vals, 1);
-            const n = vals.length;
-            const pts = vals.map((v, i) => ({
-              x: n > 1 ? +(i / (n - 1) * W).toFixed(2) : W / 2,
-              y: +(padT + chartH - (v / max) * chartH).toFixed(2)
-            }));
-            const smooth = (p) => {
-              if (p.length < 2) return p.length ? `M${p[0].x},${p[0].y}` : '';
-              let dd = `M${p[0].x},${p[0].y}`;
-              for (let i = 0; i < p.length - 1; i++) {
-                const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
-                const c1x = +(p1.x + (p2.x - p0.x) / 6).toFixed(2);
-                const c1y = +(p1.y + (p2.y - p0.y) / 6).toFixed(2);
-                const c2x = +(p2.x - (p3.x - p1.x) / 6).toFixed(2);
-                const c2y = +(p2.y - (p3.y - p1.y) / 6).toFixed(2);
-                dd += ` C${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`;
-              }
-              return dd;
-            };
-            const line = smooth(pts);
-            const area = pts.length ? `${line} L${W},${padT + chartH} L0,${padT + chartH} Z` : '';
-            const endP = pts[pts.length - 1];
-            const labels = series.map((s, i) => {
-              const show = n <= 8 ? true : ((n - 1 - i) % 2 === 0);
-              if (!show) return '';
-              const x = n > 1 ? (i / (n - 1) * W) : W / 2;
-              const anchor = i === 0 ? 'start' : (i === n - 1 ? 'end' : 'middle');
-              return `<text x="${x.toFixed(1)}" y="${H - 4}" text-anchor="${anchor}" font-size="11" font-weight="600" fill="#7C8FAC">${Utils.escHtml(s.month || '')}</text>`;
-            }).join('');
-            return `
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <div class="d-icon" style="background:rgba(93,135,255,.12);color:#5D87FF;">
-                  <iconify-icon icon="solar:graph-new-bold-duotone"></iconify-icon>
-                </div>
-                <div>
-                  <div class="d-lbl" style="margin:0;">Évolution du CA</div>
-                  <div class="d-sub" style="margin:0;">12 derniers mois</div>
-                </div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:22px;font-weight:800;color:var(--text-primary);line-height:1;">${Utils.formatCurrency(last)}</div>
-                <div style="display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:700;margin-top:5px;color:${tColor};">
-                  <iconify-icon icon="${tIcon}"></iconify-icon>${up ? '+' : ''}${t}%
-                </div>
-              </div>
-            </div>
-            <div style="flex:1;display:flex;align-items:flex-end;margin-top:8px;">
-              <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;overflow:visible;">
-                <defs>
-                  <linearGradient id="caEvoGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stop-color="#5D87FF" stop-opacity=".26"/>
-                    <stop offset="1" stop-color="#5D87FF" stop-opacity="0"/>
-                  </linearGradient>
-                </defs>
-                ${area ? `<path d="${area}" fill="url(#caEvoGrad)"/>` : ''}
-                ${line ? `<path d="${line}" fill="none" stroke="#5D87FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
-                ${endP ? `<circle cx="${endP.x}" cy="${endP.y}" r="5.5" fill="#5D87FF" stroke="#fff" stroke-width="3"/>` : ''}
-                ${labels}
-              </svg>
-            </div>`;
-          })()}
-        </div>
-      </div>
-
-      <!-- Row 3 : Répartition + Dettes + Pertes -->
-      <div class="d-grid d2-r3">
+        ${this._renderPlanningHeatmap(d)}
 
         <!-- Répartition chauffeurs (donut) -->
         <a href="#/chauffeurs" class="d-card" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;">
@@ -1580,36 +1492,6 @@ const DashboardPage = {
             </div>`;
           })()}
         </a>
-
-        <!-- Dettes -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:${d.totalDettes > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.totalDettes > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;">
-              <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
-            </div>
-            <div style="margin:0;color:var(--text-muted);font-weight:500;">Dettes</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalDettes)}</div>
-          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;background:var(--bg-tertiary);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes / d.totalAttendu * 100, 100) : 0}%;background:${d.totalDettes > 0 ? 'var(--warning)' : 'var(--text-muted)'};"></div>
-          </div>
-        </a>
-
-        <!-- Pertes -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:${d.totalPertes > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;">
-              <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
-            </div>
-            <div style="margin:0;color:var(--text-muted);font-weight:500;">Pertes</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalPertes)}</div>
-          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;background:var(--bg-tertiary);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes / d.totalAttendu * 100, 100) : 0}%;background:${d.totalPertes > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></div>
-          </div>
-        </a>
       </div>
 
       <!-- Row 3: Mes taches + Alertes (côte à côte) -->
@@ -1646,11 +1528,6 @@ const DashboardPage = {
             </div>` : ''}
           </a>`;
           })()}
-      </div>
-
-      <!-- Row 3.5: Planning Heatmap -->
-      <div class="d-grid" style="grid-template-columns:1fr;">
-        ${this._renderPlanningHeatmap(d)}
       </div>
 
       <!-- Row 4: Top chauffeurs + Documents & Maintenance -->
