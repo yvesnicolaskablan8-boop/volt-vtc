@@ -311,72 +311,72 @@ const VersementsPage = {
         </div>
       </div>
 
-      <!-- KPIs — Row 1 : Montant attendu + Versé + Programmés -->
+      <!-- KPIs — Row 1 : Montant attendu + Versé + Programmés (cartes blanches Spike) -->
       <div class="d-grid d-g4" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
-        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#6366f1,#818cf8);border:none;box-shadow:0 4px 20px rgba(99,102,241,.25);" onclick="VersementsPage._showKpiDetail('attendu')">
+        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('attendu')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Montant attendu</div>
+            <div style="width:46px;height:46px;border-radius:13px;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div style="color:var(--text-muted);font-weight:500;">Montant attendu</div>
           </div>
-          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalAttendu)}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.6);">${d.periodLabel}</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalAttendu)}</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.periodLabel}</div>
         </div>
-        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#10b981,#34d399);border:none;box-shadow:0 4px 20px rgba(16,185,129,.25);" onclick="VersementsPage._showKpiDetail('verse')">
+        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('verse')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Montant versé</div>
+            <div style="width:46px;height:46px;border-radius:13px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
+            <div style="color:var(--text-muted);font-weight:500;">Montant versé</div>
           </div>
-          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.6);">${d.periodLabel}</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.periodLabel}</div>
         </div>
-        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#3b82f6,#60a5fa);border:none;box-shadow:0 4px 20px rgba(59,130,246,.25);" onclick="VersementsPage._showKpiDetail('programmes')">
+        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('programmes')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Chauffeurs programmés</div>
+            <div style="width:46px;height:46px;border-radius:13px;background:rgba(139,92,246,.12);color:#8b5cf6;display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
+            <div style="color:var(--text-muted);font-weight:500;">Chauffeurs programmés</div>
           </div>
-          <div class="d-val" style="color:#fff;">${d.nbChauffeursProgrammes}</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${d.nbChauffeursProgrammes}</div>
         </div>
       </div>
 
-      <!-- KPIs — Row 2 : Anomalies + Dettes recettes + Dettes contraventions + Pertes -->
+      <!-- KPIs — Row 2 : Anomalies + Dettes recettes + Dettes contraventions + Pertes (cartes blanches Spike) -->
       <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
-        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:none;box-shadow:0 4px 20px rgba(139,92,246,.25);" onclick="VersementsPage._showAnomalies()">
+        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showAnomalies()">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Anomalies</div>
+            <div style="width:46px;height:46px;border-radius:13px;background:${d.anomalies.total > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
+            <div style="color:var(--text-muted);font-weight:500;">Anomalies</div>
           </div>
-          <div class="d-val" style="color:#fff;">${d.anomalies.total}</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${d.anomalies.total}</div>
           <div style="margin-top:10px;">
-            <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);font-size:11px;font-weight:700;color:#fff;">${d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK'}</span>
+            <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 11px;border-radius:20px;background:${d.anomalies.total > 0 ? 'rgba(255,174,31,.14)' : 'rgba(19,222,185,.14)'};font-size:11px;font-weight:700;color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--success-dim)'};">${d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK'}</span>
           </div>
         </div>
-        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#f97316,#fb923c);border:none;box-shadow:0 4px 20px rgba(249,115,22,.25);" onclick="document.getElementById('dette-section-recettes')?.scrollIntoView({behavior:'smooth'})">
+        <div class="d-card" style="cursor:pointer;" onclick="document.getElementById('dette-section-recettes')?.scrollIntoView({behavior:'smooth'})">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Dettes recettes</div>
+            <div style="width:46px;height:46px;border-radius:13px;background:${d.detteData.totalDettesRecettes > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div style="color:var(--text-muted);font-weight:500;">Dettes recettes</div>
           </div>
-          <div class="d-val" style="color:#fff;">${d.detteData.totalDettesRecettes > 0 ? Utils.formatCurrency(d.detteData.totalDettesRecettes) : '0 FCFA'}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.6);">${d.detteData.nbDriversRecettes > 0 ? d.detteData.nbDriversRecettes + ' chauffeur' + (d.detteData.nbDriversRecettes > 1 ? 's' : '') : 'Aucune dette'}</div>
-          <div class="d-bar-track" style="margin-top:10px;background:rgba(255,255,255,.15);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.detteData.totalDettesRecettes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${d.detteData.totalDettesRecettes > 0 ? Utils.formatCurrency(d.detteData.totalDettesRecettes) : '0 FCFA'}</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.detteData.nbDriversRecettes > 0 ? d.detteData.nbDriversRecettes + ' chauffeur' + (d.detteData.nbDriversRecettes > 1 ? 's' : '') : 'Aucune dette'}</div>
+          <div class="d-bar-track" style="margin-top:10px;background:var(--bg-tertiary);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.detteData.totalDettesRecettes/d.totalAttendu*100,100) : 0}%;background:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning)' : 'var(--text-muted)'};"></div>
           </div>
         </div>
-        <div class="d-card" style="cursor:pointer;color:#fff;background:linear-gradient(135deg,#dc2626,#ef4444);border:none;box-shadow:0 4px 20px rgba(220,38,38,.25);" onclick="document.getElementById('dette-section-contraventions')?.scrollIntoView({behavior:'smooth'})">
+        <div class="d-card" style="cursor:pointer;" onclick="document.getElementById('dette-section-contraventions')?.scrollIntoView({behavior:'smooth'})">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Dettes contraventions</div>
+            <div style="width:46px;height:46px;border-radius:13px;background:${d.detteData.totalDettesContraventions > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.detteData.totalDettesContraventions > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div>
+            <div style="color:var(--text-muted);font-weight:500;">Dettes contraventions</div>
           </div>
-          <div class="d-val" style="color:#fff;">${d.detteData.totalDettesContraventions > 0 ? Utils.formatCurrency(d.detteData.totalDettesContraventions) : '0 FCFA'}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.6);">${d.detteData.nbDriversContraventions > 0 ? d.detteData.nbDriversContraventions + ' chauffeur' + (d.detteData.nbDriversContraventions > 1 ? 's' : '') : 'Aucune'}</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${d.detteData.totalDettesContraventions > 0 ? Utils.formatCurrency(d.detteData.totalDettesContraventions) : '0 FCFA'}</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.detteData.nbDriversContraventions > 0 ? d.detteData.nbDriversContraventions + ' chauffeur' + (d.detteData.nbDriversContraventions > 1 ? 's' : '') : 'Aucune'}</div>
         </div>
-        <div class="d-card" style="color:#fff;background:linear-gradient(135deg,#991b1b,#b91c1c);border:none;box-shadow:0 4px 20px rgba(153,27,27,.25);">
+        <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Pertes</div>
+            <div style="width:46px;height:46px;border-radius:13px;background:${d.totalPertes > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div>
+            <div style="color:var(--text-muted);font-weight:500;">Pertes</div>
           </div>
-          <div class="d-val" style="color:#fff;">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
-          <div class="d-bar-track" style="margin-top:10px;background:rgba(255,255,255,.15);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
+          <div class="d-bar-track" style="margin-top:10px;background:var(--bg-tertiary);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:${d.totalPertes > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></div>
           </div>
         </div>
       </div>
