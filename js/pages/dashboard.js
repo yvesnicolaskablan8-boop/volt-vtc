@@ -244,6 +244,40 @@ const DashboardPage = {
     }).join('');
     const tableOrEmpty = lignes.length ? `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:560px;"><thead><tr>${th('Chauffeur')}${th('Statut')}${th('Courses', 'right')}${th('Versé', 'right')}${th('CA', 'right')}${th('', 'right')}</tr></thead><tbody>${rows}</tbody></table></div>` : `<div style="text-align:center;color:${C.mut2};padding:40px;font-size:14px;">Aucune activité ${estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
 
+    // Carte « CA du mois » (façon Monthly Earnings) : montant + variation + sparkline
+    const _cajAll = Store.get('caJour') || [];
+    const _moisPfx = jour.slice(0, 7);
+    const _parJour = {};
+    _cajAll.forEach(e => { const dt = String(e.date).slice(0, 10); if (dt.slice(0, 7) === _moisPfx) _parJour[dt] = (_parJour[dt] || 0) + (Number(e.caBrut) || 0); });
+    const _spark = Object.keys(_parJour).sort().map(k => _parJour[k]);
+    const _prevD = new Date(jour + 'T00:00:00'); _prevD.setMonth(_prevD.getMonth() - 1);
+    const _prevPfx = `${_prevD.getFullYear()}-${String(_prevD.getMonth() + 1).padStart(2, '0')}`;
+    const _caMoisPrev = _cajAll.filter(e => String(e.date).slice(0, 7) === _prevPfx).reduce((s, e) => s + (Number(e.caBrut) || 0), 0);
+    const _varPct = _caMoisPrev > 0 ? Math.round((caMois - _caMoisPrev) / _caMoisPrev * 100) : (caMois > 0 ? 100 : 0);
+    const sparkline = (vals) => {
+      if (!vals || vals.length < 2) return '';
+      const W = 320, H = 60, max = Math.max(...vals, 1), n = vals.length;
+      const pts = vals.map((v, i) => ({ x: +(i / (n - 1) * W).toFixed(1), y: +(H - 6 - (v / max) * (H - 12)).toFixed(1) }));
+      let dd = `M${pts[0].x},${pts[0].y}`;
+      for (let i = 0; i < pts.length - 1; i++) { const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2; dd += ` C${(p1.x + (p2.x - p0.x) / 6).toFixed(1)},${(p1.y + (p2.y - p0.y) / 6).toFixed(1)} ${(p2.x - (p3.x - p1.x) / 6).toFixed(1)},${(p2.y - (p3.y - p1.y) / 6).toFixed(1)} ${p2.x},${p2.y}`; }
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:60px;display:block;"><defs><linearGradient id="meGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#49BEFF" stop-opacity=".28"/><stop offset="1" stop-color="#49BEFF" stop-opacity="0"/></linearGradient></defs><path d="${dd} L${W},${H} L0,${H} Z" fill="url(#meGrad)"/><path d="${dd}" fill="none" stroke="#49BEFF" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+    };
+    const monthlyCard = `<div style="${cardCss}padding:24px 28px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+        <div>
+          <div style="font-size:16px;font-weight:800;color:${C.head};">CA du mois</div>
+          <div style="font-size:30px;font-weight:800;color:${C.head};margin-top:12px;letter-spacing:-.5px;">${money(caMois)}</div>
+          <div style="display:inline-flex;align-items:center;gap:8px;margin-top:9px;">
+            <span style="width:24px;height:24px;border-radius:50%;background:${_varPct >= 0 ? C.greenS : C.redS};color:${_varPct >= 0 ? C.green : C.red};display:flex;align-items:center;justify-content:center;font-size:14px;"><iconify-icon icon="${_varPct >= 0 ? 'solar:arrow-right-up-linear' : 'solar:arrow-right-down-linear'}"></iconify-icon></span>
+            <span style="font-size:13px;font-weight:700;color:${C.head};">${_varPct >= 0 ? '+' : ''}${_varPct}%</span>
+            <span style="font-size:13px;color:${C.mut};">vs mois dernier</span>
+          </div>
+        </div>
+        <div style="width:44px;height:44px;border-radius:50%;background:${C.blue};color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 8px 18px rgba(93,135,255,.32);flex-shrink:0;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
+      </div>
+      <div style="margin-top:16px;">${sparkline(_spark)}</div>
+    </div>`;
+
     const html = `
       <div style="max-width:1120px;margin:0 auto;padding:26px 26px 70px;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;">
@@ -276,13 +310,16 @@ const DashboardPage = {
           ${tableOrEmpty}
         </div>
 
-        <div style="${cardCss}padding:24px 28px;max-width:540px;">
-          <div style="font-size:18px;font-weight:800;color:${C.head};margin-bottom:10px;">Récapitulatif</div>
-          ${totalLine('CA brut Yango', money(caBrutJour), C.head)}
-          ${totalLine('− Charges', totalCharges > 0 ? '− ' + money(totalCharges) : money(0), C.red)}
-          ${totalLine('= À verser', money(totalDu), C.head, true)}
-          ${totalLine('Déjà versé', money(totalVerse), C.green)}
-          ${totalLine('Reste dû', money(reste), reste > 0 ? C.red : C.green)}
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;align-items:start;">
+          ${monthlyCard}
+          <div style="${cardCss}padding:24px 28px;">
+            <div style="font-size:18px;font-weight:800;color:${C.head};margin-bottom:10px;">Récapitulatif</div>
+            ${totalLine('CA brut Yango', money(caBrutJour), C.head)}
+            ${totalLine('− Charges', totalCharges > 0 ? '− ' + money(totalCharges) : money(0), C.red)}
+            ${totalLine('= À verser', money(totalDu), C.head, true)}
+            ${totalLine('Déjà versé', money(totalVerse), C.green)}
+            ${totalLine('Reste dû', money(reste), reste > 0 ? C.red : C.green)}
+          </div>
         </div>
       </div>`;
 
