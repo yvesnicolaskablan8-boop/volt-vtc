@@ -1417,7 +1417,7 @@ const DashboardPage = {
 
         <!-- Trio KPI colorés -->
         <div class="d2-kpis">
-          <a href="#/versements" class="d2-kpi" style="background:linear-gradient(135deg, rgba(93,135,255,.16), rgba(93,135,255,.02));">
+          <a href="#/versements" class="d2-kpi" style="background:rgba(93,135,255,.10);">
             <div style="display:flex;align-items:center;justify-content:space-between;">
               <div style="width:40px;height:40px;border-radius:12px;background:#5D87FF;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(93,135,255,.35);"><iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon></div>
               <span class="d2-pill" style="background:rgba(2,179,169,.16);color:#02b3a9;"><iconify-icon icon="solar:shield-check-bold"></iconify-icon>${d.tauxRecouvrement}%</span>
@@ -1433,17 +1433,17 @@ const DashboardPage = {
                   <strong style="font-size:12px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${fmtK(val)} F</strong>
                 </div>`;
               };
-              return `<div style="display:flex;gap:6px;margin-top:2px;">${w('solar:check-circle-bold', 'Versé', d.totalVerseMonth, 'success')}${w('solar:danger-triangle-bold', 'Dettes', d.totalDettes, 'warning')}${w('solar:arrow-down-bold', 'Pertes', d.totalPertes, 'danger')}</div>`;
+              return `<div style="display:flex;gap:6px;margin-top:2px;">${w('solar:check-circle-bold', 'Versé', d.totalVerseMonth, 'success')}</div>`;
             })()}
           </a>
-          <a href="#/versements" class="d2-kpi" style="background:linear-gradient(135deg, rgba(19,222,185,.18), rgba(19,222,185,.02));">
+          <a href="#/versements" class="d2-kpi" style="background:rgba(19,222,185,.12);">
             <div style="display:flex;align-items:center;justify-content:space-between;">
               <div style="width:40px;height:40px;border-radius:12px;background:#13DEB9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(19,222,185,.35);"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
               <span class="d2-pill" style="background:rgba(2,179,169,.16);color:#02b3a9;"><iconify-icon icon="solar:shield-check-bold"></iconify-icon>${d.tauxRecouvrement}%</span>
             </div>
             <div><div class="d2-num">${Utils.formatCurrency(d.totalVerseMonth)}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Versé ce mois</div></div>
           </a>
-          <a href="#/rentabilite" class="d2-kpi" style="background:linear-gradient(135deg, rgba(255,174,31,.18), rgba(255,174,31,.02));">
+          <a href="#/rentabilite" class="d2-kpi" style="background:rgba(255,174,31,.12);">
             <div style="display:flex;align-items:center;justify-content:space-between;">
               <div style="width:40px;height:40px;border-radius:12px;background:#FFAE1F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(255,174,31,.35);"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon></div>
               <span class="d2-pill" style="background:rgba(217,144,0,.16);color:#D99000;"><iconify-icon icon="solar:calendar-bold"></iconify-icon>${d.joursRestants}j</span>
