@@ -295,7 +295,7 @@ const DashboardPage = {
           ${stat('solar:wallet-money-bold-duotone', C.blue, C.blueS, 'Recette du jour', money(caBrutJour), 'à verser')}
           ${stat('solar:users-group-rounded-bold-duotone', C.green, C.greenS, 'Programmés', String(nbProg), nbActifs + ' en activité')}
           ${stat('solar:wheel-angle-bold-duotone', C.amber, C.amberS, 'En activité', String(nbActifs), nbHors > 0 ? nbHors + ' hors planning' : 'tous programmés')}
-          ${stat('solar:calendar-bold-duotone', C.violet, C.violetS, 'CA du mois', money(caMois), 'cumul du mois')}
+          ${stat('solar:banknote-2-bold-duotone', C.violet, C.violetS, 'À recouvrer', money(reste), reste > 0 ? 'reste dû' : 'tout est versé')}
         </div>
 
         ${barChart}
