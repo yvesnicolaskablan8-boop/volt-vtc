@@ -1387,7 +1387,7 @@ const DashboardPage = {
       <!-- Style Dashboard 2 (Spike) : hero d'accueil + trio KPI + barres + line + donut -->
       <style>
         .d2-r1{grid-template-columns:1.7fr 1.15fr;align-items:stretch;}
-        .d2-r2{grid-template-columns:1.7fr 1fr;align-items:stretch;}
+        .d2-r2{grid-template-columns:1fr;align-items:stretch;}
         .d2-r3{grid-template-columns:1.15fr 1fr 1fr;align-items:stretch;}
         .d2-kpis{display:flex;flex-direction:column;gap:16px;}
         .d2-kpi{border-radius:16px;padding:15px 17px;display:flex;flex-direction:column;gap:10px;flex:1;justify-content:center;border:1px solid var(--border-color);text-decoration:none;color:inherit;transition:transform .15s, box-shadow .15s;}
@@ -1520,10 +1520,13 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Row 2 : Planning + Répartition chauffeurs -->
+      <!-- Row 2 : Planning (pleine largeur) -->
       <div class="d-grid d2-r2">
         ${this._renderPlanningHeatmap(d)}
+      </div>
 
+      <!-- Row 3 : Répartition chauffeurs + Top chauffeurs -->
+      <div class="d-grid d-g3" style="grid-template-columns:1fr 1fr 1fr;">
         <!-- Répartition chauffeurs (donut) -->
         <a href="#/chauffeurs" class="d-card" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
@@ -1568,13 +1571,14 @@ const DashboardPage = {
             </div>`;
           })()}
         </a>
-      </div>
-
-      <!-- Row 4: Top chauffeurs + Documents & Maintenance -->
-      <div class="d-grid d-g3" style="grid-template-columns:1fr 1fr 1fr;">
         ${this._renderTopDriversRevenue(d)}
         ${this._renderTopDriversDettes(d)}
-        <div>${this._renderExpiringDocs(d)}${this._renderMaintenancePanel(d)}</div>
+      </div>
+
+      <!-- Row 4: Documents & Maintenance -->
+      <div class="d-grid d-g21" style="grid-template-columns:1fr 1fr;">
+        ${this._renderExpiringDocs(d)}
+        ${this._renderMaintenancePanel(d)}
       </div>
 
       </div>
