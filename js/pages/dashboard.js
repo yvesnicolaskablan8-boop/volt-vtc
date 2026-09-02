@@ -141,7 +141,7 @@ const DashboardPage = {
   // ouvrir l'ajout de créneau pré-rempli pour ce chauffeur, ce jour-là.
   _ajouterAuPlanning(chauffeurId) {
     const jour = this._selectedPeriod || new Date().toISOString().split('T')[0];
-    try { sessionStorage.setItem('pilote_planning_add', JSON.stringify({ chauffeurId, date: jour })); } catch (_) {}
+    try { sessionStorage.setItem('pilote_planning_add', JSON.stringify({ chauffeurId, date: jour, returnTo: 'dashboard' })); } catch (_) {}
     if (typeof Router !== 'undefined' && Router.navigate) Router.navigate('/planning');
     else window.location.hash = '#/planning';
   },

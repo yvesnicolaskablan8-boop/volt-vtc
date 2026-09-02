@@ -45,8 +45,8 @@ const PlanningPage = {
       const raw = sessionStorage.getItem('pilote_planning_add');
       if (!raw) return;
       sessionStorage.removeItem('pilote_planning_add');
-      const { chauffeurId, date } = JSON.parse(raw);
-      setTimeout(() => this._addShift(chauffeurId || '', date || ''), 60);
+      const { chauffeurId, date, returnTo } = JSON.parse(raw);
+      setTimeout(() => this._addShift(chauffeurId || '', date || '', returnTo || ''), 60);
     } catch (_) {}
   },
 
@@ -1901,7 +1901,7 @@ const PlanningPage = {
 
   // =================== CRUD ===================
 
-  _addShift(preselectedChId, preselectedDate) {
+  _addShift(preselectedChId, preselectedDate, returnTo) {
     const chauffeurs = this._getChauffeurs().filter(c => c.statut === 'actif' || c.statut === 'repos');
     const fields = [
       { type: 'row-start' },
@@ -1951,7 +1951,12 @@ const PlanningPage = {
       Store.add('planning', { id: Utils.generateId('PLN'), ...values, dateCreation: new Date().toISOString() });
       Modal.close();
       Toast.success('Créneau ajouté');
-      this._renderView();
+      if (returnTo === 'dashboard') {
+        if (typeof Router !== 'undefined' && Router.navigate) Router.navigate('/dashboard');
+        else window.location.hash = '#/dashboard';
+      } else {
+        this._renderView();
+      }
     });
 
     // Auto-remplir les heures quand on choisit un preset
