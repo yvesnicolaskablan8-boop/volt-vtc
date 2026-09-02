@@ -1283,92 +1283,133 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Row 1: Activité en direct (fusion CA + Versements) + Dettes + Pertes -->
-      <div class="d-grid d-g4" style="grid-template-columns:2.2fr 1fr 1fr;">
+      <!-- Style Dashboard 2 (Spike) : hero d'accueil + trio KPI + barres + line + donut -->
+      <style>
+        .d2-r1{grid-template-columns:1.7fr 1.15fr;align-items:stretch;}
+        .d2-r2{grid-template-columns:1.7fr 1.3fr;align-items:stretch;}
+        .d2-r3{grid-template-columns:1.15fr 1fr 1fr;align-items:stretch;}
+        .d2-kpis{display:flex;flex-direction:column;gap:16px;}
+        .d2-kpi{border-radius:16px;padding:15px 17px;display:flex;flex-direction:column;gap:10px;flex:1;justify-content:center;border:1px solid var(--border-color);text-decoration:none;color:inherit;transition:transform .15s, box-shadow .15s;}
+        .d2-kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-card);}
+        .d2-num{font-size:21px;font-weight:800;color:var(--text-primary);line-height:1.05;}
+        .d2-pill{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;}
+        @media(max-width:1024px){ .d2-r1,.d2-r2,.d2-r3{grid-template-columns:1fr;} .d2-kpis{flex-direction:row;flex-wrap:wrap;} .d2-kpi{min-width:150px;flex:1 1 150px;} }
+        @media(max-width:560px){ .d2-kpis{flex-direction:column;} }
+      </style>
 
-        <!-- Hero — Activité du jour : CA salariés EN DIRECT + alerte rythme -->
-        <div onclick="DashboardPage._showActiviteDetail()" class="d-card" style="cursor:pointer;grid-row:span 1;display:flex;flex-direction:column;gap:13px;">
+      <!-- Row 1 : Hero d'accueil + trio KPI colorés -->
+      <div class="d-grid d2-r1">
 
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-              <div style="min-width:0;">
-                <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
-                  <span style="width:8px;height:8px;border-radius:50%;background:var(--danger);"></span>
-                  Activité du jour · en direct
-                </div>
-                <div style="font-size:32px;font-weight:800;letter-spacing:-.5px;color:var(--text-primary);margin-top:8px;">${Utils.formatCurrency(d.caBrutJour)}</div>
-                <div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:2px;">recette à verser${d.caBrutJour !== d.versementAttenduJour ? ` · net ${Utils.formatCurrency(d.versementAttenduJour)}` : ''}</div>
-              </div>
-              <div style="width:46px;height:46px;border-radius:13px;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:23px;">
-                <iconify-icon icon="solar:wheel-angle-bold-duotone"></iconify-icon>
-              </div>
+        <!-- Hero d'accueil (accueil + activité en direct) -->
+        <div onclick="DashboardPage._showActiviteDetail()" class="d-card" style="cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:14px;">
+          <div style="position:absolute;top:-50px;right:-40px;width:230px;height:230px;border-radius:50%;background:radial-gradient(circle at 35% 35%, rgba(93,135,255,.16), rgba(93,135,255,0) 70%);pointer-events:none;"></div>
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;position:relative;">
+            <div style="min-width:0;">
+              <div style="font-size:23px;font-weight:800;color:var(--text-primary);letter-spacing:-.4px;">${(() => { const h = new Date().getHours(); const g = h < 12 ? 'Bonjour' : (h < 18 ? 'Bon après-midi' : 'Bonsoir'); let p = ''; try { p = (typeof Auth !== 'undefined' && Auth.getSession && (Auth.getSession() || {}).prenom) || ''; } catch (e) {} return g + (p ? ', ' + Utils.escHtml(p) : ''); })()} <span style="font-size:20px;">👋</span></div>
+              <div style="font-size:13px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Voici l'activité de votre flotte aujourd'hui.</div>
             </div>
+            <div style="width:46px;height:46px;border-radius:13px;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:23px;">
+              <iconify-icon icon="solar:wheel-angle-bold-duotone"></iconify-icon>
+            </div>
+          </div>
 
-            <!-- Rythme (jugé « bas » seulement le soir) -->
-            <div style="display:inline-flex;align-items:center;gap:7px;align-self:flex-start;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${d.paceState === 'faible' ? 'rgba(250,137,107,.15)' : d.paceState === 'bon' ? 'rgba(19,222,185,.15)' : d.paceState === 'modere' ? 'rgba(255,174,31,.16)' : 'var(--bg-tertiary)'};color:${d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)'};">
+          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;position:relative;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
+                <span style="width:8px;height:8px;border-radius:50%;background:var(--danger);"></span>Recette du jour · en direct
+              </div>
+              <div style="font-size:31px;font-weight:800;letter-spacing:-.5px;color:var(--text-primary);margin-top:6px;">${Utils.formatCurrency(d.caBrutJour)}</div>
+            </div>
+            <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${d.paceState === 'faible' ? 'rgba(250,137,107,.15)' : d.paceState === 'bon' ? 'rgba(19,222,185,.15)' : d.paceState === 'modere' ? 'rgba(255,174,31,.16)' : 'var(--bg-tertiary)'};color:${d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)'};">
               <iconify-icon icon="${d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>
               ${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% d'une journée type` : ''}
             </div>
+          </div>
 
-            <!-- Chauffeurs programmés + activité (alerte si non programmé) -->
-            <div>
-              <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.nbProgrammesJour} chauffeur${d.nbProgrammesJour > 1 ? 's' : ''} programmé${d.nbProgrammesJour > 1 ? 's' : ''}${d.nbProgrammesActifs !== d.nbProgrammesJour ? ` · ${d.nbProgrammesActifs} en activité` : ''}</div>
-              ${d.chauffeursProgrammes.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;">${d.chauffeursProgrammes.map(c => `
-                <div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:12px;padding:7px 11px 7px 8px;${c.actif ? '' : 'opacity:.6;'}">
-                  <div style="width:26px;height:26px;border-radius:50%;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
-                  <div style="line-height:1.15;">
-                    <div style="font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-primary);">${Utils.escHtml(c.prenom)}</div>
-                    <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${c.actif ? `${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}` : 'pas encore parti'}</div>
-                  </div>
-                </div>`).join('')}</div>` : '<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur programmé aujourd’hui.</div>'}
-              ${d.nbHorsPlanning > 0 ? `<div style="margin-top:9px;display:flex;align-items:center;gap:8px;background:rgba(255,174,31,.14);border-radius:12px;padding:8px 11px;font-size:12px;font-weight:600;color:var(--text-primary);">
-                <iconify-icon icon="solar:danger-triangle-bold" style="color:var(--warning);font-size:15px;flex-shrink:0;"></iconify-icon>
-                <span><strong>${d.chauffeursHorsPlanning.map(c => Utils.escHtml(c.prenom)).join(', ')}</strong> roule${d.nbHorsPlanning > 1 ? 'nt' : ''} hors planning — à ajouter</span>
-              </div>` : ''}
-            </div>
+          <div style="position:relative;">
+            <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.nbProgrammesJour} chauffeur${d.nbProgrammesJour > 1 ? 's' : ''} programmé${d.nbProgrammesJour > 1 ? 's' : ''}${d.nbProgrammesActifs !== d.nbProgrammesJour ? ` · ${d.nbProgrammesActifs} en activité` : ''}</div>
+            ${d.chauffeursProgrammes.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;">${d.chauffeursProgrammes.map(c => `
+              <div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:12px;padding:7px 11px 7px 8px;${c.actif ? '' : 'opacity:.6;'}">
+                <div style="width:26px;height:26px;border-radius:50%;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
+                <div style="line-height:1.15;">
+                  <div style="font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-primary);">${Utils.escHtml(c.prenom)}</div>
+                  <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${c.actif ? `${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}` : 'pas encore parti'}</div>
+                </div>
+              </div>`).join('')}</div>` : '<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur programmé aujourd’hui.</div>'}
+            ${d.nbHorsPlanning > 0 ? `<div style="margin-top:9px;display:flex;align-items:center;gap:8px;background:rgba(255,174,31,.14);border-radius:12px;padding:8px 11px;font-size:12px;font-weight:600;color:var(--text-primary);">
+              <iconify-icon icon="solar:danger-triangle-bold" style="color:var(--warning);font-size:15px;flex-shrink:0;"></iconify-icon>
+              <span><strong>${d.chauffeursHorsPlanning.map(c => Utils.escHtml(c.prenom)).join(', ')}</strong> roule${d.nbHorsPlanning > 1 ? 'nt' : ''} hors planning — à ajouter</span>
+            </div>` : ''}
+          </div>
 
-            <!-- CA du mois (réel) -->
-            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-color);padding-top:10px;font-size:12px;color:var(--text-secondary);">
-              <span style="display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> CA du mois</span>
-              <strong style="color:var(--text-primary);font-size:14px;">${Utils.formatCurrency(d.caReelMois)}</strong>
-            </div>
-
+          <div style="margin-top:auto;position:relative;display:inline-flex;align-self:flex-start;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);">
+            Voir l'activité du jour <iconify-icon icon="solar:arrow-right-linear"></iconify-icon>
+          </div>
         </div>
 
-        <!-- Dettes (carte blanche Spike — badge ambre s'il y en a, neutre à 0) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:${d.totalDettes > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.totalDettes > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;">
-              <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
+        <!-- Trio KPI colorés -->
+        <div class="d2-kpis">
+          <a href="#/rentabilite" class="d2-kpi" style="background:linear-gradient(135deg, rgba(93,135,255,.16), rgba(93,135,255,.02));">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="width:40px;height:40px;border-radius:12px;background:#5D87FF;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(93,135,255,.35);"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
+              <span class="d2-pill" style="background:${d.caTrend >= 0 ? 'rgba(2,179,169,.16)' : 'rgba(217,88,59,.14)'};color:${d.caTrend >= 0 ? '#02b3a9' : '#D9583B'};"><iconify-icon icon="${d.caTrend >= 0 ? 'solar:arrow-right-up-linear' : 'solar:arrow-right-down-linear'}"></iconify-icon>${d.caTrend >= 0 ? '+' : ''}${Math.round(d.caTrend)}%</span>
             </div>
-            <div style="margin:0;color:var(--text-muted);font-weight:500;">Dettes</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalDettes)}</div>
-          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;background:var(--bg-tertiary);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:${d.totalDettes > 0 ? 'var(--warning)' : 'var(--text-muted)'};"></div>
-          </div>
-        </a>
-
-        <!-- Pertes (carte blanche Spike — badge rouge s'il y en a, neutre à 0) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:${d.totalPertes > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;">
-              <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
+            <div><div class="d2-num">${Utils.formatCurrency(d.caThisMonth)}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">CA du mois</div></div>
+          </a>
+          <a href="#/versements" class="d2-kpi" style="background:linear-gradient(135deg, rgba(19,222,185,.18), rgba(19,222,185,.02));">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="width:40px;height:40px;border-radius:12px;background:#13DEB9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(19,222,185,.35);"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+              <span class="d2-pill" style="background:rgba(2,179,169,.16);color:#02b3a9;"><iconify-icon icon="solar:shield-check-bold"></iconify-icon>${d.tauxRecouvrement}%</span>
             </div>
-            <div style="margin:0;color:var(--text-muted);font-weight:500;">Pertes</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalPertes)}</div>
-          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;background:var(--bg-tertiary);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:${d.totalPertes > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></div>
-          </div>
-        </a>
+            <div><div class="d2-num">${Utils.formatCurrency(d.totalVerseMonth)}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Versé ce mois</div></div>
+          </a>
+          <a href="#/rentabilite" class="d2-kpi" style="background:linear-gradient(135deg, rgba(255,174,31,.18), rgba(255,174,31,.02));">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="width:40px;height:40px;border-radius:12px;background:#FFAE1F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(255,174,31,.35);"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon></div>
+              <span class="d2-pill" style="background:rgba(217,144,0,.16);color:#D99000;"><iconify-icon icon="solar:calendar-bold"></iconify-icon>${d.joursRestants}j</span>
+            </div>
+            <div><div class="d2-num">${d.progressionObjectif}%</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Objectif · ${Utils.formatCurrency(d.objectifMensuel)}</div></div>
+          </a>
+        </div>
       </div>
 
-      <!-- Row 2: Évolution du CA + Répartition chauffeurs -->
-      <div class="d-grid" style="grid-template-columns:2fr 1fr;gap:20px;align-items:stretch;">
+      <!-- Row 2 : Barres Recette/Attendu + Évolution du CA -->
+      <div class="d-grid d2-r2">
 
-        <!-- Évolution du CA -->
+        <!-- Recette vs attendu (barres, style Profit & Expenses) -->
+        <div class="d-card" style="display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <div class="d-icon" style="background:rgba(93,135,255,.12);color:#5D87FF;"><iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon></div>
+            <div><div class="d-lbl" style="margin:0;">Recette vs attendu</div><div class="d-sub" style="margin:0;">8 dernières semaines</div></div>
+          </div>
+          ${(() => {
+            const weeks = (d.weeklyPayments || []).slice(-8);
+            const maxV = Math.max(1, ...weeks.map(w => Math.max(w.verse || 0, w.attendu || 0)));
+            const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
+            const sumA = weeks.reduce((s, w) => s + (w.attendu || 0), 0);
+            const bars = weeks.map(w => {
+              const vH = (w.verse || 0) / maxV * 100, aH = (w.attendu || 0) / maxV * 100;
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;">
+                <div style="width:100%;max-width:32px;display:flex;gap:3px;align-items:flex-end;height:140px;">
+                  <div title="Versé ${Utils.formatCurrency(w.verse || 0)}" style="flex:1;background:#5D87FF;border-radius:5px 5px 0 0;height:${vH.toFixed(1)}%;min-height:3px;"></div>
+                  <div title="Attendu ${Utils.formatCurrency(w.attendu || 0)}" style="flex:1;background:rgba(93,135,255,.22);border-radius:5px 5px 0 0;height:${aH.toFixed(1)}%;min-height:3px;"></div>
+                </div>
+                <div style="font-size:9.5px;color:var(--text-muted);font-weight:600;white-space:nowrap;">${Utils.escHtml(w.label || '')}</div>
+              </div>`;
+            }).join('');
+            return `<div style="display:flex;gap:18px;align-items:stretch;flex:1;">
+              <div style="flex:1;display:flex;align-items:flex-end;gap:7px;min-width:0;">${bars}</div>
+              <div style="width:148px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;gap:15px;border-left:1px solid var(--border-color);padding-left:18px;">
+                <div><div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);font-weight:600;"><span style="width:10px;height:10px;border-radius:3px;background:#5D87FF;"></span>Versé</div><div style="font-size:18px;font-weight:800;color:var(--text-primary);margin-top:3px;">${Utils.formatCurrency(sumV)}</div></div>
+                <div><div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);font-weight:600;"><span style="width:10px;height:10px;border-radius:3px;background:rgba(93,135,255,.30);"></span>Attendu</div><div style="font-size:18px;font-weight:800;color:var(--text-primary);margin-top:3px;">${Utils.formatCurrency(sumA)}</div></div>
+                <a href="#/versements" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:12px;padding:9px 12px;border-radius:10px;text-decoration:none;box-shadow:0 6px 14px rgba(93,135,255,.30);">Voir le rapport <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></a>
+              </div>
+            </div>`;
+          })()}
+        </div>
+
+        <!-- Évolution du CA (aire lissée) -->
         <div class="d-card" style="display:flex;flex-direction:column;">
           ${(() => {
             const series = (d.monthlyRevenue || []).slice(-12);
@@ -1413,7 +1454,7 @@ const DashboardPage = {
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;">
               <div style="display:flex;align-items:center;gap:10px;">
                 <div class="d-icon" style="background:rgba(93,135,255,.12);color:#5D87FF;">
-                  <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
+                  <iconify-icon icon="solar:graph-new-bold-duotone"></iconify-icon>
                 </div>
                 <div>
                   <div class="d-lbl" style="margin:0;">Évolution du CA</div>
@@ -1443,8 +1484,12 @@ const DashboardPage = {
             </div>`;
           })()}
         </div>
+      </div>
 
-        <!-- Répartition chauffeurs -->
+      <!-- Row 3 : Répartition + Dettes + Pertes -->
+      <div class="d-grid d2-r3">
+
+        <!-- Répartition chauffeurs (donut) -->
         <a href="#/chauffeurs" class="d-card" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
             <div class="d-icon" style="background:rgba(19,222,185,.14);color:#02b3a9;">
@@ -1487,6 +1532,36 @@ const DashboardPage = {
               </div>
             </div>`;
           })()}
+        </a>
+
+        <!-- Dettes -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div style="width:46px;height:46px;border-radius:13px;background:${d.totalDettes > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.totalDettes > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
+            </div>
+            <div style="margin:0;color:var(--text-muted);font-weight:500;">Dettes</div>
+          </div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalDettes)}</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;background:var(--bg-tertiary);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes / d.totalAttendu * 100, 100) : 0}%;background:${d.totalDettes > 0 ? 'var(--warning)' : 'var(--text-muted)'};"></div>
+          </div>
+        </a>
+
+        <!-- Pertes -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div style="width:46px;height:46px;border-radius:13px;background:${d.totalPertes > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;">
+              <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
+            </div>
+            <div style="margin:0;color:var(--text-muted);font-weight:500;">Pertes</div>
+          </div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalPertes)}</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;background:var(--bg-tertiary);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes / d.totalAttendu * 100, 100) : 0}%;background:${d.totalPertes > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></div>
+          </div>
         </a>
       </div>
 
