@@ -126,7 +126,9 @@ const DashboardPage = {
   // arrondies, accent bleu, pastilles pastel). S'ouvre au clic sur le hero.
   // Le contenu dynamique (noms) est échappé via Utils.escHtml.
   _showActiviteDetail() {
-    const jour = new Date().toISOString().split('T')[0];
+    // Suit le sélecteur de date du tableau de bord (aujourd'hui par défaut).
+    const jour = this._selectedPeriod || new Date().toISOString().split('T')[0];
+    const estAujourdhui = jour === new Date().toISOString().split('T')[0];
     const chauffeurs = Store.get('chauffeurs') || [];
     const chById = new Map(chauffeurs.map(c => [c.id, c]));
     const caJour = (Store.get('caJour') || []).filter(e => String(e.date).slice(0, 10) === jour);
@@ -193,15 +195,15 @@ const DashboardPage = {
           <div style="margin-top:5px;">${statutPill}</div>
         </div>
       </div>`;
-    }).join('') || `<div style="text-align:center;color:${C.mut2};padding:34px;">Aucune activité aujourd'hui.</div>`;
+    }).join('') || `<div style="text-align:center;color:${C.mut2};padding:34px;">Aucune activité ${estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
 
     const html = `
       <div style="max-width:1200px;margin:0 auto;padding:26px 26px 70px;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:26px;">
           <div>
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-              <h2 style="margin:0;font-size:25px;font-weight:800;color:${C.head};letter-spacing:-.6px;">Activité du jour</h2>
-              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:${C.redT};background:${C.redS};padding:5px 13px;border-radius:30px;font-weight:800;letter-spacing:.4px;"><span style="width:7px;height:7px;border-radius:50%;background:${C.red};animation:livePulse 1.6s infinite;"></span>EN DIRECT</span>
+              <h2 style="margin:0;font-size:25px;font-weight:800;color:${C.head};letter-spacing:-.6px;">Activité ${estAujourdhui ? 'du jour' : 'de la journée'}</h2>
+              ${estAujourdhui ? `<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:${C.redT};background:${C.redS};padding:5px 13px;border-radius:30px;font-weight:800;letter-spacing:.4px;"><span style="width:7px;height:7px;border-radius:50%;background:${C.red};animation:livePulse 1.6s infinite;"></span>EN DIRECT</span>` : ''}
             </div>
             <div style="font-size:14px;color:${C.mut};margin-top:7px;">${Utils.formatDate(jour)}</div>
           </div>
@@ -750,7 +752,10 @@ const DashboardPage = {
     // Montant ATTENDU en versement aujourd'hui : ce que la flotte doit verser.
     //  - locataire programmé : sa redevance du jour ;
     //  - salarié : son CA brut Yango du jour moins ses charges (>0).
-    const jourAtt = now.toISOString().split('T')[0];
+    // La journée affichée suit le sélecteur de date : aujourd'hui par défaut,
+    // ou la date choisie pour consulter une journée passée (planning + CA de ce jour).
+    const jourAtt = selectedDay;
+    const estAujourdhui = jourAtt === now.toISOString().split('T')[0];
     const _plan = Store.get('planning') || [];
     const _caj = Store.get('caJour') || [];
     const _chg = Store.get('charges') || [];
@@ -815,8 +820,9 @@ const DashboardPage = {
     const objectifJourActifs = Math.round(refParChauffeur * nbActifsJour);
     const pctJourType = objectifJourActifs > 0 ? (caBrutJour / objectifJourActifs) : 0;
     const _heureDec = now.getUTCHours() + now.getUTCMinutes() / 60; // Abidjan = UTC
-    const _soir = _heureDec >= 19 || _heureDec < 5; // soirée/nuit : la journée de travail est faite
-    let paceState = 'neutre', paceLabel = 'En attente d’activité';
+    // Une journée passée est complète : on la juge comme une soirée (journée finie).
+    const _soir = !estAujourdhui || _heureDec >= 19 || _heureDec < 5;
+    let paceState = 'neutre', paceLabel = estAujourdhui ? 'En attente d’activité' : 'Aucune activité ce jour';
     if (nbActifsJour > 0) {
       if (pctJourType >= 0.85) { paceState = 'bon'; paceLabel = 'Journée type atteinte'; }
       else if (_soir && pctJourType < 0.5) { paceState = 'faible'; paceLabel = 'CA anormalement bas'; }
@@ -827,6 +833,7 @@ const DashboardPage = {
     return {
       versementAttenduJour, nbActifsJour,
       caBrutJour, caReelMois, chauffeursProgrammes, nbProgrammesJour, nbProgrammesActifs, chauffeursHorsPlanning, nbHorsPlanning, refParChauffeur, objectifJourActifs, pctJourType, paceState, paceLabel,
+      estAujourdhui, jourAtt,
       caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount, totalDettes, totalPertes, nbDetteDrivers, nbPerteDrivers,
       nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
       totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
@@ -1317,7 +1324,7 @@ const DashboardPage = {
           <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;position:relative;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
-                <span style="width:8px;height:8px;border-radius:50%;background:var(--danger);"></span>Recette du jour · en direct
+                <span style="width:8px;height:8px;border-radius:50%;background:${d.estAujourdhui ? 'var(--danger)' : 'var(--text-muted)'};"></span>${d.estAujourdhui ? 'Recette du jour · en direct' : 'Recette du ' + Utils.escHtml(Utils.formatDate(d.jourAtt))}
               </div>
               <div style="font-size:31px;font-weight:800;letter-spacing:-.5px;color:var(--text-primary);margin-top:6px;">${Utils.formatCurrency(d.caBrutJour)}</div>
             </div>
@@ -1334,9 +1341,9 @@ const DashboardPage = {
                 <div style="width:26px;height:26px;border-radius:50%;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
                 <div style="line-height:1.15;">
                   <div style="font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-primary);">${Utils.escHtml(c.prenom)}</div>
-                  <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${c.actif ? `${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}` : 'pas encore parti'}</div>
+                  <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${c.actif ? `${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}` : (d.estAujourdhui ? 'pas encore parti' : 'n’a pas roulé')}</div>
                 </div>
-              </div>`).join('')}</div>` : '<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur programmé aujourd’hui.</div>'}
+              </div>`).join('')}</div>` : `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur programmé ${d.estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`}
             ${d.nbHorsPlanning > 0 ? `<div style="margin-top:9px;display:flex;align-items:center;gap:8px;background:rgba(255,174,31,.14);border-radius:12px;padding:8px 11px;font-size:12px;font-weight:600;color:var(--text-primary);">
               <iconify-icon icon="solar:danger-triangle-bold" style="color:var(--warning);font-size:15px;flex-shrink:0;"></iconify-icon>
               <span><strong>${d.chauffeursHorsPlanning.map(c => Utils.escHtml(c.prenom)).join(', ')}</strong> roule${d.nbHorsPlanning > 1 ? 'nt' : ''} hors planning — à ajouter</span>
