@@ -1365,102 +1365,128 @@ const DashboardPage = {
         </a>
       </div>
 
-      <!-- Row 2: Chauffeurs + Objectif + Recouvrement + Flotte -->
-      <div class="d-grid d-g4" style="grid-template-columns:1.4fr 1fr 1fr 1fr;">
+      <!-- Row 2: Évolution du CA + Répartition chauffeurs -->
+      <div class="d-grid" style="grid-template-columns:2fr 1fr;gap:20px;align-items:stretch;">
 
-        <!-- Chauffeurs with donut -->
-        <a href="#/chauffeurs" class="d-card" style="text-decoration:none;color:inherit;">
+        <!-- Évolution du CA -->
+        <div class="d-card" style="display:flex;flex-direction:column;">
+          ${(() => {
+            const series = (d.monthlyRevenue || []).slice(-12);
+            const vals = series.map(s => s.revenue || 0);
+            const last = vals.length ? vals[vals.length - 1] : 0;
+            const prev = vals.length > 1 ? vals[vals.length - 2] : 0;
+            const t = prev > 0 ? Math.round((last - prev) / prev * 100) : (last > 0 ? 100 : 0);
+            const up = t >= 0;
+            const tColor = up ? '#02b3a9' : '#D9583B';
+            const tIcon = up ? 'solar:arrow-right-up-linear' : 'solar:arrow-right-down-linear';
+            const W = 640, H = 150, padB = 22, padT = 14, chartH = H - padB - padT;
+            const max = Math.max(...vals, 1);
+            const n = vals.length;
+            const pts = vals.map((v, i) => ({
+              x: n > 1 ? +(i / (n - 1) * W).toFixed(2) : W / 2,
+              y: +(padT + chartH - (v / max) * chartH).toFixed(2)
+            }));
+            const smooth = (p) => {
+              if (p.length < 2) return p.length ? `M${p[0].x},${p[0].y}` : '';
+              let dd = `M${p[0].x},${p[0].y}`;
+              for (let i = 0; i < p.length - 1; i++) {
+                const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
+                const c1x = +(p1.x + (p2.x - p0.x) / 6).toFixed(2);
+                const c1y = +(p1.y + (p2.y - p0.y) / 6).toFixed(2);
+                const c2x = +(p2.x - (p3.x - p1.x) / 6).toFixed(2);
+                const c2y = +(p2.y - (p3.y - p1.y) / 6).toFixed(2);
+                dd += ` C${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`;
+              }
+              return dd;
+            };
+            const line = smooth(pts);
+            const area = pts.length ? `${line} L${W},${padT + chartH} L0,${padT + chartH} Z` : '';
+            const endP = pts[pts.length - 1];
+            const labels = series.map((s, i) => {
+              const show = n <= 8 ? true : ((n - 1 - i) % 2 === 0);
+              if (!show) return '';
+              const x = n > 1 ? (i / (n - 1) * W) : W / 2;
+              const anchor = i === 0 ? 'start' : (i === n - 1 ? 'end' : 'middle');
+              return `<text x="${x.toFixed(1)}" y="${H - 4}" text-anchor="${anchor}" font-size="11" font-weight="600" fill="#7C8FAC">${Utils.escHtml(s.month || '')}</text>`;
+            }).join('');
+            return `
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="d-icon" style="background:rgba(93,135,255,.12);color:#5D87FF;">
+                  <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
+                </div>
+                <div>
+                  <div class="d-lbl" style="margin:0;">Évolution du CA</div>
+                  <div class="d-sub" style="margin:0;">12 derniers mois</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:22px;font-weight:800;color:var(--text-primary);line-height:1;">${Utils.formatCurrency(last)}</div>
+                <div style="display:inline-flex;align-items:center;gap:2px;font-size:12px;font-weight:700;margin-top:5px;color:${tColor};">
+                  <iconify-icon icon="${tIcon}"></iconify-icon>${up ? '+' : ''}${t}%
+                </div>
+              </div>
+            </div>
+            <div style="flex:1;display:flex;align-items:flex-end;margin-top:8px;">
+              <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;overflow:visible;">
+                <defs>
+                  <linearGradient id="caEvoGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#5D87FF" stop-opacity=".26"/>
+                    <stop offset="1" stop-color="#5D87FF" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                ${area ? `<path d="${area}" fill="url(#caEvoGrad)"/>` : ''}
+                ${line ? `<path d="${line}" fill="none" stroke="#5D87FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
+                ${endP ? `<circle cx="${endP.x}" cy="${endP.y}" r="5.5" fill="#5D87FF" stroke="#fff" stroke-width="3"/>` : ''}
+                ${labels}
+              </svg>
+            </div>`;
+          })()}
+        </div>
+
+        <!-- Répartition chauffeurs -->
+        <a href="#/chauffeurs" class="d-card" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-            <div class="d-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;">
+            <div class="d-icon" style="background:rgba(19,222,185,.14);color:#02b3a9;">
               <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;">Chauffeurs</div>
+            <div class="d-lbl" style="margin:0;">Répartition</div>
           </div>
-          <div class="d-chauffeurs-donut" style="display:flex;align-items:center;gap:16px;">
-            <div style="position:relative;flex-shrink:0;">
-              ${arc(d.totalChauffeurs > 0 ? (d.activeCount / d.totalChauffeurs * 100) : 0, '#10b981', '#f97316', 100, 12)}
-              <div style="position:absolute;top:55%;left:50%;transform:translate(-50%,-30%);text-align:center;">
-                <div class="d-donut-center" style="font-size:20px;font-weight:800;color:var(--text-primary);">${d.totalChauffeurs}</div>
-                <div style="font-size:9px;color:#9ca3af;font-weight:600;">Total</div>
+          ${(() => {
+            const segs = [
+              { label: 'Actifs', value: d.activeCount || 0, color: '#13DEB9' },
+              { label: 'Suspendus', value: d.suspendusCount || 0, color: '#FFAE1F' },
+              { label: 'Inactifs', value: d.inactifsCount || 0, color: '#C7D0DD' }
+            ].filter(s => s.value > 0);
+            const total = d.totalChauffeurs || segs.reduce((a, s) => a + s.value, 0);
+            const cx = 70, cy = 70, r = 54, sw = 16, C = 2 * Math.PI * r;
+            const GAP = segs.length > 1 ? 6 : 0;
+            let off = 0;
+            const arcs = segs.map(s => {
+              const frac = total > 0 ? s.value / total : 0;
+              const dash = Math.max(0, frac * C - GAP);
+              const el = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>`;
+              off += frac * C;
+              return el;
+            }).join('');
+            const legend = segs.map(s => `
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div class="d-legend"><span class="d-legend-dot" style="background:${s.color};"></span>${s.label}</div>
+                <strong style="font-size:13px;color:var(--text-primary);">${s.value}</strong>
+              </div>`).join('');
+            return `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:16px;flex:1;justify-content:center;">
+              <svg width="150" height="150" viewBox="0 0 140 140">
+                <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#EBF1F6" stroke-width="${sw}"/>
+                ${arcs}
+                <text x="${cx}" y="${cy - 2}" text-anchor="middle" font-size="30" font-weight="800" fill="#2A3547">${total}</text>
+                <text x="${cx}" y="${cy + 17}" text-anchor="middle" font-size="12" font-weight="600" fill="#7C8FAC">chauffeurs</text>
+              </svg>
+              <div style="display:flex;flex-direction:column;gap:9px;width:100%;">
+                ${legend}
               </div>
-            </div>
-            <div class="d-chauffeurs-legends" style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
-                <div class="d-legend"><span class="d-legend-dot" style="background:#10b981;"></span> Actifs</div>
-                <strong style="font-size:13px;color:var(--text-primary);flex-shrink:0;">${d.activeCount}</strong>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
-                <div class="d-legend"><span class="d-legend-dot" style="background:#f97316;"></span> Suspendus</div>
-                <strong style="font-size:13px;color:var(--text-primary);flex-shrink:0;">${d.suspendusCount}</strong>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
-                <div class="d-legend"><span class="d-legend-dot" style="background:#d1d5db;"></span> Inactifs</div>
-                <strong style="font-size:13px;color:var(--text-primary);flex-shrink:0;">${d.inactifsCount}</strong>
-              </div>
-            </div>
-          </div>
-        </a>
-
-        <!-- Objectif -->
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;">
-              <iconify-icon icon="solar:target-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;">Objectif</div>
-          </div>
-          <div style="position:relative;margin:2px 0 0;">
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-primary);position:absolute;top:4px;left:4px;z-index:1;">
-              <span style="width:8px;height:8px;border-radius:50%;background:${progressColor};display:inline-block;flex-shrink:0;"></span>${d.progressionObjectif}%
-            </div>
-            ${radialGauge(d.progressionObjectif, progressColor)}
-            <div style="position:absolute;left:50%;bottom:2px;transform:translateX(-50%);text-align:center;width:100%;">
-              <div style="font-size:30px;font-weight:800;color:var(--text-primary);line-height:1;">${d.progressionObjectif}%</div>
-              <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-top:3px;">de l'objectif</div>
-            </div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:var(--text-primary);text-align:center;margin-top:8px;">${Utils.formatCurrency(d.objectifMensuel)}</div>
-          <div class="d-sub" style="text-align:center;">${d.joursRestants}j restants</div>
-        </div>
-
-        <!-- Recouvrement -->
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;">
-              <iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;">Recouvrement</div>
-          </div>
-          <div style="position:relative;margin:2px 0 0;">
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-primary);position:absolute;top:4px;left:4px;z-index:1;">
-              <span style="width:8px;height:8px;border-radius:50%;background:${recouvrementColor};display:inline-block;flex-shrink:0;"></span>${d.tauxRecouvrement}%
-            </div>
-            ${radialGauge(d.tauxRecouvrement, recouvrementColor)}
-            <div style="position:absolute;left:50%;bottom:2px;transform:translateX(-50%);text-align:center;width:100%;">
-              <div style="font-size:30px;font-weight:800;color:var(--text-primary);line-height:1;">${d.tauxRecouvrement}%</div>
-              <div style="font-size:11px;color:#9ca3af;font-weight:600;margin-top:3px;">recouvré</div>
-            </div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:var(--text-primary);text-align:center;margin-top:8px;">${Utils.formatCurrency(d.totalVerseMonth)}</div>
-          <div class="d-sub" style="text-align:center;">/ ${Utils.formatCurrency(d.totalAttendu)}</div>
-        </div>
-
-        <!-- Flotte -->
-        <a href="#/vehicules" class="d-card" style="text-decoration:none;color:inherit;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(59,130,246,.1);color:#3b82f6;">
-              <iconify-icon icon="solar:bus-bold-duotone"></iconify-icon>
-            </div>
-            <div class="d-lbl" style="margin:0;">Flotte</div>
-          </div>
-          <div style="display:flex;align-items:baseline;gap:5px;">
-            <span class="d-val">${d.vehiclesActifs}</span>
-            <span style="font-size:15px;color:#9ca3af;font-weight:600;">/ ${d.vehiculesTotal}</span>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:12px;">
-            <span class="d-pill">⚡ ${d.vehiclesEV}</span>
-            <span class="d-pill">⛽ ${d.vehiclesThermique}</span>
-          </div>
+            </div>`;
+          })()}
         </a>
       </div>
 

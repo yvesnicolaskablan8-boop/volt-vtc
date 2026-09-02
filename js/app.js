@@ -195,7 +195,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 481;
+      const SW_VERSION = 482;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
@@ -396,9 +396,9 @@ const App = {
       const settings = Store.get('settings') || {};
       const ent = settings.entreprise || {};
       if (ent.nom) {
-        const sidebarName = document.getElementById('sidebar-company-name');
+        // Le logo de la sidebar reste la marque produit « Pilote » (pas le nom
+        // d'entreprise). On met seulement à jour le sous-titre.
         const sidebarSub = document.getElementById('sidebar-company-sub');
-        if (sidebarName) sidebarName.textContent = ent.nom.toUpperCase();
         if (sidebarSub) sidebarSub.textContent = ent.activite || 'Gestion de flotte';
         // Cache for login page on next visit
         localStorage.setItem('pilote_company_name', ent.nom);
