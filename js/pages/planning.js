@@ -26,6 +26,7 @@ const PlanningPage = {
     this._currentWeekStart.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
     this._currentWeekStart.setHours(0, 0, 0, 0);
     this._currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    this._currentDay = new Date(now); this._currentDay.setHours(0, 0, 0, 0);
 
     const container = document.getElementById('page-content');
     container.innerHTML = this._template();
@@ -67,6 +68,8 @@ const PlanningPage = {
               <div class="tabs" id="planning-view-tabs" style="margin:0;flex-shrink:0;">
                 <div class="tab ${this._currentView === 'month' ? 'active' : ''}" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
                 <div class="tab ${this._currentView === 'week' ? 'active' : ''}" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
+                <div class="tab ${this._currentView === 'day' ? 'active' : ''}" data-view="day" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:sun-2-bold-duotone"></iconify-icon> Jour</div>
+                <div class="tab ${this._currentView === 'list' ? 'active' : ''}" data-view="list" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon> Liste</div>
                 <div class="tab ${this._currentView === 'stats' ? 'active' : ''}" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
               </div>
             </div>
@@ -89,6 +92,7 @@ const PlanningPage = {
       this._currentWeekStart.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
       this._currentWeekStart.setHours(0, 0, 0, 0);
       this._currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      this._currentDay = new Date(now); this._currentDay.setHours(0, 0, 0, 0);
       this._renderView();
     });
 
@@ -111,8 +115,10 @@ const PlanningPage = {
   },
 
   _navigate(dir) {
-    if (this._currentView === 'month') {
+    if (this._currentView === 'month' || this._currentView === 'list') {
       this._currentMonth.setMonth(this._currentMonth.getMonth() + dir);
+    } else if (this._currentView === 'day') {
+      this._currentDay.setDate(this._currentDay.getDate() + dir);
     } else {
       this._currentWeekStart.setDate(this._currentWeekStart.getDate() + 7 * dir);
     }
@@ -137,6 +143,16 @@ const PlanningPage = {
         case 'month':
           label.textContent = `${Utils.getMonthName(this._currentMonth.getMonth())} ${this._currentMonth.getFullYear()}`;
           ct.innerHTML = this._renderMonthView();
+          break;
+        case 'day':
+          label.textContent = this._getDayLabel();
+          ct.replaceChildren();
+          ct.insertAdjacentHTML('beforeend', this._renderDayView());
+          break;
+        case 'list':
+          label.textContent = `${Utils.getMonthName(this._currentMonth.getMonth())} ${this._currentMonth.getFullYear()}`;
+          ct.replaceChildren();
+          ct.insertAdjacentHTML('beforeend', this._renderListView());
           break;
         case 'stats':
           label.textContent = `${Utils.getMonthName(this._currentMonth.getMonth())} ${this._currentMonth.getFullYear()}`;
@@ -976,6 +992,139 @@ const PlanningPage = {
         </div>
       </div>
     `;
+  },
+
+  _getDayLabel() {
+    return this._currentDay.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  },
+
+  _filterByName(chauffeurs) {
+    if (!this._filterSearch) return chauffeurs;
+    const q = this._filterSearch.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    return chauffeurs.filter(c => (c.prenom + ' ' + c.nom).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(q));
+  },
+
+  // Vue JOUR : agenda d'une seule journée (créneaux + absences), style Spike
+  _renderDayView() {
+    const dateStr = this._dateStr(this._currentDay);
+    const chauffeurs = this._filterByName(this._getChauffeurs().filter(c => c.statut === 'actif' || c.statut === 'repos'));
+    const chById = {}; chauffeurs.forEach(c => chById[c.id] = c);
+    const chSet = new Set(chauffeurs.map(c => c.id));
+    const shifts = this._getShiftsForDate(dateStr).filter(s => chSet.has(s.chauffeurId))
+      .sort((a, b) => (a.heureDebut || '').localeCompare(b.heureDebut || ''));
+    const absItems = [];
+    chauffeurs.forEach(ch => this._getDriverAbsencesForDate(ch.id, dateStr).forEach(a => absItems.push({ a, ch })));
+    const isToday = this._isToday(dateStr);
+    const vehList = Store.get('vehicules') || [];
+    const chPlaque = {}; vehList.forEach(v => { if (v.chauffeurAssigne) chPlaque[v.chauffeurAssigne] = v.immatriculation || `${v.marque} ${v.modele}`; });
+
+    const shiftCards = shifts.map(s => {
+      const ch = chById[s.chauffeurId]; if (!ch) return '';
+      const col = this._getShiftColor(s);
+      const nuit = this._serviceDuCreneau(s) === 'nuit';
+      return `<div onclick="PlanningPage._editShift('${s.id}')" style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:12px;background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid ${col};cursor:pointer;transition:box-shadow .15s;" onmouseover="this.style.boxShadow='0 4px 14px rgba(37,83,185,.12)'" onmouseout="this.style.boxShadow='none'">
+        <div style="width:50px;flex-shrink:0;text-align:center;">
+          <div style="font-size:15px;font-weight:800;color:var(--text-primary);">${s.heureDebut || '—'}</div>
+          <div style="font-size:11px;color:var(--text-muted);">${s.heureFin || ''}</div>
+        </div>
+        <div style="width:38px;height:38px;border-radius:50%;background:color-mix(in srgb, ${col} 16%, transparent);color:${col};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;">${Utils.escHtml((ch.prenom || '?').charAt(0))}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}${nuit ? ' <span style="font-size:9px;font-weight:800;color:#e0e7ff;background:#312e81;border-radius:4px;padding:1px 5px;">NUIT</span>' : ''}${s.role === 'doublure' ? ' <span style="font-size:9px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:4px;padding:1px 5px;">REMPL</span>' : ''}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${this._getShiftTimeLabel(s)}${chPlaque[ch.id] ? ` · ${Utils.escHtml(chPlaque[ch.id])}` : ''}</div>
+        </div>
+        <iconify-icon icon="solar:alt-arrow-right-linear" style="color:var(--text-muted);font-size:16px;flex-shrink:0;"></iconify-icon>
+      </div>`;
+    }).join('');
+
+    const absCards = absItems.map(({ a, ch }) => {
+      const col = this._absenceTypeColor(a.type);
+      return `<div onclick="PlanningPage._viewAbsence('${a.id}')" style="display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:12px;background:color-mix(in srgb, ${col} 9%, transparent);border:1px solid color-mix(in srgb, ${col} 28%, transparent);cursor:pointer;">
+        <div style="width:50px;flex-shrink:0;text-align:center;color:${col};"><iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:20px;"></iconify-icon></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:700;color:var(--text-primary);">${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}</div><div style="font-size:12px;color:var(--text-muted);">${this._absenceTypeLabel(a.type)}</div></div>
+      </div>`;
+    }).join('');
+
+    const total = shifts.length + absItems.length;
+    const body = total === 0
+      ? `<div style="text-align:center;padding:48px 20px;color:var(--text-muted);"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone" style="font-size:44px;opacity:.4;"></iconify-icon><div style="margin-top:12px;font-size:14px;">Aucun créneau ce jour</div></div>`
+      : `<div style="display:flex;flex-direction:column;gap:9px;">${shiftCards}${absCards}</div>`;
+
+    return `<div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:11px;">
+          <div style="width:40px;height:40px;border-radius:12px;background:${isToday ? 'var(--pilote-blue)' : 'var(--bg-tertiary)'};color:${isToday ? '#fff' : 'var(--text-secondary)'};display:flex;align-items:center;justify-content:center;"><iconify-icon icon="solar:sun-2-bold-duotone" style="font-size:20px;"></iconify-icon></div>
+          <div><div style="font-size:15px;font-weight:800;color:var(--text-primary);text-transform:capitalize;">${this._getDayLabel()}</div><div style="font-size:12px;color:var(--text-muted);">${shifts.length} créneau${shifts.length > 1 ? 'x' : ''}${absItems.length ? ` · ${absItems.length} absence${absItems.length > 1 ? 's' : ''}` : ''}</div></div>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="PlanningPage._addShift('','${dateStr}')"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Créneau</button>
+      </div>
+      ${body}
+    </div>`;
+  },
+
+  // Vue LISTE : tous les créneaux du mois, groupés par date (style agenda)
+  _renderListView() {
+    const chauffeurs = this._filterByName(this._getChauffeurs().filter(c => c.statut === 'actif' || c.statut === 'repos'));
+    const chById = {}; chauffeurs.forEach(c => chById[c.id] = c);
+    const chSet = new Set(chauffeurs.map(c => c.id));
+    const y = this._currentMonth.getFullYear(), m = this._currentMonth.getMonth();
+    const prefix = `${y}-${String(m + 1).padStart(2, '0')}`;
+    const firstDay = `${prefix}-01`;
+    const lastDay = `${prefix}-${String(new Date(y, m + 1, 0).getDate()).padStart(2, '0')}`;
+
+    const entries = [];
+    this._getPlanning().forEach(s => {
+      if (!s.chauffeurId || !chSet.has(s.chauffeurId) || !String(s.date).startsWith(prefix)) return;
+      const ch = chById[s.chauffeurId]; if (!ch) return;
+      entries.push({ date: s.date, t: s.heureDebut || '00:00', kind: 'shift', s, ch });
+    });
+    this._getAbsences().forEach(a => {
+      if (!chSet.has(a.chauffeurId) || a.dateDebut > lastDay || a.dateFin < firstDay) return;
+      const ch = chById[a.chauffeurId]; if (!ch) return;
+      entries.push({ date: a.dateDebut < firstDay ? firstDay : a.dateDebut, t: '00:00', kind: 'abs', a, ch });
+    });
+    entries.sort((x, z) => x.date.localeCompare(z.date) || x.t.localeCompare(z.t));
+
+    if (entries.length === 0) {
+      return `<div class="card" style="padding:48px 20px;text-align:center;color:var(--text-muted);"><iconify-icon icon="solar:list-bold-duotone" style="font-size:44px;opacity:.4;"></iconify-icon><div style="margin-top:12px;font-size:14px;">Aucun créneau ce mois</div></div>`;
+    }
+
+    const groups = {};
+    entries.forEach(e => { (groups[e.date] = groups[e.date] || []).push(e); });
+    const todayStr = this._dateStr(new Date());
+    const sections = Object.keys(groups).sort().map(date => {
+      const dObj = new Date(date + 'T00:00:00');
+      const dayLabel = dObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      const isToday = date === todayStr;
+      const rows = groups[date].map(e => {
+        if (e.kind === 'shift') {
+          const col = this._getShiftColor(e.s);
+          const nuit = this._serviceDuCreneau(e.s) === 'nuit';
+          return `<div onclick="PlanningPage._editShift('${e.s.id}')" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;border:1px solid var(--border-color);border-left:4px solid ${col};background:var(--bg-secondary);cursor:pointer;">
+            <span style="font-size:12px;font-weight:800;color:var(--text-primary);width:46px;flex-shrink:0;">${e.s.heureDebut || '—'}</span>
+            <span style="width:9px;height:9px;border-radius:50%;background:${col};flex-shrink:0;"></span>
+            <span style="flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${Utils.escHtml(e.ch.prenom)} ${Utils.escHtml(e.ch.nom)}${nuit ? ' · nuit' : ''}${e.s.role === 'doublure' ? ' · rempl.' : ''}</span>
+            <span style="font-size:11px;color:var(--text-muted);flex-shrink:0;">${this._getShiftTimeLabel(e.s)}</span>
+          </div>`;
+        }
+        const col = this._absenceTypeColor(e.a.type);
+        return `<div onclick="PlanningPage._viewAbsence('${e.a.id}')" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;border:1px solid var(--border-color);border-left:4px solid ${col};background:color-mix(in srgb, ${col} 8%, transparent);cursor:pointer;">
+          <span style="width:46px;flex-shrink:0;color:${col};font-size:13px;"><iconify-icon icon="solar:moon-sleep-bold-duotone"></iconify-icon></span>
+          <span style="width:9px;height:9px;border-radius:50%;background:${col};flex-shrink:0;"></span>
+          <span style="flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--text-primary);">${Utils.escHtml(e.ch.prenom)} ${Utils.escHtml(e.ch.nom)}</span>
+          <span style="font-size:11px;color:var(--text-muted);flex-shrink:0;">${this._absenceTypeLabel(e.a.type)}</span>
+        </div>`;
+      }).join('');
+      return `<div style="margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;">
+          <span style="font-size:12px;font-weight:800;color:${isToday ? 'var(--pilote-blue)' : 'var(--text-secondary)'};text-transform:capitalize;">${dayLabel}</span>
+          ${isToday ? `<span style="font-size:9px;font-weight:800;color:#fff;background:var(--pilote-blue);border-radius:20px;padding:2px 8px;">AUJOURD'HUI</span>` : ''}
+          <span style="font-size:11px;color:var(--text-muted);">· ${groups[date].length}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;">${rows}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="card" style="padding:20px 20px 6px;">${sections}</div>`;
   },
 
   // CSS partagé des vues calendrier (Mois et Semaine)
