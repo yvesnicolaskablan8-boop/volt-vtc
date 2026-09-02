@@ -67,13 +67,13 @@
   <!-- Leaflet, Chart.js, jsPDF: loaded on demand via LazyLibs -->
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/variables.css?v=491">
-  <link rel="stylesheet" href="css/base.css?v=491">
-  <link rel="stylesheet" href="css/layout.css?v=491">
-  <link rel="stylesheet" href="css/components.css?v=491">
-  <link rel="stylesheet" href="css/charts.css?v=491">
-  <link rel="stylesheet" href="css/animations.css?v=491">
-  <link rel="stylesheet" href="css/responsive.css?v=491">
+  <link rel="stylesheet" href="css/variables.css?v=492">
+  <link rel="stylesheet" href="css/base.css?v=492">
+  <link rel="stylesheet" href="css/layout.css?v=492">
+  <link rel="stylesheet" href="css/components.css?v=492">
+  <link rel="stylesheet" href="css/charts.css?v=492">
+  <link rel="stylesheet" href="css/animations.css?v=492">
+  <link rel="stylesheet" href="css/responsive.css?v=492">
 
   <!-- Detect password recovery BEFORE Supabase processes the hash -->
   <script>
@@ -404,7 +404,36 @@
       </nav>
 
       <div class="sidebar-footer">
-        <div class="version">Pilote v1.0.0</div>
+        <div class="header-user sidebar-user" id="header-user-toggle">
+          <div class="header-user-avatar">YN</div>
+          <span class="header-user-name">Yves Nicolas</span>
+          <iconify-icon icon="solar:alt-arrow-up-bold" class="header-user-chevron" style="font-size:14px;margin-left:auto;"></iconify-icon>
+          <!-- User Dropdown -->
+          <div class="header-user-dropdown" id="user-dropdown">
+            <div class="user-dropdown-header">
+              <div class="user-dropdown-avatar">YN</div>
+              <div class="user-dropdown-info">
+                <div class="user-dropdown-name">Yves Nicolas</div>
+                <div class="user-dropdown-role">Administrateur</div>
+              </div>
+            </div>
+            <div class="user-dropdown-divider"></div>
+            <button class="user-dropdown-item" id="user-dropdown-profile">
+              <iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon>
+              <span>Mon compte</span>
+            </button>
+            <button class="user-dropdown-item" id="user-dropdown-settings">
+              <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
+              <span>Paramètres</span>
+            </button>
+            <div class="user-dropdown-divider"></div>
+            <button class="user-dropdown-item user-dropdown-logout" id="user-dropdown-logout">
+              <iconify-icon icon="solar:logout-2-bold-duotone"></iconify-icon>
+              <span>Déconnexion</span>
+            </button>
+          </div>
+        </div>
+        <div class="version" style="margin-top:10px;text-align:center;">Pilote v1.0.0</div>
       </div>
     </aside>
 
@@ -447,35 +476,8 @@
               <div id="notif-list"></div>
             </div>
           </div>
-          <div class="header-user" id="header-user-toggle">
-            <div class="header-user-avatar">YN</div>
-            <span class="header-user-name">Yves Nicolas</span>
-            <iconify-icon icon="solar:alt-arrow-down-bold" class="header-user-chevron" style="font-size:14px;"></iconify-icon>
-            <!-- User Dropdown -->
-            <div class="header-user-dropdown" id="user-dropdown">
-              <div class="user-dropdown-header">
-                <div class="user-dropdown-avatar">YN</div>
-                <div class="user-dropdown-info">
-                  <div class="user-dropdown-name">Yves Nicolas</div>
-                  <div class="user-dropdown-role">Administrateur</div>
-                </div>
-              </div>
-              <div class="user-dropdown-divider"></div>
-              <button class="user-dropdown-item" id="user-dropdown-profile">
-                <iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon>
-                <span>Mon compte</span>
-              </button>
-              <button class="user-dropdown-item" id="user-dropdown-settings">
-                <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
-                <span>Paramètres</span>
-              </button>
-              <div class="user-dropdown-divider"></div>
-              <button class="user-dropdown-item user-dropdown-logout" id="user-dropdown-logout">
-                <iconify-icon icon="solar:logout-2-bold-duotone"></iconify-icon>
-                <span>Déconnexion</span>
-              </button>
-            </div>
-          </div>
+          <!-- Slot du sélecteur de date (rempli par le tableau de bord) -->
+          <div id="header-period-slot" class="header-period-slot"></div>
         </div>
       </header>
 
@@ -580,46 +582,46 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
 
   <!-- App JS -->
-  <script src="js/supabase-config.js?v=491"></script>
-  <script src="js/store.js?v=491"></script>
-  <script src="js/utils.js?v=491"></script>
-  <script src="js/demo-data.js?v=491"></script>
-  <script src="js/auth.js?v=491"></script>
-  <script src="js/components/toast.js?v=491"></script>
-  <script src="js/components/modal.js?v=491"></script>
-  <script src="js/components/sidebar.js?v=491"></script>
-  <script src="js/components/header.js?v=491"></script>
-  <script src="js/components/table.js?v=491"></script>
-  <script src="js/components/form-builder.js?v=491"></script>
-  <script src="js/pages/dashboard.js?v=491"></script>
-  <script src="js/pages/chauffeurs.js?v=491"></script>
-  <script src="js/pages/vehicules.js?v=491"></script>
-  <script src="js/pages/versements.js?v=491"></script>
-  <script src="js/pages/bonus.js?v=491"></script>
-  <script src="js/pages/simulateur.js?v=491"></script>
-  <script src="js/pages/rentabilite.js?v=491"></script>
-  <script src="js/pages/suivi-vehicules.js?v=491"></script>
-  <script src="js/pages/controle-conduite.js?v=491"></script>
-  <script src="js/pages/rapports.js?v=491"></script>
-  <script src="js/pages/comptabilite.js?v=491"></script>
-  <script src="js/pages/planning.js?v=491"></script>
-  <script src="js/pages/alertes.js?v=491"></script>
-  <script src="js/pages/parametres.js?v=491"></script>
-  <script src="js/pages/yango.js?v=491"></script>
-  <script src="js/pages/messagerie.js?v=491"></script>
-  <script src="js/pages/garage.js?v=491"></script>
-  <script src="js/pages/incidents.js?v=491"></script>
-  <script src="js/pages/contraventions.js?v=491"></script>
-  <script src="js/pages/depenses.js?v=491"></script>
-  <script src="js/pages/activite.js?v=491"></script>
+  <script src="js/supabase-config.js?v=492"></script>
+  <script src="js/store.js?v=492"></script>
+  <script src="js/utils.js?v=492"></script>
+  <script src="js/demo-data.js?v=492"></script>
+  <script src="js/auth.js?v=492"></script>
+  <script src="js/components/toast.js?v=492"></script>
+  <script src="js/components/modal.js?v=492"></script>
+  <script src="js/components/sidebar.js?v=492"></script>
+  <script src="js/components/header.js?v=492"></script>
+  <script src="js/components/table.js?v=492"></script>
+  <script src="js/components/form-builder.js?v=492"></script>
+  <script src="js/pages/dashboard.js?v=492"></script>
+  <script src="js/pages/chauffeurs.js?v=492"></script>
+  <script src="js/pages/vehicules.js?v=492"></script>
+  <script src="js/pages/versements.js?v=492"></script>
+  <script src="js/pages/bonus.js?v=492"></script>
+  <script src="js/pages/simulateur.js?v=492"></script>
+  <script src="js/pages/rentabilite.js?v=492"></script>
+  <script src="js/pages/suivi-vehicules.js?v=492"></script>
+  <script src="js/pages/controle-conduite.js?v=492"></script>
+  <script src="js/pages/rapports.js?v=492"></script>
+  <script src="js/pages/comptabilite.js?v=492"></script>
+  <script src="js/pages/planning.js?v=492"></script>
+  <script src="js/pages/alertes.js?v=492"></script>
+  <script src="js/pages/parametres.js?v=492"></script>
+  <script src="js/pages/yango.js?v=492"></script>
+  <script src="js/pages/messagerie.js?v=492"></script>
+  <script src="js/pages/garage.js?v=492"></script>
+  <script src="js/pages/incidents.js?v=492"></script>
+  <script src="js/pages/contraventions.js?v=492"></script>
+  <script src="js/pages/depenses.js?v=492"></script>
+  <script src="js/pages/activite.js?v=492"></script>
 
-  <script src="js/pages/notifications-admin.js?v=491"></script>
-  <script src="js/pages/taches.js?v=491"></script>
-  <script src="js/pages/mon-compte.js?v=491"></script>
-  <script src="js/pages/classement.js?v=491"></script>
-  <script src="js/pages/menu.js?v=491"></script>
-  <script src="js/components/bottom-nav.js?v=491"></script>
-  <script src="js/router.js?v=491"></script>
-  <script src="js/app.js?v=491"></script>
+  <script src="js/pages/notifications-admin.js?v=492"></script>
+  <script src="js/pages/taches.js?v=492"></script>
+  <script src="js/pages/mon-compte.js?v=492"></script>
+  <script src="js/pages/classement.js?v=492"></script>
+  <script src="js/pages/menu.js?v=492"></script>
+  <script src="js/components/bottom-nav.js?v=492"></script>
+  <script src="js/router.js?v=492"></script>
+  <script src="js/app.js?v=492"></script>
 </body>
 </html>

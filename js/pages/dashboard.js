@@ -54,6 +54,8 @@ const DashboardPage = {
       } catch (chartErr) {
         console.error('DashboardPage._loadCharts() error:', chartErr);
       }
+      const _ps = document.getElementById('header-period-slot');
+      if (_ps) _ps.innerHTML = this._renderPeriodPicker();
       this._bindPeriodSelector();
       if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
@@ -88,6 +90,19 @@ const DashboardPage = {
     this._charts.forEach(c => c.destroy());
     this._charts = [];
     this._stopAutoRefresh();
+    // Vider le sélecteur de date du header (spécifique au tableau de bord)
+    const _ps = document.getElementById('header-period-slot');
+    if (_ps) _ps.innerHTML = '';
+  },
+
+  // Sélecteur de date affiché dans le header global (uniquement sur le dashboard)
+  _renderPeriodPicker() {
+    const today = new Date().toISOString().split('T')[0];
+    return `<div style="display:flex;align-items:center;gap:0;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:12px;padding:3px;">
+      <input type="date" id="dashboard-period" value="${this._selectedPeriod || today}" max="${today}" style="font-size:12px;padding:6px 10px;border-radius:9px;background:transparent;border:none;color:var(--text-primary);font-weight:600;outline:none;">
+      <button onclick="DashboardPage._toggleMonthView()" style="font-size:12px;padding:6px 14px;border-radius:9px;background:${this._monthView ? 'var(--pilote-blue)' : 'transparent'};color:${this._monthView ? '#fff' : 'var(--text-secondary)'};border:none;font-weight:700;cursor:pointer;">${this._monthView ? 'Mois' : 'Jour'}</button>
+      ${this._selectedPeriod || this._monthView ? `<button onclick="DashboardPage._resetToToday()" title="Aujourd'hui" style="font-size:13px;padding:6px 8px;border-radius:9px;background:transparent;border:none;cursor:pointer;color:var(--text-muted);"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>` : ''}
+    </div>`;
   },
 
   _startAutoRefresh() {
@@ -1298,24 +1313,6 @@ const DashboardPage = {
       <div class="d-wrap">
       <div class="d-bg">
 
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:14px;">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:0;background:var(--bg-secondary);backdrop-filter:blur(12px);border-radius:14px;border:1px solid var(--border-color);padding:3px;">
-            <input type="date" id="dashboard-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:var(--text-primary);font-weight:500;outline:none;">
-            <button onclick="DashboardPage._toggleMonthView()" style="font-size:12px;padding:6px 14px;border-radius:11px;background:${this._monthView ? '#5D87FF' : 'transparent'};color:${this._monthView ? '#fff' : '#6b7280'};border:none;font-weight:600;cursor:pointer;transition:all .2s;">
-              ${this._monthView ? 'Mois' : 'Jour'}
-            </button>
-            ${this._selectedPeriod || this._monthView ? '<button onclick="DashboardPage._resetToToday()" style="font-size:13px;padding:6px 8px;border-radius:11px;background:transparent;border:none;cursor:pointer;color:#6b7280;"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>' : ''}
-          </div>
-          ${this._isToday() ? '<span id="live-indicator" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#5D87FF;background:rgba(99,102,241,.08);padding:5px 14px;border-radius:20px;font-weight:700;backdrop-filter:blur(8px);"><span style="width:6px;height:6px;border-radius:50%;background:#5D87FF;animation:pulse-dot 2s infinite;"></span>LIVE</span>' : `<span style="font-size:12px;color:#9ca3af;font-weight:500;">${d.periodLabel}</span>`}
-          <div style="position:relative;">
-            <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:#9ca3af;pointer-events:none;"></iconify-icon>
-            <input type="text" id="dashboard-search" placeholder="Rechercher..." style="padding:8px 14px 8px 34px;font-size:12px;width:160px;border-radius:14px;background:var(--bg-secondary);backdrop-filter:blur(12px);border:1px solid var(--border-color);color:var(--text-primary);outline:none;font-weight:500;" oninput="DashboardPage._filterByDriver(this.value)">
-          </div>
-        </div>
-      </div>
-
       <!-- Style Dashboard 2 (Spike) : hero d'accueil + trio KPI + barres + line + donut -->
       <style>
         .d2-r1{grid-template-columns:1.7fr 1.15fr;align-items:stretch;}
@@ -1340,7 +1337,7 @@ const DashboardPage = {
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
                 <span style="width:8px;height:8px;border-radius:50%;background:${d.estAujourdhui ? 'var(--danger)' : 'var(--text-muted)'};"></span>${d.estAujourdhui ? 'Recette du jour · en direct' : 'Recette du ' + Utils.escHtml(Utils.formatDate(d.jourAtt))}
               </div>
-              <div style="font-size:31px;font-weight:800;letter-spacing:-.5px;color:var(--text-primary);margin-top:6px;">${Utils.formatCurrency(d.caBrutJour)}</div>
+              <div style="font-size:40px;font-weight:800;letter-spacing:-.6px;color:var(--text-primary);margin-top:8px;">${Utils.formatCurrency(d.caBrutJour)}</div>
             </div>
             <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${d.paceState === 'faible' ? 'rgba(250,137,107,.15)' : d.paceState === 'bon' ? 'rgba(19,222,185,.15)' : d.paceState === 'modere' ? 'rgba(255,174,31,.16)' : 'var(--bg-tertiary)'};color:${d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)'};">
               <iconify-icon icon="${d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>

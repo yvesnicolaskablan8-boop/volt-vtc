@@ -141,6 +141,27 @@
   color: var(--text-muted);
 }
 
+/* Profil utilisateur déplacé dans le pied de la sidebar */
+.sidebar-footer .sidebar-user {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  gap: 10px;
+}
+.sidebar-footer .sidebar-user:hover { background: var(--bg-tertiary); }
+.sidebar-footer .sidebar-user .header-user-name {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Le menu s'ouvre vers le haut depuis le pied de la sidebar */
+.sidebar-footer .header-user-dropdown {
+  top: auto; bottom: 84px; left: 16px; right: auto;
+  width: 228px; transform: translateY(8px);
+}
+.sidebar-footer .header-user-dropdown.active { transform: translateY(0); }
+
+/* Slot du sélecteur de date dans le header */
+.header-period-slot { display: flex; align-items: center; }
+
 /* ========== MAIN CONTENT ========== */
 .main-content {
   flex: 1;
