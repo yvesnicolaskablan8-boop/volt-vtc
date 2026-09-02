@@ -376,15 +376,15 @@ const PlanningPage = {
       dayShifts.forEach(s => {
         const ch = chById[s.chauffeurId];
         if (!ch) return;
-        chips.push(`<div class="pcal-chip" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
-          <span class="pcal-dot" style="background:${this._getShiftColor(s)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.${this._serviceDuCreneau(s) === 'nuit' ? ' <span style="font-size:8.5px;font-weight:800;color:#e0e7ff;background:#312e81;border-radius:4px;padding:0 3px">NUIT</span>' : ''}${s.role === 'doublure' ? ' <span style="font-size:8.5px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:4px;padding:0 3px">REMPL</span>' : ''} <span class="pcal-chip-time">${s.heureDebut || ''}${s.heureFin ? '–' + s.heureFin : ''}</span></span>
+        chips.push(`<div class="pcal-chip" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
+          <span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.${this._serviceDuCreneau(s) === 'nuit' ? ' <span style="font-size:8.5px;font-weight:800;color:#e0e7ff;background:#312e81;border-radius:4px;padding:0 3px">NUIT</span>' : ''}${s.role === 'doublure' ? ' <span style="font-size:8.5px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:4px;padding:0 3px">REMPL</span>' : ''} <span class="pcal-chip-time">${s.heureDebut || ''}${s.heureFin ? '–' + s.heureFin : ''}</span></span>
         </div>`);
       });
       dayAbsences.forEach(a => {
         const ch = chById[a.chauffeurId];
         if (!ch) return;
-        chips.push(`<div class="pcal-chip pcal-chip-abs" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._absenceTypeLabel(a.type)}" onclick="event.stopPropagation();PlanningPage._viewAbsence('${a.id}')">
-          <span class="pcal-dot" style="background:${this._absenceTypeColor(a.type)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}. <em>(${this._absenceTypeLabel(a.type).toLowerCase()})</em></span>
+        chips.push(`<div class="pcal-chip pcal-chip-abs" style="--c:${this._absenceTypeColor(a.type)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._absenceTypeLabel(a.type)}" onclick="event.stopPropagation();PlanningPage._viewAbsence('${a.id}')">
+          <span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}. <em>(${this._absenceTypeLabel(a.type).toLowerCase()})</em></span>
         </div>`);
       });
 
@@ -394,7 +394,7 @@ const PlanningPage = {
         ? `<span class="pcal-num pcal-today">${d.obj.getDate()}</span>`
         : `<span class="pcal-num">${d.obj.getDate()}</span>`;
 
-      return `<div class="pcal-cell pcal-cell-week" onclick="PlanningPage._addShift('','${d.date}')" title="Ajouter un créneau le ${Utils.formatDate(d.date)}">
+      return `<div class="pcal-cell pcal-cell-week${isToday ? ' pcal-cell-today' : ''}" onclick="PlanningPage._addShift('','${d.date}')" title="Ajouter un créneau le ${Utils.formatDate(d.date)}">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           ${numHtml}
           <span style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);">${dayNames[i]}</span>
@@ -943,15 +943,15 @@ const PlanningPage = {
       dayShifts.forEach(s => {
         const ch = chById[s.chauffeurId];
         if (!ch) return;
-        chips.push(`<div class="pcal-chip" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
-          <span class="pcal-dot" style="background:${this._getShiftColor(s)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.</span>
+        chips.push(`<div class="pcal-chip" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
+          <span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.</span>
         </div>`);
       });
       dayAbsences.forEach(a => {
         const ch = chById[a.chauffeurId];
         if (!ch) return;
-        chips.push(`<div class="pcal-chip pcal-chip-abs" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._absenceTypeLabel(a.type)}" onclick="event.stopPropagation();PlanningPage._viewAbsence('${a.id}')">
-          <span class="pcal-dot" style="background:${this._absenceTypeColor(a.type)};"></span><span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}. <em>(${this._absenceTypeLabel(a.type).toLowerCase()})</em></span>
+        chips.push(`<div class="pcal-chip pcal-chip-abs" style="--c:${this._absenceTypeColor(a.type)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._absenceTypeLabel(a.type)}" onclick="event.stopPropagation();PlanningPage._viewAbsence('${a.id}')">
+          <span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}. <em>(${this._absenceTypeLabel(a.type).toLowerCase()})</em></span>
         </div>`);
       });
 
@@ -961,7 +961,7 @@ const PlanningPage = {
         ? `<span class="pcal-num pcal-today">${c.num}</span>`
         : `<span class="pcal-num${c.inMonth ? '' : ' pcal-num-out'}">${c.num}</span>`;
 
-      return `<div class="pcal-cell${c.inMonth ? '' : ' pcal-cell-out'}" ${c.inMonth ? `onclick="PlanningPage._addShift('','${c.date}')" title="Ajouter un créneau le ${Utils.formatDate(c.date)}"` : ''}>
+      return `<div class="pcal-cell${c.inMonth ? '' : ' pcal-cell-out'}${c.isToday ? ' pcal-cell-today' : ''}" ${c.inMonth ? `onclick="PlanningPage._addShift('','${c.date}')" title="Ajouter un créneau le ${Utils.formatDate(c.date)}"` : ''}>
         ${numHtml}
         <div class="pcal-chips">${visible.join('')}${overflow > 0 ? `<div class="pcal-more">+${overflow} autre${overflow > 1 ? 's' : ''}</div>` : ''}</div>
       </div>`;
@@ -989,23 +989,25 @@ const PlanningPage = {
       .pcal-cell { border:1px solid var(--border-color); border-radius:14px; background:var(--bg-secondary); min-height:104px; padding:10px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:6px; }
       .pcal-cell:hover { border-color:var(--pilote-blue, #3b82f6); box-shadow:0 2px 10px rgba(59,130,246,.10); }
       .pcal-cell-out { background:var(--bg-tertiary); border-color:transparent; cursor:default; opacity:.55; }
+      /* Aujourd'hui : cellule teintée bleu clair + pastille de date bleue (style Spike) */
+      .pcal-cell-today { background:rgba(93,135,255,.07); border-color:rgba(93,135,255,.45); }
       .pcal-num { font-size:13px; font-weight:600; color:var(--text-primary); line-height:26px; }
       .pcal-num-out { color:var(--text-muted); }
-      .pcal-today { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--text-primary); color:var(--bg-secondary); font-weight:800; }
-      .pcal-chips { display:flex; flex-direction:column; gap:3px; overflow:hidden; }
-      .pcal-chip { display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; color:var(--text-secondary); background:var(--bg-tertiary); border-radius:6px; padding:2px 6px; white-space:nowrap; overflow:hidden; cursor:pointer;
-        border:1px solid transparent; transition:background .12s, color .12s, border-color .12s, transform .12s; }
-      /* Survol franc : le chip est cliquable et ouvre le creneau. Un simple
-         changement de fond se remarquait a peine sur fond sombre. */
-      .pcal-chip:hover { background:var(--pilote-blue); color:#fff; border-color:var(--pilote-blue);
-        transform:translateX(2px); box-shadow:0 2px 8px rgba(79,70,229,.35); }
-      .pcal-chip:hover .pcal-chip-txt { opacity:1; }
-      .pcal-chip:hover .pcal-chip-time { color:rgba(255,255,255,.85); }
-      .pcal-chip:hover .pcal-dot { box-shadow:0 0 0 2px rgba(255,255,255,.65); }
-      .pcal-chip:active { transform:translateX(2px) scale(.98); }
-      .pcal-chip-abs .pcal-chip-txt { opacity:.75; }
+      .pcal-today { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--pilote-blue); color:#fff; font-weight:800; box-shadow:0 4px 10px rgba(93,135,255,.35); }
+      .pcal-chips { display:flex; flex-direction:column; gap:4px; overflow:hidden; }
+      /* Événements « pastille Spike » : liseré coloré à gauche + fond teinté de la même couleur (--c) */
+      .pcal-chip { display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; white-space:nowrap; overflow:hidden; cursor:pointer;
+        color:var(--text-secondary);
+        color:color-mix(in srgb, var(--c, #5D87FF) 72%, var(--text-primary));
+        background:var(--bg-tertiary);
+        background:color-mix(in srgb, var(--c, #5D87FF) 13%, transparent);
+        border-left:3px solid var(--c, #5D87FF); border-radius:5px; padding:3px 8px;
+        transition:background .12s, box-shadow .12s, transform .12s; }
+      .pcal-chip:hover { background:color-mix(in srgb, var(--c, #5D87FF) 22%, transparent);
+        transform:translateX(1px); box-shadow:0 2px 8px rgba(37,83,185,.14); }
+      .pcal-chip:active { transform:translateX(1px) scale(.98); }
+      .pcal-chip-abs .pcal-chip-txt { opacity:.8; }
       .pcal-chip-txt { overflow:hidden; text-overflow:ellipsis; }
-      .pcal-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
       .pcal-more { font-size:10px; font-weight:600; color:var(--text-muted); padding-left:2px; }
     </style>`;
   },
