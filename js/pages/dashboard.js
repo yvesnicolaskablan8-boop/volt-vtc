@@ -182,86 +182,91 @@ const DashboardPage = {
     const nbActifs = lignes.filter(l => l.roule).length;
     const nbHors = lignes.filter(l => l.roule && !l.programme).length;
 
-    // === Style Spike EXACT (plein écran, thème clair, police Plus Jakarta Sans) ===
+    // === Style shadcn (neutre, bordures fines, badges sombres, table épurée) ===
     const C = {
-      bg: '#F5F7FB', card: '#ffffff', head: '#2A3547', mut: '#5A6A85', mut2: '#7C8FAC', bd: '#EBF1F6',
-      blue: '#5D87FF', blueS: 'rgba(93,135,255,.12)',
-      green: '#13DEB9', greenT: '#0a9d86', greenS: 'rgba(19,222,185,.13)',
-      amber: '#FFAE1F', amberT: '#B47C00', amberS: 'rgba(255,174,31,.14)',
-      red: '#FA896B', redT: '#D9583B', redS: 'rgba(250,137,107,.13)',
-      purple: '#8b5cf6', purpleS: 'rgba(139,92,246,.12)'
+      bg: '#FAFAFA', card: '#FFFFFF', head: '#09090B', mut: '#71717A', mut2: '#A1A1AA', bd: '#E4E4E7', bd2: '#F4F4F5',
+      dark: '#18181B',
+      green: '#15803D', greenS: 'rgba(22,163,74,.10)', greenB: 'rgba(22,163,74,.22)',
+      amber: '#A16207', amberS: 'rgba(202,138,4,.10)', amberB: 'rgba(202,138,4,.24)',
+      red: '#B91C1C', redS: 'rgba(220,38,38,.10)'
     };
-    const SH = '0 2px 6px rgba(37,83,185,.10)'; // ombre bleutée signature de Spike
-    const cardCss = `background:${C.card};border-radius:18px;box-shadow:${SH};`;
+    const cardCss = `background:${C.card};border:1px solid ${C.bd};border-radius:12px;`;
     const money = (n) => Utils.formatCurrency(n);
-    const stat = (icon, color, bgc, label, value, sub) => `
-      <div style="${cardCss}padding:22px 24px;">
-        <div style="width:48px;height:48px;border-radius:14px;background:${bgc};color:${color};display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px;"><iconify-icon icon="${icon}"></iconify-icon></div>
-        <div style="font-size:24px;font-weight:800;color:${C.head};letter-spacing:-.5px;">${value}</div>
-        <div style="font-size:14px;color:${C.mut};font-weight:500;margin-top:3px;">${label}</div>
-        ${sub ? `<div style="font-size:12.5px;color:${C.mut2};margin-top:2px;">${sub}</div>` : ''}
+    const dot = (c) => `<span style="width:6px;height:6px;border-radius:50%;background:${c};display:inline-block;"></span>`;
+    const badge = (txt, v) => {
+      const st = {
+        secondary: `background:${C.bd2};color:${C.head};border:1px solid transparent;`,
+        green: `background:${C.greenS};color:${C.green};border:1px solid ${C.greenB};`,
+        amber: `background:${C.amberS};color:${C.amber};border:1px solid ${C.amberB};`,
+        muted: `background:${C.bd2};color:${C.mut};border:1px solid transparent;`
+      };
+      return `<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap;${st[v] || st.secondary}">${txt}</span>`;
+    };
+    const stat = (icon, label, value, sub) => `
+      <div style="${cardCss}padding:20px;">
+        <div style="width:36px;height:36px;border-radius:9px;background:${C.bd2};color:${C.head};display:flex;align-items:center;justify-content:center;font-size:18px;"><iconify-icon icon="${icon}"></iconify-icon></div>
+        <div style="font-size:26px;font-weight:800;color:${C.head};letter-spacing:-.02em;margin-top:14px;">${value}</div>
+        <div style="font-size:13px;color:${C.mut};margin-top:2px;">${label}</div>
+        ${sub ? `<div style="font-size:12px;color:${C.mut2};margin-top:6px;">${sub}</div>` : ''}
       </div>`;
-    const pill = (txt, color, bgc) => `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:30px;background:${bgc};color:${color};font-size:12px;font-weight:700;">${txt}</span>`;
-    const totalLine = (label, value, color, strong) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${strong ? `border-top:1px solid ${C.bd};margin-top:2px;padding-top:14px;` : ''}"><span style="font-size:14px;color:${C.mut};font-weight:${strong ? 700 : 500};">${label}</span><strong style="font-size:${strong ? 18 : 15}px;color:${color || C.head};">${value}</strong></div>`;
+    const totalLine = (label, value, color, strong) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;${strong ? `border-top:1px solid ${C.bd};margin-top:2px;padding-top:14px;` : ''}"><span style="font-size:14px;color:${C.mut};font-weight:${strong ? 600 : 400};">${label}</span><strong style="font-size:${strong ? 18 : 15}px;color:${color || C.head};font-weight:${strong ? 800 : 600};">${value}</strong></div>`;
+    const th = (txt, align) => `<th style="text-align:${align || 'left'};padding:11px 14px;font-size:12px;font-weight:500;color:${C.mut};border-bottom:1px solid ${C.bd};">${txt}</th>`;
 
-    const rows = lignes.map((l, i) => {
-      const statutPill = l.roule ? (l.programme ? pill('En activité', C.greenT, C.greenS) : pill('⚠ Hors planning', C.amberT, C.amberS)) : pill('Pas encore parti', C.mut2, 'rgba(124,143,172,.12)');
-      const detail = [];
-      if (l.charges > 0) detail.push(`charges ${money(l.charges)}`);
-      if (l.verse > 0) detail.push(`versé ${money(l.verse)}`);
-      return `<div style="display:flex;align-items:center;gap:16px;padding:16px 0;${i < lignes.length - 1 ? `border-bottom:1px solid ${C.bd};` : ''}">
-        <div style="width:44px;height:44px;flex-shrink:0;border-radius:50%;background:${l.programme ? C.blueS : C.amberS};color:${l.programme ? C.blue : C.amberT};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;">${Utils.escHtml((l.prenom || '?').charAt(0))}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:15px;font-weight:700;color:${C.head};">${Utils.escHtml(l.prenom)} ${Utils.escHtml(l.nom)}</div>
-          <div style="font-size:13px;color:${C.mut2};margin-top:2px;">${l.roule ? `${l.courses} course${l.courses > 1 ? 's' : ''}` : 'aucune course'}${detail.length ? ' · ' + detail.join(' · ') : ''}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:17px;font-weight:800;color:${C.head};">${money(l.ca)}</div>
-          <div style="margin-top:5px;display:flex;align-items:center;gap:8px;justify-content:flex-end;">
-            ${(l.roule && !l.programme) ? `<button onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${l.id}')" style="font-size:11px;font-weight:700;color:#fff;background:${C.blue};border:none;border-radius:8px;padding:5px 10px;cursor:pointer;">+ Planning</button>` : ''}
-            ${statutPill}
+    const rows = lignes.map(l => {
+      const st = l.roule ? (l.programme ? badge(dot('#16A34A') + 'En activité', 'green') : badge(dot('#CA8A04') + 'Hors planning', 'amber')) : badge('Pas parti', 'muted');
+      return `<tr style="border-bottom:1px solid ${C.bd2};">
+        <td style="padding:12px 14px;">
+          <div style="display:flex;align-items:center;gap:11px;">
+            <div style="width:34px;height:34px;flex-shrink:0;border-radius:50%;background:${C.bd2};color:${C.head};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">${Utils.escHtml((l.prenom || '?').charAt(0))}</div>
+            <div style="min-width:0;"><div style="font-size:14px;font-weight:600;color:${C.head};">${Utils.escHtml(l.prenom)} ${Utils.escHtml(l.nom)}</div>${l.charges > 0 ? `<div style="font-size:12px;color:${C.mut2};">charges ${money(l.charges)}</div>` : ''}</div>
           </div>
-        </div>
-      </div>`;
-    }).join('') || `<div style="text-align:center;color:${C.mut2};padding:34px;">Aucune activité ${estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
+        </td>
+        <td style="padding:12px 14px;">${st}</td>
+        <td style="padding:12px 14px;text-align:right;font-size:13px;color:${C.mut};">${l.roule ? l.courses : '—'}</td>
+        <td style="padding:12px 14px;text-align:right;font-size:13px;color:${C.mut};">${l.verse > 0 ? money(l.verse) : '—'}</td>
+        <td style="padding:12px 14px;text-align:right;font-size:14px;font-weight:700;color:${C.head};">${money(l.ca)}</td>
+        <td style="padding:12px 14px;text-align:right;">${(l.roule && !l.programme) ? `<button onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${l.id}')" style="font-size:12px;font-weight:600;color:#FAFAFA;background:${C.dark};border:none;border-radius:7px;padding:5px 11px;cursor:pointer;">+ Planning</button>` : ''}</td>
+      </tr>`;
+    }).join('');
+    const tableOrEmpty = lignes.length ? `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:560px;"><thead><tr>${th('Chauffeur')}${th('Statut')}${th('Courses', 'right')}${th('Versé', 'right')}${th('CA', 'right')}${th('', 'right')}</tr></thead><tbody>${rows}</tbody></table></div>` : `<div style="text-align:center;color:${C.mut2};padding:40px;font-size:14px;">Aucune activité ${estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
 
     const html = `
-      <div style="max-width:1200px;margin:0 auto;padding:26px 26px 70px;">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:26px;">
+      <div style="max-width:1100px;margin:0 auto;padding:26px 26px 70px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;">
           <div>
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-              <h2 style="margin:0;font-size:25px;font-weight:800;color:${C.head};letter-spacing:-.6px;">Activité ${estAujourdhui ? 'du jour' : 'de la journée'}</h2>
-              ${estAujourdhui ? `<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:${C.redT};background:${C.redS};padding:5px 13px;border-radius:30px;font-weight:800;letter-spacing:.4px;"><span style="width:7px;height:7px;border-radius:50%;background:${C.red};animation:livePulse 1.6s infinite;"></span>EN DIRECT</span>` : ''}
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <h2 style="margin:0;font-size:24px;font-weight:800;color:${C.head};letter-spacing:-.02em;">Activité en détail</h2>
+              ${estAujourdhui ? `<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:${C.head};border:1px solid ${C.bd};padding:4px 11px;border-radius:7px;font-weight:600;"><span style="width:6px;height:6px;border-radius:50%;background:#16A34A;"></span>En direct</span>` : ''}
             </div>
-            <div style="font-size:14px;color:${C.mut};margin-top:7px;">${Utils.formatDate(jour)}</div>
+            <div style="font-size:14px;color:${C.mut};margin-top:6px;text-transform:capitalize;">${Utils.escHtml(Utils.formatDate(jour))}</div>
           </div>
-          <button onclick="document.getElementById('activite-detail-overlay').remove()" style="background:${C.card};border:none;width:44px;height:44px;border-radius:14px;font-size:22px;cursor:pointer;color:${C.mut};display:flex;align-items:center;justify-content:center;box-shadow:${SH};flex-shrink:0;">&times;</button>
+          <button onclick="document.getElementById('activite-detail-overlay').remove()" style="background:${C.card};border:1px solid ${C.bd};width:38px;height:38px;border-radius:9px;font-size:20px;cursor:pointer;color:${C.mut};display:flex;align-items:center;justify-content:center;flex-shrink:0;">&times;</button>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:24px;margin-bottom:24px;">
-          ${stat('solar:wallet-money-bold-duotone', C.blue, C.blueS, 'Recette du jour', money(caBrutJour), 'à verser')}
-          ${stat('solar:users-group-rounded-bold-duotone', C.greenT, C.greenS, 'Programmés', String(nbProg), nbActifs + ' en activité')}
-          ${stat('solar:wheel-angle-bold-duotone', C.purple, C.purpleS, 'En activité', String(nbActifs), nbHors > 0 ? nbHors + ' hors planning' : 'tous programmés')}
-          ${stat('solar:calendar-bold-duotone', C.amberT, C.amberS, 'CA du mois', money(caMois))}
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:16px;margin-bottom:16px;">
+          ${stat('solar:wallet-money-bold-duotone', 'Recette du jour', money(caBrutJour), 'à verser')}
+          ${stat('solar:users-group-rounded-bold-duotone', 'Programmés', String(nbProg), nbActifs + ' en activité')}
+          ${stat('solar:wheel-angle-bold-duotone', 'En activité', String(nbActifs), nbHors > 0 ? nbHors + ' hors planning' : 'tous programmés')}
+          ${stat('solar:calendar-bold-duotone', 'CA du mois', money(caMois), '')}
         </div>
 
-        ${nbHors > 0 ? `<div style="display:flex;align-items:center;gap:14px;background:${C.amberS};border-radius:16px;padding:16px 20px;margin-bottom:24px;">
-          <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:${C.amber};font-size:26px;flex-shrink:0;"></iconify-icon>
-          <div style="font-size:14px;color:${C.head};font-weight:500;"><strong>${lignes.filter(l => l.roule && !l.programme).map(l => Utils.escHtml(l.prenom)).join(', ')}</strong> roule${nbHors > 1 ? 'nt' : ''} sans être au planning. Pensez à corriger le planning du jour.</div>
+        ${nbHors > 0 ? `<div style="display:flex;align-items:center;gap:12px;${cardCss}padding:14px 18px;margin-bottom:16px;">
+          <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:${C.amber};font-size:22px;flex-shrink:0;"></iconify-icon>
+          <div style="font-size:13.5px;color:${C.head};"><strong>${lignes.filter(l => l.roule && !l.programme).map(l => Utils.escHtml(l.prenom)).join(', ')}</strong> roule${nbHors > 1 ? 'nt' : ''} sans être au planning.</div>
         </div>` : ''}
 
-        <div style="${cardCss}padding:6px 26px 20px;margin-bottom:24px;">
-          <div style="font-size:18px;font-weight:800;color:${C.head};padding:20px 0 4px;">Chauffeurs du jour</div>
-          ${rows}
+        <div style="${cardCss}padding:0;margin-bottom:16px;overflow:hidden;">
+          <div style="font-size:15px;font-weight:700;color:${C.head};padding:16px 18px;border-bottom:1px solid ${C.bd};">Chauffeurs du jour <span style="color:${C.mut2};font-weight:500;">· ${lignes.length}</span></div>
+          ${tableOrEmpty}
         </div>
 
-        <div style="${cardCss}padding:24px 28px;max-width:560px;">
-          <div style="font-size:18px;font-weight:800;color:${C.head};margin-bottom:10px;">Récapitulatif</div>
+        <div style="${cardCss}padding:20px 24px;max-width:520px;">
+          <div style="font-size:15px;font-weight:700;color:${C.head};margin-bottom:8px;">Récapitulatif</div>
           ${totalLine('CA brut Yango', money(caBrutJour), C.head)}
-          ${totalLine('− Charges', totalCharges > 0 ? '− ' + money(totalCharges) : money(0), C.redT)}
+          ${totalLine('− Charges', totalCharges > 0 ? '− ' + money(totalCharges) : money(0), C.red)}
           ${totalLine('= À verser', money(totalDu), C.head, true)}
-          ${totalLine('Déjà versé', money(totalVerse), C.greenT)}
-          ${totalLine('Reste dû', money(reste), reste > 0 ? C.redT : C.greenT)}
+          ${totalLine('Déjà versé', money(totalVerse), C.green)}
+          ${totalLine('Reste dû', money(reste), reste > 0 ? C.red : C.green)}
         </div>
       </div>`;
 
@@ -275,7 +280,7 @@ const DashboardPage = {
     if (existing) existing.remove();
     const overlay = document.createElement('div');
     overlay.id = 'activite-detail-overlay';
-    overlay.style.cssText = `position:fixed;inset:0;background:${C.bg};z-index:3000;overflow-y:auto;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;`;
+    overlay.style.cssText = `position:fixed;inset:0;background:${C.bg};z-index:3000;overflow-y:auto;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;`;
     overlay.insertAdjacentHTML('beforeend', html);
     document.addEventListener('keydown', function handler(e) { if (e.key === 'Escape') { const o = document.getElementById('activite-detail-overlay'); if (o) o.remove(); document.removeEventListener('keydown', handler); } });
     document.body.appendChild(overlay);
@@ -1412,7 +1417,7 @@ const DashboardPage = {
           </div>
 
           <div style="margin-top:auto;position:relative;display:inline-flex;align-self:flex-start;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);">
-            Voir l'activité du jour <iconify-icon icon="solar:arrow-right-linear"></iconify-icon>
+            Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon>
           </div>
         </div>
 
