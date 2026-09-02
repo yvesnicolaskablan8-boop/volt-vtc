@@ -140,6 +140,7 @@ const DashboardPage = {
   // Clic sur « À AJOUTER » (chauffeur hors planning) → aller au Planning et
   // ouvrir l'ajout de créneau pré-rempli pour ce chauffeur, ce jour-là.
   _ajouterAuPlanning(chauffeurId) {
+    const ov = document.getElementById('activite-detail-overlay'); if (ov) ov.remove();
     const jour = this._selectedPeriod || new Date().toISOString().split('T')[0];
     try { sessionStorage.setItem('pilote_planning_add', JSON.stringify({ chauffeurId, date: jour, returnTo: 'dashboard' })); } catch (_) {}
     if (typeof Router !== 'undefined' && Router.navigate) Router.navigate('/planning');
@@ -168,7 +169,7 @@ const DashboardPage = {
       const ch = chById.get(id); const e = caById[id];
       const ca = e ? Number(e.caBrut) || 0 : 0;
       const charges = chargesJour[id] || 0;
-      return { prenom: ch.prenom, nom: ch.nom, ca, courses: e ? Number(e.nbCourses) || 0 : 0, programme: planningSet.has(id), roule: ca > 0, charges, verse: verseJour[id] || 0, du: Math.max(0, ca - charges) };
+      return { id, prenom: ch.prenom, nom: ch.nom, ca, courses: e ? Number(e.nbCourses) || 0 : 0, programme: planningSet.has(id), roule: ca > 0, charges, verse: verseJour[id] || 0, du: Math.max(0, ca - charges) };
     }).sort((a, b) => b.ca - a.ca);
 
     const caBrutJour = lignes.reduce((s, l) => s + l.ca, 0);
@@ -216,7 +217,10 @@ const DashboardPage = {
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:17px;font-weight:800;color:${C.head};">${money(l.ca)}</div>
-          <div style="margin-top:5px;">${statutPill}</div>
+          <div style="margin-top:5px;display:flex;align-items:center;gap:8px;justify-content:flex-end;">
+            ${(l.roule && !l.programme) ? `<button onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${l.id}')" style="font-size:11px;font-weight:700;color:#fff;background:${C.blue};border:none;border-radius:8px;padding:5px 10px;cursor:pointer;">+ Planning</button>` : ''}
+            ${statutPill}
+          </div>
         </div>
       </div>`;
     }).join('') || `<div style="text-align:center;color:${C.mut2};padding:34px;">Aucune activité ${estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
@@ -1355,18 +1359,30 @@ const DashboardPage = {
           </div>
 
           <div style="position:relative;">
-            <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.chauffeursActifsJour.length} chauffeur${d.chauffeursActifsJour.length > 1 ? 's' : ''}${d.nbActifsTotal !== d.chauffeursActifsJour.length ? ` · ${d.nbActifsTotal} en activité` : ''}${d.nbAjouter > 0 ? ` · ${d.nbAjouter} hors planning` : ''}</div>
-            ${d.chauffeursActifsJour.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;">${d.chauffeursActifsJour.map(c => {
-              const SC = { bon: ['#02b3a9', 'rgba(19,222,185,.16)'], demarrage: ['#4570EA', 'rgba(93,135,255,.14)'], modere: ['#D99000', 'rgba(255,174,31,.18)'], faible: ['#D9583B', 'rgba(250,137,107,.16)'], neutre: ['#7C8FAC', 'var(--bg-tertiary)'] };
-              const sc = SC[c.state] || SC.neutre;
-              return `<div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:${sc[1]};border-left:3px solid ${sc[0]};border-radius:10px;padding:7px 11px 7px 9px;${c.actif ? '' : 'opacity:.72;'}">
-                <div style="width:26px;height:26px;border-radius:50%;background:${sc[0]};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
-                <div style="line-height:1.15;min-width:0;">
-                  <div style="font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-primary);">${Utils.escHtml(c.prenom)}${!c.programme ? ` <span onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${c.id}')" style="font-size:8px;font-weight:800;color:var(--warning-dim);background:rgba(255,174,31,.18);border-radius:4px;padding:1px 5px;vertical-align:1px;cursor:pointer;" title="Ajouter au planning">À AJOUTER</span>` : ''}</div>
-                  <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${c.actif ? `${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}` : (d.estAujourdhui ? 'pas encore parti' : 'n’a pas roulé')}</div>
-                </div>
-              </div>`;
-            }).join('')}</div>` : `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur en activité ${d.estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`}
+            ${(() => {
+              const list = d.chauffeursActifsJour || [];
+              if (!list.length) return `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur en activité ${d.estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
+              const SC = { bon: ['#13DEB9', '#02b3a9', 'bon rythme'], demarrage: ['#5D87FF', '#4570EA', 'en cours'], modere: ['#FFAE1F', '#D99000', 'moyen'], faible: ['#FA896B', '#D9583B', 'CA bas'], neutre: ['#C7D0DD', '#7C8FAC', 'pas parti'] };
+              const total = list.length;
+              const counts = {}; list.forEach(c => { counts[c.state] = (counts[c.state] || 0) + 1; });
+              const shown = list.slice(0, 7);
+              const stack = shown.map((c, i) => { const col = (SC[c.state] || SC.neutre)[0]; return `<div style="width:34px;height:34px;border-radius:50%;background:${col};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2.5px solid var(--bg-secondary);margin-left:${i ? -11 : 0}px;position:relative;z-index:${20 - i};" title="${Utils.escHtml(c.prenom || '')}">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>`; }).join('');
+              const more = total > 7 ? `<div style="width:34px;height:34px;border-radius:50%;background:var(--bg-tertiary);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;border:2.5px solid var(--bg-secondary);margin-left:-11px;">+${total - 7}</div>` : '';
+              const order = ['bon', 'demarrage', 'modere', 'faible', 'neutre'];
+              const bar = order.filter(k => counts[k]).map(k => `<div title="${(SC[k] || SC.neutre)[2]} : ${counts[k]}" style="flex:${counts[k]};background:${(SC[k] || SC.neutre)[0]};"></div>`).join('');
+              const synth = order.filter(k => counts[k]).map(k => `<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${(SC[k] || SC.neutre)[0]};"></span>${counts[k]} ${(SC[k] || SC.neutre)[2]}</span>`).join('');
+              const horsNoms = list.filter(c => !c.programme).map(c => c.prenom);
+              return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;">${stack}${more}</div>
+                <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;padding:4px 11px;border-radius:20px;background:rgba(19,222,185,.15);color:var(--success-dim);"><iconify-icon icon="solar:users-group-rounded-bold"></iconify-icon>${d.nbActifsTotal}/${total} en activité</span>
+              </div>
+              <div style="display:flex;height:9px;border-radius:6px;overflow:hidden;gap:2px;margin-bottom:9px;">${bar}</div>
+              <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;font-weight:600;color:var(--text-secondary);">${synth}</div>
+              ${horsNoms.length ? `<div style="margin-top:11px;display:flex;align-items:center;gap:9px;background:rgba(255,174,31,.14);border-radius:12px;padding:9px 12px;font-size:12px;font-weight:600;color:var(--text-primary);">
+                <iconify-icon icon="solar:danger-triangle-bold" style="color:var(--warning);font-size:15px;flex-shrink:0;"></iconify-icon>
+                <span><strong>${horsNoms.length} hors planning</strong> : ${horsNoms.slice(0, 3).map(n => Utils.escHtml(n)).join(', ')}${horsNoms.length > 3 ? ` +${horsNoms.length - 3}` : ''} — à ajouter</span>
+              </div>` : ''}`;
+            })()}
           </div>
 
           <!-- Recette vs attendu — fusionnée dans le bloc d'activité -->
