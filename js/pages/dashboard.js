@@ -1420,15 +1420,17 @@ const DashboardPage = {
             ${(() => {
               const list = d.chauffeursActifsJour || [];
               if (!list.length) return `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur en activité ${d.estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
-              const SC = { bon: ['#13DEB9', '#02b3a9', 'bon rythme'], demarrage: ['#5D87FF', '#4570EA', 'en cours'], modere: ['#FFAE1F', '#D99000', 'moyen'], faible: ['#FA896B', '#D9583B', 'CA bas'], neutre: ['#C7D0DD', '#7C8FAC', 'pas parti'] };
               const total = list.length;
               const counts = {}; list.forEach(c => { counts[c.state] = (counts[c.state] || 0) + 1; });
+              const ZONE = { bon: 'ok', demarrage: 'ok', modere: 'watch', faible: 'watch', neutre: 'off' };
+              const ZC = { ok: ['#13DEB9', 'En forme'], watch: ['#FFAE1F', 'À surveiller'], off: ['#C7D0DD', 'Inactif'] };
+              const zc = {}; Object.keys(counts).forEach(k => { const z = ZONE[k] || 'off'; zc[z] = (zc[z] || 0) + counts[k]; });
+              const zorder = ['ok', 'watch', 'off'];
               const shown = list.slice(0, 7);
-              const stack = shown.map((c, i) => { const col = (SC[c.state] || SC.neutre)[0]; return `<div style="width:34px;height:34px;border-radius:50%;background:${col};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2.5px solid var(--bg-secondary);margin-left:${i ? -11 : 0}px;position:relative;z-index:${20 - i};" title="${Utils.escHtml(c.prenom || '')}">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>`; }).join('');
+              const stack = shown.map((c, i) => { const col = ZC[ZONE[c.state] || 'off'][0]; return `<div style="width:34px;height:34px;border-radius:50%;background:${col};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2.5px solid var(--bg-secondary);margin-left:${i ? -11 : 0}px;position:relative;z-index:${20 - i};" title="${Utils.escHtml(c.prenom || '')}">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>`; }).join('');
               const more = total > 7 ? `<div style="width:34px;height:34px;border-radius:50%;background:var(--bg-tertiary);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;border:2.5px solid var(--bg-secondary);margin-left:-11px;">+${total - 7}</div>` : '';
-              const order = ['bon', 'demarrage', 'modere', 'faible', 'neutre'];
-              const bar = order.filter(k => counts[k]).map(k => { const p = Math.round(counts[k] / total * 100); return `<div title="${(SC[k] || SC.neutre)[2]} : ${counts[k]} (${p}%)" style="flex:${counts[k]};min-width:26px;background:${(SC[k] || SC.neutre)[0]};display:flex;align-items:center;justify-content:center;">${p >= 12 ? `<span style="font-size:9px;font-weight:800;color:#fff;">${p}%</span>` : ''}</div>`; }).join('');
-              const synth = order.filter(k => counts[k]).map(k => `<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${(SC[k] || SC.neutre)[0]};"></span>${counts[k]} ${(SC[k] || SC.neutre)[2]} · ${Math.round(counts[k] / total * 100)}%</span>`).join('');
+              const bar = zorder.filter(z => zc[z]).map(z => { const p = Math.round(zc[z] / total * 100); return `<div title="${ZC[z][1]} : ${zc[z]} (${p}%)" style="flex:${zc[z]};min-width:26px;background:${ZC[z][0]};display:flex;align-items:center;justify-content:center;">${p >= 12 ? `<span style="font-size:9px;font-weight:800;color:#fff;">${p}%</span>` : ''}</div>`; }).join('');
+              const synth = zorder.filter(z => zc[z]).map(z => `<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${ZC[z][0]};"></span>${zc[z]} ${ZC[z][1]} · ${Math.round(zc[z] / total * 100)}%</span>`).join('');
               const horsNoms = list.filter(c => !c.programme).map(c => c.prenom);
               return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px;flex-wrap:wrap;">
                 <div style="display:flex;align-items:center;">${stack}${more}</div>
