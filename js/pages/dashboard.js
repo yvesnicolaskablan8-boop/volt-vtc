@@ -1338,7 +1338,7 @@ const DashboardPage = {
       <div class="d-grid d2-r1">
 
         <!-- Hero d'accueil (accueil + activité en direct) -->
-        <div onclick="DashboardPage._showActiviteDetail()" class="d-card" style="cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:14px;">
+        <div onclick="DashboardPage._showActiviteDetail()" class="d-card" style="cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:14px;border-left:5px solid ${d.paceState === 'faible' ? 'var(--danger)' : d.paceState === 'bon' ? 'var(--success)' : d.paceState === 'modere' ? 'var(--warning)' : d.paceState === 'demarrage' ? 'var(--pilote-blue)' : 'var(--border-color)'};box-shadow:0 6px 22px ${d.paceState === 'faible' ? 'rgba(250,137,107,.22)' : d.paceState === 'bon' ? 'rgba(19,222,185,.22)' : d.paceState === 'modere' ? 'rgba(255,174,31,.22)' : d.paceState === 'demarrage' ? 'rgba(93,135,255,.18)' : 'rgba(37,83,185,.10)'};">
           <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;position:relative;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
@@ -1492,42 +1492,6 @@ const DashboardPage = {
             </div>`;
           })()}
         </a>
-      </div>
-
-      <!-- Row 3: Mes taches + Alertes (côte à côte) -->
-      <div class="d-grid d-g21" style="grid-template-columns:1fr 1fr;align-items:stretch;">
-          <!-- Mes taches -->
-          ${this._renderMesTaches()}
-
-          <!-- Alertes -->
-          ${(() => {
-            let aGrad, aShadow;
-            if (d.alertesCritiques > 0) {
-              aGrad = 'linear-gradient(135deg,#ef4444,#f87171)';
-              aShadow = '0 4px 20px rgba(239,68,68,.35)';
-            } else if (d.alertesTotal > 0) {
-              aGrad = 'linear-gradient(135deg,#f97316,#fb923c)';
-              aShadow = '0 4px 20px rgba(249,115,22,.35)';
-            } else {
-              aGrad = 'linear-gradient(135deg,#22c55e,#4ade80)';
-              aShadow = '0 4px 20px rgba(34,197,94,.35)';
-            }
-            return `<a href="#/alertes" class="d-card" style="text-decoration:none;color:inherit;background:${aGrad};border:none;box-shadow:${aShadow};padding:16px 20px;">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:${d.alertesCritiques > 0 ? '12px' : '0'};">
-              <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(4px);">
-                <iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon>
-              </div>
-              <div>
-                <div style="font-weight:700;font-size:var(--font-size-sm);color:#fff;margin:0;">Alertes</div>
-                <div style="font-size:11px;color:rgba(255,255,255,.8);">${d.alertesTotal > 0 ? d.alertesTotal + ' alerte' + (d.alertesTotal > 1 ? 's' : '') : 'Tout est OK'}</div>
-              </div>
-            </div>
-            ${d.alertesCritiques > 0 || d.alertesUrgentes > 0 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:52px;">
-              ${d.alertesCritiques > 0 ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,255,255,.2);color:#fff;">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>` : ''}
-              ${d.alertesUrgentes > 0 ? `<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:rgba(255,255,255,.2);color:#fff;">${d.alertesUrgentes} urgent${d.alertesUrgentes > 1 ? 's' : ''}</span>` : ''}
-            </div>` : ''}
-          </a>`;
-          })()}
       </div>
 
       <!-- Row 4: Top chauffeurs + Documents & Maintenance -->
