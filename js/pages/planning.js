@@ -36,6 +36,18 @@ const PlanningPage = {
     container.innerHTML = this._template();
     this._bindEvents();
     this._renderView();
+    this._maybeOuvrirAjout();
+  },
+
+  // Ouvre l'ajout de créneau pré-rempli si on arrive depuis « À AJOUTER » (dashboard)
+  _maybeOuvrirAjout() {
+    try {
+      const raw = sessionStorage.getItem('pilote_planning_add');
+      if (!raw) return;
+      sessionStorage.removeItem('pilote_planning_add');
+      const { chauffeurId, date } = JSON.parse(raw);
+      setTimeout(() => this._addShift(chauffeurId || '', date || ''), 60);
+    } catch (_) {}
   },
 
   destroy() {

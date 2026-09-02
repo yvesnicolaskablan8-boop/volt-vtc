@@ -137,6 +137,15 @@ const DashboardPage = {
     } catch (e) { /* silencieux : réessai au prochain tick */ }
   },
 
+  // Clic sur « À AJOUTER » (chauffeur hors planning) → aller au Planning et
+  // ouvrir l'ajout de créneau pré-rempli pour ce chauffeur, ce jour-là.
+  _ajouterAuPlanning(chauffeurId) {
+    const jour = this._selectedPeriod || new Date().toISOString().split('T')[0];
+    try { sessionStorage.setItem('pilote_planning_add', JSON.stringify({ chauffeurId, date: jour })); } catch (_) {}
+    if (typeof Router !== 'undefined' && Router.navigate) Router.navigate('/planning');
+    else window.location.hash = '#/planning';
+  },
+
   // Page de détail « Activité du jour » (style Spike : thème clair, cartes blanches
   // arrondies, accent bleu, pastilles pastel). S'ouvre au clic sur le hero.
   // Le contenu dynamique (noms) est échappé via Utils.escHtml.
@@ -1353,7 +1362,7 @@ const DashboardPage = {
               return `<div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:${sc[1]};border-left:3px solid ${sc[0]};border-radius:10px;padding:7px 11px 7px 9px;${c.actif ? '' : 'opacity:.72;'}">
                 <div style="width:26px;height:26px;border-radius:50%;background:${sc[0]};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
                 <div style="line-height:1.15;min-width:0;">
-                  <div style="font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-primary);">${Utils.escHtml(c.prenom)}${!c.programme ? ` <span style="font-size:8px;font-weight:800;color:var(--warning-dim);background:rgba(255,174,31,.18);border-radius:4px;padding:1px 4px;vertical-align:1px;">À AJOUTER</span>` : ''}</div>
+                  <div style="font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-primary);">${Utils.escHtml(c.prenom)}${!c.programme ? ` <span onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${c.id}')" style="font-size:8px;font-weight:800;color:var(--warning-dim);background:rgba(255,174,31,.18);border-radius:4px;padding:1px 5px;vertical-align:1px;cursor:pointer;" title="Ajouter au planning">À AJOUTER</span>` : ''}</div>
                   <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${c.actif ? `${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}` : (d.estAujourdhui ? 'pas encore parti' : 'n’a pas roulé')}</div>
                 </div>
               </div>`;
