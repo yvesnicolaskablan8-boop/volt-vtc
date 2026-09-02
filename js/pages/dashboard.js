@@ -1287,84 +1287,80 @@ const DashboardPage = {
       <div class="d-grid d-g4" style="grid-template-columns:2.2fr 1fr 1fr;">
 
         <!-- Hero — Activité du jour : CA salariés EN DIRECT + alerte rythme -->
-        <div onclick="DashboardPage._showActiviteDetail()" class="d-card hero" style="cursor:pointer;text-decoration:none;color:#fff;grid-row:span 1;${d.paceState === 'faible' ? 'background:linear-gradient(135deg,#991b1b,#dc2626,#f87171);background-size:200% 200%;box-shadow:0 4px 30px rgba(220,38,38,.42),0 0 70px rgba(239,68,68,.28);' : d.paceState === 'modere' ? 'background:linear-gradient(135deg,#92400e,#d97706,#fbbf24);background-size:200% 200%;' : ''}">
-          <div class="hero-glass-overlay"></div>
-          <div class="hero-shimmer"></div>
-          <div class="hero-content" style="display:flex;flex-direction:column;gap:13px;">
+        <div onclick="DashboardPage._showActiviteDetail()" class="d-card" style="cursor:pointer;grid-row:span 1;display:flex;flex-direction:column;gap:13px;">
 
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
               <div style="min-width:0;">
-                <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
-                  <span style="width:8px;height:8px;border-radius:50%;background:#fff;animation:livePulse 1.6s infinite;"></span>
+                <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
+                  <span style="width:8px;height:8px;border-radius:50%;background:var(--danger);"></span>
                   Activité du jour · en direct
                 </div>
-                <div class="d-val hero" style="margin-top:8px;">${Utils.formatCurrency(d.caBrutJour)}</div>
-                <div style="font-size:12px;color:rgba(255,255,255,.78);font-weight:600;margin-top:2px;">recette à verser${d.caBrutJour !== d.versementAttenduJour ? ` · net ${Utils.formatCurrency(d.versementAttenduJour)}` : ''}</div>
+                <div style="font-size:32px;font-weight:800;letter-spacing:-.5px;color:var(--text-primary);margin-top:8px;">${Utils.formatCurrency(d.caBrutJour)}</div>
+                <div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:2px;">recette à verser${d.caBrutJour !== d.versementAttenduJour ? ` · net ${Utils.formatCurrency(d.versementAttenduJour)}` : ''}</div>
               </div>
-              <div style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <iconify-icon icon="solar:wheel-angle-bold-duotone" style="font-size:22px;color:#fff;"></iconify-icon>
+              <div style="width:46px;height:46px;border-radius:13px;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:23px;">
+                <iconify-icon icon="solar:wheel-angle-bold-duotone"></iconify-icon>
               </div>
             </div>
 
             <!-- Rythme (jugé « bas » seulement le soir) -->
-            <div style="display:inline-flex;align-items:center;gap:7px;align-self:flex-start;padding:6px 13px;border-radius:20px;background:${d.paceState === 'faible' ? 'rgba(0,0,0,.28)' : d.paceState === 'bon' ? 'rgba(52,211,153,.28)' : 'rgba(255,255,255,.18)'};border:1px solid rgba(255,255,255,.22);font-size:12px;font-weight:700;">
+            <div style="display:inline-flex;align-items:center;gap:7px;align-self:flex-start;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${d.paceState === 'faible' ? 'rgba(250,137,107,.15)' : d.paceState === 'bon' ? 'rgba(19,222,185,.15)' : d.paceState === 'modere' ? 'rgba(255,174,31,.16)' : 'var(--bg-tertiary)'};color:${d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)'};">
               <iconify-icon icon="${d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>
               ${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% d'une journée type` : ''}
             </div>
 
             <!-- Chauffeurs programmés + activité (alerte si non programmé) -->
             <div>
-              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.nbProgrammesJour} chauffeur${d.nbProgrammesJour > 1 ? 's' : ''} programmé${d.nbProgrammesJour > 1 ? 's' : ''}${d.nbProgrammesActifs !== d.nbProgrammesJour ? ` · ${d.nbProgrammesActifs} en activité` : ''}</div>
+              <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.nbProgrammesJour} chauffeur${d.nbProgrammesJour > 1 ? 's' : ''} programmé${d.nbProgrammesJour > 1 ? 's' : ''}${d.nbProgrammesActifs !== d.nbProgrammesJour ? ` · ${d.nbProgrammesActifs} en activité` : ''}</div>
               ${d.chauffeursProgrammes.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;">${d.chauffeursProgrammes.map(c => `
-                <div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:7px 11px 7px 8px;${c.actif ? '' : 'opacity:.55;'}">
-                  <div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
+                <div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:12px;padding:7px 11px 7px 8px;${c.actif ? '' : 'opacity:.6;'}">
+                  <div style="width:26px;height:26px;border-radius:50%;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
                   <div style="line-height:1.15;">
-                    <div style="font-size:12px;font-weight:700;white-space:nowrap;">${Utils.escHtml(c.prenom)}</div>
-                    <div style="font-size:11px;color:rgba(255,255,255,.82);white-space:nowrap;">${c.actif ? `${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}` : 'pas encore parti'}</div>
+                    <div style="font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-primary);">${Utils.escHtml(c.prenom)}</div>
+                    <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${c.actif ? `${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}` : 'pas encore parti'}</div>
                   </div>
-                </div>`).join('')}</div>` : '<div style="font-size:12px;color:rgba(255,255,255,.6);padding:6px 0;">Aucun chauffeur programmé aujourd’hui.</div>'}
-              ${d.nbHorsPlanning > 0 ? `<div style="margin-top:9px;display:flex;align-items:center;gap:8px;background:rgba(245,158,11,.24);border:1px solid rgba(253,230,138,.6);border-radius:12px;padding:8px 11px;font-size:12px;font-weight:600;">
-                <iconify-icon icon="solar:danger-triangle-bold" style="color:#fde68a;font-size:15px;flex-shrink:0;"></iconify-icon>
+                </div>`).join('')}</div>` : '<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur programmé aujourd’hui.</div>'}
+              ${d.nbHorsPlanning > 0 ? `<div style="margin-top:9px;display:flex;align-items:center;gap:8px;background:rgba(255,174,31,.14);border-radius:12px;padding:8px 11px;font-size:12px;font-weight:600;color:var(--text-primary);">
+                <iconify-icon icon="solar:danger-triangle-bold" style="color:var(--warning);font-size:15px;flex-shrink:0;"></iconify-icon>
                 <span><strong>${d.chauffeursHorsPlanning.map(c => Utils.escHtml(c.prenom)).join(', ')}</strong> roule${d.nbHorsPlanning > 1 ? 'nt' : ''} hors planning — à ajouter</span>
               </div>` : ''}
             </div>
 
             <!-- CA du mois (réel) -->
-            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,.15);padding-top:10px;font-size:12px;color:rgba(255,255,255,.78);">
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-color);padding-top:10px;font-size:12px;color:var(--text-secondary);">
               <span style="display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> CA du mois</span>
-              <strong style="color:#fff;font-size:14px;">${Utils.formatCurrency(d.caReelMois)}</strong>
+              <strong style="color:var(--text-primary);font-size:14px;">${Utils.formatCurrency(d.caReelMois)}</strong>
             </div>
 
-          </div>
         </div>
 
-        <!-- Dettes (orange s'il y en a, neutre à 0) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:${d.totalDettes > 0 ? 'linear-gradient(135deg,#f97316,#fb923c)' : 'linear-gradient(135deg,#64748b,#94a3b8)'};border:none;box-shadow:0 4px 20px ${d.totalDettes > 0 ? 'rgba(249,115,22,.25)' : 'rgba(100,116,139,.22)'};">
+        <!-- Dettes (carte blanche Spike — badge ambre s'il y en a, neutre à 0) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
+            <div style="width:46px;height:46px;border-radius:13px;background:${d.totalDettes > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.totalDettes > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;">
               <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Dettes</div>
+            <div style="margin:0;color:var(--text-muted);font-weight:500;">Dettes</div>
           </div>
-          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalDettes)}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.65);">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;background:rgba(255,255,255,.15);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalDettes)}</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.nbDetteDrivers} chauffeur${d.nbDetteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;background:var(--bg-tertiary);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalDettes/d.totalAttendu*100,100) : 0}%;background:${d.totalDettes > 0 ? 'var(--warning)' : 'var(--text-muted)'};"></div>
           </div>
         </a>
 
-        <!-- Pertes (rouge s'il y en a, neutre à 0) -->
-        <a href="#/versements" class="d-card" style="text-decoration:none;color:#fff;background:${d.totalPertes > 0 ? 'linear-gradient(135deg,#ef4444,#f87171)' : 'linear-gradient(135deg,#64748b,#94a3b8)'};border:none;box-shadow:0 4px 20px ${d.totalPertes > 0 ? 'rgba(239,68,68,.25)' : 'rgba(100,116,139,.22)'};">
+        <!-- Pertes (carte blanche Spike — badge rouge s'il y en a, neutre à 0) -->
+        <a href="#/versements" class="d-card" style="text-decoration:none;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(255,255,255,.2);color:#fff;">
+            <div style="width:46px;height:46px;border-radius:13px;background:${d.totalPertes > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;">
               <iconify-icon icon="solar:arrow-down-bold-duotone"></iconify-icon>
             </div>
-            <div class="d-lbl" style="margin:0;color:rgba(255,255,255,.8);">Pertes</div>
+            <div style="margin:0;color:var(--text-muted);font-weight:500;">Pertes</div>
           </div>
-          <div class="d-val" style="color:#fff;">${Utils.formatCurrency(d.totalPertes)}</div>
-          <div class="d-sub" style="color:rgba(255,255,255,.65);">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
-          <div class="d-bar-track" style="margin-top:12px;background:rgba(255,255,255,.15);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:rgba(255,255,255,.5);"></div>
+          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalPertes)}</div>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.nbPerteDrivers} chauffeur${d.nbPerteDrivers !== 1 ? 's' : ''}</div>
+          <div class="d-bar-track" style="margin-top:12px;background:var(--bg-tertiary);">
+            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:${d.totalPertes > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></div>
           </div>
         </a>
       </div>
