@@ -15,6 +15,10 @@ const PlanningPage = {
   _currentMonth: null,
   _filterChauffeurId: '',
   _filterSearch: '',
+  _fltService: '',   // '' | 'jour' | 'nuit'
+  _fltRole: '',      // '' | 'titulaire' | 'doublure'
+  _showAbsences: true,
+  _draggingShiftId: null,
 
   _retryTimer: null,
 
@@ -65,6 +69,17 @@ const PlanningPage = {
                 <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:13px;flex-shrink:0;"></iconify-icon>
                 <input type="text" id="filter-planning-search" class="form-control" placeholder="Nom..." value="${this._filterSearch}" style="width:80px;font-size:11px;padding:3px 4px;border:none;background:transparent;font-weight:500;min-width:0;">
               </div>
+              <select id="flt-service" class="form-control" style="font-size:11px;padding:4px 6px;width:auto;min-width:0;border-radius:var(--radius-sm);">
+                <option value="">Service</option>
+                <option value="jour" ${this._fltService === 'jour' ? 'selected' : ''}>Jour</option>
+                <option value="nuit" ${this._fltService === 'nuit' ? 'selected' : ''}>Nuit</option>
+              </select>
+              <select id="flt-role" class="form-control" style="font-size:11px;padding:4px 6px;width:auto;min-width:0;border-radius:var(--radius-sm);">
+                <option value="">Rôle</option>
+                <option value="titulaire" ${this._fltRole === 'titulaire' ? 'selected' : ''}>Titulaires</option>
+                <option value="doublure" ${this._fltRole === 'doublure' ? 'selected' : ''}>Doublures</option>
+              </select>
+              <button id="flt-abs" class="tab ${this._showAbsences ? 'active' : ''}" style="padding:5px 10px;font-size:11px;" title="Afficher / masquer les absences"><iconify-icon icon="solar:moon-sleep-bold-duotone"></iconify-icon> Absences</button>
               <div class="tabs" id="planning-view-tabs" style="margin:0;flex-shrink:0;">
                 <div class="tab ${this._currentView === 'month' ? 'active' : ''}" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
                 <div class="tab ${this._currentView === 'week' ? 'active' : ''}" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
@@ -109,6 +124,13 @@ const PlanningPage = {
       this._filterSearch = e.target.value;
       this._renderView();
     });
+
+    const fltS = document.getElementById('flt-service');
+    if (fltS) fltS.addEventListener('change', (e) => { this._fltService = e.target.value; this._renderView(); });
+    const fltR = document.getElementById('flt-role');
+    if (fltR) fltR.addEventListener('change', (e) => { this._fltRole = e.target.value; this._renderView(); });
+    const fltA = document.getElementById('flt-abs');
+    if (fltA) fltA.addEventListener('click', () => { this._showAbsences = !this._showAbsences; fltA.classList.toggle('active', this._showAbsences); this._renderView(); });
 
     document.getElementById('btn-add-absence').addEventListener('click', () => this._addAbsence());
     document.getElementById('btn-add-shift').addEventListener('click', () => this._addShift());
@@ -392,11 +414,13 @@ const PlanningPage = {
       dayShifts.forEach(s => {
         const ch = chById[s.chauffeurId];
         if (!ch) return;
-        chips.push(`<div class="pcal-chip" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
+        if (!this._matchesShiftFilters(s)) return;
+        chips.push(`<div class="pcal-chip" draggable="true" ondragstart="event.stopPropagation();PlanningPage._onDragShift(event,'${s.id}')" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
           <span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.${this._serviceDuCreneau(s) === 'nuit' ? ' <span style="font-size:8.5px;font-weight:800;color:#e0e7ff;background:#312e81;border-radius:4px;padding:0 3px">NUIT</span>' : ''}${s.role === 'doublure' ? ' <span style="font-size:8.5px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:4px;padding:0 3px">REMPL</span>' : ''} <span class="pcal-chip-time">${s.heureDebut || ''}${s.heureFin ? '–' + s.heureFin : ''}</span></span>
         </div>`);
       });
       dayAbsences.forEach(a => {
+        if (!this._showAbsences) return;
         const ch = chById[a.chauffeurId];
         if (!ch) return;
         chips.push(`<div class="pcal-chip pcal-chip-abs" style="--c:${this._absenceTypeColor(a.type)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._absenceTypeLabel(a.type)}" onclick="event.stopPropagation();PlanningPage._viewAbsence('${a.id}')">
@@ -410,7 +434,7 @@ const PlanningPage = {
         ? `<span class="pcal-num pcal-today">${d.obj.getDate()}</span>`
         : `<span class="pcal-num">${d.obj.getDate()}</span>`;
 
-      return `<div class="pcal-cell pcal-cell-week${isToday ? ' pcal-cell-today' : ''}" onclick="PlanningPage._addShift('','${d.date}')" title="Ajouter un créneau le ${Utils.formatDate(d.date)}">
+      return `<div class="pcal-cell pcal-cell-week${isToday ? ' pcal-cell-today' : ''}" onclick="PlanningPage._addShift('','${d.date}')" ondragover="PlanningPage._onCellDragOver(event)" ondrop="PlanningPage._onDropShift(event,'${d.date}')" title="Ajouter un créneau le ${Utils.formatDate(d.date)}">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           ${numHtml}
           <span style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-muted);">${dayNames[i]}</span>
@@ -959,11 +983,13 @@ const PlanningPage = {
       dayShifts.forEach(s => {
         const ch = chById[s.chauffeurId];
         if (!ch) return;
-        chips.push(`<div class="pcal-chip" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
+        if (!this._matchesShiftFilters(s)) return;
+        chips.push(`<div class="pcal-chip" draggable="true" ondragstart="event.stopPropagation();PlanningPage._onDragShift(event,'${s.id}')" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
           <span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.</span>
         </div>`);
       });
       dayAbsences.forEach(a => {
+        if (!this._showAbsences) return;
         const ch = chById[a.chauffeurId];
         if (!ch) return;
         chips.push(`<div class="pcal-chip pcal-chip-abs" style="--c:${this._absenceTypeColor(a.type)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._absenceTypeLabel(a.type)}" onclick="event.stopPropagation();PlanningPage._viewAbsence('${a.id}')">
@@ -977,7 +1003,7 @@ const PlanningPage = {
         ? `<span class="pcal-num pcal-today">${c.num}</span>`
         : `<span class="pcal-num${c.inMonth ? '' : ' pcal-num-out'}">${c.num}</span>`;
 
-      return `<div class="pcal-cell${c.inMonth ? '' : ' pcal-cell-out'}${c.isToday ? ' pcal-cell-today' : ''}" ${c.inMonth ? `onclick="PlanningPage._addShift('','${c.date}')" title="Ajouter un créneau le ${Utils.formatDate(c.date)}"` : ''}>
+      return `<div class="pcal-cell${c.inMonth ? '' : ' pcal-cell-out'}${c.isToday ? ' pcal-cell-today' : ''}" ${c.inMonth ? `onclick="PlanningPage._addShift('','${c.date}')" ondragover="PlanningPage._onCellDragOver(event)" ondrop="PlanningPage._onDropShift(event,'${c.date}')" title="Ajouter un créneau le ${Utils.formatDate(c.date)}"` : ''}>
         ${numHtml}
         <div class="pcal-chips">${visible.join('')}${overflow > 0 ? `<div class="pcal-more">+${overflow} autre${overflow > 1 ? 's' : ''}</div>` : ''}</div>
       </div>`;
@@ -998,6 +1024,37 @@ const PlanningPage = {
     return this._currentDay.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   },
 
+  // Filtres appliqués à tous les créneaux (service jour/nuit + rôle)
+  _matchesShiftFilters(s) {
+    if (this._fltService && this._serviceDuCreneau(s) !== this._fltService) return false;
+    if (this._fltRole) {
+      const role = s.role === 'doublure' ? 'doublure' : 'titulaire';
+      if (role !== this._fltRole) return false;
+    }
+    return true;
+  },
+
+  // Glisser-déposer : reprogrammer un créneau sur un autre jour
+  _onDragShift(e, id) {
+    this._draggingShiftId = id;
+    try { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'move'; } catch (_) {}
+  },
+  _onCellDragOver(e) {
+    e.preventDefault();
+    try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
+  },
+  _onDropShift(e, date) {
+    e.preventDefault();
+    const id = this._draggingShiftId || (e.dataTransfer ? e.dataTransfer.getData('text/plain') : '');
+    this._draggingShiftId = null;
+    if (!id || !date) return;
+    const shift = this._getPlanning().find(s => s.id === id);
+    if (!shift || shift.date === date) return;
+    Store.update('planning', id, { date });
+    if (typeof Toast !== 'undefined') Toast.success('Créneau déplacé au ' + Utils.formatDate(date));
+    this._renderView();
+  },
+
   _filterByName(chauffeurs) {
     if (!this._filterSearch) return chauffeurs;
     const q = this._filterSearch.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -1010,10 +1067,10 @@ const PlanningPage = {
     const chauffeurs = this._filterByName(this._getChauffeurs().filter(c => c.statut === 'actif' || c.statut === 'repos'));
     const chById = {}; chauffeurs.forEach(c => chById[c.id] = c);
     const chSet = new Set(chauffeurs.map(c => c.id));
-    const shifts = this._getShiftsForDate(dateStr).filter(s => chSet.has(s.chauffeurId))
+    const shifts = this._getShiftsForDate(dateStr).filter(s => chSet.has(s.chauffeurId) && this._matchesShiftFilters(s))
       .sort((a, b) => (a.heureDebut || '').localeCompare(b.heureDebut || ''));
     const absItems = [];
-    chauffeurs.forEach(ch => this._getDriverAbsencesForDate(ch.id, dateStr).forEach(a => absItems.push({ a, ch })));
+    if (this._showAbsences) chauffeurs.forEach(ch => this._getDriverAbsencesForDate(ch.id, dateStr).forEach(a => absItems.push({ a, ch })));
     const isToday = this._isToday(dateStr);
     const vehList = Store.get('vehicules') || [];
     const chPlaque = {}; vehList.forEach(v => { if (v.chauffeurAssigne) chPlaque[v.chauffeurAssigne] = v.immatriculation || `${v.marque} ${v.modele}`; });
@@ -1073,12 +1130,12 @@ const PlanningPage = {
 
     const entries = [];
     this._getPlanning().forEach(s => {
-      if (!s.chauffeurId || !chSet.has(s.chauffeurId) || !String(s.date).startsWith(prefix)) return;
+      if (!s.chauffeurId || !chSet.has(s.chauffeurId) || !String(s.date).startsWith(prefix) || !this._matchesShiftFilters(s)) return;
       const ch = chById[s.chauffeurId]; if (!ch) return;
       entries.push({ date: s.date, t: s.heureDebut || '00:00', kind: 'shift', s, ch });
     });
     this._getAbsences().forEach(a => {
-      if (!chSet.has(a.chauffeurId) || a.dateDebut > lastDay || a.dateFin < firstDay) return;
+      if (!this._showAbsences || !chSet.has(a.chauffeurId) || a.dateDebut > lastDay || a.dateFin < firstDay) return;
       const ch = chById[a.chauffeurId]; if (!ch) return;
       entries.push({ date: a.dateDebut < firstDay ? firstDay : a.dateDebut, t: '00:00', kind: 'abs', a, ch });
     });
