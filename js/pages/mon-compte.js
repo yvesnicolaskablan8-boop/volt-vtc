@@ -24,7 +24,7 @@ const MonComptePage = {
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Mon espace</div>
           <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:user-circle-bold-duotone" style="color:#6366f1;"></iconify-icon> Mon compte
+            <iconify-icon icon="solar:user-circle-bold-duotone" style="color:#5D87FF;"></iconify-icon> Mon compte
           </div>
         </div>
       </div>
@@ -32,14 +32,14 @@ const MonComptePage = {
       <!-- Profil -->
       <div class="d-card" style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
-          <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;">
+          <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#5D87FF,#4570EA);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;">
             ${(session.prenom || 'U').charAt(0)}${(session.nom || '').charAt(0)}
           </div>
           <div>
             <div style="font-size:18px;font-weight:800;color:var(--text-primary);">${session.prenom || ''} ${session.nom || ''}</div>
             <div style="font-size:13px;color:#9ca3af;margin-top:2px;">${session.email || ''}</div>
             <div style="margin-top:4px;">
-              <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:rgba(99,102,241,.1);color:#6366f1;">${session.role === 'admin' ? 'Administrateur' : session.role === 'manager' ? 'Manager' : session.role || 'Utilisateur'}</span>
+              <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:rgba(99,102,241,.1);color:#5D87FF;">${session.role === 'admin' ? 'Administrateur' : session.role === 'manager' ? 'Manager' : session.role || 'Utilisateur'}</span>
             </div>
           </div>
         </div>
@@ -48,7 +48,7 @@ const MonComptePage = {
       <!-- Notifications Push -->
       <div class="d-card" style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <div style="width:36px;height:36px;border-radius:10px;background:rgba(99,102,241,.1);display:flex;align-items:center;justify-content:center;color:#6366f1;font-size:16px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(99,102,241,.1);display:flex;align-items:center;justify-content:center;color:#5D87FF;font-size:16px;">
             <iconify-icon icon="solar:bell-bold-duotone"></iconify-icon>
           </div>
           <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Notifications Push</div>
@@ -74,22 +74,22 @@ const MonComptePage = {
           <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Apparence</div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <label style="flex:1;min-width:100px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:2px solid ${theme === 'dark' ? '#6366f1' : 'var(--border-color)'};cursor:pointer;transition:all .2s;background:var(--bg-secondary);">
-            <input type="radio" name="mc-theme" value="dark" ${theme === 'dark' ? 'checked' : ''} style="accent-color:#6366f1;">
+          <label style="flex:1;min-width:100px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:2px solid ${theme === 'dark' ? '#5D87FF' : 'var(--border-color)'};cursor:pointer;transition:all .2s;background:var(--bg-secondary);">
+            <input type="radio" name="mc-theme" value="dark" ${theme === 'dark' ? 'checked' : ''} style="accent-color:#5D87FF;">
             <div>
               <iconify-icon icon="solar:moon-bold-duotone" style="font-size:18px;color:#8b5cf6;"></iconify-icon>
               <div style="font-size:12px;font-weight:600;margin-top:2px;">Sombre</div>
             </div>
           </label>
-          <label style="flex:1;min-width:100px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:2px solid ${theme === 'light' ? '#6366f1' : 'var(--border-color)'};cursor:pointer;transition:all .2s;background:var(--bg-secondary);">
-            <input type="radio" name="mc-theme" value="light" ${theme === 'light' ? 'checked' : ''} style="accent-color:#6366f1;">
+          <label style="flex:1;min-width:100px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:2px solid ${theme === 'light' ? '#5D87FF' : 'var(--border-color)'};cursor:pointer;transition:all .2s;background:var(--bg-secondary);">
+            <input type="radio" name="mc-theme" value="light" ${theme === 'light' ? 'checked' : ''} style="accent-color:#5D87FF;">
             <div>
               <iconify-icon icon="solar:sun-bold-duotone" style="font-size:18px;color:#f59e0b;"></iconify-icon>
               <div style="font-size:12px;font-weight:600;margin-top:2px;">Clair</div>
             </div>
           </label>
-          <label style="flex:1;min-width:100px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:2px solid ${theme === 'auto' ? '#6366f1' : 'var(--border-color)'};cursor:pointer;transition:all .2s;background:var(--bg-secondary);">
-            <input type="radio" name="mc-theme" value="auto" ${theme === 'auto' ? 'checked' : ''} style="accent-color:#6366f1;">
+          <label style="flex:1;min-width:100px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:2px solid ${theme === 'auto' ? '#5D87FF' : 'var(--border-color)'};cursor:pointer;transition:all .2s;background:var(--bg-secondary);">
+            <input type="radio" name="mc-theme" value="auto" ${theme === 'auto' ? 'checked' : ''} style="accent-color:#5D87FF;">
             <div>
               <iconify-icon icon="solar:monitor-bold-duotone" style="font-size:18px;color:#3b82f6;"></iconify-icon>
               <div style="font-size:12px;font-weight:600;margin-top:2px;">Auto</div>
@@ -143,7 +143,7 @@ const MonComptePage = {
         .mc-toggle input { opacity:0;width:0;height:0; }
         .mc-toggle-slider { position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--bg-tertiary);border:1px solid var(--border-color);transition:0.3s;border-radius:24px; }
         .mc-toggle-slider::before { content:"";position:absolute;height:18px;width:18px;left:2px;bottom:2px;background:var(--text-muted);transition:0.3s;border-radius:50%; }
-        .mc-toggle input:checked + .mc-toggle-slider { background:#6366f1;border-color:#6366f1; }
+        .mc-toggle input:checked + .mc-toggle-slider { background:#5D87FF;border-color:#5D87FF; }
         .mc-toggle input:checked + .mc-toggle-slider::before { transform:translateX(20px);background:#fff; }
       </style>
     `;

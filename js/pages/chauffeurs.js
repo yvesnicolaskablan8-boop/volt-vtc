@@ -2101,7 +2101,7 @@ const ChauffeursPage = {
           <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Total impay\u00e9</div>
         </div>
         <div style="flex:1;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:14px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:#6366f1;">${contraventions.length}</div>
+          <div style="font-size:22px;font-weight:900;color:#5D87FF;">${contraventions.length}</div>
           <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Total contraventions</div>
         </div>
       </div>

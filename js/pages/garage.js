@@ -227,7 +227,7 @@ const GaragePage = {
     const today = new Date().toISOString().split('T')[0];
 
     Modal.form(
-      '<iconify-icon icon="solar:tuning-2-bold-duotone" style="color:#6366f1"></iconify-icon> Planifier une maintenance',
+      '<iconify-icon icon="solar:tuning-2-bold-duotone" style="color:#5D87FF"></iconify-icon> Planifier une maintenance',
       `<form id="form-maint-add" class="modal-form">
         <div class="form-group"><label>Véhicule *</label><select name="vehiculeId" class="form-control" required><option value="">Choisir...</option>${vOpts}</select></div>
         <div class="form-row">
@@ -725,7 +725,7 @@ const GaragePage = {
         data: {
           labels,
           datasets: [
-            { label:'Achat', data:tcoData.map(t=>t.achat), backgroundColor:'#6366f1', borderRadius:2 },
+            { label:'Achat', data:tcoData.map(t=>t.achat), backgroundColor:'#5D87FF', borderRadius:2 },
             { label:'Assurance', data:tcoData.map(t=>t.assurance), backgroundColor:'#3b82f6', borderRadius:2 },
             { label:'Maintenance', data:tcoData.map(t=>t.maintenance), backgroundColor:'#22c55e', borderRadius:2 },
             { label:'R\u00e9parations', data:tcoData.map(t=>t.reparations), backgroundColor:'#f59e0b', borderRadius:2 },

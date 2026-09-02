@@ -317,7 +317,7 @@ const Header = {
         notifications.push({
           icon: 'solar:checklist-bold-duotone',
           iconBg: 'rgba(99,102,241,0.15)',
-          iconColor: '#6366f1',
+          iconColor: '#5D87FF',
           text: `<strong>${nouvelles.length} tache${nouvelles.length > 1 ? 's' : ''}</strong> à effectuer`,
           time: "Aujourd'hui"
         });

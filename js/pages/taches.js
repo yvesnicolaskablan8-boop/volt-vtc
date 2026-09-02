@@ -153,7 +153,7 @@ const TachesPage = {
     h1.style.cssText = 'margin:0;font-size:1.4rem;display:flex;align-items:center;gap:8px;';
     const h1Icon = document.createElement('iconify-icon');
     h1Icon.setAttribute('icon', 'solar:checklist-bold-duotone');
-    h1Icon.style.cssText = 'color:#6366f1;font-size:1.5rem;';
+    h1Icon.style.cssText = 'color:#5D87FF;font-size:1.5rem;';
     h1.appendChild(h1Icon);
     h1.appendChild(document.createTextNode(' Gestion des tâches'));
     topbarLeft.appendChild(h1);
@@ -281,7 +281,7 @@ const TachesPage = {
     return `
       <div class="dash-section">
         <div class="dash-kpi-row">
-          ${this._kpiCard('solar:clipboard-list-bold-duotone', '#6366f1', 'Tâches actives', active.length, "TachesPage._kpiNav('liste')")}
+          ${this._kpiCard('solar:clipboard-list-bold-duotone', '#5D87FF', 'Tâches actives', active.length, "TachesPage._kpiNav('liste')")}
           ${this._kpiCard('solar:calendar-bold-duotone', '#f59e0b', "À faire aujourd'hui", aFaireAujourdhui.length, "TachesPage._kpiNav('liste','a_faire')")}
           ${this._kpiCard('solar:alarm-bold-duotone', '#ef4444', 'En retard', enRetard.length, "TachesPage._kpiNav('liste','a_faire')")}
           ${this._kpiCard('solar:play-bold-duotone', '#3b82f6', 'En cours', enCours.length, "TachesPage._kpiNav('liste','en_cours')")}
@@ -293,7 +293,7 @@ const TachesPage = {
       <div class="dash-grid-2col">
         <div class="dash-card">
           <div class="dash-card-header">
-            <iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:#6366f1;"></iconify-icon>
+            <iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:#5D87FF;"></iconify-icon>
             Charge par membre
           </div>
           <div class="dash-card-body">
@@ -418,7 +418,7 @@ const TachesPage = {
 
   _avatarBubble(name) {
     const initials = this._getUserInitials(name);
-    const colors = ['#6366f1', '#f97316', '#22c55e', '#ef4444', '#8b5cf6', '#3b82f6', '#ec4899'];
+    const colors = ['#5D87FF', '#f97316', '#22c55e', '#ef4444', '#8b5cf6', '#3b82f6', '#ec4899'];
     const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
     const col = colors[hash % colors.length];
     return '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:' + col + '22;color:' + col + ';font-size:11px;font-weight:700;flex-shrink:0;">' + Utils.escHtml(initials) + '</span>';
@@ -807,7 +807,7 @@ const TachesPage = {
       + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#3b82f6;"></span>En cours</span>'
       + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#22c55e;"></span>Terminée</span>'
       + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#ef4444;"></span>En retard</span>'
-      + '<span class="gantt-legend-item"><span style="width:10px;height:2px;background:#818cf8;border-radius:1px;"></span>Aujourd\'hui</span>'
+      + '<span class="gantt-legend-item"><span style="width:10px;height:2px;background:#8AA8FF;border-radius:1px;"></span>Aujourd\'hui</span>'
       + '</div>';
 
     return `
@@ -1686,7 +1686,7 @@ const TachesPage = {
       body += '<div style="margin-bottom:16px;"><div style="font-weight:600;font-size:12px;color:var(--text-muted);margin-bottom:6px;">Étiquettes</div>'
         + '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
       t.etiquettes.forEach(tag => {
-        body += '<span style="background:rgba(99,102,241,.12);color:#6366f1;padding:2px 10px;border-radius:12px;font-size:11px;">' + Utils.escHtml(tag) + '</span>';
+        body += '<span style="background:rgba(99,102,241,.12);color:#5D87FF;padding:2px 10px;border-radius:12px;font-size:11px;">' + Utils.escHtml(tag) + '</span>';
       });
       body += '</div></div>';
     }
@@ -1913,8 +1913,8 @@ const TachesPage = {
       }
       .taches-tab:hover { color:var(--text-primary); background:rgba(255,255,255,0.05); }
       .taches-tab.active {
-        background:linear-gradient(135deg, rgba(99,102,241,.2), rgba(139,92,246,.15));
-        color:#818cf8; font-weight:600;
+        background:linear-gradient(135deg, rgba(93,135,255,.2), rgba(93,135,255,.12));
+        color:#8AA8FF; font-weight:600;
         box-shadow:0 2px 8px rgba(99,102,241,.2), inset 0 1px 0 rgba(255,255,255,0.05);
       }
       .taches-tab iconify-icon { font-size:1.1rem; }
@@ -1922,7 +1922,7 @@ const TachesPage = {
       /* FAB */
       .taches-fab {
         position:fixed; bottom:28px; right:28px; width:56px; height:56px; border-radius:16px;
-        background:linear-gradient(135deg, #6366f1, #8b5cf6); color:#fff; border:none;
+        background:linear-gradient(135deg, #5D87FF, #4570EA); color:#fff; border:none;
         cursor:pointer; display:flex; align-items:center; justify-content:center;
         box-shadow:0 4px 15px rgba(99,102,241,.4), 0 0 30px rgba(99,102,241,.15); transition:all .25s cubic-bezier(.4,0,.2,1); z-index:100;
       }
@@ -1945,7 +1945,7 @@ const TachesPage = {
       }
       .dash-kpi-card::before {
         content:''; position:absolute; top:0; left:0; right:0; height:3px;
-        background:var(--kpi-accent, #6366f1); opacity:0; transition:opacity .2s;
+        background:var(--kpi-accent, #5D87FF); opacity:0; transition:opacity .2s;
       }
       .dash-kpi-card:hover { transform:translateY(-4px); box-shadow:0 8px 25px rgba(0,0,0,.2); background:rgba(255,255,255,0.05); }
       .dash-kpi-card:hover::before { opacity:1; }
@@ -1979,7 +1979,7 @@ const TachesPage = {
       .dash-bar-row { display:flex; align-items:center; gap:10px; padding:6px 0; }
       .dash-bar-label { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-primary); min-width:120px; }
       .dash-bar-track { flex:1; height:8px; border-radius:4px; background:var(--bg-tertiary); overflow:hidden; }
-      .dash-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg, #6366f1, #8b5cf6); transition:width .3s ease; }
+      .dash-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg, #5D87FF, #4570EA); transition:width .3s ease; }
       .dash-bar-count { font-size:12px; font-weight:600; color:var(--text-primary); min-width:24px; text-align:right; }
 
       /* Timeline */
@@ -2042,7 +2042,7 @@ const TachesPage = {
         border:none; background:transparent; color:var(--text-muted); cursor:pointer;
         font-size:12px; transition:all .15s; border-top:1px solid rgba(255,255,255,0.04);
       }
-      .kanban-add-btn:hover { color:#6366f1; background:rgba(99,102,241,.06); }
+      .kanban-add-btn:hover { color:#5D87FF; background:rgba(99,102,241,.06); }
 
       /* Kanban cards */
       .kanban-card {
@@ -2068,7 +2068,7 @@ const TachesPage = {
       .kanban-subtask-label { font-size:10px; color:var(--text-muted); }
       .kanban-tags { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:6px; }
       .kanban-tag {
-        background:rgba(99,102,241,.1); color:#818cf8; padding:1px 7px; border-radius:8px;
+        background:rgba(99,102,241,.1); color:#8AA8FF; padding:1px 7px; border-radius:8px;
         font-size:10px; font-weight:500;
       }
       .kanban-card-footer { display:flex; align-items:center; justify-content:space-between; }
@@ -2127,7 +2127,7 @@ const TachesPage = {
         cursor:pointer; font-size:12px; font-weight:500; transition:all .15s;
       }
       .gantt-view-btn:hover { background:rgba(255,255,255,0.06); color:var(--text-primary); }
-      .gantt-view-btn.active { background:rgba(99,102,241,.15); color:#818cf8; border-color:rgba(99,102,241,.3); font-weight:600; }
+      .gantt-view-btn.active { background:rgba(99,102,241,.15); color:#8AA8FF; border-color:rgba(99,102,241,.3); font-weight:600; }
 
       .gantt-container {
         display:flex; border:1px solid rgba(255,255,255,0.06); border-radius:14px;
@@ -2160,7 +2160,7 @@ const TachesPage = {
         border-bottom:1px solid rgba(255,255,255,0.04);
       }
       .gantt-month {
-        padding:6px 10px; font-size:12px; font-weight:600; color:#818cf8;
+        padding:6px 10px; font-size:12px; font-weight:600; color:#8AA8FF;
         text-transform:capitalize; border-right:1px solid rgba(255,255,255,0.04);
         text-align:center;
       }
@@ -2174,7 +2174,7 @@ const TachesPage = {
       .gantt-day-name { font-size:9px; color:var(--text-muted); text-transform:uppercase; }
       .gantt-day-num { font-size:11px; font-weight:600; color:var(--text-primary); }
       .gantt-day.gantt-today-col { background:rgba(99,102,241,0.08); }
-      .gantt-day.gantt-today-col .gantt-day-num { color:#818cf8; }
+      .gantt-day.gantt-today-col .gantt-day-num { color:#8AA8FF; }
       .gantt-day.gantt-weekend { background:rgba(255,255,255,0.01); }
       .gantt-day.gantt-weekend .gantt-day-num { color:var(--text-muted); opacity:.6; }
 
@@ -2198,12 +2198,12 @@ const TachesPage = {
       }
 
       .gantt-today-line {
-        position:absolute; top:0; width:2px; background:#818cf8;
+        position:absolute; top:0; width:2px; background:#8AA8FF;
         z-index:3; pointer-events:none; opacity:.7;
       }
       .gantt-today-line::before {
         content:''; position:absolute; top:-4px; left:-4px;
-        width:10px; height:10px; border-radius:50%; background:#818cf8;
+        width:10px; height:10px; border-radius:50%; background:#8AA8FF;
       }
 
       .gantt-legend {
@@ -2286,7 +2286,7 @@ const TachesPage = {
       .liste-row.selected { background:rgba(99,102,241,.06); }
       .liste-title-cell { cursor:pointer; }
       .liste-task-title { font-weight:500; color:var(--text-primary); }
-      .liste-task-title:hover { color:#6366f1; }
+      .liste-task-title:hover { color:#5D87FF; }
       .liste-subtask-info {
         font-size:10px; color:var(--text-muted); background:var(--bg-tertiary);
         padding:1px 6px; border-radius:6px; margin-left:6px;

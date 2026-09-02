@@ -285,7 +285,7 @@ const RentabilitePage = {
 
     return `
       <style>
-        .rent-hero { position:relative;border-radius:24px;padding:32px;margin-bottom:24px;overflow:hidden;background:linear-gradient(135deg,#1e1b4b,#312e81,#4338ca);box-shadow:0 20px 60px rgba(99,102,241,.25); }
+        .rent-hero { position:relative;border-radius:24px;padding:32px;margin-bottom:24px;overflow:hidden;background:linear-gradient(135deg,#5D87FF,#4570EA);box-shadow:0 12px 40px rgba(93,135,255,.3); }
         .rent-hero::before { content:'';position:absolute;top:-50%;right:-30%;width:80%;height:200%;background:radial-gradient(circle,rgba(139,92,246,.15) 0%,transparent 70%);pointer-events:none; }
         .rent-hero::after { content:'';position:absolute;bottom:-40%;left:-20%;width:60%;height:150%;background:radial-gradient(circle,rgba(16,185,129,.1) 0%,transparent 60%);pointer-events:none; }
         .rent-hero * { position:relative;z-index:1; }
@@ -317,7 +317,7 @@ const RentabilitePage = {
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Analyse financière</div>
           <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:pie-chart-2-bold-duotone" style="color:#6366f1;"></iconify-icon> Rentabilité
+            <iconify-icon icon="solar:pie-chart-2-bold-duotone" style="color:#5D87FF;"></iconify-icon> Rentabilité
           </div>
         </div>
       </div>
@@ -382,7 +382,7 @@ const RentabilitePage = {
       <!-- ===== SUIVI DES PAIEMENTS ===== -->
       <div class="rent-card" style="margin-bottom:24px;">
         <div class="rent-section-title">
-          <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+          <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#5D87FF;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
           <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Suivi des paiements</div>
         </div>
         <div id="rent-paiements-list" style="display:flex;flex-direction:column;gap:12px;"></div>
@@ -413,10 +413,10 @@ const RentabilitePage = {
         </div>
         <div class="rent-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-            <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
+            <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#5D87FF;"><iconify-icon icon="solar:sale-bold-duotone"></iconify-icon></div>
             <div style="font-size:12px;color:var(--text-muted);font-weight:600;">RSI</div>
           </div>
-          <div style="font-size:22px;font-weight:900;color:${d.rsiGlobal >= 0 ? '#6366f1' : '#ef4444'};letter-spacing:-.3px;">${d.rsiGlobal.toFixed(1)}%</div>
+          <div style="font-size:22px;font-weight:900;color:${d.rsiGlobal >= 0 ? '#5D87FF' : '#ef4444'};letter-spacing:-.3px;">${d.rsiGlobal.toFixed(1)}%</div>
         </div>
       </div>
 
@@ -424,13 +424,13 @@ const RentabilitePage = {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;">
         <div class="rent-card" style="background:linear-gradient(135deg,var(--bg-secondary),rgba(99,102,241,.04));">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-            <div class="rent-section-icon" style="background:rgba(99,102,241,.12);color:#6366f1;"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon></div>
+            <div class="rent-section-icon" style="background:rgba(99,102,241,.12);color:#5D87FF;"><iconify-icon icon="solar:document-bold-duotone"></iconify-icon></div>
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--text-primary);">Leasing</div>
               <div style="font-size:11px;color:var(--text-muted);">${d.leasingCount} véhicule${d.leasingCount > 1 ? 's' : ''}</div>
             </div>
           </div>
-          <div style="font-size:28px;font-weight:900;color:#6366f1;margin-bottom:6px;">${d.avgLeasingROI.toFixed(1)}%</div>
+          <div style="font-size:28px;font-weight:900;color:#5D87FF;margin-bottom:6px;">${d.avgLeasingROI.toFixed(1)}%</div>
           <div style="font-size:11px;color:var(--text-muted);">RSI moyen — trésorerie préservée</div>
         </div>
         <div class="rent-card" style="background:linear-gradient(135deg,var(--bg-secondary),rgba(16,185,129,.04));">
@@ -450,7 +450,7 @@ const RentabilitePage = {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;">
         <div class="rent-chart-wrap">
           <div class="rent-section-title">
-            <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
+            <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#5D87FF;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
             <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Revenus vs Coûts par véhicule</div>
           </div>
           <div id="html-chart-rev-cost" style="padding:10px 0;"></div>
@@ -481,7 +481,7 @@ const RentabilitePage = {
       <!-- ===== RSI par véhicule — Radar ===== -->
       <div class="rent-chart-wrap" style="margin-bottom:24px;">
         <div class="rent-section-title">
-          <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon></div>
+          <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#5D87FF;"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon></div>
           <div style="font-size:14px;font-weight:800;color:var(--text-primary);">RSI par véhicule</div>
         </div>
         <div style="height:350px;"><canvas id="chart-rsi-vehicule"></canvas></div>
@@ -490,7 +490,7 @@ const RentabilitePage = {
       <!-- ===== TABLE DETAIL ===== -->
       <div class="rent-card">
         <div class="rent-section-title">
-          <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></div>
+          <div class="rent-section-icon" style="background:rgba(99,102,241,.1);color:#5D87FF;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></div>
           <div style="font-size:14px;font-weight:800;color:var(--text-primary);">Détail par véhicule</div>
         </div>
         <div id="rentabilite-table"></div>
@@ -528,7 +528,7 @@ const RentabilitePage = {
         const montantPaye = (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * paid);
         const montantTotal = (v.apportInitial || 0) + ((v.mensualiteLeasing || 0) * duree);
         const autoFill = v.autoFillLeasing !== false;
-        const barColor = pct >= 100 ? '#10b981' : pct >= 50 ? '#6366f1' : '#f59e0b';
+        const barColor = pct >= 100 ? '#10b981' : pct >= 50 ? '#5D87FF' : '#f59e0b';
         return '<div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);border:1px solid var(--border-color);">'
           + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">'
           + '<div style="display:flex;align-items:center;gap:8px;">'
@@ -537,7 +537,7 @@ const RentabilitePage = {
           + '</div>'
           + '<div style="display:flex;align-items:center;gap:8px;">'
           + '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);cursor:pointer;">'
-          + '<input type="checkbox" ' + (autoFill ? 'checked' : '') + ' onchange="RentabilitePage._toggleAutoFill(\'' + v.id + '\', this.checked)" style="accent-color:#6366f1;">'
+          + '<input type="checkbox" ' + (autoFill ? 'checked' : '') + ' onchange="RentabilitePage._toggleAutoFill(\'' + v.id + '\', this.checked)" style="accent-color:#5D87FF;">'
           + ' Auto'
           + '</label>'
           + '<button class="btn btn-sm btn-outline" onclick="RentabilitePage._editPaiement(\'' + v.id + '\')" style="font-size:11px;padding:4px 10px;">'
@@ -557,7 +557,7 @@ const RentabilitePage = {
         const prixAchat = v.prixAchat || 0;
         const mp = typeof v.montantPaye === 'number' ? v.montantPaye : prixAchat;
         const pct = prixAchat > 0 ? Math.min(Math.round(mp / prixAchat * 100), 100) : 100;
-        const barColor = pct >= 100 ? '#10b981' : pct >= 50 ? '#6366f1' : '#f59e0b';
+        const barColor = pct >= 100 ? '#10b981' : pct >= 50 ? '#5D87FF' : '#f59e0b';
         return '<div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-tertiary);border:1px solid var(--border-color);">'
           + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">'
           + '<div style="display:flex;align-items:center;gap:8px;">'
@@ -599,7 +599,7 @@ const RentabilitePage = {
     const vLabel = (v.marque || '') + ' ' + (v.modele || '');
 
     Modal.form(
-      '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#6366f1;"></iconify-icon> Acquisition & Paiements — ' + vLabel,
+      '<iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#5D87FF;"></iconify-icon> Acquisition & Paiements — ' + vLabel,
       `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div class="form-group">
           <label class="form-label">Type d'acquisition</label>
@@ -633,14 +633,14 @@ const RentabilitePage = {
           <input type="number" name="apportInitial" class="form-control" value="${v.apportInitial || 0}" min="0" step="10000">
         </div>
         <hr style="border-color:var(--border-color);margin:16px 0;">
-        <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px;"><iconify-icon icon="solar:calendar-bold-duotone" style="color:#6366f1;"></iconify-icon> Suivi des mensualités</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px;"><iconify-icon icon="solar:calendar-bold-duotone" style="color:#5D87FF;"></iconify-icon> Suivi des mensualités</div>
         <div class="form-group">
           <label class="form-label">Mensualités payées</label>
           <input type="number" name="mensualitesPaid" class="form-control" value="${currentPaid}" min="0" max="${duree}" step="1">
         </div>
         <div class="form-group" style="margin-top:8px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <input type="checkbox" name="autoFillLeasing" ${autoFill ? 'checked' : ''} style="accent-color:#6366f1;">
+            <input type="checkbox" name="autoFillLeasing" ${autoFill ? 'checked' : ''} style="accent-color:#5D87FF;">
             <span class="form-label" style="margin:0;">Remplissage automatique</span>
           </label>
           <small style="color:var(--text-muted);margin-top:4px;display:block;">Incrémente automatiquement de +1 chaque mois</small>
@@ -779,8 +779,8 @@ const RentabilitePage = {
       const totalRep = d.analysis.reduce((s, a) => s + (a.vehiculeReparations || 0), 0);
       const costData = [totalAcq, totalMaint, totalDep, totalRep].map(v => Math.round(v));
       const costLabels = ['Leasing / Achat', 'Maintenance', 'Dépenses', 'Réparations'];
-      const costColors = ['#6366f1', '#f87171', '#fbbf24', '#22d3ee'];
-      const costHover = ['#818cf8', '#fca5a5', '#fcd34d', '#67e8f9'];
+      const costColors = ['#5D87FF', '#f87171', '#fbbf24', '#22d3ee'];
+      const costHover = ['#8AA8FF', '#fca5a5', '#fcd34d', '#67e8f9'];
 
       this._charts.push(new Chart(costBrkCtx, {
         type: 'doughnut',

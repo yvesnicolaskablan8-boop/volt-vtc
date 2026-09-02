@@ -9,7 +9,7 @@ const MenuPage = {
     // All pages NOT present in bottom nav tabs (Dashboard, Chauffeurs, Planning, Vehicules)
     const menuItems = [
       { route: '/yango', icon: 'solar:bus-bold-duotone', label: 'Yango Fleet', color: '#facc15' },
-      { route: '/taches', icon: 'solar:checklist-bold-duotone', label: 'Taches', color: '#6366f1' },
+      { route: '/taches', icon: 'solar:checklist-bold-duotone', label: 'Taches', color: '#5D87FF' },
       { route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements', color: '#22c55e' },
       { route: '/bonus', icon: 'solar:gift-bold-duotone', label: 'Bonus', color: '#a855f7' },
       { route: '/simulateur', icon: 'solar:calculator-minimalistic-bold-duotone', label: 'Simulateur', color: '#0891b2' },
@@ -17,12 +17,12 @@ const MenuPage = {
       { route: '/comptabilite', icon: 'solar:calculator-bold-duotone', label: 'Comptabilité', color: '#3b82f6' },
       { route: '/messagerie', icon: 'solar:chat-round-dots-bold-duotone', label: 'Messagerie', color: '#06b6d4' },
       { route: '/suivi-vehicules', icon: 'solar:map-point-wave-bold-duotone', label: 'Suivi véhicules', color: '#0ea5e9' },
-      { route: '/controle-conduite', icon: 'solar:shield-check-bold-duotone', label: 'Contr\u00f4le conduite', color: '#6366f1' },
+      { route: '/controle-conduite', icon: 'solar:shield-check-bold-duotone', label: 'Contr\u00f4le conduite', color: '#5D87FF' },
       { route: '/classement', icon: 'solar:cup-star-bold-duotone', label: 'Classement', color: '#f59e0b' },
 
       { route: '/alertes', icon: 'solar:bell-bing-bold-duotone', label: 'Alertes', color: '#eab308' },
-      { route: '/rapports', icon: 'solar:file-download-bold-duotone', label: 'Rapports', color: '#6366f1' },
-      { route: '/mon-compte', icon: 'solar:user-circle-bold-duotone', label: 'Mon compte', color: '#6366f1' },
+      { route: '/rapports', icon: 'solar:file-download-bold-duotone', label: 'Rapports', color: '#5D87FF' },
+      { route: '/mon-compte', icon: 'solar:user-circle-bold-duotone', label: 'Mon compte', color: '#5D87FF' },
       { route: '/parametres', icon: 'solar:settings-bold-duotone', label: 'Paramètres', color: '#94a3b8' }
     ];
 

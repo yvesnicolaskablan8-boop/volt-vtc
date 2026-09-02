@@ -290,7 +290,7 @@ const VersementsPage = {
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Suivi financier</div>
           <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#6366f1;"></iconify-icon> Versements
+            <iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#5D87FF;"></iconify-icon> Versements
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -2712,7 +2712,7 @@ const VersementsPage = {
 
         <div style="display:flex;flex-direction:column;gap:8px;">
           <button class="btn" onclick="VersementsPage._detteAction('modifier','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
-            <iconify-icon icon="solar:pen-bold-duotone" style="font-size:20px;color:#6366f1;"></iconify-icon>
+            <iconify-icon icon="solar:pen-bold-duotone" style="font-size:20px;color:#5D87FF;"></iconify-icon>
             <div style="text-align:left;"><div style="font-weight:600;color:var(--text-primary);">Modifier le montant</div><div style="font-size:11px;color:var(--text-muted);">Ajuster le montant de la dette</div></div>
           </button>
 
@@ -2747,7 +2747,7 @@ const VersementsPage = {
 
     if (action === 'modifier') {
       Modal.open({
-        title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#6366f1;"></iconify-icon> Modifier la dette',
+        title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#5D87FF;"></iconify-icon> Modifier la dette',
         body: `
           <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:16px;font-size:var(--font-size-sm);">
             <div style="font-weight:600;margin-bottom:4px;">${nom}</div>

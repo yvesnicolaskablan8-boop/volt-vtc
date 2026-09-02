@@ -117,8 +117,8 @@
 /* ========== SHARED VARIABLES (both themes) ========== */
 :root {
   /* Accent colors - "Pilote" brand (same in both themes) */
-  --pilote-blue: #6366f1;
-  --pilote-blue-dim: #4f46e5;
+  --pilote-blue: #5D87FF;
+  --pilote-blue-dim: #4570EA;
   --pilote-blue-glow: rgba(99, 102, 241, 0.12);
   --pilote-yellow: #facc15;
   --pilote-yellow-dim: #eab308;

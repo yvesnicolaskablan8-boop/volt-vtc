@@ -960,7 +960,7 @@ const DashboardPage = {
     // Couleur fixe par carte pour les différencier (alignée sur la couleur de l'icône) :
     // Recouvrement = émeraude, Objectif = indigo.
     const recouvrementColor = '#10b981';
-    const progressColor = '#6366f1';
+    const progressColor = '#5D87FF';
     const session = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : {};
     const userName = session.prenom || 'Patron';
 
@@ -1057,7 +1057,7 @@ const DashboardPage = {
         [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(99,102,241,.15); border-color:rgba(99,102,241,.2); }
 
         .d-card.hero {
-          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 35%, #a855f7 65%, #c084fc 100%);
+          background: linear-gradient(135deg, #4570EA 0%, #7c3aed 35%, #a855f7 65%, #c084fc 100%);
           background-size: 200% 200%;
           animation: heroGradient 8s ease infinite;
           border: 1px solid rgba(255,255,255,.18);
@@ -1135,7 +1135,7 @@ const DashboardPage = {
           display:inline-flex; align-items:center; gap:3px; padding:4px 10px; border-radius:20px;
           font-size: 11px; font-weight: 700;
         }
-        .d-tag.purple { background:rgba(99,102,241,.08); color:#6366f1; }
+        .d-tag.purple { background:rgba(99,102,241,.08); color:#5D87FF; }
         .d-tag.green { background:rgba(16,185,129,.08); color:#10b981; }
         .d-tag.red { background:rgba(239,68,68,.08); color:#ef4444; }
         .d-tag.orange { background:rgba(249,115,22,.08); color:#f97316; }
@@ -1185,13 +1185,13 @@ const DashboardPage = {
           border-bottom:2px solid transparent;
         }
         .d-hm-head.today {
-          color:#6366f1;
+          color:#5D87FF;
           background:linear-gradient(180deg, rgba(99,102,241,.06) 0%, rgba(99,102,241,.02) 100%);
           border-radius:12px 12px 0 0;
-          border-bottom:2px solid #6366f1;
+          border-bottom:2px solid #5D87FF;
         }
         .d-hm-head .d-hm-daynum { display:block; font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px; }
-        .d-hm-head.today .d-hm-daynum { color:#6366f1; }
+        .d-hm-head.today .d-hm-daynum { color:#5D87FF; }
         [data-theme="dark"] .d-hm-head { color:#6b7280; }
         [data-theme="dark"] .d-hm-head.today { background:rgba(99,102,241,.1); }
         [data-theme="dark"] .d-hm-head .d-hm-daynum { color:#d1d5db; }
@@ -1215,7 +1215,7 @@ const DashboardPage = {
         }
         .d-hm-cell:hover { transform:scale(1.1); box-shadow:0 4px 12px rgba(0,0,0,.12); z-index:2; }
         .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(52,211,153,.12)); color:#10b981; }
-        .hm-programme { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#6366f1; }
+        .hm-programme { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#5D87FF; }
         .hm-en_retard { background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(248,113,113,.1)); color:#ef4444; }
         .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f97316; }
         .hm-repos { background:rgba(0,0,0,.025); color:#d1d5db; }
@@ -1270,12 +1270,12 @@ const DashboardPage = {
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:0;background:var(--bg-secondary);backdrop-filter:blur(12px);border-radius:14px;border:1px solid var(--border-color);padding:3px;">
             <input type="date" id="dashboard-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:var(--text-primary);font-weight:500;outline:none;">
-            <button onclick="DashboardPage._toggleMonthView()" style="font-size:12px;padding:6px 14px;border-radius:11px;background:${this._monthView ? '#6366f1' : 'transparent'};color:${this._monthView ? '#fff' : '#6b7280'};border:none;font-weight:600;cursor:pointer;transition:all .2s;">
+            <button onclick="DashboardPage._toggleMonthView()" style="font-size:12px;padding:6px 14px;border-radius:11px;background:${this._monthView ? '#5D87FF' : 'transparent'};color:${this._monthView ? '#fff' : '#6b7280'};border:none;font-weight:600;cursor:pointer;transition:all .2s;">
               ${this._monthView ? 'Mois' : 'Jour'}
             </button>
             ${this._selectedPeriod || this._monthView ? '<button onclick="DashboardPage._resetToToday()" style="font-size:13px;padding:6px 8px;border-radius:11px;background:transparent;border:none;cursor:pointer;color:#6b7280;"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>' : ''}
           </div>
-          ${this._isToday() ? '<span id="live-indicator" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#6366f1;background:rgba(99,102,241,.08);padding:5px 14px;border-radius:20px;font-weight:700;backdrop-filter:blur(8px);"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;animation:pulse-dot 2s infinite;"></span>LIVE</span>' : `<span style="font-size:12px;color:#9ca3af;font-weight:500;">${d.periodLabel}</span>`}
+          ${this._isToday() ? '<span id="live-indicator" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#5D87FF;background:rgba(99,102,241,.08);padding:5px 14px;border-radius:20px;font-weight:700;backdrop-filter:blur(8px);"><span style="width:6px;height:6px;border-radius:50%;background:#5D87FF;animation:pulse-dot 2s infinite;"></span>LIVE</span>' : `<span style="font-size:12px;color:#9ca3af;font-weight:500;">${d.periodLabel}</span>`}
           <div style="position:relative;">
             <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:#9ca3af;pointer-events:none;"></iconify-icon>
             <input type="text" id="dashboard-search" placeholder="Rechercher..." style="padding:8px 14px 8px 34px;font-size:12px;width:160px;border-radius:14px;background:var(--bg-secondary);backdrop-filter:blur(12px);border:1px solid var(--border-color);color:var(--text-primary);outline:none;font-weight:500;" oninput="DashboardPage._filterByDriver(this.value)">
@@ -1404,7 +1404,7 @@ const DashboardPage = {
         <!-- Objectif -->
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;">
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;">
               <iconify-icon icon="solar:target-bold-duotone"></iconify-icon>
             </div>
             <div class="d-lbl" style="margin:0;">Objectif</div>
@@ -1661,7 +1661,7 @@ const DashboardPage = {
           </div>
           <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:var(--text-primary);">Maintenance</div>
         </div>
-        <a href="#/garage" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
+        <a href="#/garage" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout →</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
       ${alerts.length > 4 ? `<div style="text-align:center;padding:4px;font-size:10px;color:#9ca3af;margin-top:4px;">+ ${alerts.length - 4} autre(s)</div>` : ''}
@@ -1673,7 +1673,7 @@ const DashboardPage = {
     const days = d.heatmapWeekDays || [];
     if (drivers.length === 0) {
       return `<div class="d-card" style="display:flex;align-items:center;gap:14px;">
-        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
+        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
         <div>
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Planning semaine</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Aucun chauffeur actif</div>
@@ -1691,7 +1691,7 @@ const DashboardPage = {
     });
 
     const statusLabels = { verse: 'Versé', programme: 'Programmé', en_retard: 'En retard', absent: 'Absent', repos: 'Repos' };
-    const statusColors = { verse: '#10b981', programme: '#6366f1', en_retard: '#ef4444', absent: '#f97316', repos: '#9ca3af' };
+    const statusColors = { verse: '#10b981', programme: '#5D87FF', en_retard: '#ef4444', absent: '#f97316', repos: '#9ca3af' };
     const MAX_CHIPS = 6;
 
     // Cartes calendrier par jour (style MAURALEX) : les chauffeurs programmés
@@ -1727,7 +1727,7 @@ const DashboardPage = {
         .d-pcal-wrap { overflow-x:auto; }
         .d-pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; min-width:640px; animation:dSlide .5s cubic-bezier(.16,1,.3,1); }
         .d-pcal-cell { border:1px solid var(--border-color); border-radius:12px; background:var(--bg-secondary); min-height:120px; padding:8px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:5px; }
-        .d-pcal-cell:hover { border-color:#6366f1; box-shadow:0 2px 10px rgba(99,102,241,.10); }
+        .d-pcal-cell:hover { border-color:#5D87FF; box-shadow:0 2px 10px rgba(99,102,241,.10); }
         .d-pcal-cell-today { border-color:rgba(99,102,241,.45); }
         .d-pcal-num { font-size:12px; font-weight:700; color:var(--text-primary); line-height:22px; }
         .d-pcal-today { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--text-primary); color:var(--bg-secondary); font-weight:800; }
@@ -1744,7 +1744,7 @@ const DashboardPage = {
     // Legend — modern pills
     html += `<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.08);font-size:11px;font-weight:600;color:#10b981;"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Versé</div>
-      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#6366f1;"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;"></span> Programmé</div>
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#5D87FF;"><span style="width:6px;height:6px;border-radius:50%;background:#5D87FF;"></span> Programmé</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> En retard</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
@@ -1753,7 +1753,7 @@ const DashboardPage = {
     return `<div class="d-card" style="padding:24px 20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
+          <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#5D87FF,#4570EA);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
             <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#fff;"></iconify-icon>
           </div>
           <div>
@@ -1761,7 +1761,7 @@ const DashboardPage = {
             <div style="font-size:11px;color:#9ca3af;font-weight:500;margin-top:1px;">${drivers.length} chauffeur${drivers.length > 1 ? 's' : ''} actif${drivers.length > 1 ? 's' : ''}</div>
           </div>
         </div>
-        <a href="#/planning" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout →</a>
+        <a href="#/planning" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout →</a>
       </div>
       ${html}
     </div>`;
@@ -1796,14 +1796,14 @@ const DashboardPage = {
 
     return `<div class="d-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
+        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
           <iconify-icon icon="solar:cup-star-bold-duotone"></iconify-icon>
         </div>
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 chauffeurs</div>
           <div style="font-size:11px;color:#9ca3af;">Score global (${d.monthLabel})</div>
         </div>
-        <a href="#/classement" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout &rarr;</a>
+        <a href="#/classement" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout &rarr;</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
     </div>`;
@@ -1833,7 +1833,7 @@ const DashboardPage = {
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 dettes</div>
           <div style="font-size:11px;color:#9ca3af;">${drivers.length} chauffeur${drivers.length !== 1 ? 's' : ''} &bull; Total ${Utils.formatCurrency(d.totalDettes)}</div>
         </div>
-        <a href="#/versements" onclick="setTimeout(()=>{var el=document.getElementById('dette-section-recettes');if(el)el.scrollIntoView({behavior:'smooth'})},500)" style="font-size:11px;font-weight:600;color:#6366f1;text-decoration:none;">Voir tout &rarr;</a>
+        <a href="#/versements" onclick="setTimeout(()=>{var el=document.getElementById('dette-section-recettes');if(el)el.scrollIntoView({behavior:'smooth'})},500)" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout &rarr;</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
     </div>`;

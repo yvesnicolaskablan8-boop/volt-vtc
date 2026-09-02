@@ -162,7 +162,7 @@ const PlanningPage = {
           // 1) Premier chargement en cours : on patiente, mais pas indefiniment
           //    (8 essais x 1,5 s = 12 s au maximum).
           avis = cadre('var(--bg-tertiary)', 'var(--border-color)', 'var(--text-secondary)',
-            `<div class="spinner" style="width:18px;height:18px;border:2px solid var(--border-color);border-top-color:#6366f1;border-radius:50%;animation:spin 1s linear infinite;flex:none;"></div>
+            `<div class="spinner" style="width:18px;height:18px;border:2px solid var(--border-color);border-top-color:#5D87FF;border-radius:50%;animation:spin 1s linear infinite;flex:none;"></div>
              <span>Chargement des données...</span>
              <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`);
           this._retryTimer = setTimeout(() => { this._retryTimer = null; this._renderView(); }, 1500);
@@ -270,7 +270,7 @@ const PlanningPage = {
   },
 
   _shiftTypeColor(type) {
-    return { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6', custom: '#6366f1' }[type] || '#64748b';
+    return { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6', custom: '#5D87FF' }[type] || '#64748b';
   },
 
   // Helpers pour créneaux personnalisés (acceptent l'objet shift complet)
@@ -292,7 +292,7 @@ const PlanningPage = {
 
   _getShiftColor(shift) {
     if (shift.heureDebut && shift.heureFin && (!shift.typeCreneaux || shift.typeCreneaux === 'custom')) {
-      return '#6366f1';
+      return '#5D87FF';
     }
     return this._shiftTypeColor(shift.typeCreneaux);
   },
@@ -429,7 +429,7 @@ const PlanningPage = {
   // =================== VUE MOBILE (grille compacte comme dashboard) ===================
 
   _renderMobileDayView(chauffeurs, days, vehMap, stats) {
-    const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
+    const avatarColors = ['#5D87FF','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
 
     // KPIs compact
     let html = `
@@ -455,9 +455,9 @@ const PlanningPage = {
         .pm-grid-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -12px; padding:0 12px; }
         .pm-grid { display:grid; grid-template-columns:80px repeat(7,minmax(44px,1fr)); gap:3px; align-items:center; min-width:420px; }
         .pm-head { text-align:center; font-size:11px; font-weight:700; color:var(--text-muted); padding:8px 0 6px; text-transform:uppercase; }
-        .pm-head.today { color:#6366f1; background:rgba(99,102,241,.08); border-radius:8px 8px 0 0; border-bottom:2px solid #6366f1; }
+        .pm-head.today { color:#5D87FF; background:rgba(99,102,241,.08); border-radius:8px 8px 0 0; border-bottom:2px solid #5D87FF; }
         .pm-head .pm-daynum { display:block; font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px; }
-        .pm-head.today .pm-daynum { color:#6366f1; }
+        .pm-head.today .pm-daynum { color:#5D87FF; }
         .pm-driver { display:flex; align-items:center; padding:4px 6px; margin:0 -6px; overflow:hidden;
           border-radius:7px; border:1px solid transparent; transition:background .12s, color .12s, border-color .12s; }
         .pm-driver:hover { background:var(--pilote-blue); border-color:var(--pilote-blue); }
@@ -466,7 +466,7 @@ const PlanningPage = {
         .pm-driver-plaque { font-size:9px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
         .pm-cell { height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; font-size:11px; font-weight:700; }
         .pm-cell:active { transform:scale(1.1); }
-        .pm-shift { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#6366f1; }
+        .pm-shift { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#5D87FF; }
         .pm-shift-m { background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.08)); color:#22c55e; }
         .pm-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.08)); color:#3b82f6; }
         .pm-shift-j { background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.08)); color:#f59e0b; }
@@ -577,7 +577,7 @@ const PlanningPage = {
   },
 
   _renderDesktopGridView(chauffeurs, days, vehMap, stats, todayStr, versements) {
-    const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
+    const avatarColors = ['#5D87FF','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
 
     return `
       <style>
@@ -633,7 +633,7 @@ const PlanningPage = {
         .pg-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.18),rgba(96,165,250,.1)); color:#3b82f6; }
         .pg-shift-journee { background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(251,191,36,.1)); color:#f59e0b; }
         .pg-shift-nuit { background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(167,139,250,.1)); color:#8b5cf6; }
-        .pg-shift-custom { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#6366f1; }
+        .pg-shift-custom { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#5D87FF; }
 
         .pg-shift-matin:hover { background:linear-gradient(135deg,rgba(34,197,94,.28),rgba(74,222,128,.18)); }
         .pg-shift-am:hover { background:linear-gradient(135deg,rgba(59,130,246,.28),rgba(96,165,250,.18)); }
@@ -711,7 +711,7 @@ const PlanningPage = {
       <div class="card pg-card" style="padding:24px 20px;border-radius:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div class="pg-header-icon" style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
+            <div class="pg-header-icon" style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#5D87FF,#4570EA);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
               <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#fff;"></iconify-icon>
             </div>
             <div>
@@ -808,7 +808,7 @@ const PlanningPage = {
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(59,130,246,.08);font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> AM</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.08);font-size:11px;font-weight:600;color:#f59e0b;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Journée</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(139,92,246,.08);font-size:11px;font-weight:600;color:#8b5cf6;"><span style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;"></span> Nuit</div>
-          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#6366f1;"><span style="width:6px;height:6px;border-radius:50%;background:#6366f1;"></span> Perso.</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#5D87FF;"><span style="width:6px;height:6px;border-radius:50%;background:#5D87FF;"></span> Perso.</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><iconify-icon icon="solar:danger-triangle-bold" style="font-size:10px;"></iconify-icon> En retard</div>

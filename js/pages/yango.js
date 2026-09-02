@@ -1055,7 +1055,7 @@ const YangoPage = {
     const totalKmAll = rows.reduce((s, r) => s + getDriverKm(r.chauffeur.id), 0);
 
     // Shift helpers
-    const shiftColors = { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6', custom: '#6366f1' };
+    const shiftColors = { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6', custom: '#5D87FF' };
     const shiftLabels = { matin: 'M', apres_midi: 'AM', journee: 'J', nuit: 'N', custom: 'P' };
     const getShiftBadge = (shift) => {
       const type = shift.typeCreneaux || 'custom';

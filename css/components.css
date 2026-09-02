@@ -125,7 +125,7 @@
   justify-content: center;
   font-size: 1.15rem;
   margin-bottom: 12px;
-  background: linear-gradient(135deg, #6366f1, #818cf8);
+  background: linear-gradient(135deg, #5D87FF, #8AA8FF);
   color: #fff;
   box-shadow: 0 4px 12px rgba(99,102,241,.25);
   transition: transform 0.2s ease;
@@ -2739,7 +2739,7 @@ textarea.form-control {
 [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(99,102,241,.15); border-color:rgba(99,102,241,.2); }
 
 .d-card.hero {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  background: linear-gradient(135deg, #5D87FF 0%, #8b5cf6 50%, #a855f7 100%);
   border: none; color: #fff;
   box-shadow: 0 4px 24px rgba(99,102,241,.25);
 }
@@ -2777,7 +2777,7 @@ textarea.form-control {
   display:inline-flex; align-items:center; gap:3px; padding:4px 10px; border-radius:20px;
   font-size: 11px; font-weight: 700;
 }
-.d-tag.purple { background:rgba(99,102,241,.08); color:#6366f1; }
+.d-tag.purple { background:rgba(99,102,241,.08); color:#5D87FF; }
 .d-tag.green { background:rgba(16,185,129,.08); color:#10b981; }
 .d-tag.red { background:rgba(239,68,68,.08); color:#ef4444; }
 .d-tag.orange { background:rgba(249,115,22,.08); color:#f97316; }

@@ -64,7 +64,7 @@ const ContraventionsPage = {
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Gestion</div>
           <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:document-text-bold-duotone" style="color:#6366f1;"></iconify-icon> Contraventions
+            <iconify-icon icon="solar:document-text-bold-duotone" style="color:#5D87FF;"></iconify-icon> Contraventions
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -85,7 +85,7 @@ const ContraventionsPage = {
         </div>
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
+            <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
             <div class="d-lbl" style="margin:0;">Ce mois</div>
           </div>
           <div class="d-val">${data.nbMois}</div>
@@ -348,7 +348,7 @@ const ContraventionsPage = {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
               <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
-                <iconify-icon icon="solar:user-bold-duotone" style="color:#6366f1;"></iconify-icon> Chauffeur *
+                <iconify-icon icon="solar:user-bold-duotone" style="color:#5D87FF;"></iconify-icon> Chauffeur *
               </label>
               <select name="chauffeurId" id="contra-chauffeur-select" required style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;">
                 <option value="">S\u00e9lectionner un chauffeur...</option>
@@ -407,7 +407,7 @@ const ContraventionsPage = {
                 <div style="font-size:11px;color:var(--text-muted);"><span id="contra-count-badge">1</span> infraction(s)</div>
               </div>
             </div>
-            <button type="button" id="btn-add-contra-line" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(99,102,241,.3);transition:all .2s;" onmouseenter="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 16px rgba(99,102,241,.4)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(99,102,241,.3)'">
+            <button type="button" id="btn-add-contra-line" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#5D87FF,#8AA8FF);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(99,102,241,.3);transition:all .2s;" onmouseenter="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 16px rgba(99,102,241,.4)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(99,102,241,.3)'">
               <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter
             </button>
           </div>

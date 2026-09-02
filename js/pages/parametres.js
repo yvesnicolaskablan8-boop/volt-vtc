@@ -2417,7 +2417,7 @@ const ParametresPage = {
           <!-- Documents -->
           <div class="card">
             <div class="card-header">
-              <span class="card-title"><iconify-icon icon="solar:user-id-bold-duotone" style="color:#6366f1;"></iconify-icon> Expiration documents</span>
+              <span class="card-title"><iconify-icon icon="solar:user-id-bold-duotone" style="color:#5D87FF;"></iconify-icon> Expiration documents</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-sm);padding-top:var(--space-md);">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">

@@ -38,7 +38,7 @@ const ControleConduitePage = {
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Suivi</div>
           <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:shield-check-bold-duotone" style="color:#6366f1;"></iconify-icon> Contr\u00f4le de conduite
+            <iconify-icon icon="solar:shield-check-bold-duotone" style="color:#5D87FF;"></iconify-icon> Contr\u00f4le de conduite
           </div>
         </div>
       </div>
@@ -67,7 +67,7 @@ const ControleConduitePage = {
       <style>
         .cc-tab { background:none;border:none;padding:10px 20px;cursor:pointer;font-size:var(--font-size-sm);font-weight:600;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;display:flex;align-items:center;gap:6px;white-space:nowrap;font-family:inherit; }
         .cc-tab:hover { color:var(--text-primary); }
-        .cc-tab.active { color:#6366f1;border-bottom-color:#6366f1; }
+        .cc-tab.active { color:#5D87FF;border-bottom-color:#5D87FF; }
 
         .cc-kpi-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px; }
         @media(max-width:900px) { .cc-kpi-grid { grid-template-columns:repeat(2,1fr); } }
@@ -104,7 +104,7 @@ const ControleConduitePage = {
 
         .cc-type-badge { display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700; }
         .cc-type-ville { background:rgba(59,130,246,.12);color:#2563eb; }
-        .cc-type-autoroute { background:rgba(99,102,241,.12);color:#6366f1; }
+        .cc-type-autoroute { background:rgba(99,102,241,.12);color:#5D87FF; }
         .cc-type-zone_scolaire { background:rgba(234,179,8,.12);color:#ca8a04; }
         .cc-type-zone_travaux { background:rgba(249,115,22,.12);color:#ea580c; }
         .cc-type-personnalisee { background:rgba(107,114,128,.12);color:#6b7280; }
@@ -124,7 +124,7 @@ const ControleConduitePage = {
         .cc-top-list { list-style:none;padding:0;margin:0; }
         .cc-top-list li { display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-color); }
         .cc-top-list li:last-child { border-bottom:none; }
-        .cc-top-rank { width:24px;height:24px;border-radius:50%;background:rgba(99,102,241,.1);color:#6366f1;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-right:10px; }
+        .cc-top-rank { width:24px;height:24px;border-radius:50%;background:rgba(99,102,241,.1);color:#5D87FF;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-right:10px; }
         .cc-top-name { font-weight:600;font-size:13px;color:var(--text-primary); }
         .cc-top-count { font-weight:700;font-size:13px;color:var(--text-muted); }
 
@@ -273,7 +273,7 @@ const ControleConduitePage = {
         </div>
         <div class="cc-kpi">
           <div class="cc-kpi-top">
-            <div class="cc-kpi-icon" style="background:rgba(99,102,241,.1);color:#6366f1;"><iconify-icon icon="solar:user-bold-duotone"></iconify-icon></div>
+            <div class="cc-kpi-icon" style="background:rgba(99,102,241,.1);color:#5D87FF;"><iconify-icon icon="solar:user-bold-duotone"></iconify-icon></div>
             <div class="cc-kpi-label">Chauffeur le plus infracteur</div>
           </div>
           <div class="cc-kpi-val" style="font-size:1rem;">${topChauffeur}</div>
@@ -511,7 +511,7 @@ const ControleConduitePage = {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);">
-            <span style="width:10px;height:10px;border-radius:50%;background:#818cf8;display:inline-block;"></span> Radar actif
+            <span style="width:10px;height:10px;border-radius:50%;background:#8AA8FF;display:inline-block;"></span> Radar actif
           </div>
           <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);">
             <span style="width:10px;height:10px;border-radius:50%;background:#6b7280;display:inline-block;"></span> Radar inactif
@@ -783,7 +783,7 @@ const ControleConduitePage = {
     const recent = infractions.filter(i => new Date(i.date) >= thirtyDaysAgo);
 
     content.innerHTML = '<div class="cc-stats-grid">'
-      + '<div class="cc-chart-card"><div class="cc-chart-title"><iconify-icon icon="solar:chart-bold-duotone" style="color:#6366f1;"></iconify-icon> Infractions par cat\u00e9gorie (30 jours)</div><canvas id="cc-chart-categories" height="250"></canvas></div>'
+      + '<div class="cc-chart-card"><div class="cc-chart-title"><iconify-icon icon="solar:chart-bold-duotone" style="color:#5D87FF;"></iconify-icon> Infractions par cat\u00e9gorie (30 jours)</div><canvas id="cc-chart-categories" height="250"></canvas></div>'
       + '<div class="cc-chart-card"><div class="cc-chart-title"><iconify-icon icon="solar:graph-up-bold-duotone" style="color:#f97316;"></iconify-icon> Infractions par jour (30 jours)</div><canvas id="cc-chart-daily" height="250"></canvas></div>'
       + '</div>'
       + '<div class="cc-stats-grid">'
@@ -968,7 +968,7 @@ const ControleConduitePage = {
         </div>
         <div class="cc-kpi">
           <div class="cc-kpi-top">
-            <div class="cc-kpi-icon" style="background:rgba(99,102,241,.08);color:#6366f1;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
+            <div class="cc-kpi-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
             <div class="cc-kpi-label">Ce mois</div>
           </div>
           <div class="cc-kpi-val">${data.nbMois}</div>
@@ -1191,7 +1191,7 @@ const ControleConduitePage = {
         + '<div style="font-size:12px;opacity:.8;">Renseignez le chauffeur concern\u00e9 et ajoutez une ou plusieurs infractions</div></div>'
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">'
         + '<div><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
-        + '<iconify-icon icon="solar:user-bold-duotone" style="color:#6366f1;"></iconify-icon> Chauffeur *</label>'
+        + '<iconify-icon icon="solar:user-bold-duotone" style="color:#5D87FF;"></iconify-icon> Chauffeur *</label>'
         + '<select name="chauffeurId" id="cc-contra-chauffeur-select" required style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;">'
         + '<option value="">S\u00e9lectionner un chauffeur...</option>'
         + chauffeurs.map(c => '<option value="' + c.id + '" data-vehicule="' + (c.vehiculeAssigne || '') + '" ' + (c.id === preselectedChauffeurId ? 'selected' : '') + '>' + c.prenom + ' ' + c.nom + '</option>').join('')
@@ -1221,7 +1221,7 @@ const ControleConduitePage = {
         + '<iconify-icon icon="solar:list-bold"></iconify-icon></div>'
         + '<div><div style="font-size:14px;font-weight:800;color:var(--text-primary);">Infractions</div>'
         + '<div style="font-size:11px;color:var(--text-muted);"><span id="cc-contra-count-badge">1</span> infraction(s)</div></div></div>'
-        + '<button type="button" id="cc-btn-add-contra-line" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(99,102,241,.3);transition:all .2s;" onmouseenter="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 4px 16px rgba(99,102,241,.4)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(99,102,241,.3)\'">'
+        + '<button type="button" id="cc-btn-add-contra-line" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#5D87FF,#8AA8FF);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(99,102,241,.3);transition:all .2s;" onmouseenter="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 4px 16px rgba(99,102,241,.4)\'" onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'0 2px 8px rgba(99,102,241,.3)\'">'
         + '<iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter</button></div>'
         + '<div id="cc-contra-lines-container">' + this._contraLineHtml(0) + '</div>'
         + '</form>',
@@ -1539,7 +1539,7 @@ const ControleConduitePage = {
         <!-- Poids des criteres -->
         <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-            <iconify-icon icon="solar:tuning-2-bold-duotone" style="font-size:22px;color:#6366f1;"></iconify-icon>
+            <iconify-icon icon="solar:tuning-2-bold-duotone" style="font-size:22px;color:#5D87FF;"></iconify-icon>
             <div style="font-size:18px;font-weight:700;color:var(--text-primary);">Poids des crit\u00e8res</div>
           </div>
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Ajustez l'importance de chaque crit\u00e8re dans le score global (total doit faire 100%)</div>
@@ -1636,7 +1636,7 @@ const ControleConduitePage = {
         </div>
 
         <div style="text-align:right;">
-          <button id="btn-save-score-config" style="padding:12px 28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;border-radius:var(--radius-md);font-weight:700;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+          <button id="btn-save-score-config" style="padding:12px 28px;background:linear-gradient(135deg,#5D87FF,#4570EA);color:white;border:none;border-radius:var(--radius-md);font-weight:700;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
             <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Enregistrer
           </button>
         </div>
