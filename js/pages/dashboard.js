@@ -830,7 +830,37 @@ const DashboardPage = {
       else { paceState = 'demarrage'; paceLabel = 'Journée en cours'; }
     }
 
+    // === Liste unifiée « chauffeurs en activité » (programmés + hors planning) ===
+    // Chaque chauffeur reçoit un état couleur selon son CA — même logique que le
+    // rythme global, appliquée individuellement (neutre tant que la journée court).
+    const _driverState = (ca) => {
+      if (!ca || ca <= 0) return 'neutre';
+      const pct = refParChauffeur > 0 ? ca / refParChauffeur : 0;
+      if (pct >= 0.85) return 'bon';
+      if (!_soir) return 'demarrage';
+      if (pct >= 0.5) return 'modere';
+      return 'faible';
+    };
+    const chauffeursActifsJour = [];
+    _plan.filter(p => p.date === jourAtt).forEach(p => {
+      const ch = chById2.get(p.chauffeurId);
+      if (!ch || ch.statut === 'inactif' || absentCe(ch.id) || chauffeursActifsJour.some(x => x.id === ch.id)) return;
+      const a = caParChJour[ch.id] || { ca: 0, courses: 0 };
+      chauffeursActifsJour.push({ id: ch.id, prenom: ch.prenom, nom: ch.nom, ca: a.ca, courses: a.courses, programme: true, actif: a.ca > 0, state: _driverState(a.ca) });
+    });
+    _cajToday.forEach(e => {
+      const ca = Number(e.caBrut) || 0;
+      if (ca <= 0 || programmesJourSet.has(e.chauffeurId)) return;
+      const ch = chById2.get(e.chauffeurId);
+      if (!ch || chauffeursActifsJour.some(x => x.id === ch.id)) return;
+      chauffeursActifsJour.push({ id: ch.id, prenom: ch.prenom, nom: ch.nom, ca, courses: Number(e.nbCourses) || 0, programme: false, actif: true, state: _driverState(ca) });
+    });
+    chauffeursActifsJour.sort((a, b) => (b.ca - a.ca) || (b.programme - a.programme));
+    const nbActifsTotal = chauffeursActifsJour.filter(c => c.actif).length;
+    const nbAjouter = chauffeursActifsJour.filter(c => !c.programme).length;
+
     return {
+      chauffeursActifsJour, nbActifsTotal, nbAjouter,
       versementAttenduJour, nbActifsJour,
       caBrutJour, caReelMois, chauffeursProgrammes, nbProgrammesJour, nbProgrammesActifs, chauffeursHorsPlanning, nbHorsPlanning, refParChauffeur, objectifJourActifs, pctJourType, paceState, paceLabel,
       estAujourdhui, jourAtt,
@@ -1293,7 +1323,7 @@ const DashboardPage = {
       <!-- Style Dashboard 2 (Spike) : hero d'accueil + trio KPI + barres + line + donut -->
       <style>
         .d2-r1{grid-template-columns:1.7fr 1.15fr;align-items:stretch;}
-        .d2-r2{grid-template-columns:1.7fr 1.3fr;align-items:stretch;}
+        .d2-r2{grid-template-columns:1fr;align-items:stretch;}
         .d2-r3{grid-template-columns:1.15fr 1fr 1fr;align-items:stretch;}
         .d2-kpis{display:flex;flex-direction:column;gap:16px;}
         .d2-kpi{border-radius:16px;padding:15px 17px;display:flex;flex-direction:column;gap:10px;flex:1;justify-content:center;border:1px solid var(--border-color);text-decoration:none;color:inherit;transition:transform .15s, box-shadow .15s;}
@@ -1335,19 +1365,49 @@ const DashboardPage = {
           </div>
 
           <div style="position:relative;">
-            <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.nbProgrammesJour} chauffeur${d.nbProgrammesJour > 1 ? 's' : ''} programmé${d.nbProgrammesJour > 1 ? 's' : ''}${d.nbProgrammesActifs !== d.nbProgrammesJour ? ` · ${d.nbProgrammesActifs} en activité` : ''}</div>
-            ${d.chauffeursProgrammes.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;">${d.chauffeursProgrammes.map(c => `
-              <div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:12px;padding:7px 11px 7px 8px;${c.actif ? '' : 'opacity:.6;'}">
-                <div style="width:26px;height:26px;border-radius:50%;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
-                <div style="line-height:1.15;">
-                  <div style="font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-primary);">${Utils.escHtml(c.prenom)}</div>
+            <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px;">${d.chauffeursActifsJour.length} chauffeur${d.chauffeursActifsJour.length > 1 ? 's' : ''}${d.nbActifsTotal !== d.chauffeursActifsJour.length ? ` · ${d.nbActifsTotal} en activité` : ''}${d.nbAjouter > 0 ? ` · ${d.nbAjouter} hors planning` : ''}</div>
+            ${d.chauffeursActifsJour.length ? `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;">${d.chauffeursActifsJour.map(c => {
+              const SC = { bon: ['#02b3a9', 'rgba(19,222,185,.16)'], demarrage: ['#4570EA', 'rgba(93,135,255,.14)'], modere: ['#D99000', 'rgba(255,174,31,.18)'], faible: ['#D9583B', 'rgba(250,137,107,.16)'], neutre: ['#7C8FAC', 'var(--bg-tertiary)'] };
+              const sc = SC[c.state] || SC.neutre;
+              return `<div class="live-chip" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;background:${sc[1]};border-left:3px solid ${sc[0]};border-radius:10px;padding:7px 11px 7px 9px;${c.actif ? '' : 'opacity:.72;'}">
+                <div style="width:26px;height:26px;border-radius:50%;background:${sc[0]};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>
+                <div style="line-height:1.15;min-width:0;">
+                  <div style="font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-primary);">${Utils.escHtml(c.prenom)}${!c.programme ? ` <span style="font-size:8px;font-weight:800;color:var(--warning-dim);background:rgba(255,174,31,.18);border-radius:4px;padding:1px 4px;vertical-align:1px;">À AJOUTER</span>` : ''}</div>
                   <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${c.actif ? `${Utils.formatCurrency(c.ca)}${c.courses ? ` · ${c.courses} c.` : ''}` : (d.estAujourdhui ? 'pas encore parti' : 'n’a pas roulé')}</div>
                 </div>
-              </div>`).join('')}</div>` : `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur programmé ${d.estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`}
-            ${d.nbHorsPlanning > 0 ? `<div style="margin-top:9px;display:flex;align-items:center;gap:8px;background:rgba(255,174,31,.14);border-radius:12px;padding:8px 11px;font-size:12px;font-weight:600;color:var(--text-primary);">
-              <iconify-icon icon="solar:danger-triangle-bold" style="color:var(--warning);font-size:15px;flex-shrink:0;"></iconify-icon>
-              <span><strong>${d.chauffeursHorsPlanning.map(c => Utils.escHtml(c.prenom)).join(', ')}</strong> roule${d.nbHorsPlanning > 1 ? 'nt' : ''} hors planning — à ajouter</span>
-            </div>` : ''}
+              </div>`;
+            }).join('')}</div>` : `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur en activité ${d.estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`}
+          </div>
+
+          <!-- Recette vs attendu — fusionnée dans le bloc d'activité -->
+          <div style="border-top:1px solid var(--border-color);padding-top:14px;position:relative;">
+            ${(() => {
+              const weeks = (d.weeklyPayments || []).slice(-8);
+              const maxV = Math.max(1, ...weeks.map(w => Math.max(w.verse || 0, w.attendu || 0)));
+              const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
+              const sumA = weeks.reduce((s, w) => s + (w.attendu || 0), 0);
+              const bars = weeks.map(w => {
+                const vH = (w.verse || 0) / maxV * 100, aH = (w.attendu || 0) / maxV * 100;
+                return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;">
+                  <div style="width:100%;max-width:30px;display:flex;gap:3px;align-items:flex-end;height:96px;">
+                    <div title="Versé ${Utils.formatCurrency(w.verse || 0)}" style="flex:1;background:#5D87FF;border-radius:5px 5px 0 0;height:${vH.toFixed(1)}%;min-height:3px;"></div>
+                    <div title="Attendu ${Utils.formatCurrency(w.attendu || 0)}" style="flex:1;background:rgba(93,135,255,.22);border-radius:5px 5px 0 0;height:${aH.toFixed(1)}%;min-height:3px;"></div>
+                  </div>
+                  <div style="font-size:9px;color:var(--text-muted);font-weight:600;white-space:nowrap;">${Utils.escHtml(w.label || '')}</div>
+                </div>`;
+              }).join('');
+              return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:9px;">
+                  <div class="d-icon" style="width:38px;height:38px;font-size:1.05rem;background:rgba(93,135,255,.12);color:#5D87FF;"><iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon></div>
+                  <div><div class="d-lbl" style="margin:0;">Recette vs attendu</div><div class="d-sub" style="margin:0;">8 dernières semaines</div></div>
+                </div>
+                <div style="display:flex;gap:18px;align-items:flex-end;">
+                  <div style="text-align:right;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;display:flex;align-items:center;gap:5px;justify-content:flex-end;"><span style="width:9px;height:9px;border-radius:3px;background:#5D87FF;"></span>Versé</div><div style="font-size:16px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(sumV)}</div></div>
+                  <div style="text-align:right;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;display:flex;align-items:center;gap:5px;justify-content:flex-end;"><span style="width:9px;height:9px;border-radius:3px;background:rgba(93,135,255,.30);"></span>Attendu</div><div style="font-size:16px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(sumA)}</div></div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-end;gap:6px;">${bars}</div>`;
+            })()}
           </div>
 
           <div style="margin-top:auto;position:relative;display:inline-flex;align-self:flex-start;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);">
@@ -1393,40 +1453,8 @@ const DashboardPage = {
         </div>
       </div>
 
-      <!-- Row 2 : Barres Recette/Attendu + Évolution du CA -->
+      <!-- Row 2 : Évolution du CA (pleine largeur) -->
       <div class="d-grid d2-r2">
-
-        <!-- Recette vs attendu (barres, style Profit & Expenses) -->
-        <div class="d-card" style="display:flex;flex-direction:column;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-            <div class="d-icon" style="background:rgba(93,135,255,.12);color:#5D87FF;"><iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon></div>
-            <div><div class="d-lbl" style="margin:0;">Recette vs attendu</div><div class="d-sub" style="margin:0;">8 dernières semaines</div></div>
-          </div>
-          ${(() => {
-            const weeks = (d.weeklyPayments || []).slice(-8);
-            const maxV = Math.max(1, ...weeks.map(w => Math.max(w.verse || 0, w.attendu || 0)));
-            const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
-            const sumA = weeks.reduce((s, w) => s + (w.attendu || 0), 0);
-            const bars = weeks.map(w => {
-              const vH = (w.verse || 0) / maxV * 100, aH = (w.attendu || 0) / maxV * 100;
-              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;">
-                <div style="width:100%;max-width:32px;display:flex;gap:3px;align-items:flex-end;height:140px;">
-                  <div title="Versé ${Utils.formatCurrency(w.verse || 0)}" style="flex:1;background:#5D87FF;border-radius:5px 5px 0 0;height:${vH.toFixed(1)}%;min-height:3px;"></div>
-                  <div title="Attendu ${Utils.formatCurrency(w.attendu || 0)}" style="flex:1;background:rgba(93,135,255,.22);border-radius:5px 5px 0 0;height:${aH.toFixed(1)}%;min-height:3px;"></div>
-                </div>
-                <div style="font-size:9.5px;color:var(--text-muted);font-weight:600;white-space:nowrap;">${Utils.escHtml(w.label || '')}</div>
-              </div>`;
-            }).join('');
-            return `<div style="display:flex;gap:18px;align-items:stretch;flex:1;">
-              <div style="flex:1;display:flex;align-items:flex-end;gap:7px;min-width:0;">${bars}</div>
-              <div style="width:148px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;gap:15px;border-left:1px solid var(--border-color);padding-left:18px;">
-                <div><div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);font-weight:600;"><span style="width:10px;height:10px;border-radius:3px;background:#5D87FF;"></span>Versé</div><div style="font-size:18px;font-weight:800;color:var(--text-primary);margin-top:3px;">${Utils.formatCurrency(sumV)}</div></div>
-                <div><div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);font-weight:600;"><span style="width:10px;height:10px;border-radius:3px;background:rgba(93,135,255,.30);"></span>Attendu</div><div style="font-size:18px;font-weight:800;color:var(--text-primary);margin-top:3px;">${Utils.formatCurrency(sumA)}</div></div>
-                <a href="#/versements" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:12px;padding:9px 12px;border-radius:10px;text-decoration:none;box-shadow:0 6px 14px rgba(93,135,255,.30);">Voir le rapport <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></a>
-              </div>
-            </div>`;
-          })()}
-        </div>
 
         <!-- Évolution du CA (aire lissée) -->
         <div class="d-card" style="display:flex;flex-direction:column;">
