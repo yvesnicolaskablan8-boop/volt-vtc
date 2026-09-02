@@ -1476,47 +1476,47 @@ const DashboardPage = {
 
         <!-- Trio KPI colorés -->
         <div class="d2-kpis">
-          <a href="#/versements" class="d2-kpi" style="background:rgba(93,135,255,.10);">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="width:40px;height:40px;border-radius:12px;background:#5D87FF;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(93,135,255,.35);"><iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon></div>
-              <span class="d2-pill" style="background:rgba(2,179,169,.16);color:#02b3a9;"><iconify-icon icon="solar:shield-check-bold"></iconify-icon>${d.tauxRecouvrement}%</span>
-            </div>
-            <div><div class="d2-num">${Utils.formatCurrency(d.totalAttendu)}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Trésorerie · attendu ce mois</div></div>
-            ${(() => {
-              const fmtK = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(',0', '').replace('.0', '').replace('.', ',') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
-              const PAL = { success: ['var(--success-dim)', 'rgba(19,222,185,.14)'], warning: ['var(--warning-dim)', 'rgba(255,174,31,.14)'], danger: ['var(--danger-dim)', 'rgba(250,137,107,.14)'], neutral: ['var(--text-muted)', 'var(--bg-tertiary)'] };
-              const w = (icon, label, val, sem) => {
-                const [col, bg] = (val > 0) ? PAL[sem] : PAL.neutral;
-                return `<div style="flex:1;min-width:0;background:${bg};border-radius:10px;padding:6px 7px;display:flex;flex-direction:column;gap:1px;">
-                  <span style="display:flex;align-items:center;gap:3px;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:${col};"><iconify-icon icon="${icon}" style="font-size:10px;"></iconify-icon>${label}</span>
-                  <strong style="font-size:12px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${fmtK(val)} F</strong>
-                </div>`;
-              };
-              return `<div style="display:flex;gap:6px;margin-top:2px;">${w('solar:check-circle-bold', 'Versé', d.totalVerseMonth, 'success')}${w('solar:danger-triangle-bold', 'Dettes', d.totalDettes, 'warning')}${w('solar:arrow-down-bold', 'Pertes', d.totalPertes, 'danger')}</div>`;
-            })()}
-          </a>
-          <a href="#/taches" class="d2-kpi" style="background:rgba(255,174,31,.12);">
-            ${(() => {
-              const s = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : null;
-              const uid = s ? s.userId : ''; const admin = s && s.role === 'Administrateur';
-              const all = Store.get('taches') || [];
-              const mine = (admin ? all.filter(t => t.creePar === uid) : all.filter(t => t.assigneA === uid)).filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
-              const today = new Date().toISOString().split('T')[0];
-              const urg = mine.filter(t => t.priorite === 'urgente' || (t.dateEcheance && t.dateEcheance < today)).length;
-              return `<div style="display:flex;align-items:center;justify-content:space-between;">
-                <div style="width:40px;height:40px;border-radius:12px;background:#FFAE1F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(255,174,31,.35);"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></div>
-                ${urg > 0 ? `<span class="d2-pill" style="background:rgba(217,88,59,.14);color:#D9583B;"><iconify-icon icon="solar:alarm-bold"></iconify-icon>${urg} urgent${urg > 1 ? 's' : ''}</span>` : ''}
+          ${(() => {
+            const col = d.totalAttendu <= 0 ? '#5D87FF' : (d.tauxRecouvrement >= 80 ? '#13DEB9' : d.tauxRecouvrement >= 40 ? '#5D87FF' : '#FFAE1F');
+            const fmtK = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(',0', '').replace('.0', '').replace('.', ',') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
+            const w = (icon, label, val) => `<div style="flex:1;min-width:0;background:rgba(255,255,255,.20);border-radius:10px;padding:6px 7px;display:flex;flex-direction:column;gap:1px;">
+                <span style="display:flex;align-items:center;gap:3px;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:rgba(255,255,255,.92);"><iconify-icon icon="${icon}" style="font-size:10px;"></iconify-icon>${label}</span>
+                <strong style="font-size:12px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${fmtK(val)} F</strong></div>`;
+            return `<a href="#/versements" class="d2-kpi" style="background:${col};color:#fff;border:none;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="width:40px;height:40px;border-radius:12px;background:#fff;color:${col};display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(0,0,0,.14);"><iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon></div>
+                <span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;"><iconify-icon icon="solar:shield-check-bold"></iconify-icon>${d.tauxRecouvrement}%</span>
               </div>
-              <div><div class="d2-num">${mine.length}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Tâche${mine.length > 1 ? 's' : ''} en cours</div></div>`;
-            })()}
-          </a>
-          <a href="#/alertes" class="d2-kpi" style="background:rgba(250,137,107,.12);">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-              <div style="width:40px;height:40px;border-radius:12px;background:#FA896B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(250,137,107,.35);"><iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon></div>
-              ${d.alertesCritiques > 0 ? `<span class="d2-pill" style="background:rgba(217,88,59,.14);color:#D9583B;">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>` : (d.alertesTotal === 0 ? `<span class="d2-pill" style="background:rgba(2,179,169,.16);color:#02b3a9;">OK</span>` : '')}
-            </div>
-            <div><div class="d2-num">${d.alertesTotal}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Alerte${d.alertesTotal > 1 ? 's' : ''}</div></div>
-          </a>
+              <div><div class="d2-num" style="color:#fff;">${Utils.formatCurrency(d.totalAttendu)}</div><div style="font-size:12px;color:rgba(255,255,255,.88);font-weight:600;margin-top:3px;">Trésorerie · attendu ce mois</div></div>
+              <div style="display:flex;gap:6px;margin-top:2px;">${w('solar:check-circle-bold', 'Versé', d.totalVerseMonth)}${w('solar:danger-triangle-bold', 'Dettes', d.totalDettes)}${w('solar:arrow-down-bold', 'Pertes', d.totalPertes)}</div>
+            </a>`;
+          })()}
+          ${(() => {
+            const s = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : null;
+            const uid = s ? s.userId : ''; const admin = s && s.role === 'Administrateur';
+            const all = Store.get('taches') || [];
+            const mine = (admin ? all.filter(t => t.creePar === uid) : all.filter(t => t.assigneA === uid)).filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
+            const today = new Date().toISOString().split('T')[0];
+            const urg = mine.filter(t => t.priorite === 'urgente' || (t.dateEcheance && t.dateEcheance < today)).length;
+            const col = urg > 0 ? '#FA896B' : (mine.length > 0 ? '#FFAE1F' : '#13DEB9');
+            return `<a href="#/taches" class="d2-kpi" style="background:${col};color:#fff;border:none;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="width:40px;height:40px;border-radius:12px;background:#fff;color:${col};display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(0,0,0,.14);"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></div>
+                ${urg > 0 ? `<span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;"><iconify-icon icon="solar:alarm-bold"></iconify-icon>${urg} urgent${urg > 1 ? 's' : ''}</span>` : ''}
+              </div>
+              <div><div class="d2-num" style="color:#fff;">${mine.length}</div><div style="font-size:12px;color:rgba(255,255,255,.88);font-weight:600;margin-top:3px;">Tâche${mine.length > 1 ? 's' : ''} en cours</div></div>
+            </a>`;
+          })()}
+          ${(() => {
+            const col = d.alertesCritiques > 0 ? '#FA896B' : (d.alertesTotal > 0 ? '#FFAE1F' : '#13DEB9');
+            return `<a href="#/alertes" class="d2-kpi" style="background:${col};color:#fff;border:none;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="width:40px;height:40px;border-radius:12px;background:#fff;color:${col};display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(0,0,0,.14);"><iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon></div>
+                ${d.alertesCritiques > 0 ? `<span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>` : (d.alertesTotal === 0 ? `<span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;">OK</span>` : '')}
+              </div>
+              <div><div class="d2-num" style="color:#fff;">${d.alertesTotal}</div><div style="font-size:12px;color:rgba(255,255,255,.88);font-weight:600;margin-top:3px;">Alerte${d.alertesTotal > 1 ? 's' : ''}</div></div>
+            </a>`;
+          })()}
         </div>
       </div>
 
