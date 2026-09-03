@@ -74,6 +74,54 @@ const AlertesPage = {
         Toast.success('Paramètres salarié enregistrés pour ' + nom);
         AlertesPage._loadAlerts();
       });
+    } else if (type === 'objectif') {
+      const alert = (this._allAlerts || []).find(a => a.inlineType === 'objectif' && a.chauffeurId === chauffeurId);
+      if (!alert) { Toast.error('Alerte introuvable'); return; }
+      const ch = (Store.get('chauffeurs') || []).find(c => c.id === chauffeurId);
+      const nom = ch ? `${ch.prenom || ''} ${ch.nom || ''}`.trim() : 'Chauffeur';
+      const fields = [
+        { name: 'motif', label: 'Motif du manque', type: 'select', required: true, options: [
+          { value: 'performance', label: 'Manque de performance du chauffeur → dette' },
+          { value: 'accident', label: 'Accident → perte' },
+          { value: 'panne', label: 'Panne / véhicule immobilisé → perte' },
+          { value: 'autre', label: 'Autre → dette' }
+        ] },
+        { name: 'commentaire', label: 'Commentaire (optionnel)', type: 'text', placeholder: 'Précision sur la situation…' }
+      ];
+      const formHtml = FormBuilder.build(fields);
+      Modal.form(`<iconify-icon icon="solar:target-bold-duotone" class="text-blue"></iconify-icon> Justifier — ${Utils.escHtml(nom)}`, formHtml, () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, fields)) return;
+        const values = FormBuilder.getValues(body);
+        const motif = values.motif || 'performance';
+        const perte = (motif === 'accident' || motif === 'panne');
+        const motifLabel = { performance: 'Manque de performance', accident: 'Accident', panne: 'Panne / véhicule', autre: 'Autre' }[motif] || motif;
+        const manque = Math.max(0, Number(alert.manque) || 0);
+        Store.add('versements', {
+          id: Utils.generateId('VRS'),
+          chauffeurId,
+          date: alert.date,
+          dateService: alert.date,
+          vehiculeId: ch ? (ch.vehiculeAssigne || null) : null,
+          montantBrut: Number(alert.ca) || 0,
+          montantVerse: 0,
+          montantNet: 0,
+          nombreCourses: 0,
+          commission: 0,
+          manquant: manque,
+          traitementManquant: perte ? 'perte' : 'dette',
+          statut: perte ? 'perte' : 'partiel',
+          reference: 'OBJ-' + alert.date,
+          commentaire: `Objectif CA non atteint (${alert.pct}%) — ${motifLabel}${values.commentaire ? ' : ' + values.commentaire : ''}`,
+          dateCreation: new Date().toISOString()
+        });
+        Modal.close();
+        Toast.success(perte ? 'Justifié — manque passé en perte' : 'Justifié — manque imputé en dette');
+        AlertesPage._allAlerts = (AlertesPage._allAlerts || []).filter(a => !(a.inlineType === 'objectif' && a.chauffeurId === chauffeurId));
+        AlertesPage._persistSeverity(AlertesPage._allAlerts);
+        AlertesPage._renderKPIs(AlertesPage._allAlerts);
+        AlertesPage._renderAlertsList(AlertesPage._allAlerts);
+      });
     }
   },
 
@@ -819,6 +867,13 @@ const AlertesPage = {
     );
     if (chauffeurs.length === 0) return;
 
+    // Jours déjà justifiés : une justification crée un versement marqué reference « OBJ-… ».
+    const justifiedSet = new Set(
+      (Store.get('versements') || [])
+        .filter(v => v.reference && String(v.reference).startsWith('OBJ'))
+        .map(v => `${v.chauffeurId}|${v.date}`)
+    );
+
     // Check yesterday (completed day)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -839,6 +894,7 @@ const AlertesPage = {
       const pct = Math.round((ca / objectif) * 100);
 
       if (ca < objectif) {
+        if (justifiedSet.has(`${c.id}|${yesterdayStr}`)) return; // déjà justifié
         const nom = `${c.prenom} ${c.nom}`;
         const niveau = pct < 50 ? 'critique' : pct < 80 ? 'urgent' : 'attention';
         yangoAlerts.push({
@@ -848,7 +904,9 @@ const AlertesPage = {
           titre: `Objectif CA non atteint (${pct}%)`,
           description: `${nom} — CA Yango hier : ${Utils.formatCurrency(ca)} sur ${Utils.formatCurrency(objectif)} (${stats.nbCourses} courses). Manque ${Utils.formatCurrency(objectif - ca)}.`,
           chauffeurId: c.id,
-          action: 'Voir le chauffeur',
+          action: 'Justifier',
+          inlineType: 'objectif',
+          ca, objectif, manque: objectif - ca, pct,
           actionRoute: `#/chauffeurs/${c.id}`,
           icon: 'solar:target-bold-duotone',
           date: yesterdayStr
