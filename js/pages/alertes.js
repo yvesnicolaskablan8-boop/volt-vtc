@@ -80,22 +80,23 @@ const AlertesPage = {
       const ch = (Store.get('chauffeurs') || []).find(c => c.id === chauffeurId);
       const nom = ch ? `${ch.prenom || ''} ${ch.nom || ''}`.trim() : 'Chauffeur';
       const isSalarie = ch && ch.typeContrat === 'salarie';
-      // Montant suggéré. Location : le manque d'objectif. Salarié : la vraie perte ≈
-      // coût du jour (salaire journalier + charges) − CA réel — pas le CA non généré.
-      let sugg = Math.max(0, Number(alert.manque) || 0);
-      let hint = "manque d'objectif";
+      // Champ pré-rempli avec le manque (montant de l'alerte), toujours éditable.
+      const sugg = Math.max(0, Number(alert.manque) || 0);
+      let hint = 'recette manquante';
       if (isSalarie) {
-        const salaireJour = ch.salaireMensuel > 0 ? Math.round(ch.salaireMensuel / 26) : 0;
+        // Repère salarié : la perte cash réelle ≈ coût du jour (salaire/22 + charges) − CA
+        // (le manque d'objectif = CA non généré, pas de l'argent perdu).
+        const salaireJour = ch.salaireMensuel > 0 ? Math.round(ch.salaireMensuel / 22) : 0;
         const chargeJour = (Store.get('charges') || []).filter(x => x.chauffeurId === chauffeurId && x.date === alert.date).reduce((s, x) => s + (Number(x.montant) || 0), 0);
-        sugg = Math.max(0, salaireJour + chargeJour - (Number(alert.ca) || 0));
-        hint = `coût du jour estimé (${Utils.formatCurrency(salaireJour)} salaire${chargeJour ? ' + ' + Utils.formatCurrency(chargeJour) + ' charges' : ''}) − CA`;
+        const perteReelle = Math.max(0, salaireJour + chargeJour - (Number(alert.ca) || 0));
+        hint = `salarié : perte cash estimée ≈ ${Utils.formatCurrency(perteReelle)} (coût jour − CA), ajuste`;
       }
       const fields = [
         { name: 'traitement', label: 'Traitement du manque', type: 'select', required: true, options: [
           { value: 'perte', label: 'Passer en perte (non imputé au chauffeur)' },
           { value: 'dette', label: 'Imputer en dette au chauffeur' }
         ] },
-        { name: 'montant', label: `Montant (FCFA) — ${hint}`, type: 'number', min: 0, step: 500, default: sugg },
+        { name: 'montant', label: `Montant de la perte / dette (FCFA) — ${hint}`, type: 'number', min: 0, step: 500 },
         { name: 'motif', label: 'Motif', type: 'select', required: true, options: [
           { value: 'performance', label: 'Manque de performance du chauffeur' },
           { value: 'accident', label: 'Accident' },
@@ -104,7 +105,7 @@ const AlertesPage = {
         ] },
         { name: 'commentaire', label: 'Commentaire (optionnel)', type: 'text', placeholder: 'Précision sur la situation…' }
       ];
-      const formHtml = FormBuilder.build(fields);
+      const formHtml = FormBuilder.build(fields, { traitement: 'perte', montant: sugg, motif: 'performance' });
       Modal.form(`<iconify-icon icon="solar:target-bold-duotone" class="text-blue"></iconify-icon> Justifier — ${Utils.escHtml(nom)}`, formHtml, () => {
         const body = document.getElementById('modal-body');
         if (!FormBuilder.validate(body, fields)) return;
