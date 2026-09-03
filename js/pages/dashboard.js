@@ -1482,20 +1482,11 @@ const DashboardPage = {
                 <div id="rtl-fade" style="position:absolute;inset:0;"></div>
                 <div id="rtl-spark" style="position:absolute;inset:0;"></div>
               </div>
-              <div style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                  <div style="font-size:13px;font-weight:700;color:var(--text-primary);">Recette en direct</div>
-                  <div style="display:inline-flex;background:var(--bg-tertiary);border-radius:9px;padding:2px;gap:2px;pointer-events:auto;">
-                    <button type="button" onclick="event.stopPropagation();DashboardPage._rtlView('curve')" id="rtl-btn-curve" class="rtl-tbtn rtl-on"><iconify-icon icon="solar:chart-2-linear"></iconify-icon></button>
-                    <button type="button" onclick="event.stopPropagation();DashboardPage._rtlView('bar')" id="rtl-btn-bar" class="rtl-tbtn"><iconify-icon icon="solar:chart-linear"></iconify-icon></button>
-                  </div>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;font-size:12px;pointer-events:auto;">
+              <div style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="font-size:13px;font-weight:700;color:var(--text-primary);">Recette en direct</div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
                   <span id="rtl-trend" style="display:inline-flex;align-items:center;gap:3px;font-weight:700;color:var(--text-muted);">…</span>
-                  <select id="rtl-period" onclick="event.stopPropagation();" onchange="DashboardPage._rtlPeriod(this.value)" style="font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:8px;padding:3px 6px;cursor:pointer;">
-                    <option value="jour">Aujourd'hui</option>
-                    <option value="7j">7 derniers jours</option>
-                  </select>
+                  <span style="color:var(--text-muted);">Aujourd'hui</span>
                 </div>
               </div>
               <div style="position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px solid var(--border-color);font-size:12px;background:var(--bg-secondary);">
