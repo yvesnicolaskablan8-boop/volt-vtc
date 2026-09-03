@@ -1255,6 +1255,7 @@ const DashboardPage = {
         [data-theme="dark"] .d-val { color: #f9fafb; }
         .d-val.xl { font-size: 32px; }
         .d-val.hero { color: #fff; font-size: 36px; }
+        @keyframes rtlGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 
         .d-sub { font-size: 12px; color: #9ca3af; margin-top: 4px; font-weight:500; }
         [data-theme="dark"] .d-sub { color: #6b7280; }
@@ -1457,9 +1458,40 @@ const DashboardPage = {
                 <div class="d-icon" style="width:36px;height:36px;font-size:1rem;background:rgba(139,92,246,.12);color:#8b5cf6;"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
                 <div style="min-width:0;"><div class="d-lbl" style="margin:0;">Recette par heure · en direct</div><div class="d-sub" style="margin:0;" id="rtl-stats">journée d'exploitation (5 h → maintenant)</div></div>
               </div>
-              <div style="text-align:right;flex-shrink:0;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;">Encaissé · 8 sem.</div><div style="font-size:15px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency((d.weeklyPayments || []).slice(-8).reduce((s, w) => s + (w.verse || 0), 0))}</div></div>
             </div>
             <div style="height:140px;position:relative;"><canvas id="rtl-canvas"></canvas></div>
+          </div>
+
+          <!-- Recette encaissée · barres animées (versements 8 semaines) -->
+          <div style="border-top:1px solid var(--border-color);padding-top:14px;position:relative;">
+            ${(() => {
+              const weeks = (d.weeklyPayments || []).slice(-8);
+              const maxV = Math.max(1, ...weeks.map(w => w.verse || 0));
+              const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
+              const last = weeks.length ? (weeks[weeks.length - 1].verse || 0) : 0;
+              const prev = weeks.length > 1 ? (weeks[weeks.length - 2].verse || 0) : 0;
+              const varPct = prev > 0 ? Math.round((last - prev) / prev * 100) : (last > 0 ? 100 : 0);
+              const bars = weeks.map((w, i) => {
+                const vH = Math.max(3, (w.verse || 0) / maxV * 100);
+                return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;">
+                  <div style="width:100%;max-width:26px;display:flex;align-items:flex-end;height:90px;">
+                    <div title="${Utils.escHtml(w.label || '')} : ${Utils.formatCurrency(w.verse || 0)}" style="width:100%;background:linear-gradient(180deg,#ff8a3d,#f54900);border-radius:7px 7px 0 0;height:${vH.toFixed(1)}%;min-height:3px;transform-origin:bottom;animation:rtlGrow .6s cubic-bezier(.2,.8,.2,1) ${(i * 0.06).toFixed(2)}s both;box-shadow:0 4px 12px rgba(245,73,0,.25);"></div>
+                  </div>
+                  <div style="font-size:9px;color:var(--text-muted);font-weight:600;white-space:nowrap;">${Utils.escHtml(w.label || '')}</div>
+                </div>`;
+              }).join('');
+              const varColor = varPct >= 0 ? 'var(--success-dim)' : 'var(--danger-dim)';
+              const varBg = varPct >= 0 ? 'rgba(19,222,185,.15)' : 'rgba(250,137,107,.15)';
+              return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:9px;">
+                  <div class="d-icon" style="width:36px;height:36px;font-size:1rem;background:rgba(245,73,0,.12);color:#f54900;"><iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon></div>
+                  <div><div class="d-lbl" style="margin:0;">Recette encaissée</div><div class="d-sub" style="margin:0;">8 dernières semaines</div></div>
+                </div>
+                <div style="text-align:right;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;">Total encaissé</div><div style="font-size:16px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(sumV)}</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:${varBg};color:${varColor};"><iconify-icon icon="${varPct >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}"></iconify-icon>${varPct >= 0 ? '+' : ''}${varPct}%</span><span style="font-size:11px;color:var(--text-muted);">vs semaine précédente</span></div>
+              <div style="display:flex;align-items:flex-end;gap:7px;">${bars}</div>`;
+            })()}
           </div>
 
           <div style="margin-top:auto;position:relative;display:inline-flex;align-self:flex-start;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);">
