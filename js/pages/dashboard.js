@@ -57,6 +57,7 @@ const DashboardPage = {
       const _ps = document.getElementById('header-period-slot');
       if (_ps) _ps.innerHTML = this._renderPeriodPicker();
       this._bindPeriodSelector();
+      this._loadYangoWatch(data);
       if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
       this._autoGenerateVersements();
@@ -395,6 +396,7 @@ const DashboardPage = {
       container.innerHTML = this._template(data); // template uses escaped/static content only
       this._loadCharts(data);
       this._bindPeriodSelector();
+      this._loadYangoWatch(data);
       this._startAutoRefresh();
     } catch (err) {
       console.error('DashboardPage._silentRefresh() error:', err);
@@ -1530,6 +1532,9 @@ const DashboardPage = {
         </div>
       </div>
 
+      <!-- Chauffeurs à surveiller (CA faible + occupé Yango) -->
+      ${this._renderWatchlist(d)}
+
       <!-- Row 2 : Planning (pleine largeur) -->
       <div class="d-grid d2-r2">
         ${this._renderPlanningHeatmap(d)}
@@ -1745,6 +1750,113 @@ const DashboardPage = {
       <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
       ${alerts.length > 4 ? `<div style="text-align:center;padding:4px;font-size:10px;color:#9ca3af;margin-top:4px;">+ ${alerts.length - 4} autre(s)</div>` : ''}
     </div>`;
+  },
+
+  // ============ Chauffeurs à surveiller ============
+  // Combine deux signaux : CA « pas bon » (zone à surveiller : faible/modéré) et
+  // chauffeurs qui se mettent en « occupé » sur Yango (statut busy, distinct d'une
+  // vraie course in_order). La partie Yango est chargée en asynchrone (_loadYangoWatch).
+  _renderWatchlist(d) {
+    const initial = this._isToday() ? null : []; // null = statut Yango en cours de chargement
+    return `<div class="d-card" style="padding:0;overflow:hidden;">
+      <div id="dash-watchlist">${this._watchlistInner(d, initial)}</div>
+    </div>`;
+  },
+
+  _watchlistInner(d, yBusy) {
+    const RSN = {
+      ca_faible: ['CA anormalement bas', '#FA896B', 'rgba(250,137,107,.14)', 'solar:chart-2-bold'],
+      ca_modere: ['CA sous la moyenne', '#FFAE1F', 'rgba(255,174,31,.16)', 'solar:chart-2-bold'],
+      occupe: ['Occupé sur Yango', '#635BFF', 'rgba(99,91,255,.13)', 'solar:phone-calling-rounded-bold'],
+    };
+    const chauffeurs = (typeof Store !== 'undefined' && Store.get) ? (Store.get('chauffeurs') || []) : [];
+    const chById = new Map(chauffeurs.map(c => [c.id, c]));
+    const caById = new Map((d.chauffeursActifsJour || []).map(c => [c.id, c]));
+    const items = new Map();
+    // 1) CA « pas bon »
+    (d.chauffeursActifsJour || []).forEach(c => {
+      if (c.state === 'faible' || c.state === 'modere') {
+        items.set(c.id, { id: c.id, prenom: c.prenom, nom: c.nom, ca: c.ca, reasons: [c.state === 'faible' ? 'ca_faible' : 'ca_modere'] });
+      }
+    });
+    // 2) Occupé sur Yango (statut busy)
+    if (yBusy) {
+      yBusy.forEach(b => {
+        const ch = chauffeurs.find(x => x.yangoDriverId && x.yangoDriverId === b.id);
+        const key = ch ? ch.id : ('y:' + b.id);
+        const ex = items.get(key);
+        if (ex) { if (!ex.reasons.includes('occupe')) ex.reasons.push('occupe'); }
+        else {
+          const info = ch ? caById.get(ch.id) : null;
+          const parts = (b.nom || '').trim().split(' ');
+          items.set(key, { id: ch ? ch.id : null, prenom: ch ? ch.prenom : (parts[0] || ''), nom: ch ? ch.nom : (parts.slice(1).join(' ')), ca: info ? info.ca : null, reasons: ['occupe'] });
+        }
+      });
+    }
+    const list = [...items.values()].sort((a, b) => (b.reasons.length - a.reasons.length) || ((a.ca == null ? 1e12 : a.ca) - (b.ca == null ? 1e12 : b.ca)));
+    const loading = (yBusy === null);
+    const today = this._isToday();
+
+    const refreshBtn = today ? `<button onclick="DashboardPage._loadYangoWatch(DashboardPage._lastData, true)" title="Rafraîchir le statut Yango" style="background:var(--bg-tertiary);border:none;width:34px;height:34px;border-radius:9px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><iconify-icon icon="solar:refresh-bold"></iconify-icon></button>` : '';
+    const head = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 18px;border-bottom:1px solid var(--border-color);">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+        <div class="d-icon" style="width:38px;height:38px;font-size:1.05rem;background:rgba(255,174,31,.15);color:#FFAE1F;flex-shrink:0;"><iconify-icon icon="solar:eye-scan-bold-duotone"></iconify-icon></div>
+        <div style="min-width:0;"><div class="d-lbl" style="margin:0;">Chauffeurs à surveiller</div><div class="d-sub" style="margin:0;">CA faible${today ? ' ou occupé sur Yango' : ''}${loading ? '' : ` · ${list.length}`}</div></div>
+      </div>
+      ${refreshBtn}
+    </div>`;
+
+    if (!list.length && !loading) {
+      return head + `<div style="padding:22px 18px;display:flex;align-items:center;gap:10px;color:var(--success-dim);font-size:13px;font-weight:600;"><iconify-icon icon="solar:check-circle-bold" style="font-size:18px;"></iconify-icon>Aucun chauffeur à surveiller pour le moment.</div>`;
+    }
+
+    const rows = list.map(it => {
+      const initial = (it.prenom || it.nom || '?').charAt(0).toUpperCase();
+      const sev = it.reasons.includes('ca_faible') ? '#FA896B' : (it.reasons.includes('occupe') ? '#635BFF' : '#FFAE1F');
+      const ch = it.id ? chById.get(it.id) : null;
+      const tel = ch && ch.telephone ? String(ch.telephone) : '';
+      const badges = it.reasons.map(r => { const m = RSN[r]; return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${m[2]};color:${m[1]};"><iconify-icon icon="${m[3]}" style="font-size:12px;"></iconify-icon>${m[0]}</span>`; }).join('');
+      const caTxt = (it.ca != null) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
+      const callBtn = tel ? `<a href="tel:${Utils.escHtml(tel)}" title="Appeler" style="width:34px;height:34px;border-radius:9px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:phone-bold"></iconify-icon></a>` : '';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border-color);">
+        <div style="width:36px;height:36px;border-radius:50%;background:${sev};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${Utils.escHtml(initial)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Utils.escHtml(((it.prenom || '') + ' ' + (it.nom || '')).trim() || 'Chauffeur')}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">${badges}</div>
+        </div>
+        ${caTxt}
+        ${callBtn}
+      </div>`;
+    }).join('');
+
+    const loadingRow = loading ? `<div style="padding:11px 18px;display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:12px;font-weight:600;"><iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon>Vérification des statuts Yango…</div>` : '';
+
+    return head + `<div style="max-height:340px;overflow-y:auto;">${rows}${loadingRow}</div>`;
+  },
+
+  async _loadYangoWatch(d, force) {
+    d = d || this._lastData;
+    if (!d) return;
+    if (!this._isToday()) return; // le statut « occupé » temps réel n'a de sens que pour aujourd'hui
+    let el = document.getElementById('dash-watchlist');
+    if (!el) return;
+    const now = Date.now();
+    if (!force && this._yangoWatchCache && (now - this._yangoWatchCache.ts < 60000)) {
+      el.replaceChildren();
+      el.insertAdjacentHTML('beforeend', this._watchlistInner(d, this._yangoWatchCache.busy));
+      return;
+    }
+    let busy = [];
+    try {
+      const r = await Store.getFleetStatus();
+      if (r && Array.isArray(r.drivers)) busy = r.drivers.filter(x => x.status === 'busy');
+      this._yangoWatchCache = { ts: now, busy };
+    } catch (e) {
+      console.warn('Watchlist Yango error:', e.message);
+      busy = []; // échec API : on garde la partie CA
+    }
+    el = document.getElementById('dash-watchlist');
+    if (el) { el.replaceChildren(); el.insertAdjacentHTML('beforeend', this._watchlistInner(d, busy)); }
   },
 
   _renderPlanningHeatmap(d) {

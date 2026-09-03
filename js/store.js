@@ -535,6 +535,20 @@ const Store = {
   },
 
   /**
+   * Statut temps réel de la flotte Yango : { counts:{free,busy,in_order,offline},
+   * disponible, commandeActive, occupe, horsLigne, total, enLigne, drivers:[{id,nom,status}] }.
+   * `status === 'busy'` = chauffeur qui s'est mis en « occupé » (distinct de `in_order`).
+   */
+  async getFleetStatus() {
+    try {
+      return await this._yangoApi('fleet-status');
+    } catch (e) {
+      console.warn('Store: getFleetStatus error:', e.message);
+      return null;
+    }
+  },
+
+  /**
    * CA réel par chauffeur sur une période (défaut 30 j), avec le nombre de
    * jours réellement travaillés — donne le CA moyen par jour, le chiffre qui
    * décide de la rentabilité d'un passage au salariat.
