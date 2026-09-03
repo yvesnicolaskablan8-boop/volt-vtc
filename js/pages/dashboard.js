@@ -1255,22 +1255,7 @@ const DashboardPage = {
         [data-theme="dark"] .d-val { color: #f9fafb; }
         .d-val.xl { font-size: 32px; }
         .d-val.hero { color: #fff; font-size: 36px; }
-        @keyframes rtlGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-        .rec-anim { background: transparent; }
-        .rec-grid { position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(to right,#8080801f 1px,transparent 1px),linear-gradient(to bottom,#8080801f 1px,transparent 1px); background-size:20px 20px; opacity:.7; -webkit-mask-image:radial-gradient(ellipse 55% 55% at 50% 50%,#000 60%,transparent 100%); mask-image:radial-gradient(ellipse 55% 55% at 50% 50%,#000 60%,transparent 100%); }
-        .rec-ellipse { position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse 52% 60% at 50% 55%, rgba(245,73,0,.22), rgba(245,73,0,.10) 34%, transparent 72%); }
-        .rec-pills { position:absolute; top:10px; left:12px; display:flex; gap:6px; z-index:5; transition:opacity .3s ease; }
-        .rec-anim:hover .rec-pills { opacity:0; }
-        .rec-pill { display:inline-flex; align-items:center; gap:4px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:20px; padding:2px 8px; font-size:10px; font-weight:700; color:var(--text-primary); }
-        .rec-dot { width:6px; height:6px; border-radius:50%; }
-        .rec-bars { position:absolute; inset:0; width:100%; height:100%; transition:transform .5s cubic-bezier(.6,.6,0,1); transform-origin:50% 100%; }
-        .rec-anim:hover .rec-bars { transform:scale(1.12); }
-        .rec-bar { fill:#f54900; transition:fill .5s cubic-bezier(.6,.6,0,1), opacity .5s; }
-        .rec-ghost { fill:#9ca3af; opacity:.28; }
-        .rec-anim:hover .rec-ghost { fill:#fbbf24; opacity:1; }
-        .rec-lbl { fill:#9aa0ac; font-size:9px; font-weight:600; }
-        .rec-tip { position:absolute; left:50%; top:10px; transform:translate(-50%,-10px); opacity:0; pointer-events:none; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px; padding:5px 10px; font-size:11px; color:var(--text-primary); z-index:6; white-space:nowrap; transition:all .4s cubic-bezier(.6,.6,0,1); box-shadow:0 4px 14px rgba(0,0,0,.10); }
-        .rec-anim:hover .rec-tip { opacity:1; transform:translate(-50%,0); }
+        /* (styles .rec-* et keyframe rtlGrow retirés — plus utilisés) */
         @keyframes miniPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
         .mini-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
         .mini-title { display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); }
@@ -1575,14 +1560,25 @@ const DashboardPage = {
             </a>`;
           })()}
           ${(() => {
-            // Alertes en rouge équilibré si présentes, rouge profond si critiques, vert grisé si aucune.
-            const col = d.alertesTotal === 0 ? '#6E9B8E' : (d.alertesCritiques > 0 ? '#C1121F' : '#EF4444');
-            return `<a href="#/alertes" class="d2-kpi" style="background:${col};color:#fff;border:none;">
+            // Carte blanche + widgets par niveau (chacun sa couleur), liseré = plus haute sévérité.
+            const crit = d.alertesCritiques || 0;
+            const urg = d.alertesUrgentes || 0;
+            const att = Math.max(0, (d.alertesTotal || 0) - crit - urg);
+            const st = crit > 0 ? { c: '#EF4444', tint: 'rgba(239,68,68,.16)' } : urg > 0 ? { c: '#FFAE1F', tint: 'rgba(255,174,31,.18)' } : att > 0 ? { c: '#06b6d4', tint: 'rgba(6,182,212,.16)' } : { c: '#6E9B8E', tint: 'rgba(110,155,142,.16)' };
+            const TINT = { crit: ['rgba(239,68,68,.14)', 'var(--danger-dim)'], urg: ['rgba(255,174,31,.18)', 'var(--warning-dim)'], att: ['rgba(6,182,212,.14)', '#0891b2'] };
+            const w = (icon, label, val, sem) => {
+              const [bg, txt] = (val > 0) ? TINT[sem] : ['var(--bg-tertiary)', 'var(--text-muted)'];
+              return `<div style="flex:1;min-width:0;background:${bg};border-radius:9px;padding:6px 7px;display:flex;flex-direction:column;gap:1px;">
+                <span style="display:flex;align-items:center;gap:3px;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:${txt};"><iconify-icon icon="${icon}" style="font-size:10px;"></iconify-icon>${label}</span>
+                <strong style="font-size:14px;color:var(--text-primary);">${val}</strong></div>`;
+            };
+            return `<a href="#/alertes" class="d2-kpi" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid ${st.c};">
               <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div style="width:40px;height:40px;border-radius:12px;background:#fff;color:${col};display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(0,0,0,.14);"><iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon></div>
-                ${d.alertesCritiques > 0 ? `<span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;">${d.alertesCritiques} critique${d.alertesCritiques > 1 ? 's' : ''}</span>` : (d.alertesTotal === 0 ? `<span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;">OK</span>` : '')}
+                <div style="width:40px;height:40px;border-radius:12px;background:${st.c};color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px ${st.tint};"><iconify-icon icon="${(d.alertesTotal || 0) > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon></div>
+                ${(d.alertesTotal || 0) === 0 ? `<span class="d2-pill" style="background:rgba(19,222,185,.16);color:#02b3a9;">OK</span>` : ''}
               </div>
-              <div><div class="d2-num" style="color:#fff;">${d.alertesTotal}</div><div style="font-size:12px;color:rgba(255,255,255,.88);font-weight:600;margin-top:3px;">Alerte${d.alertesTotal > 1 ? 's' : ''}</div></div>
+              <div><div class="d2-num">${d.alertesTotal || 0}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Alerte${(d.alertesTotal || 0) > 1 ? 's' : ''}</div></div>
+              <div style="display:flex;gap:6px;margin-top:2px;">${w('solar:danger-circle-bold', 'Critiques', crit, 'crit')}${w('solar:danger-triangle-bold', 'Urgentes', urg, 'urg')}${w('solar:info-circle-bold', 'Attention', att, 'att')}</div>
             </a>`;
           })()}
         </div>
