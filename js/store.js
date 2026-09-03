@@ -580,8 +580,11 @@ const Store = {
     try {
       const params = new URLSearchParams({ yangoDriverId });
       if (date) {
-        params.set('from', `${date}T00:00:00+00:00`);
-        params.set('to', `${date}T23:59:59+00:00`);
+        // Journée d'exploitation : 5 h → 5 h le lendemain (le travail continue après minuit,
+        // les courses de 0 h à 5 h comptent pour la veille). Abidjan = UTC.
+        const next = new Date(`${date}T00:00:00Z`); next.setUTCDate(next.getUTCDate() + 1);
+        params.set('from', `${date}T05:00:00+00:00`);
+        params.set('to', `${next.toISOString().slice(0, 10)}T04:59:59+00:00`);
       }
       return await this._yangoApi('driver-stats', { query: `?${params}` });
     } catch (e) {

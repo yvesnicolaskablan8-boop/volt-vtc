@@ -994,8 +994,11 @@ async function handleSync(req, res) {
       targetDate = d.toISOString().slice(0, 10);
     }
 
-    const from = `${targetDate}T00:00:00+00:00`;
-    const to = `${targetDate}T23:59:59+00:00`;
+    // Journée d'exploitation : 5 h → 5 h le lendemain (le travail continue après minuit,
+    // les courses de 0 h à 5 h comptent pour la veille). Abidjan = UTC.
+    const _next = new Date(`${targetDate}T00:00:00Z`); _next.setUTCDate(_next.getUTCDate() + 1);
+    const from = `${targetDate}T05:00:00+00:00`;
+    const to = `${_next.toISOString().slice(0, 10)}T04:59:59+00:00`;
 
     // 1) Get Pilote chauffeurs linked to Yango
     const chauffeurs = await supabaseQuery(
