@@ -38,6 +38,27 @@ const Header = {
     const rd = document.getElementById('hw-rentab-dd');
     if (rd) { rd.replaceChildren(); rd.insertAdjacentHTML('beforeend', '<div class="hw-dd-title">Rentabilité</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;line-height:1.5;">Analyse de rentabilité de la flotte (RSI, profit, récupération).</div><a href="#/rentabilite" class="hw-dd-link">Ouvrir la rentabilité →</a>'); }
     this._refreshWidgets();
+    this._initDock();
+  },
+
+  // Effet loupe façon dock macOS : chaque bouton grossit selon la distance au curseur.
+  _initDock() {
+    const dock = document.querySelector('.hw-group');
+    if (!dock) return;
+    const BASE = 38, PEAK = 52, RANGE = 115;
+    const apply = (mouseX) => {
+      const items = Array.from(dock.querySelectorAll('.hw'));
+      const centers = items.map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; });
+      items.forEach((el, i) => {
+        const t = Math.max(0, 1 - Math.abs(mouseX - centers[i]) / RANGE);
+        const size = BASE + (PEAK - BASE) * t;
+        el.style.width = el.style.height = size + 'px';
+        el.style.fontSize = (size * 0.48) + 'px';
+      });
+    };
+    this._on('dockMove', dock, 'mousemove', (e) => apply(e.clientX));
+    this._on('dockLeave', dock, 'mouseleave', () => apply(Infinity));
+    apply(Infinity);
   },
 
   _refreshWidgets() {

@@ -1444,34 +1444,6 @@ const DashboardPage = {
               <iconify-icon icon="${d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>
               ${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% d'une journée type` : ''}
             </div>
-            <div style="margin-left:auto;align-self:center;position:relative;">
-            ${(() => {
-              const list = d.chauffeursActifsJour || [];
-              if (!list.length) return `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur en activité ${d.estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
-              const total = list.length;
-              const counts = {}; list.forEach(c => { counts[c.state] = (counts[c.state] || 0) + 1; });
-              const ZONE = { bon: 'ok', demarrage: 'ok', modere: 'watch', faible: 'watch', neutre: 'off' };
-              const ZC = { ok: ['#13DEB9', 'En forme'], watch: ['#FFAE1F', 'À surveiller'], off: ['#C7D0DD', 'Inactif'] };
-              const zc = {}; Object.keys(counts).forEach(k => { const z = ZONE[k] || 'off'; zc[z] = (zc[z] || 0) + counts[k]; });
-              const zorder = ['ok', 'watch', 'off'];
-              const shown = list.slice(0, 7);
-              const stack = shown.map((c, i) => { const col = ZC[ZONE[c.state] || 'off'][0]; return `<div style="width:34px;height:34px;border-radius:50%;background:${col};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2.5px solid var(--bg-secondary);margin-left:${i ? -11 : 0}px;position:relative;z-index:${20 - i};" title="${Utils.escHtml(c.prenom || '')}">${Utils.escHtml((c.prenom || '?').charAt(0))}</div>`; }).join('');
-              const more = total > 7 ? `<div style="width:34px;height:34px;border-radius:50%;background:var(--bg-tertiary);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;border:2.5px solid var(--bg-secondary);margin-left:-11px;">+${total - 7}</div>` : '';
-              const bar = zorder.filter(z => zc[z]).map(z => { const p = Math.round(zc[z] / total * 100); return `<div title="${ZC[z][1]} : ${zc[z]} (${p}%)" style="flex:${zc[z]};min-width:26px;background:${ZC[z][0]};display:flex;align-items:center;justify-content:center;">${p >= 12 ? `<span style="font-size:9px;font-weight:800;color:#fff;">${p}%</span>` : ''}</div>`; }).join('');
-              const synth = zorder.filter(z => zc[z]).map(z => `<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${ZC[z][0]};"></span>${zc[z]} ${ZC[z][1]} · ${Math.round(zc[z] / total * 100)}%</span>`).join('');
-              const horsNoms = list.filter(c => !c.programme).map(c => c.prenom);
-              const enForme = zc.ok || 0, aSurv = zc.watch || 0, inactif = zc.off || 0;
-              const pctForme = total ? Math.round(enForme / total * 100) : 0;
-              const tile = (lbl, val, col, bg) => `<div style="background:${bg};border-radius:11px;padding:6px 11px;text-align:center;min-width:60px;"><div style="font-size:10px;font-weight:700;color:var(--text-secondary);white-space:nowrap;">${lbl}</div><div style="font-size:15px;font-weight:800;color:${col};white-space:nowrap;margin-top:1px;">${val}</div></div>`;
-              return `<div style="display:flex;gap:9px;flex-wrap:wrap;">
-                ${tile('En activité', `${d.nbActifsTotal}/${total}`, 'var(--success-dim)', 'rgba(19,222,185,.12)')}
-                ${tile('En forme', `${pctForme}%`, '#02b3a9', 'rgba(19,222,185,.10)')}
-                ${aSurv ? tile('À surveiller', String(aSurv), 'var(--warning-dim)', 'rgba(255,174,31,.12)') : ''}
-                ${inactif ? tile('Inactif', String(inactif), 'var(--text-muted)', 'var(--bg-tertiary)') : ''}
-                ${horsNoms.length ? tile('Hors planning', String(horsNoms.length), 'var(--danger-dim)', 'rgba(250,137,107,.12)') : ''}
-              </div>`;
-            })()}
-            </div>
           </div>
 
           <!-- Recette en direct · courbe intégrée (sans encadré, avec toggle + période) -->
@@ -1866,6 +1838,28 @@ const DashboardPage = {
     </div>`;
   },
 
+  // Bandeau de synthèse d'activité (En activité / En forme / À surveiller / Inactif /
+  // Hors planning) — affiché en tête de la carte « Chauffeurs à surveiller ».
+  _activityTiles(d) {
+    const list = d.chauffeursActifsJour || [];
+    if (!list.length) return '';
+    const total = list.length;
+    const counts = {}; list.forEach(c => { counts[c.state] = (counts[c.state] || 0) + 1; });
+    const ZONE = { bon: 'ok', demarrage: 'ok', modere: 'watch', faible: 'watch', neutre: 'off' };
+    const zc = {}; Object.keys(counts).forEach(k => { const z = ZONE[k] || 'off'; zc[z] = (zc[z] || 0) + counts[k]; });
+    const enForme = zc.ok || 0, aSurv = zc.watch || 0, inactif = zc.off || 0;
+    const pctForme = total ? Math.round(enForme / total * 100) : 0;
+    const horsNoms = list.filter(c => !c.programme).map(c => c.prenom);
+    const tile = (lbl, val, col, bg) => `<div style="background:${bg};border-radius:11px;padding:6px 11px;text-align:center;min-width:60px;"><div style="font-size:10px;font-weight:700;color:var(--text-secondary);white-space:nowrap;">${lbl}</div><div style="font-size:15px;font-weight:800;color:${col};white-space:nowrap;margin-top:1px;">${val}</div></div>`;
+    return `<div style="display:flex;gap:9px;flex-wrap:wrap;">
+      ${tile('En activité', `${d.nbActifsTotal}/${total}`, 'var(--success-dim)', 'rgba(19,222,185,.12)')}
+      ${tile('En forme', `${pctForme}%`, '#02b3a9', 'rgba(19,222,185,.10)')}
+      ${aSurv ? tile('À surveiller', String(aSurv), 'var(--warning-dim)', 'rgba(255,174,31,.12)') : ''}
+      ${inactif ? tile('Inactif', String(inactif), 'var(--text-muted)', 'var(--bg-tertiary)') : ''}
+      ${horsNoms.length ? tile('Hors planning', String(horsNoms.length), 'var(--danger-dim)', 'rgba(250,137,107,.12)') : ''}
+    </div>`;
+  },
+
   _watchlistInner(d, yBusy) {
     const RSN = {
       ca_faible: ['CA anormalement bas', '#FA896B', 'rgba(250,137,107,.14)', 'solar:chart-2-bold'],
@@ -1909,8 +1903,11 @@ const DashboardPage = {
       ${refreshBtn}
     </div>`;
 
+    const _tiles = this._activityTiles(d);
+    const tilesStrip = _tiles ? `<div style="padding:13px 18px 12px;border-bottom:1px solid var(--border-color);">${_tiles}</div>` : '';
+
     if (!list.length && !loading) {
-      return head + `<div style="padding:22px 18px;display:flex;align-items:center;gap:10px;color:var(--success-dim);font-size:13px;font-weight:600;"><iconify-icon icon="solar:check-circle-bold" style="font-size:18px;"></iconify-icon>Aucun chauffeur à surveiller pour le moment.</div>`;
+      return head + tilesStrip + `<div style="padding:22px 18px;display:flex;align-items:center;gap:10px;color:var(--success-dim);font-size:13px;font-weight:600;"><iconify-icon icon="solar:check-circle-bold" style="font-size:18px;"></iconify-icon>Aucun chauffeur à surveiller pour le moment.</div>`;
     }
 
     const rows = list.map(it => {
@@ -1934,7 +1931,7 @@ const DashboardPage = {
 
     const loadingRow = loading ? `<div style="padding:11px 18px;display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:12px;font-weight:600;"><iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon>Vérification des statuts Yango…</div>` : '';
 
-    return head + `<div style="max-height:340px;overflow-y:auto;">${rows}${loadingRow}</div>`;
+    return head + tilesStrip + `<div style="max-height:340px;overflow-y:auto;">${rows}${loadingRow}</div>`;
   },
 
   async _loadYangoWatch(d, force) {

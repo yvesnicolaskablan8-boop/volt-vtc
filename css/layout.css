@@ -278,13 +278,17 @@
 /* Fil d'Ariane masqué (place libérée pour les widgets) */
 .header-breadcrumb { display: none; }
 
-/* ========== HEADER WIDGETS (accès rapide) ========== */
-.hw-group { display: flex; align-items: center; gap: 6px; }
-.hw { position: relative; width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; background: transparent; transition: all var(--transition-base); font-size: 19px; }
-.hw:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+/* ========== HEADER WIDGETS — floating dock (effet loupe façon dock macOS) ========== */
+.hw-group { display: flex; align-items: flex-end; gap: 7px; padding: 5px 9px; background: var(--bg-tertiary); border-radius: 18px; height: 50px; box-sizing: border-box; }
+.hw { position: relative; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; background: rgba(120,132,156,.15); font-size: 19px; flex-shrink: 0; transition: width .16s cubic-bezier(.2,.8,.3,1), height .16s cubic-bezier(.2,.8,.3,1), font-size .16s cubic-bezier(.2,.8,.3,1), background .18s ease, color .18s ease; }
+.hw:hover { background: rgba(120,132,156,.28); color: var(--text-primary); }
 .hw.active { background: var(--pilote-blue); color: #fff; }
-.hw-badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 9px; background: var(--danger); color: #fff; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.hw-badge { position: absolute; top: 1px; right: 1px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 9px; background: var(--danger); color: #fff; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; line-height: 1; box-shadow: 0 0 0 2px var(--bg-tertiary); }
 .hw-badge:empty { display: none; }
+/* Tooltip façon dock (au survol, masqué quand le menu est ouvert) */
+.hw::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 9px); left: 50%; transform: translateX(-50%) translateY(4px); background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 8px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s ease, transform .15s ease; box-shadow: 0 6px 18px rgba(0,0,0,.12); z-index: 210; }
+.hw:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+.hw.active::after { opacity: 0; }
 .hw-dd { position: absolute; top: calc(100% + 8px); right: 0; width: 232px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.15); padding: 13px 15px; z-index: 200; display: none; cursor: default; text-align: left; }
 .hw.active .hw-dd { display: block; }
 .hw-dd-title { font-size: 13px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; }
