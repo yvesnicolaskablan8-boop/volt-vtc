@@ -40,20 +40,15 @@
   object-fit: contain;
 }
 
-.sidebar-logo .logo-text {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.3px;
-  text-transform: none;
-  color: var(--text-primary);
-  -webkit-text-fill-color: currentColor;
+.sidebar-logo-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
 }
 
-.sidebar-logo .logo-subtitle {
-  font-size: 11px;
-  color: var(--text-muted);
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
+.sidebar-logo-actions .theme-toggle {
+  width: 34px;
+  height: 34px;
 }
 
 .sidebar-nav {
