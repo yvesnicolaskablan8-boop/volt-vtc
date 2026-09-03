@@ -1256,6 +1256,21 @@ const DashboardPage = {
         .d-val.xl { font-size: 32px; }
         .d-val.hero { color: #fff; font-size: 36px; }
         @keyframes rtlGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+        .rec-anim { background: transparent; }
+        .rec-grid { position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(to right,#8080801f 1px,transparent 1px),linear-gradient(to bottom,#8080801f 1px,transparent 1px); background-size:20px 20px; opacity:.7; -webkit-mask-image:radial-gradient(ellipse 55% 55% at 50% 50%,#000 60%,transparent 100%); mask-image:radial-gradient(ellipse 55% 55% at 50% 50%,#000 60%,transparent 100%); }
+        .rec-ellipse { position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse 52% 60% at 50% 55%, rgba(245,73,0,.22), rgba(245,73,0,.10) 34%, transparent 72%); }
+        .rec-pills { position:absolute; top:10px; left:12px; display:flex; gap:6px; z-index:5; transition:opacity .3s ease; }
+        .rec-anim:hover .rec-pills { opacity:0; }
+        .rec-pill { display:inline-flex; align-items:center; gap:4px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:20px; padding:2px 8px; font-size:10px; font-weight:700; color:var(--text-primary); }
+        .rec-dot { width:6px; height:6px; border-radius:50%; }
+        .rec-bars { position:absolute; inset:0; width:100%; height:100%; transition:transform .5s cubic-bezier(.6,.6,0,1); transform-origin:50% 100%; }
+        .rec-anim:hover .rec-bars { transform:scale(1.12); }
+        .rec-bar { fill:#f54900; transition:fill .5s cubic-bezier(.6,.6,0,1), opacity .5s; }
+        .rec-ghost { fill:#9ca3af; opacity:.28; }
+        .rec-anim:hover .rec-ghost { fill:#fbbf24; opacity:1; }
+        .rec-lbl { fill:#9aa0ac; font-size:9px; font-weight:600; }
+        .rec-tip { position:absolute; left:50%; top:10px; transform:translate(-50%,-10px); opacity:0; pointer-events:none; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px; padding:5px 10px; font-size:11px; color:var(--text-primary); z-index:6; white-space:nowrap; transition:all .4s cubic-bezier(.6,.6,0,1); box-shadow:0 4px 14px rgba(0,0,0,.10); }
+        .rec-anim:hover .rec-tip { opacity:1; transform:translate(-50%,0); }
 
         .d-sub { font-size: 12px; color: #9ca3af; margin-top: 4px; font-weight:500; }
         [data-theme="dark"] .d-sub { color: #6b7280; }
@@ -1420,9 +1435,7 @@ const DashboardPage = {
               <iconify-icon icon="${d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>
               ${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% d'une journée type` : ''}
             </div>
-          </div>
-
-          <div style="position:relative;">
+            <div style="margin-left:auto;align-self:center;position:relative;">
             ${(() => {
               const list = d.chauffeursActifsJour || [];
               if (!list.length) return `<div style="font-size:12px;color:var(--text-muted);padding:6px 0;">Aucun chauffeur en activité ${d.estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
@@ -1440,7 +1453,7 @@ const DashboardPage = {
               const horsNoms = list.filter(c => !c.programme).map(c => c.prenom);
               const enForme = zc.ok || 0, aSurv = zc.watch || 0, inactif = zc.off || 0;
               const pctForme = total ? Math.round(enForme / total * 100) : 0;
-              const tile = (lbl, val, col, bg) => `<div style="background:${bg};border-radius:12px;padding:8px 13px;text-align:center;flex:1;min-width:76px;"><div style="font-size:10px;font-weight:700;color:var(--text-secondary);white-space:nowrap;">${lbl}</div><div style="font-size:16px;font-weight:800;color:${col};white-space:nowrap;margin-top:2px;">${val}</div></div>`;
+              const tile = (lbl, val, col, bg) => `<div style="background:${bg};border-radius:11px;padding:6px 11px;text-align:center;min-width:60px;"><div style="font-size:10px;font-weight:700;color:var(--text-secondary);white-space:nowrap;">${lbl}</div><div style="font-size:15px;font-weight:800;color:${col};white-space:nowrap;margin-top:1px;">${val}</div></div>`;
               return `<div style="display:flex;gap:9px;flex-wrap:wrap;">
                 ${tile('En activité', `${d.nbActifsTotal}/${total}`, 'var(--success-dim)', 'rgba(19,222,185,.12)')}
                 ${tile('En forme', `${pctForme}%`, '#02b3a9', 'rgba(19,222,185,.10)')}
@@ -1449,6 +1462,7 @@ const DashboardPage = {
                 ${horsNoms.length ? tile('Hors planning', String(horsNoms.length), 'var(--danger-dim)', 'rgba(250,137,107,.12)') : ''}
               </div>`;
             })()}
+            </div>
           </div>
 
           <!-- Recette par heure · en direct (courbe intégrée au hero) -->
@@ -1471,26 +1485,33 @@ const DashboardPage = {
               const last = weeks.length ? (weeks[weeks.length - 1].verse || 0) : 0;
               const prev = weeks.length > 1 ? (weeks[weeks.length - 2].verse || 0) : 0;
               const varPct = prev > 0 ? Math.round((last - prev) / prev * 100) : (last > 0 ? 100 : 0);
-              const bars = weeks.map((w, i) => {
-                const vH = Math.max(3, (w.verse || 0) / maxV * 100);
-                return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;">
-                  <div style="width:100%;max-width:26px;display:flex;align-items:flex-end;height:90px;">
-                    <div title="${Utils.escHtml(w.label || '')} : ${Utils.formatCurrency(w.verse || 0)}" style="width:100%;background:linear-gradient(180deg,#ff8a3d,#f54900);border-radius:7px 7px 0 0;height:${vH.toFixed(1)}%;min-height:3px;transform-origin:bottom;animation:rtlGrow .6s cubic-bezier(.2,.8,.2,1) ${(i * 0.06).toFixed(2)}s both;box-shadow:0 4px 12px rgba(245,73,0,.25);"></div>
-                  </div>
-                  <div style="font-size:9px;color:var(--text-muted);font-weight:600;white-space:nowrap;">${Utils.escHtml(w.label || '')}</div>
-                </div>`;
+              const avg = weeks.length ? sumV / weeks.length : 0;
+              const varAvg = avg > 0 ? Math.round((last - avg) / avg * 100) : 0;
+              const n = weeks.length || 1;
+              const gap = 8, padX = 18, bw = Math.max(10, (356 - padX * 2 - gap * (n - 1)) / n);
+              const rects = weeks.map((w, i) => {
+                const h = Math.max(4, (w.verse || 0) / maxV * 104);
+                const x = padX + i * (bw + gap), y = 138 - h;
+                return `<rect class="rec-bar${i % 2 ? ' rec-ghost' : ''}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="3"><title>${Utils.escHtml(w.label || '')} : ${Utils.formatCurrency(w.verse || 0)}</title></rect>`;
               }).join('');
-              const varColor = varPct >= 0 ? 'var(--success-dim)' : 'var(--danger-dim)';
-              const varBg = varPct >= 0 ? 'rgba(19,222,185,.15)' : 'rgba(250,137,107,.15)';
-              return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+              const labels = weeks.map((w, i) => { const x = padX + i * (bw + gap) + bw / 2; return `<text class="rec-lbl" x="${x.toFixed(1)}" y="152" text-anchor="middle">${Utils.escHtml(w.label || '')}</text>`; }).join('');
+              return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
                 <div style="display:flex;align-items:center;gap:9px;">
                   <div class="d-icon" style="width:36px;height:36px;font-size:1rem;background:rgba(245,73,0,.12);color:#f54900;"><iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon></div>
-                  <div><div class="d-lbl" style="margin:0;">Recette encaissée</div><div class="d-sub" style="margin:0;">8 dernières semaines</div></div>
+                  <div><div class="d-lbl" style="margin:0;">Recette encaissée</div><div class="d-sub" style="margin:0;">8 dernières semaines · survole pour l'effet</div></div>
                 </div>
                 <div style="text-align:right;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;">Total encaissé</div><div style="font-size:16px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(sumV)}</div></div>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:${varBg};color:${varColor};"><iconify-icon icon="${varPct >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold'}"></iconify-icon>${varPct >= 0 ? '+' : ''}${varPct}%</span><span style="font-size:11px;color:var(--text-muted);">vs semaine précédente</span></div>
-              <div style="display:flex;align-items:flex-end;gap:7px;">${bars}</div>`;
+              <div class="rec-anim" style="position:relative;height:158px;border-radius:12px;overflow:hidden;">
+                <div class="rec-grid"></div>
+                <div class="rec-ellipse"></div>
+                <div class="rec-pills">
+                  <span class="rec-pill"><span class="rec-dot" style="background:#f54900;"></span>${varPct >= 0 ? '+' : ''}${varPct}%</span>
+                  <span class="rec-pill"><span class="rec-dot" style="background:#fbbf24;"></span>${varAvg >= 0 ? '+' : ''}${varAvg}%</span>
+                </div>
+                <svg class="rec-bars" viewBox="0 0 356 158" preserveAspectRatio="none">${rects}${labels}</svg>
+                <div class="rec-tip">Total encaissé <strong>${Utils.formatCurrency(sumV)}</strong> · ${varPct >= 0 ? '▲' : '▼'} ${Math.abs(varPct)}% vs S-1</div>
+              </div>`;
             })()}
           </div>
 
