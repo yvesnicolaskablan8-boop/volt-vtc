@@ -1509,18 +1509,24 @@ const DashboardPage = {
             const all = Store.get('taches') || [];
             const mine = (admin ? all.filter(t => t.creePar === uid) : all.filter(t => t.assigneA === uid)).filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
             const today = new Date().toISOString().split('T')[0];
-            const urg = mine.filter(t => t.priorite === 'urgente' || (t.dateEcheance && t.dateEcheance < today)).length;
-            const col = urg > 0 ? '#FA896B' : (mine.length > 0 ? '#FFAE1F' : '#13DEB9');
+            const enRetard = mine.filter(t => t.dateEcheance && t.dateEcheance < today).length;
+            const urgent = mine.filter(t => t.priorite === 'urgente' && !(t.dateEcheance && t.dateEcheance < today)).length;
+            // Vert grisé quand rien à faire, puis la couleur monte avec l'urgence.
+            const col = mine.length === 0 ? '#6E9B8E' : (enRetard > 0 ? '#FA896B' : (urgent > 0 ? '#FFAE1F' : '#13DEB9'));
+            const pill = enRetard > 0
+              ? `<span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;"><iconify-icon icon="solar:alarm-bold"></iconify-icon>${enRetard} en retard</span>`
+              : (urgent > 0 ? `<span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;"><iconify-icon icon="solar:alarm-bold"></iconify-icon>${urgent} urgent${urgent > 1 ? 's' : ''}</span>` : '');
             return `<a href="#/taches" class="d2-kpi" style="background:${col};color:#fff;border:none;">
               <div style="display:flex;align-items:center;justify-content:space-between;">
                 <div style="width:40px;height:40px;border-radius:12px;background:#fff;color:${col};display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(0,0,0,.14);"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></div>
-                ${urg > 0 ? `<span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;"><iconify-icon icon="solar:alarm-bold"></iconify-icon>${urg} urgent${urg > 1 ? 's' : ''}</span>` : ''}
+                ${pill}
               </div>
               <div><div class="d2-num" style="color:#fff;">${mine.length}</div><div style="font-size:12px;color:rgba(255,255,255,.88);font-weight:600;margin-top:3px;">Tâche${mine.length > 1 ? 's' : ''} en cours</div></div>
             </a>`;
           })()}
           ${(() => {
-            const col = d.alertesCritiques > 0 ? '#FA896B' : (d.alertesTotal > 0 ? '#FFAE1F' : '#13DEB9');
+            // Les alertes tirent sur le rouge : rouge doux si présentes, rouge franc si critiques, vert grisé si aucune.
+            const col = d.alertesTotal === 0 ? '#6E9B8E' : (d.alertesCritiques > 0 ? '#EF4444' : '#FA896B');
             return `<a href="#/alertes" class="d2-kpi" style="background:${col};color:#fff;border:none;">
               <div style="display:flex;align-items:center;justify-content:space-between;">
                 <div style="width:40px;height:40px;border-radius:12px;background:#fff;color:${col};display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(0,0,0,.14);"><iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon></div>
