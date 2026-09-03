@@ -549,6 +549,24 @@ const Store = {
   },
 
   /**
+   * CA de la flotte pour la journée d'exploitation en cours (5 h → maintenant),
+   * réparti par heure. Renvoie l'objet ca-report ({ repartitionHoraire, ... }).
+   */
+  async getRecetteJourHoraire() {
+    try {
+      const now = new Date();
+      const start = new Date(now);
+      if (now.getUTCHours() < 5) start.setUTCDate(start.getUTCDate() - 1);
+      start.setUTCHours(5, 0, 0, 0);
+      const q = `?from=${encodeURIComponent(start.toISOString())}&to=${encodeURIComponent(now.toISOString())}`;
+      return await this._yangoApi('ca-report', { query: q });
+    } catch (e) {
+      console.warn('Store: getRecetteJourHoraire error:', e.message);
+      return null;
+    }
+  },
+
+  /**
    * CA réel par chauffeur sur une période (défaut 30 j), avec le nombre de
    * jours réellement travaillés — donne le CA moyen par jour, le chiffre qui
    * décide de la rentabilité d'un passage au salariat.
