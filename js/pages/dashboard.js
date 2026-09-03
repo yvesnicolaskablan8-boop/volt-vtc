@@ -1271,6 +1271,23 @@ const DashboardPage = {
         .rec-lbl { fill:#9aa0ac; font-size:9px; font-weight:600; }
         .rec-tip { position:absolute; left:50%; top:10px; transform:translate(-50%,-10px); opacity:0; pointer-events:none; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px; padding:5px 10px; font-size:11px; color:var(--text-primary); z-index:6; white-space:nowrap; transition:all .4s cubic-bezier(.6,.6,0,1); box-shadow:0 4px 14px rgba(0,0,0,.10); }
         .rec-anim:hover .rec-tip { opacity:1; transform:translate(-50%,0); }
+        @keyframes miniPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+        .mini-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+        .mini-title { display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); }
+        .mini-dot { width:8px; height:8px; border-radius:50%; background:#13DEB9; animation:miniPulse 1.6s infinite; }
+        .mini-val { font-size:17px; font-weight:800; color:var(--text-primary); opacity:.55; min-height:22px; transition:opacity .3s; }
+        .mini-chart:hover .mini-val { opacity:1; }
+        .mini-bars { display:flex; align-items:flex-end; gap:8px; height:100px; }
+        .mini-col { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+        .mini-bar { width:100%; border-radius:99px; background:var(--text-primary); opacity:.20; transform-origin:bottom; transition:all .3s ease-out; cursor:pointer; }
+        .mini-chart:hover .mini-bar { opacity:.25; }
+        .mini-bar.is-hover { opacity:1 !important; transform:scaleX(1.12) scaleY(1.02); }
+        .mini-bar.is-neighbor { opacity:.35 !important; transform:scaleX(1.05); }
+        .mini-bar.is-dim { opacity:.10 !important; }
+        .mini-lbl { font-size:10px; font-weight:600; color:var(--text-muted); margin-top:8px; transition:color .3s; }
+        .mini-col.is-hover .mini-lbl { color:var(--text-primary); }
+        .mini-tip { position:absolute; top:-30px; left:50%; transform:translate(-50%,4px); opacity:0; background:var(--text-primary); color:var(--bg-secondary); font-size:11px; font-weight:600; padding:3px 8px; border-radius:6px; white-space:nowrap; pointer-events:none; transition:all .2s; z-index:5; }
+        .mini-col.is-hover .mini-tip { opacity:1; transform:translate(-50%,0); }
 
         .d-sub { font-size: 12px; color: #9ca3af; margin-top: 4px; font-weight:500; }
         [data-theme="dark"] .d-sub { color: #6b7280; }
@@ -1482,35 +1499,21 @@ const DashboardPage = {
               const weeks = (d.weeklyPayments || []).slice(-8);
               const maxV = Math.max(1, ...weeks.map(w => w.verse || 0));
               const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
-              const last = weeks.length ? (weeks[weeks.length - 1].verse || 0) : 0;
-              const prev = weeks.length > 1 ? (weeks[weeks.length - 2].verse || 0) : 0;
-              const varPct = prev > 0 ? Math.round((last - prev) / prev * 100) : (last > 0 ? 100 : 0);
-              const avg = weeks.length ? sumV / weeks.length : 0;
-              const varAvg = avg > 0 ? Math.round((last - avg) / avg * 100) : 0;
-              const n = weeks.length || 1;
-              const gap = 8, padX = 18, bw = Math.max(10, (356 - padX * 2 - gap * (n - 1)) / n);
-              const rects = weeks.map((w, i) => {
-                const h = Math.max(4, (w.verse || 0) / maxV * 104);
-                const x = padX + i * (bw + gap), y = 138 - h;
-                return `<rect class="rec-bar${i % 2 ? ' rec-ghost' : ''}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="3"><title>${Utils.escHtml(w.label || '')} : ${Utils.formatCurrency(w.verse || 0)}</title></rect>`;
+              const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
+              const cols = weeks.map((w, i) => {
+                const h = Math.max(4, (w.verse || 0) / maxV * 96);
+                return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})">
+                  <div class="mini-tip">${fmt(w.verse || 0)} F</div>
+                  <div class="mini-bar" data-fmt="${fmt(w.verse || 0)} F" style="height:${h.toFixed(1)}px;"></div>
+                  <div class="mini-lbl">${Utils.escHtml(w.label || '')}</div>
+                </div>`;
               }).join('');
-              const labels = weeks.map((w, i) => { const x = padX + i * (bw + gap) + bw / 2; return `<text class="rec-lbl" x="${x.toFixed(1)}" y="152" text-anchor="middle">${Utils.escHtml(w.label || '')}</text>`; }).join('');
-              return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
-                <div style="display:flex;align-items:center;gap:9px;">
-                  <div class="d-icon" style="width:36px;height:36px;font-size:1rem;background:rgba(245,73,0,.12);color:#f54900;"><iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon></div>
-                  <div><div class="d-lbl" style="margin:0;">Recette encaissée</div><div class="d-sub" style="margin:0;">8 dernières semaines · survole pour l'effet</div></div>
+              return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)} F" onmouseleave="DashboardPage._miniLeave()">
+                <div class="mini-head">
+                  <div class="mini-title"><span class="mini-dot"></span>Recette encaissée · 8 sem.</div>
+                  <div class="mini-val" id="mini-value">${fmt(sumV)} F</div>
                 </div>
-                <div style="text-align:right;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;">Total encaissé</div><div style="font-size:16px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(sumV)}</div></div>
-              </div>
-              <div class="rec-anim" style="position:relative;height:158px;border-radius:12px;overflow:hidden;">
-                <div class="rec-grid"></div>
-                <div class="rec-ellipse"></div>
-                <div class="rec-pills">
-                  <span class="rec-pill"><span class="rec-dot" style="background:#f54900;"></span>${varPct >= 0 ? '+' : ''}${varPct}%</span>
-                  <span class="rec-pill"><span class="rec-dot" style="background:#fbbf24;"></span>${varAvg >= 0 ? '+' : ''}${varAvg}%</span>
-                </div>
-                <svg class="rec-bars" viewBox="0 0 356 158" preserveAspectRatio="none">${rects}${labels}</svg>
-                <div class="rec-tip">Total encaissé <strong>${Utils.formatCurrency(sumV)}</strong> · ${varPct >= 0 ? '▲' : '▼'} ${Math.abs(varPct)}% vs S-1</div>
+                <div class="mini-bars">${cols}</div>
               </div>`;
             })()}
           </div>
@@ -1831,6 +1834,31 @@ const DashboardPage = {
       data: { labels: series.map(x => x.h + 'h'), datasets: [{ data: series.map(x => x.ca), borderColor: '#8b5cf6', borderWidth: 2.5, fill: true, backgroundColor: grad, tension: 0.4, pointRadius: series.map((_, i) => i === series.length - 1 ? 4 : 0), pointBackgroundColor: '#8b5cf6', pointBorderColor: '#fff', pointBorderWidth: 2 }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmt(c.parsed.y) + ' F' } } }, scales: { y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#7C8FAC', font: { size: 10 }, callback: v => fmt(v), maxTicksLimit: 5 }, beginAtZero: true }, x: { grid: { display: false }, ticks: { color: '#7C8FAC', font: { size: 10 }, maxTicksLimit: 12 } } } }
     });
+  },
+
+  // MiniChart « Recette encaissée » : survol interactif d'une barre.
+  _miniHover(i) {
+    const cont = document.getElementById('hero-mini');
+    if (!cont) return;
+    const cols = cont.querySelectorAll('.mini-col');
+    const bars = cont.querySelectorAll('.mini-bar');
+    bars.forEach((b, idx) => {
+      b.classList.remove('is-hover', 'is-neighbor', 'is-dim');
+      if (cols[idx]) cols[idx].classList.remove('is-hover');
+      if (idx === i) { b.classList.add('is-hover'); if (cols[idx]) cols[idx].classList.add('is-hover'); }
+      else if (idx === i - 1 || idx === i + 1) b.classList.add('is-neighbor');
+      else b.classList.add('is-dim');
+    });
+    const val = document.getElementById('mini-value');
+    if (val && bars[i]) val.textContent = bars[i].dataset.fmt || '';
+  },
+  _miniLeave() {
+    const cont = document.getElementById('hero-mini');
+    if (!cont) return;
+    cont.querySelectorAll('.mini-bar').forEach(b => b.classList.remove('is-hover', 'is-neighbor', 'is-dim'));
+    cont.querySelectorAll('.mini-col').forEach(c => c.classList.remove('is-hover'));
+    const val = document.getElementById('mini-value');
+    if (val) val.textContent = cont.dataset.total || '';
   },
 
   // ============ Chauffeurs à surveiller ============
