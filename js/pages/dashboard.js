@@ -1278,6 +1278,8 @@ const DashboardPage = {
         .spk-area { opacity:0; animation:spkFade .8s ease-out .25s forwards; }
         @keyframes spkFade { to { opacity:1; } }
         .rtl-dots { position:absolute; inset:0; color:var(--text-primary); opacity:.10; background-image:radial-gradient(currentColor 1px, transparent 1px); background-size:14px 14px; -webkit-mask-image:linear-gradient(to right, transparent, #000 55%); mask-image:linear-gradient(to right, transparent, #000 55%); }
+        .rtl-tbtn { border:none; background:transparent; color:var(--text-muted); width:27px; height:22px; border-radius:7px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:14px; transition:all .2s; }
+        .rtl-tbtn.rtl-on { background:var(--bg-secondary); color:var(--text-primary); box-shadow:0 1px 3px rgba(0,0,0,.10); }
 
         .d-sub { font-size: 12px; color: #9ca3af; margin-top: 4px; font-weight:500; }
         [data-theme="dark"] .d-sub { color: #6b7280; }
@@ -1436,7 +1438,7 @@ const DashboardPage = {
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
                 <span style="width:8px;height:8px;border-radius:50%;background:${d.estAujourdhui ? 'var(--danger)' : 'var(--text-muted)'};"></span>${d.estAujourdhui ? 'Recette du jour · en direct' : 'Recette du ' + Utils.escHtml(Utils.formatDate(d.jourAtt))}
               </div>
-              <div style="font-size:40px;font-weight:800;letter-spacing:-.6px;color:var(--text-primary);margin-top:8px;">${Utils.formatCurrency(d.caBrutJour)}</div>
+              <div id="hero-ca-amount" style="font-size:40px;font-weight:800;letter-spacing:-.6px;color:var(--text-primary);margin-top:8px;">${Utils.formatCurrency(d.caBrutJour)}</div>
             </div>
             <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${d.paceState === 'faible' ? 'rgba(250,137,107,.15)' : d.paceState === 'bon' ? 'rgba(19,222,185,.15)' : d.paceState === 'modere' ? 'rgba(255,174,31,.16)' : 'var(--bg-tertiary)'};color:${d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)'};">
               <iconify-icon icon="${d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>
@@ -1472,22 +1474,31 @@ const DashboardPage = {
             </div>
           </div>
 
-          <!-- Recette en direct · carte métrique thème-aware (ProgressMetricCard) -->
+          <!-- Recette en direct · courbe intégrée (sans encadré, avec toggle + période) -->
           <div style="border-top:1px solid var(--border-color);padding-top:14px;">
-            <div style="position:relative;overflow:hidden;border-radius:16px;min-height:188px;background:var(--bg-tertiary);border:1px solid var(--border-color);">
-              <div style="position:absolute;top:0;bottom:0;right:0;width:64%;">
+            <div style="position:relative;overflow:hidden;min-height:158px;">
+              <div style="position:absolute;top:26px;bottom:34px;right:0;width:60%;">
                 <div class="rtl-dots"></div>
                 <div id="rtl-fade" style="position:absolute;inset:0;"></div>
                 <div id="rtl-spark" style="position:absolute;inset:0;"></div>
               </div>
-              <div style="position:relative;z-index:2;padding:16px 18px;pointer-events:none;">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                  <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Recette en direct</div>
-                  <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span id="rtl-trend" style="display:inline-flex;align-items:center;gap:3px;font-weight:700;color:var(--text-muted);">…</span><span style="color:var(--text-muted);">Aujourd'hui</span></div>
+              <div style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="font-size:13px;font-weight:700;color:var(--text-primary);">Recette en direct</div>
+                  <div style="display:inline-flex;background:var(--bg-tertiary);border-radius:9px;padding:2px;gap:2px;pointer-events:auto;">
+                    <button type="button" onclick="event.stopPropagation();DashboardPage._rtlView('curve')" id="rtl-btn-curve" class="rtl-tbtn rtl-on"><iconify-icon icon="solar:chart-2-linear"></iconify-icon></button>
+                    <button type="button" onclick="event.stopPropagation();DashboardPage._rtlView('bar')" id="rtl-btn-bar" class="rtl-tbtn"><iconify-icon icon="solar:chart-linear"></iconify-icon></button>
+                  </div>
                 </div>
-                <div id="rtl-amount" style="font-size:42px;font-weight:800;letter-spacing:-1px;color:var(--text-primary);margin-top:8px;line-height:1;">…</div>
+                <div style="display:flex;align-items:center;gap:10px;font-size:12px;pointer-events:auto;">
+                  <span id="rtl-trend" style="display:inline-flex;align-items:center;gap:3px;font-weight:700;color:var(--text-muted);">…</span>
+                  <select id="rtl-period" onclick="event.stopPropagation();" onchange="DashboardPage._rtlPeriod(this.value)" style="font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:8px;padding:3px 6px;cursor:pointer;">
+                    <option value="jour">Aujourd'hui</option>
+                    <option value="7j">7 derniers jours</option>
+                  </select>
+                </div>
               </div>
-              <div style="position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 18px;border-top:1px solid var(--border-color);background:var(--bg-secondary);font-size:12px;">
+              <div style="position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px solid var(--border-color);font-size:12px;background:var(--bg-secondary);">
                 <div id="rtl-delta" style="color:var(--text-muted);font-weight:600;">…</div>
                 <div id="rtl-stats" style="color:var(--text-muted);">…</div>
               </div>
@@ -1817,24 +1828,42 @@ const DashboardPage = {
 
   // ============ Recette en direct (courbe CA par heure, intégrée au hero blanc) ============
   async _loadRecetteLive() {
-    const spark = document.getElementById('rtl-spark');
-    if (!spark) return;
-    const stats = document.getElementById('rtl-stats');
-    const amountEl = document.getElementById('rtl-amount');
-    if (!this._isToday()) return;
+    if (!document.getElementById('rtl-spark')) return;
+    const period = this._rtlPeriodSel || 'jour';
+    const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
+    if (period === '7j') {
+      const caj = Store.get('caJour') || [];
+      const byDay = {};
+      caj.forEach(e => { const dd = String(e.date || '').slice(0, 10); if (dd) byDay[dd] = (byDay[dd] || 0) + (Number(e.caBrut) || 0); });
+      const days = [];
+      for (let i = 6; i >= 0; i--) { const dt = new Date(); dt.setDate(dt.getDate() - i); const ds = dt.toISOString().slice(0, 10); days.push({ label: dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }), v: byDay[ds] || 0 }); }
+      const tot = days.reduce((s, x) => s + x.v, 0);
+      this._rtlData = { series: days, deltaTxt: `${fmt(tot)} F sur 7 jours`, updateHero: false, heroTotal: 0 };
+      this._rtlDraw();
+      return;
+    }
+    if (!this._isToday()) { const st = document.getElementById('rtl-stats'); if (st) st.textContent = 'Jour passé'; return; }
     const r = await Store.getRecetteJourHoraire();
-    const spark2 = document.getElementById('rtl-spark');
-    if (!spark2) return;
-    if (!r || !Array.isArray(r.repartitionHoraire)) { if (stats) stats.textContent = 'Statut Yango indisponible'; if (amountEl) amountEl.textContent = '—'; return; }
+    if (!document.getElementById('rtl-spark')) return;
+    if (!r || !Array.isArray(r.repartitionHoraire)) { const st = document.getElementById('rtl-stats'); if (st) st.textContent = 'Statut Yango indisponible'; return; }
     const rp = r.repartitionHoraire;
     const nowH = new Date().getUTCHours();
     const order = []; for (let h = 5; h <= 23; h++) order.push(h); for (let h = 0; h <= 4; h++) order.push(h);
     const pertinent = h => (h >= 5) ? true : (nowH < 5);
-    const series = order.map(h => ({ h, ca: (rp[h] ? rp[h].ca : 0) || 0, courses: (rp[h] ? rp[h].courses : 0) || 0 })).filter(x => x.ca > 0 || x.courses > 0 || pertinent(x.h));
-    const total = series.reduce((s, x) => s + x.ca, 0);
-    const totalCourses = series.reduce((s, x) => s + x.courses, 0);
-    const vals = series.map(x => x.ca);
+    const s2 = order.map(h => ({ h, ca: (rp[h] ? rp[h].ca : 0) || 0, courses: (rp[h] ? rp[h].courses : 0) || 0 })).filter(x => x.ca > 0 || x.courses > 0 || pertinent(x.h));
+    const courses = s2.reduce((s, x) => s + x.courses, 0);
+    const tot = s2.reduce((s, x) => s + x.ca, 0);
+    this._rtlData = { series: s2.map(x => ({ label: x.h + 'h', v: x.ca })), deltaTxt: `${courses} course${courses > 1 ? 's' : ''} aujourd'hui`, updateHero: true, heroTotal: tot };
+    this._rtlDraw();
+  },
+
+  _rtlDraw() {
+    const spark = document.getElementById('rtl-spark');
+    const data = this._rtlData;
+    if (!spark || !data) return;
+    const vals = data.series.map(s => s.v);
     const nz = vals.filter(v => v > 0);
+    const total = vals.reduce((a, b) => a + b, 0);
     const avg = nz.length ? Math.round(total / nz.length) : 0;
     const peak = vals.length ? Math.max(...vals) : 0;
     const low = nz.length ? Math.min(...nz) : 0;
@@ -1843,23 +1872,40 @@ const DashboardPage = {
     const dir = Math.abs(pct) < 1 ? 'flat' : (pct >= 0 ? 'up' : 'down');
     const ACC = { up: { s: '#10b981', t: '#059669', ic: 'solar:arrow-up-linear' }, down: { s: '#f43f5e', t: '#e11d48', ic: 'solar:arrow-down-linear' }, flat: { s: '#64748b', t: 'var(--text-muted)', ic: 'solar:arrow-right-linear' } }[dir];
     const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
-    const trendEl = document.getElementById('rtl-trend');
-    const deltaEl = document.getElementById('rtl-delta');
-    const fadeEl = document.getElementById('rtl-fade');
-    if (amountEl) amountEl.textContent = fmt(total) + ' F';
-    if (trendEl) { trendEl.style.color = ACC.t; trendEl.replaceChildren(); trendEl.insertAdjacentHTML('beforeend', `<iconify-icon icon="${ACC.ic}"></iconify-icon>${Math.abs(pct)}%`); }
-    if (deltaEl) { deltaEl.style.color = ACC.t; deltaEl.textContent = `${totalCourses} course${totalCourses > 1 ? 's' : ''} aujourd'hui`; }
-    if (stats) { stats.replaceChildren(); stats.insertAdjacentHTML('beforeend', `<span style="color:var(--text-primary);font-weight:700;">${fmt(peak)}</span> peak · <span style="color:var(--text-primary);font-weight:700;">${fmt(low)}</span> low · <span style="color:var(--text-primary);font-weight:700;">${fmt(avg)}</span> avg`); }
-    if (fadeEl) fadeEl.style.background = `linear-gradient(to left, ${ACC.s}26, transparent 75%)`;
+    const trendEl = document.getElementById('rtl-trend'); if (trendEl) { trendEl.style.color = ACC.t; trendEl.replaceChildren(); trendEl.insertAdjacentHTML('beforeend', `<iconify-icon icon="${ACC.ic}"></iconify-icon>${Math.abs(pct)}%`); }
+    const deltaEl = document.getElementById('rtl-delta'); if (deltaEl) { deltaEl.style.color = ACC.t; deltaEl.textContent = data.deltaTxt; }
+    const statsEl = document.getElementById('rtl-stats'); if (statsEl) { statsEl.replaceChildren(); statsEl.insertAdjacentHTML('beforeend', `<span style="color:var(--text-primary);font-weight:700;">${fmt(peak)}</span> peak · <span style="color:var(--text-primary);font-weight:700;">${fmt(low)}</span> low · <span style="color:var(--text-primary);font-weight:700;">${fmt(avg)}</span> avg`); }
+    const fadeEl = document.getElementById('rtl-fade'); if (fadeEl) fadeEl.style.background = `linear-gradient(to left, ${ACC.s}26, transparent 75%)`;
+    if (data.updateHero) { const ha = document.getElementById('hero-ca-amount'); if (ha) ha.textContent = Utils.formatCurrency(data.heroTotal); }
     const maxV = Math.max(1, ...vals);
-    const W = 200, Hh = 150, step = W / Math.max(1, vals.length - 1);
-    const pts = vals.map((v, i) => [i * step, Hh - (v / maxV) * (Hh * 0.72) - Hh * 0.12]);
-    let line = pts.length ? `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}` : `M 0 ${Hh}`;
-    for (let i = 0; i < pts.length - 1; i++) { const [x1, y1] = pts[i], [x2, y2] = pts[i + 1]; const mx = ((x1 + x2) / 2).toFixed(1); line += ` C ${mx},${y1.toFixed(1)} ${mx},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`; }
-    const area = `${line} L ${W} ${Hh} L 0 ${Hh} Z`;
-    const svg = `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" style="width:100%;height:100%;"><defs><linearGradient id="rtlSpk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${ACC.s}" stop-opacity="0.30"/><stop offset="100%" stop-color="${ACC.s}" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#rtlSpk)" class="spk-area"/><path d="${line}" fill="none" stroke="${ACC.s}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" class="spk-line" vector-effect="non-scaling-stroke"/></svg>`;
-    spark2.replaceChildren();
-    spark2.insertAdjacentHTML('beforeend', svg);
+    const W = 200, Hh = 150;
+    let inner;
+    if ((this._rtlViewMode || 'curve') === 'bar') {
+      const n = vals.length || 1, gap = 4, bw = Math.max(2, (W - gap * (n - 1)) / n);
+      inner = vals.map((v, i) => { const h = Math.max(1, (v / maxV) * (Hh * 0.82)); const x = i * (bw + gap), y = Hh - h; return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="1.5" fill="${ACC.s}" class="spk-area"/>`; }).join('');
+    } else {
+      const step = W / Math.max(1, vals.length - 1);
+      const pts = vals.map((v, i) => [i * step, Hh - (v / maxV) * (Hh * 0.78) - Hh * 0.10]);
+      let line = pts.length ? `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}` : `M 0 ${Hh}`;
+      for (let i = 0; i < pts.length - 1; i++) { const [x1, y1] = pts[i], [x2, y2] = pts[i + 1]; const mx = ((x1 + x2) / 2).toFixed(1); line += ` C ${mx},${y1.toFixed(1)} ${mx},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`; }
+      const area = `${line} L ${W} ${Hh} L 0 ${Hh} Z`;
+      inner = `<path d="${area}" fill="${ACC.s}" opacity="0.16" class="spk-area"/><path d="${line}" fill="none" stroke="${ACC.s}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" class="spk-line" vector-effect="non-scaling-stroke"/>`;
+    }
+    spark.replaceChildren();
+    spark.insertAdjacentHTML('beforeend', `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" style="width:100%;height:100%;">${inner}</svg>`);
+  },
+
+  _rtlView(v) {
+    this._rtlViewMode = v;
+    const c = document.getElementById('rtl-btn-curve'), b = document.getElementById('rtl-btn-bar');
+    if (c) c.classList.toggle('rtl-on', v === 'curve');
+    if (b) b.classList.toggle('rtl-on', v === 'bar');
+    this._rtlDraw();
+  },
+
+  _rtlPeriod(p) {
+    this._rtlPeriodSel = p;
+    this._loadRecetteLive();
   },
 
   // MiniChart « Recette encaissée » : survol interactif d'une barre.

@@ -195,7 +195,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 530;
+      const SW_VERSION = 531;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
