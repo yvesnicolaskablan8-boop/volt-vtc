@@ -1277,6 +1277,7 @@ const DashboardPage = {
         @keyframes spkDraw { to { stroke-dashoffset:0; } }
         .spk-area { opacity:0; animation:spkFade .8s ease-out .25s forwards; }
         @keyframes spkFade { to { opacity:1; } }
+        .rtl-dots { position:absolute; inset:0; color:var(--text-primary); opacity:.10; background-image:radial-gradient(currentColor 1px, transparent 1px); background-size:14px 14px; -webkit-mask-image:linear-gradient(to right, transparent, #000 55%); mask-image:linear-gradient(to right, transparent, #000 55%); }
 
         .d-sub { font-size: 12px; color: #9ca3af; margin-top: 4px; font-weight:500; }
         [data-theme="dark"] .d-sub { color: #6b7280; }
@@ -1471,15 +1472,25 @@ const DashboardPage = {
             </div>
           </div>
 
-          <!-- Recette du jour · en direct (StatsWidget + sparkline horaire) -->
-          <div style="border-top:1px solid var(--border-color);padding-top:14px;position:relative;">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
-              <div>
-                <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:.5px;"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;"></span>Recette du jour · en direct</div>
-                <div id="rtl-amount" style="font-size:30px;font-weight:800;color:var(--text-primary);letter-spacing:-.5px;margin-top:5px;">…</div>
-                <div class="d-sub" style="margin-top:2px;" id="rtl-stats">journée d'exploitation (5 h → maintenant)</div>
+          <!-- Recette en direct · carte métrique thème-aware (ProgressMetricCard) -->
+          <div style="border-top:1px solid var(--border-color);padding-top:14px;">
+            <div style="position:relative;overflow:hidden;border-radius:16px;min-height:188px;background:var(--bg-tertiary);border:1px solid var(--border-color);">
+              <div style="position:absolute;top:0;bottom:0;right:0;width:64%;">
+                <div class="rtl-dots"></div>
+                <div id="rtl-fade" style="position:absolute;inset:0;"></div>
+                <div id="rtl-spark" style="position:absolute;inset:0;"></div>
               </div>
-              <div id="rtl-spark" style="flex:1;max-width:240px;height:70px;"></div>
+              <div style="position:relative;z-index:2;padding:16px 18px;pointer-events:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                  <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Recette en direct</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span id="rtl-trend" style="display:inline-flex;align-items:center;gap:3px;font-weight:700;color:var(--text-muted);">…</span><span style="color:var(--text-muted);">Aujourd'hui</span></div>
+                </div>
+                <div id="rtl-amount" style="font-size:42px;font-weight:800;letter-spacing:-1px;color:var(--text-primary);margin-top:8px;line-height:1;">…</div>
+              </div>
+              <div style="position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 18px;border-top:1px solid var(--border-color);background:var(--bg-secondary);font-size:12px;">
+                <div id="rtl-delta" style="color:var(--text-muted);font-weight:600;">…</div>
+                <div id="rtl-stats" style="color:var(--text-muted);">…</div>
+              </div>
             </div>
           </div>
 
@@ -1822,20 +1833,31 @@ const DashboardPage = {
     const series = order.map(h => ({ h, ca: (rp[h] ? rp[h].ca : 0) || 0, courses: (rp[h] ? rp[h].courses : 0) || 0 })).filter(x => x.ca > 0 || x.courses > 0 || pertinent(x.h));
     const total = series.reduce((s, x) => s + x.ca, 0);
     const totalCourses = series.reduce((s, x) => s + x.courses, 0);
-    const nonZero = series.filter(x => x.ca > 0);
-    const avg = nonZero.length ? Math.round(total / nonZero.length) : 0;
-    let peak = { h: null, ca: 0 }; series.forEach(x => { if (x.ca > peak.ca) peak = { h: x.h, ca: x.ca }; });
-    const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
-    if (amountEl) amountEl.textContent = Utils.formatCurrency(total);
-    if (stats) stats.textContent = `Moy ${fmt(avg)}/h · Pic ${peak.h != null ? peak.h + 'h·' + fmt(peak.ca) : '—'} · ${totalCourses} courses`;
     const vals = series.map(x => x.ca);
+    const nz = vals.filter(v => v > 0);
+    const avg = nz.length ? Math.round(total / nz.length) : 0;
+    const peak = vals.length ? Math.max(...vals) : 0;
+    const low = nz.length ? Math.min(...nz) : 0;
+    const lastV = vals.length ? vals[vals.length - 1] : 0;
+    const pct = avg > 0 ? Math.round((lastV - avg) / avg * 100) : 0;
+    const dir = Math.abs(pct) < 1 ? 'flat' : (pct >= 0 ? 'up' : 'down');
+    const ACC = { up: { s: '#10b981', t: '#059669', ic: 'solar:arrow-up-linear' }, down: { s: '#f43f5e', t: '#e11d48', ic: 'solar:arrow-down-linear' }, flat: { s: '#64748b', t: 'var(--text-muted)', ic: 'solar:arrow-right-linear' } }[dir];
+    const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
+    const trendEl = document.getElementById('rtl-trend');
+    const deltaEl = document.getElementById('rtl-delta');
+    const fadeEl = document.getElementById('rtl-fade');
+    if (amountEl) amountEl.textContent = fmt(total) + ' F';
+    if (trendEl) { trendEl.style.color = ACC.t; trendEl.replaceChildren(); trendEl.insertAdjacentHTML('beforeend', `<iconify-icon icon="${ACC.ic}"></iconify-icon>${Math.abs(pct)}%`); }
+    if (deltaEl) { deltaEl.style.color = ACC.t; deltaEl.textContent = `${totalCourses} course${totalCourses > 1 ? 's' : ''} aujourd'hui`; }
+    if (stats) { stats.replaceChildren(); stats.insertAdjacentHTML('beforeend', `<span style="color:var(--text-primary);font-weight:700;">${fmt(peak)}</span> peak · <span style="color:var(--text-primary);font-weight:700;">${fmt(low)}</span> low · <span style="color:var(--text-primary);font-weight:700;">${fmt(avg)}</span> avg`); }
+    if (fadeEl) fadeEl.style.background = `linear-gradient(to left, ${ACC.s}26, transparent 75%)`;
     const maxV = Math.max(1, ...vals);
-    const W = 150, Hh = 60, step = W / Math.max(1, vals.length - 1);
-    const pts = vals.map((v, i) => [i * step, Hh - (v / maxV) * (Hh * 0.8) - Hh * 0.1]);
+    const W = 200, Hh = 150, step = W / Math.max(1, vals.length - 1);
+    const pts = vals.map((v, i) => [i * step, Hh - (v / maxV) * (Hh * 0.72) - Hh * 0.12]);
     let line = pts.length ? `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}` : `M 0 ${Hh}`;
     for (let i = 0; i < pts.length - 1; i++) { const [x1, y1] = pts[i], [x2, y2] = pts[i + 1]; const mx = ((x1 + x2) / 2).toFixed(1); line += ` C ${mx},${y1.toFixed(1)} ${mx},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`; }
     const area = `${line} L ${W} ${Hh} L 0 ${Hh} Z`;
-    const svg = `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" style="width:100%;height:100%;"><defs><linearGradient id="rtlSpk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.35"/><stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#rtlSpk)" class="spk-area"/><path d="${line}" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pathLength="1" class="spk-line"/></svg>`;
+    const svg = `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" style="width:100%;height:100%;"><defs><linearGradient id="rtlSpk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${ACC.s}" stop-opacity="0.30"/><stop offset="100%" stop-color="${ACC.s}" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#rtlSpk)" class="spk-area"/><path d="${line}" fill="none" stroke="${ACC.s}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" class="spk-line" vector-effect="non-scaling-stroke"/></svg>`;
     spark2.replaceChildren();
     spark2.insertAdjacentHTML('beforeend', svg);
   },
