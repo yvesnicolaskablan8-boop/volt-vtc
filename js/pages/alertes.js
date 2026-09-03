@@ -66,7 +66,7 @@ const AlertesPage = {
       </style>
       <div class="page-header">
         <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-          <button class="btn btn-sm btn-secondary" onclick="AlertesPage._goBack()" style="flex-shrink:0;"><iconify-icon icon="solar:arrow-left-linear"></iconify-icon> Retour</button>
+          <button onclick="AlertesPage._goBack()" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:var(--pilote-blue);color:#fff;border:none;font-weight:700;font-size:14px;padding:10px 20px;border-radius:12px;cursor:pointer;box-shadow:0 6px 16px rgba(93,135,255,.35);"><iconify-icon icon="solar:arrow-left-linear" style="font-size:19px;"></iconify-icon> Retour</button>
           <h1 style="margin:0;"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Centre d'Alertes</h1>
         </div>
         <div class="page-actions">
@@ -278,8 +278,9 @@ const AlertesPage = {
         });
       }
 
-      // Chauffeur actif sans redevance quotidienne
-      if (ch.statut === 'actif' && (!ch.redevanceQuotidienne || ch.redevanceQuotidienne <= 0)) {
+      // Chauffeur actif en LOCATION sans redevance quotidienne.
+      // Les salariés (payés au mois) ne doivent aucune recette : pas d'alerte pour eux.
+      if (ch.statut === 'actif' && (ch.typeContrat || 'location') !== 'salarie' && (!ch.redevanceQuotidienne || ch.redevanceQuotidienne <= 0)) {
         alerts.push({
           id: `NOREDEV-${ch.id}`,
           categorie: 'versements',
