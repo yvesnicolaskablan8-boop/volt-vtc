@@ -1486,15 +1486,16 @@ const DashboardPage = {
             </div>
           </div>
 
-          <!-- Recette par heure · en direct (courbe intégrée au hero) -->
+          <!-- Recette du jour · en direct (StatsWidget + sparkline horaire) -->
           <div style="border-top:1px solid var(--border-color);padding-top:14px;position:relative;">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
-              <div style="display:flex;align-items:center;gap:9px;min-width:0;">
-                <div class="d-icon" style="width:36px;height:36px;font-size:1rem;background:rgba(139,92,246,.12);color:#8b5cf6;"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
-                <div style="min-width:0;"><div class="d-lbl" style="margin:0;">Recette par heure · en direct</div><div class="d-sub" style="margin:0;" id="rtl-stats">journée d'exploitation (5 h → maintenant)</div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:.5px;"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;"></span>Recette du jour · en direct</div>
+                <div id="rtl-amount" style="font-size:30px;font-weight:800;color:var(--text-primary);letter-spacing:-.5px;margin-top:5px;">…</div>
+                <div class="d-sub" style="margin-top:2px;" id="rtl-stats">journée d'exploitation (5 h → maintenant)</div>
               </div>
+              <div id="rtl-spark" style="flex:1;max-width:240px;height:70px;"></div>
             </div>
-            <div style="height:140px;position:relative;"><canvas id="rtl-canvas"></canvas></div>
           </div>
 
           <!-- Recette encaissée · barres animées (versements 8 semaines) -->
@@ -1503,31 +1504,21 @@ const DashboardPage = {
               const weeks = (d.weeklyPayments || []).slice(-8);
               const maxV = Math.max(1, ...weeks.map(w => w.verse || 0));
               const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
-              const vals = weeks.map(w => w.verse || 0);
-              const last = vals.length ? vals[vals.length - 1] : 0;
-              const prev = vals.length > 1 ? vals[vals.length - 2] : 0;
-              const change = prev > 0 ? Math.round((last - prev) / prev * 100) : (last > 0 ? 100 : 0);
-              const pos = change >= 0;
-              const stroke = pos ? '#22C55E' : '#F97316';
-              const gid = pos ? 'spkUp' : 'spkDown';
-              const W = 150, H = 60, step = W / Math.max(1, vals.length - 1);
-              const pts = vals.map((v, i) => [i * step, H - (v / maxV) * (H * 0.8) - H * 0.1]);
-              let line = pts.length ? `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}` : `M 0 ${H}`;
-              for (let i = 0; i < pts.length - 1; i++) { const [x1, y1] = pts[i], [x2, y2] = pts[i + 1]; const mx = ((x1 + x2) / 2).toFixed(1); line += ` C ${mx},${y1.toFixed(1)} ${mx},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`; }
-              const area = `${line} L ${W} ${H} L 0 ${H} Z`;
-              return `<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
-                <div>
-                  <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);font-weight:600;">Cette semaine <span style="display:inline-flex;align-items:center;gap:2px;font-weight:800;color:${pos ? '#16a34a' : '#ea580c'};">${Math.abs(change)}% <iconify-icon icon="${pos ? 'solar:arrow-up-linear' : 'solar:arrow-down-linear'}"></iconify-icon></span></div>
-                  <div style="font-size:32px;font-weight:800;color:var(--text-primary);letter-spacing:-.5px;margin-top:4px;">${Utils.formatCurrency(last)}</div>
-                  <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-top:2px;">Recette encaissée</div>
+              const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
+              const cols = weeks.map((w, i) => {
+                const h = Math.max(4, (w.verse || 0) / maxV * 96);
+                return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})">
+                  <div class="mini-tip">${fmt(w.verse || 0)} F</div>
+                  <div class="mini-bar" data-fmt="${fmt(w.verse || 0)} F" style="height:${h.toFixed(1)}px;"></div>
+                  <div class="mini-lbl">${Utils.escHtml(w.label || '')}</div>
+                </div>`;
+              }).join('');
+              return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)} F" onmouseleave="DashboardPage._miniLeave()">
+                <div class="mini-head">
+                  <div class="mini-title"><span class="mini-dot"></span>Recette encaissée · 8 sem.</div>
+                  <div class="mini-val" id="mini-value">${fmt(sumV)} F</div>
                 </div>
-                <div style="flex:1;max-width:230px;height:66px;">
-                  <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:100%;">
-                    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${stroke}" stop-opacity="0.4"/><stop offset="100%" stop-color="${stroke}" stop-opacity="0"/></linearGradient></defs>
-                    <path d="${area}" fill="url(#${gid})" class="spk-area"/>
-                    <path d="${line}" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pathLength="1" class="spk-line"/>
-                  </svg>
-                </div>
+                <div class="mini-bars">${cols}</div>
               </div>`;
             })()}
           </div>
@@ -1819,14 +1810,15 @@ const DashboardPage = {
 
   // ============ Recette en direct (courbe CA par heure, intégrée au hero blanc) ============
   async _loadRecetteLive() {
-    const cv = document.getElementById('rtl-canvas');
-    if (!cv) return;
+    const spark = document.getElementById('rtl-spark');
+    if (!spark) return;
     const stats = document.getElementById('rtl-stats');
-    if (!this._isToday()) return; // le hero d'un jour passé n'affiche pas la courbe live
+    const amountEl = document.getElementById('rtl-amount');
+    if (!this._isToday()) return;
     const r = await Store.getRecetteJourHoraire();
-    const cv2 = document.getElementById('rtl-canvas');
-    if (!cv2) return;
-    if (!r || !Array.isArray(r.repartitionHoraire)) { if (stats) stats.textContent = 'Statut Yango indisponible'; return; }
+    const spark2 = document.getElementById('rtl-spark');
+    if (!spark2) return;
+    if (!r || !Array.isArray(r.repartitionHoraire)) { if (stats) stats.textContent = 'Statut Yango indisponible'; if (amountEl) amountEl.textContent = '—'; return; }
     const rp = r.repartitionHoraire;
     const nowH = new Date().getUTCHours();
     const order = []; for (let h = 5; h <= 23; h++) order.push(h); for (let h = 0; h <= 4; h++) order.push(h);
@@ -1838,16 +1830,18 @@ const DashboardPage = {
     const avg = nonZero.length ? Math.round(total / nonZero.length) : 0;
     let peak = { h: null, ca: 0 }; series.forEach(x => { if (x.ca > peak.ca) peak = { h: x.h, ca: x.ca }; });
     const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
+    if (amountEl) amountEl.textContent = Utils.formatCurrency(total);
     if (stats) stats.textContent = `Moy ${fmt(avg)}/h · Pic ${peak.h != null ? peak.h + 'h·' + fmt(peak.ca) : '—'} · ${totalCourses} courses`;
-    if (typeof Chart === 'undefined') return;
-    if (this._rtlChart) { this._rtlChart.destroy(); this._rtlChart = null; }
-    const ctx = cv2.getContext('2d');
-    const grad = ctx.createLinearGradient(0, 0, 0, 140); grad.addColorStop(0, 'rgba(139,92,246,0.28)'); grad.addColorStop(1, 'rgba(139,92,246,0)');
-    this._rtlChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels: series.map(x => x.h + 'h'), datasets: [{ data: series.map(x => x.ca), borderColor: '#8b5cf6', borderWidth: 2.5, fill: true, backgroundColor: grad, tension: 0.4, pointRadius: series.map((_, i) => i === series.length - 1 ? 4 : 0), pointBackgroundColor: '#8b5cf6', pointBorderColor: '#fff', pointBorderWidth: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmt(c.parsed.y) + ' F' } } }, scales: { y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#7C8FAC', font: { size: 10 }, callback: v => fmt(v), maxTicksLimit: 5 }, beginAtZero: true }, x: { grid: { display: false }, ticks: { color: '#7C8FAC', font: { size: 10 }, maxTicksLimit: 12 } } } }
-    });
+    const vals = series.map(x => x.ca);
+    const maxV = Math.max(1, ...vals);
+    const W = 150, Hh = 60, step = W / Math.max(1, vals.length - 1);
+    const pts = vals.map((v, i) => [i * step, Hh - (v / maxV) * (Hh * 0.8) - Hh * 0.1]);
+    let line = pts.length ? `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}` : `M 0 ${Hh}`;
+    for (let i = 0; i < pts.length - 1; i++) { const [x1, y1] = pts[i], [x2, y2] = pts[i + 1]; const mx = ((x1 + x2) / 2).toFixed(1); line += ` C ${mx},${y1.toFixed(1)} ${mx},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`; }
+    const area = `${line} L ${W} ${Hh} L 0 ${Hh} Z`;
+    const svg = `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" style="width:100%;height:100%;"><defs><linearGradient id="rtlSpk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.35"/><stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#rtlSpk)" class="spk-area"/><path d="${line}" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pathLength="1" class="spk-line"/></svg>`;
+    spark2.replaceChildren();
+    spark2.insertAdjacentHTML('beforeend', svg);
   },
 
   // MiniChart « Recette encaissée » : survol interactif d'une barre.
