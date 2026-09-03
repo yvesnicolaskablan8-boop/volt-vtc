@@ -54,6 +54,26 @@ const AlertesPage = {
         Toast.success('Redevance configurée pour ' + nom);
         AlertesPage._loadAlerts(); // régénère la liste : l'alerte disparaît
       });
+    } else if (type === 'salarie') {
+      const ch = (Store.get('chauffeurs') || []).find(c => c.id === chauffeurId);
+      if (!ch) { Toast.error('Chauffeur introuvable'); return; }
+      const nom = `${ch.prenom || ''} ${ch.nom || ''}`.trim();
+      const fields = [
+        { name: 'salaireMensuel', label: 'Salaire mensuel net (FCFA)', type: 'number', min: 0, step: 10000, placeholder: 'Ex : 200000' },
+        { name: 'objectifCaJour', label: 'Objectif CA / jour (FCFA)', type: 'number', min: 0, step: 5000, placeholder: 'Ex : 75000' }
+      ];
+      const formHtml = FormBuilder.build(fields, ch);
+      Modal.form(`<iconify-icon icon="solar:wallet-money-bold-duotone" class="text-blue"></iconify-icon> Paramètres salarié — ${Utils.escHtml(nom)}`, formHtml, () => {
+        const body = document.getElementById('modal-body');
+        const values = FormBuilder.getValues(body);
+        const sal = Number(values.salaireMensuel) || 0;
+        const obj = Number(values.objectifCaJour) || 0;
+        if (sal <= 0 && obj <= 0) { Toast.error('Saisis au moins un montant'); return; }
+        Store.update('chauffeurs', chauffeurId, { salaireMensuel: sal, objectifCaJour: obj });
+        Modal.close();
+        Toast.success('Paramètres salarié enregistrés pour ' + nom);
+        AlertesPage._loadAlerts();
+      });
     }
   },
 
@@ -294,6 +314,28 @@ const AlertesPage = {
           icon: 'solar:wallet-money-bold-duotone',
           date: todayStr
         });
+      }
+
+      // Chauffeur salarié actif : paramètres du modèle salariat manquants (salaire / objectif CA).
+      if (ch.statut === 'actif' && ch.typeContrat === 'salarie') {
+        const manquants = [];
+        if (!ch.salaireMensuel || ch.salaireMensuel <= 0) manquants.push('salaire mensuel');
+        if (!ch.objectifCaJour || ch.objectifCaJour <= 0) manquants.push('objectif CA/jour');
+        if (manquants.length) {
+          alerts.push({
+            id: `SALPARAM-${ch.id}`,
+            categorie: 'versements',
+            niveau: 'attention',
+            titre: 'Paramètres salarié incomplets',
+            description: `${nom} est salarié mais n'a pas configuré son ${manquants.join(' ni son ')}. Nécessaire pour suivre son objectif et sa rentabilité.`,
+            chauffeurId: ch.id,
+            action: 'Configurer',
+            inlineType: 'salarie',
+            actionRoute: `#/chauffeurs/${ch.id}`,
+            icon: 'solar:wallet-money-bold-duotone',
+            date: todayStr
+          });
+        }
       }
 
       // Dette élevée
