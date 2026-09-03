@@ -1438,21 +1438,15 @@ const DashboardPage = {
               const bar = zorder.filter(z => zc[z]).map(z => { const p = Math.round(zc[z] / total * 100); return `<div title="${ZC[z][1]} : ${zc[z]} (${p}%)" style="flex:${zc[z]};min-width:26px;background:${ZC[z][0]};display:flex;align-items:center;justify-content:center;">${p >= 12 ? `<span style="font-size:9px;font-weight:800;color:#fff;">${p}%</span>` : ''}</div>`; }).join('');
               const synth = zorder.filter(z => zc[z]).map(z => `<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${ZC[z][0]};"></span>${zc[z]} ${ZC[z][1]} · ${Math.round(zc[z] / total * 100)}%</span>`).join('');
               const horsNoms = list.filter(c => !c.programme).map(c => c.prenom);
-              return `<div onclick="event.stopPropagation(); DashboardPage._toggleHeroActivite(event)" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <iconify-icon id="hero-act-chevron" icon="solar:alt-arrow-down-linear" style="transition:transform .2s;color:var(--text-muted);font-size:16px;"></iconify-icon>
-                  <span style="font-size:13px;font-weight:700;color:var(--text-primary);">Activité chauffeurs</span>
-                </div>
-                <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;padding:4px 11px;border-radius:20px;background:rgba(19,222,185,.15);color:var(--success-dim);"><iconify-icon icon="solar:users-group-rounded-bold"></iconify-icon>${d.nbActifsTotal}/${total} en activité</span>
-              </div>
-              <div id="hero-activite-detail" hidden style="margin-top:11px;">
-                <div style="display:flex;align-items:center;margin-bottom:11px;">${stack}${more}</div>
-                <div style="display:flex;height:15px;border-radius:8px;overflow:hidden;gap:2px;margin-bottom:9px;background:var(--bg-tertiary);">${bar}</div>
-                <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;font-weight:600;color:var(--text-secondary);">${synth}</div>
-                ${horsNoms.length ? `<div style="margin-top:11px;display:flex;align-items:center;gap:9px;background:rgba(255,174,31,.14);border-radius:12px;padding:9px 12px;font-size:12px;font-weight:600;color:var(--text-primary);">
-                  <iconify-icon icon="solar:danger-triangle-bold" style="color:var(--warning);font-size:15px;flex-shrink:0;"></iconify-icon>
-                  <span><strong>${horsNoms.length} hors planning</strong> : ${horsNoms.slice(0, 3).map(n => Utils.escHtml(n)).join(', ')}${horsNoms.length > 3 ? ` +${horsNoms.length - 3}` : ''} — à ajouter</span>
-                </div>` : ''}
+              const enForme = zc.ok || 0, aSurv = zc.watch || 0, inactif = zc.off || 0;
+              const pctForme = total ? Math.round(enForme / total * 100) : 0;
+              const tile = (lbl, val, col, bg) => `<div style="background:${bg};border-radius:12px;padding:8px 13px;text-align:center;flex:1;min-width:76px;"><div style="font-size:10px;font-weight:700;color:var(--text-secondary);white-space:nowrap;">${lbl}</div><div style="font-size:16px;font-weight:800;color:${col};white-space:nowrap;margin-top:2px;">${val}</div></div>`;
+              return `<div style="display:flex;gap:9px;flex-wrap:wrap;">
+                ${tile('En activité', `${d.nbActifsTotal}/${total}`, 'var(--success-dim)', 'rgba(19,222,185,.12)')}
+                ${tile('En forme', `${pctForme}%`, '#02b3a9', 'rgba(19,222,185,.10)')}
+                ${aSurv ? tile('À surveiller', String(aSurv), 'var(--warning-dim)', 'rgba(255,174,31,.12)') : ''}
+                ${inactif ? tile('Inactif', String(inactif), 'var(--text-muted)', 'var(--bg-tertiary)') : ''}
+                ${horsNoms.length ? tile('Hors planning', String(horsNoms.length), 'var(--danger-dim)', 'rgba(250,137,107,.12)') : ''}
               </div>`;
             })()}
           </div>
@@ -1816,15 +1810,6 @@ const DashboardPage = {
       data: { labels: series.map(x => x.h + 'h'), datasets: [{ data: series.map(x => x.ca), borderColor: '#8b5cf6', borderWidth: 2.5, fill: true, backgroundColor: grad, tension: 0.4, pointRadius: series.map((_, i) => i === series.length - 1 ? 4 : 0), pointBackgroundColor: '#8b5cf6', pointBorderColor: '#fff', pointBorderWidth: 2 }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmt(c.parsed.y) + ' F' } } }, scales: { y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#7C8FAC', font: { size: 10 }, callback: v => fmt(v), maxTicksLimit: 5 }, beginAtZero: true }, x: { grid: { display: false }, ticks: { color: '#7C8FAC', font: { size: 10 }, maxTicksLimit: 12 } } } }
     });
-  },
-
-  _toggleHeroActivite(e) {
-    if (e) e.stopPropagation();
-    const det = document.getElementById('hero-activite-detail');
-    const ch = document.getElementById('hero-act-chevron');
-    if (!det) return;
-    det.hidden = !det.hidden;
-    if (ch) ch.style.transform = det.hidden ? '' : 'rotate(180deg)';
   },
 
   // ============ Chauffeurs à surveiller ============
