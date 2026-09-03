@@ -280,6 +280,9 @@
   animation: rotateTheme 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Fil d'Ariane masqué (place libérée pour les widgets) */
+.header-breadcrumb { display: none; }
+
 /* ========== HEADER WIDGETS (accès rapide) ========== */
 .hw-group { display: flex; align-items: center; gap: 6px; }
 .hw { position: relative; width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; background: transparent; transition: all var(--transition-base); font-size: 19px; }
