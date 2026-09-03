@@ -182,6 +182,9 @@ const AlertesPage = {
         </div>
       </div>
 
+      <!-- Bandeau alertes ignorées -->
+      <div id="ignored-banner" style="margin-bottom:var(--space-sm);"></div>
+
       <!-- Liste des alertes -->
       <div id="alerts-list"></div>
 
@@ -232,6 +235,7 @@ const AlertesPage = {
     this._persistSeverity(alerts);
     this._renderKPIs(alerts);
     this._renderAlertsList(alerts);
+    this._renderIgnoredBanner();
     this._renderCharts(alerts);
     this._loadNotifStats();
 
@@ -872,7 +876,8 @@ const AlertesPage = {
     const niveauOrder = { critique: 0, urgent: 1, attention: 2 };
     alerts.sort((a, b) => (niveauOrder[a.niveau] || 3) - (niveauOrder[b.niveau] || 3));
 
-    return alerts;
+    const ignored = this._getIgnoredIds();
+    return alerts.filter(a => !ignored.has(a.id));
   },
 
   // =================== ALERTES YANGO (async) ===================
@@ -890,10 +895,13 @@ const AlertesPage = {
         .map(v => `${v.chauffeurId}|${v.date}`)
     );
 
+    const ignoredSet = this._getIgnoredIds();
+
     // Check yesterday (completed day)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const dateLabel = yesterday.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
     const yangoAlerts = [];
     const results = await Promise.allSettled(
@@ -911,6 +919,7 @@ const AlertesPage = {
 
       if (ca < objectif) {
         if (justifiedSet.has(`${c.id}|${yesterdayStr}`)) return; // déjà justifié
+        if (ignoredSet.has(`YOBJ-${c.id}`)) return; // ignorée
         const nom = `${c.prenom} ${c.nom}`;
         const niveau = pct < 50 ? 'critique' : pct < 80 ? 'urgent' : 'attention';
         yangoAlerts.push({
@@ -918,7 +927,7 @@ const AlertesPage = {
           categorie: 'yango',
           niveau,
           titre: `Objectif CA non atteint (${pct}%)`,
-          description: `${nom} — CA Yango hier : ${Utils.formatCurrency(ca)} sur ${Utils.formatCurrency(objectif)} (${stats.nbCourses} courses). Manque ${Utils.formatCurrency(objectif - ca)}.`,
+          description: `${nom} — CA Yango du ${dateLabel} : ${Utils.formatCurrency(ca)} sur ${Utils.formatCurrency(objectif)} (${stats.nbCourses} courses). Manque ${Utils.formatCurrency(objectif - ca)}.`,
           chauffeurId: c.id,
           action: 'Justifier',
           inlineType: 'objectif',
@@ -933,7 +942,9 @@ const AlertesPage = {
     if (yangoAlerts.length > 0) {
       // Merge with existing alerts and re-render
       const niveauOrder = { critique: 0, urgent: 1, attention: 2 };
-      this._allAlerts = [...this._allAlerts, ...yangoAlerts];
+      const byId = new Map(this._allAlerts.map(a => [a.id, a]));
+      yangoAlerts.forEach(a => byId.set(a.id, a));
+      this._allAlerts = [...byId.values()];
       this._allAlerts.sort((a, b) => (niveauOrder[a.niveau] || 3) - (niveauOrder[b.niveau] || 3));
       this._persistSeverity(this._allAlerts);
 
@@ -978,6 +989,35 @@ const AlertesPage = {
         ${alerts.length === 0 ? '<div class="kpi-trend up"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tout est en ordre !</div>' : ''}
       </div>
     `;
+  },
+
+  // ----- Alertes ignorées (uniquement les non sévères / niveau « attention ») -----
+  // Stockées en local (pas de colonne DB), filtrées de la liste, des KPI et de la sévérité.
+  _getIgnoredIds() {
+    try { return new Set(JSON.parse(localStorage.getItem('pilote_ignored_alerts') || '[]')); }
+    catch (e) { return new Set(); }
+  },
+  _ignoreAlert(id) {
+    const s = this._getIgnoredIds(); s.add(id);
+    try { localStorage.setItem('pilote_ignored_alerts', JSON.stringify([...s])); } catch (e) {}
+    this._allAlerts = (this._allAlerts || []).filter(a => a.id !== id);
+    this._persistSeverity(this._allAlerts);
+    this._renderKPIs(this._allAlerts);
+    this._renderAlertsList(this._allAlerts);
+    this._renderIgnoredBanner();
+    Toast.success('Alerte ignorée');
+  },
+  _restoreIgnored() {
+    try { localStorage.removeItem('pilote_ignored_alerts'); } catch (e) {}
+    this._loadAlerts();
+    Toast.success('Alertes ignorées réaffichées');
+  },
+  _renderIgnoredBanner() {
+    const el = document.getElementById('ignored-banner');
+    if (!el) return;
+    el.replaceChildren();
+    const n = this._getIgnoredIds().size;
+    if (n > 0) el.insertAdjacentHTML('beforeend', `<div class="card" style="padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:var(--font-size-sm);"><span style="color:var(--text-muted);"><iconify-icon icon="solar:eye-closed-bold"></iconify-icon> ${n} alerte${n > 1 ? 's' : ''} ignorée${n > 1 ? 's' : ''}</span><button type="button" class="btn btn-sm btn-secondary" onclick="AlertesPage._restoreIgnored()">Réafficher</button></div>`);
   },
 
   // Met en cache le niveau d'alerte le plus élevé pour colorer le bouton « Alertes » de la barre latérale.
@@ -1062,16 +1102,21 @@ const AlertesPage = {
               <div style="font-size:var(--font-size-xs);color:var(--text-muted);line-height:1.5;">${alert.description}</div>
             </div>
 
-            <!-- Action -->
-            ${alert.inlineType ? `
-              <button type="button" class="btn btn-sm btn-secondary" style="flex-shrink:0;white-space:nowrap;" onclick="AlertesPage._resolveInline('${alert.inlineType}','${alert.chauffeurId}')">
-                ${alert.action} <iconify-icon icon="solar:settings-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
-              </button>
-            ` : (alert.actionRoute ? `
-              <a href="${alert.actionRoute}" class="btn btn-sm btn-secondary" style="flex-shrink:0;white-space:nowrap;">
-                ${alert.action} <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
-              </a>
-            ` : '')}
+            <!-- Actions -->
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+              ${alert.inlineType ? `
+                <button type="button" class="btn btn-sm btn-secondary" style="white-space:nowrap;" onclick="AlertesPage._resolveInline('${alert.inlineType}','${alert.chauffeurId}')">
+                  ${alert.action} <iconify-icon icon="solar:settings-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
+                </button>
+              ` : (alert.actionRoute ? `
+                <a href="${alert.actionRoute}" class="btn btn-sm btn-secondary" style="white-space:nowrap;">
+                  ${alert.action} <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
+                </a>
+              ` : '')}
+              ${alert.niveau === 'attention' ? `
+                <button type="button" class="btn btn-sm btn-secondary" title="Ignorer cette alerte" onclick="AlertesPage._ignoreAlert('${alert.id}')" style="white-space:nowrap;"><iconify-icon icon="solar:eye-closed-bold"></iconify-icon></button>
+              ` : ''}
+            </div>
           </div>
         </div>
       `;
