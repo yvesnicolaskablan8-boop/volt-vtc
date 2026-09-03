@@ -1450,30 +1450,16 @@ const DashboardPage = {
             })()}
           </div>
 
-          <!-- Recette vs attendu — fusionnée dans le bloc d'activité -->
+          <!-- Recette par heure · en direct (courbe intégrée au hero) -->
           <div style="border-top:1px solid var(--border-color);padding-top:14px;position:relative;">
-            ${(() => {
-              const weeks = (d.weeklyPayments || []).slice(-8);
-              const maxV = Math.max(1, ...weeks.map(w => w.verse || 0));
-              const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
-              const bars = weeks.map(w => {
-                const vH = (w.verse || 0) / maxV * 100;
-                return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;">
-                  <div style="width:100%;max-width:26px;display:flex;align-items:flex-end;height:100px;">
-                    <div title="${Utils.escHtml(w.label || '')} : ${Utils.formatCurrency(w.verse || 0)}" style="width:100%;background:linear-gradient(180deg,#5D87FF,#8AA8FF);border-radius:6px 6px 0 0;height:${vH.toFixed(1)}%;min-height:3px;"></div>
-                  </div>
-                  <div style="font-size:9px;color:var(--text-muted);font-weight:600;white-space:nowrap;">${Utils.escHtml(w.label || '')}</div>
-                </div>`;
-              }).join('');
-              return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
-                <div style="display:flex;align-items:center;gap:9px;">
-                  <div class="d-icon" style="width:38px;height:38px;font-size:1.05rem;background:rgba(93,135,255,.12);color:#5D87FF;"><iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon></div>
-                  <div><div class="d-lbl" style="margin:0;">Recette encaissée</div><div class="d-sub" style="margin:0;">8 dernières semaines</div></div>
-                </div>
-                <div style="text-align:right;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;">Total encaissé</div><div style="font-size:17px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(sumV)}</div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:9px;min-width:0;">
+                <div class="d-icon" style="width:36px;height:36px;font-size:1rem;background:rgba(139,92,246,.12);color:#8b5cf6;"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></div>
+                <div style="min-width:0;"><div class="d-lbl" style="margin:0;">Recette par heure · en direct</div><div class="d-sub" style="margin:0;" id="rtl-stats">journée d'exploitation (5 h → maintenant)</div></div>
               </div>
-              <div style="display:flex;align-items:flex-end;gap:7px;">${bars}</div>`;
-            })()}
+              <div style="text-align:right;flex-shrink:0;"><div style="font-size:10px;color:var(--text-secondary);font-weight:600;">Encaissé · 8 sem.</div><div style="font-size:15px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency((d.weeklyPayments || []).slice(-8).reduce((s, w) => s + (w.verse || 0), 0))}</div></div>
+            </div>
+            <div style="height:140px;position:relative;"><canvas id="rtl-canvas"></canvas></div>
           </div>
 
           <div style="margin-top:auto;position:relative;display:inline-flex;align-self:flex-start;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);">
@@ -1540,9 +1526,6 @@ const DashboardPage = {
           })()}
         </div>
       </div>
-
-      <!-- Recette en direct (CA flotte par heure, style néon) -->
-      ${this._renderRecetteLive()}
 
       <!-- Chauffeurs à surveiller (CA faible + occupé Yango) -->
       ${this._renderWatchlist(d)}
@@ -1764,66 +1747,36 @@ const DashboardPage = {
     </div>`;
   },
 
-  // ============ Recette en direct (CA flotte par heure, style néon sombre) ============
-  _renderRecetteLive() {
-    return `<div id="recette-live-card" style="background:#0e0e14;border:1px solid #1e1e2a;border-radius:20px;padding:20px 22px;box-shadow:0 12px 40px rgba(10,10,30,.18);margin-bottom:16px;color:#fff;">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:19px;font-weight:800;color:#fff;">Recette en direct</div>
-          <div style="font-size:12.5px;color:#8a8aa0;margin-top:3px;">CA de la flotte — journée d'exploitation (5 h → maintenant)</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;background:#15151f;border-radius:14px;padding:8px 14px;">
-          <span style="width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px #22c55e;"></span>
-          <span style="font-size:12px;color:#9a9ab0;font-weight:600;">Live</span>
-          <span id="rtl-total" style="font-size:22px;font-weight:800;color:#fff;">…</span>
-        </div>
-      </div>
-      <div style="background:#0b0b12;border-radius:14px;padding:12px 6px 4px;height:220px;margin-top:14px;position:relative;"><canvas id="rtl-canvas"></canvas></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:14px;">
-        <div style="background:#13131c;border-radius:12px;padding:13px;text-align:center;"><div style="font-size:11px;color:#8a8aa0;font-weight:600;margin-bottom:5px;">Moyenne / h</div><div id="rtl-avg" style="font-size:20px;font-weight:800;color:#fff;">…</div></div>
-        <div style="background:#13131c;border-radius:12px;padding:13px;text-align:center;"><div style="font-size:11px;color:#8a8aa0;font-weight:600;margin-bottom:5px;">Meilleure heure</div><div id="rtl-peak" style="font-size:20px;font-weight:800;color:#fff;">…</div></div>
-        <div style="background:#13131c;border-radius:12px;padding:13px;text-align:center;"><div style="font-size:11px;color:#8a8aa0;font-weight:600;margin-bottom:5px;">Courses</div><div id="rtl-courses" style="font-size:20px;font-weight:800;color:#fff;">…</div></div>
-      </div>
-    </div>`;
-  },
-
+  // ============ Recette en direct (courbe CA par heure, intégrée au hero blanc) ============
   async _loadRecetteLive() {
-    const card = document.getElementById('recette-live-card');
-    if (!card) return;
-    if (!this._isToday()) { card.style.display = 'none'; return; }
+    const cv = document.getElementById('rtl-canvas');
+    if (!cv) return;
+    const stats = document.getElementById('rtl-stats');
+    if (!this._isToday()) return; // le hero d'un jour passé n'affiche pas la courbe live
     const r = await Store.getRecetteJourHoraire();
-    const card2 = document.getElementById('recette-live-card');
-    if (!card2) return;
-    if (!r || !Array.isArray(r.repartitionHoraire)) { card2.style.display = 'none'; return; }
+    const cv2 = document.getElementById('rtl-canvas');
+    if (!cv2) return;
+    if (!r || !Array.isArray(r.repartitionHoraire)) { if (stats) stats.textContent = 'Statut Yango indisponible'; return; }
     const rp = r.repartitionHoraire;
     const nowH = new Date().getUTCHours();
     const order = []; for (let h = 5; h <= 23; h++) order.push(h); for (let h = 0; h <= 4; h++) order.push(h);
-    const pertinent = h => (h >= 5) ? true : (nowH < 5); // avant 5h : on inclut aussi 0-4h
-    const series = order
-      .map(h => ({ h, ca: (rp[h] ? rp[h].ca : 0) || 0, courses: (rp[h] ? rp[h].courses : 0) || 0 }))
-      .filter(x => x.ca > 0 || x.courses > 0 || pertinent(x.h));
+    const pertinent = h => (h >= 5) ? true : (nowH < 5);
+    const series = order.map(h => ({ h, ca: (rp[h] ? rp[h].ca : 0) || 0, courses: (rp[h] ? rp[h].courses : 0) || 0 })).filter(x => x.ca > 0 || x.courses > 0 || pertinent(x.h));
     const total = series.reduce((s, x) => s + x.ca, 0);
     const totalCourses = series.reduce((s, x) => s + x.courses, 0);
     const nonZero = series.filter(x => x.ca > 0);
     const avg = nonZero.length ? Math.round(total / nonZero.length) : 0;
     let peak = { h: null, ca: 0 }; series.forEach(x => { if (x.ca > peak.ca) peak = { h: x.h, ca: x.ca }; });
     const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
-    const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-    set('rtl-total', fmt(total) + ' F');
-    set('rtl-avg', fmt(avg) + ' F');
-    set('rtl-peak', peak.h != null ? peak.h + 'h · ' + fmt(peak.ca) + ' F' : '—');
-    set('rtl-courses', String(totalCourses));
-    const cv = document.getElementById('rtl-canvas');
-    if (!cv || typeof Chart === 'undefined') return;
+    if (stats) stats.textContent = `Moy ${fmt(avg)}/h · Pic ${peak.h != null ? peak.h + 'h·' + fmt(peak.ca) : '—'} · ${totalCourses} courses`;
+    if (typeof Chart === 'undefined') return;
     if (this._rtlChart) { this._rtlChart.destroy(); this._rtlChart = null; }
-    const ctx = cv.getContext('2d');
-    const grad = ctx.createLinearGradient(0, 0, 0, 220); grad.addColorStop(0, 'rgba(168,85,247,0.45)'); grad.addColorStop(1, 'rgba(168,85,247,0)');
-    const glow = { id: 'rtlglow', beforeDatasetsDraw(c) { c.ctx.save(); c.ctx.shadowColor = 'rgba(168,85,247,0.7)'; c.ctx.shadowBlur = 14; }, afterDatasetsDraw(c) { c.ctx.restore(); } };
+    const ctx = cv2.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 140); grad.addColorStop(0, 'rgba(139,92,246,0.28)'); grad.addColorStop(1, 'rgba(139,92,246,0)');
     this._rtlChart = new Chart(ctx, {
       type: 'line',
-      data: { labels: series.map(x => x.h + 'h'), datasets: [{ data: series.map(x => x.ca), borderColor: '#a855f7', borderWidth: 3, fill: true, backgroundColor: grad, tension: 0.4, pointRadius: series.map((_, i) => i === series.length - 1 ? 5 : 0), pointBackgroundColor: '#c084fc', pointBorderColor: '#fff', pointBorderWidth: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmt(c.parsed.y) + ' F' } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#6a6a80', callback: v => fmt(v) }, beginAtZero: true }, x: { grid: { display: false }, ticks: { color: '#6a6a80' } } } },
-      plugins: [glow]
+      data: { labels: series.map(x => x.h + 'h'), datasets: [{ data: series.map(x => x.ca), borderColor: '#8b5cf6', borderWidth: 2.5, fill: true, backgroundColor: grad, tension: 0.4, pointRadius: series.map((_, i) => i === series.length - 1 ? 4 : 0), pointBackgroundColor: '#8b5cf6', pointBorderColor: '#fff', pointBorderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmt(c.parsed.y) + ' F' } } }, scales: { y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#7C8FAC', font: { size: 10 }, callback: v => fmt(v), maxTicksLimit: 5 }, beginAtZero: true }, x: { grid: { display: false }, ticks: { color: '#7C8FAC', font: { size: 10 }, maxTicksLimit: 12 } } } }
     });
   },
 
