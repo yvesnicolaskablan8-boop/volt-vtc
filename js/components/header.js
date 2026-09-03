@@ -22,7 +22,7 @@ const Header = {
       const el = document.getElementById(id);
       if (!el) return;
       const handler = (e) => {
-        if (e.target.closest('.hw-dd-link')) { document.querySelectorAll('.hw.active').forEach(w => w.classList.remove('active')); return; }
+        if (e.target.closest('a')) { document.querySelectorAll('.hw.active').forEach(w => w.classList.remove('active')); return; }
         if (e.target.closest('.hw-dd')) { e.stopPropagation(); return; }
         e.stopPropagation();
         const wasActive = el.classList.contains('active');
@@ -38,27 +38,6 @@ const Header = {
     const rd = document.getElementById('hw-rentab-dd');
     if (rd) { rd.replaceChildren(); rd.insertAdjacentHTML('beforeend', '<div class="hw-dd-title">Rentabilité</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;line-height:1.5;">Analyse de rentabilité de la flotte (RSI, profit, récupération).</div><a href="#/rentabilite" class="hw-dd-link">Ouvrir la rentabilité →</a>'); }
     this._refreshWidgets();
-    this._initDock();
-  },
-
-  // Effet loupe façon dock macOS : chaque bouton grossit selon la distance au curseur.
-  _initDock() {
-    const dock = document.querySelector('.hw-group');
-    if (!dock) return;
-    const BASE = 38, PEAK = 52, RANGE = 115;
-    const apply = (mouseX) => {
-      const items = Array.from(dock.querySelectorAll('.hw'));
-      const centers = items.map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; });
-      items.forEach((el, i) => {
-        const t = Math.max(0, 1 - Math.abs(mouseX - centers[i]) / RANGE);
-        const size = BASE + (PEAK - BASE) * t;
-        el.style.width = el.style.height = size + 'px';
-        el.style.fontSize = (size * 0.48) + 'px';
-      });
-    };
-    this._on('dockMove', dock, 'mousemove', (e) => apply(e.clientX));
-    this._on('dockLeave', dock, 'mouseleave', () => apply(Infinity));
-    apply(Infinity);
   },
 
   _refreshWidgets() {
@@ -69,13 +48,38 @@ const Header = {
       const allT = Store.get('taches') || [];
       const mine = (admin ? allT.filter(t => t.creePar === uid) : allT.filter(t => t.assigneA === uid)).filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
       const tb = document.getElementById('hw-taches-badge'); if (tb) tb.textContent = mine.length ? String(mine.length) : '';
-      const td = document.getElementById('hw-taches-dd'); if (td) { td.replaceChildren(); td.insertAdjacentHTML('beforeend', `<div class="hw-dd-title">Tâches</div><div class="hw-dd-row"><span>En cours</span><strong>${mine.length}</strong></div><a href="#/taches" class="hw-dd-link">Voir les tâches →</a>`); }
+      const td = document.getElementById('hw-taches-dd');
+      if (td) {
+        const prioCol = { haute: '#EF4444', urgente: '#EF4444', normale: '#0891b2', basse: '#7C8FAC' };
+        const tsorted = mine.slice().sort((a, b) => String(a.dateEcheance || '9999').localeCompare(String(b.dateEcheance || '9999')));
+        const titems = tsorted.slice(0, 5).map(t => {
+          const c = prioCol[t.priorite] || '#0891b2';
+          const ech = t.dateEcheance ? Utils.formatDate(t.dateEcheance) : '';
+          return `<a href="#/taches" class="hw-dd-item"><span class="hw-dd-dot" style="background:${c};"></span><span class="hw-dd-item-txt">${Utils.escHtml(t.titre || 'Tâche')}</span>${ech ? `<span class="hw-dd-item-meta">${ech}</span>` : ''}</a>`;
+        }).join('');
+        const tmore = mine.length > 5 ? `<div class="hw-dd-item-meta" style="padding:2px 8px 4px;">+${mine.length - 5} autre(s)…</div>` : '';
+        td.replaceChildren();
+        td.insertAdjacentHTML('beforeend', `<div class="hw-dd-title">Tâches en cours<span class="hw-dd-count">${mine.length}</span></div>${mine.length ? `<div class="hw-dd-list">${titems}</div>${tmore}` : '<div class="hw-dd-empty">Aucune tâche en cours 🎉</div>'}<a href="#/taches" class="hw-dd-link">Voir toutes les tâches →</a>`);
+      }
       let alerts = [];
       try { if (typeof AlertesPage !== 'undefined' && AlertesPage._generateAllAlerts) alerts = AlertesPage._generateAllAlerts() || []; } catch (e) { }
       const crit = alerts.filter(a => a.niveau === 'critique').length, urg = alerts.filter(a => a.niveau === 'urgent').length, att = alerts.filter(a => a.niveau === 'attention').length, tot = alerts.length;
       const ab = document.getElementById('hw-alertes-badge'); if (ab) { ab.textContent = tot ? String(tot) : ''; ab.style.background = crit > 0 ? '#EF4444' : urg > 0 ? '#FFAE1F' : att > 0 ? '#06b6d4' : 'var(--text-muted)'; }
       const aw = document.getElementById('hw-alertes'); if (aw) aw.style.color = tot ? (crit > 0 ? '#EF4444' : urg > 0 ? '#E8930C' : '#0891b2') : '';
-      const ad = document.getElementById('hw-alertes-dd'); if (ad) { ad.replaceChildren(); ad.insertAdjacentHTML('beforeend', `<div class="hw-dd-title">Alertes</div><div class="hw-dd-row"><span style="color:#EF4444;">Critiques</span><strong>${crit}</strong></div><div class="hw-dd-row"><span style="color:#D99000;">Urgentes</span><strong>${urg}</strong></div><div class="hw-dd-row"><span style="color:#0891b2;">Attention</span><strong>${att}</strong></div><a href="#/alertes" class="hw-dd-link">Voir les alertes →</a>`); }
+      const ad = document.getElementById('hw-alertes-dd');
+      if (ad) {
+        const sevCol = { critique: '#EF4444', urgent: '#E8930C', attention: '#0891b2' };
+        const aord = { critique: 0, urgent: 1, attention: 2 };
+        const asorted = alerts.slice().sort((a, b) => (aord[a.niveau] === undefined ? 9 : aord[a.niveau]) - (aord[b.niveau] === undefined ? 9 : aord[b.niveau]));
+        const aitems = asorted.slice(0, 5).map(a => {
+          const c = sevCol[a.niveau] || '#7C8FAC';
+          const route = a.actionRoute || '#/alertes';
+          return `<a href="${route}" class="hw-dd-item"><span class="hw-dd-dot" style="background:${c};"></span><span class="hw-dd-item-txt">${Utils.escHtml(a.titre || 'Alerte')}</span></a>`;
+        }).join('');
+        const amore = tot > 5 ? `<div class="hw-dd-item-meta" style="padding:2px 8px 4px;">+${tot - 5} autre(s)…</div>` : '';
+        ad.replaceChildren();
+        ad.insertAdjacentHTML('beforeend', `<div class="hw-dd-title">Alertes<span class="hw-dd-count">${tot}</span></div>${tot ? `<div class="hw-dd-sub"><span style="color:#EF4444;">${crit} critiques</span> · <span style="color:#E8930C;">${urg} urgentes</span> · <span style="color:#0891b2;">${att} attention</span></div><div class="hw-dd-list">${aitems}</div>${amore}` : '<div class="hw-dd-empty">Aucune alerte ✓</div>'}<a href="#/alertes" class="hw-dd-link">Voir toutes les alertes →</a>`);
+      }
       let dettes = 0, pertes = 0, verse = 0;
       try {
         const versements = Store.get('versements') || [];
