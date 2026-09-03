@@ -79,12 +79,28 @@ const AlertesPage = {
       if (!alert) { Toast.error('Alerte introuvable'); return; }
       const ch = (Store.get('chauffeurs') || []).find(c => c.id === chauffeurId);
       const nom = ch ? `${ch.prenom || ''} ${ch.nom || ''}`.trim() : 'Chauffeur';
+      const isSalarie = ch && ch.typeContrat === 'salarie';
+      // Montant suggéré. Location : le manque d'objectif. Salarié : la vraie perte ≈
+      // coût du jour (salaire journalier + charges) − CA réel — pas le CA non généré.
+      let sugg = Math.max(0, Number(alert.manque) || 0);
+      let hint = "manque d'objectif";
+      if (isSalarie) {
+        const salaireJour = ch.salaireMensuel > 0 ? Math.round(ch.salaireMensuel / 26) : 0;
+        const chargeJour = (Store.get('charges') || []).filter(x => x.chauffeurId === chauffeurId && x.date === alert.date).reduce((s, x) => s + (Number(x.montant) || 0), 0);
+        sugg = Math.max(0, salaireJour + chargeJour - (Number(alert.ca) || 0));
+        hint = `coût du jour estimé (${Utils.formatCurrency(salaireJour)} salaire${chargeJour ? ' + ' + Utils.formatCurrency(chargeJour) + ' charges' : ''}) − CA`;
+      }
       const fields = [
-        { name: 'motif', label: 'Motif du manque', type: 'select', required: true, options: [
-          { value: 'performance', label: 'Manque de performance du chauffeur → dette' },
-          { value: 'accident', label: 'Accident → perte' },
-          { value: 'panne', label: 'Panne / véhicule immobilisé → perte' },
-          { value: 'autre', label: 'Autre → dette' }
+        { name: 'traitement', label: 'Traitement du manque', type: 'select', required: true, options: [
+          { value: 'perte', label: 'Passer en perte (non imputé au chauffeur)' },
+          { value: 'dette', label: 'Imputer en dette au chauffeur' }
+        ] },
+        { name: 'montant', label: `Montant (FCFA) — ${hint}`, type: 'number', min: 0, step: 500, default: sugg },
+        { name: 'motif', label: 'Motif', type: 'select', required: true, options: [
+          { value: 'performance', label: 'Manque de performance du chauffeur' },
+          { value: 'accident', label: 'Accident' },
+          { value: 'panne', label: 'Panne / véhicule immobilisé' },
+          { value: 'autre', label: 'Autre' }
         ] },
         { name: 'commentaire', label: 'Commentaire (optionnel)', type: 'text', placeholder: 'Précision sur la situation…' }
       ];
@@ -93,10 +109,9 @@ const AlertesPage = {
         const body = document.getElementById('modal-body');
         if (!FormBuilder.validate(body, fields)) return;
         const values = FormBuilder.getValues(body);
-        const motif = values.motif || 'performance';
-        const perte = (motif === 'accident' || motif === 'panne');
-        const motifLabel = { performance: 'Manque de performance', accident: 'Accident', panne: 'Panne / véhicule', autre: 'Autre' }[motif] || motif;
-        const manque = Math.max(0, Number(alert.manque) || 0);
+        const perte = (values.traitement || 'perte') === 'perte';
+        const montant = Math.max(0, Number(values.montant) || 0);
+        const motifLabel = { performance: 'Manque de performance', accident: 'Accident', panne: 'Panne / véhicule', autre: 'Autre' }[values.motif] || values.motif || '';
         Store.add('versements', {
           id: Utils.generateId('VRS'),
           chauffeurId,
@@ -108,7 +123,7 @@ const AlertesPage = {
           montantNet: 0,
           nombreCourses: 0,
           commission: 0,
-          manquant: manque,
+          manquant: montant,
           traitementManquant: perte ? 'perte' : 'dette',
           statut: perte ? 'perte' : 'partiel',
           reference: 'OBJ-' + alert.date,
@@ -116,7 +131,7 @@ const AlertesPage = {
           dateCreation: new Date().toISOString()
         });
         Modal.close();
-        Toast.success(perte ? 'Justifié — manque passé en perte' : 'Justifié — manque imputé en dette');
+        Toast.success(`Justifié — ${Utils.formatCurrency(montant)} en ${perte ? 'perte' : 'dette'}`);
         AlertesPage._allAlerts = (AlertesPage._allAlerts || []).filter(a => !(a.inlineType === 'objectif' && a.chauffeurId === chauffeurId));
         AlertesPage._persistSeverity(AlertesPage._allAlerts);
         AlertesPage._renderKPIs(AlertesPage._allAlerts);
