@@ -21,17 +21,54 @@ const AlertesPage = {
     container.innerHTML = this._template();
     this._bindEvents();
     this._loadAlerts();
+    document.body.classList.add('alertes-focus'); // masque la barre latérale sur la page Alertes
   },
 
   destroy() {
+    document.body.classList.remove('alertes-focus');
     this._charts.forEach(c => c.destroy());
     this._charts = [];
   },
 
+  _goBack() {
+    if (window.history.length > 1) window.history.back();
+    else if (typeof Router !== 'undefined') Router.navigate('/dashboard');
+  },
+
+  // Résolution d'une alerte directement depuis la page, sans changer de page.
+  _resolveInline(type, chauffeurId) {
+    if (type === 'redevance') {
+      const ch = (Store.get('chauffeurs') || []).find(c => c.id === chauffeurId);
+      if (!ch) { Toast.error('Chauffeur introuvable'); return; }
+      const nom = `${ch.prenom || ''} ${ch.nom || ''}`.trim();
+      const fields = [{ name: 'redevanceQuotidienne', label: 'Recette quotidienne (FCFA / jour)', type: 'number', min: 0, step: 500, required: true, placeholder: 'Montant journalier à verser' }];
+      const formHtml = FormBuilder.build(fields, ch);
+      Modal.form(`<iconify-icon icon="solar:wallet-money-bold-duotone" class="text-blue"></iconify-icon> Redevance — ${Utils.escHtml(nom)}`, formHtml, () => {
+        const body = document.getElementById('modal-body');
+        if (!FormBuilder.validate(body, fields)) return;
+        const values = FormBuilder.getValues(body);
+        const val = Number(values.redevanceQuotidienne) || 0;
+        if (val <= 0) { Toast.error('Saisis un montant supérieur à 0'); return; }
+        Store.update('chauffeurs', chauffeurId, { redevanceQuotidienne: val });
+        Modal.close();
+        Toast.success('Redevance configurée pour ' + nom);
+        AlertesPage._loadAlerts(); // régénère la liste : l'alerte disparaît
+      });
+    }
+  },
+
   _template() {
     return `
+      <style>
+        body.alertes-focus .sidebar { display: none !important; }
+        body.alertes-focus .main-content { margin-left: 0 !important; }
+        body.alertes-focus #sidebar-toggle { display: none !important; }
+      </style>
       <div class="page-header">
-        <h1><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Centre d'Alertes</h1>
+        <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+          <button class="btn btn-sm btn-secondary" onclick="AlertesPage._goBack()" style="flex-shrink:0;"><iconify-icon icon="solar:arrow-left-linear"></iconify-icon> Retour</button>
+          <h1 style="margin:0;"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Centre d'Alertes</h1>
+        </div>
         <div class="page-actions">
           <button class="btn btn-sm btn-secondary" id="btn-refresh-alerts"><iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser</button>
           <button class="btn btn-sm btn-secondary" id="btn-export-alerts"><iconify-icon icon="solar:file-bold-duotone"></iconify-icon> Exporter PDF</button>
@@ -251,6 +288,7 @@ const AlertesPage = {
           description: `${nom} est actif mais n'a pas de redevance quotidienne configurée. Il ne sera pas comptabilisé dans les versements attendus.`,
           chauffeurId: ch.id,
           action: 'Configurer la redevance',
+          inlineType: 'redevance',
           actionRoute: `#/chauffeurs/${ch.id}`,
           icon: 'solar:wallet-money-bold-duotone',
           date: todayStr
@@ -883,11 +921,15 @@ const AlertesPage = {
             </div>
 
             <!-- Action -->
-            ${alert.actionRoute ? `
+            ${alert.inlineType ? `
+              <button type="button" class="btn btn-sm btn-secondary" style="flex-shrink:0;white-space:nowrap;" onclick="AlertesPage._resolveInline('${alert.inlineType}','${alert.chauffeurId}')">
+                ${alert.action} <iconify-icon icon="solar:settings-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
+              </button>
+            ` : (alert.actionRoute ? `
               <a href="${alert.actionRoute}" class="btn btn-sm btn-secondary" style="flex-shrink:0;white-space:nowrap;">
                 ${alert.action} <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
               </a>
-            ` : ''}
+            ` : '')}
           </div>
         </div>
       `;
