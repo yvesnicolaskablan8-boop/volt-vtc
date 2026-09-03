@@ -135,5 +135,18 @@ const Sidebar = {
       const isActive = route === itemRoute || route.startsWith(itemRoute + '/');
       item.classList.toggle('active', isActive);
     });
+    this.applyAlertSeverity();
+  },
+
+  // Colore le bouton « Alertes » selon le niveau le plus élevé présent
+  // (priorité : critique > urgent > attention). Lit la sévérité mise en
+  // cache par la page Alertes (localStorage).
+  applyAlertSeverity() {
+    const item = document.querySelector('.nav-item[data-route="/alertes"]');
+    if (!item) return;
+    item.classList.remove('alert-sev-critique', 'alert-sev-urgent', 'alert-sev-attention');
+    let sev = '';
+    try { sev = localStorage.getItem('pilote_alert_severity') || ''; } catch (e) {}
+    if (sev) item.classList.add('alert-sev-' + sev);
   }
 };

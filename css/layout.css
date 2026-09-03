@@ -105,6 +105,23 @@
 .nav-item.active iconify-icon,
 .nav-item.active .nav-icon { color: #fff; }
 
+/* Bouton « Alertes » coloré selon le niveau le plus élevé (priorité aux critiques). */
+.nav-item.alert-sev-critique:not(.active),
+.nav-item.alert-sev-urgent:not(.active),
+.nav-item.alert-sev-attention:not(.active) { font-weight: 700; }
+.nav-item.alert-sev-critique:not(.active) { background: rgba(239, 68, 68, 0.12); color: #EF4444; }
+.nav-item.alert-sev-critique:not(.active) i,
+.nav-item.alert-sev-critique:not(.active) iconify-icon,
+.nav-item.alert-sev-critique:not(.active) .nav-icon { color: #EF4444; }
+.nav-item.alert-sev-urgent:not(.active) { background: rgba(255, 174, 31, 0.14); color: #E8930C; }
+.nav-item.alert-sev-urgent:not(.active) i,
+.nav-item.alert-sev-urgent:not(.active) iconify-icon,
+.nav-item.alert-sev-urgent:not(.active) .nav-icon { color: #E8930C; }
+.nav-item.alert-sev-attention:not(.active) { background: rgba(6, 182, 212, 0.12); color: #0891B2; }
+.nav-item.alert-sev-attention:not(.active) i,
+.nav-item.alert-sev-attention:not(.active) iconify-icon,
+.nav-item.alert-sev-attention:not(.active) .nav-icon { color: #0891B2; }
+
 .nav-item i,
 .nav-item iconify-icon,
 .nav-item .nav-icon {

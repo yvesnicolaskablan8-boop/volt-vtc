@@ -165,6 +165,7 @@ const AlertesPage = {
 
     const alerts = this._generateAllAlerts();
     this._allAlerts = alerts;
+    this._persistSeverity(alerts);
     this._renderKPIs(alerts);
     this._renderAlertsList(alerts);
     this._renderCharts(alerts);
@@ -860,6 +861,7 @@ const AlertesPage = {
       const niveauOrder = { critique: 0, urgent: 1, attention: 2 };
       this._allAlerts = [...this._allAlerts, ...yangoAlerts];
       this._allAlerts.sort((a, b) => (niveauOrder[a.niveau] || 3) - (niveauOrder[b.niveau] || 3));
+      this._persistSeverity(this._allAlerts);
 
       this._charts.forEach(c => c.destroy());
       this._charts = [];
@@ -877,31 +879,54 @@ const AlertesPage = {
     const attention = alerts.filter(a => a.niveau === 'attention').length;
 
     document.getElementById('alerts-kpis').innerHTML = `
-      <div class="kpi-card red">
+      <div class="kpi-card red" onclick="AlertesPage._filterBy('critique')" style="cursor:pointer;">
         <div class="kpi-icon"><iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon></div>
         <div class="kpi-value" style="color:var(--danger);">${critiques}</div>
         <div class="kpi-label">Alertes critiques</div>
         <div class="kpi-trend down"><iconify-icon icon="solar:fire-bold-duotone"></iconify-icon> Action immédiate requise</div>
       </div>
-      <div class="kpi-card yellow">
+      <div class="kpi-card yellow" onclick="AlertesPage._filterBy('urgent')" style="cursor:pointer;">
         <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
         <div class="kpi-value" style="color:var(--warning);">${urgentes}</div>
         <div class="kpi-label">Alertes urgentes</div>
         <div class="kpi-trend down"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> À traiter cette semaine</div>
       </div>
-      <div class="kpi-card cyan">
+      <div class="kpi-card cyan" onclick="AlertesPage._filterBy('attention')" style="cursor:pointer;">
         <div class="kpi-icon"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon></div>
         <div class="kpi-value">${attention}</div>
         <div class="kpi-label">Points d'attention</div>
         <div class="kpi-trend"><iconify-icon icon="solar:eye-bold"></iconify-icon> À surveiller</div>
       </div>
-      <div class="kpi-card ${alerts.length === 0 ? 'green' : ''}">
+      <div class="kpi-card ${alerts.length === 0 ? 'green' : ''}" onclick="AlertesPage._filterBy('all')" style="cursor:pointer;">
         <div class="kpi-icon"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon></div>
         <div class="kpi-value">${alerts.length}</div>
         <div class="kpi-label">Total alertes</div>
         ${alerts.length === 0 ? '<div class="kpi-trend up"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tout est en ordre !</div>' : ''}
       </div>
     `;
+  },
+
+  // Met en cache le niveau d'alerte le plus élevé pour colorer le bouton « Alertes » de la barre latérale.
+  _persistSeverity(alerts) {
+    let sev = '';
+    if (alerts.some(a => a.niveau === 'critique')) sev = 'critique';
+    else if (alerts.some(a => a.niveau === 'urgent')) sev = 'urgent';
+    else if (alerts.some(a => a.niveau === 'attention')) sev = 'attention';
+    try { localStorage.setItem('pilote_alert_severity', sev); } catch (e) {}
+    if (typeof Sidebar !== 'undefined' && Sidebar.applyAlertSeverity) Sidebar.applyAlertSeverity();
+  },
+
+  _filterBy(level) {
+    this._currentFilter = level;
+    document.querySelectorAll('.alert-filter').forEach(b => {
+      const on = b.dataset.filter === level;
+      b.classList.toggle('btn-primary', on);
+      b.classList.toggle('btn-secondary', !on);
+      b.classList.toggle('active', on);
+    });
+    this._renderAlertsList(this._allAlerts || this._generateAllAlerts());
+    const list = document.getElementById('alerts-list');
+    if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
   _renderAlertsList(alerts) {
