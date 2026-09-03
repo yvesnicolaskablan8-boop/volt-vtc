@@ -1288,6 +1288,10 @@ const DashboardPage = {
         .mini-col.is-hover .mini-lbl { color:var(--text-primary); }
         .mini-tip { position:absolute; top:-30px; left:50%; transform:translate(-50%,4px); opacity:0; background:var(--text-primary); color:var(--bg-secondary); font-size:11px; font-weight:600; padding:3px 8px; border-radius:6px; white-space:nowrap; pointer-events:none; transition:all .2s; z-index:5; }
         .mini-col.is-hover .mini-tip { opacity:1; transform:translate(-50%,0); }
+        .spk-line { stroke-dasharray:1; stroke-dashoffset:1; animation:spkDraw 1s ease-out forwards; }
+        @keyframes spkDraw { to { stroke-dashoffset:0; } }
+        .spk-area { opacity:0; animation:spkFade .8s ease-out .25s forwards; }
+        @keyframes spkFade { to { opacity:1; } }
 
         .d-sub { font-size: 12px; color: #9ca3af; margin-top: 4px; font-weight:500; }
         [data-theme="dark"] .d-sub { color: #6b7280; }
@@ -1499,21 +1503,31 @@ const DashboardPage = {
               const weeks = (d.weeklyPayments || []).slice(-8);
               const maxV = Math.max(1, ...weeks.map(w => w.verse || 0));
               const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
-              const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
-              const cols = weeks.map((w, i) => {
-                const h = Math.max(4, (w.verse || 0) / maxV * 96);
-                return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})">
-                  <div class="mini-tip">${fmt(w.verse || 0)} F</div>
-                  <div class="mini-bar" data-fmt="${fmt(w.verse || 0)} F" style="height:${h.toFixed(1)}px;"></div>
-                  <div class="mini-lbl">${Utils.escHtml(w.label || '')}</div>
-                </div>`;
-              }).join('');
-              return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)} F" onmouseleave="DashboardPage._miniLeave()">
-                <div class="mini-head">
-                  <div class="mini-title"><span class="mini-dot"></span>Recette encaissée · 8 sem.</div>
-                  <div class="mini-val" id="mini-value">${fmt(sumV)} F</div>
+              const vals = weeks.map(w => w.verse || 0);
+              const last = vals.length ? vals[vals.length - 1] : 0;
+              const prev = vals.length > 1 ? vals[vals.length - 2] : 0;
+              const change = prev > 0 ? Math.round((last - prev) / prev * 100) : (last > 0 ? 100 : 0);
+              const pos = change >= 0;
+              const stroke = pos ? '#22C55E' : '#F97316';
+              const gid = pos ? 'spkUp' : 'spkDown';
+              const W = 150, H = 60, step = W / Math.max(1, vals.length - 1);
+              const pts = vals.map((v, i) => [i * step, H - (v / maxV) * (H * 0.8) - H * 0.1]);
+              let line = pts.length ? `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}` : `M 0 ${H}`;
+              for (let i = 0; i < pts.length - 1; i++) { const [x1, y1] = pts[i], [x2, y2] = pts[i + 1]; const mx = ((x1 + x2) / 2).toFixed(1); line += ` C ${mx},${y1.toFixed(1)} ${mx},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`; }
+              const area = `${line} L ${W} ${H} L 0 ${H} Z`;
+              return `<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+                <div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);font-weight:600;">Cette semaine <span style="display:inline-flex;align-items:center;gap:2px;font-weight:800;color:${pos ? '#16a34a' : '#ea580c'};">${Math.abs(change)}% <iconify-icon icon="${pos ? 'solar:arrow-up-linear' : 'solar:arrow-down-linear'}"></iconify-icon></span></div>
+                  <div style="font-size:32px;font-weight:800;color:var(--text-primary);letter-spacing:-.5px;margin-top:4px;">${Utils.formatCurrency(last)}</div>
+                  <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-top:2px;">Recette encaissée</div>
                 </div>
-                <div class="mini-bars">${cols}</div>
+                <div style="flex:1;max-width:230px;height:66px;">
+                  <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:100%;">
+                    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${stroke}" stop-opacity="0.4"/><stop offset="100%" stop-color="${stroke}" stop-opacity="0"/></linearGradient></defs>
+                    <path d="${area}" fill="url(#${gid})" class="spk-area"/>
+                    <path d="${line}" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pathLength="1" class="spk-line"/>
+                  </svg>
+                </div>
               </div>`;
             })()}
           </div>
