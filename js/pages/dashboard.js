@@ -1525,8 +1525,8 @@ const DashboardPage = {
             </a>`;
           })()}
           ${(() => {
-            // Alertes en rouge vif si présentes, rouge profond si critiques, vert grisé si aucune.
-            const col = d.alertesTotal === 0 ? '#6E9B8E' : (d.alertesCritiques > 0 ? '#C1121F' : '#FA3E3E');
+            // Alertes en rouge équilibré si présentes, rouge profond si critiques, vert grisé si aucune.
+            const col = d.alertesTotal === 0 ? '#6E9B8E' : (d.alertesCritiques > 0 ? '#C1121F' : '#EF4444');
             return `<a href="#/alertes" class="d2-kpi" style="background:${col};color:#fff;border:none;">
               <div style="display:flex;align-items:center;justify-content:space-between;">
                 <div style="width:40px;height:40px;border-radius:12px;background:#fff;color:${col};display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(0,0,0,.14);"><iconify-icon icon="${d.alertesTotal > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon></div>
