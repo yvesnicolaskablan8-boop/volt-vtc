@@ -13,6 +13,60 @@ const Header = {
     this._initSearch();
     this._renderUserInfo();
     this._initUserDropdown();
+    this._initWidgets();
+  },
+
+  // Widgets d'accès rapide dans le header (Rentabilité / Trésorerie / Tâches / Alertes)
+  _initWidgets() {
+    ['hw-rentab', 'hw-tres', 'hw-taches', 'hw-alertes'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const handler = (e) => {
+        if (e.target.closest('.hw-dd-link')) { document.querySelectorAll('.hw.active').forEach(w => w.classList.remove('active')); return; }
+        if (e.target.closest('.hw-dd')) { e.stopPropagation(); return; }
+        e.stopPropagation();
+        const wasActive = el.classList.contains('active');
+        document.querySelectorAll('.hw.active').forEach(w => w.classList.remove('active'));
+        const nd = document.getElementById('notif-dropdown'); if (nd) nd.classList.remove('active');
+        const ndt = document.getElementById('notifications-toggle'); if (ndt) ndt.classList.remove('active');
+        const ud = document.getElementById('user-dropdown'); if (ud) ud.classList.remove('active');
+        if (!wasActive) el.classList.add('active');
+      };
+      this._on('hwClick-' + id, el, 'click', handler);
+    });
+    this._on('hwOutside', document, 'click', (e) => { if (!e.target.closest('.hw')) document.querySelectorAll('.hw.active').forEach(w => w.classList.remove('active')); });
+    const rd = document.getElementById('hw-rentab-dd');
+    if (rd) { rd.replaceChildren(); rd.insertAdjacentHTML('beforeend', '<div class="hw-dd-title">Rentabilité</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;line-height:1.5;">Analyse de rentabilité de la flotte (RSI, profit, récupération).</div><a href="#/rentabilite" class="hw-dd-link">Ouvrir la rentabilité →</a>'); }
+    this._refreshWidgets();
+  },
+
+  _refreshWidgets() {
+    try {
+      const fmtK = n => { n = Math.round(n || 0); const a = Math.abs(n); return a >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + 'M' : a >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n); };
+      const s = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : null;
+      const uid = s ? s.userId : ''; const admin = s && s.role === 'Administrateur';
+      const allT = Store.get('taches') || [];
+      const mine = (admin ? allT.filter(t => t.creePar === uid) : allT.filter(t => t.assigneA === uid)).filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
+      const tb = document.getElementById('hw-taches-badge'); if (tb) tb.textContent = mine.length ? String(mine.length) : '';
+      const td = document.getElementById('hw-taches-dd'); if (td) { td.replaceChildren(); td.insertAdjacentHTML('beforeend', `<div class="hw-dd-title">Tâches</div><div class="hw-dd-row"><span>En cours</span><strong>${mine.length}</strong></div><a href="#/taches" class="hw-dd-link">Voir les tâches →</a>`); }
+      let alerts = [];
+      try { if (typeof AlertesPage !== 'undefined' && AlertesPage._generateAllAlerts) alerts = AlertesPage._generateAllAlerts() || []; } catch (e) { }
+      const crit = alerts.filter(a => a.niveau === 'critique').length, urg = alerts.filter(a => a.niveau === 'urgent').length, att = alerts.filter(a => a.niveau === 'attention').length, tot = alerts.length;
+      const ab = document.getElementById('hw-alertes-badge'); if (ab) { ab.textContent = tot ? String(tot) : ''; ab.style.background = crit > 0 ? '#EF4444' : urg > 0 ? '#FFAE1F' : att > 0 ? '#06b6d4' : 'var(--text-muted)'; }
+      const aw = document.getElementById('hw-alertes'); if (aw) aw.style.color = tot ? (crit > 0 ? '#EF4444' : urg > 0 ? '#E8930C' : '#0891b2') : '';
+      const ad = document.getElementById('hw-alertes-dd'); if (ad) { ad.replaceChildren(); ad.insertAdjacentHTML('beforeend', `<div class="hw-dd-title">Alertes</div><div class="hw-dd-row"><span style="color:#EF4444;">Critiques</span><strong>${crit}</strong></div><div class="hw-dd-row"><span style="color:#D99000;">Urgentes</span><strong>${urg}</strong></div><div class="hw-dd-row"><span style="color:#0891b2;">Attention</span><strong>${att}</strong></div><a href="#/alertes" class="hw-dd-link">Voir les alertes →</a>`); }
+      let dettes = 0, pertes = 0, verse = 0;
+      try {
+        const versements = Store.get('versements') || [];
+        if (typeof Utils !== 'undefined' && Utils.computeDebts) {
+          const dd = Utils.computeDebts({ versements, chauffeurs: Store.get('chauffeurs') || [], planning: Store.get('planning') || [], absences: Store.get('absences') || [], contraventions: Store.get('contraventions') || [], caJour: Store.get('caJour') || [], charges: Store.get('charges') || [] });
+          dettes = dd.totalDettes || 0; pertes = dd.totalPertes || 0;
+        }
+        const ym = new Date().toISOString().slice(0, 7);
+        verse = versements.filter(v => String(v.date || '').slice(0, 7) === ym && v.statut !== 'supprime').reduce((sum, v) => sum + (v.montantVerse || 0), 0);
+      } catch (e) { }
+      const trd = document.getElementById('hw-tres-dd'); if (trd) { trd.replaceChildren(); trd.insertAdjacentHTML('beforeend', `<div class="hw-dd-title">Trésorerie</div><div class="hw-dd-row"><span style="color:#02b3a9;">Versé (mois)</span><strong>${fmtK(verse)} F</strong></div><div class="hw-dd-row"><span style="color:#D99000;">Dettes</span><strong>${fmtK(dettes)} F</strong></div><div class="hw-dd-row"><span style="color:#D9583B;">Pertes</span><strong>${fmtK(pertes)} F</strong></div><a href="#/versements" class="hw-dd-link">Voir les versements →</a>`); }
+    } catch (e) { console.warn('Header widgets:', e.message); }
   },
 
   // Remove all previously attached handlers
@@ -217,6 +271,7 @@ const Header = {
     if (!this._notifInterval) {
       this._notifInterval = setInterval(() => {
         this._loadNotifications();
+        this._refreshWidgets();
       }, 60000);
     }
   },

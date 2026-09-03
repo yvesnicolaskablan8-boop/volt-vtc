@@ -1526,79 +1526,10 @@ const DashboardPage = {
           </div>
         </div>
 
-        <!-- Trio KPI colorés -->
-        <div class="d2-kpis">
-          ${(() => {
-            const ST = d.totalAttendu <= 0
-              ? { c: '#5D87FF', dim: '#4570EA', tint: 'rgba(93,135,255,.14)' }
-              : (d.tauxRecouvrement >= 80 ? { c: '#13DEB9', dim: '#02b3a9', tint: 'rgba(2,179,169,.16)' }
-                : d.tauxRecouvrement >= 40 ? { c: '#5D87FF', dim: '#4570EA', tint: 'rgba(93,135,255,.14)' }
-                  : { c: '#FFAE1F', dim: 'var(--warning-dim)', tint: 'rgba(255,174,31,.18)' });
-            const fmtK = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(',0', '').replace('.0', '').replace('.', ',') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
-            const TINT = { success: ['rgba(19,222,185,.16)', 'var(--success-dim)'], warning: ['rgba(255,174,31,.18)', 'var(--warning-dim)'], danger: ['rgba(250,137,107,.16)', 'var(--danger-dim)'] };
-            const w = (icon, label, val, sem) => {
-              const [bg, txt] = (val > 0) ? TINT[sem] : ['var(--bg-tertiary)', 'var(--text-muted)'];
-              return `<div style="flex:1;min-width:0;background:${bg};border-radius:9px;padding:6px 8px;display:flex;flex-direction:column;gap:1px;">
-                <span style="display:flex;align-items:center;gap:3px;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:${txt};"><iconify-icon icon="${icon}" style="font-size:10px;"></iconify-icon>${label}</span>
-                <strong style="font-size:12px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${fmtK(val)} F</strong></div>`;
-            };
-            return `<a href="#/versements" class="d2-kpi" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid ${ST.c};">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div style="width:40px;height:40px;border-radius:12px;background:${ST.c};color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px ${ST.tint};"><iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon></div>
-                <span class="d2-pill" style="background:${ST.tint};color:${ST.dim};"><iconify-icon icon="solar:shield-check-bold"></iconify-icon>${d.tauxRecouvrement}%</span>
-              </div>
-              <div><div class="d2-num">${Utils.formatCurrency(d.totalAttendu)}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Trésorerie · attendu ce mois</div></div>
-              <div style="display:flex;gap:6px;margin-top:2px;">${w('solar:check-circle-bold', 'Versé', d.totalVerseMonth, 'success')}${w('solar:danger-triangle-bold', 'Dettes', d.totalDettes, 'warning')}${w('solar:arrow-down-bold', 'Pertes', d.totalPertes, 'danger')}</div>
-            </a>`;
-          })()}
-          ${(() => {
-            const s = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : null;
-            const uid = s ? s.userId : ''; const admin = s && s.role === 'Administrateur';
-            const all = Store.get('taches') || [];
-            const mine = (admin ? all.filter(t => t.creePar === uid) : all.filter(t => t.assigneA === uid)).filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
-            const today = new Date().toISOString().split('T')[0];
-            const enRetard = mine.filter(t => t.dateEcheance && t.dateEcheance < today).length;
-            const urgent = mine.filter(t => t.priorite === 'urgente' && !(t.dateEcheance && t.dateEcheance < today)).length;
-            // Vert grisé quand rien à faire, puis la couleur monte avec l'urgence.
-            const col = mine.length === 0 ? '#6E9B8E' : (enRetard > 0 ? '#FA896B' : (urgent > 0 ? '#FFAE1F' : '#13DEB9'));
-            const pill = enRetard > 0
-              ? `<span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;"><iconify-icon icon="solar:alarm-bold"></iconify-icon>${enRetard} en retard</span>`
-              : (urgent > 0 ? `<span class="d2-pill" style="background:rgba(255,255,255,.22);color:#fff;"><iconify-icon icon="solar:alarm-bold"></iconify-icon>${urgent} urgent${urgent > 1 ? 's' : ''}</span>` : '');
-            return `<a href="#/taches" class="d2-kpi" style="background:${col};color:#fff;border:none;">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div style="width:40px;height:40px;border-radius:12px;background:#fff;color:${col};display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px rgba(0,0,0,.14);"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></div>
-                ${pill}
-              </div>
-              <div><div class="d2-num" style="color:#fff;">${mine.length}</div><div style="font-size:12px;color:rgba(255,255,255,.88);font-weight:600;margin-top:3px;">Tâche${mine.length > 1 ? 's' : ''} en cours</div></div>
-            </a>`;
-          })()}
-          ${(() => {
-            // Carte blanche + widgets par niveau (chacun sa couleur), liseré = plus haute sévérité.
-            const crit = d.alertesCritiques || 0;
-            const urg = d.alertesUrgentes || 0;
-            const att = Math.max(0, (d.alertesTotal || 0) - crit - urg);
-            const st = crit > 0 ? { c: '#EF4444', tint: 'rgba(239,68,68,.16)' } : urg > 0 ? { c: '#FFAE1F', tint: 'rgba(255,174,31,.18)' } : att > 0 ? { c: '#06b6d4', tint: 'rgba(6,182,212,.16)' } : { c: '#6E9B8E', tint: 'rgba(110,155,142,.16)' };
-            const TINT = { crit: ['rgba(239,68,68,.14)', 'var(--danger-dim)'], urg: ['rgba(255,174,31,.18)', 'var(--warning-dim)'], att: ['rgba(6,182,212,.14)', '#0891b2'] };
-            const w = (icon, label, val, sem) => {
-              const [bg, txt] = (val > 0) ? TINT[sem] : ['var(--bg-tertiary)', 'var(--text-muted)'];
-              return `<div style="flex:1;min-width:0;background:${bg};border-radius:9px;padding:6px 7px;display:flex;flex-direction:column;gap:1px;">
-                <span style="display:flex;align-items:center;gap:3px;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:${txt};"><iconify-icon icon="${icon}" style="font-size:10px;"></iconify-icon>${label}</span>
-                <strong style="font-size:14px;color:var(--text-primary);">${val}</strong></div>`;
-            };
-            return `<a href="#/alertes" class="d2-kpi" style="background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid ${st.c};">
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div style="width:40px;height:40px;border-radius:12px;background:${st.c};color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 14px ${st.tint};"><iconify-icon icon="${(d.alertesTotal || 0) > 0 ? 'solar:bell-bing-bold-duotone' : 'solar:check-circle-bold-duotone'}"></iconify-icon></div>
-                ${(d.alertesTotal || 0) === 0 ? `<span class="d2-pill" style="background:rgba(19,222,185,.16);color:#02b3a9;">OK</span>` : ''}
-              </div>
-              <div><div class="d2-num">${d.alertesTotal || 0}</div><div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:3px;">Alerte${(d.alertesTotal || 0) > 1 ? 's' : ''}</div></div>
-              <div style="display:flex;gap:6px;margin-top:2px;">${w('solar:danger-circle-bold', 'Critiques', crit, 'crit')}${w('solar:danger-triangle-bold', 'Urgentes', urg, 'urg')}${w('solar:info-circle-bold', 'Attention', att, 'att')}</div>
-            </a>`;
-          })()}
-        </div>
+        <!-- Chauffeurs à surveiller (à la place du trio) -->
+        ${this._renderWatchlist(d)}
       </div>
 
-      <!-- Chauffeurs à surveiller (CA faible + occupé Yango) -->
-      ${this._renderWatchlist(d)}
 
       <!-- Row 2 : Planning (pleine largeur) -->
       <div class="d-grid d2-r2">
