@@ -1435,12 +1435,16 @@ const DashboardPage = {
         @keyframes fdPulse{0%{box-shadow:0 0 0 0 rgba(250,62,62,.5)}70%{box-shadow:0 0 0 7px rgba(250,62,62,0)}100%{box-shadow:0 0 0 0 rgba(250,62,62,0)}}
         .fd-spin{animation:fdSpin 1s linear infinite;display:inline-flex;}
         @keyframes fdSpin{to{transform:rotate(360deg)}}
-        .fd-donut-wrap{position:relative;width:250px;height:250px;margin:6px auto 20px;}
+        .fd-top{display:flex;align-items:center;gap:24px;margin:6px 0 20px;}
+        .fd-donut-wrap{position:relative;width:230px;height:230px;flex-shrink:0;}
+        .fd-recette{flex:1;min-width:0;}
+        .fd-recette-inner{display:flex;flex-direction:column;gap:12px;cursor:pointer;border-left:1px solid var(--border-color);padding-left:24px;}
+        .fd-voir{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);}
         .fd-svg{width:100%;height:100%;transform:rotate(-90deg);}
         .fd-seg{transition:stroke-width .2s ease,opacity .2s ease;cursor:pointer;}
         .fd-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;}
         .fd-center-lbl{font-size:12px;font-weight:600;color:var(--text-muted);}
-        .fd-center-val{font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.05;margin-top:2px;color:var(--text-primary);}
+        .fd-center-val{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1.05;margin-top:2px;color:var(--text-primary);white-space:nowrap;}
         .fd-center-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
         .fd-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
         .fd-c{background:var(--bg-tertiary);border:1px solid transparent;border-radius:14px;padding:13px 14px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}
@@ -1452,82 +1456,13 @@ const DashboardPage = {
         .fd-c-val{font-size:23px;font-weight:800;letter-spacing:-.5px;}
         .fd-c-pct{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:6px;}
         .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}
-        @media(max-width:820px){ .fd-cards{grid-template-columns:repeat(2,1fr);} }
+        @media(max-width:820px){ .fd-cards{grid-template-columns:repeat(2,1fr);} .fd-top{flex-direction:column;} .fd-donut-wrap{margin:0 auto;} .fd-recette{width:100%;} .fd-recette-inner{border-left:none;border-top:1px solid var(--border-color);padding-left:0;padding-top:16px;} }
       </style>
 
       <!-- Row 0 : Flotte en direct (donut centralisé) -->
       <div class="d-grid" style="grid-template-columns:1fr;">
         ${this._renderFleetDonut(d)}
       </div>
-
-      <!-- Row 1 : Hero d'accueil + trio KPI colorés -->
-      <div class="d-grid d2-r1">
-
-        <!-- Hero d'accueil (accueil + activité en direct) -->
-        <div onclick="DashboardPage._showActiviteDetail()" class="d-card" style="cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:14px;border-left:5px solid ${d.paceState === 'faible' ? 'var(--danger)' : d.paceState === 'bon' ? 'var(--success)' : d.paceState === 'modere' ? 'var(--warning)' : d.paceState === 'demarrage' ? 'var(--pilote-blue)' : 'var(--border-color)'};box-shadow:0 6px 22px ${d.paceState === 'faible' ? 'rgba(250,137,107,.22)' : d.paceState === 'bon' ? 'rgba(19,222,185,.22)' : d.paceState === 'modere' ? 'rgba(255,174,31,.22)' : d.paceState === 'demarrage' ? 'rgba(93,135,255,.18)' : 'rgba(37,83,185,.10)'};">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:relative;">
-            <div style="font-size:12px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:7px;">
-              <span style="width:8px;height:8px;border-radius:50%;background:${d.estAujourdhui ? 'var(--danger)' : 'var(--text-muted)'};"></span>${d.estAujourdhui ? "Recette du jour · en direct" : 'Recette du ' + Utils.escHtml(Utils.formatDate(d.jourAtt))}
-            </div>
-            <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${d.paceState === 'faible' ? 'rgba(250,137,107,.15)' : d.paceState === 'bon' ? 'rgba(19,222,185,.15)' : d.paceState === 'modere' ? 'rgba(255,174,31,.16)' : 'var(--bg-tertiary)'};color:${d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)'};">
-              <iconify-icon icon="${d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>
-              ${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% d'une journée type` : ''}
-            </div>
-          </div>
-
-          <!-- Recette en direct · courbe intégrée (sans encadré, avec toggle + période) -->
-          <div style="border-top:1px solid var(--border-color);padding-top:14px;">
-            <div style="position:relative;overflow:hidden;min-height:158px;">
-              <div style="position:absolute;top:26px;bottom:34px;right:0;width:60%;">
-                <div class="rtl-dots"></div>
-                <div id="rtl-fade" style="position:absolute;inset:0;"></div>
-                <div id="rtl-spark" style="position:absolute;inset:0;"></div>
-              </div>
-              <div style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                <div style="font-size:13px;font-weight:700;color:var(--text-primary);">Recette en direct</div>
-                <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
-                  <span id="rtl-trend" style="display:inline-flex;align-items:center;gap:3px;font-weight:700;color:var(--text-muted);">…</span>
-                  <span style="color:var(--text-muted);">Aujourd'hui</span>
-                </div>
-              </div>
-              <div style="position:absolute;left:0;right:0;bottom:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px solid var(--border-color);font-size:12px;background:var(--bg-secondary);">
-                <div id="rtl-delta" style="color:var(--text-muted);font-weight:600;">…</div>
-                <div id="rtl-stats" style="color:var(--text-muted);">…</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recette encaissée · barres animées (versements 8 semaines) -->
-          <div style="border-top:1px solid var(--border-color);padding-top:14px;position:relative;">
-            ${(() => {
-              const weeks = (d.weeklyPayments || []).slice(-8);
-              const maxV = Math.max(1, ...weeks.map(w => w.verse || 0));
-              const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
-              const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
-              const cols = weeks.map((w, i) => {
-                const h = Math.max(4, (w.verse || 0) / maxV * 96);
-                return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})">
-                  <div class="mini-tip">${fmt(w.verse || 0)} F</div>
-                  <div class="mini-bar" data-fmt="${fmt(w.verse || 0)} F" style="height:${h.toFixed(1)}px;"></div>
-                  <div class="mini-lbl">${Utils.escHtml(w.label || '')}</div>
-                </div>`;
-              }).join('');
-              return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)} F" onmouseleave="DashboardPage._miniLeave()">
-                <div class="mini-head">
-                  <div class="mini-title"><span class="mini-dot"></span>Recette encaissée · 8 sem.</div>
-                  <div class="mini-val" id="mini-value">${fmt(sumV)} F</div>
-                </div>
-                <div class="mini-bars">${cols}</div>
-              </div>`;
-            })()}
-          </div>
-
-          <div style="margin-top:auto;position:relative;display:inline-flex;align-self:flex-start;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);">
-            Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon>
-          </div>
-        </div>
-      </div>
-
 
       <!-- Row 2 : Planning (pleine largeur) -->
       <div class="d-grid d2-r2">
@@ -2044,7 +1979,7 @@ const DashboardPage = {
   },
 
   _fleetDonutSvg(segments, total) {
-    const R = 76, C = 2 * Math.PI * R, GAP = 7, SW = 20;
+    const R = 80, C = 2 * Math.PI * R, GAP = 7, SW = 18;
     const active = segments.filter(s => s.count > 0);
     if (!total || !active.length) {
       return `<circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--border-color)" stroke-width="${SW}"></circle>`;
@@ -2059,12 +1994,23 @@ const DashboardPage = {
     }).join('');
   },
 
-  _fleetDonutInner(d, yStatus, loading) {
-    const { segments, total } = this._fleetBuckets(d, yStatus);
+  // Format compact pour le centre du donut (évite le débordement dans le cercle).
+  _caCenter(n) {
+    n = Math.round(n || 0);
+    if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '').replace('.', ',') + 'M F';
+    return new Intl.NumberFormat('fr-FR').format(n) + ' F';
+  },
+
+  _fleetCircleInner(d, segments, total) {
     const svg = this._fleetDonutSvg(segments, total);
-    const caTxt = Utils.formatCurrency(d.caBrutJour);
+    const caTxt = this._caCenter(d.caBrutJour);
     const sub = `${this._isToday() ? "aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt))} · ${total} chauffeur${total > 1 ? 's' : ''}`;
-    const cards = segments.map((s, i) => {
+    return `<svg viewBox="0 0 200 200" class="fd-svg">${svg}</svg>
+      <div class="fd-center"><div class="fd-center-lbl">CA flotte</div><div class="fd-center-val" id="fleet-ca-center">${caTxt}</div><div class="fd-center-sub">${sub}</div></div>`;
+  },
+
+  _fleetCardsInner(segments, total) {
+    return segments.map((s, i) => {
       const pct = total ? Math.round(s.count / total * 100) : 0;
       const clickable = s.count > 0;
       const handlers = clickable ? `onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
@@ -2074,31 +2020,52 @@ const DashboardPage = {
         <div class="fd-c-desc">${s.desc}</div>
       </div>`;
     }).join('');
-    const live = loading
-      ? `<span class="fd-live"><iconify-icon icon="solar:refresh-bold" class="fd-spin"></iconify-icon>Statut temps réel…</span>`
-      : `<span class="fd-live"><span class="fd-dot-live"></span>Temps réel</span>`;
-    return `<div class="fd-head"><div class="fd-title">Flotte en direct</div>${live}</div>
-      <div class="fd-donut-wrap">
-        <svg viewBox="0 0 200 200" class="fd-svg">${svg}</svg>
-        <div class="fd-center"><div class="fd-center-lbl">CA flotte</div><div class="fd-center-val" id="fleet-ca-center">${caTxt}</div><div class="fd-center-sub">${sub}</div></div>
-      </div>
-      <div class="fd-cards">${cards}</div>`;
+  },
+
+  // Volet recette placé à côté du cercle (rythme + recette encaissée + accès détail).
+  _fleetRecettePanel(d) {
+    const paceBg = d.paceState === 'faible' ? 'rgba(250,137,107,.15)' : d.paceState === 'bon' ? 'rgba(19,222,185,.15)' : d.paceState === 'modere' ? 'rgba(255,174,31,.16)' : 'var(--bg-tertiary)';
+    const paceColor = d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)';
+    const paceIcon = d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold';
+    const pace = `<div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${paceBg};color:${paceColor};align-self:flex-start;"><iconify-icon icon="${paceIcon}"></iconify-icon>${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% d'une journée type` : ''}</div>`;
+    const bars = (() => {
+      const weeks = (d.weeklyPayments || []).slice(-8);
+      const maxV = Math.max(1, ...weeks.map(w => w.verse || 0));
+      const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
+      const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
+      const cols = weeks.map((w, i) => {
+        const h = Math.max(4, (w.verse || 0) / maxV * 82);
+        return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})"><div class="mini-tip">${fmt(w.verse || 0)} F</div><div class="mini-bar" data-fmt="${fmt(w.verse || 0)} F" style="height:${h.toFixed(1)}px;"></div><div class="mini-lbl">${Utils.escHtml(w.label || '')}</div></div>`;
+      }).join('');
+      return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)} F" onmouseleave="DashboardPage._miniLeave()"><div class="mini-head"><div class="mini-title"><span class="mini-dot"></span>Recette encaissée · 8 sem.</div><div class="mini-val" id="mini-value">${fmt(sumV)} F</div></div><div class="mini-bars">${cols}</div></div>`;
+    })();
+    return `<div class="fd-recette-inner" onclick="DashboardPage._showActiviteDetail()">
+      ${pace}
+      ${bars}
+      <div class="fd-voir">Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></div>
+    </div>`;
   },
 
   _renderFleetDonut(d) {
     const yStatus = this._fleetStatusCache ? this._fleetStatusCache.data : null;
-    const loading = this._isToday() && !this._fleetStatusCache;
-    return `<div class="d-card fd-card"><div id="fleet-donut">${this._fleetDonutInner(d, yStatus, loading)}</div></div>`;
+    const { segments, total } = this._fleetBuckets(d, yStatus);
+    return `<div class="d-card fd-card">
+      <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>Temps réel</span></div>
+      <div class="fd-top">
+        <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
+        <div class="fd-recette">${this._fleetRecettePanel(d)}</div>
+      </div>
+      <div class="fd-cards" id="fleet-donut-cards">${this._fleetCardsInner(segments, total)}</div>
+    </div>`;
   },
 
   _renderFleetDonutInto(d) {
-    const el = document.getElementById('fleet-donut');
-    if (!el) return;
     const yStatus = this._fleetStatusCache ? this._fleetStatusCache.data : null;
-    el.replaceChildren();
-    el.insertAdjacentHTML('beforeend', this._fleetDonutInner(d, yStatus, false));
-    const ca = document.getElementById('fleet-ca-center');
-    if (ca && this._rtlData && this._rtlData.updateHero) ca.textContent = Utils.formatCurrency(this._rtlData.heroTotal);
+    const { segments, total } = this._fleetBuckets(d, yStatus);
+    const circle = document.getElementById('fleet-donut-circle');
+    if (circle) { circle.replaceChildren(); circle.insertAdjacentHTML('beforeend', this._fleetCircleInner(d, segments, total)); }
+    const cards = document.getElementById('fleet-donut-cards');
+    if (cards) { cards.replaceChildren(); cards.insertAdjacentHTML('beforeend', this._fleetCardsInner(segments, total)); }
   },
 
   async _loadFleetStatus(d, force) {
@@ -2124,7 +2091,7 @@ const DashboardPage = {
     if (!root) return;
     root.querySelectorAll('.fd-seg').forEach(el => {
       const j = +el.getAttribute('data-seg');
-      if (j === i) { el.style.strokeWidth = on ? '27' : '20'; el.style.opacity = '1'; }
+      if (j === i) { el.style.strokeWidth = on ? '24' : '18'; el.style.opacity = '1'; }
       else el.style.opacity = on ? '0.35' : '1';
     });
     root.querySelectorAll('.fd-c').forEach(c => c.classList.toggle('hot', on && +c.getAttribute('data-i') === i));
