@@ -16,37 +16,37 @@ const Header = {
     this._initHDock();
   },
 
-  // Dock de navigation rapide (façon macOS) : magnify au survol + état actif.
+  // Dock de navigation : la loupe (survolé ×1.5, voisins ×1.33/×1.17) est gérée
+  // en CSS (sélecteurs de voisins). Ici : état actif + ajustement fin au curseur.
   _initHDock() {
     const dock = document.getElementById('hdock');
     if (!dock) return;
-    const tiles = Array.from(dock.querySelectorAll('.hdock-tile'));
-    const BASE = 38, PEAK = 54, RANGE = 130;
-    // Centres AU REPOS (mesurés quand toutes les tuiles sont à BASE) : évite la
-    // dérive de la vague si on lit les positions déjà agrandies.
-    let baseCenters = tiles.map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; });
-    const apply = (mx) => {
-      tiles.forEach((el, i) => {
-        const s = Math.max(0, 1 - Math.abs(mx - baseCenters[i]) / RANGE);
-        const size = BASE + (PEAK - BASE) * s;
-        el.style.width = el.style.height = size + 'px';
-        el.style.fontSize = (size * 0.5) + 'px';
-      });
-    };
-    // Re-mesure au repos à chaque entrée (les tuiles sont revenues à BASE) : suit
-    // les changements de mise en page / chargement d'icônes.
-    this._on('hdockEnter', dock, 'mouseenter', () => { baseCenters = tiles.map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; }); });
-    this._on('hdockMove', dock, 'mousemove', (e) => apply(e.clientX));
-    this._on('hdockLeave', dock, 'mouseleave', () => apply(Infinity));
     const setActive = () => {
       const h = (location.hash || '').replace(/^#/, '');
-      dock.querySelectorAll('.hdock-item').forEach(a => {
+      dock.querySelectorAll('.hdk-a').forEach(a => {
         const route = a.getAttribute('data-route') || '';
-        a.classList.toggle('active', route && (h === route || h.startsWith(route + '/')));
+        a.setAttribute('data-active', (route && (h === route || h.startsWith(route + '/'))) ? '1' : '0');
       });
     };
     setActive();
     this._on('hdockHash', window, 'hashchange', setActive);
+  },
+
+  // Ajustement fin (± quelques px) de la taille des voisins selon la position du
+  // curseur dans la tuile survolée — appelé en inline (onmousemove) sur chaque <li>.
+  _hdockMove(e) {
+    const dock = document.getElementById('hdock'); if (!dock) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const d = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    const max = 5; const off = Math.floor(d * 2 * max - max);
+    dock.style.setProperty('--dock-offset-left', (off * -1) + 'px');
+    dock.style.setProperty('--dock-offset-right', off + 'px');
+  },
+
+  _hdockReset() {
+    const dock = document.getElementById('hdock'); if (!dock) return;
+    dock.style.setProperty('--dock-offset-left', '0px');
+    dock.style.setProperty('--dock-offset-right', '0px');
   },
 
   // Widgets d'accès rapide (obsolète — remplacés par le dock ; conservé sans effet)
