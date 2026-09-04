@@ -1462,6 +1462,7 @@ const DashboardPage = {
         /* Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) */
         .iw-grid{grid-template-columns:repeat(4,1fr);gap:16px;align-items:stretch;}
         .iw{display:flex;flex-direction:column;background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid var(--iw-accent);border-radius:16px;padding:15px 17px;text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease;}
+        .iw.iw-plain{border:none;}
         .iw-gauge{width:100%;max-width:180px;margin:8px auto 0;}
         .iw-gauge svg{width:100%;height:auto;display:block;overflow:visible;}
         .iw-gauge-arc{animation:iwGauge 1.3s ease-out forwards;}
@@ -2012,25 +2013,40 @@ const DashboardPage = {
 
     return `<div class="d-grid iw-grid">
       ${widget({ href: '#/versements', accent: '#02b3a9', bg: 'rgba(19,222,185,.12)', icon: 'solar:safe-2-bold-duotone', label: 'Trésorerie', value: `${fmtK(verse)} F`, sub: `<span style="color:#D99000;">Dettes ${fmtK(dettes)}</span> · <span style="color:#D9583B;">Pertes ${fmtK(pertes)}</span>` })}
-      ${(rsi != null || marge != null) ? `<a href="#/rentabilite" class="iw" style="--iw-accent:#f97316;--iw-bg:rgba(249,115,22,.12);">
+      ${(rsi != null || marge != null) ? (() => {
+        const gc = this._gaugeColor(rsi || 0, marge);
+        return `<a href="#/rentabilite" class="iw iw-plain" style="--iw-accent:${gc.rgb};--iw-bg:${gc.soft};">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div>
-        ${this._renderRadialGauge(rsi || 0)}
+        ${this._renderRadialGauge(rsi || 0, gc.rgb)}
         <div class="iw-sub" style="text-align:center;">${marge != null ? `${fmtK(marge)} F/mois` : 'RSI'}${recup > 0 && isFinite(recup) ? ` · récup. ${recup} mois` : ''}</div>
-      </a>` : widget({ href: '#/rentabilite', accent: '#f97316', bg: 'rgba(249,115,22,.12)', icon: 'solar:chart-2-bold-duotone', label: 'Rentabilité', value: '—', sub: "Voir l'analyse →" })}
+      </a>`; })() : widget({ href: '#/rentabilite', accent: '#f97316', bg: 'rgba(249,115,22,.12)', icon: 'solar:chart-2-bold-duotone', label: 'Rentabilité', value: '—', sub: "Voir l'analyse →" })}
       ${this._renderTaskStack(d)}
       ${widget({ href: '#/alertes', accent: alertAccent, bg: 'rgba(239,68,68,.10)', icon: 'solar:danger-triangle-bold-duotone', label: 'Alertes', value: `${totA}`, sub: totA > 0 ? `<span style="color:#EF4444;">${crit} crit.</span> · <span style="color:#E8930C;">${urg} urg.</span> · <span style="color:#0891b2;">${att} att.</span>` : 'Aucune ✓' })}
     </div>`;
   },
 
-  // Jauge radiale animée (demi-cercle 0→100 %) pour la rentabilité — recréée en
-  // vanilla d'après le composant AnimatedRadialChart (dégradé orange→rouge).
-  _renderRadialGauge(pct) {
+  // Couleur santé de la jauge : rouge si perte (marge < 0), sinon ambre → vert
+  // selon le RSI (plus on récupère, plus c'est vert).
+  _gaugeColor(pct, marge) {
+    let rgb;
+    if (marge != null && marge < 0) rgb = [220, 38, 38];
+    else {
+      const t = Math.max(0, Math.min(1, (pct || 0) / 100));
+      const a = [245, 158, 11], b = [22, 163, 74];
+      rgb = a.map((ch, i) => Math.round(ch + (b[i] - ch) * t));
+    }
+    return { rgb: `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`, soft: `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, .12)` };
+  },
+
+  // Jauge radiale animée (demi-cercle) — couleur santé dynamique, sans encadré ni
+  // labels 0/100 (elle se fond dans la carte). Recréée d'après AnimatedRadialChart.
+  _renderRadialGauge(pct, color) {
     const R = 45, cx = 60, cy = 56, sw = 11;
     const frac = Math.max(0, Math.min(1, (pct || 0) / 100));
     const off = (100 - frac * 100).toFixed(1);
-    const uid = 'g' + Math.random().toString(36).slice(2, 7);
     const arc = `M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`;
-    return `<div class="iw-gauge"><svg viewBox="0 0 120 70"><defs><linearGradient id="${uid}" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f97316"></stop><stop offset="55%" stop-color="#ea580c"></stop><stop offset="100%" stop-color="#dc2626"></stop></linearGradient></defs><path d="${arc}" fill="none" stroke="var(--bg-tertiary)" stroke-width="${sw}" stroke-linecap="round"></path><path d="${arc}" fill="none" stroke="url(#${uid})" stroke-width="${sw}" stroke-linecap="round" pathLength="100" stroke-dasharray="100" class="iw-gauge-arc" style="--gauge-off:${off};"></path><text x="60" y="45" text-anchor="middle" font-size="18" font-weight="800" fill="#ea580c" style="letter-spacing:-.5px;">${Math.round(pct)}%</text><text x="12" y="67" font-size="8" font-weight="700" fill="var(--text-muted)">0%</text><text x="108" y="67" text-anchor="end" font-size="8" font-weight="700" fill="var(--text-muted)">100%</text></svg></div>`;
+    const col = color || '#f97316';
+    return `<div class="iw-gauge"><svg viewBox="0 0 120 62"><path d="${arc}" fill="none" stroke="var(--bg-tertiary)" stroke-width="${sw}" stroke-linecap="round"></path><path d="${arc}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" pathLength="100" stroke-dasharray="100" class="iw-gauge-arc" style="--gauge-off:${off};"></path><text x="60" y="47" text-anchor="middle" font-size="20" font-weight="800" fill="${col}" style="letter-spacing:-.5px;">${Math.round(pct)}%</text></svg></div>`;
   },
 
   // ============ Tâches — pile de cartes morphable (stack / grille / liste) ============
