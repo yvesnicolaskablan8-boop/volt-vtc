@@ -1477,6 +1477,9 @@ const DashboardPage = {
         .iw-chip-val{font-size:16px;font-weight:800;margin-top:2px;}
         .iw-chip-dette{background:rgba(217,144,0,.13);color:#D99000;}
         .iw-chip-perte{background:rgba(217,88,59,.13);color:#D9583B;}
+        .iw-chip-crit{background:rgba(239,68,68,.12);color:#EF4444;}
+        .iw-chip-urg{background:rgba(232,147,12,.13);color:#E8930C;}
+        .iw-chip-att{background:rgba(8,145,178,.12);color:#0891b2;}
         .iw{display:flex;flex-direction:column;background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid var(--iw-accent);border-radius:16px;padding:15px 17px;text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease;}
         .iw.iw-plain{border:none;}
         .iw-gauge{width:100%;max-width:180px;margin:8px auto 0;}
@@ -2026,11 +2029,17 @@ const DashboardPage = {
           </div>
         </div>
       </div>
-      <a href="#/alertes" class="iw iw-plain iw-med" style="--iw-accent:${alertAccent};--iw-bg:rgba(239,68,68,.10);">
+      <div class="iw iw-plain iw-med" style="--iw-accent:${alertAccent};--iw-bg:rgba(239,68,68,.10);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></span><span class="iw-label">Alertes</span></div>
-        <div class="iw-val" style="color:${alertAccent};margin-top:auto;">${totA}</div>
-        <div class="iw-sub">${totA > 0 ? `<span style="color:#EF4444;">${crit} crit.</span> · <span style="color:#E8930C;">${urg} urg.</span> · <span style="color:#0891b2;">${att} att.</span>` : 'Aucune ✓'}</div>
-      </a>
+        <div class="iw-wide-row">
+          <a href="#/alertes" class="iw-tres-main"><div class="iw-val" style="font-size:34px;color:${alertAccent};">${totA}</div><div class="iw-tres-lbl">au total</div></a>
+          <div class="iw-tres-chips">
+            <a href="#/alertes" class="iw-chip iw-chip-crit"><span class="iw-chip-lbl">Crit.</span><span class="iw-chip-val">${crit}</span></a>
+            <a href="#/alertes" class="iw-chip iw-chip-urg"><span class="iw-chip-lbl">Urg.</span><span class="iw-chip-val">${urg}</span></a>
+            <a href="#/alertes" class="iw-chip iw-chip-att"><span class="iw-chip-lbl">Att.</span><span class="iw-chip-val">${att}</span></a>
+          </div>
+        </div>
+      </div>
       <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></span><span class="iw-label">Tâches</span></div>
         <div class="iw-val" style="color:#5D87FF;margin-top:auto;">${taches}</div>
@@ -2109,9 +2118,12 @@ const DashboardPage = {
       const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, programme, reasons, idleMin };
       const survByCa = (caState === 'faible' || caState === 'modere');
       const isSurv = haveY ? (online && (survByCa || ystat === 'busy' || idle)) : survByCa;
-      const isNonpl = !programme && (haveY ? online : actif);
-      if (isSurv) B.surv.push(entry);
-      else if (isNonpl) B.nonpl.push(entry);
+      // Non planifiés = chauffeur EN LIGNE (Yango) ou actif aujourd'hui, mais absent
+      // du planning du jour → à régulariser. Prioritaire et non filtré par le CA,
+      // pour compter TOUS les chauffeurs hors planning.
+      const isNonpl = !programme && (online || actif);
+      if (isNonpl) B.nonpl.push(entry);
+      else if (isSurv) B.surv.push(entry);
       else if (haveY ? ystat === 'in_order' : actif) B.course.push(entry);
       else if (haveY && ystat === 'free') B.ligne.push(entry);
       else B.hors.push(entry);
@@ -2146,8 +2158,13 @@ const DashboardPage = {
 
   _fleetCircleInner(d, segments, total) {
     const svg = this._fleetDonutSvg(segments, total);
-    const caTxt = this._caCenter(d.caBrutJour);
-    const sub = `${this._isToday() ? "aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt))} · ${total} chauffeur${total > 1 ? 's' : ''}`;
+    // Centre = uniquement les chauffeurs PLANIFIÉS (CA + effectif). L'anneau, lui,
+    // répartit toute la flotte (dont les non planifiés).
+    const planned = (d.chauffeursActifsJour || []).filter(c => c.programme);
+    const plannedCA = planned.reduce((s, c) => s + (c.ca || 0), 0);
+    const plannedCount = planned.length;
+    const caTxt = this._caCenter(plannedCA);
+    const sub = `${this._isToday() ? "aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt))} · ${plannedCount} planifié${plannedCount > 1 ? 's' : ''}`;
     return `<svg viewBox="0 0 200 200" class="fd-svg">${svg}</svg>
       <div class="fd-center"><div class="fd-center-lbl">CA flotte</div><div class="fd-center-val" id="fleet-ca-center">${caTxt}</div><div class="fd-center-sub">${sub}</div></div>`;
   },
