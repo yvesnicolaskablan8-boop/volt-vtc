@@ -1862,6 +1862,15 @@ const DashboardPage = {
     if (host) { host.replaceChildren(); host.insertAdjacentHTML('beforeend', this._fleetRecettePanel(d)); }
   },
 
+  // Clic sur une barre du widget « Recette encaissée » → page d'analyse détaillée,
+  // ciblée sur la granularité et la période cliquée.
+  _openAnalyseVersements(i) {
+    if (typeof AnalyseVersementsPage !== 'undefined') {
+      AnalyseVersementsPage.setContext({ gran: this._recetteGran || 'semaine', index: i });
+    }
+    if (typeof Router !== 'undefined') Router.navigate('/analyse-versements');
+  },
+
   // ============ Chauffeurs à surveiller ============
   // Combine deux signaux : CA « pas bon » (zone à surveiller : faible/modéré) et
   // chauffeurs qui se mettent en « occupé » sur Yango (statut busy, distinct d'une
@@ -2232,7 +2241,7 @@ const DashboardPage = {
       const fmt = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
       const cols = periods.map((w, i) => {
         const h = Math.max(4, (w.verse || 0) / maxV * 82);
-        return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})"><div class="mini-tip">${fmt(w.verse || 0)}</div><div class="mini-bar" data-fmt="${fmt(w.verse || 0)}" style="height:${h.toFixed(1)}px;"></div><div class="mini-lbl">${Utils.escHtml(w.label || '')}</div></div>`;
+        return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})" onclick="event.stopPropagation();DashboardPage._openAnalyseVersements(${i})" title="Analyser cette période"><div class="mini-tip">${fmt(w.verse || 0)}</div><div class="mini-bar" data-fmt="${fmt(w.verse || 0)}" style="height:${h.toFixed(1)}px;"></div><div class="mini-lbl">${Utils.escHtml(w.label || '')}</div></div>`;
       }).join('');
       const gBtn = (key, label) => `<button type="button" class="mini-gran-btn${gran === key ? ' is-active' : ''}" onclick="event.stopPropagation();DashboardPage._setRecetteGran('${key}')">${label}</button>`;
       const granBar = `<div class="mini-gran">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>`;
@@ -2305,6 +2314,16 @@ const DashboardPage = {
       occupe: ['Occupé sur Yango', '#635BFF', 'rgba(99,91,255,.13)'],
       idle: ['En ligne sans course >10 min', '#EF4444', 'rgba(239,68,68,.13)'],
     };
+    // Lien vers la page Yango du chauffeur (surveillance) : contractor = yangoDriverId,
+    // park_id issu des réglages d'intégration Yango.
+    const parkId = (((Store.get('settings') || {}).integrations || {}).yango || {}).parkId || '';
+    const chById = new Map((Store.get('chauffeurs') || []).map(c => [c.id, c]));
+    const yangoLink = (it) => {
+      const ch = chById.get(it.id);
+      if (!ch || !ch.yangoDriverId || !parkId) return '';
+      const url = `https://fleet.yango.com/contractors/${encodeURIComponent(ch.yangoDriverId)}/details?park_id=${encodeURIComponent(parkId)}`;
+      return `<a href="${url}" target="_blank" rel="noopener" title="Ouvrir la page Yango (surveillance)" style="width:34px;height:34px;border-radius:9px;background:rgba(99,91,255,.13);color:#635BFF;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:map-point-bold"></iconify-icon></a>`;
+    };
     const rows = seg.drivers.length ? seg.drivers.map(it => {
       const initial = (it.prenom || it.nom || '?').charAt(0).toUpperCase();
       const badges = (it.reasons || []).map(r => { const m = RSN[r]; return m ? `<span style="display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${m[2]};color:${m[1]};">${m[0]}</span>` : ''; }).join('');
@@ -2322,6 +2341,7 @@ const DashboardPage = {
         ${caTxt}
         ${planif}
         ${call}
+        ${yangoLink(it)}
       </div>`;
     }).join('') : `<div style="padding:22px 4px;color:var(--text-muted);font-size:13px;">Aucun chauffeur dans cet état.</div>`;
     const body = `<div style="max-height:60vh;overflow-y:auto;">${rows}</div>`;
