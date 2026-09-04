@@ -2059,10 +2059,10 @@ const DashboardPage = {
     return `<div class="d-grid iw-grid">
       ${(rsi != null || marge != null) ? (() => {
         const gc = this._gaugeColor(rsi || 0, marge);
-        return `<a href="#/rentabilite" class="iw iw-plain iw-hero" style="--iw-accent:${gc.rgb};--iw-bg:${gc.soft};">
+        return `<a href="#/analyse-rentabilite" class="iw iw-plain iw-hero" style="--iw-accent:${gc.rgb};--iw-bg:${gc.soft};">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div>
         <div class="iw-hero-mid">${this._renderRadialGauge(rsi || 0, gc.rgb, 'RSI')}<div class="iw-hero-marge" style="color:${gc.rgb};">${marge != null ? `${fmtK(marge)} F/mois` : '—'}</div><div class="iw-hero-ctx">${recup > 0 && isFinite(recup) ? `récupération en ${recup} mois` : 'marge mensuelle nette'}</div></div>
-      </a>`; })() : `<a href="#/rentabilite" class="iw iw-hero" style="--iw-accent:#f97316;--iw-bg:rgba(249,115,22,.12);"><div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div><div class="iw-hero-mid" style="color:var(--text-muted);font-weight:600;">Voir l'analyse →</div></a>`}
+      </a>`; })() : `<a href="#/analyse-rentabilite" class="iw iw-hero" style="--iw-accent:#f97316;--iw-bg:rgba(249,115,22,.12);"><div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div><div class="iw-hero-mid" style="color:var(--text-muted);font-weight:600;">Voir l'analyse →</div></a>`}
       <div class="iw iw-plain iw-wide" style="--iw-accent:#02b3a9;--iw-bg:rgba(19,222,185,.12);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon></span><span class="iw-label">Trésorerie</span></div>
         <div class="iw-wide-row">
