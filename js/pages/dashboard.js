@@ -2009,14 +2009,13 @@ const DashboardPage = {
       <div class="fd-center"><div class="fd-center-lbl">CA flotte</div><div class="fd-center-val" id="fleet-ca-center">${caTxt}</div><div class="fd-center-sub">${sub}</div></div>`;
   },
 
-  _fleetCardsInner(segments, total) {
+  _fleetCardsInner(segments) {
     return segments.map((s, i) => {
-      const pct = total ? Math.round(s.count / total * 100) : 0;
       const clickable = s.count > 0;
       const handlers = clickable ? `onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
       return `<div class="fd-c${clickable ? '' : ' fd-c-off'}" data-i="${i}" ${handlers}>
         <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}</div>
-        <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span><span class="fd-c-pct">${pct}%</span></div>
+        <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span></div>
         <div class="fd-c-desc">${s.desc}</div>
       </div>`;
     }).join('');
@@ -2055,7 +2054,7 @@ const DashboardPage = {
         <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
         <div class="fd-recette">${this._fleetRecettePanel(d)}</div>
       </div>
-      <div class="fd-cards" id="fleet-donut-cards">${this._fleetCardsInner(segments, total)}</div>
+      <div class="fd-cards" id="fleet-donut-cards">${this._fleetCardsInner(segments)}</div>
     </div>`;
   },
 
@@ -2065,7 +2064,7 @@ const DashboardPage = {
     const circle = document.getElementById('fleet-donut-circle');
     if (circle) { circle.replaceChildren(); circle.insertAdjacentHTML('beforeend', this._fleetCircleInner(d, segments, total)); }
     const cards = document.getElementById('fleet-donut-cards');
-    if (cards) { cards.replaceChildren(); cards.insertAdjacentHTML('beforeend', this._fleetCardsInner(segments, total)); }
+    if (cards) { cards.replaceChildren(); cards.insertAdjacentHTML('beforeend', this._fleetCardsInner(segments)); }
   },
 
   async _loadFleetStatus(d, force) {
