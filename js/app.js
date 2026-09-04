@@ -195,7 +195,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 540;
+      const SW_VERSION = 541;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
@@ -218,6 +218,9 @@ const App = {
           reg.update();
           // Vérifier les mises à jour toutes les 60s
           setInterval(() => reg.update(), 60000);
+          // …et immédiatement au retour sur l'onglet (déploiement pris en compte
+          // sans avoir à attendre le prochain cycle de 60s).
+          document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update(); });
           // Si un nouveau SW est en attente, l'activer
           reg.addEventListener('updatefound', () => {
             const newSW = reg.installing;

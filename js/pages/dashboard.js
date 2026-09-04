@@ -1264,8 +1264,8 @@ const DashboardPage = {
         .mini-chart:hover .mini-val { opacity:1; }
         .mini-bars { display:flex; align-items:flex-end; gap:8px; height:100px; }
         .mini-col { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
-        .mini-bar { width:100%; border-radius:99px; background:var(--text-primary); opacity:.20; transform-origin:bottom; transition:all .3s ease-out; cursor:pointer; }
-        .mini-chart:hover .mini-bar { opacity:.25; }
+        .mini-bar { width:100%; border-radius:99px; background:#13DEB9; opacity:.32; transform-origin:bottom; transition:all .3s ease-out; cursor:pointer; }
+        .mini-chart:hover .mini-bar { opacity:.42; }
         .mini-bar.is-hover { opacity:1 !important; transform:scaleX(1.12) scaleY(1.02); }
         .mini-bar.is-neighbor { opacity:.35 !important; transform:scaleX(1.05); }
         .mini-bar.is-dim { opacity:.10 !important; }
