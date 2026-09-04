@@ -1457,12 +1457,27 @@ const DashboardPage = {
         .fd-c-pct{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:6px;}
         .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}
         @media(max-width:820px){ .fd-cards{grid-template-columns:repeat(2,1fr);} .fd-top{flex-direction:column;} .fd-donut-wrap{margin:0 auto;} .fd-recette{width:100%;} .fd-recette-inner{border-left:none;border-top:1px solid var(--border-color);padding-left:0;padding-top:16px;} }
+        /* Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) */
+        .iw-grid{grid-template-columns:repeat(4,1fr);gap:16px;}
+        .iw{display:block;background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid var(--iw-accent);border-radius:16px;padding:15px 17px;text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease;}
+        .iw:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,0,0,.10);}
+        .iw-top{display:flex;align-items:center;gap:9px;}
+        .iw-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--iw-bg);color:var(--iw-accent);font-size:19px;flex-shrink:0;}
+        .iw-label{font-size:13px;font-weight:700;color:var(--text-secondary);}
+        .iw-val{font-size:26px;font-weight:800;color:var(--iw-accent);letter-spacing:-.5px;margin-top:12px;line-height:1;}
+        .iw-unit{font-size:13px;font-weight:700;color:var(--text-muted);margin-left:2px;}
+        .iw-sub{font-size:11.5px;color:var(--text-muted);font-weight:600;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        @media(max-width:1024px){ .iw-grid{grid-template-columns:repeat(2,1fr);} }
+        @media(max-width:560px){ .iw-grid{grid-template-columns:1fr;} }
       </style>
 
       <!-- Row 0 : Flotte en direct (donut centralisé) -->
       <div class="d-grid" style="grid-template-columns:1fr;">
         ${this._renderFleetDonut(d)}
       </div>
+
+      <!-- Row 1 : Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) -->
+      ${this._renderInsightWidgets(d)}
 
       <!-- Row 2 : Planning (pleine largeur) -->
       <div class="d-grid d2-r2">
@@ -1918,6 +1933,62 @@ const DashboardPage = {
     }
     el = document.getElementById('dash-watchlist');
     if (el) { el.replaceChildren(); el.insertAdjacentHTML('beforeend', this._watchlistInner(d, busy)); }
+  },
+
+  // ============ Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) ============
+  // Cartes cliquables affichant la donnée réelle en un coup d'œil (chiffre + détail),
+  // en remplacement des pastilles peu parlantes du header.
+  _renderInsightWidgets(d) {
+    const fmtK = n => { n = Math.round(n || 0); const a = Math.abs(n); return a >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '').replace('.', ',') + 'M' : a >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n); };
+
+    // Trésorerie (déjà dans d)
+    const verse = d.totalVerse || 0, dettes = d.totalDettes || 0, pertes = d.totalPertes || 0;
+
+    // Rentabilité (calcul de la page rentabilité, appelé sans effet de bord)
+    let marge = null, rsi = null, recup = null;
+    try {
+      if (typeof RentabilitePage !== 'undefined' && RentabilitePage._getData) {
+        const r = RentabilitePage._getData();
+        if (r) { marge = r.margeMensuelle; rsi = Math.round(r.rsiGlobal || 0); recup = r.moisRecuperation; }
+      }
+    } catch (e) { console.warn('Widget rentabilité:', e.message); }
+
+    // Tâches
+    let taches = 0, tachesRetard = 0;
+    try {
+      const s = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : null;
+      const uid = s ? s.userId : ''; const admin = s && s.role === 'Administrateur';
+      const today = new Date().toISOString().slice(0, 10);
+      const allT = Store.get('taches') || [];
+      const mine = (admin ? allT.filter(t => t.creePar === uid) : allT.filter(t => t.assigneA === uid)).filter(t => t.statut !== 'terminee' && t.statut !== 'annulee');
+      taches = mine.length;
+      tachesRetard = mine.filter(t => t.dateEcheance && t.dateEcheance < today).length;
+    } catch (e) { }
+
+    // Alertes
+    let crit = 0, urg = 0, att = 0, totA = 0;
+    try {
+      let alerts = [];
+      if (typeof AlertesPage !== 'undefined' && AlertesPage._generateAllAlerts) alerts = AlertesPage._generateAllAlerts() || [];
+      crit = alerts.filter(a => a.niveau === 'critique').length;
+      urg = alerts.filter(a => a.niveau === 'urgent').length;
+      att = alerts.filter(a => a.niveau === 'attention').length;
+      totA = alerts.length;
+    } catch (e) { }
+    const alertAccent = crit > 0 ? '#EF4444' : urg > 0 ? '#E8930C' : att > 0 ? '#0891b2' : '#02b3a9';
+
+    const widget = (o) => `<a href="${o.href}" class="iw" style="--iw-accent:${o.accent};--iw-bg:${o.bg};">
+      <div class="iw-top"><span class="iw-icon"><iconify-icon icon="${o.icon}"></iconify-icon></span><span class="iw-label">${o.label}</span></div>
+      <div class="iw-val">${o.value}</div>
+      <div class="iw-sub">${o.sub}</div>
+    </a>`;
+
+    return `<div class="d-grid iw-grid">
+      ${widget({ href: '#/versements', accent: '#02b3a9', bg: 'rgba(19,222,185,.12)', icon: 'solar:safe-2-bold-duotone', label: 'Trésorerie', value: `${fmtK(verse)} F`, sub: `<span style="color:#D99000;">Dettes ${fmtK(dettes)}</span> · <span style="color:#D9583B;">Pertes ${fmtK(pertes)}</span>` })}
+      ${widget({ href: '#/rentabilite', accent: '#635BFF', bg: 'rgba(99,91,255,.12)', icon: 'solar:chart-2-bold-duotone', label: 'Rentabilité', value: marge != null ? `${fmtK(marge)} F<span class="iw-unit">/mois</span>` : '—', sub: marge != null ? `RSI ${rsi}%${recup > 0 && isFinite(recup) ? ` · récup. ${recup} mois` : ''}` : "Voir l'analyse →" })}
+      ${widget({ href: '#/taches', accent: '#5D87FF', bg: 'rgba(93,135,255,.12)', icon: 'solar:clipboard-list-bold-duotone', label: 'Tâches', value: `${taches}`, sub: tachesRetard > 0 ? `<span style="color:#EF4444;font-weight:700;">${tachesRetard} en retard</span>` : (taches > 0 ? 'en cours' : 'Rien en attente 🎉') })}
+      ${widget({ href: '#/alertes', accent: alertAccent, bg: 'rgba(239,68,68,.10)', icon: 'solar:danger-triangle-bold-duotone', label: 'Alertes', value: `${totA}`, sub: totA > 0 ? `<span style="color:#EF4444;">${crit} crit.</span> · <span style="color:#E8930C;">${urg} urg.</span> · <span style="color:#0891b2;">${att} att.</span>` : 'Aucune ✓' })}
+    </div>`;
   },
 
   // ============ Flotte en direct (donut centralisé) ============
