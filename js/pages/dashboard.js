@@ -1988,7 +1988,7 @@ const DashboardPage = {
     return segments.map((s, i) => {
       if (!s.count) return '';
       const frac = s.count / total, len = frac * C, dash = Math.max(0.5, len - GAP);
-      const el = `<circle data-seg="${i}" cx="100" cy="100" r="${R}" fill="none" stroke="${s.color}" stroke-width="${SW}" stroke-linecap="round" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${(-cum).toFixed(2)}" class="fd-seg" onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)"></circle>`;
+      const el = `<circle data-seg="${i}" cx="100" cy="100" r="${R}" fill="none" stroke="${s.color}" stroke-width="${SW}" stroke-linecap="round" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${(-cum).toFixed(2)}" class="fd-seg" onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"></circle>`;
       cum += len;
       return el;
     }).join('');
@@ -2086,14 +2086,12 @@ const DashboardPage = {
   },
 
   _fdHot(i, on) {
-    const root = document.getElementById('fleet-donut');
-    if (!root) return;
-    root.querySelectorAll('.fd-seg').forEach(el => {
+    document.querySelectorAll('.fd-seg').forEach(el => {
       const j = +el.getAttribute('data-seg');
       if (j === i) { el.style.strokeWidth = on ? '24' : '18'; el.style.opacity = '1'; }
       else el.style.opacity = on ? '0.35' : '1';
     });
-    root.querySelectorAll('.fd-c').forEach(c => c.classList.toggle('hot', on && +c.getAttribute('data-i') === i));
+    document.querySelectorAll('.fd-c').forEach(c => c.classList.toggle('hot', on && +c.getAttribute('data-i') === i));
   },
 
   _fleetCardClick(key) {
