@@ -1458,8 +1458,12 @@ const DashboardPage = {
         .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}
         @media(max-width:820px){ .fd-cards{grid-template-columns:repeat(2,1fr);} .fd-top{flex-direction:column;} .fd-donut-wrap{margin:0 auto;} .fd-recette{width:100%;} .fd-recette-inner{border-left:none;border-top:1px solid var(--border-color);padding-left:0;padding-top:16px;} }
         /* Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) */
-        .iw-grid{grid-template-columns:repeat(4,1fr);gap:16px;}
-        .iw{display:block;background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid var(--iw-accent);border-radius:16px;padding:15px 17px;text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease;}
+        .iw-grid{grid-template-columns:repeat(4,1fr);gap:16px;align-items:stretch;}
+        .iw{display:flex;flex-direction:column;background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid var(--iw-accent);border-radius:16px;padding:15px 17px;text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease;}
+        .iw-gauge{width:100%;max-width:180px;margin:8px auto 0;}
+        .iw-gauge svg{width:100%;height:auto;display:block;overflow:visible;}
+        .iw-gauge-arc{animation:iwGauge 1.3s ease-out forwards;}
+        @keyframes iwGauge{from{stroke-dashoffset:100;}to{stroke-dashoffset:var(--gauge-off);}}
         .iw:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,0,0,.10);}
         .iw-top{display:flex;align-items:center;gap:9px;}
         .iw-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--iw-bg);color:var(--iw-accent);font-size:19px;flex-shrink:0;}
@@ -1941,8 +1945,10 @@ const DashboardPage = {
   _renderInsightWidgets(d) {
     const fmtK = n => { n = Math.round(n || 0); const a = Math.abs(n); return a >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '').replace('.', ',') + 'M' : a >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n); };
 
-    // Trésorerie (déjà dans d)
-    const verse = d.totalVerse || 0, dettes = d.totalDettes || 0, pertes = d.totalPertes || 0;
+    // Trésorerie (déjà dans d) — versé du MOIS entier (totalVerseMonth), stable
+    // quel que soit le jour sélectionné, pour rester cohérent avec dettes/pertes
+    // (qui sont des cumuls). d.totalVerse suit la période affichée → 0 un jour sans activité.
+    const verse = d.totalVerseMonth || 0, dettes = d.totalDettes || 0, pertes = d.totalPertes || 0;
 
     // Rentabilité (calcul de la page rentabilité, appelé sans effet de bord)
     let marge = null, rsi = null, recup = null;
@@ -1985,10 +1991,25 @@ const DashboardPage = {
 
     return `<div class="d-grid iw-grid">
       ${widget({ href: '#/versements', accent: '#02b3a9', bg: 'rgba(19,222,185,.12)', icon: 'solar:safe-2-bold-duotone', label: 'Trésorerie', value: `${fmtK(verse)} F`, sub: `<span style="color:#D99000;">Dettes ${fmtK(dettes)}</span> · <span style="color:#D9583B;">Pertes ${fmtK(pertes)}</span>` })}
-      ${widget({ href: '#/rentabilite', accent: '#635BFF', bg: 'rgba(99,91,255,.12)', icon: 'solar:chart-2-bold-duotone', label: 'Rentabilité', value: marge != null ? `${fmtK(marge)} F<span class="iw-unit">/mois</span>` : '—', sub: marge != null ? `RSI ${rsi}%${recup > 0 && isFinite(recup) ? ` · récup. ${recup} mois` : ''}` : "Voir l'analyse →" })}
+      ${(rsi != null || marge != null) ? `<a href="#/rentabilite" class="iw" style="--iw-accent:#f97316;--iw-bg:rgba(249,115,22,.12);">
+        <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div>
+        ${this._renderRadialGauge(rsi || 0)}
+        <div class="iw-sub" style="text-align:center;">${marge != null ? `${fmtK(marge)} F/mois` : 'RSI'}${recup > 0 && isFinite(recup) ? ` · récup. ${recup} mois` : ''}</div>
+      </a>` : widget({ href: '#/rentabilite', accent: '#f97316', bg: 'rgba(249,115,22,.12)', icon: 'solar:chart-2-bold-duotone', label: 'Rentabilité', value: '—', sub: "Voir l'analyse →" })}
       ${widget({ href: '#/taches', accent: '#5D87FF', bg: 'rgba(93,135,255,.12)', icon: 'solar:clipboard-list-bold-duotone', label: 'Tâches', value: `${taches}`, sub: tachesRetard > 0 ? `<span style="color:#EF4444;font-weight:700;">${tachesRetard} en retard</span>` : (taches > 0 ? 'en cours' : 'Rien en attente 🎉') })}
       ${widget({ href: '#/alertes', accent: alertAccent, bg: 'rgba(239,68,68,.10)', icon: 'solar:danger-triangle-bold-duotone', label: 'Alertes', value: `${totA}`, sub: totA > 0 ? `<span style="color:#EF4444;">${crit} crit.</span> · <span style="color:#E8930C;">${urg} urg.</span> · <span style="color:#0891b2;">${att} att.</span>` : 'Aucune ✓' })}
     </div>`;
+  },
+
+  // Jauge radiale animée (demi-cercle 0→100 %) pour la rentabilité — recréée en
+  // vanilla d'après le composant AnimatedRadialChart (dégradé orange→rouge).
+  _renderRadialGauge(pct) {
+    const R = 45, cx = 60, cy = 56, sw = 11;
+    const frac = Math.max(0, Math.min(1, (pct || 0) / 100));
+    const off = (100 - frac * 100).toFixed(1);
+    const uid = 'g' + Math.random().toString(36).slice(2, 7);
+    const arc = `M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`;
+    return `<div class="iw-gauge"><svg viewBox="0 0 120 70"><defs><linearGradient id="${uid}" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f97316"></stop><stop offset="55%" stop-color="#ea580c"></stop><stop offset="100%" stop-color="#dc2626"></stop></linearGradient></defs><path d="${arc}" fill="none" stroke="var(--bg-tertiary)" stroke-width="${sw}" stroke-linecap="round"></path><path d="${arc}" fill="none" stroke="url(#${uid})" stroke-width="${sw}" stroke-linecap="round" pathLength="100" stroke-dasharray="100" class="iw-gauge-arc" style="--gauge-off:${off};"></path><text x="60" y="45" text-anchor="middle" font-size="18" font-weight="800" fill="#ea580c" style="letter-spacing:-.5px;">${Math.round(pct)}%</text><text x="12" y="67" font-size="8" font-weight="700" fill="var(--text-muted)">0%</text><text x="108" y="67" text-anchor="end" font-size="8" font-weight="700" fill="var(--text-muted)">100%</text></svg></div>`;
   },
 
   // ============ Flotte en direct (donut centralisé) ============
