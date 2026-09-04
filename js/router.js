@@ -40,6 +40,7 @@ const Router = {
     add('/rapports', () => RapportsPage, 'Rapports');
     add('/comptabilite', () => ComptabilitePage, 'Comptabilité');
     add('/planning', () => PlanningPage, 'Planning');
+    add('/occupation-vehicules', () => OccupationVehiculesPage, 'Occupation des véhicules');
     add('/messagerie', () => MessageriePage, 'Messagerie');
     add('/alertes', () => AlertesPage, 'Alertes');
     add('/taches', () => TachesPage, 'Taches');
