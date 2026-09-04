@@ -29,7 +29,11 @@ const Header = {
     tabs.forEach((t, i) => this._on('stabHover' + i, t, 'mouseenter', () => move(t)));
     this._on('stabLeave', nav, 'mouseleave', rest);
     this._on('stabHash', window, 'hashchange', rest);
-    requestAnimationFrame(rest);
+    this._on('stabResize', window, 'resize', rest);
+    // Placement initial robuste : les offsets sont lus après stabilisation du
+    // layout flex ET des polices (sinon le curseur se pose à côté au 1er rendu).
+    requestAnimationFrame(() => requestAnimationFrame(rest));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(rest);
   },
 
   // Widgets d'accès rapide (obsolète — remplacés par le dock ; conservé sans effet)

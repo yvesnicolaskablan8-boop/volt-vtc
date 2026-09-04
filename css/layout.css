@@ -208,6 +208,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-md);
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .header-toggle {
@@ -242,6 +244,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-lg);
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: flex-end;
 }
 
 /* ========== THEME TOGGLE ========== */
@@ -308,15 +313,21 @@
 @media (max-width: 900px) { .hw-group { display: none; } }
 
 /* ========== DOCK DE NAVIGATION (onglets glissants / SlideTabs) ========== */
-.stab { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; padding: 4px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary); isolation: isolate; }
+/* Dans le flux (pas en absolute) : le centrage vient de flex:1 sur .header-left
+   et .header-right, ce qui évite tout chevauchement avec la barre de recherche. */
+.stab { position: relative; flex: 0 0 auto; display: flex; align-items: center; padding: 4px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary); isolation: isolate; }
 .stab-cursor { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 999px; background: #18181b; opacity: 0; transition: left .3s cubic-bezier(.25,1,.5,1), width .3s cubic-bezier(.25,1,.5,1), opacity .2s ease; pointer-events: none; }
-.stab-tab { position: relative; z-index: 1; display: block; padding: 7px 16px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #fff; mix-blend-mode: difference; text-decoration: none; white-space: nowrap; }
+.stab-tab { position: relative; z-index: 1; display: block; padding: 7px 14px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; mix-blend-mode: difference; text-decoration: none; white-space: nowrap; }
+/* Toujours blanc (le blend fait l'inversion) — bat le a:hover{color:pilote-blue} global. */
+.stab .stab-tab, .stab .stab-tab:hover, .stab .stab-tab:visited, .stab .stab-tab:focus { color: #fff; }
 :root[data-theme="dark"] .stab-cursor { background: #f4f4f5; }
-@media (max-width: 900px) { .stab { display: none; } }
+@media (max-width: 1150px) { .stab { display: none; } }
 
 /* ========== HEADER SEARCH ========== */
 .header-search {
   position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .header-search input {
@@ -325,7 +336,8 @@
   border-radius: 30px;
   padding: 11px var(--space-md);
   padding-left: 38px;
-  width: 260px;
+  width: 220px;
+  max-width: 100%;
   color: var(--text-primary);
   font-size: var(--font-size-sm);
   transition: all var(--transition-base);
@@ -338,7 +350,7 @@
 .header-search input:focus {
   border-color: var(--pilote-blue);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  width: 300px;
+  width: 240px;
   background: var(--bg-secondary);
 }
 
