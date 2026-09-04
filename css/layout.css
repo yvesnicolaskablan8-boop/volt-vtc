@@ -308,7 +308,7 @@
 @media (max-width: 900px) { .hw-group { display: none; } }
 
 /* ========== DOCK DE NAVIGATION (façon macOS : icônes app + magnify + noms) ========== */
-.hdock { display: flex; align-items: flex-end; gap: 9px; padding: 3px 6px; }
+.hdock { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 14px; }
 .hdock-item { position: relative; display: flex; align-items: flex-end; text-decoration: none; }
 .hdock-tile { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #fff; background: var(--dk); font-size: 19px; box-shadow: 0 4px 11px rgba(0,0,0,.18); transition: width .16s cubic-bezier(.2,.8,.3,1), height .16s cubic-bezier(.2,.8,.3,1), font-size .16s cubic-bezier(.2,.8,.3,1), transform .16s ease; position: relative; overflow: hidden; }
 .hdock-tile::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,.28), transparent 60%); }
