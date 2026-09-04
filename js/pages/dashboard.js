@@ -1465,12 +1465,9 @@ const DashboardPage = {
 
         <!-- Hero d'accueil (accueil + activité en direct) -->
         <div onclick="DashboardPage._showActiviteDetail()" class="d-card" style="cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:14px;border-left:5px solid ${d.paceState === 'faible' ? 'var(--danger)' : d.paceState === 'bon' ? 'var(--success)' : d.paceState === 'modere' ? 'var(--warning)' : d.paceState === 'demarrage' ? 'var(--pilote-blue)' : 'var(--border-color)'};box-shadow:0 6px 22px ${d.paceState === 'faible' ? 'rgba(250,137,107,.22)' : d.paceState === 'bon' ? 'rgba(19,222,185,.22)' : d.paceState === 'modere' ? 'rgba(255,174,31,.22)' : d.paceState === 'demarrage' ? 'rgba(93,135,255,.18)' : 'rgba(37,83,185,.10)'};">
-          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;position:relative;">
-            <div>
-              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.1px;display:flex;align-items:center;gap:7px;">
-                <span style="width:8px;height:8px;border-radius:50%;background:${d.estAujourdhui ? 'var(--danger)' : 'var(--text-muted)'};"></span>${d.estAujourdhui ? 'Recette du jour · en direct' : 'Recette du ' + Utils.escHtml(Utils.formatDate(d.jourAtt))}
-              </div>
-              <div id="hero-ca-amount" style="font-size:40px;font-weight:800;letter-spacing:-.6px;color:var(--text-primary);margin-top:8px;">${Utils.formatCurrency(d.caBrutJour)}</div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:relative;">
+            <div style="font-size:12px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:7px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${d.estAujourdhui ? 'var(--danger)' : 'var(--text-muted)'};"></span>${d.estAujourdhui ? "Recette du jour · en direct" : 'Recette du ' + Utils.escHtml(Utils.formatDate(d.jourAtt))}
             </div>
             <div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${d.paceState === 'faible' ? 'rgba(250,137,107,.15)' : d.paceState === 'bon' ? 'rgba(19,222,185,.15)' : d.paceState === 'modere' ? 'rgba(255,174,31,.16)' : 'var(--bg-tertiary)'};color:${d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)'};">
               <iconify-icon icon="${d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>
