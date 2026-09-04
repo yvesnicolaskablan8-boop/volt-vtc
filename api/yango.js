@@ -643,7 +643,7 @@ async function handleFleetStatus(req, res) {
     const data = await yangoFetch('/v1/parks/driver-profiles/list', {
       fields: {
         driver_profile: ['id', 'first_name', 'last_name'],
-        current_status: ['status']
+        current_status: ['status', 'status_updated_ts']
       },
       limit: 300,
       offset: 0,
@@ -656,7 +656,12 @@ async function handleFleetStatus(req, res) {
 
     for (const p of profiles) {
       const dp = p.driver_profile || {};
-      const status = (p.current_status || {}).status || 'offline';
+      const cs = p.current_status || {};
+      const status = cs.status || 'offline';
+      // Horodatage du dernier changement de statut (ISO ou epoch selon Yango).
+      // Permet au front de mesurer depuis combien de temps un chauffeur est « free »
+      // (en ligne sans course) → règle des 10 min « à surveiller ».
+      const statusTs = cs.status_updated_ts || null;
 
       if (counts[status] !== undefined) counts[status]++;
       else counts.offline++;
@@ -666,7 +671,8 @@ async function handleFleetStatus(req, res) {
         drivers.push({
           id: dp.id,
           nom: [dp.first_name, dp.last_name].filter(Boolean).join(' '),
-          status
+          status,
+          statusTs
         });
       }
     }

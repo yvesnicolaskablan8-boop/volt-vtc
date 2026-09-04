@@ -57,7 +57,7 @@ const DashboardPage = {
       const _ps = document.getElementById('header-period-slot');
       if (_ps) _ps.innerHTML = this._renderPeriodPicker();
       this._bindPeriodSelector();
-      this._loadYangoWatch(data);
+      this._loadFleetStatus(data);
       this._loadRecetteLive();
       if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
@@ -398,7 +398,7 @@ const DashboardPage = {
       container.innerHTML = this._template(data); // template uses escaped/static content only
       this._loadCharts(data);
       this._bindPeriodSelector();
-      this._loadYangoWatch(data);
+      this._loadFleetStatus(data);
       this._loadRecetteLive();
       this._startAutoRefresh();
     } catch (err) {
@@ -1416,7 +1416,7 @@ const DashboardPage = {
 
       <!-- Style Dashboard 2 (Spike) : hero d'accueil + trio KPI + barres + line + donut -->
       <style>
-        .d2-r1{grid-template-columns:1.7fr 1.15fr;align-items:stretch;}
+        .d2-r1{grid-template-columns:1fr;align-items:stretch;}
         .d2-r2{grid-template-columns:1fr;align-items:stretch;}
         .d2-r3{grid-template-columns:1.15fr 1fr 1fr;align-items:stretch;}
         .d2-kpis{display:flex;flex-direction:column;gap:16px;}
@@ -1426,7 +1426,39 @@ const DashboardPage = {
         .d2-pill{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;}
         @media(max-width:1024px){ .d2-r1,.d2-r2,.d2-r3{grid-template-columns:1fr;} .d2-kpis{flex-direction:row;flex-wrap:wrap;} .d2-kpi{min-width:150px;flex:1 1 150px;} }
         @media(max-width:560px){ .d2-kpis{flex-direction:column;} }
+        /* Flotte en direct — donut centralisé */
+        .fd-card{padding:24px 24px 20px;}
+        .fd-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+        .fd-title{font-size:15px;font-weight:800;color:var(--text-primary);}
+        .fd-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-muted);}
+        .fd-dot-live{width:8px;height:8px;border-radius:50%;background:#FA3E3E;animation:fdPulse 1.8s infinite;}
+        @keyframes fdPulse{0%{box-shadow:0 0 0 0 rgba(250,62,62,.5)}70%{box-shadow:0 0 0 7px rgba(250,62,62,0)}100%{box-shadow:0 0 0 0 rgba(250,62,62,0)}}
+        .fd-spin{animation:fdSpin 1s linear infinite;display:inline-flex;}
+        @keyframes fdSpin{to{transform:rotate(360deg)}}
+        .fd-donut-wrap{position:relative;width:250px;height:250px;margin:6px auto 20px;}
+        .fd-svg{width:100%;height:100%;transform:rotate(-90deg);}
+        .fd-seg{transition:stroke-width .2s ease,opacity .2s ease;cursor:pointer;}
+        .fd-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;}
+        .fd-center-lbl{font-size:12px;font-weight:600;color:var(--text-muted);}
+        .fd-center-val{font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.05;margin-top:2px;color:var(--text-primary);}
+        .fd-center-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
+        .fd-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+        .fd-c{background:var(--bg-tertiary);border:1px solid transparent;border-radius:14px;padding:13px 14px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}
+        .fd-c.fd-c-off{cursor:default;opacity:.65;}
+        .fd-c:not(.fd-c-off):hover,.fd-c.hot{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.10);}
+        .fd-c-top{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--text-secondary);}
+        .fd-c-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+        .fd-c-mid{margin-top:8px;}
+        .fd-c-val{font-size:23px;font-weight:800;letter-spacing:-.5px;}
+        .fd-c-pct{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:6px;}
+        .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}
+        @media(max-width:820px){ .fd-cards{grid-template-columns:repeat(2,1fr);} }
       </style>
+
+      <!-- Row 0 : Flotte en direct (donut centralisé) -->
+      <div class="d-grid" style="grid-template-columns:1fr;">
+        ${this._renderFleetDonut(d)}
+      </div>
 
       <!-- Row 1 : Hero d'accueil + trio KPI colorés -->
       <div class="d-grid d2-r1">
@@ -1497,9 +1529,6 @@ const DashboardPage = {
             Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon>
           </div>
         </div>
-
-        <!-- Chauffeurs à surveiller (à la place du trio) -->
-        ${this._renderWatchlist(d)}
       </div>
 
 
@@ -1770,7 +1799,7 @@ const DashboardPage = {
     const deltaEl = document.getElementById('rtl-delta'); if (deltaEl) { deltaEl.style.color = ACC.t; deltaEl.textContent = data.deltaTxt; }
     const statsEl = document.getElementById('rtl-stats'); if (statsEl) { statsEl.replaceChildren(); statsEl.insertAdjacentHTML('beforeend', `<span style="color:var(--text-primary);font-weight:700;">${fmt(peak)}</span> peak · <span style="color:var(--text-primary);font-weight:700;">${fmt(low)}</span> low · <span style="color:var(--text-primary);font-weight:700;">${fmt(avg)}</span> avg`); }
     const fadeEl = document.getElementById('rtl-fade'); if (fadeEl) fadeEl.style.background = `linear-gradient(to left, ${ACC.s}26, transparent 75%)`;
-    if (data.updateHero) { const ha = document.getElementById('hero-ca-amount'); if (ha) ha.textContent = Utils.formatCurrency(data.heroTotal); }
+    if (data.updateHero) { const ha = document.getElementById('hero-ca-amount'); if (ha) ha.textContent = Utils.formatCurrency(data.heroTotal); const fc = document.getElementById('fleet-ca-center'); if (fc) fc.textContent = Utils.formatCurrency(data.heroTotal); }
     const maxV = Math.max(1, ...vals);
     const W = 200, Hh = 150;
     let inner;
@@ -1957,6 +1986,182 @@ const DashboardPage = {
     }
     el = document.getElementById('dash-watchlist');
     if (el) { el.replaceChildren(); el.insertAdjacentHTML('beforeend', this._watchlistInner(d, busy)); }
+  },
+
+  // ============ Flotte en direct (donut centralisé) ============
+  // Répartit toute la flotte active en 5 états mutuellement exclusifs, affichés
+  // en anneau + cartes. Le statut temps réel Yango (course/libre/hors-ligne) est
+  // chargé en asynchrone (_loadFleetStatus). Un chauffeur « free » depuis ≥ 10 min
+  // (statusTs Yango) bascule en « à surveiller ».
+  _fleetSegDef() {
+    return [
+      { key: 'course', label: 'En course', color: '#13DEB9', desc: 'Sur une course' },
+      { key: 'ligne', label: 'En ligne', color: '#5D87FF', desc: 'Disponible' },
+      { key: 'surv', label: 'À surveiller', color: '#FFAE1F', desc: 'CA bas / inactif' },
+      { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Sans planning' },
+      { key: 'hors', label: 'Hors ligne', color: '#C7D0DD', desc: 'Déconnectés' },
+    ];
+  },
+
+  _fleetBuckets(d, yStatus) {
+    const chauffeurs = (typeof Store !== 'undefined' && Store.get) ? (Store.get('chauffeurs') || []) : [];
+    const fleet = chauffeurs.filter(c => (c.statut || 'actif') !== 'inactif');
+    const caById = new Map((d.chauffeursActifsJour || []).map(c => [c.id, c]));
+    const now = Date.now() / 1000;
+    const toEpoch = ts => { if (ts == null) return null; if (typeof ts === 'number') return ts > 1e12 ? ts / 1000 : ts; const p = Date.parse(ts); return isNaN(p) ? null : p / 1000; };
+    const yById = new Map();
+    if (yStatus && Array.isArray(yStatus.drivers)) yStatus.drivers.forEach(y => { if (y.id) yById.set(y.id, y); });
+    const haveY = !!yStatus;
+
+    const B = { course: [], ligne: [], surv: [], nonpl: [], hors: [] };
+    fleet.forEach(ch => {
+      const info = caById.get(ch.id) || null;
+      const caState = info ? info.state : null;
+      const programme = info ? info.programme : false;
+      const ca = info ? info.ca : 0;
+      const actif = info ? info.actif : false;
+      let ystat = null, idleMin = 0, idle = false;
+      if (haveY) {
+        const y = ch.yangoDriverId ? yById.get(ch.yangoDriverId) : null;
+        ystat = y ? y.status : 'offline';
+        if (y && y.status === 'free' && y.statusTs) { const e = toEpoch(y.statusTs); if (e) { idleMin = Math.max(0, Math.floor((now - e) / 60)); idle = idleMin >= 10; } }
+      }
+      const online = ystat === 'free' || ystat === 'busy' || ystat === 'in_order';
+      const reasons = [];
+      if (caState === 'faible') reasons.push('ca_faible'); else if (caState === 'modere') reasons.push('ca_modere');
+      if (ystat === 'busy') reasons.push('occupe');
+      if (idle) reasons.push('idle');
+      const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, programme, reasons, idleMin };
+      const survByCa = (caState === 'faible' || caState === 'modere');
+      const isSurv = haveY ? (online && (survByCa || ystat === 'busy' || idle)) : survByCa;
+      const isNonpl = !programme && (haveY ? online : actif);
+      if (isSurv) B.surv.push(entry);
+      else if (isNonpl) B.nonpl.push(entry);
+      else if (haveY ? ystat === 'in_order' : actif) B.course.push(entry);
+      else if (haveY && ystat === 'free') B.ligne.push(entry);
+      else B.hors.push(entry);
+    });
+
+    const segments = this._fleetSegDef().map(s => ({ ...s, count: B[s.key].length, drivers: B[s.key] }));
+    return { segments, total: fleet.length, haveY };
+  },
+
+  _fleetDonutSvg(segments, total) {
+    const R = 76, C = 2 * Math.PI * R, GAP = 7, SW = 20;
+    const active = segments.filter(s => s.count > 0);
+    if (!total || !active.length) {
+      return `<circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--border-color)" stroke-width="${SW}"></circle>`;
+    }
+    let cum = 0;
+    return segments.map((s, i) => {
+      if (!s.count) return '';
+      const frac = s.count / total, len = frac * C, dash = Math.max(0.5, len - GAP);
+      const el = `<circle data-seg="${i}" cx="100" cy="100" r="${R}" fill="none" stroke="${s.color}" stroke-width="${SW}" stroke-linecap="round" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${(-cum).toFixed(2)}" class="fd-seg" onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)"></circle>`;
+      cum += len;
+      return el;
+    }).join('');
+  },
+
+  _fleetDonutInner(d, yStatus, loading) {
+    const { segments, total } = this._fleetBuckets(d, yStatus);
+    const svg = this._fleetDonutSvg(segments, total);
+    const caTxt = Utils.formatCurrency(d.caBrutJour);
+    const sub = `${this._isToday() ? "aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt))} · ${total} chauffeur${total > 1 ? 's' : ''}`;
+    const cards = segments.map((s, i) => {
+      const pct = total ? Math.round(s.count / total * 100) : 0;
+      const clickable = s.count > 0;
+      const handlers = clickable ? `onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
+      return `<div class="fd-c${clickable ? '' : ' fd-c-off'}" data-i="${i}" ${handlers}>
+        <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}</div>
+        <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span><span class="fd-c-pct">${pct}%</span></div>
+        <div class="fd-c-desc">${s.desc}</div>
+      </div>`;
+    }).join('');
+    const live = loading
+      ? `<span class="fd-live"><iconify-icon icon="solar:refresh-bold" class="fd-spin"></iconify-icon>Statut temps réel…</span>`
+      : `<span class="fd-live"><span class="fd-dot-live"></span>Temps réel</span>`;
+    return `<div class="fd-head"><div class="fd-title">Flotte en direct</div>${live}</div>
+      <div class="fd-donut-wrap">
+        <svg viewBox="0 0 200 200" class="fd-svg">${svg}</svg>
+        <div class="fd-center"><div class="fd-center-lbl">CA flotte</div><div class="fd-center-val" id="fleet-ca-center">${caTxt}</div><div class="fd-center-sub">${sub}</div></div>
+      </div>
+      <div class="fd-cards">${cards}</div>`;
+  },
+
+  _renderFleetDonut(d) {
+    const yStatus = this._fleetStatusCache ? this._fleetStatusCache.data : null;
+    const loading = this._isToday() && !this._fleetStatusCache;
+    return `<div class="d-card fd-card"><div id="fleet-donut">${this._fleetDonutInner(d, yStatus, loading)}</div></div>`;
+  },
+
+  _renderFleetDonutInto(d) {
+    const el = document.getElementById('fleet-donut');
+    if (!el) return;
+    const yStatus = this._fleetStatusCache ? this._fleetStatusCache.data : null;
+    el.replaceChildren();
+    el.insertAdjacentHTML('beforeend', this._fleetDonutInner(d, yStatus, false));
+    const ca = document.getElementById('fleet-ca-center');
+    if (ca && this._rtlData && this._rtlData.updateHero) ca.textContent = Utils.formatCurrency(this._rtlData.heroTotal);
+  },
+
+  async _loadFleetStatus(d, force) {
+    d = d || this._lastData;
+    if (!d) return;
+    if (!this._isToday()) return; // temps réel pertinent uniquement pour aujourd'hui
+    const now = Date.now();
+    if (!force && this._fleetStatusCache && (now - this._fleetStatusCache.ts < 60000)) {
+      this._renderFleetDonutInto(d);
+      return;
+    }
+    let data = null;
+    try {
+      const r = await Store.getFleetStatus();
+      if (r) data = r;
+    } catch (e) { console.warn('Fleet status error:', e.message); }
+    this._fleetStatusCache = { ts: now, data };
+    this._renderFleetDonutInto(d);
+  },
+
+  _fdHot(i, on) {
+    const root = document.getElementById('fleet-donut');
+    if (!root) return;
+    root.querySelectorAll('.fd-seg').forEach(el => {
+      const j = +el.getAttribute('data-seg');
+      if (j === i) { el.style.strokeWidth = on ? '27' : '20'; el.style.opacity = '1'; }
+      else el.style.opacity = on ? '0.35' : '1';
+    });
+    root.querySelectorAll('.fd-c').forEach(c => c.classList.toggle('hot', on && +c.getAttribute('data-i') === i));
+  },
+
+  _fleetCardClick(key) {
+    const d = this._lastData; if (!d) return;
+    const yStatus = this._fleetStatusCache ? this._fleetStatusCache.data : null;
+    const { segments } = this._fleetBuckets(d, yStatus);
+    const seg = segments.find(s => s.key === key); if (!seg) return;
+    const RSN = {
+      ca_faible: ['CA anormalement bas', '#FA896B', 'rgba(250,137,107,.14)'],
+      ca_modere: ['CA sous la moyenne', '#FFAE1F', 'rgba(255,174,31,.16)'],
+      occupe: ['Occupé sur Yango', '#635BFF', 'rgba(99,91,255,.13)'],
+      idle: ['En ligne sans course >10 min', '#EF4444', 'rgba(239,68,68,.13)'],
+    };
+    const rows = seg.drivers.length ? seg.drivers.map(it => {
+      const initial = (it.prenom || it.nom || '?').charAt(0).toUpperCase();
+      const badges = (it.reasons || []).map(r => { const m = RSN[r]; return m ? `<span style="display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${m[2]};color:${m[1]};">${m[0]}</span>` : ''; }).join('');
+      const extra = it.idleMin && (it.reasons || []).includes('idle') ? `<span style="font-size:11px;color:var(--text-muted);font-weight:600;">${it.idleMin} min</span>` : '';
+      const caTxt = (it.ca != null && it.ca > 0) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
+      const call = it.tel ? `<a href="tel:${Utils.escHtml(String(it.tel))}" title="Appeler" style="width:34px;height:34px;border-radius:9px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:phone-bold"></iconify-icon></a>` : '';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);">
+        <div style="width:36px;height:36px;border-radius:50%;background:${seg.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${Utils.escHtml(initial)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Utils.escHtml(((it.prenom || '') + ' ' + (it.nom || '')).trim() || 'Chauffeur')}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">${badges}${extra}</div>
+        </div>
+        ${caTxt}
+        ${call}
+      </div>`;
+    }).join('') : `<div style="padding:22px 4px;color:var(--text-muted);font-size:13px;">Aucun chauffeur dans cet état.</div>`;
+    const body = `<div style="max-height:60vh;overflow-y:auto;">${rows}</div>`;
+    Modal.open({ title: `${seg.label} · ${seg.drivers.length}`, body, size: 'md' });
   },
 
   _renderPlanningHeatmap(d) {
