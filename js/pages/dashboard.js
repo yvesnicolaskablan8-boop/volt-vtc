@@ -58,6 +58,7 @@ const DashboardPage = {
       if (_ps) _ps.innerHTML = this._renderPeriodPicker();
       this._bindPeriodSelector();
       this._loadFleetStatus(data);
+      this._initTaskStack();
       this._loadRecetteLive();
       if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
@@ -399,6 +400,7 @@ const DashboardPage = {
       this._loadCharts(data);
       this._bindPeriodSelector();
       this._loadFleetStatus(data);
+      this._initTaskStack();
       this._loadRecetteLive();
       this._startAutoRefresh();
     } catch (err) {
@@ -1473,6 +1475,25 @@ const DashboardPage = {
         .iw-sub{font-size:11.5px;color:var(--text-muted);font-weight:600;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         @media(max-width:1024px){ .iw-grid{grid-template-columns:repeat(2,1fr);} }
         @media(max-width:560px){ .iw-grid{grid-template-columns:1fr;} }
+        /* Tâches — pile de cartes morphable */
+        .ts-toggle{margin-left:auto;display:inline-flex;background:var(--bg-tertiary);border-radius:8px;padding:2px;gap:2px;}
+        .ts-tbtn{border:none;background:transparent;color:var(--text-muted);width:24px;height:22px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:13px;}
+        .ts-tbtn.ts-on{background:var(--bg-secondary);color:var(--iw-accent);box-shadow:0 1px 3px rgba(0,0,0,.15);}
+        .ts-body{position:relative;margin-top:12px;}
+        .ts-body.ts-stack{height:104px;touch-action:pan-y;}
+        .ts-body.ts-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+        .ts-body.ts-list{display:flex;flex-direction:column;gap:8px;}
+        .ts-c{background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:12px;padding:9px 11px;cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.3,1),opacity .3s ease;}
+        .ts-stack .ts-c{position:absolute;top:0;left:0;right:0;height:104px;box-sizing:border-box;}
+        .ts-grid .ts-c{overflow:hidden;}
+        .ts-c-top{display:flex;align-items:center;gap:6px;}
+        .ts-c-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+        .ts-c-ech{margin-left:auto;font-size:10px;font-weight:700;color:var(--text-muted);}
+        .ts-c-title{font-size:12.5px;font-weight:700;color:var(--text-primary);margin-top:7px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+        .ts-dots{display:flex;justify-content:center;gap:5px;margin-top:10px;}
+        .ts-dot{height:5px;width:5px;border-radius:99px;background:var(--text-muted);opacity:.35;border:none;cursor:pointer;padding:0;transition:all .2s;}
+        .ts-dot.on{width:14px;opacity:1;background:var(--iw-accent);}
+        .ts-empty{margin-top:16px;font-size:12px;color:var(--text-muted);font-weight:600;}
       </style>
 
       <!-- Row 0 : Flotte en direct (donut centralisé) -->
@@ -1996,7 +2017,7 @@ const DashboardPage = {
         ${this._renderRadialGauge(rsi || 0)}
         <div class="iw-sub" style="text-align:center;">${marge != null ? `${fmtK(marge)} F/mois` : 'RSI'}${recup > 0 && isFinite(recup) ? ` · récup. ${recup} mois` : ''}</div>
       </a>` : widget({ href: '#/rentabilite', accent: '#f97316', bg: 'rgba(249,115,22,.12)', icon: 'solar:chart-2-bold-duotone', label: 'Rentabilité', value: '—', sub: "Voir l'analyse →" })}
-      ${widget({ href: '#/taches', accent: '#5D87FF', bg: 'rgba(93,135,255,.12)', icon: 'solar:clipboard-list-bold-duotone', label: 'Tâches', value: `${taches}`, sub: tachesRetard > 0 ? `<span style="color:#EF4444;font-weight:700;">${tachesRetard} en retard</span>` : (taches > 0 ? 'en cours' : 'Rien en attente 🎉') })}
+      ${this._renderTaskStack(d)}
       ${widget({ href: '#/alertes', accent: alertAccent, bg: 'rgba(239,68,68,.10)', icon: 'solar:danger-triangle-bold-duotone', label: 'Alertes', value: `${totA}`, sub: totA > 0 ? `<span style="color:#EF4444;">${crit} crit.</span> · <span style="color:#E8930C;">${urg} urg.</span> · <span style="color:#0891b2;">${att} att.</span>` : 'Aucune ✓' })}
     </div>`;
   },
@@ -2010,6 +2031,98 @@ const DashboardPage = {
     const uid = 'g' + Math.random().toString(36).slice(2, 7);
     const arc = `M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`;
     return `<div class="iw-gauge"><svg viewBox="0 0 120 70"><defs><linearGradient id="${uid}" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f97316"></stop><stop offset="55%" stop-color="#ea580c"></stop><stop offset="100%" stop-color="#dc2626"></stop></linearGradient></defs><path d="${arc}" fill="none" stroke="var(--bg-tertiary)" stroke-width="${sw}" stroke-linecap="round"></path><path d="${arc}" fill="none" stroke="url(#${uid})" stroke-width="${sw}" stroke-linecap="round" pathLength="100" stroke-dasharray="100" class="iw-gauge-arc" style="--gauge-off:${off};"></path><text x="60" y="45" text-anchor="middle" font-size="18" font-weight="800" fill="#ea580c" style="letter-spacing:-.5px;">${Math.round(pct)}%</text><text x="12" y="67" font-size="8" font-weight="700" fill="var(--text-muted)">0%</text><text x="108" y="67" text-anchor="end" font-size="8" font-weight="700" fill="var(--text-muted)">100%</text></svg></div>`;
+  },
+
+  // ============ Tâches — pile de cartes morphable (stack / grille / liste) ============
+  // Recréé en vanilla d'après MorphingCardStack : bascule de disposition + navigation
+  // (glisser / points) sur la pile. Remplace le widget Tâches dans la grille.
+  _renderTaskStack(d) {
+    let tasks = [];
+    try {
+      const s = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : null;
+      const uid = s ? s.userId : ''; const admin = s && s.role === 'Administrateur';
+      const allT = Store.get('taches') || [];
+      tasks = (admin ? allT.filter(t => t.creePar === uid) : allT.filter(t => t.assigneA === uid))
+        .filter(t => t.statut !== 'terminee' && t.statut !== 'annulee')
+        .sort((a, b) => String(a.dateEcheance || '9999').localeCompare(String(b.dateEcheance || '9999')))
+        .slice(0, 6);
+    } catch (e) { }
+    const prioCol = { haute: '#EF4444', urgente: '#EF4444', normale: '#0891b2', basse: '#7C8FAC' };
+    const layout = this._tsLayoutMode || 'stack';
+    const head = `<div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></span><span class="iw-label">Tâches</span>
+      <div class="ts-toggle">
+        <button class="ts-tbtn${layout === 'stack' ? ' ts-on' : ''}" data-m="stack" title="Pile" onclick="DashboardPage._tsLayout('stack')"><iconify-icon icon="solar:layers-bold"></iconify-icon></button>
+        <button class="ts-tbtn${layout === 'grid' ? ' ts-on' : ''}" data-m="grid" title="Grille" onclick="DashboardPage._tsLayout('grid')"><iconify-icon icon="solar:widget-4-bold"></iconify-icon></button>
+        <button class="ts-tbtn${layout === 'list' ? ' ts-on' : ''}" data-m="list" title="Liste" onclick="DashboardPage._tsLayout('list')"><iconify-icon icon="solar:list-bold"></iconify-icon></button>
+      </div></div>`;
+    if (!tasks.length) {
+      return `<div class="iw" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">${head}<div class="ts-empty">Rien en attente 🎉</div></div>`;
+    }
+    this._tsCount = tasks.length;
+    if (this._tsActive == null || this._tsActive >= tasks.length) this._tsActive = 0;
+    const cards = tasks.map((t, i) => {
+      const c = prioCol[t.priorite] || '#0891b2';
+      const ech = t.dateEcheance ? Utils.formatDate(t.dateEcheance) : '';
+      return `<div class="ts-c" data-i="${i}"><div class="ts-c-top"><span class="ts-c-dot" style="background:${c};"></span><span class="ts-c-ech">${ech}</span></div><div class="ts-c-title">${Utils.escHtml(t.titre || 'Tâche')}</div></div>`;
+    }).join('');
+    const dots = tasks.map((_, i) => `<button class="ts-dot" onclick="DashboardPage._tsGoto(${i})" aria-label="Tâche ${i + 1}"></button>`).join('');
+    return `<div class="iw ts-card" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">${head}<div class="ts-body ts-${layout}" id="ts-body">${cards}</div><div class="ts-dots" id="ts-dots">${dots}</div></div>`;
+  },
+
+  _tsLayout(m) { this._tsLayoutMode = m; this._tsRender(); },
+  _tsGoto(i) { this._tsActive = i; this._tsRender(); },
+  _tsCycle(dir) { const n = this._tsCount || 1; this._tsActive = (((this._tsActive || 0) + dir) % n + n) % n; this._tsRender(); },
+
+  _tsRender() {
+    const body = document.getElementById('ts-body'); if (!body) return;
+    const layout = this._tsLayoutMode || 'stack';
+    body.className = 'ts-body ts-' + layout;
+    const cards = Array.from(body.querySelectorAll('.ts-c')); const n = cards.length;
+    const active = this._tsActive || 0;
+    if (layout === 'stack') {
+      cards.forEach((c, i) => {
+        const pos = (i - active + n) % n; const show = pos < 3;
+        c.style.transform = `translate(${pos * 7}px, ${pos * 9}px) rotate(${pos === 0 ? 0 : (pos % 2 ? 2.5 : -2.5)}deg) scale(${1 - pos * 0.05})`;
+        c.style.zIndex = String(n - pos); c.style.opacity = show ? (pos === 0 ? '1' : '0.6') : '0'; c.style.pointerEvents = pos === 0 ? 'auto' : 'none';
+      });
+    } else {
+      cards.forEach(c => { c.style.transform = ''; c.style.zIndex = ''; c.style.opacity = ''; c.style.pointerEvents = ''; });
+    }
+    const dotsEl = document.getElementById('ts-dots'); if (dotsEl) dotsEl.style.display = layout === 'stack' ? 'flex' : 'none';
+    document.querySelectorAll('.ts-dot').forEach((dd, i) => dd.classList.toggle('on', i === active));
+    document.querySelectorAll('.ts-tbtn').forEach(b => b.classList.toggle('ts-on', b.getAttribute('data-m') === layout));
+  },
+
+  _initTaskStack() {
+    this._tsRender();
+    const body = document.getElementById('ts-body'); if (!body || body._tsBound) return; body._tsBound = true;
+    let sx = null, dx = 0, drag = false, topEl = null;
+    body.addEventListener('pointerdown', (e) => {
+      this._tsDragged = false; // chaque nouvelle interaction repart propre (sinon un swipe précédent avale le tap suivant)
+      if ((this._tsLayoutMode || 'stack') !== 'stack') return;
+      topEl = e.target.closest('.ts-c'); if (!topEl || topEl.style.pointerEvents === 'none') { topEl = null; return; }
+      sx = e.clientX; dx = 0; drag = false;
+      try { topEl.setPointerCapture(e.pointerId); } catch (_) { }
+    });
+    body.addEventListener('pointermove', (e) => {
+      if (sx == null || !topEl) return;
+      dx = e.clientX - sx; if (Math.abs(dx) > 4) drag = true;
+      topEl.style.transition = 'none';
+      topEl.style.transform = `translate(${dx}px, 0) rotate(${(dx * 0.03).toFixed(2)}deg)`;
+    });
+    const end = () => {
+      if (sx == null) return;
+      const moved = dx; sx = null;
+      if (topEl) topEl.style.transition = '';
+      if (drag) { this._tsDragged = true; if (Math.abs(moved) > 40) this._tsCycle(moved < 0 ? 1 : -1); else this._tsRender(); }
+      topEl = null; drag = false;
+    };
+    body.addEventListener('pointerup', end);
+    body.addEventListener('pointercancel', end);
+    body.addEventListener('click', (e) => {
+      if (this._tsDragged) { this._tsDragged = false; return; }
+      if (e.target.closest('.ts-c')) location.hash = '#/taches';
+    });
   },
 
   // ============ Flotte en direct (donut centralisé) ============
