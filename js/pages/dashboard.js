@@ -7,6 +7,7 @@ const DashboardPage = {
   _lastData: null,
   _selectedPeriod: null, // null = today/current month
   _monthView: false, // false = jour, true = mois entier
+  _recetteGran: 'semaine', // granularité du widget « Recette encaissée » : jour | semaine | mois
 
   render() {
     const container = document.getElementById('page-content');
@@ -518,6 +519,24 @@ const DashboardPage = {
       });
     }
 
+    // Recette encaissée par jour (8 derniers jours) et par mois (8 derniers mois)
+    // — pour le filtre de granularité du widget « Recette encaissée ».
+    const sumVerse = (list) => list.filter(v => v.statut !== 'supprime').reduce((s, v) => s + (v.montantVerse || 0), 0);
+    const dailyPayments = [];
+    for (let dd = 7; dd >= 0; dd--) {
+      const day = new Date(now); day.setHours(0, 0, 0, 0); day.setDate(day.getDate() - dd);
+      const next = new Date(day); next.setDate(next.getDate() + 1);
+      const dayVers = versements.filter(v => { const x = new Date(v.date); return x >= day && x < next; });
+      dailyPayments.push({ label: `${day.getDate()}/${day.getMonth() + 1}`, verse: sumVerse(dayVers) });
+    }
+    const monthlyPayments = [];
+    for (let mm = 7; mm >= 0; mm--) {
+      const mStart = new Date(now.getFullYear(), now.getMonth() - mm, 1);
+      const mEnd = new Date(now.getFullYear(), now.getMonth() - mm + 1, 1);
+      const mVers = versements.filter(v => { const x = new Date(v.date); return x >= mStart && x < mEnd; });
+      monthlyPayments.push({ label: Utils.getMonthShort(mStart.getMonth()), verse: sumVerse(mVers) });
+    }
+
     // Courses by type (from local courses collection, if any)
     const monthCourses = courses.filter(c => matchesPeriod(c.dateHeure) && c.statut === 'terminee');
     const coursesByType = {};
@@ -960,7 +979,7 @@ const DashboardPage = {
       totalChauffeurs, activeCount, suspendusCount, inactifsCount, programmesCount,
       vehiclesActifs, vehiclesEV, vehiclesThermique,
       monthCourses: monthCourses.length,
-      monthlyRevenue, weeklyPayments,
+      monthlyRevenue, weeklyPayments, dailyPayments, monthlyPayments,
       coursesByType, typeLabels, vehicleProfit,
       recentVersements, chauffeurs, vehiculesTotal: vehicules.length,
       maintenanceAlerts, unpaidItems, totalUnpaid, totalPenalites,
@@ -1260,8 +1279,12 @@ const DashboardPage = {
         .mini-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
         .mini-title { display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); }
         .mini-dot { width:8px; height:8px; border-radius:50%; background:#13DEB9; animation:miniPulse 1.6s infinite; }
-        .mini-val { font-size:17px; font-weight:800; color:var(--text-primary); opacity:.55; min-height:22px; transition:opacity .3s; }
+        .mini-val { font-size:17px; font-weight:800; color:var(--text-primary); opacity:.55; min-height:22px; transition:opacity .3s; white-space:nowrap; }
         .mini-chart:hover .mini-val { opacity:1; }
+        .mini-gran { display:flex; gap:4px; margin:0 0 12px; }
+        .mini-gran-btn { border:none; background:var(--bg-tertiary); color:var(--text-muted); font-size:11px; font-weight:700; padding:4px 11px; border-radius:20px; cursor:pointer; transition:all .15s; }
+        .mini-gran-btn:hover { color:var(--text-primary); }
+        .mini-gran-btn.is-active { background:var(--pilote-blue); color:#fff; }
         .mini-bars { display:flex; align-items:flex-end; gap:8px; height:100px; }
         .mini-col { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
         .mini-bar { width:100%; border-radius:99px; background:#13DEB9; opacity:.32; transform-origin:bottom; transition:all .3s ease-out; cursor:pointer; }
@@ -1828,6 +1851,17 @@ const DashboardPage = {
     if (val) val.textContent = cont.dataset.total || '';
   },
 
+  // Filtre de granularité du widget « Recette encaissée » (jour / semaine / mois).
+  _setRecetteGran(g) {
+    if (!['jour', 'semaine', 'mois'].includes(g)) return;
+    this._recetteGran = g;
+    if (this._lastData) this._renderRecetteInto(this._lastData);
+  },
+  _renderRecetteInto(d) {
+    const host = document.querySelector('.fd-recette');
+    if (host) { host.replaceChildren(); host.insertAdjacentHTML('beforeend', this._fleetRecettePanel(d)); }
+  },
+
   // ============ Chauffeurs à surveiller ============
   // Combine deux signaux : CA « pas bon » (zone à surveiller : faible/modéré) et
   // chauffeurs qui se mettent en « occupé » sur Yango (statut busy, distinct d'une
@@ -2188,15 +2222,21 @@ const DashboardPage = {
     const paceIcon = d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold';
     const pace = `<div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${paceBg};color:${paceColor};align-self:flex-start;"><iconify-icon icon="${paceIcon}"></iconify-icon>${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% d'une journée type` : ''}</div>`;
     const bars = (() => {
-      const weeks = (d.weeklyPayments || []).slice(-8);
-      const maxV = Math.max(1, ...weeks.map(w => w.verse || 0));
-      const sumV = weeks.reduce((s, w) => s + (w.verse || 0), 0);
-      const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
-      const cols = weeks.map((w, i) => {
+      const gran = this._recetteGran || 'semaine';
+      const series = gran === 'jour' ? (d.dailyPayments || []) : gran === 'mois' ? (d.monthlyPayments || []) : (d.weeklyPayments || []);
+      const periods = series.slice(-8);
+      const unitLabel = gran === 'jour' ? '8 j.' : gran === 'mois' ? '8 mois' : '8 sem.';
+      const maxV = Math.max(1, ...periods.map(w => w.verse || 0));
+      const sumV = periods.reduce((s, w) => s + (w.verse || 0), 0);
+      // Montant intégral (pas d'abréviation k/M) : « 639 000 F ».
+      const fmt = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
+      const cols = periods.map((w, i) => {
         const h = Math.max(4, (w.verse || 0) / maxV * 82);
-        return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})"><div class="mini-tip">${fmt(w.verse || 0)} F</div><div class="mini-bar" data-fmt="${fmt(w.verse || 0)} F" style="height:${h.toFixed(1)}px;"></div><div class="mini-lbl">${Utils.escHtml(w.label || '')}</div></div>`;
+        return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})"><div class="mini-tip">${fmt(w.verse || 0)}</div><div class="mini-bar" data-fmt="${fmt(w.verse || 0)}" style="height:${h.toFixed(1)}px;"></div><div class="mini-lbl">${Utils.escHtml(w.label || '')}</div></div>`;
       }).join('');
-      return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)} F" onmouseleave="DashboardPage._miniLeave()"><div class="mini-head"><div class="mini-title"><span class="mini-dot"></span>Recette encaissée · 8 sem.</div><div class="mini-val" id="mini-value">${fmt(sumV)} F</div></div><div class="mini-bars">${cols}</div></div>`;
+      const gBtn = (key, label) => `<button type="button" class="mini-gran-btn${gran === key ? ' is-active' : ''}" onclick="event.stopPropagation();DashboardPage._setRecetteGran('${key}')">${label}</button>`;
+      const granBar = `<div class="mini-gran">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>`;
+      return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)}" onmouseleave="DashboardPage._miniLeave()"><div class="mini-head"><div class="mini-title"><span class="mini-dot"></span>Recette encaissée · ${unitLabel}</div><div class="mini-val" id="mini-value">${fmt(sumV)}</div></div>${granBar}<div class="mini-bars">${cols}</div></div>`;
     })();
     return `<div class="fd-recette-inner" onclick="DashboardPage._showActiviteDetail()">
       ${pace}
