@@ -1469,8 +1469,16 @@ const DashboardPage = {
         .iw-hero .iw-gauge{max-width:250px;margin-top:0;}
         .iw-hero-marge{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1;text-align:center;}
         .iw-hero-ctx{font-size:12px;color:var(--text-muted);font-weight:600;text-align:center;}
-        .iw-wide-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:1;}
-        .iw-wide-side{text-align:right;font-size:13px;font-weight:700;line-height:1.6;}
+        .iw-wide-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:1;flex-wrap:wrap;}
+        .iw-tres-main{text-decoration:none;display:block;}
+        .iw-tres-lbl{font-size:11px;color:var(--text-muted);font-weight:600;margin-top:4px;}
+        .iw-tres-chips{display:flex;gap:8px;}
+        .iw-chip{display:flex;flex-direction:column;align-items:flex-start;padding:8px 13px;border-radius:12px;text-decoration:none;transition:transform .12s ease,box-shadow .12s ease;}
+        .iw-chip:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.12);}
+        .iw-chip-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;opacity:.85;}
+        .iw-chip-val{font-size:16px;font-weight:800;margin-top:2px;}
+        .iw-chip-dette{background:rgba(217,144,0,.13);color:#D99000;}
+        .iw-chip-perte{background:rgba(217,88,59,.13);color:#D9583B;}
         .iw{display:flex;flex-direction:column;background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid var(--iw-accent);border-radius:16px;padding:15px 17px;text-decoration:none;color:inherit;transition:transform .15s ease,box-shadow .15s ease;}
         .iw.iw-plain{border:none;}
         .iw-gauge{width:100%;max-width:180px;margin:8px auto 0;}
@@ -2029,16 +2037,22 @@ const DashboardPage = {
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div>
         <div class="iw-hero-mid">${this._renderRadialGauge(rsi || 0, gc.rgb)}<div class="iw-hero-marge" style="color:${gc.rgb};">${marge != null ? `${fmtK(marge)} F/mois` : '—'}</div><div class="iw-hero-ctx">RSI ${rsi != null ? rsi : '—'}%${recup > 0 && isFinite(recup) ? ` · récup. ${recup} mois` : ''}</div></div>
       </a>`; })() : `<a href="#/rentabilite" class="iw iw-hero" style="--iw-accent:#f97316;--iw-bg:rgba(249,115,22,.12);"><div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div><div class="iw-hero-mid" style="color:var(--text-muted);font-weight:600;">Voir l'analyse →</div></a>`}
-      <a href="#/versements" class="iw iw-wide" style="--iw-accent:#02b3a9;--iw-bg:rgba(19,222,185,.12);">
+      <div class="iw iw-plain iw-wide" style="--iw-accent:#02b3a9;--iw-bg:rgba(19,222,185,.12);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon></span><span class="iw-label">Trésorerie</span></div>
-        <div class="iw-wide-row"><div class="iw-val" style="font-size:34px;color:#02b3a9;">${fmtK(verse)} F</div><div class="iw-wide-side"><div style="color:#D99000;">Dettes ${fmtK(dettes)}</div><div style="color:#D9583B;">Pertes ${fmtK(pertes)}</div></div></div>
-      </a>
-      ${this._renderTaskStack(d)}
-      <a href="#/alertes" class="iw iw-sm" style="--iw-accent:${alertAccent};--iw-bg:rgba(239,68,68,.10);">
+        <div class="iw-wide-row">
+          <a href="#/versements" class="iw-tres-main"><div class="iw-val" style="font-size:34px;color:#02b3a9;">${fmtK(verse)} F</div><div class="iw-tres-lbl">Versé ce mois</div></a>
+          <div class="iw-tres-chips">
+            <a href="#/versements" class="iw-chip iw-chip-dette"><span class="iw-chip-lbl">Dettes</span><span class="iw-chip-val">${fmtK(dettes)} F</span></a>
+            <a href="#/versements" class="iw-chip iw-chip-perte"><span class="iw-chip-lbl">Pertes</span><span class="iw-chip-val">${fmtK(pertes)} F</span></a>
+          </div>
+        </div>
+      </div>
+      <a href="#/alertes" class="iw iw-plain iw-med" style="--iw-accent:${alertAccent};--iw-bg:rgba(239,68,68,.10);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></span><span class="iw-label">Alertes</span></div>
         <div class="iw-val" style="color:${alertAccent};margin-top:auto;">${totA}</div>
-        <div class="iw-sub">${alertSub}</div>
+        <div class="iw-sub">${totA > 0 ? `<span style="color:#EF4444;">${crit} crit.</span> · <span style="color:#E8930C;">${urg} urg.</span> · <span style="color:#0891b2;">${att} att.</span>` : 'Aucune ✓'}</div>
       </a>
+      ${this._renderTaskStack(d)}
     </div>`;
   },
 
@@ -2089,7 +2103,7 @@ const DashboardPage = {
         <button class="ts-tbtn${layout === 'list' ? ' ts-on' : ''}" data-m="list" title="Liste" onclick="DashboardPage._tsLayout('list')"><iconify-icon icon="solar:list-bold"></iconify-icon></button>
       </div></div>`;
     if (!tasks.length) {
-      return `<div class="iw iw-med" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">${head}<div class="ts-empty">Rien en attente 🎉</div></div>`;
+      return `<div class="iw iw-plain iw-sm" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">${head}<div class="ts-empty">Rien en attente 🎉</div></div>`;
     }
     this._tsCount = tasks.length;
     if (this._tsActive == null || this._tsActive >= tasks.length) this._tsActive = 0;
@@ -2099,7 +2113,7 @@ const DashboardPage = {
       return `<div class="ts-c" data-i="${i}"><div class="ts-c-top"><span class="ts-c-dot" style="background:${c};"></span><span class="ts-c-ech">${ech}</span></div><div class="ts-c-title">${Utils.escHtml(t.titre || 'Tâche')}</div></div>`;
     }).join('');
     const dots = tasks.map((_, i) => `<button class="ts-dot" onclick="DashboardPage._tsGoto(${i})" aria-label="Tâche ${i + 1}"></button>`).join('');
-    return `<div class="iw ts-card iw-med" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">${head}<div class="ts-body ts-${layout}" id="ts-body">${cards}</div><div class="ts-dots" id="ts-dots">${dots}</div></div>`;
+    return `<div class="iw ts-card iw-plain iw-sm" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">${head}<div class="ts-body ts-${layout}" id="ts-body">${cards}</div><div class="ts-dots" id="ts-dots">${dots}</div></div>`;
   },
 
   _tsLayout(m) { this._tsLayoutMode = m; this._tsRender(); },
