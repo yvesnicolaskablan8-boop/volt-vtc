@@ -1487,7 +1487,10 @@ const DashboardPage = {
         .iw-med{grid-column:4/span 2;grid-row:2;}
         .iw-sm{grid-column:6/span 1;grid-row:2;}
         .iw-hero-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
-        .iw-hero .iw-gauge{max-width:250px;margin-top:0;}
+        .iw-hero .iw-gauge{max-width:172px;margin-top:0;}
+        .iw-gauge svg{width:100%;height:auto;display:block;}
+        @keyframes iwRingIn{from{opacity:0;}to{opacity:1;}}
+        .iw-ring-anim{animation:iwRingIn .6s ease-out both;}
         .iw-hero-marge{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1;text-align:center;}
         .iw-hero-ctx{font-size:12px;color:var(--text-muted);font-weight:600;text-align:center;}
         .iw-wide-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:1;flex-wrap:wrap;}
@@ -1507,8 +1510,6 @@ const DashboardPage = {
         .iw.iw-plain{border:none;}
         .iw-gauge{width:100%;max-width:180px;margin:8px auto 0;}
         .iw-gauge svg{width:100%;height:auto;display:block;overflow:visible;}
-        .iw-gauge-arc{animation:iwGauge 1.3s ease-out forwards;}
-        @keyframes iwGauge{from{stroke-dashoffset:100;}to{stroke-dashoffset:var(--gauge-off);}}
         .iw:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,0,0,.10);}
         .iw-top{display:flex;align-items:center;gap:9px;}
         .iw-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--iw-bg);color:var(--iw-accent);font-size:19px;flex-shrink:0;}
@@ -2060,7 +2061,7 @@ const DashboardPage = {
         const gc = this._gaugeColor(rsi || 0, marge);
         return `<a href="#/rentabilite" class="iw iw-plain iw-hero" style="--iw-accent:${gc.rgb};--iw-bg:${gc.soft};">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div>
-        <div class="iw-hero-mid">${this._renderRadialGauge(rsi || 0, gc.rgb)}<div class="iw-hero-marge" style="color:${gc.rgb};">${marge != null ? `${fmtK(marge)} F/mois` : '—'}</div><div class="iw-hero-ctx">RSI ${rsi != null ? rsi : '—'}%${recup > 0 && isFinite(recup) ? ` · récup. ${recup} mois` : ''}</div></div>
+        <div class="iw-hero-mid">${this._renderRadialGauge(rsi || 0, gc.rgb, 'RSI')}<div class="iw-hero-marge" style="color:${gc.rgb};">${marge != null ? `${fmtK(marge)} F/mois` : '—'}</div><div class="iw-hero-ctx">${recup > 0 && isFinite(recup) ? `récupération en ${recup} mois` : 'marge mensuelle nette'}</div></div>
       </a>`; })() : `<a href="#/rentabilite" class="iw iw-hero" style="--iw-accent:#f97316;--iw-bg:rgba(249,115,22,.12);"><div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div><div class="iw-hero-mid" style="color:var(--text-muted);font-weight:600;">Voir l'analyse →</div></a>`}
       <div class="iw iw-plain iw-wide" style="--iw-accent:#02b3a9;--iw-bg:rgba(19,222,185,.12);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon></span><span class="iw-label">Trésorerie</span></div>
@@ -2104,15 +2105,36 @@ const DashboardPage = {
     return { rgb: `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`, soft: `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, .12)` };
   },
 
-  // Jauge radiale animée (demi-cercle) — couleur santé dynamique, sans encadré ni
-  // labels 0/100 (elle se fond dans la carte). Recréée d'après AnimatedRadialChart.
-  _renderRadialGauge(pct, color) {
-    const R = 45, cx = 60, cy = 56, sw = 11;
-    const frac = Math.max(0, Math.min(1, (pct || 0) / 100));
-    const off = (100 - frac * 100).toFixed(1);
-    const arc = `M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`;
-    const col = color || '#f97316';
-    return `<div class="iw-gauge"><svg viewBox="0 0 120 62"><path d="${arc}" fill="none" stroke="var(--bg-tertiary)" stroke-width="${sw}" stroke-linecap="round"></path><path d="${arc}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" pathLength="100" stroke-dasharray="100" class="iw-gauge-arc" style="--gauge-off:${off};"></path><text x="60" y="47" text-anchor="middle" font-size="20" font-weight="800" fill="${col}" style="letter-spacing:-.5px;">${Math.round(pct)}%</text></svg></div>`;
+  // Jauge radiale (anneau circulaire complet) — gap + coins arrondis + graduations
+  // + dégradé, valeur et label au centre. Couleur santé dynamique. Recréée
+  // d'après le composant Gauge (gaugeType « full », equal=false).
+  _renderRadialGauge(pct, color, label) {
+    const p = Math.max(0, Math.min(100, Math.round(pct || 0)));
+    const cs = 100, sw = 9, R = cs / 2 - sw / 2, cx = cs / 2, cy = cs / 2;
+    const C = 2 * Math.PI * R, px = C / 100;
+    const gap = 4; // gap (en % du cercle) entre l'arc primaire et l'arc secondaire
+    const col = color || '#22c55e';
+    const primeDash = `${Math.max(0, p * px).toFixed(2)} ${C.toFixed(2)}`;
+    const secDash = `${Math.max(0, (100 - p - gap * 2) * px).toFixed(2)} ${C.toFixed(2)}`;
+    const secRotate = (270 - gap * 3.6).toFixed(2);
+    // Graduations (8) à l'intérieur de l'anneau.
+    let ticks = '';
+    const tc = 8, tr = R - sw / 2 - 1.5, tl = 5;
+    for (let i = 0; i < tc; i++) {
+      const a = (i / tc) * 360 - 90, rad = a * Math.PI / 180;
+      const x1 = (cx + (tr - tl) * Math.cos(rad)).toFixed(1), y1 = (cy + (tr - tl) * Math.sin(rad)).toFixed(1);
+      const x2 = (cx + tr * Math.cos(rad)).toFixed(1), y2 = (cy + tr * Math.sin(rad)).toFixed(1);
+      ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--text-muted)" stroke-width="1" opacity="0.28"></line>`;
+    }
+    const uid = 'gg' + Math.round(p) + '_' + Math.round(Math.random() * 1e4);
+    return `<div class="iw-gauge"><svg viewBox="0 0 ${cs} ${cs}" style="overflow:visible;">
+      <defs><linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${col}" stop-opacity="1"></stop><stop offset="100%" stop-color="${col}" stop-opacity="0.35"></stop></linearGradient></defs>
+      ${ticks}
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--bg-tertiary)" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${secDash}" style="transform:rotate(${secRotate}deg) scaleY(-1);transform-origin:50% 50%;"></circle>
+      <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="url(#${uid})" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${primeDash}" class="iw-ring-anim" style="transform:rotate(-90deg);transform-origin:50% 50%;"></circle>
+      <text x="${cx}" y="${cy - 1}" text-anchor="middle" dominant-baseline="middle" font-size="24" font-weight="800" fill="${col}" style="letter-spacing:-.5px;">${p}%</text>
+      ${label ? `<text x="${cx}" y="${cy + 15}" text-anchor="middle" dominant-baseline="middle" font-size="8.5" font-weight="600" fill="var(--text-muted)">${Utils.escHtml(label)}</text>` : ''}
+    </svg></div>`;
   },
 
   // ============ Flotte en direct (donut centralisé) ============
