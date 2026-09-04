@@ -22,7 +22,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 401;
+    var APP_VERSION = 402;
     var stored = parseInt(localStorage.getItem('pilote_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_app_version', APP_VERSION);
@@ -67,13 +67,13 @@
   <!-- Leaflet, Chart.js, jsPDF: loaded on demand via LazyLibs -->
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/variables.css?v=555">
-  <link rel="stylesheet" href="css/base.css?v=555">
-  <link rel="stylesheet" href="css/layout.css?v=555">
-  <link rel="stylesheet" href="css/components.css?v=555">
-  <link rel="stylesheet" href="css/charts.css?v=555">
-  <link rel="stylesheet" href="css/animations.css?v=555">
-  <link rel="stylesheet" href="css/responsive.css?v=555">
+  <link rel="stylesheet" href="css/variables.css?v=556">
+  <link rel="stylesheet" href="css/base.css?v=556">
+  <link rel="stylesheet" href="css/layout.css?v=556">
+  <link rel="stylesheet" href="css/components.css?v=556">
+  <link rel="stylesheet" href="css/charts.css?v=556">
+  <link rel="stylesheet" href="css/animations.css?v=556">
+  <link rel="stylesheet" href="css/responsive.css?v=556">
 
   <!-- Detect password recovery BEFORE Supabase processes the hash -->
   <script>
@@ -458,15 +458,14 @@
             <span class="current">Tableau de bord</span>
           </div>
         </div>
-        <!-- Dock de navigation (tuiles claires, magnify voisins CSS) — centré dans le header -->
-        <nav class="hdk" id="hdock" aria-label="Navigation rapide">
-          <ul class="hdk-list">
-            <li class="hdk-i" onmousemove="Header._hdockMove(event)" onmouseleave="Header._hdockReset()"><a href="#/planning" class="hdk-a" data-route="/planning"><span class="hdk-tip">Planning</span><iconify-icon icon="solar:calendar-bold" style="color:#5D87FF;"></iconify-icon></a></li>
-            <li class="hdk-i" onmousemove="Header._hdockMove(event)" onmouseleave="Header._hdockReset()"><a href="#/suivi-vehicules" class="hdk-a" data-route="/suivi-vehicules"><span class="hdk-tip">Suivi véhicules</span><iconify-icon icon="solar:map-point-bold" style="color:#06b6d4;"></iconify-icon></a></li>
-            <li class="hdk-i" onmousemove="Header._hdockMove(event)" onmouseleave="Header._hdockReset()"><a href="#/chauffeurs" class="hdk-a" data-route="/chauffeurs"><span class="hdk-tip">Chauffeurs</span><iconify-icon icon="solar:users-group-rounded-bold" style="color:#8b5cf6;"></iconify-icon></a></li>
-            <li class="hdk-i" onmousemove="Header._hdockMove(event)" onmouseleave="Header._hdockReset()"><a href="#/vehicules" class="hdk-a" data-route="/vehicules"><span class="hdk-tip">Véhicules</span><iconify-icon icon="solar:wheel-bold" style="color:#f97316;"></iconify-icon></a></li>
-            <li class="hdk-i" onmousemove="Header._hdockMove(event)" onmouseleave="Header._hdockReset()"><a href="#/versements" class="hdk-a" data-route="/versements"><span class="hdk-tip">Versements</span><iconify-icon icon="solar:wallet-money-bold" style="color:#22c55e;"></iconify-icon></a></li>
-          </ul>
+        <!-- Dock de navigation (onglets glissants) — centré dans le header -->
+        <nav class="stab" id="hdock" aria-label="Navigation rapide">
+          <span class="stab-cursor" aria-hidden="true"></span>
+          <a href="#/planning" class="stab-tab" data-route="/planning">Planning</a>
+          <a href="#/suivi-vehicules" class="stab-tab" data-route="/suivi-vehicules">Suivi</a>
+          <a href="#/chauffeurs" class="stab-tab" data-route="/chauffeurs">Chauffeurs</a>
+          <a href="#/vehicules" class="stab-tab" data-route="/vehicules">Véhicules</a>
+          <a href="#/versements" class="stab-tab" data-route="/versements">Versements</a>
         </nav>
         <div class="header-right">
           <div class="header-search">
@@ -590,46 +589,46 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
 
   <!-- App JS -->
-  <script src="js/supabase-config.js?v=555"></script>
-  <script src="js/store.js?v=555"></script>
-  <script src="js/utils.js?v=555"></script>
-  <script src="js/demo-data.js?v=555"></script>
-  <script src="js/auth.js?v=555"></script>
-  <script src="js/components/toast.js?v=555"></script>
-  <script src="js/components/modal.js?v=555"></script>
-  <script src="js/components/sidebar.js?v=555"></script>
-  <script src="js/components/header.js?v=555"></script>
-  <script src="js/components/table.js?v=555"></script>
-  <script src="js/components/form-builder.js?v=555"></script>
-  <script src="js/pages/dashboard.js?v=555"></script>
-  <script src="js/pages/chauffeurs.js?v=555"></script>
-  <script src="js/pages/vehicules.js?v=555"></script>
-  <script src="js/pages/versements.js?v=555"></script>
-  <script src="js/pages/bonus.js?v=555"></script>
-  <script src="js/pages/simulateur.js?v=555"></script>
-  <script src="js/pages/rentabilite.js?v=555"></script>
-  <script src="js/pages/suivi-vehicules.js?v=555"></script>
-  <script src="js/pages/controle-conduite.js?v=555"></script>
-  <script src="js/pages/rapports.js?v=555"></script>
-  <script src="js/pages/comptabilite.js?v=555"></script>
-  <script src="js/pages/planning.js?v=555"></script>
-  <script src="js/pages/alertes.js?v=555"></script>
-  <script src="js/pages/parametres.js?v=555"></script>
-  <script src="js/pages/yango.js?v=555"></script>
-  <script src="js/pages/messagerie.js?v=555"></script>
-  <script src="js/pages/garage.js?v=555"></script>
-  <script src="js/pages/incidents.js?v=555"></script>
-  <script src="js/pages/contraventions.js?v=555"></script>
-  <script src="js/pages/depenses.js?v=555"></script>
-  <script src="js/pages/activite.js?v=555"></script>
+  <script src="js/supabase-config.js?v=556"></script>
+  <script src="js/store.js?v=556"></script>
+  <script src="js/utils.js?v=556"></script>
+  <script src="js/demo-data.js?v=556"></script>
+  <script src="js/auth.js?v=556"></script>
+  <script src="js/components/toast.js?v=556"></script>
+  <script src="js/components/modal.js?v=556"></script>
+  <script src="js/components/sidebar.js?v=556"></script>
+  <script src="js/components/header.js?v=556"></script>
+  <script src="js/components/table.js?v=556"></script>
+  <script src="js/components/form-builder.js?v=556"></script>
+  <script src="js/pages/dashboard.js?v=556"></script>
+  <script src="js/pages/chauffeurs.js?v=556"></script>
+  <script src="js/pages/vehicules.js?v=556"></script>
+  <script src="js/pages/versements.js?v=556"></script>
+  <script src="js/pages/bonus.js?v=556"></script>
+  <script src="js/pages/simulateur.js?v=556"></script>
+  <script src="js/pages/rentabilite.js?v=556"></script>
+  <script src="js/pages/suivi-vehicules.js?v=556"></script>
+  <script src="js/pages/controle-conduite.js?v=556"></script>
+  <script src="js/pages/rapports.js?v=556"></script>
+  <script src="js/pages/comptabilite.js?v=556"></script>
+  <script src="js/pages/planning.js?v=556"></script>
+  <script src="js/pages/alertes.js?v=556"></script>
+  <script src="js/pages/parametres.js?v=556"></script>
+  <script src="js/pages/yango.js?v=556"></script>
+  <script src="js/pages/messagerie.js?v=556"></script>
+  <script src="js/pages/garage.js?v=556"></script>
+  <script src="js/pages/incidents.js?v=556"></script>
+  <script src="js/pages/contraventions.js?v=556"></script>
+  <script src="js/pages/depenses.js?v=556"></script>
+  <script src="js/pages/activite.js?v=556"></script>
 
-  <script src="js/pages/notifications-admin.js?v=555"></script>
-  <script src="js/pages/taches.js?v=555"></script>
-  <script src="js/pages/mon-compte.js?v=555"></script>
-  <script src="js/pages/classement.js?v=555"></script>
-  <script src="js/pages/menu.js?v=555"></script>
-  <script src="js/components/bottom-nav.js?v=555"></script>
-  <script src="js/router.js?v=555"></script>
-  <script src="js/app.js?v=555"></script>
+  <script src="js/pages/notifications-admin.js?v=556"></script>
+  <script src="js/pages/taches.js?v=556"></script>
+  <script src="js/pages/mon-compte.js?v=556"></script>
+  <script src="js/pages/classement.js?v=556"></script>
+  <script src="js/pages/menu.js?v=556"></script>
+  <script src="js/components/bottom-nav.js?v=556"></script>
+  <script src="js/router.js?v=556"></script>
+  <script src="js/app.js?v=556"></script>
 </body>
 </html>

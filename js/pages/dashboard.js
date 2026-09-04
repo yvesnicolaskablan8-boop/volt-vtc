@@ -2271,6 +2271,8 @@ const DashboardPage = {
       const extra = it.idleMin && (it.reasons || []).includes('idle') ? `<span style="font-size:11px;color:var(--text-muted);font-weight:600;">${it.idleMin} min</span>` : '';
       const caTxt = (it.ca != null && it.ca > 0) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
       const call = it.tel ? `<a href="tel:${Utils.escHtml(String(it.tel))}" title="Appeler" style="width:34px;height:34px;border-radius:9px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:phone-bold"></iconify-icon></a>` : '';
+      // Pour les non planifiés : bouton pour les inscrire au planning du jour.
+      const planif = key === 'nonpl' ? `<button onclick="DashboardPage._planifierNonpl('${Utils.escHtml(String(it.id))}')" title="Planifier aujourd'hui" style="height:34px;padding:0 12px;border-radius:9px;border:none;background:rgba(93,135,255,.14);color:#5D87FF;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;white-space:nowrap;"><iconify-icon icon="solar:calendar-add-bold"></iconify-icon>Planifier</button>` : '';
       return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);">
         <div style="width:36px;height:36px;border-radius:50%;background:${seg.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${Utils.escHtml(initial)}</div>
         <div style="flex:1;min-width:0;">
@@ -2278,11 +2280,41 @@ const DashboardPage = {
           <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">${badges}${extra}</div>
         </div>
         ${caTxt}
+        ${planif}
         ${call}
       </div>`;
     }).join('') : `<div style="padding:22px 4px;color:var(--text-muted);font-size:13px;">Aucun chauffeur dans cet état.</div>`;
     const body = `<div style="max-height:60vh;overflow-y:auto;">${rows}</div>`;
     Modal.open({ title: `${seg.label} · ${seg.drivers.length}`, body, size: 'md' });
+  },
+
+  // Inscrit un chauffeur « non planifié » au planning du jour affiché (créneau
+  // journée par défaut), puis rafraîchit la flotte et la liste ouverte.
+  _planifierNonpl(id) {
+    const d = this._lastData; if (!d || !id) return;
+    const date = this._selectedPeriod || new Date().toISOString().split('T')[0];
+    const planning = (typeof Store !== 'undefined' && Store.get) ? (Store.get('planning') || []) : [];
+    const already = planning.some(p => p.chauffeurId === id && p.date === date);
+    if (!already) {
+      Store.add('planning', {
+        id: Utils.generateId('PLN'),
+        chauffeurId: id,
+        date,
+        typeCreneaux: 'journee',
+        heureDebut: '06:00',
+        heureFin: '00:00',
+        notes: '',
+        dateCreation: new Date().toISOString()
+      });
+    }
+    // Reflète immédiatement le passage « planifié » côté données locales pour que
+    // le chauffeur sorte du bucket « Non planifiés » et compte dans le CA planifié.
+    const info = (d.chauffeursActifsJour || []).find(c => c.id === id);
+    if (info) info.programme = true;
+    else { if (!Array.isArray(d.chauffeursActifsJour)) d.chauffeursActifsJour = []; d.chauffeursActifsJour.push({ id, programme: true, ca: 0, actif: false, state: null }); }
+    if (typeof Toast !== 'undefined') Toast.success(already ? 'Déjà planifié aujourd\'hui' : 'Chauffeur planifié');
+    this._renderFleetDonutInto(d);
+    this._fleetCardClick('nonpl');
   },
 
   _renderPlanningHeatmap(d) {

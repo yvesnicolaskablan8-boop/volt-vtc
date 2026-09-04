@@ -16,37 +16,20 @@ const Header = {
     this._initHDock();
   },
 
-  // Dock de navigation : la loupe (survolé ×1.5, voisins ×1.33/×1.17) est gérée
-  // en CSS (sélecteurs de voisins). Ici : état actif + ajustement fin au curseur.
+  // Dock de navigation (onglets glissants) : un curseur suit le survol et se pose
+  // sur l'onglet de la page courante (masqué si aucune de ces pages n'est active).
   _initHDock() {
-    const dock = document.getElementById('hdock');
-    if (!dock) return;
-    const setActive = () => {
-      const h = (location.hash || '').replace(/^#/, '');
-      dock.querySelectorAll('.hdk-a').forEach(a => {
-        const route = a.getAttribute('data-route') || '';
-        a.setAttribute('data-active', (route && (h === route || h.startsWith(route + '/'))) ? '1' : '0');
-      });
-    };
-    setActive();
-    this._on('hdockHash', window, 'hashchange', setActive);
-  },
-
-  // Ajustement fin (± quelques px) de la taille des voisins selon la position du
-  // curseur dans la tuile survolée — appelé en inline (onmousemove) sur chaque <li>.
-  _hdockMove(e) {
-    const dock = document.getElementById('hdock'); if (!dock) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    const d = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-    const max = 5; const off = Math.floor(d * 2 * max - max);
-    dock.style.setProperty('--dock-offset-left', (off * -1) + 'px');
-    dock.style.setProperty('--dock-offset-right', off + 'px');
-  },
-
-  _hdockReset() {
-    const dock = document.getElementById('hdock'); if (!dock) return;
-    dock.style.setProperty('--dock-offset-left', '0px');
-    dock.style.setProperty('--dock-offset-right', '0px');
+    const nav = document.getElementById('hdock'); if (!nav) return;
+    const cursor = nav.querySelector('.stab-cursor');
+    const tabs = Array.from(nav.querySelectorAll('.stab-tab'));
+    if (!cursor || !tabs.length) return;
+    const move = (t) => { if (!t) return; cursor.style.left = t.offsetLeft + 'px'; cursor.style.width = t.offsetWidth + 'px'; cursor.style.opacity = '1'; };
+    const activeTab = () => { const h = (location.hash || '').replace(/^#/, ''); return tabs.find(t => { const r = t.getAttribute('data-route'); return r && (h === r || h.startsWith(r + '/')); }); };
+    const rest = () => { const a = activeTab(); if (a) move(a); else cursor.style.opacity = '0'; };
+    tabs.forEach((t, i) => this._on('stabHover' + i, t, 'mouseenter', () => move(t)));
+    this._on('stabLeave', nav, 'mouseleave', rest);
+    this._on('stabHash', window, 'hashchange', rest);
+    requestAnimationFrame(rest);
   },
 
   // Widgets d'accès rapide (obsolète — remplacés par le dock ; conservé sans effet)
