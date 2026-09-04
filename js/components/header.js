@@ -13,10 +13,43 @@ const Header = {
     this._initSearch();
     this._renderUserInfo();
     this._initUserDropdown();
-    this._initWidgets();
+    this._initHDock();
   },
 
-  // Widgets d'accès rapide dans le header (Rentabilité / Trésorerie / Tâches / Alertes)
+  // Dock de navigation rapide (façon macOS) : magnify au survol + état actif.
+  _initHDock() {
+    const dock = document.getElementById('hdock');
+    if (!dock) return;
+    const tiles = Array.from(dock.querySelectorAll('.hdock-tile'));
+    const BASE = 38, PEAK = 54, RANGE = 130;
+    // Centres AU REPOS (mesurés quand toutes les tuiles sont à BASE) : évite la
+    // dérive de la vague si on lit les positions déjà agrandies.
+    let baseCenters = tiles.map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; });
+    const apply = (mx) => {
+      tiles.forEach((el, i) => {
+        const s = Math.max(0, 1 - Math.abs(mx - baseCenters[i]) / RANGE);
+        const size = BASE + (PEAK - BASE) * s;
+        el.style.width = el.style.height = size + 'px';
+        el.style.fontSize = (size * 0.5) + 'px';
+      });
+    };
+    // Re-mesure au repos à chaque entrée (les tuiles sont revenues à BASE) : suit
+    // les changements de mise en page / chargement d'icônes.
+    this._on('hdockEnter', dock, 'mouseenter', () => { baseCenters = tiles.map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; }); });
+    this._on('hdockMove', dock, 'mousemove', (e) => apply(e.clientX));
+    this._on('hdockLeave', dock, 'mouseleave', () => apply(Infinity));
+    const setActive = () => {
+      const h = (location.hash || '').replace(/^#/, '');
+      dock.querySelectorAll('.hdock-item').forEach(a => {
+        const route = a.getAttribute('data-route') || '';
+        a.classList.toggle('active', route && (h === route || h.startsWith(route + '/')));
+      });
+    };
+    setActive();
+    this._on('hdockHash', window, 'hashchange', setActive);
+  },
+
+  // Widgets d'accès rapide (obsolète — remplacés par le dock ; conservé sans effet)
   _initWidgets() {
     ['hw-rentab', 'hw-tres', 'hw-taches', 'hw-alertes'].forEach(id => {
       const el = document.getElementById(id);
@@ -41,6 +74,7 @@ const Header = {
   },
 
   _refreshWidgets() {
+    if (!document.getElementById('hw-taches-badge')) return; // widgets header retirés (dock)
     try {
       const fmtK = n => { n = Math.round(n || 0); const a = Math.abs(n); return a >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + 'M' : a >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n); };
       const s = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : null;
