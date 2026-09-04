@@ -195,7 +195,7 @@ const AnalyseVersementsPage = {
       const st = stMap[v.statut] || [v.statut || '—', 'muted'];
       const date = Utils.formatDate ? Utils.formatDate(String(v.date).slice(0, 10)) : String(v.date).slice(0, 10);
       const yango = (ch && ch.yangoDriverId && parkId)
-        ? ` <a href="https://fleet.yango.com/contractors/${encodeURIComponent(ch.yangoDriverId)}/details?park_id=${encodeURIComponent(parkId)}" target="_blank" rel="noopener" title="Ouvrir la page Yango (surveillance)" class="av-yango"><iconify-icon icon="solar:map-point-bold"></iconify-icon></a>`
+        ? ` <a href="https://fleet.yango.com/contractors/${encodeURIComponent(ch.yangoDriverId)}/details?park_id=${encodeURIComponent(parkId)}" target="_blank" rel="noopener" title="Ouvrir la page Yango (surveillance)" class="av-yango">YANGO</a>`
         : '';
       const tel = ch && ch.telephone ? ` <a href="tel:${Utils.escHtml(String(ch.telephone))}" title="Appeler" class="av-tel"><iconify-icon icon="solar:phone-bold"></iconify-icon></a>` : '';
       return `<tr>
@@ -319,9 +319,8 @@ const AnalyseVersementsPage = {
       .av-td-strong { font-weight:800; }
       .av-td-muted { color:var(--text-muted); }
       .av-name { font-weight:600; }
-      .av-tel, .av-yango { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; text-decoration:none; vertical-align:-5px; margin-left:3px; font-size:13px; }
-      .av-tel { background:rgba(19,222,185,.14); color:#0a9d78; }
-      .av-yango { background:rgba(99,91,255,.13); color:#635BFF; }
+      .av-tel { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; text-decoration:none; vertical-align:-5px; margin-left:3px; font-size:13px; background:rgba(19,222,185,.14); color:#0a9d78; }
+      .av-yango { display:inline-flex; align-items:center; justify-content:center; padding:2px 7px; border-radius:6px; text-decoration:none; vertical-align:-4px; margin-left:4px; font-size:10px; font-weight:800; font-style:italic; letter-spacing:.02em; background:#FC3F1D; color:#fff; }
       .av-badge { display:inline-flex; align-items:center; font-size:11px; font-weight:800; padding:3px 9px; border-radius:20px; }
       .av-badge.up { color:#0a9d78; background:rgba(19,222,185,.14); }
       .av-badge.down { color:#e0603a; background:rgba(250,137,107,.14); }

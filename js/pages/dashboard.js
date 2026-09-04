@@ -2322,7 +2322,7 @@ const DashboardPage = {
       const ch = chById.get(it.id);
       if (!ch || !ch.yangoDriverId || !parkId) return '';
       const url = `https://fleet.yango.com/contractors/${encodeURIComponent(ch.yangoDriverId)}/details?park_id=${encodeURIComponent(parkId)}`;
-      return `<a href="${url}" target="_blank" rel="noopener" title="Ouvrir la page Yango (surveillance)" style="width:34px;height:34px;border-radius:9px;background:rgba(99,91,255,.13);color:#635BFF;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:map-point-bold"></iconify-icon></a>`;
+      return `<a href="${url}" target="_blank" rel="noopener" title="Ouvrir la page Yango (surveillance)" style="height:34px;padding:0 13px;border-radius:9px;background:#FC3F1D;color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;font-weight:800;font-style:italic;font-size:12px;letter-spacing:.02em;">YANGO</a>`;
     };
     const rows = seg.drivers.length ? seg.drivers.map(it => {
       const initial = (it.prenom || it.nom || '?').charAt(0).toUpperCase();
