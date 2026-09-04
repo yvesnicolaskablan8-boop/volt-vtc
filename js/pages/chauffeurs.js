@@ -1320,6 +1320,16 @@ const ChauffeursPage = {
   },
 
   // CRUD operations
+  // Accepte soit l'ID contractor Yango, soit l'URL complète de la page Yango du
+  // chauffeur (fleet.yango.com/contractors/<id>/details?park_id=...) et en
+  // extrait l'ID. On ne stocke que l'ID (colonne yangoDriverId existante).
+  _extractYangoId(value) {
+    if (!value) return value;
+    const s = String(value).trim();
+    const m = s.match(/contractors\/([^/?#]+)/i);
+    return m ? m[1] : s;
+  },
+
   _getFormFields() {
     const vehicules = Store.get('vehicules');
     return [
@@ -1382,7 +1392,7 @@ const ChauffeursPage = {
       { type: 'row-end' },
       { type: 'divider' },
       { type: 'heading', label: 'Liaison Yango' },
-      { name: 'yangoDriverId', label: 'Yango Driver ID', type: 'text', placeholder: 'Ex: abc123... (sera rempli auto par la sync ou manuellement)' },
+      { name: 'yangoDriverId', label: 'Lien Yango ou ID contractor', type: 'text', placeholder: 'Collez le lien fleet.yango.com du chauffeur (ou son ID) — l\'ID est extrait automatiquement' },
       { name: 'noteInterne', label: 'Note interne', type: 'textarea', rows: 2 }
     ];
   },
@@ -1397,6 +1407,7 @@ const ChauffeursPage = {
       if (!FormBuilder.validate(body, fields)) return;
 
       const values = FormBuilder.getValues(body);
+      if (values.yangoDriverId) values.yangoDriverId = this._extractYangoId(values.yangoDriverId);
       const chauffeur = {
         id: Utils.generateId('CHF'),
         ...values,
@@ -1432,6 +1443,7 @@ const ChauffeursPage = {
       if (!FormBuilder.validate(body, fields)) return;
 
       const values = FormBuilder.getValues(body);
+      if (values.yangoDriverId) values.yangoDriverId = this._extractYangoId(values.yangoDriverId);
       Store.update('chauffeurs', id, values);
       Modal.close();
       Toast.success('Chauffeur modifié avec succès');
