@@ -2052,7 +2052,11 @@ const DashboardPage = {
         <div class="iw-val" style="color:${alertAccent};margin-top:auto;">${totA}</div>
         <div class="iw-sub">${totA > 0 ? `<span style="color:#EF4444;">${crit} crit.</span> · <span style="color:#E8930C;">${urg} urg.</span> · <span style="color:#0891b2;">${att} att.</span>` : 'Aucune ✓'}</div>
       </a>
-      ${this._renderTaskStack(d)}
+      <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">
+        <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></span><span class="iw-label">Tâches</span></div>
+        <div class="iw-val" style="color:#5D87FF;margin-top:auto;">${taches}</div>
+        <div class="iw-sub">${tachesRetard > 0 ? `<span style="color:#EF4444;">${tachesRetard} en retard</span>` : (taches > 0 ? 'en cours' : 'Rien en attente 🎉')}</div>
+      </a>
     </div>`;
   },
 
