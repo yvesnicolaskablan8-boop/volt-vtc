@@ -81,7 +81,6 @@ const PlanningPage = {
                 <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:13px;flex-shrink:0;"></iconify-icon>
                 <input type="text" id="filter-planning-search" class="form-control" placeholder="Nom..." value="${this._filterSearch}" style="width:80px;font-size:11px;padding:3px 4px;border:none;background:transparent;font-weight:500;min-width:0;">
               </div>
-              <button id="flt-abs" class="tab ${this._showAbsences ? 'active' : ''}" style="padding:5px 10px;font-size:11px;" title="Afficher / masquer les absences"><iconify-icon icon="solar:moon-sleep-bold-duotone"></iconify-icon> Absences</button>
               <div class="tabs" id="planning-view-tabs" style="margin:0;flex-shrink:0;">
                 <div class="tab ${this._currentView === 'month' ? 'active' : ''}" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
                 <div class="tab ${this._currentView === 'week' ? 'active' : ''}" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
@@ -127,8 +126,6 @@ const PlanningPage = {
       this._renderView();
     });
 
-    const fltA = document.getElementById('flt-abs');
-    if (fltA) fltA.addEventListener('click', () => { this._showAbsences = !this._showAbsences; fltA.classList.toggle('active', this._showAbsences); this._renderView(); });
 
     document.getElementById('btn-add-absence').addEventListener('click', () => this._addAbsence());
     document.getElementById('btn-add-shift').addEventListener('click', () => this._addShift());
