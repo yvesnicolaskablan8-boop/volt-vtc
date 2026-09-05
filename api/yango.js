@@ -643,7 +643,7 @@ async function handleFleetStatus(req, res) {
     const data = await yangoFetch('/v1/parks/driver-profiles/list', {
       fields: {
         driver_profile: ['id', 'first_name', 'last_name'],
-        current_status: ['status', 'status_updated_ts']
+        current_status: ['status']
       },
       limit: 300,
       offset: 0,
