@@ -1469,7 +1469,7 @@ const DashboardPage = {
         .fd-center-lbl{font-size:12px;font-weight:600;color:var(--text-muted);}
         .fd-center-val{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1.05;margin-top:2px;color:var(--text-primary);white-space:nowrap;}
         .fd-center-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
-        .fd-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+        .fd-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
         .fd-c{background:var(--bg-tertiary);border:1px solid transparent;border-radius:14px;padding:13px 14px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}
         .fd-c.fd-c-off{cursor:default;opacity:.65;}
         .fd-c:not(.fd-c-off):hover,.fd-c.hot{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.10);}
@@ -2097,9 +2097,8 @@ const DashboardPage = {
   // plus utilisée comme source de présence temps réel.
   _fleetSegDef() {
     return [
-      { key: 'activite', label: 'En activité', color: '#13DEB9', desc: "Travaille aujourd'hui" },
+      { key: 'activite', label: 'En activité', color: '#13DEB9', desc: "Roule aujourd'hui" },
       { key: 'attente', label: 'En attente', color: '#5D87FF', desc: 'Planifié, sans recette' },
-      { key: 'surv', label: 'À surveiller', color: '#FFAE1F', desc: 'Recette basse' },
       { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Hors planning' },
       { key: 'repos', label: 'Repos / Hors service', color: '#C7D0DD', desc: 'Pas de service' },
     ];
@@ -2110,7 +2109,7 @@ const DashboardPage = {
     const fleet = chauffeurs.filter(c => (c.statut || 'actif') !== 'inactif');
     const infoById = new Map((d.chauffeursActifsJour || []).map(c => [c.id, c]));
 
-    const B = { activite: [], attente: [], surv: [], nonpl: [], repos: [] };
+    const B = { activite: [], attente: [], nonpl: [], repos: [] };
     fleet.forEach(ch => {
       const info = infoById.get(ch.id) || null;
       const ca = info ? (info.ca || 0) : 0;
@@ -2121,15 +2120,20 @@ const DashboardPage = {
       if (state === 'faible') reasons.push('ca_faible'); else if (state === 'modere') reasons.push('ca_modere');
       if (actif && !programme) reasons.push('hors_planning');
       const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, programme, reasons };
-      // Priorité : hors-planning > recette basse > en activité > planifié en attente > repos.
+      // Un chauffeur qui roule (recette > 0) compte toujours « en activité », même
+      // si son CA est bas — l'alerte « à surveiller » devient un sous-compteur.
+      // Priorité : hors-planning > en activité > planifié en attente > repos.
       if (actif && !programme) B.nonpl.push(entry);
-      else if (actif && (state === 'faible' || state === 'modere')) B.surv.push(entry);
       else if (actif) B.activite.push(entry);
       else if (programme) B.attente.push(entry);
       else B.repos.push(entry);
     });
 
     const segments = this._fleetSegDef().map(s => ({ ...s, count: B[s.key].length, drivers: B[s.key] }));
+    // Sous-compteur « à surveiller » (CA bas) parmi les chauffeurs en activité.
+    const survCount = B.activite.filter(e => e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere')).length;
+    const act = segments.find(s => s.key === 'activite');
+    if (act && survCount) act.note = `dont ${survCount} à surveiller`;
     return { segments, total: fleet.length };
   },
 
@@ -2176,7 +2180,7 @@ const DashboardPage = {
       return `<div class="fd-c${clickable ? '' : ' fd-c-off'}" data-i="${i}" ${handlers}>
         <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}</div>
         <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span></div>
-        <div class="fd-c-desc">${s.desc}</div>
+        <div class="fd-c-desc">${s.desc}${s.note ? ` · <span style="color:#FFAE1F;font-weight:700;">${s.note}</span>` : ''}</div>
       </div>`;
     }).join('');
   },
