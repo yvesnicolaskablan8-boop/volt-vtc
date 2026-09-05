@@ -373,23 +373,8 @@ const ComptabilitePage = {
         </div>
       </div>
 
-      <!-- Charts -->
-      <div class="d-grid d-g21" style="margin-bottom:24px;">
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-            <div class="d-icon" style="background:rgba(59,130,246,.12);color:#3b82f6;width:32px;height:32px;font-size:14px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon></div>
-            <span style="font-weight:700;font-size:14px;">Encaissements vs Décaissements (6 mois)</span>
-          </div>
-          <div style="height:300px;"><canvas id="chart-compta-overview"></canvas></div>
-        </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-            <div class="d-icon" style="background:rgba(245,158,11,.12);color:#f59e0b;width:32px;height:32px;font-size:14px;"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon></div>
-            <span style="font-weight:700;font-size:14px;">Répartition des dépenses du mois</span>
-          </div>
-          <div style="height:300px;"><canvas id="chart-compta-depenses"></canvas></div>
-        </div>
-      </div>
+      <!-- Synthèse analytique (style advanced stats) -->
+      ${this._cptSynthese()}
 
       <!-- Dernières opérations -->
       <div class="d-card">
@@ -403,6 +388,157 @@ const ComptabilitePage = {
         <div id="compta-recent-ops"></div>
       </div>
     `;
+  },
+
+  // Synthèse analytique (style « advanced stats ») : grand graphe d'aire
+  // recettes/dépenses (6 mois) + carte « Résultat du mois » + répartition des
+  // dépenses. Vanilla SVG, données issues du Store. Montants entiers.
+  _cptSynthese() {
+    const now = new Date();
+    const ops = this._getOperations();
+    const fmt = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
+    const pct = n => (n >= 0 ? '+' : '') + Math.round(n) + '%';
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mo = this._monthOps(ops, d.getFullYear(), d.getMonth());
+      months.push({
+        label: Utils.getMonthShort(d.getMonth()),
+        recettes: mo.filter(o => o.type === 'recette').reduce((s, o) => s + o.montant, 0),
+        depenses: mo.filter(o => o.type === 'depense').reduce((s, o) => s + o.montant, 0)
+      });
+    }
+    const cur = months[months.length - 1], prev = months[months.length - 2];
+    const resultat = cur.recettes - cur.depenses;
+    const trend = prev && prev.recettes > 0 ? ((cur.recettes - prev.recettes) / prev.recettes * 100) : (cur.recettes > 0 ? 100 : 0);
+    const up = trend >= 0;
+    const maxRec = cur.recettes + cur.depenses || 1;
+
+    // Répartition des dépenses du mois (top 5)
+    const catLabels = { carburant: 'Carburant', maintenance: 'Maintenance', assurance: 'Assurance', leasing: 'Leasing', salaire: 'Salaires', loyer: 'Loyer/Bureau', impots: 'Impôts/Taxes', telephone: 'Télécom', divers: 'Divers', marketing: 'Marketing', fournitures: 'Fournitures', recharge_yango: 'Recharge Yango', autres_depenses: 'Autres' };
+    const catColors = ['#5D87FF', '#f59e0b', '#ef4444', '#8b5cf6', '#13DEB9', '#ec4899', '#06b6d4'];
+    const catMap = {};
+    this._thisMonthOps(ops).filter(o => o.type === 'depense').forEach(o => { catMap[o.categorie] = (catMap[o.categorie] || 0) + o.montant; });
+    const cats = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const catTotal = Object.values(catMap).reduce((s, v) => s + v, 0) || 1;
+    const catRows = cats.length ? cats.map(([k, v], i) => `
+      <div class="cpt-cat">
+        <span class="cpt-cat-dot" style="background:${catColors[i % catColors.length]};"></span>
+        <span class="cpt-cat-lbl">${Utils.escHtml(catLabels[k] || k)}</span>
+        <span class="cpt-cat-bar"><span style="width:${(v / catTotal * 100).toFixed(1)}%;background:${catColors[i % catColors.length]};"></span></span>
+        <span class="cpt-cat-val">${fmt(v)}</span>
+      </div>`).join('') : '<div class="cpt-empty">Aucune dépense ce mois-ci.</div>';
+
+    return `
+      ${this._cptStyles()}
+      <div class="cpt-grid">
+        <div class="cpt-main">
+          <div class="cpt-main-head">
+            <div>
+              <div class="cpt-eyebrow">Encaissements vs décaissements · 6 mois</div>
+              <div class="cpt-main-title">Flux mensuels</div>
+            </div>
+            <div class="cpt-main-total">
+              <div class="cpt-main-amount">${fmt(cur.recettes)}</div>
+              <span class="cpt-trend ${up ? 'up' : 'down'}"><iconify-icon icon="${up ? 'solar:arrow-right-up-linear' : 'solar:arrow-right-down-linear'}"></iconify-icon>${pct(trend)}</span>
+            </div>
+          </div>
+          ${this._cptAreaChart(months)}
+          <div class="cpt-legend2">
+            <span class="cpt-lg"><span class="cpt-sw" style="background:#13DEB9;"></span>Encaissements</span>
+            <span class="cpt-lg"><span class="cpt-sw" style="background:#FA896B;"></span>Décaissements</span>
+          </div>
+        </div>
+
+        <div class="cpt-side">
+          <div class="cpt-goal">
+            <div>
+              <div class="cpt-goal-eyebrow">Résultat du mois</div>
+              <div class="cpt-goal-amount" style="color:${resultat >= 0 ? '#4ade80' : '#fca5a5'};">${fmt(resultat)}</div>
+              <div class="cpt-goal-sub">${resultat >= 0 ? 'Bénéfice' : 'Perte'} · encaissé ${fmt(cur.recettes)} / décaissé ${fmt(cur.depenses)}</div>
+            </div>
+            <div class="cpt-goal-bottom">
+              <div class="cpt-stack"><span style="width:${(cur.recettes / maxRec * 100).toFixed(1)}%;background:#13DEB9;"></span><span style="width:${(cur.depenses / maxRec * 100).toFixed(1)}%;background:#FA896B;"></span></div>
+            </div>
+          </div>
+          <div class="cpt-info">
+            <div class="cpt-info-head"><div class="cpt-info-icon"><iconify-icon icon="solar:pie-chart-2-bold"></iconify-icon></div><h4>Répartition des dépenses</h4></div>
+            ${catRows}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  _cptAreaChart(months) {
+    const W = 720, H = 220, padX = 8, padTop = 20, padBot = 28;
+    const n = months.length;
+    const rec = months.map(m => m.recettes || 0);
+    const dep = months.map(m => m.depenses || 0);
+    const max = Math.max(1, ...rec, ...dep);
+    const innerW = W - padX * 2, innerH = H - padTop - padBot;
+    const xs = i => padX + (n === 1 ? innerW / 2 : i / (n - 1) * innerW);
+    const ys = v => padTop + innerH - (v / max) * innerH;
+    const path = (arr) => {
+      const pts = arr.map((v, i) => [+xs(i).toFixed(1), +ys(v).toFixed(1)]);
+      let d = pts.length ? `M ${pts[0][0]} ${pts[0][1]}` : '';
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+        const c1x = (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1), c1y = (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1);
+        const c2x = (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1), c2y = (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1);
+        d += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]}`;
+      }
+      return { d, pts };
+    };
+    const R = path(rec), D = path(dep);
+    const area = R.pts.length ? `${R.d} L ${R.pts[n - 1][0]},${padTop + innerH} L ${R.pts[0][0]},${padTop + innerH} Z` : '';
+    const labels = months.map((m, i) => `<text x="${xs(i).toFixed(1)}" y="${H - 10}" text-anchor="middle" class="cpt-xlbl">${Utils.escHtml(m.label)}</text>`).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" class="cpt-chart" preserveAspectRatio="none" role="img" aria-label="Flux mensuels">
+      <defs><linearGradient id="cptGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#13DEB9" stop-opacity="0.26"/><stop offset="100%" stop-color="#13DEB9" stop-opacity="0"/></linearGradient></defs>
+      <path d="${area}" fill="url(#cptGrad)"></path>
+      <path d="${R.d}" fill="none" stroke="#13DEB9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="${D.d}" fill="none" stroke="#FA896B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 5"></path>
+      ${labels}
+    </svg>`;
+  },
+
+  _cptStyles() {
+    return `<style>
+      .cpt-grid { display:grid; grid-template-columns:2fr 1fr; gap:18px; margin-bottom:24px; }
+      @media (max-width:900px){ .cpt-grid{ grid-template-columns:1fr; } }
+      .cpt-main { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:20px; padding:22px 24px; }
+      .cpt-main-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+      .cpt-eyebrow { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.16em; color:var(--text-muted); }
+      .cpt-main-title { font-size:18px; font-weight:800; color:var(--text-primary); margin-top:4px; }
+      .cpt-main-total { text-align:right; }
+      .cpt-main-amount { font-size:22px; font-weight:900; color:var(--text-primary); letter-spacing:-.02em; white-space:nowrap; }
+      .cpt-trend { display:inline-flex; align-items:center; gap:3px; font-size:12px; font-weight:800; padding:2px 8px; border-radius:20px; margin-top:4px; }
+      .cpt-trend.up { color:#0a9d78; background:rgba(19,222,185,.15); }
+      .cpt-trend.down { color:#e0603a; background:rgba(250,137,107,.15); }
+      .cpt-chart { width:100%; height:220px; display:block; margin-top:8px; overflow:visible; }
+      .cpt-xlbl { fill:var(--text-muted); font-size:11px; font-weight:600; }
+      .cpt-legend2 { display:flex; gap:16px; margin-top:8px; }
+      .cpt-lg { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); }
+      .cpt-sw { width:12px; height:12px; border-radius:4px; }
+      .cpt-side { display:flex; flex-direction:column; gap:14px; }
+      .cpt-goal { background:#18181b; color:#fff; border-radius:20px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; gap:16px; min-height:150px; }
+      .cpt-goal-eyebrow { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.2em; color:#8b8b96; }
+      .cpt-goal-amount { font-size:26px; font-weight:900; letter-spacing:-.02em; margin-top:6px; }
+      .cpt-goal-sub { font-size:11.5px; color:#a1a1aa; margin-top:4px; line-height:1.4; }
+      .cpt-stack { display:flex; width:100%; height:10px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.1); gap:2px; }
+      .cpt-stack span { height:100%; border-radius:99px; }
+      .cpt-info { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:20px; padding:18px 20px; }
+      .cpt-info-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+      .cpt-info-icon { width:30px; height:30px; border-radius:9px; background:rgba(93,135,255,.14); color:#5D87FF; display:flex; align-items:center; justify-content:center; font-size:16px; }
+      .cpt-info h4 { margin:0; font-size:14px; font-weight:800; color:var(--text-primary); }
+      .cpt-cat { display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+      .cpt-cat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+      .cpt-cat-lbl { font-size:12px; font-weight:600; color:var(--text-primary); width:84px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .cpt-cat-bar { flex:1; height:7px; background:var(--bg-tertiary); border-radius:99px; overflow:hidden; }
+      .cpt-cat-bar span { display:block; height:100%; border-radius:99px; }
+      .cpt-cat-val { font-size:11.5px; font-weight:800; color:var(--text-primary); white-space:nowrap; }
+      .cpt-empty { font-size:12px; color:var(--text-muted); padding:8px 0; }
+    </style>`;
   },
 
   _loadOverviewCharts() {
