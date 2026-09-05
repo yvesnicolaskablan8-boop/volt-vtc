@@ -1469,7 +1469,7 @@ const DashboardPage = {
         .fd-center-lbl{font-size:12px;font-weight:600;color:var(--text-muted);}
         .fd-center-val{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1.05;margin-top:2px;color:var(--text-primary);white-space:nowrap;}
         .fd-center-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
-        .fd-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+        .fd-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;}
         .fd-c{background:var(--bg-tertiary);border:1px solid transparent;border-radius:14px;padding:13px 14px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}
         .fd-c.fd-c-off{cursor:default;opacity:.65;}
         .fd-c:not(.fd-c-off):hover,.fd-c.hot{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.10);}
@@ -2145,6 +2145,7 @@ const DashboardPage = {
   _fleetSegDef() {
     return [
       { key: 'course', label: 'En course', color: '#13DEB9', desc: 'Sur une course' },
+      { key: 'occupe', label: 'Occupé', color: '#06b6d4', desc: 'En prise en charge' },
       { key: 'ligne', label: 'En ligne', color: '#5D87FF', desc: 'Disponible' },
       { key: 'surv', label: 'À surveiller', color: '#FFAE1F', desc: 'CA bas / inactif' },
       { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Sans planning' },
@@ -2162,7 +2163,7 @@ const DashboardPage = {
     if (yStatus && Array.isArray(yStatus.drivers)) yStatus.drivers.forEach(y => { if (y.id) yById.set(y.id, y); });
     const haveY = !!yStatus;
 
-    const B = { course: [], ligne: [], surv: [], nonpl: [], hors: [] };
+    const B = { course: [], occupe: [], ligne: [], surv: [], nonpl: [], hors: [] };
     fleet.forEach(ch => {
       const info = caById.get(ch.id) || null;
       const caState = info ? info.state : null;
@@ -2182,13 +2183,15 @@ const DashboardPage = {
       if (idle) reasons.push('idle');
       const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, programme, reasons, idleMin };
       const survByCa = (caState === 'faible' || caState === 'modere');
-      const isSurv = haveY ? (online && (survByCa || ystat === 'busy' || idle)) : survByCa;
+      // « Occupé » (busy Yango) n'est plus « à surveiller » : c'est un état actif à part.
+      const isSurv = haveY ? (online && (survByCa || idle)) : survByCa;
       // Non planifiés = chauffeur EN LIGNE (Yango) ou actif aujourd'hui, mais absent
       // du planning du jour → à régulariser. Prioritaire et non filtré par le CA,
       // pour compter TOUS les chauffeurs hors planning.
       const isNonpl = !programme && (online || actif);
       if (isNonpl) B.nonpl.push(entry);
       else if (isSurv) B.surv.push(entry);
+      else if (haveY && ystat === 'busy') B.occupe.push(entry);
       else if (haveY ? ystat === 'in_order' : actif) B.course.push(entry);
       else if (haveY && ystat === 'free') B.ligne.push(entry);
       else B.hors.push(entry);
