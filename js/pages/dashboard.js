@@ -2199,8 +2199,23 @@ const DashboardPage = {
       else B.hors.push(entry);
     });
 
+    // Rattrapage : chauffeurs « occupés » (busy) présents dans la flotte Yango
+    // mais NON liés à une fiche chauffeur (pas de yangoDriverId associé) — sinon
+    // ils ne seraient jamais comptés. On les ajoute à « Occupé ».
+    let extra = 0;
+    if (haveY && Array.isArray(yStatus.drivers)) {
+      const linked = new Set(fleet.map(c => c.yangoDriverId).filter(Boolean));
+      yStatus.drivers.forEach(y => {
+        if (y && y.status === 'busy' && y.id && !linked.has(y.id)) {
+          const parts = String(y.nom || '').trim().split(' ');
+          B.occupe.push({ id: null, prenom: parts[0] || 'Chauffeur', nom: parts.slice(1).join(' '), tel: '', ca: 0, programme: false, reasons: ['occupe'], idleMin: 0 });
+          extra++;
+        }
+      });
+    }
+
     const segments = this._fleetSegDef().map(s => ({ ...s, count: B[s.key].length, drivers: B[s.key] }));
-    return { segments, total: fleet.length, haveY };
+    return { segments, total: fleet.length + extra, haveY };
   },
 
   _fleetDonutSvg(segments, total) {
