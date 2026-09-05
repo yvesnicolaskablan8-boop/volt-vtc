@@ -450,7 +450,6 @@ const PlanningPage = {
         .pcal-cell-week { min-height:240px; }
         .pcal-chip-time { font-weight:500; color:var(--text-muted); font-size:9.5px; }
       </style>
-      ${this._renderServiceDuJour(chauffeurs, days)}
       <div class="card" style="margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);display:flex;gap:var(--space-lg);flex-wrap:wrap;font-size:var(--font-size-xs);color:var(--text-secondary);">
         <span><strong>${filledSlots}</strong> créneau${filledSlots > 1 ? 'x' : ''} programmé${filledSlots > 1 ? 's' : ''}</span>
         <span><strong>${uniqueAbsDrivers}</strong> chauffeur${uniqueAbsDrivers > 1 ? 's' : ''} absent${uniqueAbsDrivers > 1 ? 's' : ''}</span>
