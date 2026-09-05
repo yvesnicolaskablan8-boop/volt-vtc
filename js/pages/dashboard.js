@@ -58,7 +58,7 @@ const DashboardPage = {
       const _ps = document.getElementById('header-period-slot');
       if (_ps) _ps.innerHTML = this._renderPeriodPicker();
       this._bindPeriodSelector();
-      this._loadFleetStatus(data);
+      this._renderFleetDonutInto(data);
       this._loadRecetteLive();
       if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
@@ -399,7 +399,7 @@ const DashboardPage = {
       container.innerHTML = this._template(data); // template uses escaped/static content only
       this._loadCharts(data);
       this._bindPeriodSelector();
-      this._loadFleetStatus(data);
+      this._renderFleetDonutInto(data);
       this._loadRecetteLive();
       this._startAutoRefresh();
     } catch (err) {
@@ -1469,7 +1469,7 @@ const DashboardPage = {
         .fd-center-lbl{font-size:12px;font-weight:600;color:var(--text-muted);}
         .fd-center-val{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1.05;margin-top:2px;color:var(--text-primary);white-space:nowrap;}
         .fd-center-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
-        .fd-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;}
+        .fd-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
         .fd-c{background:var(--bg-tertiary);border:1px solid transparent;border-radius:14px;padding:13px 14px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}
         .fd-c.fd-c-off{cursor:default;opacity:.65;}
         .fd-c:not(.fd-c-off):hover,.fd-c.hot{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.10);}
@@ -1873,13 +1873,12 @@ const DashboardPage = {
   },
 
   // ============ Chauffeurs à surveiller ============
-  // Combine deux signaux : CA « pas bon » (zone à surveiller : faible/modéré) et
-  // chauffeurs qui se mettent en « occupé » sur Yango (statut busy, distinct d'une
-  // vraie course in_order). La partie Yango est chargée en asynchrone (_loadYangoWatch).
+  // Signal unique : CA « pas bon » (zone à surveiller : faible/modéré), calculé
+  // sur NOS données du jour. (La présence Yango n'est plus utilisée : son API
+  // renvoyait « offline » pour tous les chauffeurs.)
   _renderWatchlist(d) {
-    const initial = this._isToday() ? null : []; // null = statut Yango en cours de chargement
     return `<div class="d-card" style="padding:0;overflow:hidden;">
-      <div id="dash-watchlist">${this._watchlistInner(d, initial)}</div>
+      <div id="dash-watchlist">${this._watchlistInner(d)}</div>
     </div>`;
   },
 
@@ -1905,59 +1904,39 @@ const DashboardPage = {
     </div>`;
   },
 
-  _watchlistInner(d, yBusy) {
+  _watchlistInner(d) {
     const RSN = {
       ca_faible: ['CA anormalement bas', '#FA896B', 'rgba(250,137,107,.14)', 'solar:chart-2-bold'],
       ca_modere: ['CA sous la moyenne', '#FFAE1F', 'rgba(255,174,31,.16)', 'solar:chart-2-bold'],
-      occupe: ['Occupé sur Yango', '#635BFF', 'rgba(99,91,255,.13)', 'solar:phone-calling-rounded-bold'],
     };
     const chauffeurs = (typeof Store !== 'undefined' && Store.get) ? (Store.get('chauffeurs') || []) : [];
     const chById = new Map(chauffeurs.map(c => [c.id, c]));
-    const caById = new Map((d.chauffeursActifsJour || []).map(c => [c.id, c]));
     const items = new Map();
-    // 1) CA « pas bon »
+    // CA « pas bon » (zone à surveiller)
     (d.chauffeursActifsJour || []).forEach(c => {
       if (c.state === 'faible' || c.state === 'modere') {
         items.set(c.id, { id: c.id, prenom: c.prenom, nom: c.nom, ca: c.ca, reasons: [c.state === 'faible' ? 'ca_faible' : 'ca_modere'] });
       }
     });
-    // 2) Occupé sur Yango (statut busy)
-    if (yBusy) {
-      yBusy.forEach(b => {
-        const ch = chauffeurs.find(x => x.yangoDriverId && x.yangoDriverId === b.id);
-        const key = ch ? ch.id : ('y:' + b.id);
-        const ex = items.get(key);
-        if (ex) { if (!ex.reasons.includes('occupe')) ex.reasons.push('occupe'); }
-        else {
-          const info = ch ? caById.get(ch.id) : null;
-          const parts = (b.nom || '').trim().split(' ');
-          items.set(key, { id: ch ? ch.id : null, prenom: ch ? ch.prenom : (parts[0] || ''), nom: ch ? ch.nom : (parts.slice(1).join(' ')), ca: info ? info.ca : null, reasons: ['occupe'] });
-        }
-      });
-    }
     const list = [...items.values()].sort((a, b) => (b.reasons.length - a.reasons.length) || ((a.ca == null ? 1e12 : a.ca) - (b.ca == null ? 1e12 : b.ca)));
-    const loading = (yBusy === null);
-    const today = this._isToday();
 
-    const refreshBtn = today ? `<button onclick="DashboardPage._loadYangoWatch(DashboardPage._lastData, true)" title="Rafraîchir le statut Yango" style="background:var(--bg-tertiary);border:none;width:34px;height:34px;border-radius:9px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><iconify-icon icon="solar:refresh-bold"></iconify-icon></button>` : '';
     const head = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 18px;border-bottom:1px solid var(--border-color);">
       <div style="display:flex;align-items:center;gap:10px;min-width:0;">
         <div class="d-icon" style="width:38px;height:38px;font-size:1.05rem;background:rgba(255,174,31,.15);color:#FFAE1F;flex-shrink:0;"><iconify-icon icon="solar:eye-scan-bold-duotone"></iconify-icon></div>
-        <div style="min-width:0;"><div class="d-lbl" style="margin:0;">Chauffeurs à surveiller</div><div class="d-sub" style="margin:0;">CA faible${today ? ' ou occupé sur Yango' : ''}${loading ? '' : ` · ${list.length}`}</div></div>
+        <div style="min-width:0;"><div class="d-lbl" style="margin:0;">Chauffeurs à surveiller</div><div class="d-sub" style="margin:0;">CA faible · ${list.length}</div></div>
       </div>
-      ${refreshBtn}
     </div>`;
 
     const _tiles = this._activityTiles(d);
     const tilesStrip = _tiles ? `<div style="padding:13px 18px 12px;border-bottom:1px solid var(--border-color);">${_tiles}</div>` : '';
 
-    if (!list.length && !loading) {
+    if (!list.length) {
       return head + tilesStrip + `<div style="padding:22px 18px;display:flex;align-items:center;gap:10px;color:var(--success-dim);font-size:13px;font-weight:600;"><iconify-icon icon="solar:check-circle-bold" style="font-size:18px;"></iconify-icon>Aucun chauffeur à surveiller pour le moment.</div>`;
     }
 
     const rows = list.map(it => {
       const initial = (it.prenom || it.nom || '?').charAt(0).toUpperCase();
-      const sev = it.reasons.includes('ca_faible') ? '#FA896B' : (it.reasons.includes('occupe') ? '#635BFF' : '#FFAE1F');
+      const sev = it.reasons.includes('ca_faible') ? '#FA896B' : '#FFAE1F';
       const ch = it.id ? chById.get(it.id) : null;
       const tel = ch && ch.telephone ? String(ch.telephone) : '';
       const badges = it.reasons.map(r => { const m = RSN[r]; return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${m[2]};color:${m[1]};"><iconify-icon icon="${m[3]}" style="font-size:12px;"></iconify-icon>${m[0]}</span>`; }).join('');
@@ -1974,34 +1953,7 @@ const DashboardPage = {
       </div>`;
     }).join('');
 
-    const loadingRow = loading ? `<div style="padding:11px 18px;display:flex;align-items:center;gap:8px;color:var(--text-muted);font-size:12px;font-weight:600;"><iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon>Vérification des statuts Yango…</div>` : '';
-
-    return head + tilesStrip + `<div style="max-height:340px;overflow-y:auto;">${rows}${loadingRow}</div>`;
-  },
-
-  async _loadYangoWatch(d, force) {
-    d = d || this._lastData;
-    if (!d) return;
-    if (!this._isToday()) return; // le statut « occupé » temps réel n'a de sens que pour aujourd'hui
-    let el = document.getElementById('dash-watchlist');
-    if (!el) return;
-    const now = Date.now();
-    if (!force && this._yangoWatchCache && (now - this._yangoWatchCache.ts < 60000)) {
-      el.replaceChildren();
-      el.insertAdjacentHTML('beforeend', this._watchlistInner(d, this._yangoWatchCache.busy));
-      return;
-    }
-    let busy = [];
-    try {
-      const r = await Store.getFleetStatus();
-      if (r && Array.isArray(r.drivers)) busy = r.drivers.filter(x => x.status === 'busy');
-      this._yangoWatchCache = { ts: now, busy };
-    } catch (e) {
-      console.warn('Watchlist Yango error:', e.message);
-      busy = []; // échec API : on garde la partie CA
-    }
-    el = document.getElementById('dash-watchlist');
-    if (el) { el.replaceChildren(); el.insertAdjacentHTML('beforeend', this._watchlistInner(d, busy)); }
+    return head + tilesStrip + `<div style="max-height:340px;overflow-y:auto;">${rows}</div>`;
   },
 
   // ============ Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) ============
@@ -2138,84 +2090,47 @@ const DashboardPage = {
   },
 
   // ============ Flotte en direct (donut centralisé) ============
-  // Répartit toute la flotte active en 5 états mutuellement exclusifs, affichés
-  // en anneau + cartes. Le statut temps réel Yango (course/libre/hors-ligne) est
-  // chargé en asynchrone (_loadFleetStatus). Un chauffeur « free » depuis ≥ 10 min
-  // (statusTs Yango) bascule en « à surveiller ».
+  // Répartit toute la flotte active en 5 états mutuellement exclusifs pour la
+  // journée affichée, à partir de NOS données (planning + activité/versements).
+  // Note : l'API Yango (current_status) renvoyant « offline » pour tous les
+  // chauffeurs quel que soit leur statut réel sur fleet.yango.com, elle n'est
+  // plus utilisée comme source de présence temps réel.
   _fleetSegDef() {
     return [
-      { key: 'course', label: 'En course', color: '#13DEB9', desc: 'Sur une course' },
-      { key: 'occupe', label: 'Occupé', color: '#06b6d4', desc: 'En prise en charge' },
-      { key: 'ligne', label: 'En ligne', color: '#5D87FF', desc: 'Disponible' },
-      { key: 'surv', label: 'À surveiller', color: '#FFAE1F', desc: 'CA bas / inactif' },
-      { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Sans planning' },
-      { key: 'hors', label: 'Hors ligne', color: '#C7D0DD', desc: 'Déconnectés' },
+      { key: 'activite', label: 'En activité', color: '#13DEB9', desc: "Travaille aujourd'hui" },
+      { key: 'attente', label: 'En attente', color: '#5D87FF', desc: 'Planifié, sans recette' },
+      { key: 'surv', label: 'À surveiller', color: '#FFAE1F', desc: 'Recette basse' },
+      { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Hors planning' },
+      { key: 'repos', label: 'Repos / Hors service', color: '#C7D0DD', desc: 'Pas de service' },
     ];
   },
 
-  _fleetBuckets(d, yStatus) {
+  _fleetBuckets(d) {
     const chauffeurs = (typeof Store !== 'undefined' && Store.get) ? (Store.get('chauffeurs') || []) : [];
     const fleet = chauffeurs.filter(c => (c.statut || 'actif') !== 'inactif');
-    const caById = new Map((d.chauffeursActifsJour || []).map(c => [c.id, c]));
-    const now = Date.now() / 1000;
-    const toEpoch = ts => { if (ts == null) return null; if (typeof ts === 'number') return ts > 1e12 ? ts / 1000 : ts; const p = Date.parse(ts); return isNaN(p) ? null : p / 1000; };
-    const yById = new Map();
-    if (yStatus && Array.isArray(yStatus.drivers)) yStatus.drivers.forEach(y => { if (y.id) yById.set(y.id, y); });
-    const haveY = !!yStatus;
+    const infoById = new Map((d.chauffeursActifsJour || []).map(c => [c.id, c]));
 
-    const B = { course: [], occupe: [], ligne: [], surv: [], nonpl: [], hors: [] };
+    const B = { activite: [], attente: [], surv: [], nonpl: [], repos: [] };
     fleet.forEach(ch => {
-      const info = caById.get(ch.id) || null;
-      const caState = info ? info.state : null;
-      const programme = info ? info.programme : false;
-      const ca = info ? info.ca : 0;
-      const actif = info ? info.actif : false;
-      let ystat = null, idleMin = 0, idle = false;
-      if (haveY) {
-        const y = ch.yangoDriverId ? yById.get(ch.yangoDriverId) : null;
-        ystat = y ? y.status : 'offline';
-        if (y && y.status === 'free' && y.statusTs) { const e = toEpoch(y.statusTs); if (e) { idleMin = Math.max(0, Math.floor((now - e) / 60)); idle = idleMin >= 10; } }
-      }
-      const online = ystat === 'free' || ystat === 'busy' || ystat === 'in_order';
+      const info = infoById.get(ch.id) || null;
+      const ca = info ? (info.ca || 0) : 0;
+      const programme = info ? !!info.programme : false;
+      const actif = info ? !!info.actif : false;   // a une recette aujourd'hui (ca > 0)
+      const state = info ? info.state : null;
       const reasons = [];
-      if (caState === 'faible') reasons.push('ca_faible'); else if (caState === 'modere') reasons.push('ca_modere');
-      if (ystat === 'busy') reasons.push('occupe');
-      if (idle) reasons.push('idle');
-      const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, programme, reasons, idleMin };
-      const survByCa = (caState === 'faible' || caState === 'modere');
-      // « Occupé » (busy Yango) n'est plus « à surveiller » : c'est un état actif à part.
-      const isSurv = haveY ? (online && (survByCa || idle)) : survByCa;
-      // Non planifiés = chauffeur EN LIGNE (Yango) ou actif aujourd'hui, mais absent
-      // du planning du jour → à régulariser. Prioritaire et non filtré par le CA,
-      // pour compter TOUS les chauffeurs hors planning.
-      const isNonpl = !programme && (online || actif);
-      if (isNonpl) B.nonpl.push(entry);
-      // « Occupé » (busy) est prioritaire sur « À surveiller » : un chauffeur qui
-      // travaille (occupé) ne doit pas être noyé dans les CA bas.
-      else if (haveY && ystat === 'busy') B.occupe.push(entry);
-      else if (isSurv) B.surv.push(entry);
-      else if (haveY ? ystat === 'in_order' : actif) B.course.push(entry);
-      else if (haveY && ystat === 'free') B.ligne.push(entry);
-      else B.hors.push(entry);
+      if (state === 'faible') reasons.push('ca_faible'); else if (state === 'modere') reasons.push('ca_modere');
+      if (actif && !programme) reasons.push('hors_planning');
+      const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, programme, reasons };
+      // Priorité : hors-planning > recette basse > en activité > planifié en attente > repos.
+      if (actif && !programme) B.nonpl.push(entry);
+      else if (actif && (state === 'faible' || state === 'modere')) B.surv.push(entry);
+      else if (actif) B.activite.push(entry);
+      else if (programme) B.attente.push(entry);
+      else B.repos.push(entry);
     });
 
-    // Rattrapage : chauffeurs « occupés » (busy) présents dans la flotte Yango
-    // mais NON liés à une fiche chauffeur (pas de yangoDriverId associé) — sinon
-    // ils ne seraient jamais comptés. On les ajoute à « Occupé ».
-    let extra = 0;
-    if (haveY && Array.isArray(yStatus.drivers)) {
-      const linked = new Set(fleet.map(c => c.yangoDriverId).filter(Boolean));
-      yStatus.drivers.forEach(y => {
-        if (y && y.status === 'busy' && y.id && !linked.has(y.id)) {
-          const parts = String(y.nom || '').trim().split(' ');
-          B.occupe.push({ id: null, prenom: parts[0] || 'Chauffeur', nom: parts.slice(1).join(' '), tel: '', ca: 0, programme: false, reasons: ['occupe'], idleMin: 0 });
-          extra++;
-        }
-      });
-    }
-
     const segments = this._fleetSegDef().map(s => ({ ...s, count: B[s.key].length, drivers: B[s.key] }));
-    return { segments, total: fleet.length + extra, haveY };
+    return { segments, total: fleet.length };
   },
 
   _fleetDonutSvg(segments, total) {
@@ -2297,11 +2212,10 @@ const DashboardPage = {
   },
 
   _renderFleetDonut(d) {
-    const yStatus = this._fleetStatusCache ? this._fleetStatusCache.data : null;
-    const { segments, total } = this._fleetBuckets(d, yStatus);
+    const { segments, total } = this._fleetBuckets(d);
+    const live = this._isToday() ? "Aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt));
     return `<div class="d-card fd-card">
-      <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>Temps réel</span></div>
-      <div id="fleet-debug">${this._fleetDebug(yStatus)}</div>
+      <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span></div>
       <div class="fd-top">
         <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
         <div class="fd-recette">${this._fleetRecettePanel(d)}</div>
@@ -2311,42 +2225,11 @@ const DashboardPage = {
   },
 
   _renderFleetDonutInto(d) {
-    const yStatus = this._fleetStatusCache ? this._fleetStatusCache.data : null;
-    const { segments, total } = this._fleetBuckets(d, yStatus);
+    const { segments, total } = this._fleetBuckets(d);
     const circle = document.getElementById('fleet-donut-circle');
     if (circle) { circle.replaceChildren(); circle.insertAdjacentHTML('beforeend', this._fleetCircleInner(d, segments, total)); }
     const cards = document.getElementById('fleet-donut-cards');
     if (cards) { cards.replaceChildren(); cards.insertAdjacentHTML('beforeend', this._fleetCardsInner(segments)); }
-    const dbg = document.getElementById('fleet-debug');
-    if (dbg) { dbg.replaceChildren(); dbg.insertAdjacentHTML('beforeend', this._fleetDebug(yStatus)); }
-  },
-
-  // DIAGNOSTIC TEMPORAIRE : statuts bruts renvoyés par l'API Yango.
-  _fleetDebug(yStatus) {
-    const box = (txt) => `<div style="font-size:11px;color:#8b5cf6;margin:4px 0 10px;padding:7px 11px;background:rgba(139,92,246,.08);border:1px dashed rgba(139,92,246,.4);border-radius:8px;line-height:1.5;">${txt}</div>`;
-    if (!yStatus) { const err = (typeof Store !== 'undefined' && Store._lastFleetError) ? Store._lastFleetError : 'pas encore chargé ou API muette'; return box('<b>DEBUG Yango</b> — statut temps réel INDISPONIBLE (yStatus null). Erreur API : <b>' + Utils.escHtml(String(err)) + '</b>'); }
-    const c = yStatus.counts || {};
-    const list = (yStatus.drivers || []).map(x => `${Utils.escHtml(x.nom || '?')}=${Utils.escHtml(x.status || '?')}`).join(' · ');
-    const sample = (yStatus.sample || []).map(x => `${Utils.escHtml(x.nom || '?')}: ${Utils.escHtml(JSON.stringify(x.cs))}`).join('<br>');
-    return box(`<b>DEBUG Yango</b> — total:${yStatus.total || 0} · free:${c.free || 0} · busy:${c.busy || 0} · in_order:${c.in_order || 0} · offline:${c.offline || 0} · drivers:${(yStatus.drivers || []).length}${list ? '<br>' + list : ''}${sample ? '<br><b>RAW:</b><br>' + sample : ''}`);
-  },
-
-  async _loadFleetStatus(d, force) {
-    d = d || this._lastData;
-    if (!d) return;
-    if (!this._isToday()) return; // temps réel pertinent uniquement pour aujourd'hui
-    const now = Date.now();
-    if (!force && this._fleetStatusCache && (now - this._fleetStatusCache.ts < 60000)) {
-      this._renderFleetDonutInto(d);
-      return;
-    }
-    let data = null;
-    try {
-      const r = await Store.getFleetStatus();
-      if (r) data = r;
-    } catch (e) { console.warn('Fleet status error:', e.message); }
-    this._fleetStatusCache = { ts: now, data };
-    this._renderFleetDonutInto(d);
   },
 
   _fdHot(i, on) {
@@ -2360,14 +2243,12 @@ const DashboardPage = {
 
   _fleetCardClick(key) {
     const d = this._lastData; if (!d) return;
-    const yStatus = this._fleetStatusCache ? this._fleetStatusCache.data : null;
-    const { segments } = this._fleetBuckets(d, yStatus);
+    const { segments } = this._fleetBuckets(d);
     const seg = segments.find(s => s.key === key); if (!seg) return;
     const RSN = {
       ca_faible: ['CA anormalement bas', '#FA896B', 'rgba(250,137,107,.14)'],
       ca_modere: ['CA sous la moyenne', '#FFAE1F', 'rgba(255,174,31,.16)'],
-      occupe: ['Occupé sur Yango', '#635BFF', 'rgba(99,91,255,.13)'],
-      idle: ['En ligne sans course >10 min', '#EF4444', 'rgba(239,68,68,.13)'],
+      hors_planning: ['Hors planning', '#635BFF', 'rgba(99,91,255,.13)'],
     };
     // Lien vers la page Yango du chauffeur (surveillance) : contractor = yangoDriverId,
     // park_id issu des réglages d'intégration Yango.
@@ -2382,7 +2263,6 @@ const DashboardPage = {
     const rows = seg.drivers.length ? seg.drivers.map(it => {
       const initial = (it.prenom || it.nom || '?').charAt(0).toUpperCase();
       const badges = (it.reasons || []).map(r => { const m = RSN[r]; return m ? `<span style="display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${m[2]};color:${m[1]};">${m[0]}</span>` : ''; }).join('');
-      const extra = it.idleMin && (it.reasons || []).includes('idle') ? `<span style="font-size:11px;color:var(--text-muted);font-weight:600;">${it.idleMin} min</span>` : '';
       const caTxt = (it.ca != null && it.ca > 0) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
       const call = it.tel ? `<a href="tel:${Utils.escHtml(String(it.tel))}" title="Appeler" style="width:34px;height:34px;border-radius:9px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:phone-bold"></iconify-icon></a>` : '';
       // Pour les non planifiés : bouton pour les inscrire au planning du jour.
@@ -2391,7 +2271,7 @@ const DashboardPage = {
         <div style="width:36px;height:36px;border-radius:50%;background:${seg.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${Utils.escHtml(initial)}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Utils.escHtml(((it.prenom || '') + ' ' + (it.nom || '')).trim() || 'Chauffeur')}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">${badges}${extra}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">${badges}</div>
         </div>
         ${caTxt}
         ${planif}
