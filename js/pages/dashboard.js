@@ -2119,7 +2119,8 @@ const DashboardPage = {
       const reasons = [];
       if (state === 'faible') reasons.push('ca_faible'); else if (state === 'modere') reasons.push('ca_modere');
       if (actif && !programme) reasons.push('hors_planning');
-      const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, programme, reasons };
+      const courses = info ? (info.courses || 0) : 0;
+      const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, courses, programme, reasons };
       // Un chauffeur qui roule (recette > 0) compte toujours « en activité », même
       // si son CA est bas — l'alerte « à surveiller » devient un sous-compteur.
       // Priorité : hors-planning > en activité > planifié en attente > repos.
@@ -2130,11 +2131,40 @@ const DashboardPage = {
     });
 
     const segments = this._fleetSegDef().map(s => ({ ...s, count: B[s.key].length, drivers: B[s.key] }));
+    const act = segments.find(s => s.key === 'activite');
     // Sous-compteur « à surveiller » (CA bas) parmi les chauffeurs en activité.
     const survCount = B.activite.filter(e => e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere')).length;
-    const act = segments.find(s => s.key === 'activite');
     if (act && survCount) act.note = `dont ${survCount} à surveiller`;
+    // Sous-compteur « actif à l'instant » : chauffeurs dont le nombre de courses a
+    // augmenté récemment (proxy de présence, faute de statut temps réel Yango).
+    if (act && this._isToday()) {
+      const recent = this._recentActiveIds(B.activite);
+      if (recent.size) act.recentCount = recent.size;
+    }
     return { segments, total: fleet.length };
+  },
+
+  // Détecte les chauffeurs « actifs à l'instant » via l'évolution de leur nombre
+  // de courses entre deux relevés (snapshot en localStorage). Un compteur qui
+  // grimpe = le chauffeur roule encore. Fenêtre de 90 min depuis la dernière
+  // hausse. Signal approché (le CA Yango n'est synchronisé qu'une fois par heure).
+  _recentActiveIds(activeList) {
+    const WINDOW = 90 * 60 * 1000;
+    const today = new Date().toISOString().slice(0, 10);
+    const now = Date.now();
+    let snap = {};
+    try { const raw = localStorage.getItem('pilote_courses_snap'); if (raw) snap = JSON.parse(raw) || {}; } catch (e) { snap = {}; }
+    if (snap.date !== today || !snap.drivers) snap = { date: today, drivers: {} };
+    const recent = new Set();
+    (activeList || []).forEach(e => {
+      const id = e.id; if (!id) return;
+      const cur = e.courses || 0;
+      const prev = snap.drivers[id];
+      if (!prev || cur > prev.courses) snap.drivers[id] = { courses: cur, ts: now };
+      if (now - snap.drivers[id].ts <= WINDOW) recent.add(id);
+    });
+    try { localStorage.setItem('pilote_courses_snap', JSON.stringify(snap)); } catch (e) { /* stockage indispo */ }
+    return recent;
   },
 
   _fleetDonutSvg(segments, total) {
@@ -2177,10 +2207,13 @@ const DashboardPage = {
     return segments.map((s, i) => {
       const clickable = s.count > 0;
       const handlers = clickable ? `onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
+      const notes = [];
+      if (s.recentCount) notes.push(`<span style="color:#13DEB9;font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#13DEB9;margin-right:4px;vertical-align:middle;"></span>${s.recentCount} actif${s.recentCount > 1 ? 's' : ''} à l'instant</span>`);
+      if (s.note) notes.push(`<span style="color:#FFAE1F;font-weight:700;">${s.note}</span>`);
       return `<div class="fd-c${clickable ? '' : ' fd-c-off'}" data-i="${i}" ${handlers}>
         <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}</div>
         <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span></div>
-        <div class="fd-c-desc">${s.desc}${s.note ? ` · <span style="color:#FFAE1F;font-weight:700;">${s.note}</span>` : ''}</div>
+        <div class="fd-c-desc">${s.desc}${notes.length ? ' · ' + notes.join(' · ') : ''}</div>
       </div>`;
     }).join('');
   },
