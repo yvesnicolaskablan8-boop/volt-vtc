@@ -541,8 +541,11 @@ const Store = {
    */
   async getFleetStatus() {
     try {
-      return await this._yangoApi('fleet-status');
+      const r = await this._yangoApi('fleet-status');
+      this._lastFleetError = null;
+      return r;
     } catch (e) {
+      this._lastFleetError = e.message; // exposé pour diagnostic (DEBUG dashboard)
       console.warn('Store: getFleetStatus error:', e.message);
       return null;
     }

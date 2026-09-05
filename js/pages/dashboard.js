@@ -2324,7 +2324,7 @@ const DashboardPage = {
   // DIAGNOSTIC TEMPORAIRE : statuts bruts renvoyés par l'API Yango.
   _fleetDebug(yStatus) {
     const box = (txt) => `<div style="font-size:11px;color:#8b5cf6;margin:4px 0 10px;padding:7px 11px;background:rgba(139,92,246,.08);border:1px dashed rgba(139,92,246,.4);border-radius:8px;line-height:1.5;">${txt}</div>`;
-    if (!yStatus) return box('<b>DEBUG Yango</b> — statut temps réel INDISPONIBLE (yStatus null) : l\'API fleet-status ne répond pas / pas encore chargée. « Occupé » ne peut pas fonctionner sans ces données.');
+    if (!yStatus) { const err = (typeof Store !== 'undefined' && Store._lastFleetError) ? Store._lastFleetError : 'pas encore chargé ou API muette'; return box('<b>DEBUG Yango</b> — statut temps réel INDISPONIBLE (yStatus null). Erreur API : <b>' + Utils.escHtml(String(err)) + '</b>'); }
     const c = yStatus.counts || {};
     const list = (yStatus.drivers || []).map(x => `${Utils.escHtml(x.nom || '?')}=${Utils.escHtml(x.status || '?')}`).join(' · ');
     return box(`<b>DEBUG Yango</b> — free:${c.free || 0} · busy:${c.busy || 0} · in_order:${c.in_order || 0} · offline:${c.offline || 0} · drivers:${(yStatus.drivers || []).length}${list ? '<br>' + list : ''}`);
