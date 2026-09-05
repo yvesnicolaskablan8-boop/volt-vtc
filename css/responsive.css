@@ -1292,3 +1292,28 @@ body.pilote-native-app.pilote-has-bottomnav .header-toggle {
     min-width: 0;
   }
 }
+
+/* ============================================================
+   HARMONISATION GLOBALE DES CARTES (toutes pages, même style)
+   Un seul conteneur : fond plein, bordure douce, rayon, ombre.
+   Neutralise translucidité/dégradés/pastilles qui divergeaient.
+   ============================================================ */
+.card, .d-card, .chart-card, .kpi-card, .stat-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+[data-theme="dark"] .card,
+[data-theme="dark"] .d-card,
+[data-theme="dark"] .chart-card,
+[data-theme="dark"] .kpi-card,
+[data-theme="dark"] .stat-card {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+/* KPI : rendu uniforme (plus de dégradé indigo ni de pastille d'angle) */
+.kpi-card { background: var(--bg-secondary); }
+.kpi-card::before { display: none !important; }
