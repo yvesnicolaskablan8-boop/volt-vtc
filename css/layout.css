@@ -317,7 +317,7 @@
    et .header-right, ce qui évite tout chevauchement avec la barre de recherche. */
 .stab { position: relative; flex: 0 0 auto; display: flex; align-items: center; padding: 4px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary); isolation: isolate; }
 .stab-cursor { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 999px; background: #18181b; opacity: 0; transition: left .3s cubic-bezier(.25,1,.5,1), width .3s cubic-bezier(.25,1,.5,1), opacity .2s ease; pointer-events: none; }
-.stab-tab { position: relative; z-index: 1; display: block; padding: 7px 14px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; mix-blend-mode: difference; text-decoration: none; white-space: nowrap; }
+.stab-tab { position: relative; z-index: 1; display: block; padding: 7px 11px; font-size: 12px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; mix-blend-mode: difference; text-decoration: none; white-space: nowrap; }
 /* Toujours blanc (le blend fait l'inversion) — bat le a:hover{color:pilote-blue} global. */
 .stab .stab-tab, .stab .stab-tab:hover, .stab .stab-tab:visited, .stab .stab-tab:focus { color: #fff; }
 :root[data-theme="dark"] .stab-cursor { background: #f4f4f5; }

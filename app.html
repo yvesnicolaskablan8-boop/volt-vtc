@@ -22,7 +22,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 420;
+    var APP_VERSION = 421;
     var stored = parseInt(localStorage.getItem('pilote_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_app_version', APP_VERSION);
@@ -67,13 +67,13 @@
   <!-- Leaflet, Chart.js, jsPDF: loaded on demand via LazyLibs -->
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/variables.css?v=574">
-  <link rel="stylesheet" href="css/base.css?v=574">
-  <link rel="stylesheet" href="css/layout.css?v=574">
-  <link rel="stylesheet" href="css/components.css?v=574">
-  <link rel="stylesheet" href="css/charts.css?v=574">
-  <link rel="stylesheet" href="css/animations.css?v=574">
-  <link rel="stylesheet" href="css/responsive.css?v=574">
+  <link rel="stylesheet" href="css/variables.css?v=575">
+  <link rel="stylesheet" href="css/base.css?v=575">
+  <link rel="stylesheet" href="css/layout.css?v=575">
+  <link rel="stylesheet" href="css/components.css?v=575">
+  <link rel="stylesheet" href="css/charts.css?v=575">
+  <link rel="stylesheet" href="css/animations.css?v=575">
+  <link rel="stylesheet" href="css/responsive.css?v=575">
 
   <!-- Detect password recovery BEFORE Supabase processes the hash -->
   <script>
@@ -425,12 +425,14 @@
         <!-- Dock de navigation (onglets glissants) — centré dans le header -->
         <nav class="stab" id="hdock" aria-label="Navigation rapide">
           <span class="stab-cursor" aria-hidden="true"></span>
+          <a href="#/dashboard" class="stab-tab" data-route="/dashboard">Tableau de bord</a>
           <a href="#/planning" class="stab-tab" data-route="/planning">Planning</a>
           <a href="#/suivi-vehicules" class="stab-tab" data-route="/suivi-vehicules">Suivi</a>
           <a href="#/chauffeurs" class="stab-tab" data-route="/chauffeurs">Chauffeurs</a>
           <a href="#/vehicules" class="stab-tab" data-route="/vehicules">Véhicules</a>
           <a href="#/versements" class="stab-tab" data-route="/versements">Versements</a>
           <a href="#/rapports" class="stab-tab" data-route="/rapports">Rapport</a>
+          <a href="#/taches" class="stab-tab" data-route="/taches">Tâches</a>
         </nav>
         <div class="header-right">
           <div class="header-search">
@@ -554,50 +556,50 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
 
   <!-- App JS -->
-  <script src="js/supabase-config.js?v=574"></script>
-  <script src="js/store.js?v=574"></script>
-  <script src="js/utils.js?v=574"></script>
-  <script src="js/demo-data.js?v=574"></script>
-  <script src="js/auth.js?v=574"></script>
-  <script src="js/components/toast.js?v=574"></script>
-  <script src="js/components/modal.js?v=574"></script>
-  <script src="js/components/sidebar.js?v=574"></script>
-  <script src="js/components/header.js?v=574"></script>
-  <script src="js/components/table.js?v=574"></script>
-  <script src="js/components/form-builder.js?v=574"></script>
-  <script src="js/pages/dashboard.js?v=574"></script>
-  <script src="js/pages/chauffeurs.js?v=574"></script>
-  <script src="js/pages/vehicules.js?v=574"></script>
-  <script src="js/pages/versements.js?v=574"></script>
-  <script src="js/pages/analyse-versements.js?v=574"></script>
-  <script src="js/pages/analyse-rentabilite.js?v=574"></script>
-  <script src="js/pages/bonus.js?v=574"></script>
-  <script src="js/pages/simulateur.js?v=574"></script>
-  <script src="js/pages/rentabilite.js?v=574"></script>
-  <script src="js/pages/suivi-vehicules.js?v=574"></script>
-  <script src="js/pages/controle-conduite.js?v=574"></script>
-  <script src="js/pages/rapports.js?v=574"></script>
-  <script src="js/pages/comptabilite.js?v=574"></script>
-  <script src="js/pages/planning.js?v=574"></script>
-  <script src="js/pages/occupation-vehicules.js?v=574"></script>
-  <script src="js/pages/alertes.js?v=574"></script>
-  <script src="js/pages/parametres.js?v=574"></script>
-  <script src="js/pages/yango.js?v=574"></script>
-  <script src="js/pages/messagerie.js?v=574"></script>
-  <script src="js/pages/garage.js?v=574"></script>
-  <script src="js/pages/incidents.js?v=574"></script>
-  <script src="js/pages/contraventions.js?v=574"></script>
-  <script src="js/pages/depenses.js?v=574"></script>
-  <script src="js/pages/activite.js?v=574"></script>
+  <script src="js/supabase-config.js?v=575"></script>
+  <script src="js/store.js?v=575"></script>
+  <script src="js/utils.js?v=575"></script>
+  <script src="js/demo-data.js?v=575"></script>
+  <script src="js/auth.js?v=575"></script>
+  <script src="js/components/toast.js?v=575"></script>
+  <script src="js/components/modal.js?v=575"></script>
+  <script src="js/components/sidebar.js?v=575"></script>
+  <script src="js/components/header.js?v=575"></script>
+  <script src="js/components/table.js?v=575"></script>
+  <script src="js/components/form-builder.js?v=575"></script>
+  <script src="js/pages/dashboard.js?v=575"></script>
+  <script src="js/pages/chauffeurs.js?v=575"></script>
+  <script src="js/pages/vehicules.js?v=575"></script>
+  <script src="js/pages/versements.js?v=575"></script>
+  <script src="js/pages/analyse-versements.js?v=575"></script>
+  <script src="js/pages/analyse-rentabilite.js?v=575"></script>
+  <script src="js/pages/bonus.js?v=575"></script>
+  <script src="js/pages/simulateur.js?v=575"></script>
+  <script src="js/pages/rentabilite.js?v=575"></script>
+  <script src="js/pages/suivi-vehicules.js?v=575"></script>
+  <script src="js/pages/controle-conduite.js?v=575"></script>
+  <script src="js/pages/rapports.js?v=575"></script>
+  <script src="js/pages/comptabilite.js?v=575"></script>
+  <script src="js/pages/planning.js?v=575"></script>
+  <script src="js/pages/occupation-vehicules.js?v=575"></script>
+  <script src="js/pages/alertes.js?v=575"></script>
+  <script src="js/pages/parametres.js?v=575"></script>
+  <script src="js/pages/yango.js?v=575"></script>
+  <script src="js/pages/messagerie.js?v=575"></script>
+  <script src="js/pages/garage.js?v=575"></script>
+  <script src="js/pages/incidents.js?v=575"></script>
+  <script src="js/pages/contraventions.js?v=575"></script>
+  <script src="js/pages/depenses.js?v=575"></script>
+  <script src="js/pages/activite.js?v=575"></script>
 
-  <script src="js/pages/notifications-admin.js?v=574"></script>
-  <script src="js/pages/taches.js?v=574"></script>
-  <script src="js/pages/gantt-taches.js?v=574"></script>
-  <script src="js/pages/mon-compte.js?v=574"></script>
-  <script src="js/pages/classement.js?v=574"></script>
-  <script src="js/pages/menu.js?v=574"></script>
-  <script src="js/components/bottom-nav.js?v=574"></script>
-  <script src="js/router.js?v=574"></script>
-  <script src="js/app.js?v=574"></script>
+  <script src="js/pages/notifications-admin.js?v=575"></script>
+  <script src="js/pages/taches.js?v=575"></script>
+  <script src="js/pages/gantt-taches.js?v=575"></script>
+  <script src="js/pages/mon-compte.js?v=575"></script>
+  <script src="js/pages/classement.js?v=575"></script>
+  <script src="js/pages/menu.js?v=575"></script>
+  <script src="js/components/bottom-nav.js?v=575"></script>
+  <script src="js/router.js?v=575"></script>
+  <script src="js/app.js?v=575"></script>
 </body>
 </html>
