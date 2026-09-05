@@ -189,10 +189,10 @@
 /* ========== HEADER ========== */
 .header {
   height: var(--header-height);
-  background: var(--bg-secondary);
+  background: transparent;
   border: none;
   border-radius: 16px;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
   margin: 14px 24px 4px;
   display: flex;
   align-items: center;
