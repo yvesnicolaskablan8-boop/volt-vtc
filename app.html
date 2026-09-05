@@ -22,7 +22,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 411;
+    var APP_VERSION = 412;
     var stored = parseInt(localStorage.getItem('pilote_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_app_version', APP_VERSION);
@@ -67,13 +67,13 @@
   <!-- Leaflet, Chart.js, jsPDF: loaded on demand via LazyLibs -->
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/variables.css?v=565">
-  <link rel="stylesheet" href="css/base.css?v=565">
-  <link rel="stylesheet" href="css/layout.css?v=565">
-  <link rel="stylesheet" href="css/components.css?v=565">
-  <link rel="stylesheet" href="css/charts.css?v=565">
-  <link rel="stylesheet" href="css/animations.css?v=565">
-  <link rel="stylesheet" href="css/responsive.css?v=565">
+  <link rel="stylesheet" href="css/variables.css?v=566">
+  <link rel="stylesheet" href="css/base.css?v=566">
+  <link rel="stylesheet" href="css/layout.css?v=566">
+  <link rel="stylesheet" href="css/components.css?v=566">
+  <link rel="stylesheet" href="css/charts.css?v=566">
+  <link rel="stylesheet" href="css/animations.css?v=566">
+  <link rel="stylesheet" href="css/responsive.css?v=566">
 
   <!-- Detect password recovery BEFORE Supabase processes the hash -->
   <script>
@@ -335,10 +335,6 @@
           <iconify-icon icon="solar:calendar-bold-duotone" class="nav-icon"></iconify-icon>
           <span>Planning</span>
         </a>
-        <a class="nav-item" href="#/occupation-vehicules" data-route="/occupation-vehicules">
-          <iconify-icon icon="solar:calendar-mark-bold-duotone" class="nav-icon"></iconify-icon>
-          <span>Occupation v&eacute;hicules</span>
-        </a>
 
         <div class="nav-section-title">Finances</div>
         <a class="nav-item" href="#/versements" data-route="/versements">
@@ -589,49 +585,50 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
 
   <!-- App JS -->
-  <script src="js/supabase-config.js?v=565"></script>
-  <script src="js/store.js?v=565"></script>
-  <script src="js/utils.js?v=565"></script>
-  <script src="js/demo-data.js?v=565"></script>
-  <script src="js/auth.js?v=565"></script>
-  <script src="js/components/toast.js?v=565"></script>
-  <script src="js/components/modal.js?v=565"></script>
-  <script src="js/components/sidebar.js?v=565"></script>
-  <script src="js/components/header.js?v=565"></script>
-  <script src="js/components/table.js?v=565"></script>
-  <script src="js/components/form-builder.js?v=565"></script>
-  <script src="js/pages/dashboard.js?v=565"></script>
-  <script src="js/pages/chauffeurs.js?v=565"></script>
-  <script src="js/pages/vehicules.js?v=565"></script>
-  <script src="js/pages/versements.js?v=565"></script>
-  <script src="js/pages/analyse-versements.js?v=565"></script>
-  <script src="js/pages/analyse-rentabilite.js?v=565"></script>
-  <script src="js/pages/bonus.js?v=565"></script>
-  <script src="js/pages/simulateur.js?v=565"></script>
-  <script src="js/pages/rentabilite.js?v=565"></script>
-  <script src="js/pages/suivi-vehicules.js?v=565"></script>
-  <script src="js/pages/controle-conduite.js?v=565"></script>
-  <script src="js/pages/rapports.js?v=565"></script>
-  <script src="js/pages/comptabilite.js?v=565"></script>
-  <script src="js/pages/planning.js?v=565"></script>
-  <script src="js/pages/occupation-vehicules.js?v=565"></script>
-  <script src="js/pages/alertes.js?v=565"></script>
-  <script src="js/pages/parametres.js?v=565"></script>
-  <script src="js/pages/yango.js?v=565"></script>
-  <script src="js/pages/messagerie.js?v=565"></script>
-  <script src="js/pages/garage.js?v=565"></script>
-  <script src="js/pages/incidents.js?v=565"></script>
-  <script src="js/pages/contraventions.js?v=565"></script>
-  <script src="js/pages/depenses.js?v=565"></script>
-  <script src="js/pages/activite.js?v=565"></script>
+  <script src="js/supabase-config.js?v=566"></script>
+  <script src="js/store.js?v=566"></script>
+  <script src="js/utils.js?v=566"></script>
+  <script src="js/demo-data.js?v=566"></script>
+  <script src="js/auth.js?v=566"></script>
+  <script src="js/components/toast.js?v=566"></script>
+  <script src="js/components/modal.js?v=566"></script>
+  <script src="js/components/sidebar.js?v=566"></script>
+  <script src="js/components/header.js?v=566"></script>
+  <script src="js/components/table.js?v=566"></script>
+  <script src="js/components/form-builder.js?v=566"></script>
+  <script src="js/pages/dashboard.js?v=566"></script>
+  <script src="js/pages/chauffeurs.js?v=566"></script>
+  <script src="js/pages/vehicules.js?v=566"></script>
+  <script src="js/pages/versements.js?v=566"></script>
+  <script src="js/pages/analyse-versements.js?v=566"></script>
+  <script src="js/pages/analyse-rentabilite.js?v=566"></script>
+  <script src="js/pages/bonus.js?v=566"></script>
+  <script src="js/pages/simulateur.js?v=566"></script>
+  <script src="js/pages/rentabilite.js?v=566"></script>
+  <script src="js/pages/suivi-vehicules.js?v=566"></script>
+  <script src="js/pages/controle-conduite.js?v=566"></script>
+  <script src="js/pages/rapports.js?v=566"></script>
+  <script src="js/pages/comptabilite.js?v=566"></script>
+  <script src="js/pages/planning.js?v=566"></script>
+  <script src="js/pages/occupation-vehicules.js?v=566"></script>
+  <script src="js/pages/alertes.js?v=566"></script>
+  <script src="js/pages/parametres.js?v=566"></script>
+  <script src="js/pages/yango.js?v=566"></script>
+  <script src="js/pages/messagerie.js?v=566"></script>
+  <script src="js/pages/garage.js?v=566"></script>
+  <script src="js/pages/incidents.js?v=566"></script>
+  <script src="js/pages/contraventions.js?v=566"></script>
+  <script src="js/pages/depenses.js?v=566"></script>
+  <script src="js/pages/activite.js?v=566"></script>
 
-  <script src="js/pages/notifications-admin.js?v=565"></script>
-  <script src="js/pages/taches.js?v=565"></script>
-  <script src="js/pages/mon-compte.js?v=565"></script>
-  <script src="js/pages/classement.js?v=565"></script>
-  <script src="js/pages/menu.js?v=565"></script>
-  <script src="js/components/bottom-nav.js?v=565"></script>
-  <script src="js/router.js?v=565"></script>
-  <script src="js/app.js?v=565"></script>
+  <script src="js/pages/notifications-admin.js?v=566"></script>
+  <script src="js/pages/taches.js?v=566"></script>
+  <script src="js/pages/gantt-taches.js?v=566"></script>
+  <script src="js/pages/mon-compte.js?v=566"></script>
+  <script src="js/pages/classement.js?v=566"></script>
+  <script src="js/pages/menu.js?v=566"></script>
+  <script src="js/components/bottom-nav.js?v=566"></script>
+  <script src="js/router.js?v=566"></script>
+  <script src="js/app.js?v=566"></script>
 </body>
 </html>

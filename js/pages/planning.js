@@ -98,6 +98,7 @@ const PlanningPage = {
                 <div class="tab ${this._currentView === 'day' ? 'active' : ''}" data-view="day" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:sun-2-bold-duotone"></iconify-icon> Jour</div>
                 <div class="tab ${this._currentView === 'list' ? 'active' : ''}" data-view="list" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon> Liste</div>
                 <div class="tab ${this._currentView === 'stats' ? 'active' : ''}" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
+                <div class="tab ${this._currentView === 'gantt' ? 'active' : ''}" data-view="gantt" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon> Gantt</div>
               </div>
             </div>
           </div>
@@ -192,6 +193,12 @@ const PlanningPage = {
           label.textContent = `${Utils.getMonthName(this._currentMonth.getMonth())} ${this._currentMonth.getFullYear()}`;
           ct.innerHTML = this._renderStatsView();
           this._loadStatsCharts();
+          break;
+        case 'gantt':
+          label.textContent = 'Occupation des véhicules';
+          ct.replaceChildren();
+          if (typeof OccupationVehiculesPage !== 'undefined') OccupationVehiculesPage.renderInto(ct);
+          else ct.insertAdjacentHTML('beforeend', '<div style="padding:30px;text-align:center;color:var(--text-muted);">Vue indisponible.</div>');
           break;
       }
 
@@ -996,16 +1003,18 @@ const PlanningPage = {
         const ch = chById[s.chauffeurId];
         if (!ch) return;
         if (!this._matchesShiftFilters(s)) return;
-        chips.push(`<div class="pcal-chip" draggable="true" ondragstart="event.stopPropagation();PlanningPage._onDragShift(event,'${s.id}')" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
-          <span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.</span>
+        chips.push(`<div class="pcal-ev" draggable="true" ondragstart="event.stopPropagation();PlanningPage._onDragShift(event,'${s.id}')" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
+          <span class="pcal-ev-name">${Utils.escHtml(ch.prenom + ' ' + ch.nom)}</span>
+          <span class="pcal-ev-time">${Utils.escHtml(this._getShiftTimeLabel(s))}</span>
         </div>`);
       });
       dayAbsences.forEach(a => {
         if (!this._showAbsences) return;
         const ch = chById[a.chauffeurId];
         if (!ch) return;
-        chips.push(`<div class="pcal-chip pcal-chip-abs" style="--c:${this._absenceTypeColor(a.type)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._absenceTypeLabel(a.type)}" onclick="event.stopPropagation();PlanningPage._viewAbsence('${a.id}')">
-          <span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}. <em>(${this._absenceTypeLabel(a.type).toLowerCase()})</em></span>
+        chips.push(`<div class="pcal-ev pcal-ev-abs" style="--c:${this._absenceTypeColor(a.type)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._absenceTypeLabel(a.type)}" onclick="event.stopPropagation();PlanningPage._viewAbsence('${a.id}')">
+          <span class="pcal-ev-name">${Utils.escHtml(ch.prenom + ' ' + ch.nom)}</span>
+          <span class="pcal-ev-time">${Utils.escHtml(this._absenceTypeLabel(a.type))}</span>
         </div>`);
       });
 
@@ -1204,7 +1213,7 @@ const PlanningPage = {
       .pcal-head { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:8px; }
       .pcal-head div { text-align:center; font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--text-muted); }
       .pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
-      .pcal-cell { border:1px solid var(--border-color); border-radius:14px; background:var(--bg-secondary); min-height:104px; padding:10px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:6px; }
+      .pcal-cell { border:1px solid var(--border-color); border-radius:14px; background:var(--bg-secondary); min-height:122px; padding:10px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:6px; }
       .pcal-cell:hover { border-color:var(--pilote-blue, #3b82f6); box-shadow:0 2px 10px rgba(59,130,246,.10); }
       .pcal-cell-out { background:var(--bg-tertiary); border-color:transparent; cursor:default; opacity:.55; }
       /* Aujourd'hui : cellule teintée bleu clair + pastille de date bleue (style Spike) */
@@ -1227,6 +1236,13 @@ const PlanningPage = {
       .pcal-chip-abs .pcal-chip-txt { opacity:.8; }
       .pcal-chip-txt { overflow:hidden; text-overflow:ellipsis; }
       .pcal-more { font-size:10px; font-weight:600; color:var(--text-muted); padding-left:2px; }
+      /* Cartes événement (style calendrier plein écran) : nom + heure */
+      .pcal-ev { display:flex; flex-direction:column; gap:1px; padding:4px 8px; border-radius:8px; border:1px solid var(--border-color); border-left:3px solid var(--c,#5D87FF); background:color-mix(in srgb, var(--c,#5D87FF) 8%, var(--bg-secondary)); cursor:pointer; overflow:hidden; transition:background .12s, box-shadow .12s, transform .12s; }
+      .pcal-ev:hover { background:color-mix(in srgb, var(--c,#5D87FF) 16%, var(--bg-secondary)); box-shadow:0 2px 8px rgba(37,83,185,.14); transform:translateX(1px); }
+      .pcal-ev:active { transform:translateX(1px) scale(.98); }
+      .pcal-ev-name { font-size:11px; font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.25; }
+      .pcal-ev-time { font-size:10px; font-weight:600; color:var(--text-muted); line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .pcal-ev-abs .pcal-ev-name { opacity:.85; }
     </style>`;
   },
 

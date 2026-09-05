@@ -231,7 +231,12 @@ const TachesPage = {
       case 'dashboard': ct.innerHTML = this._renderDashboard(); this._bindDashboardClicks(ct); break;
       case 'kanban': ct.innerHTML = this._renderKanban(); this._bindKanbanDragDrop(); break;
       case 'eisenhower': ct.innerHTML = this._renderEisenhower(); this._bindEisenhowerDragDrop(); break;
-      case 'gantt': ct.innerHTML = this._renderGantt(); this._scrollGanttToToday(); break;
+      case 'gantt':
+        // Nouvelle frise Gantt (widget dédié) : début→échéance, couleur par statut,
+        // retards en rouge. Remplace l'ancien rendu interne.
+        ct.replaceChildren();
+        GanttTachesPage.renderInto(ct);
+        break;
       case 'reunions': ct.innerHTML = this._renderReunions(); break;
       case 'liste': ct.innerHTML = this._renderListe(); this._bindListeEvents(); break;
     }

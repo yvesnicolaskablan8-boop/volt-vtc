@@ -9,8 +9,17 @@ const OccupationVehiculesPage = {
   _start: null,   // 1er jour de la fenêtre (00:00)
   _days: 14,      // largeur de la fenêtre en jours
   _COLW: 76,
+  _container: null, // conteneur cible (null = #page-content en mode page)
+
+  // Mode widget : rend la frise DANS un conteneur fourni (ex. onglet Planning).
+  renderInto(el) {
+    this._container = (typeof el === 'string') ? document.getElementById(el) : el;
+    if (!this._start) this._start = this._defaultStart();
+    this._paint();
+  },
 
   render() {
+    this._container = null;
     if (!this._start) this._start = this._defaultStart();
     this._paint();
   },
@@ -42,7 +51,7 @@ const OccupationVehiculesPage = {
   _setDays(n) { this._days = n; this._paint(); },
 
   _paint() {
-    const c = document.getElementById('page-content');
+    const c = this._container || document.getElementById('page-content');
     if (!c) return;
     c.replaceChildren();
     c.insertAdjacentHTML('beforeend', this._template());
@@ -116,14 +125,11 @@ const OccupationVehiculesPage = {
 
     return `
       ${this._styles()}
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon> Occupation des véhicules</h1>
-        <div class="page-actions">
-          <div class="ov-days">${dBtn(7, '7 j')}${dBtn(14, '14 j')}${dBtn(30, '30 j')}</div>
-          <button class="btn btn-sm btn-secondary" onclick="OccupationVehiculesPage._today()">Aujourd'hui</button>
-          <button class="btn btn-sm btn-secondary" onclick="OccupationVehiculesPage._nav(-7)"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>
-          <button class="btn btn-sm btn-secondary" onclick="OccupationVehiculesPage._nav(7)"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>
-        </div>
+      <div class="ov-toolbar">
+        <div class="ov-days">${dBtn(7, '7 j')}${dBtn(14, '14 j')}${dBtn(30, '30 j')}</div>
+        <button class="btn btn-sm btn-secondary" onclick="OccupationVehiculesPage._today()">Aujourd'hui</button>
+        <button class="btn btn-sm btn-secondary" onclick="OccupationVehiculesPage._nav(-7)"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>
+        <button class="btn btn-sm btn-secondary" onclick="OccupationVehiculesPage._nav(7)"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>
       </div>
 
       <div class="ov-card">
@@ -144,6 +150,7 @@ const OccupationVehiculesPage = {
 
   _styles() {
     return `<style>
+      .ov-toolbar { display:flex; justify-content:flex-end; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
       .ov-card { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:18px; overflow:hidden; }
       .ov-titlebar { padding:14px 20px; font-size:15px; font-weight:800; border-bottom:1px solid var(--border-color); }
       .ov-days { display:inline-flex; gap:3px; padding:3px; background:var(--bg-tertiary); border-radius:20px; margin-right:4px; }
