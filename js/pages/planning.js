@@ -81,16 +81,6 @@ const PlanningPage = {
                 <iconify-icon icon="solar:magnifer-bold-duotone" style="color:var(--pilote-blue);font-size:13px;flex-shrink:0;"></iconify-icon>
                 <input type="text" id="filter-planning-search" class="form-control" placeholder="Nom..." value="${this._filterSearch}" style="width:80px;font-size:11px;padding:3px 4px;border:none;background:transparent;font-weight:500;min-width:0;">
               </div>
-              <select id="flt-service" class="form-control" style="font-size:11px;padding:4px 6px;width:auto;min-width:0;border-radius:var(--radius-sm);">
-                <option value="">Service</option>
-                <option value="jour" ${this._fltService === 'jour' ? 'selected' : ''}>Jour</option>
-                <option value="nuit" ${this._fltService === 'nuit' ? 'selected' : ''}>Nuit</option>
-              </select>
-              <select id="flt-role" class="form-control" style="font-size:11px;padding:4px 6px;width:auto;min-width:0;border-radius:var(--radius-sm);">
-                <option value="">Rôle</option>
-                <option value="titulaire" ${this._fltRole === 'titulaire' ? 'selected' : ''}>Titulaires</option>
-                <option value="doublure" ${this._fltRole === 'doublure' ? 'selected' : ''}>Doublures</option>
-              </select>
               <button id="flt-abs" class="tab ${this._showAbsences ? 'active' : ''}" style="padding:5px 10px;font-size:11px;" title="Afficher / masquer les absences"><iconify-icon icon="solar:moon-sleep-bold-duotone"></iconify-icon> Absences</button>
               <div class="tabs" id="planning-view-tabs" style="margin:0;flex-shrink:0;">
                 <div class="tab ${this._currentView === 'month' ? 'active' : ''}" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
@@ -138,10 +128,6 @@ const PlanningPage = {
       this._renderView();
     });
 
-    const fltS = document.getElementById('flt-service');
-    if (fltS) fltS.addEventListener('change', (e) => { this._fltService = e.target.value; this._renderView(); });
-    const fltR = document.getElementById('flt-role');
-    if (fltR) fltR.addEventListener('change', (e) => { this._fltRole = e.target.value; this._renderView(); });
     const fltA = document.getElementById('flt-abs');
     if (fltA) fltA.addEventListener('click', () => { this._showAbsences = !this._showAbsences; fltA.classList.toggle('active', this._showAbsences); this._renderView(); });
 
