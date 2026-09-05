@@ -1345,3 +1345,15 @@ body.pilote-native-app.pilote-has-bottomnav .header-toggle {
   margin: 0 0 8px; padding-right: 40px;
 }
 .kpi-value { font-size: 1.7rem; }
+
+/* ============================================================
+   HARMONISATION DES COULEURS KPI
+   Valeurs en neutre + icônes grises (fini l'arc-en-ciel) ;
+   seuls les petits badges de tendance gardent une couleur.
+   ============================================================ */
+.kpi-value { color: var(--text-primary) !important; }
+.kpi-card .kpi-icon {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-secondary) !important;
+  box-shadow: none !important;
+}
