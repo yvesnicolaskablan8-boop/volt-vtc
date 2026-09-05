@@ -86,7 +86,6 @@ const PlanningPage = {
                 <div class="tab ${this._currentView === 'month' ? 'active' : ''}" data-view="month" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois</div>
                 <div class="tab ${this._currentView === 'week' ? 'active' : ''}" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
                 <div class="tab ${this._currentView === 'day' ? 'active' : ''}" data-view="day" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:sun-2-bold-duotone"></iconify-icon> Jour</div>
-                <div class="tab ${this._currentView === 'list' ? 'active' : ''}" data-view="list" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon> Liste</div>
                 <div class="tab ${this._currentView === 'stats' ? 'active' : ''}" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
                 <div class="tab ${this._currentView === 'gantt' ? 'active' : ''}" data-view="gantt" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon> Gantt</div>
               </div>
