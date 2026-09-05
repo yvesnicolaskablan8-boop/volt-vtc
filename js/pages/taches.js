@@ -1675,15 +1675,28 @@ const TachesPage = {
       body += '<div style="margin-bottom:16px;padding:10px;border-radius:8px;background:var(--bg-tertiary);font-size:13px;color:var(--text-primary);white-space:pre-wrap;">' + Utils.escHtml(t.description) + '</div>';
     }
 
+    // Assigné à (avatar) + ré-assignation directe : tout membre peut (ré)attribuer la tâche.
+    const _users = this._getUsers();
+    const _assName = t.assigneANom || this._getUserName(t.assigneA) || '';
+    const _assignSel = '<select onchange="TachesPage._reassignTask(\'' + t.id + '\',this.value)" style="padding:6px 10px;border-radius:8px;background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer;max-width:180px;">'
+      + '<option value="">Non assigné</option>'
+      + _users.map(u => { const nm = [u.prenom, u.nom].filter(Boolean).join(' ') || u.login; return '<option value="' + u.id + '"' + (u.id === t.assigneA ? ' selected' : '') + '>' + Utils.escHtml(nm) + '</option>'; }).join('')
+      + '</select>';
+    const _periode = (t.dateDebut || t.dateEcheance)
+      ? ((t.dateDebut ? Utils.formatDate(t.dateDebut) : '&mdash;') + ' &rarr; ' + (t.dateEcheance ? '<span style="' + (isLate ? 'color:#ef4444;font-weight:700;' : '') + '">' + Utils.formatDate(t.dateEcheance) + '</span>' : '&mdash;'))
+      : '&mdash;';
+    body += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;border:1px solid var(--border-color);border-radius:14px;">'
+      + '<span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);">Assigné à</span>'
+      + (_assName ? this._avatarBubble(_assName) + '<span style="font-size:13px;font-weight:700;">' + Utils.escHtml(_assName) + '</span>' : '<span style="color:var(--text-muted);font-size:13px;">Non assigné</span>')
+      + '<span style="margin-left:auto;font-size:11px;color:var(--text-muted);">Réassigner :</span>' + _assignSel
+      + '</div>';
     body += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:13px;">'
-      + '<div><span style="color:var(--text-muted);">Assigné à :</span> ' + (t.assigneANom ? Utils.escHtml(t.assigneANom) : '<span style="color:var(--text-muted);">Non assigné</span>') + '</div>'
+      + '<div><span style="color:var(--text-muted);">Période :</span> ' + _periode + '</div>'
       + '<div><span style="color:var(--text-muted);">Type :</span> ' + (this._typeLabels[t.type] || t.type || '&mdash;') + '</div>'
-      + '<div><span style="color:var(--text-muted);">Échéance :</span> ' + (t.dateEcheance ? '<span style="' + (isLate ? 'color:#ef4444;font-weight:600;' : '') + '">' + Utils.formatDate(t.dateEcheance) + '</span>' : '&mdash;') + '</div>'
-      + '<div><span style="color:var(--text-muted);">Créé par :</span> ' + (t.creeParNom ? Utils.escHtml(t.creeParNom) : '&mdash;') + '</div>';
-
+      + '<div><span style="color:var(--text-muted);">Créé par :</span> ' + (t.creeParNom ? Utils.escHtml(t.creeParNom) : '&mdash;') + '</div>'
+      + '<div><span style="color:var(--text-muted);">Créé le :</span> ' + (t.dateCreation ? Utils.formatDate(t.dateCreation) : '&mdash;') + '</div>';
     if (t.tempsEstime) body += '<div><span style="color:var(--text-muted);">Temps estimé :</span> ' + t.tempsEstime + ' min</div>';
     if (t.recurrence && t.recurrence !== 'aucune') body += '<div><span style="color:var(--text-muted);">Récurrence :</span> ' + Utils.escHtml(t.recurrence) + '</div>';
-    body += '<div><span style="color:var(--text-muted);">Créé le :</span> ' + (t.dateCreation ? Utils.formatDate(t.dateCreation) : '&mdash;') + '</div>';
     if (t.dateTerminaison) body += '<div><span style="color:var(--text-muted);">Terminé le :</span> ' + Utils.formatDate(t.dateTerminaison) + '</div>';
     body += '</div>';
 
@@ -1715,15 +1728,37 @@ const TachesPage = {
     }
 
     if (subTotal > 0) {
-      body += '<div style="margin-bottom:16px;"><div style="font-weight:600;font-size:12px;color:var(--text-muted);margin-bottom:6px;">Sous-tâches (' + subDone + '/' + subTotal + ')</div>'
-        + '<div style="width:100%;height:6px;border-radius:3px;background:var(--bg-tertiary);margin-bottom:8px;">'
-        + '<div style="height:100%;border-radius:3px;background:#22c55e;width:' + Math.round((subDone / subTotal) * 100) + '%;transition:width .3s;"></div></div>';
-      t.sousTaches.forEach(st => {
-        body += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;">'
-          + '<input type="checkbox"' + (st.fait ? ' checked' : '') + ' onchange="TachesPage._toggleSubtask(\'' + t.id + '\',\'' + st.id + '\',this.checked)">'
-          + '<span style="' + (st.fait ? 'text-decoration:line-through;color:var(--text-muted);' : 'color:var(--text-primary);') + '">' + Utils.escHtml(st.titre) + '</span></div>';
+      body += '<div style="margin-bottom:16px;">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><span style="font-weight:800;font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Sous-tâches</span><span style="font-size:12px;font-weight:700;color:var(--text-muted);">' + subDone + '/' + subTotal + '</span></div>'
+        + '<style>'
+        + '.tl-item{position:relative;display:flex;gap:14px;padding-bottom:12px;}'
+        + '.tl-rail{position:relative;width:16px;flex-shrink:0;display:flex;justify-content:center;}'
+        + '.tl-line{position:absolute;top:20px;bottom:-12px;left:50%;transform:translateX(-50%);width:2px;background:var(--border-color);}'
+        + '.tl-dot{position:relative;z-index:1;margin-top:15px;width:13px;height:13px;border-radius:50%;background:var(--bg-tertiary);border:2px solid var(--border-color);}'
+        + '.tl-dot.done{background:#13DEB9;border-color:#13DEB9;box-shadow:0 0 0 3px rgba(19,222,185,.16);}'
+        + '.tl-card{flex:1;border:1px solid var(--border-color);border-radius:12px;padding:11px 14px;transition:border-color .2s,box-shadow .2s;}'
+        + '.tl-card:hover{border-color:var(--pilote-blue);box-shadow:0 2px 10px rgba(93,135,255,.12);}'
+        + '.tl-card:hover .tl-btn{opacity:1;}'
+        + '.tl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}'
+        + '.tl-title{font-size:13px;font-weight:600;color:var(--text-primary);}'
+        + '.tl-title.strike{text-decoration:line-through;color:var(--text-muted);}'
+        + '.tl-status{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:20px;white-space:nowrap;}'
+        + '.tl-status.ok{background:rgba(19,222,185,.15);color:#0a9d78;}'
+        + '.tl-status.todo{background:var(--bg-tertiary);color:var(--text-muted);}'
+        + '.tl-btn{margin-top:8px;border:none;background:var(--bg-tertiary);color:var(--text-secondary);font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;cursor:pointer;opacity:.55;transition:opacity .2s,background .2s;}'
+        + '.tl-btn:hover{background:var(--pilote-blue);color:#fff;opacity:1;}'
+        + '</style><div class="tl">';
+      t.sousTaches.forEach((st, idx) => {
+        const done = !!st.fait, last = idx === t.sousTaches.length - 1;
+        body += '<div class="tl-item">'
+          + '<div class="tl-rail">' + (last ? '' : '<span class="tl-line"></span>') + '<span class="tl-dot' + (done ? ' done' : '') + '"></span></div>'
+          + '<div class="tl-card">'
+          + '<div class="tl-top"><span class="tl-title' + (done ? ' strike' : '') + '">' + Utils.escHtml(st.titre) + '</span>'
+          + '<span class="tl-status ' + (done ? 'ok' : 'todo') + '">' + (done ? 'Terminé' : 'À faire') + '</span></div>'
+          + '<button class="tl-btn" onclick="TachesPage._toggleSubtask(\'' + t.id + '\',\'' + st.id + '\',' + (!done) + ')">' + (done ? 'Rouvrir' : 'Marquer fait') + '</button>'
+          + '</div></div>';
       });
-      body += '</div>';
+      body += '</div></div>';
     }
 
     body += '</div>';
@@ -1881,6 +1916,17 @@ const TachesPage = {
     this._renderActiveView();
   },
 
+  // (Ré)assigner une tâche à n'importe quel membre depuis la vue détail :
+  // les utilisateurs peuvent ainsi s'attribuer mutuellement des tâches.
+  _reassignTask(taskId, userId) {
+    const u = this._getUsers().find(x => x.id === userId);
+    const nom = u ? ([u.prenom, u.nom].filter(Boolean).join(' ') || u.login) : '';
+    Store.update('taches', taskId, { assigneA: userId || '', assigneANom: nom, dateModification: new Date().toISOString() });
+    if (typeof Toast !== 'undefined') Toast.success(userId ? ('Tâche assignée à ' + nom) : 'Tâche désassignée');
+    Modal.close();
+    this._viewTask(taskId);
+  },
+
   _toggleSubtask(taskId, subId, checked) {
     const t = this._getTaches().find(x => x.id === taskId);
     if (!t) return;
@@ -1888,6 +1934,8 @@ const TachesPage = {
       st.id === subId ? { ...st, fait: checked } : st
     );
     Store.update('taches', taskId, { sousTaches: subs, dateModification: new Date().toISOString() });
+    // Rafraîchit la vue détail pour mettre à jour la timeline (pastille + statut).
+    if (document.getElementById('modal-body')) this._viewTask(taskId);
   },
 
   // =====================================================================
