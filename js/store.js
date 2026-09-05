@@ -519,7 +519,7 @@ const Store = {
     const json = await res.json();
 
     if (!res.ok) {
-      const msg = json.error || json.details || `Erreur ${res.status}`;
+      const msg = [json.error, json.details].filter(Boolean).join(' — ') || `Erreur ${res.status}`;
       throw new Error(msg);
     }
     return json;
