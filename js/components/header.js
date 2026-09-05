@@ -16,24 +16,35 @@ const Header = {
     this._initHDock();
   },
 
-  // Dock de navigation (onglets glissants) : un curseur suit le survol et se pose
-  // sur l'onglet de la page courante (masqué si aucune de ces pages n'est active).
+  // Dock de navigation (icônes + limelight) : le faisceau se pose au-dessus de
+  // l'onglet de la page courante ; le nom apparaît en tooltip au survol.
   _initHDock() {
     const nav = document.getElementById('hdock'); if (!nav) return;
-    const cursor = nav.querySelector('.stab-cursor');
-    const tabs = Array.from(nav.querySelectorAll('.stab-tab'));
-    if (!cursor || !tabs.length) return;
-    const move = (t) => { if (!t) return; cursor.style.left = t.offsetLeft + 'px'; cursor.style.width = t.offsetWidth + 'px'; cursor.style.opacity = '1'; };
-    const activeTab = () => { const h = (location.hash || '').replace(/^#/, ''); return tabs.find(t => { const r = t.getAttribute('data-route'); return r && (h === r || h.startsWith(r + '/')); }); };
-    const rest = () => { const a = activeTab(); if (a) move(a); else cursor.style.opacity = '0'; };
-    tabs.forEach((t, i) => this._on('stabHover' + i, t, 'mouseenter', () => move(t)));
-    this._on('stabLeave', nav, 'mouseleave', rest);
-    this._on('stabHash', window, 'hashchange', rest);
-    this._on('stabResize', window, 'resize', rest);
-    // Placement initial robuste : les offsets sont lus après stabilisation du
-    // layout flex ET des polices (sinon le curseur se pose à côté au 1er rendu).
-    requestAnimationFrame(() => requestAnimationFrame(rest));
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(rest);
+    const beam = nav.querySelector('.lnav-beam');
+    const items = Array.from(nav.querySelectorAll('.lnav-item'));
+    if (!beam || !items.length) return;
+    const activeItem = () => { const h = (location.hash || '').replace(/^#/, ''); return items.find(t => { const r = t.getAttribute('data-route'); return r && (h === r || h.startsWith(r + '/')); }); };
+    const place = () => {
+      const a = activeItem();
+      items.forEach(t => t.classList.remove('is-active'));
+      if (a) { a.classList.add('is-active'); beam.style.left = (a.offsetLeft + a.offsetWidth / 2 - beam.offsetWidth / 2) + 'px'; beam.style.opacity = '1'; }
+      else { beam.style.opacity = '0'; }
+    };
+    this._on('lnavHash', window, 'hashchange', place);
+    // Les <iconify-icon> s'« upgradent » de façon asynchrone et changent la
+    // largeur du dock APRÈS le 1er rendu : un ResizeObserver replace le faisceau
+    // dès que la taille se stabilise (couvre aussi le redimensionnement fenêtre).
+    if (typeof ResizeObserver !== 'undefined') {
+      if (this._hdockRO) this._hdockRO.disconnect();
+      this._hdockRO = new ResizeObserver(() => place());
+      this._hdockRO.observe(nav);
+    } else {
+      this._on('lnavResize', window, 'resize', place);
+    }
+    requestAnimationFrame(() => requestAnimationFrame(place));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+    // Filet de sécurité : les icônes peuvent finir de s'upgrader après tout ça.
+    setTimeout(place, 400);
   },
 
   // Widgets d'accès rapide (obsolète — remplacés par le dock ; conservé sans effet)

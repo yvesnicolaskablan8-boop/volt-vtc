@@ -312,16 +312,18 @@
 @media (max-width: 1200px) { .hw-label { display: none; } .hw { padding: 0 12px; } }
 @media (max-width: 900px) { .hw-group { display: none; } }
 
-/* ========== DOCK DE NAVIGATION (onglets glissants / SlideTabs) ========== */
-/* Dans le flux (pas en absolute) : le centrage vient de flex:1 sur .header-left
-   et .header-right, ce qui évite tout chevauchement avec la barre de recherche. */
-.stab { position: relative; flex: 0 0 auto; display: flex; align-items: center; padding: 4px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-tertiary); isolation: isolate; }
-.stab-cursor { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 999px; background: #18181b; opacity: 0; transition: left .3s cubic-bezier(.25,1,.5,1), width .3s cubic-bezier(.25,1,.5,1), opacity .2s ease; pointer-events: none; }
-.stab-tab { position: relative; z-index: 1; display: block; padding: 7px 11px; font-size: 12px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; mix-blend-mode: difference; text-decoration: none; white-space: nowrap; }
-/* Toujours blanc (le blend fait l'inversion) — bat le a:hover{color:pilote-blue} global. */
-.stab .stab-tab, .stab .stab-tab:hover, .stab .stab-tab:visited, .stab .stab-tab:focus { color: #fff; }
-:root[data-theme="dark"] .stab-cursor { background: #f4f4f5; }
-@media (max-width: 1150px) { .stab { display: none; } }
+/* ========== DOCK DE NAVIGATION (icônes + effet « limelight ») ========== */
+/* Icônes seules (gain de place) ; le nom apparaît en tooltip au survol. Un
+   faisceau lumineux coulisse au-dessus de l'onglet de la page courante. */
+.lnav { position: relative; flex: 0 0 auto; display: flex; align-items: center; gap: 2px; padding: 6px 8px; border-radius: 16px; border: 1px solid var(--border-color); background: var(--bg-tertiary); }
+.lnav-item { position: relative; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 8px 12px; font-size: 22px; line-height: 0; color: var(--text-primary); opacity: .4; text-decoration: none; transition: opacity .15s ease; }
+.lnav-item:hover, .lnav-item.is-active { opacity: 1; }
+.lnav-item, .lnav-item:hover, .lnav-item:visited, .lnav-item:focus { color: var(--text-primary); }
+.lnav-tip { position: absolute; top: calc(100% + 9px); left: 50%; transform: translateX(-50%); background: var(--text-primary); color: var(--bg-secondary); font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 8px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s ease; z-index: 60; box-shadow: 0 6px 18px rgba(0,0,0,.22); }
+.lnav-item:hover .lnav-tip { opacity: 1; }
+.lnav-beam { position: absolute; top: -1px; z-index: 1; width: 26px; height: 4px; border-radius: 999px; background: var(--text-primary); left: -999px; opacity: 0; transition: left .35s cubic-bezier(.25,1,.5,1), opacity .2s ease; pointer-events: none; }
+.lnav-beam-cone { position: absolute; left: -60%; top: 4px; width: 220%; height: 46px; clip-path: polygon(16% 100%, 33% 0, 67% 0, 84% 100%); background: linear-gradient(to bottom, color-mix(in srgb, var(--text-primary) 22%, transparent), transparent); pointer-events: none; }
+@media (max-width: 1150px) { .lnav { display: none; } }
 
 /* ========== HEADER SEARCH ========== */
 .header-search {
