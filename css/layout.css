@@ -323,7 +323,7 @@
 .lnav-item:hover .lnav-tip { opacity: 1; }
 .lnav-beam { position: absolute; top: -1px; z-index: 1; width: 26px; height: 4px; border-radius: 999px; background: var(--text-primary); left: -999px; opacity: 0; transition: left .35s cubic-bezier(.25,1,.5,1), opacity .2s ease; pointer-events: none; }
 .lnav-beam-cone { position: absolute; left: -60%; top: 4px; width: 220%; height: 46px; clip-path: polygon(16% 100%, 33% 0, 67% 0, 84% 100%); background: linear-gradient(to bottom, color-mix(in srgb, var(--text-primary) 22%, transparent), transparent); pointer-events: none; }
-@media (max-width: 1150px) { .lnav { display: none; } }
+@media (max-width: 720px) { .lnav { display: none; } }
 
 /* ========== HEADER SEARCH ========== */
 .header-search {
