@@ -32,6 +32,65 @@ const YangoPage = {
     this._charts = [];
   },
 
+  // Carte « Activité » : graphe d'aire du CA encaissé sur 6 mois (style shadcn),
+  // alimenté par les versements du Store (indépendant de la sync Yango async).
+  _caAreaCard() {
+    const now = new Date();
+    const versements = (Store.get('versements') || []).filter(v => v.statut !== 'supprime');
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const s = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const e = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      const val = versements.filter(v => { const d = new Date(v.date); return d >= s && d < e; }).reduce((a, v) => a + (v.montantVerse || 0), 0);
+      months.push({ label: Utils.getMonthShort(s.getMonth()), val });
+    }
+    const total = months.reduce((a, m) => a + m.val, 0);
+    const cur = months[months.length - 1].val, prev = months[months.length - 2] ? months[months.length - 2].val : 0;
+    const trend = prev > 0 ? Math.round((cur - prev) / prev * 100) : (cur > 0 ? 100 : 0);
+    const up = trend >= 0;
+    const fmt = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
+    return `<div class="d-card" style="margin-top:16px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px;">
+        <div>
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.16em;color:var(--text-muted);">CA encaissé · 6 mois</div>
+          <div style="font-size:16px;font-weight:800;color:var(--text-primary);margin-top:3px;">Activité mensuelle</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:20px;font-weight:900;color:var(--text-primary);white-space:nowrap;">${fmt(cur)}</div>
+          <span style="display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:800;padding:2px 8px;border-radius:20px;margin-top:2px;${up ? 'color:#0a9d78;background:rgba(19,222,185,.15);' : 'color:#e0603a;background:rgba(250,137,107,.15);'}"><iconify-icon icon="solar:arrow-right-${up ? 'up' : 'down'}-linear"></iconify-icon>${(trend >= 0 ? '+' : '') + trend}%</span>
+        </div>
+      </div>
+      ${this._caArea(months)}
+    </div>`;
+  },
+
+  _caArea(months) {
+    const W = 760, H = 210, padX = 8, padTop = 18, padBot = 28;
+    const n = months.length;
+    const vals = months.map(m => m.val || 0);
+    const max = Math.max(1, ...vals);
+    const innerW = W - padX * 2, innerH = H - padTop - padBot;
+    const xs = i => padX + (n === 1 ? innerW / 2 : i / (n - 1) * innerW);
+    const ys = v => padTop + innerH - (v / max) * innerH;
+    const pts = vals.map((v, i) => [+xs(i).toFixed(1), +ys(v).toFixed(1)]);
+    let line = pts.length ? `M ${pts[0][0]} ${pts[0][1]}` : '';
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      const c1x = (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1), c1y = (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1);
+      const c2x = (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1), c2y = (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1);
+      line += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]}`;
+    }
+    const area = pts.length ? `${line} L ${pts[n - 1][0]},${padTop + innerH} L ${pts[0][0]},${padTop + innerH} Z` : '';
+    const dots = pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="var(--bg-secondary)" stroke="#FC4C02" stroke-width="2"><title>${Utils.escHtml(months[i].label)} : ${Utils.formatNumber(Math.round(vals[i]))} F</title></circle>`).join('');
+    const labels = months.map((m, i) => `<text x="${xs(i).toFixed(1)}" y="${H - 9}" text-anchor="middle" style="fill:var(--text-muted);font-size:11px;font-weight:600;">${Utils.escHtml(m.label)}</text>`).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:210px;display:block;overflow:visible;" preserveAspectRatio="none" role="img" aria-label="CA encaissé par mois">
+      <defs><linearGradient id="ypGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FC4C02" stop-opacity="0.24"/><stop offset="100%" stop-color="#FC4C02" stop-opacity="0"/></linearGradient></defs>
+      <path d="${area}" fill="url(#ypGrad)"></path>
+      <path d="${line}" fill="none" stroke="#FC4C02" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+      ${dots}${labels}
+    </svg>`;
+  },
+
   _template() {
     const today = new Date().toISOString().split('T')[0];
     return `
@@ -156,6 +215,9 @@ const YangoPage = {
           <div class="kpi-value" id="yp-activity-time"><div class="yango-skeleton"></div></div>
         </div>
       </div>
+
+      <!-- Activité : CA encaissé (graphe d'aire, style shadcn) -->
+      ${this._caAreaCard()}
 
       <!-- Chauffeurs programmés — Planning -->
       <div class="d-card" style="margin-top:16px;">
