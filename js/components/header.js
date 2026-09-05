@@ -16,35 +16,48 @@ const Header = {
     this._initHDock();
   },
 
-  // Dock de navigation (icônes + limelight) : le faisceau se pose au-dessus de
-  // l'onglet de la page courante ; le nom apparaît en tooltip au survol.
+  // Dock de navigation (icônes rondes, effet magnify) : les icônes grossissent
+  // à l'approche du curseur ; le nom s'affiche dans un tooltip position:fixed
+  // (qui échappe à tout overflow du header).
   _initHDock() {
     const nav = document.getElementById('hdock'); if (!nav) return;
-    const beam = nav.querySelector('.lnav-beam');
-    const items = Array.from(nav.querySelectorAll('.lnav-item'));
-    if (!beam || !items.length) return;
-    const activeItem = () => { const h = (location.hash || '').replace(/^#/, ''); return items.find(t => { const r = t.getAttribute('data-route'); return r && (h === r || h.startsWith(r + '/')); }); };
-    const place = () => {
-      const a = activeItem();
-      items.forEach(t => t.classList.remove('is-active'));
-      if (a) { a.classList.add('is-active'); beam.style.left = (a.offsetLeft + a.offsetWidth / 2 - beam.offsetWidth / 2) + 'px'; beam.style.opacity = '1'; }
-      else { beam.style.opacity = '0'; }
+    const items = Array.from(nav.querySelectorAll('.mdock-item'));
+    if (!items.length) return;
+    const BASE = 40, MAG = 58, DIST = 130;
+
+    // Tooltip partagé, en position:fixed sur <body> → jamais clippé.
+    let tip = document.getElementById('mdock-tip');
+    if (!tip) { tip = document.createElement('div'); tip.id = 'mdock-tip'; tip.className = 'mdock-tip'; document.body.appendChild(tip); }
+
+    const setActive = () => {
+      const h = (location.hash || '').replace(/^#/, '');
+      items.forEach(t => { const r = t.getAttribute('data-route'); t.classList.toggle('is-active', !!(r && (h === r || h.startsWith(r + '/')))); });
     };
-    this._on('lnavHash', window, 'hashchange', place);
-    // Les <iconify-icon> s'« upgradent » de façon asynchrone et changent la
-    // largeur du dock APRÈS le 1er rendu : un ResizeObserver replace le faisceau
-    // dès que la taille se stabilise (couvre aussi le redimensionnement fenêtre).
-    if (typeof ResizeObserver !== 'undefined') {
-      if (this._hdockRO) this._hdockRO.disconnect();
-      this._hdockRO = new ResizeObserver(() => place());
-      this._hdockRO.observe(nav);
-    } else {
-      this._on('lnavResize', window, 'resize', place);
-    }
-    requestAnimationFrame(() => requestAnimationFrame(place));
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
-    // Filet de sécurité : les icônes peuvent finir de s'upgrader après tout ça.
-    setTimeout(place, 400);
+    const showTip = (it) => {
+      const r = it.getBoundingClientRect();
+      tip.textContent = it.getAttribute('aria-label') || '';
+      tip.style.left = (r.left + r.width / 2) + 'px';
+      tip.style.top = (r.bottom + 8) + 'px';
+      tip.classList.add('show');
+    };
+    const magnify = (mouseX) => {
+      let hovered = null;
+      items.forEach(it => {
+        const r = it.getBoundingClientRect();
+        const center = r.left + r.width / 2;
+        const d = Math.abs(mouseX - center);
+        const sz = d < DIST ? BASE + (MAG - BASE) * (1 - d / DIST) : BASE;
+        it.style.setProperty('--sz', sz.toFixed(1) + 'px');
+        if (d < r.width / 2) hovered = it;
+      });
+      if (hovered) showTip(hovered);
+    };
+    const reset = () => { items.forEach(it => it.style.setProperty('--sz', BASE + 'px')); tip.classList.remove('show'); };
+
+    this._on('mdockMove', nav, 'mousemove', (e) => magnify(e.clientX));
+    this._on('mdockLeave', nav, 'mouseleave', reset);
+    this._on('mdockHash', window, 'hashchange', setActive);
+    setActive();
   },
 
   // Widgets d'accès rapide (obsolète — remplacés par le dock ; conservé sans effet)
