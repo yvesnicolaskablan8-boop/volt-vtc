@@ -2327,7 +2327,8 @@ const DashboardPage = {
     if (!yStatus) { const err = (typeof Store !== 'undefined' && Store._lastFleetError) ? Store._lastFleetError : 'pas encore chargé ou API muette'; return box('<b>DEBUG Yango</b> — statut temps réel INDISPONIBLE (yStatus null). Erreur API : <b>' + Utils.escHtml(String(err)) + '</b>'); }
     const c = yStatus.counts || {};
     const list = (yStatus.drivers || []).map(x => `${Utils.escHtml(x.nom || '?')}=${Utils.escHtml(x.status || '?')}`).join(' · ');
-    return box(`<b>DEBUG Yango</b> — free:${c.free || 0} · busy:${c.busy || 0} · in_order:${c.in_order || 0} · offline:${c.offline || 0} · drivers:${(yStatus.drivers || []).length}${list ? '<br>' + list : ''}`);
+    const sample = (yStatus.sample || []).map(x => `${Utils.escHtml(x.nom || '?')}: ${Utils.escHtml(JSON.stringify(x.cs))}`).join('<br>');
+    return box(`<b>DEBUG Yango</b> — total:${yStatus.total || 0} · free:${c.free || 0} · busy:${c.busy || 0} · in_order:${c.in_order || 0} · offline:${c.offline || 0} · drivers:${(yStatus.drivers || []).length}${list ? '<br>' + list : ''}${sample ? '<br><b>RAW:</b><br>' + sample : ''}`);
   },
 
   async _loadFleetStatus(d, force) {

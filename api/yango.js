@@ -647,7 +647,11 @@ async function handleFleetStatus(req, res) {
       },
       limit: 300,
       offset: 0,
-      query: { park: { id: parkId } }
+      // On filtre sur work_status:'working' comme le handler stats (le seul qui
+      // remonte des statuts temps réel corrects). Sans ce filtre, Yango renvoie
+      // les 300 profils (dont licenciés/inactifs) avec current_status vide → tout
+      // « offline ».
+      query: { park: { id: parkId, driver_profile: { work_status: ['working'] } } }
     });
 
     const profiles = data.driver_profiles || [];
@@ -679,6 +683,12 @@ async function handleFleetStatus(req, res) {
 
     const enLigne = counts.free + counts.busy + counts.in_order;
 
+    // DEBUG temporaire : échantillon brut du current_status renvoyé par Yango
+    const sample = profiles.slice(0, 8).map(p => ({
+      nom: [(p.driver_profile || {}).first_name, (p.driver_profile || {}).last_name].filter(Boolean).join(' '),
+      cs: p.current_status || null
+    }));
+
     res.json({
       counts,
       disponible: counts.free,
@@ -687,7 +697,8 @@ async function handleFleetStatus(req, res) {
       horsLigne: counts.offline,
       total: profiles.length,
       enLigne,
-      drivers
+      drivers,
+      sample
     });
 
   } catch (err) {
