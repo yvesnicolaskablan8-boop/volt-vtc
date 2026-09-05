@@ -2190,8 +2190,10 @@ const DashboardPage = {
       // pour compter TOUS les chauffeurs hors planning.
       const isNonpl = !programme && (online || actif);
       if (isNonpl) B.nonpl.push(entry);
-      else if (isSurv) B.surv.push(entry);
+      // « Occupé » (busy) est prioritaire sur « À surveiller » : un chauffeur qui
+      // travaille (occupé) ne doit pas être noyé dans les CA bas.
       else if (haveY && ystat === 'busy') B.occupe.push(entry);
+      else if (isSurv) B.surv.push(entry);
       else if (haveY ? ystat === 'in_order' : actif) B.course.push(entry);
       else if (haveY && ystat === 'free') B.ligne.push(entry);
       else B.hors.push(entry);
