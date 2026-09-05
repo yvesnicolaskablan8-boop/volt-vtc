@@ -2301,6 +2301,7 @@ const DashboardPage = {
     const { segments, total } = this._fleetBuckets(d, yStatus);
     return `<div class="d-card fd-card">
       <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>Temps réel</span></div>
+      <div id="fleet-debug">${this._fleetDebug(yStatus)}</div>
       <div class="fd-top">
         <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
         <div class="fd-recette">${this._fleetRecettePanel(d)}</div>
@@ -2316,6 +2317,17 @@ const DashboardPage = {
     if (circle) { circle.replaceChildren(); circle.insertAdjacentHTML('beforeend', this._fleetCircleInner(d, segments, total)); }
     const cards = document.getElementById('fleet-donut-cards');
     if (cards) { cards.replaceChildren(); cards.insertAdjacentHTML('beforeend', this._fleetCardsInner(segments)); }
+    const dbg = document.getElementById('fleet-debug');
+    if (dbg) { dbg.replaceChildren(); dbg.insertAdjacentHTML('beforeend', this._fleetDebug(yStatus)); }
+  },
+
+  // DIAGNOSTIC TEMPORAIRE : statuts bruts renvoyés par l'API Yango.
+  _fleetDebug(yStatus) {
+    if (!yStatus) return '';
+    const c = yStatus.counts || {};
+    const list = (yStatus.drivers || []).map(x => `${Utils.escHtml(x.nom || '?')}=${Utils.escHtml(x.status || '?')}`).join(' · ');
+    return `<div style="font-size:11px;color:var(--text-muted);margin:4px 0 10px;padding:7px 11px;background:var(--bg-tertiary);border-radius:8px;line-height:1.5;">
+      <b>DEBUG Yango</b> — free:${c.free || 0} · busy:${c.busy || 0} · in_order:${c.in_order || 0} · offline:${c.offline || 0}${list ? '<br>' + list : ''}</div>`;
   },
 
   async _loadFleetStatus(d, force) {
