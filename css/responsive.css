@@ -1317,3 +1317,31 @@ body.pilote-native-app.pilote-has-bottomnav .header-toggle {
 /* KPI : rendu uniforme (plus de dégradé indigo ni de pastille d'angle) */
 .kpi-card { background: var(--bg-secondary); }
 .kpi-card::before { display: none !important; }
+
+/* ============================================================
+   CARTES KPI → style « stat » shadcn (plat, uniforme)
+   Aplati les variantes colorées et repositionne l'icône.
+   ============================================================ */
+.kpi-card.green, .kpi-card.orange, .kpi-card.blue, .kpi-card.cyan,
+.kpi-card.purple, .kpi-card.red, .kpi-card.yellow {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+.kpi-card.green:hover, .kpi-card.orange:hover, .kpi-card.blue:hover, .kpi-card.cyan:hover,
+.kpi-card.purple:hover, .kpi-card.red:hover, .kpi-card.yellow:hover {
+  border-color: var(--pilote-blue);
+  box-shadow: var(--shadow-card);
+}
+.kpi-card { position: relative; }
+.kpi-icon {
+  position: absolute; top: 16px; right: 16px;
+  width: 30px; height: 30px; margin: 0; border-radius: 9px;
+  background: var(--bg-tertiary); color: var(--text-secondary);
+  box-shadow: none; font-size: 15px;
+}
+.kpi-label {
+  font-size: 11px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text-muted);
+  margin: 0 0 8px; padding-right: 40px;
+}
+.kpi-value { font-size: 1.7rem; }
