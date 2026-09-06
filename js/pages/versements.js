@@ -321,6 +321,12 @@ const VersementsPage = {
 .wl-nav-title{font-size:14.5px;font-weight:700;color:var(--text-primary);}
 .wl-nav-sub{font-size:12.5px;color:var(--text-muted);margin-top:1px;}
 .wl-nav-val{font-size:14px;font-weight:800;flex-shrink:0;white-space:nowrap;}
+.wl-chevron{color:var(--text-muted);font-size:17px;flex-shrink:0;transition:transform .2s;}
+.wl-acc{border-radius:18px;}
+.wl-acc.open{background:var(--vx-hover);border:1px solid var(--vx-bd-soft);}
+.wl-acc.open>.wl-nav-row{background:transparent;border-color:transparent;}
+.wl-acc.open .wl-chevron{transform:rotate(180deg);}
+.wl-acc-body{padding:2px 10px 10px;}
 .wl-masked .wl-pill-val,.wl-masked .wl-total-val{filter:blur(9px);user-select:none;}
 @media(max-width:560px){.wl-actions{flex-wrap:wrap;}.wl-act-1{flex:1 1 40%;}}
 .vx-sec{background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:24px;padding:20px 22px 16px;margin-top:20px;box-shadow:0 1px 2px rgba(17,24,39,.03),0 16px 44px rgba(17,24,39,.06);}
@@ -423,31 +429,53 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const fmt = n => Utils.formatCurrency(n || 0);
     const dr = d.detteData || {};
 
-    // Liste de « comptes » (rangées de navigation)
-    const navRow = (icBg, icFg, icBd, icon, title, sub, val, valCol, onclick) =>
-      `<div class="wl-nav-row"${onclick ? ` onclick="${onclick}"` : ''}>
-        <div class="wl-nav-ic" style="background:${icBg};color:${icFg};border:1px solid ${icBd};"><iconify-icon icon="${icon}"></iconify-icon></div>
-        <div class="wl-nav-main"><div class="wl-nav-title">${title}</div><div class="wl-nav-sub">${sub}</div></div>
-        <div class="wl-nav-val" style="color:${valCol};">${val}</div>
+    // ── Contenus repliés (accordéons) ──
+    const recetteRows = this._renderDettesByDate(dr.detteListRecettes || [], '#f59e0b', 'recette');
+    const contraRows = this._renderDettesByDate(dr.detteListContraventions || [], '#ef4444', 'contravention');
+    const versements = (d.versements || []).filter(_isRealVersement).sort((a, b) => b.date.localeCompare(a.date));
+    const versementRows = this._renderVersementRows(versements, d.chauffeurs);
+    const verseTotal = versements.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
+    const detteFilterBar = (id) => `<div class="vx-tools"><div class="vx-search"><iconify-icon icon="solar:magnifer-linear"></iconify-icon><input type="text" class="vx-input dette-search-input" data-target="${id}" placeholder="Rechercher un chauffeur..."></div><input type="date" class="vx-input dette-date-filter" data-target="${id}"></div>`;
+    const empty = (txt) => `<div class="vx-empty"><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon>${txt}</div>`;
+    const anomRows = [
+      ...(d.anomalies.workingNotScheduled || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fef3c7;color:#d97706;">!</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">Roule sans être programmé · ${Utils.formatDate(a.date)}</div></div><div class="vx-right"><div class="vx-amt" style="color:#d97706;">${Utils.formatCurrency(a.caBrut)}</div></div></div>`),
+      ...(d.anomalies.versementMismatch || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fee2e2;color:#dc2626;">≠</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">${Utils.formatDate(a.date)} · dû ${Utils.formatCurrency(a.du)} / versé ${Utils.formatCurrency(a.verse)}</div></div><div class="vx-right"><div class="vx-amt" style="color:${a.ecart > 0 ? '#dc2626' : '#059669'};">${a.ecart > 0 ? '−' : '+'}${Utils.formatCurrency(Math.abs(a.ecart))}</div></div></div>`)
+    ].join('');
+    const progRows = (d.detailProgrammes || []).map(p => `<div class="vx-row"><div class="vx-av" style="background:#f3e8ff;color:#7c3aed;">${Utils.escHtml((p.prenom || '?').charAt(0).toUpperCase())}</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(((p.prenom || '') + ' ' + (p.nom || '')).trim())}</div><div class="vx-note">${Utils.formatDate(p.date)}</div></div><div class="vx-right"><div class="vx-amt">${Utils.formatCurrency(p.redevance)}</div></div></div>`).join('');
+
+    // Générateur d'accordéon (ligne « compte » repliable)
+    const acc = (icBg, icFg, icBd, icon, title, sub, val, valCol, bodyHtml, valId) =>
+      `<div class="wl-acc">
+        <div class="wl-nav-row" onclick="VersementsPage._toggleAcc(this)">
+          <div class="wl-nav-ic" style="background:${icBg};color:${icFg};border:1px solid ${icBd};"><iconify-icon icon="${icon}"></iconify-icon></div>
+          <div class="wl-nav-main"><div class="wl-nav-title">${title}</div><div class="wl-nav-sub">${sub}</div></div>
+          <div class="wl-nav-val"${valId ? ` id="${valId}"` : ''} style="color:${valCol};">${val}</div>
+          <iconify-icon class="wl-chevron" icon="solar:alt-arrow-down-linear"></iconify-icon>
+        </div>
+        <div class="wl-acc-body" hidden>${bodyHtml}</div>
       </div>`;
 
     const rows = [];
-    rows.push(navRow('#fef3c7', '#d97706', '#fde68a', 'solar:wallet-money-bold-duotone', 'Dettes recettes',
+    rows.push(acc('#fef3c7', '#d97706', '#fde68a', 'solar:wallet-money-bold-duotone', 'Dettes recettes',
       `${dr.nbDriversRecettes || 0} chauffeur${(dr.nbDriversRecettes || 0) > 1 ? 's' : ''} à régulariser`,
       fmt(dr.totalDettesRecettes), (dr.totalDettesRecettes || 0) > 0 ? '#d97706' : 'var(--text-muted)',
-      "document.getElementById('dette-section-recettes')?.scrollIntoView({behavior:'smooth'})"));
-    if ((dr.totalDettesContraventions || 0) > 0) rows.push(navRow('#fee2e2', '#dc2626', '#fecaca', 'solar:shield-warning-bold-duotone', 'Dettes contraventions',
+      `<div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap;"><button class="vx-gbtn" onclick="VersementsPage._resyncCaYango(this)"><iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon> Resync Yango</button><button class="vx-gbtn is-accent" style="background:#f59e0b;" onclick="VersementsPage._ajouterDette()"><iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter</button></div>${(dr.detteListRecettes || []).length > 3 ? detteFilterBar('dette-recettes-list') : ''}${(dr.detteListRecettes || []).length ? `<div id="dette-recettes-list" class="vx-list">${recetteRows}</div>` : empty('Aucune dette recette')}`));
+    if ((dr.totalDettesContraventions || 0) > 0) rows.push(acc('#fee2e2', '#dc2626', '#fecaca', 'solar:shield-warning-bold-duotone', 'Dettes contraventions',
       `${dr.nbDriversContraventions || 0} chauffeur${(dr.nbDriversContraventions || 0) > 1 ? 's' : ''}`,
       fmt(dr.totalDettesContraventions), '#dc2626',
-      "document.getElementById('dette-section-contraventions')?.scrollIntoView({behavior:'smooth'})"));
-    rows.push(navRow(d.anomalies.total > 0 ? '#fef3c7' : '#eef1f7', d.anomalies.total > 0 ? '#d97706' : '#9aa3b2', d.anomalies.total > 0 ? '#fde68a' : '#e9edf4', 'solar:danger-triangle-bold-duotone', 'Anomalies',
+      `${(dr.detteListContraventions || []).length > 3 ? detteFilterBar('dette-contra-list') : ''}<div id="dette-contra-list" class="vx-list">${contraRows}</div>`));
+    rows.push(acc('#dcfce7', '#16a34a', '#bbf7d0', 'solar:hand-money-bold-duotone', 'Versements',
+      `<span id="versements-count">${versements.length}</span> versement${versements.length > 1 ? 's' : ''} · ${d.periodLabel}`,
+      Utils.formatCurrency(verseTotal), '#16a34a',
+      `<div class="vx-tools"><div class="vx-search"><iconify-icon icon="solar:magnifer-linear"></iconify-icon><input type="text" id="versements-search" class="vx-input" placeholder="Rechercher un chauffeur..." onclick="event.stopPropagation()"></div><select class="vx-input" id="filter-chauffeur" style="min-width:150px;"><option value="">Tous les chauffeurs</option>${d.chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}</select><select class="vx-input" id="filter-statut" style="min-width:130px;"><option value="">Tous statuts</option><option value="valide">Validé</option><option value="en_attente">En attente</option><option value="retard">En retard</option><option value="partiel">Partiel</option><option value="conteste">Contesté</option></select><input type="date" class="vx-input" id="filter-date-paiement" style="min-width:140px;"></div>${versements.length ? `<div id="versements-list" class="vx-list">${versementRows}</div>` : empty('Aucun versement pour cette date')}`,
+      'versements-total'));
+    rows.push(acc(d.anomalies.total > 0 ? '#fef3c7' : '#eef1f7', d.anomalies.total > 0 ? '#d97706' : '#9aa3b2', d.anomalies.total > 0 ? '#fde68a' : '#e9edf4', 'solar:danger-triangle-bold-duotone', 'Anomalies',
       d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK', String(d.anomalies.total), d.anomalies.total > 0 ? '#d97706' : 'var(--text-muted)',
-      'VersementsPage._showAnomalies()'));
-    rows.push(navRow('#f3e8ff', '#7c3aed', '#e9d5ff', 'solar:users-group-rounded-bold-duotone', 'Chauffeurs programmés',
+      d.anomalies.total > 0 ? `<div class="vx-list">${anomRows}</div>` : empty('Aucune anomalie détectée')));
+    rows.push(acc('#f3e8ff', '#7c3aed', '#e9d5ff', 'solar:users-group-rounded-bold-duotone', 'Chauffeurs programmés',
       `Programmés · ${d.periodLabel}`, String(d.nbChauffeursProgrammes), 'var(--text-primary)',
-      "VersementsPage._showKpiDetail('programmes')"));
-    if ((d.totalPertes || 0) > 0) rows.push(navRow('#ffe4e6', '#e11d48', '#fecdd3', 'solar:close-circle-bold-duotone', 'Pertes',
-      'Montant non recouvrable', fmt(d.totalPertes), '#e11d48', ''));
+      (d.detailProgrammes || []).length ? `<div class="vx-list">${progRows}</div>` : empty('Aucun chauffeur programmé')));
+    if ((d.totalPertes || 0) > 0) rows.push(`<div class="wl-acc"><div class="wl-nav-row" style="cursor:default;"><div class="wl-nav-ic" style="background:#ffe4e6;color:#e11d48;border:1px solid #fecdd3;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div><div class="wl-nav-main"><div class="wl-nav-title">Pertes</div><div class="wl-nav-sub">Montant non recouvrable</div></div><div class="wl-nav-val" style="color:#e11d48;">${fmt(d.totalPertes)}</div></div></div>`);
 
     return `<div class="wl-card" id="wl-card">
       <div class="wl-pills">
@@ -485,6 +513,21 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
       <div class="wl-nav">${rows.join('')}</div>
     </div>`;
+  },
+
+  // Ouvre/ferme un accordéon « compte » (un seul ouvert à la fois).
+  _toggleAcc(rowEl) {
+    const acc = rowEl.closest('.wl-acc');
+    if (!acc) return;
+    const body = acc.querySelector('.wl-acc-body');
+    const willOpen = !acc.classList.contains('open');
+    // Ferme les autres
+    const nav = acc.parentElement;
+    if (nav) nav.querySelectorAll('.wl-acc.open').forEach(o => {
+      if (o !== acc) { o.classList.remove('open'); const b = o.querySelector('.wl-acc-body'); if (b) b.hidden = true; }
+    });
+    acc.classList.toggle('open', willOpen);
+    if (body) body.hidden = !willOpen;
   },
 
   // Palette sémantique des KPI : la couleur reflète la SITUATION (bon / à
@@ -525,13 +568,6 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       </div>
 
       ${this._walletHero(d)}
-
-
-      <!-- Suivi des dettes -->
-      ${this._renderDetteSection(d)}
-
-      <!-- Versements du jour -->
-      ${this._renderVersementsSection(d)}
 
       </div></div>
     `;
