@@ -284,7 +284,45 @@ const VersementsPage = {
   // Feuille de style scopée des sections « liste » modernisées (Dettes / Versements).
   _vxStyles() {
     return `<style id="vx-styles">
-.vx-page{--vx-card:#ffffff;--vx-bd:#e9edf4;--vx-bd-soft:#eef1f7;--vx-surface:#f5f7fb;--vx-hover:#f7f9fc;}
+.vx-page{--vx-card:#ffffff;--vx-bd:#e9edf4;--vx-bd-soft:#eef1f7;--vx-surface:#f5f7fb;--vx-hover:#f7f9fc;max-width:720px;margin:0 auto;}
+.wl-title{margin-bottom:18px;}
+.wl-title-k{font-size:13px;color:var(--text-muted);font-weight:600;}
+.wl-title-h{font-size:26px;font-weight:800;letter-spacing:-.6px;color:var(--text-primary);margin-top:2px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.wl-date{display:flex;align-items:center;background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:13px;padding:2px 4px;}
+.wl-card{background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:28px;box-shadow:0 24px 60px rgba(17,24,39,.1);padding:22px;display:flex;flex-direction:column;gap:18px;}
+.wl-pills{display:flex;flex-direction:column;gap:12px;}
+.wl-pill{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;border-radius:18px;box-shadow:0 4px 14px rgba(17,24,39,.05);}
+.wl-pill-l{display:flex;align-items:center;gap:12px;min-width:0;}
+.wl-pill-ic{width:34px;height:34px;border-radius:11px;background:rgba(17,24,39,.1);display:flex;align-items:center;justify-content:center;font-size:17px;color:#374151;flex-shrink:0;}
+.wl-pill-lbl{font-size:14px;font-weight:600;color:#374151;}
+.wl-pill-val{font-size:16px;font-weight:800;color:#1f2937;letter-spacing:-.3px;white-space:nowrap;}
+.wl-total{border:1px solid var(--vx-bd-soft);border-radius:20px;padding:20px;}
+.wl-total-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.wl-total-lbl{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600;color:var(--text-secondary);}
+.wl-dot{width:22px;height:22px;border-radius:50%;background:var(--vx-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wl-dot::before{content:'';width:10px;height:10px;border-radius:50%;background:#9aa3b2;}
+.wl-eye,.wl-refresh{color:var(--text-muted);cursor:pointer;font-size:18px;display:inline-flex;transition:.15s;}
+.wl-eye:hover,.wl-refresh:hover{color:var(--text-secondary);}
+.wl-total-val{font-size:38px;font-weight:800;letter-spacing:-1px;color:#111827;line-height:1;}
+.wl-total-sub{display:flex;align-items:center;gap:7px;margin-top:11px;font-weight:700;font-size:14px;}
+.wl-actions{display:flex;gap:10px;}
+.wl-btn{height:48px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:.15s;width:100%;}
+.wl-btn-primary{background:#ec4899;color:#fff;box-shadow:0 8px 20px rgba(236,72,153,.28);}
+.wl-btn-primary:hover{background:#db2777;}
+.wl-btn-sec{background:var(--vx-surface);color:#374151;border:1px solid var(--vx-bd);}
+.wl-btn-sec:hover{background:#eceff5;}
+.wl-act-1{flex:1;}.wl-act-ic{flex:0 0 48px;width:48px;}
+.wl-export{position:relative;flex:1;display:flex;}
+.wl-nav{display:flex;flex-direction:column;gap:7px;}
+.wl-nav-row{display:flex;align-items:center;gap:13px;padding:11px 12px;border:1px solid var(--vx-bd-soft);border-radius:18px;cursor:pointer;transition:.15s;background:var(--vx-card);}
+.wl-nav-row:hover{background:var(--vx-hover);}
+.wl-nav-ic{width:46px;height:46px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.wl-nav-main{flex:1;min-width:0;}
+.wl-nav-title{font-size:14.5px;font-weight:700;color:var(--text-primary);}
+.wl-nav-sub{font-size:12.5px;color:var(--text-muted);margin-top:1px;}
+.wl-nav-val{font-size:14px;font-weight:800;flex-shrink:0;white-space:nowrap;}
+.wl-masked .wl-pill-val,.wl-masked .wl-total-val{filter:blur(9px);user-select:none;}
+@media(max-width:560px){.wl-actions{flex-wrap:wrap;}.wl-act-1{flex:1 1 40%;}}
 .vx-sec{background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:24px;padding:20px 22px 16px;margin-top:20px;box-shadow:0 1px 2px rgba(17,24,39,.03),0 16px 44px rgba(17,24,39,.06);}
 .vx-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
 .vx-head-l{display:flex;align-items:center;gap:12px;min-width:0;}
@@ -372,6 +410,83 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     return M[status] || M.neutral;
   },
 
+  // Bloc « wallet » : pastilles récap (reste / encaissé) + carte total (attendu)
+  // + rangée d'actions + liste de « comptes » (dettes, anomalies, programmés…).
+  _walletHero(d) {
+    const attendu = d.totalAttendu || 0;
+    const verse = d.totalVerse || 0;
+    const reste = Math.max(0, attendu - verse);
+    const taux = attendu > 0 ? Math.round(verse / attendu * 100) : null;
+    const status = attendu <= 0 ? 'neutral' : (taux >= 85 ? 'good' : taux >= 50 ? 'warn' : 'bad');
+    const subCol = { good: '#059669', warn: '#b45309', bad: '#e11d48', neutral: '#6b7280' }[status];
+    const subIcon = { good: 'solar:check-circle-bold', warn: 'solar:clock-circle-bold', bad: 'solar:danger-triangle-bold', neutral: 'solar:clock-circle-bold' }[status];
+    const fmt = n => Utils.formatCurrency(n || 0);
+    const dr = d.detteData || {};
+
+    // Liste de « comptes » (rangées de navigation)
+    const navRow = (icBg, icFg, icBd, icon, title, sub, val, valCol, onclick) =>
+      `<div class="wl-nav-row"${onclick ? ` onclick="${onclick}"` : ''}>
+        <div class="wl-nav-ic" style="background:${icBg};color:${icFg};border:1px solid ${icBd};"><iconify-icon icon="${icon}"></iconify-icon></div>
+        <div class="wl-nav-main"><div class="wl-nav-title">${title}</div><div class="wl-nav-sub">${sub}</div></div>
+        <div class="wl-nav-val" style="color:${valCol};">${val}</div>
+      </div>`;
+
+    const rows = [];
+    rows.push(navRow('#fef3c7', '#d97706', '#fde68a', 'solar:wallet-money-bold-duotone', 'Dettes recettes',
+      `${dr.nbDriversRecettes || 0} chauffeur${(dr.nbDriversRecettes || 0) > 1 ? 's' : ''} à régulariser`,
+      fmt(dr.totalDettesRecettes), (dr.totalDettesRecettes || 0) > 0 ? '#d97706' : 'var(--text-muted)',
+      "document.getElementById('dette-section-recettes')?.scrollIntoView({behavior:'smooth'})"));
+    if ((dr.totalDettesContraventions || 0) > 0) rows.push(navRow('#fee2e2', '#dc2626', '#fecaca', 'solar:shield-warning-bold-duotone', 'Dettes contraventions',
+      `${dr.nbDriversContraventions || 0} chauffeur${(dr.nbDriversContraventions || 0) > 1 ? 's' : ''}`,
+      fmt(dr.totalDettesContraventions), '#dc2626',
+      "document.getElementById('dette-section-contraventions')?.scrollIntoView({behavior:'smooth'})"));
+    rows.push(navRow(d.anomalies.total > 0 ? '#fef3c7' : '#eef1f7', d.anomalies.total > 0 ? '#d97706' : '#9aa3b2', d.anomalies.total > 0 ? '#fde68a' : '#e9edf4', 'solar:danger-triangle-bold-duotone', 'Anomalies',
+      d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK', String(d.anomalies.total), d.anomalies.total > 0 ? '#d97706' : 'var(--text-muted)',
+      'VersementsPage._showAnomalies()'));
+    rows.push(navRow('#f3e8ff', '#7c3aed', '#e9d5ff', 'solar:users-group-rounded-bold-duotone', 'Chauffeurs programmés',
+      `Programmés · ${d.periodLabel}`, String(d.nbChauffeursProgrammes), 'var(--text-primary)',
+      "VersementsPage._showKpiDetail('programmes')"));
+    if ((d.totalPertes || 0) > 0) rows.push(navRow('#ffe4e6', '#e11d48', '#fecdd3', 'solar:close-circle-bold-duotone', 'Pertes',
+      'Montant non recouvrable', fmt(d.totalPertes), '#e11d48', ''));
+
+    return `<div class="wl-card" id="wl-card">
+      <div class="wl-pills">
+        <div class="wl-pill" style="background:linear-gradient(120deg,#fbcfe8 0%,#ffe4e6 100%);border:1px solid rgba(244,114,182,.35);">
+          <div class="wl-pill-l"><div class="wl-pill-ic"><iconify-icon icon="solar:wallet-bold"></iconify-icon></div><span class="wl-pill-lbl">Reste à encaisser</span></div>
+          <span class="wl-pill-val">${fmt(reste)}</span>
+        </div>
+        <div class="wl-pill" style="background:linear-gradient(120deg,#e9d5ff 0%,#e0e7ff 100%);border:1px solid rgba(167,139,250,.35);">
+          <div class="wl-pill-l"><div class="wl-pill-ic"><iconify-icon icon="solar:course-up-bold"></iconify-icon></div><span class="wl-pill-lbl">Déjà encaissé</span></div>
+          <span class="wl-pill-val">${fmt(verse)}</span>
+        </div>
+      </div>
+
+      <div class="wl-total">
+        <div class="wl-total-top">
+          <div class="wl-total-lbl"><span class="wl-dot"></span>Montant attendu <iconify-icon class="wl-eye" icon="solar:eye-bold" title="Masquer / afficher les montants" onclick="document.getElementById('wl-card').classList.toggle('wl-masked')"></iconify-icon></div>
+          <iconify-icon class="wl-refresh" icon="solar:refresh-bold" title="Actualiser" onclick="location.reload()"></iconify-icon>
+        </div>
+        <div class="wl-total-val">${fmt(attendu)}</div>
+        <div class="wl-total-sub" style="color:${subCol};"><iconify-icon icon="${subIcon}"></iconify-icon>${taux != null ? taux + '% recouvré' : 'Aucun montant attendu'} · ${d.periodLabel}</div>
+      </div>
+
+      <div class="wl-actions">
+        <button class="wl-btn wl-btn-primary wl-act-1" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Nouveau</button>
+        <div class="wl-export wl-act-1" id="export-dropdown-wrap">
+          <button class="wl-btn wl-btn-sec" onclick="document.getElementById('export-menu').style.display=document.getElementById('export-menu').style.display==='block'?'none':'block'"><iconify-icon icon="solar:export-bold-duotone"></iconify-icon> Exporter</button>
+          <div id="export-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:14px;box-shadow:0 12px 30px rgba(17,24,39,.12);z-index:100;overflow:hidden;">
+            <button onclick="VersementsPage._exportPDF();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:document-bold-duotone" style="font-size:16px;color:#ef4444;"></iconify-icon> Exporter en PDF</button>
+            <div style="height:1px;background:var(--vx-bd);"></div>
+            <button onclick="VersementsPage._exportCSV();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#10b981;"></iconify-icon> Exporter en CSV</button>
+          </div>
+        </div>
+        <button class="wl-btn wl-btn-sec wl-act-ic" title="Nettoyer les versements fantômes" onclick="VersementsPage._cleanupGhosts()"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+      </div>
+
+      <div class="wl-nav">${rows.join('')}</div>
+    </div>`;
+  },
+
   // Palette sémantique des KPI : la couleur reflète la SITUATION (bon / à
   // surveiller / mauvais), pas une teinte décorative fixe.
   _kpiCol(status) {
@@ -397,74 +512,20 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       ${VersementsPage._vxStyles()}
       <div class="d-wrap"><div class="d-bg vx-page">
 
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
-        <div>
-          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Suivi financier</div>
-          <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#5D87FF;"></iconify-icon> Versements
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:0;background:var(--bg-secondary);backdrop-filter:blur(12px);border-radius:14px;border:1px solid var(--border-color);padding:3px;">
+      <!-- Titre -->
+      <div class="wl-title">
+        <div class="wl-title-k">Suivi financier</div>
+        <div class="wl-title-h">
+          <span style="display:flex;align-items:center;gap:12px;"><iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#5D87FF;"></iconify-icon> Versements</span>
+          <div class="wl-date">
             <input type="date" id="versements-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:var(--text-primary);font-weight:500;outline:none;">
             ${this._selectedPeriod ? '<button onclick="VersementsPage._resetToToday()" style="font-size:13px;padding:6px 8px;border-radius:11px;background:transparent;border:none;cursor:pointer;color:#6b7280;"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>' : ''}
           </div>
-          <div style="position:relative;display:inline-block;" id="export-dropdown-wrap">
-            <button class="btn btn-secondary" onclick="document.getElementById('export-menu').style.display=document.getElementById('export-menu').style.display==='block'?'none':'block'"><iconify-icon icon="solar:export-bold-duotone"></iconify-icon> Exporter</button>
-            <div id="export-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;min-width:170px;overflow:hidden;">
-              <button onclick="VersementsPage._exportPDF();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:document-bold-duotone" style="font-size:16px;color:#ef4444;"></iconify-icon> Exporter en PDF</button>
-              <div style="height:1px;background:var(--border-color);margin:0 10px;"></div>
-              <button onclick="VersementsPage._exportCSV();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#10b981;"></iconify-icon> Exporter en CSV</button>
-            </div>
-          </div>
-          <button class="btn btn-secondary" onclick="VersementsPage._cleanupGhosts()" title="Supprimer les versements fantômes (0 FCFA)"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Nettoyer</button>
-          <button class="btn btn-primary" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouveau versement</button>
         </div>
       </div>
 
-      <!-- KPIs — Row 1 : Montant attendu + Versé + Programmés -->
-      <div class="vx-kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
-        <div class="vx-kpi is-grad is-clk" style="background:${ag.grad};" onclick="VersementsPage._showKpiDetail('attendu')">
-          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Montant attendu</span><div class="vx-kpi-ic"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div></div>
-          <div class="vx-kpi-val">${Utils.formatCurrency(d.totalAttendu)}</div>
-          <div class="vx-kpi-sub" style="color:${ag.fg};">${d.periodLabel}</div>
-        </div>
-        <div class="vx-kpi is-grad is-clk" style="background:${vg.grad};" onclick="VersementsPage._showKpiDetail('verse')">
-          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Montant versé</span><div class="vx-kpi-ic"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div></div>
-          <div class="vx-kpi-val">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div class="vx-kpi-sub" style="color:${vg.fg};font-weight:700;">${taux != null ? taux + '% recouvré · ' + d.periodLabel : d.periodLabel}</div>
-        </div>
-        <div class="vx-kpi is-clk" onclick="VersementsPage._showKpiDetail('programmes')">
-          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Chauffeurs programmés</span><div class="vx-kpi-ic" style="background:rgba(139,92,246,.12);color:#8b5cf6;"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div></div>
-          <div class="vx-kpi-val">${d.nbChauffeursProgrammes}</div>
-        </div>
-      </div>
+      ${this._walletHero(d)}
 
-      <!-- KPIs — Row 2 : Anomalies + Dettes recettes + Dettes contraventions + Pertes -->
-      <div class="vx-kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
-        <div class="vx-kpi is-clk" onclick="VersementsPage._showAnomalies()">
-          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Anomalies</span><div class="vx-kpi-ic" style="background:${d.anomalies.total > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div></div>
-          <div class="vx-kpi-val" style="color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--text-primary)'};">${d.anomalies.total}</div>
-          <span class="vx-kpi-badge" style="background:${d.anomalies.total > 0 ? 'rgba(255,174,31,.14)' : 'rgba(19,222,185,.14)'};color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--success-dim)'};"><iconify-icon icon="${d.anomalies.total > 0 ? 'solar:danger-triangle-bold' : 'solar:check-circle-bold'}"></iconify-icon> ${d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK'}</span>
-        </div>
-        <div class="vx-kpi is-clk" onclick="document.getElementById('dette-section-recettes')?.scrollIntoView({behavior:'smooth'})">
-          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Dettes recettes</span><div class="vx-kpi-ic" style="background:${d.detteData.totalDettesRecettes > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div></div>
-          <div class="vx-kpi-val" style="color:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning-dim)' : 'var(--text-primary)'};">${d.detteData.totalDettesRecettes > 0 ? Utils.formatCurrency(d.detteData.totalDettesRecettes) : '0 FCFA'}</div>
-          <div class="vx-kpi-sub">${d.detteData.nbDriversRecettes > 0 ? d.detteData.nbDriversRecettes + ' chauffeur' + (d.detteData.nbDriversRecettes > 1 ? 's' : '') : 'Aucune dette'}</div>
-          <div class="vx-kpi-track"><div class="vx-kpi-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.detteData.totalDettesRecettes / d.totalAttendu * 100, 100) : 0}%;background:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning)' : 'var(--text-muted)'};"></div></div>
-        </div>
-        <div class="vx-kpi is-clk" onclick="document.getElementById('dette-section-contraventions')?.scrollIntoView({behavior:'smooth'})">
-          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Dettes contraventions</span><div class="vx-kpi-ic" style="background:${d.detteData.totalDettesContraventions > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.detteData.totalDettesContraventions > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div></div>
-          <div class="vx-kpi-val" style="color:${d.detteData.totalDettesContraventions > 0 ? 'var(--danger-dim)' : 'var(--text-primary)'};">${d.detteData.totalDettesContraventions > 0 ? Utils.formatCurrency(d.detteData.totalDettesContraventions) : '0 FCFA'}</div>
-          <div class="vx-kpi-sub">${d.detteData.nbDriversContraventions > 0 ? d.detteData.nbDriversContraventions + ' chauffeur' + (d.detteData.nbDriversContraventions > 1 ? 's' : '') : 'Aucune'}</div>
-        </div>
-        <div class="vx-kpi">
-          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Pertes</span><div class="vx-kpi-ic" style="background:${d.totalPertes > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div></div>
-          <div class="vx-kpi-val" style="color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-primary)'};">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
-          <div class="vx-kpi-track"><div class="vx-kpi-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes / d.totalAttendu * 100, 100) : 0}%;background:${d.totalPertes > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></div></div>
-        </div>
-      </div>
 
       <!-- Suivi des dettes -->
       ${this._renderDetteSection(d)}
