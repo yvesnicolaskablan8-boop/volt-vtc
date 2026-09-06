@@ -281,7 +281,25 @@ const VersementsPage = {
     return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay, detailProgrammes, detailAttendu, detailRetard, detailVerse, nbChauffeursProgrammes, unpaidItems, totalUnpaid, totalPenalites, totalDettes, totalPertes, nbDetteDrivers, detteData, anomalies };
   },
 
+  // Palette sémantique des KPI : la couleur reflète la SITUATION (bon / à
+  // surveiller / mauvais), pas une teinte décorative fixe.
+  _kpiCol(status) {
+    const M = {
+      good:    { bg: 'rgba(19,222,185,.14)', fg: 'var(--success-dim)' },
+      warn:    { bg: 'rgba(255,174,31,.14)', fg: 'var(--warning-dim)' },
+      bad:     { bg: 'rgba(250,137,107,.15)', fg: 'var(--danger-dim)' },
+      info:    { bg: 'rgba(93,135,255,.12)', fg: 'var(--pilote-blue)' },
+      neutral: { bg: 'var(--bg-tertiary)',   fg: 'var(--text-muted)' },
+    };
+    return M[status] || M.neutral;
+  },
+
   _template(d) {
+    // Taux de recouvrement → statut du « Montant versé » (bon ≥ 85 %, à
+    // surveiller ≥ 50 %, mauvais en dessous ; neutre si rien n'est attendu).
+    const taux = d.totalAttendu > 0 ? Math.round(d.totalVerse / d.totalAttendu * 100) : null;
+    const verseStatus = d.totalAttendu <= 0 ? 'neutral' : (taux >= 85 ? 'good' : taux >= 50 ? 'warn' : 'bad');
+    const vc = VersementsPage._kpiCol(verseStatus);
     return `
       <div class="d-wrap"><div class="d-bg">
 
@@ -323,11 +341,11 @@ const VersementsPage = {
         </div>
         <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('verse')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
+            <div style="width:46px;height:46px;border-radius:13px;background:${vc.bg};color:${vc.fg};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
             <div style="color:var(--text-muted);font-weight:500;">Montant versé</div>
           </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.periodLabel}</div>
+          <div style="font-size:24px;font-weight:800;color:${vc.fg};">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div style="color:${taux != null ? vc.fg : 'var(--text-muted)'};font-size:13px;font-weight:${taux != null ? '600' : '400'};margin-top:2px;">${taux != null ? taux + '% recouvré · ' + d.periodLabel : d.periodLabel}</div>
         </div>
         <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('programmes')">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
@@ -345,7 +363,7 @@ const VersementsPage = {
             <div style="width:46px;height:46px;border-radius:13px;background:${d.anomalies.total > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
             <div style="color:var(--text-muted);font-weight:500;">Anomalies</div>
           </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${d.anomalies.total}</div>
+          <div style="font-size:24px;font-weight:800;color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--text-primary)'};">${d.anomalies.total}</div>
           <div style="margin-top:10px;">
             <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 11px;border-radius:20px;background:${d.anomalies.total > 0 ? 'rgba(255,174,31,.14)' : 'rgba(19,222,185,.14)'};font-size:11px;font-weight:700;color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--success-dim)'};">${d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK'}</span>
           </div>
@@ -355,7 +373,7 @@ const VersementsPage = {
             <div style="width:46px;height:46px;border-radius:13px;background:${d.detteData.totalDettesRecettes > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
             <div style="color:var(--text-muted);font-weight:500;">Dettes recettes</div>
           </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${d.detteData.totalDettesRecettes > 0 ? Utils.formatCurrency(d.detteData.totalDettesRecettes) : '0 FCFA'}</div>
+          <div style="font-size:24px;font-weight:800;color:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning-dim)' : 'var(--text-primary)'};">${d.detteData.totalDettesRecettes > 0 ? Utils.formatCurrency(d.detteData.totalDettesRecettes) : '0 FCFA'}</div>
           <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.detteData.nbDriversRecettes > 0 ? d.detteData.nbDriversRecettes + ' chauffeur' + (d.detteData.nbDriversRecettes > 1 ? 's' : '') : 'Aucune dette'}</div>
           <div class="d-bar-track" style="margin-top:10px;background:var(--bg-tertiary);">
             <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.detteData.totalDettesRecettes/d.totalAttendu*100,100) : 0}%;background:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning)' : 'var(--text-muted)'};"></div>
@@ -366,7 +384,7 @@ const VersementsPage = {
             <div style="width:46px;height:46px;border-radius:13px;background:${d.detteData.totalDettesContraventions > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.detteData.totalDettesContraventions > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div>
             <div style="color:var(--text-muted);font-weight:500;">Dettes contraventions</div>
           </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${d.detteData.totalDettesContraventions > 0 ? Utils.formatCurrency(d.detteData.totalDettesContraventions) : '0 FCFA'}</div>
+          <div style="font-size:24px;font-weight:800;color:${d.detteData.totalDettesContraventions > 0 ? 'var(--danger-dim)' : 'var(--text-primary)'};">${d.detteData.totalDettesContraventions > 0 ? Utils.formatCurrency(d.detteData.totalDettesContraventions) : '0 FCFA'}</div>
           <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.detteData.nbDriversContraventions > 0 ? d.detteData.nbDriversContraventions + ' chauffeur' + (d.detteData.nbDriversContraventions > 1 ? 's' : '') : 'Aucune'}</div>
         </div>
         <div class="d-card">
@@ -374,7 +392,7 @@ const VersementsPage = {
             <div style="width:46px;height:46px;border-radius:13px;background:${d.totalPertes > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div>
             <div style="color:var(--text-muted);font-weight:500;">Pertes</div>
           </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
+          <div style="font-size:24px;font-weight:800;color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-primary)'};">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
           <div class="d-bar-track" style="margin-top:10px;background:var(--bg-tertiary);">
             <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:${d.totalPertes > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></div>
           </div>
