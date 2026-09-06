@@ -284,12 +284,15 @@ const VersementsPage = {
   // Feuille de style scopée des sections « liste » modernisées (Dettes / Versements).
   _vxStyles() {
     return `<style id="vx-styles">
-.vx-page{--vx-card:#ffffff;--vx-bd:#e9edf4;--vx-bd-soft:#eef1f7;--vx-surface:#f5f7fb;--vx-hover:#f7f9fc;max-width:720px;margin:0 auto;}
+.vx-page{--vx-card:#ffffff;--vx-bd:#e9edf4;--vx-bd-soft:#eef1f7;--vx-surface:#f5f7fb;--vx-hover:#f7f9fc;max-width:1400px;margin:0 auto;}
 .wl-title{margin-bottom:18px;}
 .wl-title-k{font-size:13px;color:var(--text-muted);font-weight:600;}
 .wl-title-h{font-size:26px;font-weight:800;letter-spacing:-.6px;color:var(--text-primary);margin-top:2px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .wl-date{display:flex;align-items:center;background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:13px;padding:2px 4px;}
-.wl-card{background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:28px;box-shadow:0 24px 60px rgba(17,24,39,.1);padding:22px;display:flex;flex-direction:column;gap:18px;}
+.wl-card{background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:28px;box-shadow:0 24px 60px rgba(17,24,39,.1);padding:24px;display:grid;grid-template-columns:400px 1fr;gap:24px;align-items:start;}
+.wl-left{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px;}
+.wl-right{min-width:0;}
+@media(max-width:900px){.wl-card{grid-template-columns:1fr;}.wl-left{position:static;}}
 .wl-pills{display:flex;flex-direction:column;gap:12px;}
 .wl-pill{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;border-radius:18px;box-shadow:0 4px 14px rgba(17,24,39,.05);}
 .wl-pill-l{display:flex;align-items:center;gap:12px;min-width:0;}
@@ -478,6 +481,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     if ((d.totalPertes || 0) > 0) rows.push(`<div class="wl-acc"><div class="wl-nav-row" style="cursor:default;"><div class="wl-nav-ic" style="background:#ffe4e6;color:#e11d48;border:1px solid #fecdd3;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div><div class="wl-nav-main"><div class="wl-nav-title">Pertes</div><div class="wl-nav-sub">Montant non recouvrable</div></div><div class="wl-nav-val" style="color:#e11d48;">${fmt(d.totalPertes)}</div></div></div>`);
 
     return `<div class="wl-card" id="wl-card">
+      <div class="wl-left">
       <div class="wl-pills">
         <div class="wl-pill" style="background:linear-gradient(120deg,#fbcfe8 0%,#ffe4e6 100%);border:1px solid rgba(244,114,182,.35);">
           <div class="wl-pill-l"><div class="wl-pill-ic"><iconify-icon icon="solar:wallet-bold"></iconify-icon></div><span class="wl-pill-lbl">Reste à encaisser</span></div>
@@ -510,8 +514,9 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         </div>
         <button class="wl-btn wl-btn-sec wl-act-ic" title="Nettoyer les versements fantômes" onclick="VersementsPage._cleanupGhosts()"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
       </div>
+      </div>
 
-      <div class="wl-nav">${rows.join('')}</div>
+      <div class="wl-right"><div class="wl-nav">${rows.join('')}</div></div>
     </div>`;
   },
 
