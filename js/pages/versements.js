@@ -281,6 +281,66 @@ const VersementsPage = {
     return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay, detailProgrammes, detailAttendu, detailRetard, detailVerse, nbChauffeursProgrammes, unpaidItems, totalUnpaid, totalPenalites, totalDettes, totalPertes, nbDetteDrivers, detteData, anomalies };
   },
 
+  // Feuille de style scopée des sections « liste » modernisées (Dettes / Versements).
+  _vxStyles() {
+    return `<style id="vx-styles">
+.vx-sec{background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:20px;padding:18px 20px 14px;margin-top:var(--space-lg);box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 30px rgba(15,23,42,.05);}
+.vx-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+.vx-head-l{display:flex;align-items:center;gap:12px;min-width:0;}
+.vx-chip{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.vx-title{font-size:16px;font-weight:800;letter-spacing:-.3px;color:var(--text-primary);line-height:1.15;}
+.vx-title small{display:block;font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:0;margin-top:1px;}
+.vx-head-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+.vx-total{text-align:right;line-height:1.1;}
+.vx-total-v{font-size:20px;font-weight:800;letter-spacing:-.4px;}
+.vx-total-s{font-size:12px;font-weight:600;margin-top:1px;}
+.vx-gbtn{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-secondary);transition:.15s;}
+.vx-gbtn:hover{filter:brightness(.98);box-shadow:0 3px 10px rgba(15,23,42,.06);}
+.vx-gbtn.is-accent{border:none;color:#fff;}
+.vx-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.vx-search{position:relative;flex:1;min-width:150px;}
+.vx-search iconify-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--text-muted);pointer-events:none;}
+.vx-input{width:100%;height:38px;padding:0 12px 0 34px;border-radius:12px;border:1px solid var(--border-color);background:var(--bg-tertiary);font-size:13px;font-family:var(--font-body);color:var(--text-primary);outline:none;transition:.15s;box-sizing:border-box;}
+.vx-input:focus{border-color:var(--pilote-blue);background:var(--bg-secondary);box-shadow:0 0 0 3px rgba(93,135,255,.12);}
+select.vx-input,input[type=date].vx-input{padding-left:12px;flex:0 0 auto;width:auto;min-width:140px;}
+.vx-list{display:flex;flex-direction:column;gap:3px;max-height:460px;overflow-y:auto;padding-right:2px;}
+.vx-date{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:2;background:var(--bg-secondary);padding:9px 4px 6px;margin-top:4px;}
+.vx-date-l{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);}
+.vx-date-l::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.5;}
+.vx-date-v{font-size:12.5px;font-weight:800;padding:3px 10px;border-radius:20px;background:var(--bg-tertiary);}
+.vx-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:14px;background:transparent;border:1px solid transparent;transition:.14s;}
+.vx-row:hover{background:var(--bg-tertiary);border-color:var(--border-color);transform:translateY(-1px);box-shadow:0 6px 16px rgba(15,23,42,.06);}
+.vx-av{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;letter-spacing:.3px;}
+.vx-main{flex:1;min-width:0;}
+.vx-name{font-size:14px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vx-note{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.vx-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px;}
+.vx-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;line-height:1.2;white-space:nowrap;}
+.vx-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0;}
+.vx-amt{font-size:16px;font-weight:800;letter-spacing:-.3px;white-space:nowrap;}
+.vx-acts{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.vx-ib{width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-secondary);cursor:pointer;font-size:16px;transition:.14s;}
+.vx-ib:hover{background:var(--bg-tertiary);color:var(--text-primary);}
+.vx-ib.is-danger:hover{background:rgba(239,68,68,.12);color:#ef4444;border-color:rgba(239,68,68,.3);}
+.vx-pill{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 14px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;color:#fff;transition:.14s;white-space:nowrap;}
+.vx-pill:hover{filter:brightness(1.05);box-shadow:0 4px 12px rgba(34,197,94,.3);}
+.vx-empty{text-align:center;color:var(--text-muted);padding:26px 12px;font-size:13px;}
+.vx-empty iconify-icon{font-size:30px;display:block;margin:0 auto 8px;}
+@media(max-width:640px){.vx-note{white-space:normal;}}
+</style>`;
+  },
+
+  // Avatar à initiales, teinte stable dérivée du nom (touche moderne, discrète).
+  _avatar(name) {
+    const pals = [['#eef2ff', '#4f46e5'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#16a34a'], ['#fff7ed', '#ea580c'], ['#fdf2f8', '#db2777'], ['#f5f3ff', '#7c3aed'], ['#eff6ff', '#2563eb'], ['#fefce8', '#ca8a04']];
+    const s = String(name || '?').trim();
+    let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    const [bg, fg] = pals[h % pals.length];
+    const parts = s.split(/\s+/).filter(Boolean);
+    const init = ((parts[0] || '?')[0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+    return `<div class="vx-av" style="background:${bg};color:${fg};">${Utils.escHtml(init)}</div>`;
+  },
+
   // Palette sémantique des KPI : la couleur reflète la SITUATION (bon / à
   // surveiller / mauvais), pas une teinte décorative fixe.
   _kpiCol(status) {
@@ -301,6 +361,7 @@ const VersementsPage = {
     const verseStatus = d.totalAttendu <= 0 ? 'neutral' : (taux >= 85 ? 'good' : taux >= 50 ? 'warn' : 'bad');
     const vc = VersementsPage._kpiCol(verseStatus);
     return `
+      ${VersementsPage._vxStyles()}
       <div class="d-wrap"><div class="d-bg">
 
       <!-- Header -->
@@ -501,23 +562,24 @@ const VersementsPage = {
     const totalVerse = versements.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
     const rows = this._renderVersementRows(versements, d.chauffeurs);
 
-    return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #22c55e;">
-      <div class="card-header">
-        <span class="card-title"><iconify-icon icon="solar:hand-money-bold-duotone" style="color:#22c55e;"></iconify-icon> Versements (<span id="versements-count">${versements.length}</span>)</span>
-        <div style="text-align:right;">
-          <div style="font-size:var(--font-size-base);font-weight:700;color:#22c55e;" id="versements-total">${Utils.formatCurrency(totalVerse)}</div>
+    return `<div class="vx-sec">
+      <div class="vx-head">
+        <div class="vx-head-l">
+          <div class="vx-chip" style="background:rgba(34,197,94,.14);color:#22c55e;"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
+          <div class="vx-title">Versements<small><span id="versements-count">${versements.length}</span> ce jour</small></div>
         </div>
+        <div class="vx-head-r"><div class="vx-total"><div class="vx-total-v" style="color:#22c55e;" id="versements-total">${Utils.formatCurrency(totalVerse)}</div></div></div>
       </div>
-      <div style="display:flex;gap:var(--space-sm);margin-bottom:8px;flex-wrap:wrap;">
-        <div style="position:relative;flex:1;min-width:150px;">
-          <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:#22c55e;pointer-events:none;"></iconify-icon>
-          <input type="text" id="versements-search" class="form-control" placeholder="Rechercher un chauffeur..." style="padding-left:32px;font-size:var(--font-size-xs);border:2px solid #22c55e;border-radius:var(--radius-md);background:var(--bg-primary);" onclick="event.stopPropagation()">
+      <div class="vx-tools">
+        <div class="vx-search">
+          <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+          <input type="text" id="versements-search" class="vx-input" placeholder="Rechercher un chauffeur..." onclick="event.stopPropagation()">
         </div>
-        <select class="form-control" id="filter-chauffeur" style="width:180px;font-size:var(--font-size-xs);">
+        <select class="vx-input" id="filter-chauffeur" style="min-width:170px;">
           <option value="">Tous les chauffeurs</option>
           ${d.chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}
         </select>
-        <select class="form-control" id="filter-statut" style="width:140px;font-size:var(--font-size-xs);">
+        <select class="vx-input" id="filter-statut" style="min-width:140px;">
           <option value="">Tous statuts</option>
           <option value="valide">Valid\u00e9</option>
           <option value="en_attente">En attente</option>
@@ -525,9 +587,9 @@ const VersementsPage = {
           <option value="partiel">Partiel</option>
           <option value="conteste">Contesté</option>
         </select>
-        <input type="date" class="form-control" id="filter-date-paiement" style="width:160px;font-size:var(--font-size-xs);" title="Filtrer par date de paiement">
+        <input type="date" class="vx-input" id="filter-date-paiement" style="min-width:150px;" title="Filtrer par date de paiement">
       </div>
-      <div id="versements-list" style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto;">
+      <div id="versements-list" class="vx-list" style="max-height:500px;">
         ${rows}
       </div>
     </div>`;
@@ -599,34 +661,36 @@ const VersementsPage = {
       const coursesHtml = `<span data-yango-courses="${v.id}" style="font-size:var(--font-size-xs);color:var(--text-muted);">${v.nombreCourses > 0 ? `${v.nombreCourses} courses` : '<iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:11px;"></iconify-icon>'}</span>`;
 
       // Action buttons
-      let actionsHtml = '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">';
+      let actionsHtml = '<div class="vx-acts">';
       if (v.statut === 'en_attente' || v.statut === 'retard') {
-        actionsHtml += `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();VersementsPage._validate('${v.id}')" title="Valider"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button>`;
+        actionsHtml += `<button class="vx-ib" style="color:#22c55e;border-color:rgba(34,197,94,.3);" onclick="event.stopPropagation();VersementsPage._validate('${v.id}')" title="Valider"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button>`;
         if (v.soumisParChauffeur) {
-          actionsHtml += `<button class="btn btn-sm btn-outline" style="color:#ef4444;border-color:#ef4444;" onclick="event.stopPropagation();VersementsPage._contester('${v.id}')" title="Contester le montant déclaré"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></button>`;
+          actionsHtml += `<button class="vx-ib is-danger" onclick="event.stopPropagation();VersementsPage._contester('${v.id}')" title="Contester le montant déclaré"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></button>`;
         }
       }
-      actionsHtml += `<button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();VersementsPage._edit('${v.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>`;
+      actionsHtml += `<button class="vx-ib" onclick="event.stopPropagation();VersementsPage._edit('${v.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>`;
       if (v.statut === 'valide') {
-        actionsHtml += `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();VersementsPage._exportReceipt('${v.id}')" title="Reçu PDF"><iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon></button>`;
+        actionsHtml += `<button class="vx-ib" onclick="event.stopPropagation();VersementsPage._exportReceipt('${v.id}')" title="Reçu PDF"><iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon></button>`;
       }
       if (!isDeleted) {
-        actionsHtml += `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();VersementsPage._deleteVersement('${v.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>`;
+        actionsHtml += `<button class="vx-ib is-danger" onclick="event.stopPropagation();VersementsPage._deleteVersement('${v.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>`;
       }
       actionsHtml += '</div>';
 
       const isDette = v.traitementManquant === 'dette';
       const isPerte = v.traitementManquant === 'perte';
-      const rowBg = isDeleted ? 'var(--bg-tertiary)' : isDette ? 'rgba(245,158,11,0.06)' : isPerte ? 'rgba(239,68,68,0.06)' : v.moyenPaiement === 'wave' ? 'rgba(34,197,94,0.06)' : 'var(--bg-tertiary)';
-      const rowBorder = isDeleted ? '' : isDette ? 'border-left:3px solid #f59e0b;' : isPerte ? 'border-left:3px solid #ef4444;' : v.moyenPaiement === 'wave' ? 'border-left:3px solid #22c55e;' : '';
-      return `<div data-name="${name.toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:${rowBg};${rowBorder}gap:8px;${isDeleted ? 'opacity:0.5;' : ''}">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:600;">${name}</div>
-          ${metaBits ? `<div style="font-size:var(--font-size-xs);color:var(--text-muted);">${metaBits}</div>` : ''}
-          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">${statutHtml} ${sourceHtml} ${manquantHtml} ${anomalieHtml} ${methodHtml} ${coursesHtml}</div>
+      const accent = isDeleted ? '' : isDette ? '#f59e0b' : isPerte ? '#ef4444' : v.moyenPaiement === 'wave' ? '#22c55e' : '';
+      const rowStyle = `${accent ? `box-shadow:inset 3px 0 0 ${accent};` : ''}${isDeleted ? 'opacity:.5;' : ''}`;
+      const amtColor = isDeleted ? 'var(--text-muted)' : isPerte ? '#ef4444' : isDette ? '#d97706' : v.statut === 'en_attente' ? '#f59e0b' : '#22c55e';
+      return `<div class="vx-row" data-name="${name.toLowerCase()}" style="${rowStyle}">
+        ${this._avatar(name)}
+        <div class="vx-main">
+          <div class="vx-name">${Utils.escHtml(name)}</div>
+          ${metaBits ? `<div class="vx-note">${metaBits}</div>` : ''}
+          <div class="vx-badges">${statutHtml} ${sourceHtml} ${manquantHtml} ${anomalieHtml} ${methodHtml} ${coursesHtml}</div>
         </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:700;color:${isDeleted ? 'var(--text-muted)' : isPerte ? '#ef4444' : isDette ? '#d97706' : v.statut === 'en_attente' ? '#f59e0b' : '#22c55e'};${isDeleted ? 'text-decoration:line-through;' : ''}">${Utils.formatCurrency((v.montantVerse || 0) > 0 ? v.montantVerse : (v.montantBrut || 0))}</div>
+        <div class="vx-right">
+          <div class="vx-amt" style="color:${amtColor};${isDeleted ? 'text-decoration:line-through;' : ''}">${Utils.formatCurrency((v.montantVerse || 0) > 0 ? v.montantVerse : (v.montantBrut || 0))}</div>
           ${actionsHtml}
         </div>
       </div>`;
@@ -636,7 +700,7 @@ const VersementsPage = {
     return this._groupItemsByDate(versements, v => v.dateService || v.date).map(g => {
       const sub = g.items.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
       return `<div class="versement-date-group" data-date="${g.date}">
-        ${this._dateHeaderHtml(g.date, `<span style="font-size:var(--font-size-xs);font-weight:700;color:#22c55e;">${Utils.formatCurrency(sub)}</span>`)}
+        ${this._dateHeaderHtml(g.date, `<span class="vx-date-v" style="color:#22c55e;">${Utils.formatCurrency(sub)}</span>`)}
         <div style="display:flex;flex-direction:column;gap:6px;">${g.items.map(renderOne).join('')}</div>
       </div>`;
     }).join('');
@@ -2495,10 +2559,8 @@ const VersementsPage = {
 
   // En-tête d'un groupe « par date » (reste collé en haut du conteneur qui défile)
   _dateHeaderHtml(dateStr, rightHtml) {
-    return `<div class="date-group-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px;margin:6px 0 2px;position:sticky;top:0;z-index:1;background:var(--bg-secondary);border-radius:var(--radius-sm);">
-      <span style="font-size:var(--font-size-xs);font-weight:700;color:var(--text-secondary);text-transform:capitalize;">
-        <iconify-icon icon="solar:calendar-mark-bold-duotone" style="color:var(--text-muted);vertical-align:-2px;"></iconify-icon> ${dateStr ? Utils.formatDate(dateStr) : 'Date inconnue'}
-      </span>
+    return `<div class="date-group-header vx-date">
+      <span class="vx-date-l">${dateStr ? Utils.formatDate(dateStr) : 'Date inconnue'}</span>
       ${rightHtml || ''}
     </div>`;
   },
@@ -2522,24 +2584,25 @@ const VersementsPage = {
             : ds ? `Yango ${Utils.formatCurrency(ds.caBrut)} − charges ${Utils.formatCurrency(ds.charge)}${ds.verse ? ' − versé ' + Utils.formatCurrency(ds.verse) : ''}`
             : isImplicit ? 'Non versé (redevance due)'
             : ('Versé : ' + Utils.formatCurrency(it.montantVerse || 0));
-          const chargesBtn = ds ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();VersementsPage._gererCharges('${it._chauffeurId}','${it.date}')" title="Déduire / gérer les charges"><iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon></button>` : '';
-          return `<div class="dette-row" data-nom="${(it._nom || '').toLowerCase()}" data-date="${it.date || ''}" style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:var(--font-size-sm);font-weight:600;">${it._nom}</div>
-              <div style="font-size:10px;color:var(--text-muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${note}</div>
+          const chargesBtn = ds ? `<button class="vx-ib" onclick="event.stopPropagation();VersementsPage._gererCharges('${it._chauffeurId}','${it.date}')" title="Déduire / gérer les charges"><iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon></button>` : '';
+          return `<div class="dette-row vx-row" data-nom="${(it._nom || '').toLowerCase()}" data-date="${it.date || ''}">
+            ${this._avatar(it._nom)}
+            <div class="vx-main">
+              <div class="vx-name">${Utils.escHtml(it._nom || 'Chauffeur')}</div>
+              <div class="vx-note">${note}</div>
             </div>
-            <div style="text-align:right;flex-shrink:0;">
-              <div style="font-size:var(--font-size-sm);font-weight:700;color:${color};">${Utils.formatCurrency(it.manquant)}</div>
-              <div style="display:flex;gap:4px;margin-top:4px;">
-                <button class="btn btn-sm btn-success" onclick="event.stopPropagation();VersementsPage._encaisserDetteIndividuelle('${it._chauffeurId}','${it.date}',${it.manquant},${isImplicit},'${isImplicit ? '' : it.id}','${it.source || ''}')"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser</button>
+            <div class="vx-right">
+              <div class="vx-amt" style="color:${color};">${Utils.formatCurrency(it.manquant)}</div>
+              <div class="vx-acts">
+                <button class="vx-pill" style="background:#22c55e;" onclick="event.stopPropagation();VersementsPage._encaisserDetteIndividuelle('${it._chauffeurId}','${it.date}',${it.manquant},${isImplicit},'${isImplicit ? '' : it.id}','${it.source || ''}')"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser</button>
                 ${chargesBtn}
-                <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();VersementsPage._showDetteDetail('${it._chauffeurId}','${typeKey}')" title="Voir tout le chauffeur"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></button>
+                <button class="vx-ib" onclick="event.stopPropagation();VersementsPage._showDetteDetail('${it._chauffeurId}','${typeKey}')" title="Voir tout le chauffeur"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></button>
               </div>
             </div>
           </div>`;
         }).join('');
       return `<div class="dette-date-group" data-date="${g.date}">
-        ${this._dateHeaderHtml(g.date, `<span style="font-size:var(--font-size-xs);font-weight:700;color:${color};">${Utils.formatCurrency(sub)}</span>`)}
+        ${this._dateHeaderHtml(g.date, `<span class="vx-date-v" style="color:${color};">${Utils.formatCurrency(sub)}</span>`)}
         <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
       </div>`;
     }).join('');
@@ -2591,47 +2654,49 @@ const VersementsPage = {
 
     let html = '';
 
-    const filterBarHtml = (id, color) => `
-      <div style="display:flex;gap:var(--space-sm);margin-bottom:8px;flex-wrap:wrap;">
-        <div style="position:relative;flex:1;min-width:120px;">
-          <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
-          <input type="text" class="form-control dette-search-input" data-target="${id}" placeholder="Rechercher..." style="padding-left:30px;font-size:var(--font-size-xs);">
+    const filterBarHtml = (id) => `
+      <div class="vx-tools">
+        <div class="vx-search">
+          <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+          <input type="text" class="vx-input dette-search-input" data-target="${id}" placeholder="Rechercher un chauffeur...">
         </div>
-        <input type="date" class="form-control dette-date-filter" data-target="${id}" style="width:160px;font-size:var(--font-size-xs);" placeholder="Choisir un jour">
+        <input type="date" class="vx-input dette-date-filter" data-target="${id}">
       </div>`;
 
     // Section recettes
     if (detteData.detteListRecettes.length > 0 || detteData.totalPertes > 0) {
-      html += `<div id="dette-section-recettes" class="card" style="margin-top:var(--space-lg);border-left:4px solid #f59e0b;">
-        <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#f59e0b;"></iconify-icon> Dettes recettes (${detteData.detteListRecettes.length} chauffeur${detteData.detteListRecettes.length > 1 ? 's' : ''})</span>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <button class="btn btn-sm" style="background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border-color);display:flex;align-items:center;gap:4px;padding:4px 10px;font-size:var(--font-size-xs);" onclick="VersementsPage._resyncCaYango(this)" title="Récupérer le CA réel depuis Yango (30 derniers jours)">
-              <iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon> Resync Yango
-            </button>
-            <button class="btn btn-sm" style="background:#f59e0b;color:white;border:none;display:flex;align-items:center;gap:4px;padding:4px 10px;font-size:var(--font-size-xs);" onclick="VersementsPage._ajouterDette()">
-              <iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter
-            </button>
-            <div style="text-align:right;">
-              ${detteData.totalDettesRecettes > 0 ? `<div style="font-size:var(--font-size-base);font-weight:700;color:#f59e0b;">${Utils.formatCurrency(detteData.totalDettesRecettes)}</div>` : ''}
-              ${detteData.totalPertes > 0 ? `<div style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;">Pertes : ${Utils.formatCurrency(detteData.totalPertes)}</div>` : ''}
+      html += `<div id="dette-section-recettes" class="vx-sec">
+        <div class="vx-head">
+          <div class="vx-head-l">
+            <div class="vx-chip" style="background:rgba(245,158,11,.14);color:#f59e0b;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div class="vx-title">Dettes recettes<small>${detteData.detteListRecettes.length} chauffeur${detteData.detteListRecettes.length > 1 ? 's' : ''}</small></div>
+          </div>
+          <div class="vx-head-r">
+            <button class="vx-gbtn" onclick="VersementsPage._resyncCaYango(this)" title="Récupérer le CA réel depuis Yango (30 derniers jours)"><iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon> Resync Yango</button>
+            <button class="vx-gbtn is-accent" style="background:#f59e0b;" onclick="VersementsPage._ajouterDette()"><iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter</button>
+            <div class="vx-total">
+              ${detteData.totalDettesRecettes > 0 ? `<div class="vx-total-v" style="color:#f59e0b;">${Utils.formatCurrency(detteData.totalDettesRecettes)}</div>` : ''}
+              ${detteData.totalPertes > 0 ? `<div class="vx-total-s" style="color:#ef4444;">Pertes : ${Utils.formatCurrency(detteData.totalPertes)}</div>` : ''}
             </div>
           </div>
         </div>
-        ${detteData.detteListRecettes.length > 3 ? filterBarHtml('dette-recettes-list', '#f59e0b') : ''}
-        ${detteData.detteListRecettes.length > 0 ? `<div id="dette-recettes-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">${recetteRows}</div>` : '<div style="text-align:center;color:var(--text-muted);padding:12px;font-size:var(--font-size-sm);">Aucune dette recette</div>'}
+        ${detteData.detteListRecettes.length > 3 ? filterBarHtml('dette-recettes-list') : ''}
+        ${detteData.detteListRecettes.length > 0 ? `<div id="dette-recettes-list" class="vx-list">${recetteRows}</div>` : '<div class="vx-empty"><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon>Aucune dette recette</div>'}
       </div>`;
     }
 
     // Section contraventions
     if (detteData.detteListContraventions.length > 0) {
-      html += `<div id="dette-section-contraventions" class="card" style="margin-top:var(--space-lg);border-left:4px solid #ef4444;">
-        <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:shield-warning-bold-duotone" style="color:#ef4444;"></iconify-icon> Dettes contraventions (${detteData.detteListContraventions.length} chauffeur${detteData.detteListContraventions.length > 1 ? 's' : ''})</span>
-          <div style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${Utils.formatCurrency(detteData.totalDettesContraventions)}</div>
+      html += `<div id="dette-section-contraventions" class="vx-sec">
+        <div class="vx-head">
+          <div class="vx-head-l">
+            <div class="vx-chip" style="background:rgba(239,68,68,.14);color:#ef4444;"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div>
+            <div class="vx-title">Dettes contraventions<small>${detteData.detteListContraventions.length} chauffeur${detteData.detteListContraventions.length > 1 ? 's' : ''}</small></div>
+          </div>
+          <div class="vx-head-r"><div class="vx-total"><div class="vx-total-v" style="color:#ef4444;">${Utils.formatCurrency(detteData.totalDettesContraventions)}</div></div></div>
         </div>
-        ${detteData.detteListContraventions.length > 3 ? filterBarHtml('dette-contra-list', '#ef4444') : ''}
-        <div id="dette-contra-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">${contraRows}</div>
+        ${detteData.detteListContraventions.length > 3 ? filterBarHtml('dette-contra-list') : ''}
+        <div id="dette-contra-list" class="vx-list">${contraRows}</div>
       </div>`;
     }
 
