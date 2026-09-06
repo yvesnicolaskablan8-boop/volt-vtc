@@ -326,6 +326,20 @@ select.vx-input,input[type=date].vx-input{padding-left:12px;flex:0 0 auto;width:
 .vx-pill:hover{filter:brightness(1.05);box-shadow:0 4px 12px rgba(34,197,94,.3);}
 .vx-empty{text-align:center;color:var(--text-muted);padding:26px 12px;font-size:13px;}
 .vx-empty iconify-icon{font-size:30px;display:block;margin:0 auto 8px;}
+.vx-kpi-grid{display:grid;gap:16px;}
+.vx-kpi{position:relative;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:18px;padding:18px 18px 16px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 10px 26px rgba(15,23,42,.045);transition:.15s;}
+.vx-kpi.is-clk{cursor:pointer;}
+.vx-kpi.is-clk:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(15,23,42,.1);}
+.vx-kpi-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px;}
+.vx-kpi-lbl{font-size:12.5px;font-weight:700;color:var(--text-secondary);line-height:1.25;}
+.vx-kpi-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.vx-kpi-val{font-size:26px;font-weight:800;letter-spacing:-.6px;color:var(--text-primary);line-height:1.05;}
+.vx-kpi-sub{font-size:12.5px;font-weight:600;color:var(--text-muted);margin-top:4px;}
+.vx-kpi-badge{display:inline-flex;align-items:center;gap:4px;margin-top:11px;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;}
+.vx-kpi-track{margin-top:12px;height:6px;border-radius:6px;background:var(--bg-tertiary);overflow:hidden;}
+.vx-kpi-fill{height:100%;border-radius:6px;}
+@media(max-width:820px){.vx-kpi-grid{grid-template-columns:repeat(2,1fr)!important;}}
+@media(max-width:480px){.vx-kpi-grid{grid-template-columns:1fr!important;}.vx-note{white-space:normal;}}
 @media(max-width:640px){.vx-note{white-space:normal;}}
 </style>`;
   },
@@ -390,73 +404,46 @@ select.vx-input,input[type=date].vx-input{padding-left:12px;flex:0 0 auto;width:
         </div>
       </div>
 
-      <!-- KPIs — Row 1 : Montant attendu + Versé + Programmés (cartes blanches Spike) -->
-      <div class="d-grid d-g4" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
-        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('attendu')">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:rgba(93,135,255,.12);color:var(--pilote-blue);display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-            <div style="color:var(--text-muted);font-weight:500;">Montant attendu</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(d.totalAttendu)}</div>
-          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.periodLabel}</div>
+      <!-- KPIs — Row 1 : Montant attendu + Versé + Programmés -->
+      <div class="vx-kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
+        <div class="vx-kpi is-clk" onclick="VersementsPage._showKpiDetail('attendu')">
+          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Montant attendu</span><div class="vx-kpi-ic" style="background:rgba(93,135,255,.12);color:var(--pilote-blue);"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div></div>
+          <div class="vx-kpi-val">${Utils.formatCurrency(d.totalAttendu)}</div>
+          <div class="vx-kpi-sub">${d.periodLabel}</div>
         </div>
-        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('verse')">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:${vc.bg};color:${vc.fg};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
-            <div style="color:var(--text-muted);font-weight:500;">Montant versé</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:${vc.fg};">${Utils.formatCurrency(d.totalVerse)}</div>
-          <div style="color:${taux != null ? vc.fg : 'var(--text-muted)'};font-size:13px;font-weight:${taux != null ? '600' : '400'};margin-top:2px;">${taux != null ? taux + '% recouvré · ' + d.periodLabel : d.periodLabel}</div>
+        <div class="vx-kpi is-clk" onclick="VersementsPage._showKpiDetail('verse')">
+          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Montant versé</span><div class="vx-kpi-ic" style="background:${vc.bg};color:${vc.fg};"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div></div>
+          <div class="vx-kpi-val" style="color:${vc.fg};">${Utils.formatCurrency(d.totalVerse)}</div>
+          <div class="vx-kpi-sub" style="color:${taux != null ? vc.fg : 'var(--text-muted)'};">${taux != null ? taux + '% recouvré · ' + d.periodLabel : d.periodLabel}</div>
         </div>
-        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showKpiDetail('programmes')">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:rgba(139,92,246,.12);color:#8b5cf6;display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
-            <div style="color:var(--text-muted);font-weight:500;">Chauffeurs programmés</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:var(--text-primary);">${d.nbChauffeursProgrammes}</div>
+        <div class="vx-kpi is-clk" onclick="VersementsPage._showKpiDetail('programmes')">
+          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Chauffeurs programmés</span><div class="vx-kpi-ic" style="background:rgba(139,92,246,.12);color:#8b5cf6;"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div></div>
+          <div class="vx-kpi-val">${d.nbChauffeursProgrammes}</div>
         </div>
       </div>
 
-      <!-- KPIs — Row 2 : Anomalies + Dettes recettes + Dettes contraventions + Pertes (cartes blanches Spike) -->
-      <div class="d-grid d-g4" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
-        <div class="d-card" style="cursor:pointer;" onclick="VersementsPage._showAnomalies()">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:${d.anomalies.total > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
-            <div style="color:var(--text-muted);font-weight:500;">Anomalies</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--text-primary)'};">${d.anomalies.total}</div>
-          <div style="margin-top:10px;">
-            <span style="display:inline-flex;align-items:center;gap:3px;padding:4px 11px;border-radius:20px;background:${d.anomalies.total > 0 ? 'rgba(255,174,31,.14)' : 'rgba(19,222,185,.14)'};font-size:11px;font-weight:700;color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--success-dim)'};">${d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK'}</span>
-          </div>
+      <!-- KPIs — Row 2 : Anomalies + Dettes recettes + Dettes contraventions + Pertes -->
+      <div class="vx-kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+        <div class="vx-kpi is-clk" onclick="VersementsPage._showAnomalies()">
+          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Anomalies</span><div class="vx-kpi-ic" style="background:${d.anomalies.total > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div></div>
+          <div class="vx-kpi-val" style="color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--text-primary)'};">${d.anomalies.total}</div>
+          <span class="vx-kpi-badge" style="background:${d.anomalies.total > 0 ? 'rgba(255,174,31,.14)' : 'rgba(19,222,185,.14)'};color:${d.anomalies.total > 0 ? 'var(--warning-dim)' : 'var(--success-dim)'};"><iconify-icon icon="${d.anomalies.total > 0 ? 'solar:danger-triangle-bold' : 'solar:check-circle-bold'}"></iconify-icon> ${d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK'}</span>
         </div>
-        <div class="d-card" style="cursor:pointer;" onclick="document.getElementById('dette-section-recettes')?.scrollIntoView({behavior:'smooth'})">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:${d.detteData.totalDettesRecettes > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-            <div style="color:var(--text-muted);font-weight:500;">Dettes recettes</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning-dim)' : 'var(--text-primary)'};">${d.detteData.totalDettesRecettes > 0 ? Utils.formatCurrency(d.detteData.totalDettesRecettes) : '0 FCFA'}</div>
-          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.detteData.nbDriversRecettes > 0 ? d.detteData.nbDriversRecettes + ' chauffeur' + (d.detteData.nbDriversRecettes > 1 ? 's' : '') : 'Aucune dette'}</div>
-          <div class="d-bar-track" style="margin-top:10px;background:var(--bg-tertiary);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.detteData.totalDettesRecettes/d.totalAttendu*100,100) : 0}%;background:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning)' : 'var(--text-muted)'};"></div>
-          </div>
+        <div class="vx-kpi is-clk" onclick="document.getElementById('dette-section-recettes')?.scrollIntoView({behavior:'smooth'})">
+          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Dettes recettes</span><div class="vx-kpi-ic" style="background:${d.detteData.totalDettesRecettes > 0 ? 'rgba(255,174,31,.14)' : 'var(--bg-tertiary)'};color:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning-dim)' : 'var(--text-muted)'};"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div></div>
+          <div class="vx-kpi-val" style="color:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning-dim)' : 'var(--text-primary)'};">${d.detteData.totalDettesRecettes > 0 ? Utils.formatCurrency(d.detteData.totalDettesRecettes) : '0 FCFA'}</div>
+          <div class="vx-kpi-sub">${d.detteData.nbDriversRecettes > 0 ? d.detteData.nbDriversRecettes + ' chauffeur' + (d.detteData.nbDriversRecettes > 1 ? 's' : '') : 'Aucune dette'}</div>
+          <div class="vx-kpi-track"><div class="vx-kpi-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.detteData.totalDettesRecettes / d.totalAttendu * 100, 100) : 0}%;background:${d.detteData.totalDettesRecettes > 0 ? 'var(--warning)' : 'var(--text-muted)'};"></div></div>
         </div>
-        <div class="d-card" style="cursor:pointer;" onclick="document.getElementById('dette-section-contraventions')?.scrollIntoView({behavior:'smooth'})">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:${d.detteData.totalDettesContraventions > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.detteData.totalDettesContraventions > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div>
-            <div style="color:var(--text-muted);font-weight:500;">Dettes contraventions</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:${d.detteData.totalDettesContraventions > 0 ? 'var(--danger-dim)' : 'var(--text-primary)'};">${d.detteData.totalDettesContraventions > 0 ? Utils.formatCurrency(d.detteData.totalDettesContraventions) : '0 FCFA'}</div>
-          <div style="color:var(--text-muted);font-size:13px;margin-top:2px;">${d.detteData.nbDriversContraventions > 0 ? d.detteData.nbDriversContraventions + ' chauffeur' + (d.detteData.nbDriversContraventions > 1 ? 's' : '') : 'Aucune'}</div>
+        <div class="vx-kpi is-clk" onclick="document.getElementById('dette-section-contraventions')?.scrollIntoView({behavior:'smooth'})">
+          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Dettes contraventions</span><div class="vx-kpi-ic" style="background:${d.detteData.totalDettesContraventions > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.detteData.totalDettesContraventions > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div></div>
+          <div class="vx-kpi-val" style="color:${d.detteData.totalDettesContraventions > 0 ? 'var(--danger-dim)' : 'var(--text-primary)'};">${d.detteData.totalDettesContraventions > 0 ? Utils.formatCurrency(d.detteData.totalDettesContraventions) : '0 FCFA'}</div>
+          <div class="vx-kpi-sub">${d.detteData.nbDriversContraventions > 0 ? d.detteData.nbDriversContraventions + ' chauffeur' + (d.detteData.nbDriversContraventions > 1 ? 's' : '') : 'Aucune'}</div>
         </div>
-        <div class="d-card">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div style="width:46px;height:46px;border-radius:13px;background:${d.totalPertes > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};display:flex;align-items:center;justify-content:center;font-size:22px;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div>
-            <div style="color:var(--text-muted);font-weight:500;">Pertes</div>
-          </div>
-          <div style="font-size:24px;font-weight:800;color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-primary)'};">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
-          <div class="d-bar-track" style="margin-top:10px;background:var(--bg-tertiary);">
-            <div class="d-bar-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes/d.totalAttendu*100,100) : 0}%;background:${d.totalPertes > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></div>
-          </div>
+        <div class="vx-kpi">
+          <div class="vx-kpi-top"><span class="vx-kpi-lbl">Pertes</span><div class="vx-kpi-ic" style="background:${d.totalPertes > 0 ? 'rgba(250,137,107,.15)' : 'var(--bg-tertiary)'};color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-muted)'};"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div></div>
+          <div class="vx-kpi-val" style="color:${d.totalPertes > 0 ? 'var(--danger-dim)' : 'var(--text-primary)'};">${d.totalPertes > 0 ? Utils.formatCurrency(d.totalPertes) : '0 FCFA'}</div>
+          <div class="vx-kpi-track"><div class="vx-kpi-fill" style="width:${d.totalAttendu > 0 ? Math.min(d.totalPertes / d.totalAttendu * 100, 100) : 0}%;background:${d.totalPertes > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></div></div>
         </div>
       </div>
 
