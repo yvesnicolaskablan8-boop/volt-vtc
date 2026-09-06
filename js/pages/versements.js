@@ -288,7 +288,27 @@ const VersementsPage = {
 .wl-title{margin-bottom:18px;}
 .wl-title-k{font-size:13px;color:var(--text-muted);font-weight:600;}
 .wl-title-h{font-size:26px;font-weight:800;letter-spacing:-.6px;color:var(--text-primary);margin-top:2px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-.wl-date{display:flex;align-items:center;background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:13px;padding:2px 4px;}
+.wl-date{display:inline-flex;align-items:center;gap:8px;background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:13px;padding:9px 13px;cursor:pointer;font-size:13.5px;font-weight:700;color:var(--text-primary);transition:.15s;}
+.wl-date:hover{background:var(--vx-surface);}
+.dw-overlay{position:fixed;inset:0;background:rgba(17,24,39,.4);z-index:1200;display:flex;align-items:center;justify-content:center;padding:16px;}
+.dw-pop{background:#fff;border-radius:24px;box-shadow:0 30px 80px rgba(17,24,39,.3);padding:20px;width:min(94vw,420px);}
+.dw-head{font-size:15px;font-weight:800;color:var(--text-primary);text-align:center;margin-bottom:14px;}
+.dw-wheels{display:flex;gap:10px;}
+.dw-col{position:relative;height:200px;flex:1;overflow:hidden;border-radius:14px;background:var(--vx-surface);}
+.dw-col.dw-day{flex:0 0 66px;}.dw-col.dw-year{flex:0 0 92px;}
+.dw-band{position:absolute;left:6px;right:6px;top:80px;height:40px;border:1px solid var(--vx-bd);border-radius:10px;background:#fff;pointer-events:none;z-index:0;}
+.dw-scroll{position:relative;z-index:1;height:100%;overflow-y:auto;scroll-snap-type:y mandatory;padding:80px 0;box-sizing:border-box;scrollbar-width:none;-ms-overflow-style:none;}
+.dw-scroll::-webkit-scrollbar{display:none;}
+.dw-item{height:40px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:16px;font-weight:600;color:#c3c9d4;cursor:pointer;transition:color .15s;white-space:nowrap;}
+.dw-item.sel{color:var(--text-primary);font-weight:800;}
+.dw-fade-t,.dw-fade-b{position:absolute;left:0;right:0;height:78px;pointer-events:none;z-index:2;}
+.dw-fade-t{top:0;background:linear-gradient(to bottom,var(--vx-surface),transparent);}
+.dw-fade-b{bottom:0;background:linear-gradient(to top,var(--vx-surface),transparent);}
+.dw-actions{display:flex;gap:8px;margin-top:16px;}
+.dw-btn{flex:1;height:44px;border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.15s;}
+.dw-ghost{background:var(--vx-surface);color:var(--text-secondary);border:1px solid var(--vx-bd);}
+.dw-today{background:#eef2ff;color:#4338ca;border:1px solid #e0e7ff;}
+.dw-ok{background:#ec4899;color:#fff;box-shadow:0 8px 20px rgba(236,72,153,.28);}
 .wl-card{background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:28px;box-shadow:0 24px 60px rgba(17,24,39,.1);padding:24px;display:grid;grid-template-columns:400px 1fr;gap:24px;align-items:start;}
 .wl-left{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px;}
 .wl-right{min-width:0;}
@@ -535,6 +555,94 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     if (body) body.hidden = !willOpen;
   },
 
+  // ── Sélecteur de date à molettes (jour / mois / année), style iOS ──
+  _frMonths() {
+    const f = new Intl.DateTimeFormat('fr-FR', { month: 'long' });
+    return Array.from({ length: 12 }, (_, i) => f.format(new Date(2000, i, 1)));
+  },
+
+  _openDateWheel() {
+    if (document.getElementById('dw-overlay')) return;
+    const cur = this._selectedPeriod ? new Date(this._selectedPeriod + 'T00:00:00') : new Date();
+    const day = cur.getDate(), month = cur.getMonth(), year = cur.getFullYear();
+    const months = this._frMonths();
+    const maxYear = new Date().getFullYear();
+    const minYear = Math.min(year, maxYear - 8);
+    const years = []; for (let y = maxYear; y >= minYear; y--) years.push(y);
+    const dayLabels = Array.from({ length: 31 }, (_, i) => String(i + 1));
+    const yearIdx = Math.max(0, years.indexOf(year));
+
+    const col = (key, labels, selIdx, extra) => `<div class="dw-col ${extra || ''}">
+      <div class="dw-band"></div>
+      <div class="dw-scroll" data-key="${key}">${labels.map((l, i) => `<div class="dw-item${i === selIdx ? ' sel' : ''}" data-i="${i}">${Utils.escHtml(String(l))}</div>`).join('')}</div>
+      <div class="dw-fade-t"></div><div class="dw-fade-b"></div>
+    </div>`;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'dw-overlay'; overlay.className = 'dw-overlay';
+    overlay.insertAdjacentHTML('beforeend', `<div class="dw-pop" onclick="event.stopPropagation()">
+      <div class="dw-head">Choisir une date</div>
+      <div class="dw-wheels">
+        ${col('day', dayLabels, day - 1, 'dw-day')}
+        ${col('month', months, month, 'dw-month')}
+        ${col('year', years.map(String), yearIdx, 'dw-year')}
+      </div>
+      <div class="dw-actions">
+        <button class="dw-btn dw-ghost" onclick="VersementsPage._closeDateWheel()">Annuler</button>
+        <button class="dw-btn dw-today" onclick="VersementsPage._wheelToday()">Aujourd'hui</button>
+        <button class="dw-btn dw-ok" onclick="VersementsPage._applyWheelDate()">Valider</button>
+      </div>
+    </div>`);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', () => this._closeDateWheel());
+    this._wheelState = { dayIdx: day - 1, monthIdx: month, yearIdx, years };
+    this._wheelKeyHandler = (e) => { if (e.key === 'Escape') this._closeDateWheel(); };
+    document.addEventListener('keydown', this._wheelKeyHandler);
+
+    const H = 40;
+    overlay.querySelectorAll('.dw-scroll').forEach(sc => {
+      const key = sc.dataset.key;
+      const init = key === 'day' ? day - 1 : key === 'month' ? month : yearIdx;
+      sc.scrollTop = init * H;
+      let t;
+      sc.addEventListener('scroll', () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          const idx = Math.max(0, Math.min(sc.children.length - 1, Math.round(sc.scrollTop / H)));
+          sc.querySelectorAll('.dw-item').forEach((el, i) => el.classList.toggle('sel', i === idx));
+          if (key === 'day') this._wheelState.dayIdx = idx;
+          else if (key === 'month') this._wheelState.monthIdx = idx;
+          else this._wheelState.yearIdx = idx;
+        }, 90);
+      });
+      sc.querySelectorAll('.dw-item').forEach((el, i) => el.addEventListener('click', () => sc.scrollTo({ top: i * H, behavior: 'smooth' })));
+    });
+  },
+
+  _closeDateWheel() {
+    const o = document.getElementById('dw-overlay');
+    if (o) o.remove();
+    if (this._wheelKeyHandler) { document.removeEventListener('keydown', this._wheelKeyHandler); this._wheelKeyHandler = null; }
+    this._wheelState = null;
+  },
+
+  _applyWheelDate() {
+    const s = this._wheelState;
+    if (!s) { this._closeDateWheel(); return; }
+    const year = s.years[s.yearIdx];
+    const month = s.monthIdx;
+    const maxDay = new Date(year, month + 1, 0).getDate();
+    const day = Math.min(s.dayIdx + 1, maxDay);
+    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    this._closeDateWheel();
+    this._onPeriodChange(iso);
+  },
+
+  _wheelToday() {
+    this._closeDateWheel();
+    this._resetToToday();
+  },
+
   // Palette sémantique des KPI : la couleur reflète la SITUATION (bon / à
   // surveiller / mauvais), pas une teinte décorative fixe.
   _kpiCol(status) {
@@ -565,10 +673,11 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         <div class="wl-title-k">Suivi financier</div>
         <div class="wl-title-h">
           <span style="display:flex;align-items:center;gap:12px;"><iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#5D87FF;"></iconify-icon> Versements</span>
-          <div class="wl-date">
-            <input type="date" id="versements-period" value="${this._selectedPeriod || new Date().toISOString().split('T')[0]}" style="font-size:12px;padding:6px 10px;border-radius:11px;background:transparent;border:none;color:var(--text-primary);font-weight:500;outline:none;">
-            ${this._selectedPeriod ? '<button onclick="VersementsPage._resetToToday()" style="font-size:13px;padding:6px 8px;border-radius:11px;background:transparent;border:none;cursor:pointer;color:#6b7280;"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>' : ''}
-          </div>
+          <button class="wl-date" onclick="VersementsPage._openDateWheel()">
+            <iconify-icon icon="solar:calendar-bold-duotone" style="color:#5D87FF;font-size:17px;"></iconify-icon>
+            ${this._selectedPeriod ? Utils.escHtml(Utils.formatDate(this._selectedPeriod)) : "Aujourd'hui"}
+            <iconify-icon icon="solar:alt-arrow-down-linear" style="font-size:14px;color:var(--text-muted);"></iconify-icon>
+          </button>
         </div>
       </div>
 
