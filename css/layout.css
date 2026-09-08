@@ -315,7 +315,8 @@
 /* ========== DOCK DE NAVIGATION (icônes rondes, effet magnify) ========== */
 /* Les icônes grossissent à l'approche du curseur (géré en JS via --sz) ; le nom
    s'affiche dans un tooltip position:fixed (créé en JS) qui échappe à tout overflow. */
-.mdock { position: relative; flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 22px; border: 1px solid var(--border-color); background: var(--bg-tertiary); }
+.mdock { position: relative; flex: 0 1 auto; min-width: 0; max-width: 100%; display: flex; align-items: center; gap: 7px; padding: 5px 10px; border-radius: 22px; border: 1px solid var(--border-color); background: var(--bg-tertiary); overflow-x: auto; overflow-y: visible; scrollbar-width: none; -ms-overflow-style: none; }
+.mdock::-webkit-scrollbar { display: none; }
 .mdock-item { --sz: 40px; width: var(--sz); height: var(--sz); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--bg-secondary); color: var(--text-secondary); text-decoration: none; font-size: calc(var(--sz) * 0.46); line-height: 0; transition: width .14s ease, height .14s ease, background .15s ease, color .15s ease; }
 .mdock .mdock-item:hover, .mdock .mdock-item:visited, .mdock .mdock-item:focus { color: var(--text-primary); }
 .mdock-item.is-active { background: rgba(93,135,255,.16); color: var(--pilote-blue); }
