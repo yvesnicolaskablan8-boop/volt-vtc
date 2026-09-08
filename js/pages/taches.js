@@ -459,7 +459,7 @@ const TachesPage = {
             + ' ondrop="TachesPage._kanbanDrop(event, \'' + col.id + '\')"'
             + ' ondragleave="TachesPage._kanbanDragLeave(event)">'
             + colTasks.map(t => this._kanbanCard(t)).join('')
-            + (colTasks.length === 0 ? '<div class="kanban-empty">Aucune tâche</div>' : '')
+            + (colTasks.length === 0 ? '<div class="kanban-empty"><iconify-icon icon="solar:inbox-line-duotone"></iconify-icon>Aucune tâche</div>' : '')
             + '</div>'
             + '<button class="kanban-add-btn" onclick="TachesPage._openTaskForm(\'' + col.id + '\')">'
             + '<iconify-icon icon="solar:add-circle-line-duotone"></iconify-icon> Ajouter'
@@ -2072,39 +2072,41 @@ const TachesPage = {
 
       .kanban-column {
         background:var(--bg-tertiary); border:1px solid var(--border-color);
-        border-radius:16px; display:flex; flex-direction:column; min-height:300px;
-        backdrop-filter:blur(4px);
+        border-radius:18px; display:flex; flex-direction:column; min-height:300px;
+        box-shadow:0 1px 2px rgba(0,0,0,.03); overflow:hidden;
       }
       .kanban-col-header {
-        padding:14px 16px; border-radius:16px 16px 0 0;
-        background:var(--bg-secondary);
+        padding:15px 16px 11px; background:transparent;
       }
       .kanban-col-title {
-        display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--text-primary);
+        display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; color:var(--text-primary); letter-spacing:-.01em;
       }
+      .kanban-col-title iconify-icon { font-size:1.15rem; }
       .kanban-col-count {
-        padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; margin-left:auto;
+        padding:2px 9px; border-radius:20px; font-size:11px; font-weight:800; margin-left:auto;
       }
       .kanban-col-body {
-        flex:1; padding:8px; overflow-y:auto; min-height:60px;
+        flex:1; padding:6px 10px 10px; overflow-y:auto; min-height:60px;
         transition:background .15s ease;
       }
-      .kanban-col-body.drag-over { background:rgba(245,81,46,.08); border-radius:0 0 12px 12px; }
-      .kanban-empty { text-align:center; color:var(--text-muted); font-size:12px; padding:20px 10px; }
+      .kanban-col-body.drag-over { background:rgba(245,81,46,.08); }
+      .kanban-empty { display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; color:var(--text-muted); font-size:12px; padding:32px 12px; opacity:.75; }
+      .kanban-empty iconify-icon { font-size:1.8rem; opacity:.5; }
       .kanban-add-btn {
-        display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;
-        border:none; background:transparent; color:var(--text-muted); cursor:pointer;
-        font-size:12px; transition:all .15s; border-top:1px solid var(--border-color);
+        display:flex; align-items:center; justify-content:center; gap:5px; margin:2px 10px 10px; padding:9px; border-radius:11px;
+        border:1px dashed var(--border-color); background:transparent; color:var(--text-muted); cursor:pointer;
+        font-size:12px; font-weight:600; transition:color .15s ease, background .15s ease, border-color .15s ease;
       }
-      .kanban-add-btn:hover { color:#F5512E; background:rgba(245,81,46,.06); }
+      .kanban-add-btn:hover { color:#F5512E; background:rgba(245,81,46,.06); border-color:rgba(245,81,46,.35); }
 
       /* Kanban cards */
       .kanban-card {
         background:var(--bg-secondary); border:1px solid var(--border-color);
-        border-radius:12px; padding:12px 14px; margin-bottom:8px; cursor:pointer;
-        transition:all .15s cubic-bezier(.4,0,.2,1); position:relative;
+        border-radius:14px; padding:12px 14px; margin-bottom:9px; cursor:pointer;
+        transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease, border-color .18s ease; position:relative;
+        box-shadow:0 2px 6px -3px rgba(30,32,34,.15);
       }
-      .kanban-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.08); background:var(--bg-tertiary); }
+      .kanban-card:hover { transform:translateY(-3px); box-shadow:0 12px 22px -10px rgba(30,32,34,.28); border-color:rgba(245,81,46,.25); }
       .kanban-card:active { transform:scale(0.98); }
       .kanban-card-top { display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
       .kanban-prio-badge {

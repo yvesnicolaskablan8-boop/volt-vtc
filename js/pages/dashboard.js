@@ -1307,8 +1307,13 @@ const DashboardPage = {
         .mini-bar.is-dim { opacity:.10 !important; }
         .mini-lbl { font-size:10px; font-weight:600; color:var(--text-muted); margin-top:8px; transition:color .3s; }
         .mini-col.is-hover .mini-lbl { color:var(--text-primary); }
-        .mini-tip { position:absolute; top:-30px; left:50%; transform:translate(-50%,4px); opacity:0; background:var(--text-primary); color:var(--bg-secondary); font-size:11px; font-weight:600; padding:3px 8px; border-radius:6px; white-space:nowrap; pointer-events:none; transition:all .2s; z-index:5; }
+        .mini-tip { position:absolute; top:-30px; left:50%; transform:translate(-50%,4px); opacity:0; background:var(--text-primary); color:var(--bg-secondary); font-size:11px; font-weight:600; padding:3px 8px; border-radius:6px; white-space:nowrap; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:5; }
         .mini-col.is-hover .mini-tip { opacity:1; transform:translate(-50%,0); }
+        /* Colonnes de bord : ancrer l'infobulle à l'intérieur pour éviter le débordement hors carte */
+        .mini-col:first-child .mini-tip { left:0; transform:translate(0,4px); }
+        .mini-col:first-child.is-hover .mini-tip { transform:translate(0,0); }
+        .mini-col:last-child .mini-tip { left:auto; right:0; transform:translate(0,4px); }
+        .mini-col:last-child.is-hover .mini-tip { transform:translate(0,0); }
         .spk-line { stroke-dasharray:1; stroke-dashoffset:1; animation:spkDraw 1s ease-out forwards; }
         @keyframes spkDraw { to { stroke-dashoffset:0; } }
         .spk-area { opacity:0; animation:spkFade .8s ease-out .25s forwards; }
@@ -2201,16 +2206,11 @@ const DashboardPage = {
     B.surveiller = B.service.filter(e => !(e.ca > 0) || e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere'));
     const segments = this._fleetSegDef().map(s => ({ ...s, count: (B[s.key] || []).length, drivers: B[s.key] || [] }));
     const svc = segments.find(s => s.key === 'service');
-    // Sous-indicateur « à surveiller » : chauffeurs en service au CA anormalement bas.
-    const survCount = B.service.filter(e => e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere')).length;
-    if (svc && survCount) svc.note = `dont ${survCount} à surveiller`;
     // Sous-compteur « actif à l'instant » (courses en hausse récente) parmi les en service.
+    // Les concerns (inactif / CA bas) sont regroupés dans la carte dédiée « À surveiller ».
     if (svc && this._isToday()) {
       const recent = this._recentActiveIds(B.service);
       if (recent.size) svc.recentCount = recent.size;
-      // Sous-compteur « pas actif » : en service mais sans aucune activité (CA nul).
-      const inactifs = B.service.filter(e => !(e.ca > 0)).length;
-      if (inactifs > 0) svc.inactifCount = inactifs;
     }
     // Le donut ne bague que la présence (En service + Non planifiés). « À surveiller »
     // est un sous-ensemble des en service (KPI, pas une tranche) ; le repos est le reste non bagué.
