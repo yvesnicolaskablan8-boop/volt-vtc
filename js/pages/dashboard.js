@@ -2166,7 +2166,7 @@ const DashboardPage = {
     return [
       { key: 'service', label: 'En service', color: '#13DEB9', desc: "Au planning aujourd'hui" },
       { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Roulent hors planning' },
-      { key: 'repos', label: 'Repos / Hors service', color: '#C7D0DD', desc: 'Pas de service' },
+      { key: 'surveiller', label: 'À surveiller', color: '#F5512E', desc: 'Inactif ou CA anormalement bas' },
     ];
   },
 
@@ -2197,7 +2197,9 @@ const DashboardPage = {
       else B.repos.push(entry);
     });
 
-    const segments = this._fleetSegDef().map(s => ({ ...s, count: B[s.key].length, drivers: B[s.key] }));
+    // « À surveiller » : chauffeurs EN SERVICE inactifs (CA nul) ou au CA anormalement bas.
+    B.surveiller = B.service.filter(e => !(e.ca > 0) || e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere'));
+    const segments = this._fleetSegDef().map(s => ({ ...s, count: (B[s.key] || []).length, drivers: B[s.key] || [] }));
     const svc = segments.find(s => s.key === 'service');
     // Sous-indicateur « à surveiller » : chauffeurs en service au CA anormalement bas.
     const survCount = B.service.filter(e => e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere')).length;
@@ -2210,7 +2212,10 @@ const DashboardPage = {
       const inactifs = B.service.filter(e => !(e.ca > 0)).length;
       if (inactifs > 0) svc.inactifCount = inactifs;
     }
-    return { segments, total: fleet.length };
+    // Le donut ne bague que la présence (En service + Non planifiés). « À surveiller »
+    // est un sous-ensemble des en service (KPI, pas une tranche) ; le repos est le reste non bagué.
+    const ringSegments = segments.filter(s => s.key === 'service' || s.key === 'nonpl');
+    return { segments, ringSegments, total: fleet.length };
   },
 
   // Détecte les chauffeurs « actifs à l'instant » via l'évolution de leur nombre
@@ -2320,13 +2325,13 @@ const DashboardPage = {
   },
 
   _renderFleetDonut(d) {
-    const { segments, total } = this._fleetBuckets(d);
+    const { segments, ringSegments, total } = this._fleetBuckets(d);
     const live = this._isToday() ? "Aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt));
     return `<div class="d-card fd-card">
       <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span></div>
       <div class="fd-top">
         <div class="fd-donut-col">
-          <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
+          <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, ringSegments, total)}</div>
           <button type="button" class="fd-voir fd-voir-alt" onclick="DashboardPage._showActiviteDetail()">Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button>
         </div>
         <div class="fd-recette">${this._fleetRecettePanel(d)}</div>
@@ -2336,9 +2341,9 @@ const DashboardPage = {
   },
 
   _renderFleetDonutInto(d) {
-    const { segments, total } = this._fleetBuckets(d);
+    const { segments, ringSegments, total } = this._fleetBuckets(d);
     const circle = document.getElementById('fleet-donut-circle');
-    if (circle) { circle.replaceChildren(); circle.insertAdjacentHTML('beforeend', this._fleetCircleInner(d, segments, total)); }
+    if (circle) { circle.replaceChildren(); circle.insertAdjacentHTML('beforeend', this._fleetCircleInner(d, ringSegments, total)); }
     const cards = document.getElementById('fleet-donut-cards');
     if (cards) { cards.replaceChildren(); cards.insertAdjacentHTML('beforeend', this._fleetCardsInner(segments)); }
   },
@@ -2358,7 +2363,7 @@ const DashboardPage = {
     const seg = segments.find(s => s.key === key); if (!seg) return;
     // Statut d'activité par chauffeur : « actif à l'instant » (course récente),
     // « actif aujourd'hui » (CA > 0) ou « pas d'activité » (rien encore).
-    const showStatus = key === 'service' || key === 'nonpl';
+    const showStatus = key === 'service' || key === 'nonpl' || key === 'surveiller';
     const recentSet = showStatus ? this._recentActiveIds(seg.drivers) : new Set();
     const statusPill = (it) => {
       if (!showStatus) return '';
