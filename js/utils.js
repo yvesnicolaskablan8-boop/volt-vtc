@@ -768,8 +768,13 @@ const Utils = {
       if (!ch || ch.statut === 'inactif' || ch.typeContrat !== 'salarie') return;
       if (hasAbsence(ch.id, date)) return;
       const caBrut = Number(e.caBrut) || 0;
+      // Salariés : le montant à régler part du CA NET (CA − commission société/Yango),
+      // pas du CA brut. Le CA brut reste affiché en référence et le montant est
+      // ajustable à l'encaissement. Voir [[volt-modele-salariat]].
+      const commission = Number(e.commissionYango != null ? e.commissionYango : (e.commission_yango || 0)) || 0;
+      const caNet = (e.caNet != null || e.ca_net != null) ? (Number(e.caNet != null ? e.caNet : e.ca_net) || 0) : Math.max(0, caBrut - commission);
       const charge = chargesIndex.get(`${ch.id}|${date}`) || 0;
-      const du = caBrut - charge;
+      const du = Math.max(0, caNet - charge);
       if (du <= 0) return;
       if (explicitDebtIndex.has(`${ch.id}|${date}`)) return;   // dette deja saisie a la main
       if (annulationIndex.has(`${ch.id}|${date}`)) return;    // dette annulee ou passee en perte
@@ -779,7 +784,7 @@ const Utils = {
       implicitDettes.push({
         id: `salarie_${ch.id}_${date}`, chauffeurId: ch.id, date,
         manquant, traitementManquant: 'dette', implicit: true, source: 'recette',
-        detailSalarie: { caBrut, charge, du, verse }
+        detailSalarie: { caBrut, commission, caNet, charge, du, verse }
       });
     });
 

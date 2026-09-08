@@ -118,12 +118,15 @@ const VersementsPage = {
       const ch = chauffeurs.find(c => c.id === e.chauffeurId);
       if (!ch || ch.statut === 'inactif' || ch.typeContrat !== 'salarie') return;
       const caBrut = Number(e.caBrut) || 0;
+      // Attendu salarié basé sur le CA NET (CA − commission), pas le brut.
+      const commission = Number(e.commissionYango != null ? e.commissionYango : (e.commission_yango || 0)) || 0;
+      const caNet = (e.caNet != null || e.ca_net != null) ? (Number(e.caNet != null ? e.caNet : e.ca_net) || 0) : Math.max(0, caBrut - commission);
       const charge = chargeJourIdx[e.chauffeurId] || 0;
-      const du = Math.max(0, caBrut - charge);
+      const du = Math.max(0, caNet - charge);
       if (du <= 0) return;
-      attenduSalarieParCh[e.chauffeurId] = { du, caBrut, charge };
+      attenduSalarieParCh[e.chauffeurId] = { du, caBrut, caNet, commission, charge };
       totalAttendu += du;
-      detailAttendu.push({ chauffeurId: e.chauffeurId, nom: ch.nom, prenom: ch.prenom, date: selectedDay, montant: du, salarie: true, caBrut, charge });
+      detailAttendu.push({ chauffeurId: e.chauffeurId, nom: ch.nom, prenom: ch.prenom, date: selectedDay, montant: du, salarie: true, caBrut, caNet, charge });
     });
 
     // Chauffeurs planifiés (tous contrats) + attendu location (redevance)
@@ -2798,7 +2801,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           const ds = it.detailSalarie;   // présent uniquement pour un salarié
           const note = it.source === 'contravention'
             ? (it.commentaire || 'Contravention')
-            : ds ? `Yango ${Utils.formatCurrency(ds.caBrut)} − charges ${Utils.formatCurrency(ds.charge)}${ds.verse ? ' − versé ' + Utils.formatCurrency(ds.verse) : ''}`
+            : ds ? `CA Yango ${Utils.formatCurrency(ds.caBrut)}${ds.commission > 0 ? ' − comm. ' + Utils.formatCurrency(ds.commission) : ''}${ds.charge > 0 ? ' − charges ' + Utils.formatCurrency(ds.charge) : ''} · à régler ${Utils.formatCurrency(ds.du)} (ajustable)${ds.verse ? ' − versé ' + Utils.formatCurrency(ds.verse) : ''}`
             : isImplicit ? 'Non versé (redevance due)'
             : ('Versé : ' + Utils.formatCurrency(it.montantVerse || 0));
           const chargesBtn = ds ? `<button class="vx-ib" onclick="event.stopPropagation();VersementsPage._gererCharges('${it._chauffeurId}','${it.date}')" title="Déduire / gérer les charges"><iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon></button>` : '';
