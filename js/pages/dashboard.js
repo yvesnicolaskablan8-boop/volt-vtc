@@ -2206,6 +2206,9 @@ const DashboardPage = {
     if (svc && this._isToday()) {
       const recent = this._recentActiveIds(B.service);
       if (recent.size) svc.recentCount = recent.size;
+      // Sous-compteur « pas actif » : en service mais sans aucune activité (CA nul).
+      const inactifs = B.service.filter(e => !(e.ca > 0)).length;
+      if (inactifs > 0) svc.inactifCount = inactifs;
     }
     return { segments, total: fleet.length };
   },
@@ -2275,6 +2278,7 @@ const DashboardPage = {
       const handlers = clickable ? `onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
       const notes = [];
       if (s.recentCount) notes.push(`<span style="color:#13DEB9;font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#13DEB9;margin-right:4px;vertical-align:middle;"></span>${s.recentCount} actif${s.recentCount > 1 ? 's' : ''} à l'instant</span>`);
+      if (s.inactifCount) notes.push(`<span style="color:#E8930C;font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#E8930C;margin-right:4px;vertical-align:middle;"></span>${s.inactifCount} pas actif${s.inactifCount > 1 ? 's' : ''}</span>`);
       if (s.note) notes.push(`<button type="button" class="fd-surv-chip" onclick="event.stopPropagation();DashboardPage._scrollToWatchlist()" title="Voir les chauffeurs à surveiller"><iconify-icon icon="solar:eye-scan-bold" style="font-size:12px;"></iconify-icon>${s.note}</button>`);
       return `<div class="fd-c${clickable ? '' : ' fd-c-off'}" data-i="${i}" ${handlers}>
         <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}</div>

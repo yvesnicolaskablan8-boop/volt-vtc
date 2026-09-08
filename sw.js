@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pilote-v645';
+const CACHE_NAME = 'pilote-v646';
 const ASSETS = [
   './',
   './index.html',
@@ -122,7 +122,7 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Fetch — stale-while-revalidate: serve cache instantly, update in background
+// Fetch
 self.addEventListener('fetch', (e) => {
   // Skip non-GET and API/Supabase requests
   if (e.request.method !== 'GET') return;
@@ -130,6 +130,27 @@ self.addEventListener('fetch', (e) => {
   if (e.request.url.includes('supabase')) return;
   if (!e.request.url.startsWith(self.location.origin)) return;
 
+  // Documents HTML (navigation, index.html, app.html) : network-first pour que la
+  // toute derniere version (et ses ?v=) se charge des le rechargement quand on est
+  // en ligne. Le cache ne sert que de secours hors-ligne. Evite les vues perimees.
+  const isDoc = e.request.mode === 'navigate'
+    || /\.html(\?|$)/.test(e.request.url)
+    || e.request.url === self.location.origin + '/'
+    || e.request.url.endsWith('/');
+  if (isDoc) {
+    e.respondWith(
+      fetch(e.request).then((response) => {
+        if (response && response.status === 200) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy));
+        }
+        return response;
+      }).catch(() => caches.match(e.request).then((r) => r || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Reste (JS/CSS versionnes par ?v=, images) : stale-while-revalidate.
   e.respondWith(
     caches.open(CACHE_NAME).then((cache) =>
       cache.match(e.request).then((cached) => {
