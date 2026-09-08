@@ -186,10 +186,10 @@ const DashboardPage = {
     const nbActifs = lignes.filter(l => l.roule).length;
     const nbHors = lignes.filter(l => l.roule && !l.programme).length;
 
-    // === Style Modernize / Spike (bleu #F5512E, cartes arrondies pastel, ombre douce) ===
+    // === Style Modernize / Spike (bleu #5D87FF, cartes arrondies pastel, ombre douce) ===
     const C = {
       bg: '#F5F7FB', card: '#ffffff', head: '#2A3547', mut: '#5A6A85', mut2: '#7C8FAC', bd: '#EBF1F6',
-      blue: '#F5512E', blueS: 'rgba(245,81,46,.10)',
+      blue: '#5D87FF', blueS: 'rgba(93,135,255,.10)',
       green: '#02b3a9', greenS: 'rgba(19,222,185,.14)',
       amber: '#D99000', amberS: 'rgba(255,174,31,.16)',
       red: '#D9583B', redS: 'rgba(250,137,107,.14)',
@@ -224,7 +224,7 @@ const DashboardPage = {
       <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px;">
         ${topCA.map(l => `<div style="display:flex;align-items:center;gap:14px;">
           <div style="width:120px;flex-shrink:0;font-size:13px;font-weight:700;color:${C.head};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${Utils.escHtml(l.prenom)} ${Utils.escHtml((l.nom || '').charAt(0))}.</div>
-          <div style="flex:1;height:24px;background:${C.bg};border-radius:8px;overflow:hidden;"><div style="height:100%;width:${(l.ca / maxCA * 100).toFixed(1)}%;background:linear-gradient(90deg,#F5512E,#8AA8FF);border-radius:8px;min-width:4px;"></div></div>
+          <div style="flex:1;height:24px;background:${C.bg};border-radius:8px;overflow:hidden;"><div style="height:100%;width:${(l.ca / maxCA * 100).toFixed(1)}%;background:linear-gradient(90deg,#5D87FF,#8AA8FF);border-radius:8px;min-width:4px;"></div></div>
           <div style="width:100px;flex-shrink:0;text-align:right;font-size:13px;font-weight:800;color:${C.head};">${money(l.ca)}</div>
         </div>`).join('')}
       </div>
@@ -243,7 +243,7 @@ const DashboardPage = {
         <td style="padding:13px 14px;text-align:right;font-size:13px;color:${C.mut};">${l.roule ? l.courses : '—'}</td>
         <td style="padding:13px 14px;text-align:right;font-size:13px;color:${C.mut};">${l.verse > 0 ? money(l.verse) : '—'}</td>
         <td style="padding:13px 14px;text-align:right;font-size:14px;font-weight:800;color:${C.head};">${money(l.ca)}</td>
-        <td style="padding:13px 14px;text-align:right;">${(l.roule && !l.programme) ? `<button onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${l.id}')" style="font-size:12px;font-weight:700;color:#fff;background:${C.blue};border:none;border-radius:9px;padding:6px 12px;cursor:pointer;box-shadow:0 4px 10px rgba(245,81,46,.30);">+ Planning</button>` : ''}</td>
+        <td style="padding:13px 14px;text-align:right;">${(l.roule && !l.programme) ? `<button onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${l.id}')" style="font-size:12px;font-weight:700;color:#fff;background:${C.blue};border:none;border-radius:9px;padding:6px 12px;cursor:pointer;box-shadow:0 4px 10px rgba(93,135,255,.30);">+ Planning</button>` : ''}</td>
       </tr>`;
     }).join('');
     const tableOrEmpty = lignes.length ? `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:560px;"><thead><tr>${th('Chauffeur')}${th('Statut')}${th('Courses', 'right')}${th('Versé', 'right')}${th('CA', 'right')}${th('', 'right')}</tr></thead><tbody>${rows}</tbody></table></div>` : `<div style="text-align:center;color:${C.mut2};padding:40px;font-size:14px;">Aucune activité ${estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
@@ -277,7 +277,7 @@ const DashboardPage = {
             <span style="font-size:13px;color:${C.mut};">vs mois dernier</span>
           </div>
         </div>
-        <div style="width:44px;height:44px;border-radius:50%;background:${C.blue};color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 8px 18px rgba(245,81,46,.32);flex-shrink:0;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
+        <div style="width:44px;height:44px;border-radius:50%;background:${C.blue};color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 8px 18px rgba(93,135,255,.32);flex-shrink:0;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
       </div>
       <div style="margin-top:16px;">${sparkline(_spark)}</div>
     </div>`;
@@ -1107,7 +1107,7 @@ const DashboardPage = {
     // Couleur fixe par carte pour les différencier (alignée sur la couleur de l'icône) :
     // Recouvrement = émeraude, Objectif = indigo.
     const recouvrementColor = '#10b981';
-    const progressColor = '#F5512E';
+    const progressColor = '#5D87FF';
     const session = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : {};
     const userName = session.prenom || 'Patron';
 
@@ -1172,23 +1172,25 @@ const DashboardPage = {
         .live-chip { animation: dSlide .4s ease both; }
         @keyframes dSlide { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         #live-indicator.pulse { animation:flash-indicator 1.5s }
-        @keyframes flash-indicator { 0%{background:rgba(245,81,46,.3)} 100%{background:rgba(245,81,46,.08)} }
+        @keyframes flash-indicator { 0%{background:rgba(99,102,241,.3)} 100%{background:rgba(99,102,241,.08)} }
 
         .d-wrap { animation: dSlide .5s cubic-bezier(.16,1,.3,1); }
         .d-bg {
-          background: var(--bg-primary);
+          background: linear-gradient(160deg, #f0f4ff 0%, #faf5ff 40%, #fdf2f8 100%);
           margin: -24px -28px;
           padding: 32px 32px 40px;
           min-height: 100vh;
         }
+        [data-theme="dark"] .d-bg { background: linear-gradient(160deg, #0c0f1a 0%, #13111c 40%, #170f14 100%); }
 
         .d-grid { display:grid; gap:16px; margin-bottom:16px; }
         .d-card {
-          background: var(--bg-secondary);
-          border-radius: 22px;
+          background: rgba(255,255,255,.72);
+          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+          border-radius: 20px;
           padding: 22px 24px;
-          border: 1px solid var(--border-color);
-          box-shadow: var(--shadow-card);
+          border: 1px solid rgba(255,255,255,.6);
+          box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.04);
           transition: all .25s cubic-bezier(.16,1,.3,1);
           position: relative;
           overflow: hidden;
@@ -1198,13 +1200,17 @@ const DashboardPage = {
           border-color: rgba(255,255,255,.06);
           box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 8px 32px rgba(0,0,0,.15);
         }
-        .d-card:hover { transform:translateY(-2px); box-shadow:0 12px 34px rgba(38,32,24,.09); border-color:var(--border-accent); }
+        .d-card:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(99,102,241,.1); border-color:rgba(99,102,241,.15); }
+        [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(99,102,241,.15); border-color:rgba(99,102,241,.2); }
 
         .d-card.hero {
-          background: linear-gradient(140deg, #2b2723 0%, #1a1613 100%);
-          border: 1px solid rgba(255,255,255,.08);
+          background: linear-gradient(135deg, #4570EA 0%, #7c3aed 35%, #a855f7 65%, #c084fc 100%);
+          background-size: 200% 200%;
+          animation: heroGradient 8s ease infinite;
+          border: 1px solid rgba(255,255,255,.18);
           color: #fff;
-          box-shadow: 0 14px 40px rgba(26,20,16,.3), inset 0 1px 0 rgba(255,255,255,.06);
+          box-shadow: 0 4px 24px rgba(99,102,241,.3), 0 0 60px rgba(139,92,246,.15), inset 0 1px 0 rgba(255,255,255,.15);
+          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
           position: relative;
           overflow: hidden;
         }
@@ -1213,7 +1219,7 @@ const DashboardPage = {
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-        .d-card.hero:hover { transform:translateY(-3px); box-shadow:0 20px 50px rgba(26,20,16,.4), inset 0 1px 0 rgba(255,255,255,.08); }
+        .d-card.hero:hover { transform:translateY(-3px); box-shadow:0 12px 48px rgba(99,102,241,.4), 0 0 80px rgba(139,92,246,.2), inset 0 1px 0 rgba(255,255,255,.2); }
         .d-card.hero::before {
           content:''; position:absolute; top:-50%; left:-30%; width:260px; height:260px;
           background:radial-gradient(circle, rgba(255,255,255,.1) 0%, transparent 60%);
@@ -1272,7 +1278,7 @@ const DashboardPage = {
         @keyframes miniPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
         .mini-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
         .mini-title { display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); }
-        .mini-dot { width:8px; height:8px; border-radius:50%; background:#F5512E; animation:miniPulse 1.6s infinite; }
+        .mini-dot { width:8px; height:8px; border-radius:50%; background:#13DEB9; animation:miniPulse 1.6s infinite; }
         .mini-val { font-size:17px; font-weight:800; color:var(--text-primary); opacity:.55; min-height:22px; transition:opacity .3s; white-space:nowrap; }
         .mini-chart:hover .mini-val { opacity:1; }
         .mini-gran { display:flex; gap:4px; margin:0 0 12px; }
@@ -1281,7 +1287,7 @@ const DashboardPage = {
         .mini-gran-btn.is-active { background:var(--pilote-blue); color:#fff; }
         .mini-bars { display:flex; align-items:flex-end; gap:8px; height:100px; }
         .mini-col { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
-        .mini-bar { width:100%; border-radius:99px; background:#F5512E; opacity:.32; transform-origin:bottom; transition:all .3s ease-out; cursor:pointer; }
+        .mini-bar { width:100%; border-radius:99px; background:#13DEB9; opacity:.32; transform-origin:bottom; transition:all .3s ease-out; cursor:pointer; }
         .mini-chart:hover .mini-bar { opacity:.42; }
         .mini-bar.is-hover { opacity:1 !important; transform:scaleX(1.12) scaleY(1.02); }
         .mini-bar.is-neighbor { opacity:.35 !important; transform:scaleX(1.05); }
@@ -1305,12 +1311,12 @@ const DashboardPage = {
           display:inline-flex; align-items:center; gap:3px; padding:4px 10px; border-radius:20px;
           font-size: 11px; font-weight: 700;
         }
-        .d-tag.purple { background:rgba(245,81,46,.08); color:#F5512E; }
+        .d-tag.purple { background:rgba(99,102,241,.08); color:#5D87FF; }
         .d-tag.green { background:rgba(16,185,129,.08); color:#10b981; }
         .d-tag.red { background:rgba(239,68,68,.08); color:#ef4444; }
         .d-tag.orange { background:rgba(249,115,22,.08); color:#f97316; }
         .d-tag.white { background:rgba(255,255,255,.2); color:#fff; }
-        [data-theme="dark"] .d-tag.purple { background:rgba(245,81,46,.15); }
+        [data-theme="dark"] .d-tag.purple { background:rgba(99,102,241,.15); }
         [data-theme="dark"] .d-tag.green { background:rgba(16,185,129,.15); }
         [data-theme="dark"] .d-tag.red { background:rgba(239,68,68,.15); }
         [data-theme="dark"] .d-tag.orange { background:rgba(249,115,22,.15); }
@@ -1355,15 +1361,15 @@ const DashboardPage = {
           border-bottom:2px solid transparent;
         }
         .d-hm-head.today {
-          color:#F5512E;
-          background:linear-gradient(180deg, rgba(245,81,46,.06) 0%, rgba(245,81,46,.02) 100%);
+          color:#5D87FF;
+          background:linear-gradient(180deg, rgba(99,102,241,.06) 0%, rgba(99,102,241,.02) 100%);
           border-radius:12px 12px 0 0;
-          border-bottom:2px solid #F5512E;
+          border-bottom:2px solid #5D87FF;
         }
         .d-hm-head .d-hm-daynum { display:block; font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px; }
-        .d-hm-head.today .d-hm-daynum { color:#F5512E; }
+        .d-hm-head.today .d-hm-daynum { color:#5D87FF; }
         [data-theme="dark"] .d-hm-head { color:#6b7280; }
-        [data-theme="dark"] .d-hm-head.today { background:rgba(245,81,46,.1); }
+        [data-theme="dark"] .d-hm-head.today { background:rgba(99,102,241,.1); }
         [data-theme="dark"] .d-hm-head .d-hm-daynum { color:#d1d5db; }
         .d-hm-driver {
           display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:var(--text-primary);
@@ -1385,16 +1391,16 @@ const DashboardPage = {
         }
         .d-hm-cell:hover { transform:scale(1.1); box-shadow:0 4px 12px rgba(0,0,0,.12); z-index:2; }
         .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(52,211,153,.12)); color:#10b981; }
-        .hm-programme { background:linear-gradient(135deg,rgba(245,81,46,.15),rgba(139,92,246,.1)); color:#F5512E; }
+        .hm-programme { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#5D87FF; }
         .hm-en_retard { background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(248,113,113,.1)); color:#ef4444; }
         .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f97316; }
         .hm-repos { background:rgba(0,0,0,.025); color:#d1d5db; }
         .hm-verse:hover { background:linear-gradient(135deg,rgba(16,185,129,.28),rgba(52,211,153,.2)); }
-        .hm-programme:hover { background:linear-gradient(135deg,rgba(245,81,46,.25),rgba(139,92,246,.18)); }
+        .hm-programme:hover { background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(139,92,246,.18)); }
         .hm-en_retard:hover { background:linear-gradient(135deg,rgba(239,68,68,.28),rgba(248,113,113,.2)); }
         .hm-absent:hover { background:linear-gradient(135deg,rgba(249,115,22,.25),rgba(251,146,60,.15)); }
         [data-theme="dark"] .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.22),rgba(52,211,153,.15)); }
-        [data-theme="dark"] .hm-programme { background:linear-gradient(135deg,rgba(245,81,46,.22),rgba(139,92,246,.15)); }
+        [data-theme="dark"] .hm-programme { background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(139,92,246,.15)); }
         [data-theme="dark"] .hm-en_retard { background:linear-gradient(135deg,rgba(239,68,68,.22),rgba(248,113,113,.15)); }
         [data-theme="dark"] .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.2),rgba(251,146,60,.12)); }
         [data-theme="dark"] .hm-repos { background:rgba(255,255,255,.03); color:#4b5563; }
@@ -1454,11 +1460,9 @@ const DashboardPage = {
         @keyframes fdSpin{to{transform:rotate(360deg)}}
         .fd-top{display:flex;align-items:center;gap:24px;margin:6px 0 20px;}
         .fd-donut-wrap{position:relative;width:230px;height:230px;flex-shrink:0;}
-        .fd-donut-col{display:flex;flex-direction:column;align-items:center;gap:14px;flex-shrink:0;}
         .fd-recette{flex:1;min-width:0;}
-        .fd-recette-inner{display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--border-color);padding-left:24px;}
-        .fd-voir{display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:10px 18px;border-radius:12px;box-shadow:0 8px 18px rgba(245,81,46,.32);border:none;cursor:pointer;transition:.15s;}
-        .fd-voir:hover{filter:brightness(1.05);}
+        .fd-recette-inner{display:flex;flex-direction:column;gap:12px;cursor:pointer;border-left:1px solid var(--border-color);padding-left:24px;}
+        .fd-voir{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);}
         .fd-svg{width:100%;height:100%;transform:rotate(-90deg);}
         .fd-seg{transition:stroke-width .2s ease,opacity .2s ease;cursor:pointer;}
         .fd-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;}
@@ -1514,131 +1518,7 @@ const DashboardPage = {
         .iw-unit{font-size:13px;font-weight:700;color:var(--text-muted);margin-left:2px;}
         .iw-sub{font-size:11.5px;color:var(--text-muted);font-weight:600;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         @media(max-width:860px){ .iw-grid{grid-template-columns:1fr;grid-template-rows:none;} .iw-hero,.iw-wide,.iw-med,.iw-sm{grid-column:auto;grid-row:auto;} .iw-hero-mid{min-height:190px;} }
-        /* ===== Row hero « Financial Dashboard » (carte compte + income/paid + donut + tendance) ===== */
-        .fb-grid{grid-template-columns:1.5fr 1.15fr .9fr 1.25fr;align-items:stretch;}
-        @media(max-width:1100px){ .fb-grid{grid-template-columns:1fr 1fr;} }
-        @media(max-width:640px){ .fb-grid{grid-template-columns:1fr;} }
-        .fb-acc{background:linear-gradient(140deg,#2c2824 0%,#191512 100%)!important;color:#fff;display:flex;flex-direction:column;justify-content:space-between;min-height:186px;}
-        .fb-acc::after{content:'';position:absolute;top:-45%;right:-12%;width:190px;height:190px;background:radial-gradient(circle,rgba(245,81,46,.4),transparent 62%);pointer-events:none;}
-        .fb-acc-top{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;}
-        .fb-brand{font-weight:800;letter-spacing:1.5px;font-size:13px;}
-        .fb-tag{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.18);padding:3px 10px;border-radius:20px;}
-        .fb-acc-lbl{font-size:12px;color:rgba(255,255,255,.6);margin-top:16px;position:relative;z-index:1;}
-        .fb-acc-val{font-size:29px;font-weight:800;letter-spacing:-.6px;margin-top:2px;position:relative;z-index:1;}
-        .fb-acc-actions{display:flex;gap:10px;margin-top:16px;position:relative;z-index:1;}
-        .fb-btn{flex:1;height:42px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;border:none;transition:.15s;}
-        .fb-btn-a{background:#F5512E;color:#fff;}
-        .fb-btn-a:hover{filter:brightness(1.06);}
-        .fb-btn-b{background:rgba(255,255,255,.12);color:#fff;}
-        .fb-btn-b:hover{background:rgba(255,255,255,.2);}
-        .fb-acc-foot{font-size:12px;color:rgba(255,255,255,.55);margin-top:14px;position:relative;z-index:1;}
-        .fb-acc-foot b{color:#fff;font-weight:700;}
-        .fb-io{display:flex;flex-direction:column;gap:12px;justify-content:center;}
-        .fb-io-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:16px;background:var(--bg-tertiary);}
-        .fb-io-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
-        .fb-io-lbl{font-size:12px;color:var(--text-muted);font-weight:600;}
-        .fb-io-val{font-size:19px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px;margin-top:1px;}
-        .fb-growth{background:linear-gradient(140deg,#232020 0%,#100f0e 100%)!important;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
-        .fb-growth-lbl{font-size:12px;color:rgba(255,255,255,.65);font-weight:600;}
-        .fb-trend{display:flex;flex-direction:column;}
-        .fb-trend-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
-        .fb-trend-lbl{font-size:12px;color:var(--text-muted);font-weight:600;}
-        .fb-trend-val{font-size:22px;font-weight:800;color:var(--text-primary);letter-spacing:-.4px;margin-top:2px;}
-        .fb-trend-svg{flex:1;min-height:60px;margin-top:10px;}
-        /* Carte Rentabilité en noir (cohérente avec le donut de recouvrement) */
-        .iw-hero{background:linear-gradient(140deg,#232020 0%,#100f0e 100%)!important;color:#fff;border:1px solid rgba(255,255,255,.08)!important;box-shadow:0 14px 40px rgba(26,20,16,.26)!important;--bg-tertiary:rgba(255,255,255,.12);--text-muted:rgba(255,255,255,.55);}
-        .iw-hero .iw-label{color:rgba(255,255,255,.82);}
-        .iw-hero .iw-icon{background:rgba(255,255,255,.1)!important;color:#fff!important;}
-        .iw-hero .iw-hero-ctx{color:rgba(255,255,255,.6)!important;}
-        /* En-tête d'accueil (date + tâches + salutation) façon reference */
-        .dh-row{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px;}
-        .dh-left{display:flex;align-items:center;gap:14px;}
-        .dh-date{display:flex;align-items:center;gap:11px;border:1px solid var(--border-color);background:var(--bg-secondary);border-radius:18px;padding:9px 17px;box-shadow:var(--shadow-card);}
-        .dh-daynum{font-size:27px;font-weight:800;color:var(--text-primary);letter-spacing:-1px;line-height:1;}
-        .dh-dtxt{font-size:12px;font-weight:700;color:var(--text-secondary);line-height:1.15;text-transform:capitalize;}
-        .dh-tasks{display:inline-flex;align-items:center;gap:8px;background:#F5512E;color:#fff;font-weight:700;font-size:13px;padding:12px 20px;border-radius:26px;text-decoration:none;box-shadow:0 8px 18px rgba(245,81,46,.28);transition:.15s;}
-        .dh-tasks:hover{filter:brightness(1.06);}
-        .dh-ic{width:46px;height:46px;border-radius:50%;border:1px solid var(--border-color);background:var(--bg-secondary);display:inline-flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:20px;text-decoration:none;box-shadow:var(--shadow-card);}
-        .dh-right{text-align:right;min-width:0;}
-        .dh-hi{font-size:30px;font-weight:800;color:var(--text-primary);letter-spacing:-.8px;line-height:1.05;}
-        .dh-sub{font-size:15px;color:var(--text-muted);font-weight:500;margin-top:6px;}
-        @media(max-width:760px){ .dh-row{flex-direction:column;align-items:flex-start;} .dh-right{text-align:left;} .dh-hi{font-size:24px;} }
-        /* Activity manager (activité du jour : recherche + tags + liste) */
-        .dact-head{display:flex;align-items:center;gap:11px;margin-bottom:14px;}
-        .dact-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
-        .dact-search{position:relative;flex:1;min-width:180px;}
-        .dact-search iconify-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:15px;pointer-events:none;}
-        .dact-search input{width:100%;height:40px;padding:0 12px 0 34px;border-radius:13px;border:1px solid var(--border-color);background:var(--bg-tertiary);font-size:13px;color:var(--text-primary);outline:none;box-sizing:border-box;}
-        .dact-search input:focus{border-color:var(--pilote-blue);}
-        .dact-tags{display:flex;gap:7px;flex-wrap:wrap;}
-        .dact-tag{border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-secondary);font-size:12px;font-weight:700;padding:7px 14px;border-radius:20px;cursor:pointer;transition:.15s;}
-        .dact-tag:hover{background:var(--bg-tertiary);}
-        .dact-tag.on{background:#1b1a18;color:#fff;border-color:#1b1a18;}
-        .dact-list{display:flex;flex-direction:column;gap:3px;max-height:360px;overflow-y:auto;}
-        .dact-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:14px;transition:.14s;}
-        .dact-row:hover{background:var(--bg-tertiary);}
-        .dact-av{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;}
-        .dact-main{flex:1;min-width:0;}
-        .dact-name{font-size:14px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-        .dact-sub{font-size:12px;color:var(--text-muted);margin-top:1px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-        .dact-pill{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;}
-        .dact-amt{font-size:15px;font-weight:800;flex-shrink:0;white-space:nowrap;}
-        .dact-empty{text-align:center;color:var(--text-muted);font-size:13px;padding:26px 0;}
-        /* ===== Overall Sales (barres) + Source (segments) façon reference ===== */
-        .os-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
-        .os-lbl{font-size:14px;font-weight:700;color:var(--text-secondary);}
-        .os-total{font-size:34px;font-weight:800;letter-spacing:-1.2px;color:var(--text-primary);margin-top:4px;line-height:1;}
-        .os-per{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text-secondary);background:var(--bg-tertiary);border:1px solid var(--border-color);padding:8px 13px;border-radius:12px;}
-        .os-bars{display:flex;align-items:flex-end;gap:8px;height:210px;margin-top:20px;}
-        .os-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:9px;}
-        .os-pct{font-size:11px;font-weight:800;color:var(--text-secondary);white-space:nowrap;}
-        .os-barwrap{width:100%;flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:0;}
-        .os-bar{width:78%;max-width:44px;border-radius:12px 12px 7px 7px;background:#F5512E;min-height:6px;transition:height .35s cubic-bezier(.16,1,.3,1);}
-        .os-bar.soft{background:rgba(245,81,46,.32);}
-        .os-mo{font-size:10.5px;font-weight:600;color:var(--text-muted);text-transform:capitalize;white-space:nowrap;}
-        .src-net{font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--text-primary);margin-top:2px;line-height:1;}
-        .src-row{margin-top:20px;}
-        .src-rlbl{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text-secondary);margin-bottom:9px;}
-        .src-rlbl iconify-icon{color:var(--text-muted);font-size:14px;}
-        .src-seg{display:flex;gap:8px;height:36px;}
-        .src-seg>span{border-radius:12px;min-width:20px;}
-        .src-cap{font-size:12px;color:var(--text-muted);margin-top:18px;line-height:1.45;}
-        .os-row{grid-template-columns:1.6fr 1fr;}
-        @media(max-width:960px){ .os-bars{height:170px;} }
-        @media(max-width:900px){ .os-row{grid-template-columns:1fr;} }
-        /* Bande de cartes stat (recouvrement / panier / transactions / dette) */
-        .sb-grid{grid-template-columns:repeat(4,1fr);}
-        @media(max-width:1000px){ .sb-grid{grid-template-columns:repeat(2,1fr);} }
-        @media(max-width:560px){ .sb-grid{grid-template-columns:1fr;} }
-        .sb-card{display:flex;flex-direction:column;justify-content:space-between;min-height:150px;}
-        .sb-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
-        .sb-num{font-size:30px;font-weight:800;letter-spacing:-1px;color:var(--text-primary);line-height:1;}
-        .sb-pill{font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px;background:rgba(52,211,153,.16);color:#0f9d6b;white-space:nowrap;}
-        .sb-pill.neg{background:rgba(239,68,68,.14);color:#dc2626;}
-        .sb-lbl{font-size:13px;color:var(--text-muted);font-weight:600;margin-top:10px;}
-        .sb-ic{width:34px;height:34px;border-radius:10px;background:var(--bg-tertiary);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
-        .sb-dots{display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:12px;}
-        .sb-dcol{display:flex;flex-direction:column;gap:4px;flex:1;align-items:center;justify-content:flex-end;}
-        .sb-dot{width:9px;height:9px;border-radius:50%;background:#F5512E;flex-shrink:0;}
-        .sb-black{background:linear-gradient(160deg,#26221f 0%,#111 100%)!important;color:#fff;align-items:center;justify-content:center;text-align:center;gap:4px;}
-        .sb-black .sb-cap{font-size:13px;color:rgba(255,255,255,.7);font-weight:600;}
-        .sb-black .sb-big{font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1;}
       </style>
-
-      <!-- En-tête d'accueil -->
-      ${this._renderGreeting(d)}
-
-      <!-- Row hero : Overall Sales (barres) + Source (résultat net) -->
-      <div class="d-grid os-row">
-        ${this._renderSalesChart(d)}
-        ${this._renderSourceCard(d)}
-      </div>
-
-      <!-- Bande stat : recouvrement / panier / transactions / dette -->
-      ${this._renderStatBand(d)}
-
-      <!-- Row : compte + income/paid + recouvrement + tendance -->
-      ${this._renderFinBento(d)}
 
       <!-- Row 0 : Flotte en direct (donut centralisé) -->
       <div class="d-grid" style="grid-template-columns:1fr;">
@@ -1647,11 +1527,6 @@ const DashboardPage = {
 
       <!-- Row 1 : Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) -->
       ${this._renderInsightWidgets(d)}
-
-      <!-- Row 1.5 : Activity manager (activité du jour) -->
-      <div class="d-grid" style="grid-template-columns:1fr;">
-        ${this._renderActivityManager(d)}
-      </div>
 
       <!-- Row 2 : Planning (pleine largeur) -->
       <div class="d-grid d2-r2">
@@ -1717,238 +1592,6 @@ const DashboardPage = {
       </div>
       </div>
     `;
-  },
-
-  // Bloc « Activity manager » : activité des chauffeurs du jour, recherche + tags.
-  _renderActivityManager(d) {
-    const list = [...(d.chauffeursActifsJour || [])].sort((a, b) => (b.ca || 0) - (a.ca || 0));
-    const pals = [['#eef2ff', '#4f46e5'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#16a34a'], ['#fff7ed', '#ea580c'], ['#fdf2f8', '#db2777'], ['#f5f3ff', '#DE3E1E']];
-    const av = (nom) => { const s = String(nom || '?'); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; const [bg, fg] = pals[h % pals.length]; const p = s.trim().split(/\s+/); const ini = ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase(); return `<div class="dact-av" style="background:${bg};color:${fg};">${Utils.escHtml(ini)}</div>`; };
-    const zoneOf = (c) => !c.actif ? 'inactif' : (c.state === 'faible' || c.state === 'modere') ? 'surv' : 'forme';
-    const stMap = { forme: ['En forme', '#10b981', 'rgba(16,185,129,.12)'], surv: ['À surveiller', '#D99000', 'rgba(255,174,31,.16)'], inactif: ['Inactif', '#9aa3b2', 'rgba(0,0,0,.05)'] };
-
-    const rows = list.length ? list.map(c => {
-      const nom = ((c.prenom || '') + ' ' + (c.nom || '')).trim() || 'Chauffeur';
-      const zone = zoneOf(c);
-      const st = stMap[zone];
-      const hors = c.programme ? '0' : '1';
-      const courses = c.courses ? `${c.courses} course${c.courses > 1 ? 's' : ''}` : 'aucune course';
-      return `<div class="dact-row" data-name="${Utils.escHtml(nom.toLowerCase())}" data-zone="${zone}" data-hors="${hors}">
-        ${av(nom)}
-        <div class="dact-main">
-          <div class="dact-name">${Utils.escHtml(nom)}</div>
-          <div class="dact-sub"><span class="dact-pill" style="color:${st[1]};background:${st[2]};">${st[0]}</span>${hors === '1' ? '<span class="dact-pill" style="color:#F5512E;background:rgba(245,81,46,.12);">Hors planning</span>' : ''}<span>${courses}</span></div>
-        </div>
-        <div class="dact-amt" style="color:${c.ca > 0 ? 'var(--text-primary)' : 'var(--text-muted)'};">${c.ca > 0 ? Utils.formatCurrency(c.ca) : '—'}</div>
-      </div>`;
-    }).join('') : '<div class="dact-empty">Aucune activité aujourd\'hui.</div>';
-
-    const tag = (key, label, on) => `<button class="dact-tag${on ? ' on' : ''}" onclick="DashboardPage._dactFilter('${key}',this)">${label}</button>`;
-    return `<div class="d-card">
-      <div class="dact-head">
-        <div class="d-icon" style="background:rgba(245,81,46,.12);color:#F5512E;"><iconify-icon icon="solar:widget-5-bold-duotone"></iconify-icon></div>
-        <div style="flex:1;"><div style="font-size:15px;font-weight:800;color:var(--text-primary);">Activité du jour</div><div style="font-size:11px;color:var(--text-muted);">${list.length} chauffeur${list.length > 1 ? 's' : ''} · ${d.periodLabel || ''}</div></div>
-        <a href="#/chauffeurs" style="font-size:11px;font-weight:700;color:#F5512E;text-decoration:none;">Voir tout →</a>
-      </div>
-      <div class="dact-tools">
-        <div class="dact-search"><iconify-icon icon="solar:magnifer-linear"></iconify-icon><input type="text" placeholder="Rechercher un chauffeur…" oninput="DashboardPage._dactSearch(this)"></div>
-        <div class="dact-tags">${tag('all', 'Tous', true)}${tag('forme', 'En forme')}${tag('surv', 'À surveiller')}${tag('hors', 'Hors planning')}</div>
-      </div>
-      <div class="dact-list">${rows}</div>
-    </div>`;
-  },
-
-  _dactFilter(key, btn) {
-    const card = btn.closest('.d-card'); if (!card) return;
-    card.querySelectorAll('.dact-tag').forEach(t => t.classList.toggle('on', t === btn));
-    card._dactKey = key;
-    this._dactApply(card);
-  },
-  _dactSearch(inp) { const card = inp.closest('.d-card'); if (card) this._dactApply(card); },
-  _dactApply(card) {
-    const key = card._dactKey || 'all';
-    const q = (card.querySelector('.dact-search input') || {}).value || '';
-    const qq = q.toLowerCase().trim();
-    card.querySelectorAll('.dact-row').forEach(r => {
-      let ok = true;
-      if (key === 'hors') ok = r.dataset.hors === '1';
-      else if (key !== 'all') ok = r.dataset.zone === key;
-      if (ok && qq) ok = (r.dataset.name || '').includes(qq);
-      r.style.display = ok ? '' : 'none';
-    });
-  },
-
-  // En-tête d'accueil façon reference : date + « Mes tâches » + salutation.
-  _renderGreeting(d) {
-    const session = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : {};
-    const name = session.prenom || 'Patron';
-    const now = (d.estAujourdhui || !d.jourAtt) ? new Date() : new Date(String(d.jourAtt) + 'T00:00:00');
-    const wd = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' }).format(now).replace('.', '');
-    const mo = new Intl.DateTimeFormat('fr-FR', { month: 'short' }).format(now).replace('.', '');
-    return `<div class="dh-row">
-      <div class="dh-left">
-        <div class="dh-date"><span class="dh-daynum">${now.getDate()}</span><span class="dh-dtxt">${wd}<br>${mo}</span></div>
-        <a href="#/taches" class="dh-tasks"><iconify-icon icon="solar:checklist-minimalistic-bold"></iconify-icon> Mes tâches <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></a>
-        <a href="#/planning" class="dh-ic" title="Planning"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></a>
-      </div>
-      <div class="dh-right">
-        <div class="dh-hi">Bonjour ${Utils.escHtml(name)} 👋</div>
-        <div class="dh-sub">Voici l'activité de votre flotte.</div>
-      </div>
-    </div>`;
-  },
-
-  // Bande de cartes stat façon reference (recouvrement / panier / transactions / dette).
-  _renderStatBand(d) {
-    const f = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
-    const taux = Math.round(d.tauxRecouvrement || 0);
-    const panier = d.monthCourses > 0 ? Math.round((d.caThisMonth || 0) / d.monthCourses) : 0;
-    const nbV = d.nbVersementsPeriode || 0;
-    const trend = Math.round(d.caTrend || 0);
-    const detteRate = d.totalAttendu > 0 ? Math.round((d.totalDettes || 0) / d.totalAttendu * 100) : 0;
-    const weeks = (d.weeklyPayments || []).slice(-8);
-    const maxw = Math.max(1, ...weeks.map(w => w.verse || 0));
-    const dots = weeks.length ? weeks.map(w => { const n = Math.max(1, Math.round((w.verse || 0) / maxw * 6)); return `<div class="sb-dcol">${Array.from({ length: n }).map(() => '<span class="sb-dot"></span>').join('')}</div>`; }).join('') : '';
-    const pill = (v) => `<span class="sb-pill${v < 0 ? ' neg' : ''}">${v >= 0 ? '+' : ''}${v}%</span>`;
-    return `<div class="d-grid sb-grid">
-      <a href="#/versements" class="d-card sb-card" style="text-decoration:none;">
-        <div class="sb-top"><div class="sb-num">${taux}%</div>${pill(trend)}</div>
-        <div class="sb-lbl">Taux de recouvrement</div>
-      </a>
-      <div class="d-card sb-card">
-        <div class="sb-top"><div class="sb-num" style="font-size:26px;">${f(panier)}</div><div class="sb-ic"><iconify-icon icon="solar:bag-smile-bold-duotone"></iconify-icon></div></div>
-        <div class="sb-lbl">Panier moyen / course</div>
-      </div>
-      <div class="d-card sb-card">
-        <div class="sb-top"><div><div class="sb-num" style="font-size:26px;">${Utils.formatNumber(nbV)}</div><div class="sb-lbl" style="margin-top:3px;">Versements ce mois</div></div>${pill(trend)}</div>
-        <div class="sb-dots">${dots}</div>
-      </div>
-      <a href="#/versements" class="d-card sb-card sb-black" style="text-decoration:none;">
-        <div class="sb-cap">Taux de dette</div>
-        <div class="sb-big">${detteRate}<span style="font-size:22px;">%</span></div>
-        <span style="color:#fff;font-size:12px;font-weight:700;background:rgba(255,255,255,.14);padding:8px 16px;border-radius:20px;margin-top:6px;">Voir →</span>
-      </a>
-    </div>`;
-  },
-
-  // « Overall Sales » : recette globale + barres mensuelles (arrondies, % vs mois précédent).
-  _renderSalesChart(d) {
-    const f = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
-    const series = (d.monthlyRevenue || []).slice(-12);
-    const total = series.reduce((s, m) => s + (m.revenue || 0), 0);
-    const max = Math.max(1, ...series.map(m => m.revenue || 0));
-    const bars = series.length ? series.map((m, i) => {
-      const v = m.revenue || 0;
-      const h = Math.max(6, v / max * 100);
-      const prev = i > 0 ? (series[i - 1].revenue || 0) : v;
-      const pct = prev > 0 ? Math.round((v - prev) / prev * 100) : 0;
-      const soft = (v / max) < 0.5 ? ' soft' : '';
-      return `<div class="os-col"><div class="os-pct">${i > 0 && v > 0 ? (pct >= 0 ? '+' : '') + pct + '%' : ''}</div><div class="os-barwrap"><div class="os-bar${soft}" style="height:${h.toFixed(0)}%;"></div></div><div class="os-mo">${Utils.escHtml(m.month || '')}</div></div>`;
-    }).join('') : '<div style="color:var(--text-muted);font-size:13px;padding:40px 0;text-align:center;flex:1;">Pas encore de données de recette.</div>';
-    return `<div class="d-card">
-      <div class="os-head">
-        <div><div class="os-lbl">Recette globale</div><div class="os-total">${f(total)}</div></div>
-        <span class="os-per"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> 12 mois</span>
-      </div>
-      <div class="os-bars">${bars}</div>
-    </div>`;
-  },
-
-  // « Source » : résultat net + barres segmentées (recouvrement, recette/dépenses).
-  _renderSourceCard(d) {
-    const f = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
-    const ca = d.caThisMonth || 0, dep = d.totalDepensesMois || 0;
-    const net = ca - dep;
-    const taux = Math.max(0, Math.min(100, Math.round(d.tauxRecouvrement || 0)));
-    const caShare = (ca + dep) > 0 ? Math.round(ca / (ca + dep) * 100) : 100;
-    const seg = (segs) => `<div class="src-seg">${segs.filter(s => s.w > 0).map(s => `<span style="flex:${s.w};background:${s.c};"></span>`).join('')}</div>`;
-    return `<div class="d-card">
-      <div class="os-head"><div><div class="os-lbl">Résultat net · ${Utils.escHtml(d.monthLabel || '')}</div><div class="src-net" style="color:${net >= 0 ? 'var(--text-primary)' : '#ef4444'};">${f(net)}</div></div>
-        <span class="os-per"><iconify-icon icon="solar:pie-chart-2-bold-duotone"></iconify-icon> Mois</span></div>
-      <div class="src-row">
-        <div class="src-rlbl"><iconify-icon icon="solar:info-circle-linear"></iconify-icon> Taux de recouvrement</div>
-        ${seg([{ w: taux, c: '#34D399' }, { w: 100 - taux, c: '#F5C542' }])}
-      </div>
-      <div class="src-row">
-        <div class="src-rlbl"><iconify-icon icon="solar:info-circle-linear"></iconify-icon> Recette vs dépenses</div>
-        ${seg([{ w: caShare, c: '#F5512E' }, { w: 100 - caShare, c: '#8B5CF6' }])}
-      </div>
-      <div class="src-cap">Recouvrement à <b>${taux}%</b> ce mois · recette <b>${f(ca)}</b> pour <b>${f(dep)}</b> de dépenses.</div>
-    </div>`;
-  },
-
-  // Rangée hero « Financial Dashboard » : carte compte + income/paid + donut recouvrement + tendance.
-  _renderFinBento(d) {
-    const f = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
-    const encaisseMois = d.totalVerseMonth || 0;
-    const caMois = d.caThisMonth || 0;
-    const depMois = d.totalDepensesMois || 0;
-    const attendu = d.versementAttenduJour || d.caBrutJour || 0;
-    const taux = Math.round(d.tauxRecouvrement || 0);
-    const trend = d.caTrend || 0;
-    const mLabel = d.monthLabel || d.periodLabel || 'ce mois';
-
-    // Donut recouvrement (carte noire)
-    const R = 52, C = 2 * Math.PI * R, dash = Math.max(0, Math.min(100, taux)) / 100 * C;
-    const donut = `<svg viewBox="0 0 130 130" width="132" height="132">
-      <circle cx="65" cy="65" r="${R}" fill="none" stroke="rgba(255,255,255,.13)" stroke-width="12"/>
-      <circle cx="65" cy="65" r="${R}" fill="none" stroke="#F5512E" stroke-width="12" stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" transform="rotate(-90 65 65)" style="transition:stroke-dasharray .8s ease;"/>
-      <text x="65" y="61" text-anchor="middle" font-size="27" font-weight="800" fill="#fff">${taux}%</text>
-      <text x="65" y="80" text-anchor="middle" font-size="11" fill="rgba(255,255,255,.6)">recouvré</text>
-    </svg>`;
-
-    // Courbe de tendance (revenus mensuels)
-    const rev = (d.monthlyRevenue || []).slice(-8).map(m => m.revenue || 0);
-    const lastRev = rev.length ? rev[rev.length - 1] : caMois;
-    let line = '';
-    if (rev.length >= 2) {
-      const max = Math.max(...rev, 1);
-      const pts = rev.map((v, i) => `${((i / (rev.length - 1)) * 100).toFixed(1)},${(38 - (v / max) * 34 - 2).toFixed(1)}`);
-      line = `<svg class="fb-trend-svg" viewBox="0 0 100 40" preserveAspectRatio="none" width="100%">
-        <polygon points="${pts.join(' ')} 100,40 0,40" fill="#F5512E" opacity="0.08"/>
-        <polyline points="${pts.join(' ')}" fill="none" stroke="#F5512E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-      </svg>`;
-    }
-    const trendPill = `<span class="d2-pill" style="background:${trend >= 0 ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.12)'};color:${trend >= 0 ? '#10b981' : '#ef4444'};">${trend >= 0 ? '▲' : '▼'} ${Math.abs(Math.round(trend))}%</span>`;
-
-    return `<div class="d-grid fb-grid" style="margin-bottom:16px;">
-      <div class="d-card fb-acc">
-        <div class="fb-acc-top"><span class="fb-brand">PILOTE</span><span class="fb-tag">Trésorerie</span></div>
-        <div>
-          <div class="fb-acc-lbl">Encaissé · ${Utils.escHtml(mLabel)}</div>
-          <div class="fb-acc-val">${f(encaisseMois)}</div>
-        </div>
-        <div class="fb-acc-actions">
-          <a href="#/versements" class="fb-btn fb-btn-a"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon> Versement</a>
-          <a href="#/comptabilite" class="fb-btn fb-btn-b"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon> Dépense</a>
-        </div>
-        <div class="fb-acc-foot">Attendu aujourd'hui · <b>${f(attendu)}</b></div>
-      </div>
-
-      <div class="d-card fb-io">
-        <div class="fb-io-row">
-          <div class="fb-io-ic" style="background:rgba(16,185,129,.14);color:#10b981;"><iconify-icon icon="solar:course-up-bold-duotone"></iconify-icon></div>
-          <div><div class="fb-io-lbl">Recette du mois</div><div class="fb-io-val">${f(caMois)}</div></div>
-        </div>
-        <div class="fb-io-row">
-          <div class="fb-io-ic" style="background:rgba(245,81,46,.14);color:#F5512E;"><iconify-icon icon="solar:course-down-bold-duotone"></iconify-icon></div>
-          <div><div class="fb-io-lbl">Dépenses du mois</div><div class="fb-io-val">${f(depMois)}</div></div>
-        </div>
-      </div>
-
-      <a href="#/versements" class="d-card fb-growth" style="text-decoration:none;">
-        ${donut}
-        <div class="fb-growth-lbl">Taux de recouvrement</div>
-      </a>
-
-      <div class="d-card fb-trend">
-        <div class="fb-trend-head">
-          <div><div class="fb-trend-lbl">Tendance recette</div><div class="fb-trend-val">${f(lastRev)}</div></div>
-          ${trendPill}
-        </div>
-        ${line}
-      </div>
-    </div>`;
   },
 
   _renderMesTaches() {
@@ -2095,7 +1738,7 @@ const DashboardPage = {
           </div>
           <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:var(--text-primary);">Maintenance</div>
         </div>
-        <a href="#/garage" style="font-size:11px;font-weight:600;color:#F5512E;text-decoration:none;">Voir tout →</a>
+        <a href="#/garage" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout →</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
       ${alerts.length > 4 ? `<div style="text-align:center;padding:4px;font-size:10px;color:#9ca3af;margin-top:4px;">+ ${alerts.length - 4} autre(s)</div>` : ''}
@@ -2393,9 +2036,9 @@ const DashboardPage = {
           </div>
         </div>
       </div>
-      <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#F5512E;--iw-bg:rgba(245,81,46,.12);">
+      <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></span><span class="iw-label">Tâches</span></div>
-        <div class="iw-val" style="color:#F5512E;margin-top:auto;">${taches}</div>
+        <div class="iw-val" style="color:#5D87FF;margin-top:auto;">${taches}</div>
         <div class="iw-sub">${tachesRetard > 0 ? `<span style="color:#EF4444;">${tachesRetard} en retard</span>` : (taches > 0 ? 'en cours' : 'Rien en attente 🎉')}</div>
       </a>
     </div>`;
@@ -2455,7 +2098,7 @@ const DashboardPage = {
   _fleetSegDef() {
     return [
       { key: 'activite', label: 'En activité', color: '#13DEB9', desc: "Roule aujourd'hui" },
-      { key: 'attente', label: 'En attente', color: '#F5512E', desc: 'Planifié, sans recette' },
+      { key: 'attente', label: 'En attente', color: '#5D87FF', desc: 'Planifié, sans recette' },
       { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Hors planning' },
       { key: 'repos', label: 'Repos / Hors service', color: '#C7D0DD', desc: 'Pas de service' },
     ];
@@ -2598,9 +2241,10 @@ const DashboardPage = {
       const granBar = `<div class="mini-gran">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>`;
       return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)}" onmouseleave="DashboardPage._miniLeave()"><div class="mini-head"><div class="mini-title"><span class="mini-dot"></span>Recette encaissée · ${unitLabel}</div><div class="mini-val" id="mini-value">${fmt(sumV)}</div></div>${granBar}<div class="mini-bars">${cols}</div></div>`;
     })();
-    return `<div class="fd-recette-inner">
+    return `<div class="fd-recette-inner" onclick="DashboardPage._showActiviteDetail()">
       ${pace}
       ${bars}
+      <div class="fd-voir">Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></div>
     </div>`;
   },
 
@@ -2610,10 +2254,7 @@ const DashboardPage = {
     return `<div class="d-card fd-card">
       <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span></div>
       <div class="fd-top">
-        <div class="fd-donut-col">
-          <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
-          <button class="fd-voir" onclick="DashboardPage._showActiviteDetail()">Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button>
-        </div>
+        <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
         <div class="fd-recette">${this._fleetRecettePanel(d)}</div>
       </div>
       <div class="fd-cards" id="fleet-donut-cards">${this._fleetCardsInner(segments)}</div>
@@ -2662,7 +2303,7 @@ const DashboardPage = {
       const caTxt = (it.ca != null && it.ca > 0) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
       const call = it.tel ? `<a href="tel:${Utils.escHtml(String(it.tel))}" title="Appeler" style="width:34px;height:34px;border-radius:9px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:phone-bold"></iconify-icon></a>` : '';
       // Pour les non planifiés : bouton pour les inscrire au planning du jour.
-      const planif = key === 'nonpl' ? `<button onclick="DashboardPage._planifierNonpl('${Utils.escHtml(String(it.id))}')" title="Planifier aujourd'hui" style="height:34px;padding:0 12px;border-radius:9px;border:none;background:rgba(245,81,46,.14);color:#F5512E;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;white-space:nowrap;"><iconify-icon icon="solar:calendar-add-bold"></iconify-icon>Planifier</button>` : '';
+      const planif = key === 'nonpl' ? `<button onclick="DashboardPage._planifierNonpl('${Utils.escHtml(String(it.id))}')" title="Planifier aujourd'hui" style="height:34px;padding:0 12px;border-radius:9px;border:none;background:rgba(93,135,255,.14);color:#5D87FF;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;white-space:nowrap;"><iconify-icon icon="solar:calendar-add-bold"></iconify-icon>Planifier</button>` : '';
       return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);">
         <div style="width:36px;height:36px;border-radius:50%;background:${seg.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${Utils.escHtml(initial)}</div>
         <div style="flex:1;min-width:0;">
@@ -2713,7 +2354,7 @@ const DashboardPage = {
     const days = d.heatmapWeekDays || [];
     if (drivers.length === 0) {
       return `<div class="d-card" style="display:flex;align-items:center;gap:14px;">
-        <div class="d-icon" style="background:rgba(245,81,46,.08);color:#F5512E;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
+        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
         <div>
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Planning semaine</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Aucun chauffeur actif</div>
@@ -2731,7 +2372,7 @@ const DashboardPage = {
     });
 
     const statusLabels = { verse: 'Versé', programme: 'Programmé', en_retard: 'En retard', absent: 'Absent', repos: 'Repos' };
-    const statusColors = { verse: '#10b981', programme: '#F5512E', en_retard: '#ef4444', absent: '#f97316', repos: '#9ca3af' };
+    const statusColors = { verse: '#10b981', programme: '#5D87FF', en_retard: '#ef4444', absent: '#f97316', repos: '#9ca3af' };
     const MAX_CHIPS = 6;
 
     // Cartes calendrier par jour (style MAURALEX) : les chauffeurs programmés
@@ -2767,8 +2408,8 @@ const DashboardPage = {
         .d-pcal-wrap { overflow-x:auto; }
         .d-pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; min-width:640px; animation:dSlide .5s cubic-bezier(.16,1,.3,1); }
         .d-pcal-cell { border:1px solid var(--border-color); border-radius:12px; background:var(--bg-secondary); min-height:120px; padding:8px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:5px; }
-        .d-pcal-cell:hover { border-color:#F5512E; box-shadow:0 2px 10px rgba(245,81,46,.10); }
-        .d-pcal-cell-today { border-color:rgba(245,81,46,.45); }
+        .d-pcal-cell:hover { border-color:#5D87FF; box-shadow:0 2px 10px rgba(99,102,241,.10); }
+        .d-pcal-cell-today { border-color:rgba(99,102,241,.45); }
         .d-pcal-num { font-size:12px; font-weight:700; color:var(--text-primary); line-height:22px; }
         .d-pcal-today { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--text-primary); color:var(--bg-secondary); font-weight:800; }
         .d-pcal-chips { display:flex; flex-direction:column; gap:3px; overflow:hidden; }
@@ -2784,7 +2425,7 @@ const DashboardPage = {
     // Legend — modern pills
     html += `<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.08);font-size:11px;font-weight:600;color:#10b981;"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Versé</div>
-      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(245,81,46,.08);font-size:11px;font-weight:600;color:#F5512E;"><span style="width:6px;height:6px;border-radius:50%;background:#F5512E;"></span> Programmé</div>
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#5D87FF;"><span style="width:6px;height:6px;border-radius:50%;background:#5D87FF;"></span> Programmé</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> En retard</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
@@ -2793,7 +2434,7 @@ const DashboardPage = {
     return `<div class="d-card" style="padding:24px 20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#F5512E,#DE3E1E);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(245,81,46,.25);">
+          <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#5D87FF,#4570EA);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
             <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#fff;"></iconify-icon>
           </div>
           <div>
@@ -2801,7 +2442,7 @@ const DashboardPage = {
             <div style="font-size:11px;color:#9ca3af;font-weight:500;margin-top:1px;">${drivers.length} chauffeur${drivers.length > 1 ? 's' : ''} actif${drivers.length > 1 ? 's' : ''}</div>
           </div>
         </div>
-        <a href="#/planning" style="font-size:11px;font-weight:600;color:#F5512E;text-decoration:none;">Voir tout →</a>
+        <a href="#/planning" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout →</a>
       </div>
       ${html}
     </div>`;
@@ -2809,48 +2450,43 @@ const DashboardPage = {
 
   // =================== TOP CHAUFFEURS & DOCS WIDGETS ===================
 
-  // Top recettes en cercles concentriques (style « Annual profits » du reference).
   _renderTopDriversRevenue(d) {
-    const drivers = [...(d.topDriversRevenue || [])].sort((a, b) => (b.ca || 0) - (a.ca || 0)).slice(0, 4);
-    const fk = n => { n = Math.round(n || 0); const a = Math.abs(n); return a >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + 'M' : a >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n); };
-    const shades = ['#FADFD6', '#F3AF99', '#ED7C5E', '#F5512E'];
-    const header = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div class="d-icon" style="background:rgba(245,81,46,.12);color:#F5512E;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
+    const drivers = d.topDriversRevenue || [];
+    const maxVal = drivers.length > 0 ? drivers[0].total : 1;
+    const rows = drivers.length > 0 ? drivers.map((dr, i) => {
+      const pct = maxVal > 0 ? Math.round((dr.total / maxVal) * 100) : 0;
+      const medals = ['#f59e0b', '#9ca3af', '#cd7f32'];
+      const medalColor = i < 3 ? medals[i] : '';
+      const scoreColor = dr.total >= 75 ? '#22c55e' : dr.total >= 50 ? '#f59e0b' : '#ef4444';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);cursor:pointer;" onclick="Router.navigate('/classement')">
+        <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;${medalColor ? 'background:' + medalColor + '20;color:' + medalColor : 'background:rgba(0,0,0,.04);color:#9ca3af;'}">${i + 1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dr.nom}</div>
+          <div style="display:flex;gap:6px;margin-top:4px;font-size:9px;color:var(--text-muted);">
+            <span title="Recettes">${Utils.formatCurrency(dr.ca)}</span>
+            <span>•</span>
+            <span title="Conduite">${dr.scoreConduite}/100</span>
+            <span>•</span>
+            <span title="Regularite">${dr.regularite}%</span>
+            ${dr.nbContras > 0 ? '<span>•</span><span style="color:#ef4444;" title="Infractions">' + dr.nbContras + ' inf.</span>' : ''}
+          </div>
+        </div>
+        <div style="font-size:14px;font-weight:800;color:${scoreColor};white-space:nowrap;">${dr.total}<span style="font-size:9px;font-weight:600;opacity:.7">/100</span></div>
+      </div>`;
+    }).join('') : '<div style="font-size:12px;color:#9ca3af;text-align:center;padding:20px 0;">Aucun chauffeur actif</div>';
+
+    return `<div class="d-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
           <iconify-icon icon="solar:cup-star-bold-duotone"></iconify-icon>
         </div>
         <div style="flex:1;">
-          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top recettes</div>
-          <div style="font-size:11px;color:var(--text-muted);">${Utils.escHtml(d.monthLabel || '')}</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 chauffeurs</div>
+          <div style="font-size:11px;color:#9ca3af;">Score global (${d.monthLabel})</div>
         </div>
-        <a href="#/classement" style="font-size:11px;font-weight:600;color:#F5512E;text-decoration:none;">Voir tout &rarr;</a>
-      </div>`;
-
-    if (!drivers.length) {
-      return `<div class="d-card">${header}<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:26px 0;">Aucun chauffeur actif</div></div>`;
-    }
-
-    const maxCa = drivers[0].ca || 1;
-    const baseline = 182, cx = 100, rMax = 84, rMin = 26;
-    let circles = '', labels = '';
-    drivers.forEach((dr, i) => {
-      const ratio = maxCa > 0 ? (dr.ca || 0) / maxCa : 0;
-      const r = Math.max(rMin, rMax * (0.35 + 0.65 * ratio));  // borne basse pour rester lisible
-      const cy = baseline - r;
-      circles += `<circle cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" fill="${shades[i] || shades[3]}"/>`;
-      const lc = i < 2 ? '#8a3a26' : '#fff';
-      labels += `<text x="${cx}" y="${(cy - r + 16).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="800" fill="${lc}">${fk(dr.ca)} F</text>`;
-    });
-    const svg = `<svg viewBox="0 0 200 190" width="100%" style="max-width:230px;display:block;margin:0 auto;">${circles}${labels}</svg>`;
-    const legend = drivers.map((dr, i) => `<div style="display:flex;align-items:center;gap:8px;">
-        <span style="width:10px;height:10px;border-radius:50%;background:${shades[i] || shades[3]};flex-shrink:0;"></span>
-        <span style="flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Utils.escHtml(dr.nom || '')}</span>
-        <strong style="font-size:12px;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(dr.ca)}</strong>
-      </div>`).join('');
-
-    return `<div class="d-card" style="display:flex;flex-direction:column;">
-      ${header}
-      ${svg}
-      <div style="display:flex;flex-direction:column;gap:9px;margin-top:14px;">${legend}</div>
+        <a href="#/classement" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout &rarr;</a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
     </div>`;
   },
 
@@ -2878,7 +2514,7 @@ const DashboardPage = {
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 dettes</div>
           <div style="font-size:11px;color:#9ca3af;">${drivers.length} chauffeur${drivers.length !== 1 ? 's' : ''} &bull; Total ${Utils.formatCurrency(d.totalDettes)}</div>
         </div>
-        <a href="#/versements" onclick="setTimeout(()=>{var el=document.getElementById('dette-section-recettes');if(el)el.scrollIntoView({behavior:'smooth'})},500)" style="font-size:11px;font-weight:600;color:#F5512E;text-decoration:none;">Voir tout &rarr;</a>
+        <a href="#/versements" onclick="setTimeout(()=>{var el=document.getElementById('dette-section-recettes');if(el)el.scrollIntoView({behavior:'smooth'})},500)" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout &rarr;</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
     </div>`;
@@ -2987,7 +2623,7 @@ const DashboardPage = {
               bodyFont: { size: 13, weight: '700' },
               padding: { top: 6, bottom: 6, left: 10, right: 10 },
               cornerRadius: 10,
-              borderColor: 'rgba(245,81,46,.15)',
+              borderColor: 'rgba(99,102,241,.15)',
               borderWidth: 1,
               displayColors: false,
               caretSize: 6,

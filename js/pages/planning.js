@@ -201,7 +201,7 @@ const PlanningPage = {
           // 1) Premier chargement en cours : on patiente, mais pas indefiniment
           //    (8 essais x 1,5 s = 12 s au maximum).
           avis = cadre('var(--bg-tertiary)', 'var(--border-color)', 'var(--text-secondary)',
-            `<div class="spinner" style="width:18px;height:18px;border:2px solid var(--border-color);border-top-color:#F5512E;border-radius:50%;animation:spin 1s linear infinite;flex:none;"></div>
+            `<div class="spinner" style="width:18px;height:18px;border:2px solid var(--border-color);border-top-color:#5D87FF;border-radius:50%;animation:spin 1s linear infinite;flex:none;"></div>
              <span>Chargement des données...</span>
              <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`);
           this._retryTimer = setTimeout(() => { this._retryTimer = null; this._renderView(); }, 1500);
@@ -295,7 +295,7 @@ const PlanningPage = {
   },
 
   _absenceTypeColor(type) {
-    const colors = { repos: '#64748b', conge: '#3b82f6', maladie: '#ef4444', formation: '#f59e0b', personnel: '#F5512E', suspension: '#dc2626' };
+    const colors = { repos: '#64748b', conge: '#3b82f6', maladie: '#ef4444', formation: '#f59e0b', personnel: '#8b5cf6', suspension: '#dc2626' };
     return colors[type] || '#64748b';
   },
 
@@ -309,7 +309,7 @@ const PlanningPage = {
   },
 
   _shiftTypeColor(type) {
-    return { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#F5512E', custom: '#F5512E' }[type] || '#64748b';
+    return { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6', custom: '#5D87FF' }[type] || '#64748b';
   },
 
   // Helpers pour créneaux personnalisés (acceptent l'objet shift complet)
@@ -331,7 +331,7 @@ const PlanningPage = {
 
   _getShiftColor(shift) {
     if (shift.heureDebut && shift.heureFin && (!shift.typeCreneaux || shift.typeCreneaux === 'custom')) {
-      return '#F5512E';
+      return '#5D87FF';
     }
     return this._shiftTypeColor(shift.typeCreneaux);
   },
@@ -469,7 +469,7 @@ const PlanningPage = {
   // =================== VUE MOBILE (grille compacte comme dashboard) ===================
 
   _renderMobileDayView(chauffeurs, days, vehMap, stats) {
-    const avatarColors = ['#F5512E','#10b981','#f59e0b','#ef4444','#3b82f6','#F5512E','#ec4899','#14b8a6','#f97316','#06b6d4'];
+    const avatarColors = ['#5D87FF','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
 
     // KPIs compact
     let html = `
@@ -495,9 +495,9 @@ const PlanningPage = {
         .pm-grid-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -12px; padding:0 12px; }
         .pm-grid { display:grid; grid-template-columns:80px repeat(7,minmax(44px,1fr)); gap:3px; align-items:center; min-width:420px; }
         .pm-head { text-align:center; font-size:11px; font-weight:700; color:var(--text-muted); padding:8px 0 6px; text-transform:uppercase; }
-        .pm-head.today { color:#F5512E; background:rgba(245,81,46,.08); border-radius:8px 8px 0 0; border-bottom:2px solid #F5512E; }
+        .pm-head.today { color:#5D87FF; background:rgba(99,102,241,.08); border-radius:8px 8px 0 0; border-bottom:2px solid #5D87FF; }
         .pm-head .pm-daynum { display:block; font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px; }
-        .pm-head.today .pm-daynum { color:#F5512E; }
+        .pm-head.today .pm-daynum { color:#5D87FF; }
         .pm-driver { display:flex; align-items:center; padding:4px 6px; margin:0 -6px; overflow:hidden;
           border-radius:7px; border:1px solid transparent; transition:background .12s, color .12s, border-color .12s; }
         .pm-driver:hover { background:var(--pilote-blue); border-color:var(--pilote-blue); }
@@ -506,11 +506,11 @@ const PlanningPage = {
         .pm-driver-plaque { font-size:9px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
         .pm-cell { height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; font-size:11px; font-weight:700; }
         .pm-cell:active { transform:scale(1.1); }
-        .pm-shift { background:linear-gradient(135deg,rgba(245,81,46,.15),rgba(139,92,246,.1)); color:#F5512E; }
+        .pm-shift { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#5D87FF; }
         .pm-shift-m { background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.08)); color:#22c55e; }
         .pm-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.08)); color:#3b82f6; }
         .pm-shift-j { background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.08)); color:#f59e0b; }
-        .pm-shift-n { background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.08)); color:#F5512E; }
+        .pm-shift-n { background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.08)); color:#8b5cf6; }
         .pm-absence { background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.06)); color:#f97316; }
         .pm-absence-maladie { background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(239,68,68,.06)); color:#ef4444; }
         .pm-absence-conge { background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(59,130,246,.06)); color:#3b82f6; }
@@ -584,7 +584,7 @@ const PlanningPage = {
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#22c55e;"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;"></span>Mat</div>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;"></span>AM</div>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#f59e0b;"><span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;"></span>Jour</div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#F5512E;"><span style="width:7px;height:7px;border-radius:50%;background:#F5512E;"></span>Nuit</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#8b5cf6;"><span style="width:7px;height:7px;border-radius:50%;background:#8b5cf6;"></span>Nuit</div>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#f97316;"><span style="width:7px;height:7px;border-radius:50%;background:#f97316;"></span>Abs</div>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#ef4444;"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;"></span>Mal</div>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#94a3b8;"><span style="width:7px;height:7px;border-radius:50%;background:#d1d5db;"></span>Repos</div>
@@ -617,7 +617,7 @@ const PlanningPage = {
   },
 
   _renderDesktopGridView(chauffeurs, days, vehMap, stats, todayStr, versements) {
-    const avatarColors = ['#F5512E','#10b981','#f59e0b','#ef4444','#3b82f6','#F5512E','#ec4899','#14b8a6','#f97316','#06b6d4'];
+    const avatarColors = ['#5D87FF','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
 
     return `
       <style>
@@ -672,20 +672,20 @@ const PlanningPage = {
         .pg-shift-matin { background:linear-gradient(135deg,rgba(34,197,94,.18),rgba(74,222,128,.1)); color:#22c55e; }
         .pg-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.18),rgba(96,165,250,.1)); color:#3b82f6; }
         .pg-shift-journee { background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(251,191,36,.1)); color:#f59e0b; }
-        .pg-shift-nuit { background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(167,139,250,.1)); color:#F5512E; }
-        .pg-shift-custom { background:linear-gradient(135deg,rgba(245,81,46,.15),rgba(139,92,246,.1)); color:#F5512E; }
+        .pg-shift-nuit { background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(167,139,250,.1)); color:#8b5cf6; }
+        .pg-shift-custom { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#5D87FF; }
 
         .pg-shift-matin:hover { background:linear-gradient(135deg,rgba(34,197,94,.28),rgba(74,222,128,.18)); }
         .pg-shift-am:hover { background:linear-gradient(135deg,rgba(59,130,246,.28),rgba(96,165,250,.18)); }
         .pg-shift-journee:hover { background:linear-gradient(135deg,rgba(245,158,11,.28),rgba(251,191,36,.18)); }
         .pg-shift-nuit:hover { background:linear-gradient(135deg,rgba(139,92,246,.28),rgba(167,139,250,.18)); }
-        .pg-shift-custom:hover { background:linear-gradient(135deg,rgba(245,81,46,.25),rgba(139,92,246,.18)); }
+        .pg-shift-custom:hover { background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(139,92,246,.18)); }
 
         [data-theme="dark"] .pg-shift-matin { background:linear-gradient(135deg,rgba(34,197,94,.22),rgba(74,222,128,.15)); }
         [data-theme="dark"] .pg-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(96,165,250,.15)); }
         [data-theme="dark"] .pg-shift-journee { background:linear-gradient(135deg,rgba(245,158,11,.22),rgba(251,191,36,.15)); }
         [data-theme="dark"] .pg-shift-nuit { background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(167,139,250,.15)); }
-        [data-theme="dark"] .pg-shift-custom { background:linear-gradient(135deg,rgba(245,81,46,.22),rgba(139,92,246,.15)); }
+        [data-theme="dark"] .pg-shift-custom { background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(139,92,246,.15)); }
 
         /* Absence */
         .pg-absence { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f97316; }
@@ -704,9 +704,9 @@ const PlanningPage = {
 
         /* Empty */
         .pg-empty { background:rgba(0,0,0,.015); }
-        .pg-empty:hover { background:rgba(245,81,46,.06); }
+        .pg-empty:hover { background:rgba(99,102,241,.06); }
         [data-theme="dark"] .pg-empty { background:rgba(255,255,255,.02); }
-        [data-theme="dark"] .pg-empty:hover { background:rgba(245,81,46,.08); }
+        [data-theme="dark"] .pg-empty:hover { background:rgba(99,102,241,.08); }
 
         /* Today column highlight — bande ambre continue */
         .pg-today-col { background-color:rgba(251,191,36,.15); }
@@ -751,7 +751,7 @@ const PlanningPage = {
       <div class="card pg-card" style="padding:24px 20px;border-radius:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div class="pg-header-icon" style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#F5512E,#DE3E1E);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(245,81,46,.25);">
+            <div class="pg-header-icon" style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#5D87FF,#4570EA);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
               <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#fff;"></iconify-icon>
             </div>
             <div>
@@ -847,8 +847,8 @@ const PlanningPage = {
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(34,197,94,.08);font-size:11px;font-weight:600;color:#22c55e;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> Matin</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(59,130,246,.08);font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> AM</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.08);font-size:11px;font-weight:600;color:#f59e0b;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Journée</div>
-          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(139,92,246,.08);font-size:11px;font-weight:600;color:#F5512E;"><span style="width:6px;height:6px;border-radius:50%;background:#F5512E;"></span> Nuit</div>
-          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(245,81,46,.08);font-size:11px;font-weight:600;color:#F5512E;"><span style="width:6px;height:6px;border-radius:50%;background:#F5512E;"></span> Perso.</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(139,92,246,.08);font-size:11px;font-weight:600;color:#8b5cf6;"><span style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;"></span> Nuit</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#5D87FF;"><span style="width:6px;height:6px;border-radius:50%;background:#5D87FF;"></span> Perso.</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><iconify-icon icon="solar:danger-triangle-bold" style="font-size:10px;"></iconify-icon> En retard</div>
@@ -1198,28 +1198,28 @@ const PlanningPage = {
       .pcal-cell:hover { border-color:var(--pilote-blue, #3b82f6); box-shadow:0 2px 10px rgba(59,130,246,.10); }
       .pcal-cell-out { background:var(--bg-tertiary); border-color:transparent; cursor:default; opacity:.55; }
       /* Aujourd'hui : cellule teintée bleu clair + pastille de date bleue (style Spike) */
-      .pcal-cell-today { background:rgba(245,81,46,.07); border-color:rgba(245,81,46,.45); }
+      .pcal-cell-today { background:rgba(93,135,255,.07); border-color:rgba(93,135,255,.45); }
       .pcal-num { font-size:13px; font-weight:600; color:var(--text-primary); line-height:26px; }
       .pcal-num-out { color:var(--text-muted); }
-      .pcal-today { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--pilote-blue); color:#fff; font-weight:800; box-shadow:0 4px 10px rgba(245,81,46,.35); }
+      .pcal-today { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--pilote-blue); color:#fff; font-weight:800; box-shadow:0 4px 10px rgba(93,135,255,.35); }
       .pcal-chips { display:flex; flex-direction:column; gap:4px; overflow:hidden; }
       /* Événements « pastille Spike » : liseré coloré à gauche + fond teinté de la même couleur (--c) */
       .pcal-chip { display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; white-space:nowrap; overflow:hidden; cursor:pointer;
         color:var(--text-secondary);
-        color:color-mix(in srgb, var(--c, #F5512E) 72%, var(--text-primary));
+        color:color-mix(in srgb, var(--c, #5D87FF) 72%, var(--text-primary));
         background:var(--bg-tertiary);
-        background:color-mix(in srgb, var(--c, #F5512E) 13%, transparent);
-        border-left:3px solid var(--c, #F5512E); border-radius:5px; padding:3px 8px;
+        background:color-mix(in srgb, var(--c, #5D87FF) 13%, transparent);
+        border-left:3px solid var(--c, #5D87FF); border-radius:5px; padding:3px 8px;
         transition:background .12s, box-shadow .12s, transform .12s; }
-      .pcal-chip:hover { background:color-mix(in srgb, var(--c, #F5512E) 22%, transparent);
+      .pcal-chip:hover { background:color-mix(in srgb, var(--c, #5D87FF) 22%, transparent);
         transform:translateX(1px); box-shadow:0 2px 8px rgba(37,83,185,.14); }
       .pcal-chip:active { transform:translateX(1px) scale(.98); }
       .pcal-chip-abs .pcal-chip-txt { opacity:.8; }
       .pcal-chip-txt { overflow:hidden; text-overflow:ellipsis; }
       .pcal-more { font-size:10px; font-weight:600; color:var(--text-muted); padding-left:2px; }
       /* Cartes événement (style calendrier plein écran) : nom + heure */
-      .pcal-ev { display:flex; flex-direction:column; gap:1px; padding:4px 8px; border-radius:8px; border:1px solid var(--border-color); border-left:3px solid var(--c,#F5512E); background:color-mix(in srgb, var(--c,#F5512E) 8%, var(--bg-secondary)); cursor:pointer; overflow:hidden; transition:background .12s, box-shadow .12s, transform .12s; }
-      .pcal-ev:hover { background:color-mix(in srgb, var(--c,#F5512E) 16%, var(--bg-secondary)); box-shadow:0 2px 8px rgba(37,83,185,.14); transform:translateX(1px); }
+      .pcal-ev { display:flex; flex-direction:column; gap:1px; padding:4px 8px; border-radius:8px; border:1px solid var(--border-color); border-left:3px solid var(--c,#5D87FF); background:color-mix(in srgb, var(--c,#5D87FF) 8%, var(--bg-secondary)); cursor:pointer; overflow:hidden; transition:background .12s, box-shadow .12s, transform .12s; }
+      .pcal-ev:hover { background:color-mix(in srgb, var(--c,#5D87FF) 16%, var(--bg-secondary)); box-shadow:0 2px 8px rgba(37,83,185,.14); transform:translateX(1px); }
       .pcal-ev:active { transform:translateX(1px) scale(.98); }
       .pcal-ev-name { font-size:11px; font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.25; }
       .pcal-ev-time { font-size:10px; font-weight:600; color:var(--text-muted); line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

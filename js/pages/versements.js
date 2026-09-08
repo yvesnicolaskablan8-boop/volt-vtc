@@ -309,23 +309,6 @@ const VersementsPage = {
 .dw-ghost{background:var(--vx-surface);color:var(--text-secondary);border:1px solid var(--vx-bd);}
 .dw-today{background:#eef2ff;color:#4338ca;border:1px solid #e0e7ff;}
 .dw-ok{background:#ec4899;color:#fff;box-shadow:0 8px 20px rgba(236,72,153,.28);}
-.ps-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;}
-.ps-title{font-size:15px;font-weight:800;color:var(--text-primary);letter-spacing:-.2px;}
-.ps-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
-.ps-total{font-size:19px;font-weight:800;color:#16a34a;letter-spacing:-.4px;white-space:nowrap;}
-.ps-toggle{display:inline-flex;background:var(--vx-surface);border:1px solid var(--vx-bd);border-radius:12px;padding:3px;gap:2px;margin-bottom:20px;}
-.ps-tbtn{border:none;background:transparent;font-size:12.5px;font-weight:700;color:var(--text-secondary);padding:6px 15px;border-radius:9px;cursor:pointer;transition:.15s;}
-.ps-tbtn.on{background:var(--vx-card);color:var(--text-primary);box-shadow:0 2px 6px rgba(17,24,39,.08);}
-.ps-bars{display:flex;align-items:flex-end;gap:12px;height:170px;}
-.ps-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;}
-.ps-amt{font-size:11px;font-weight:700;color:var(--text-secondary);white-space:nowrap;}
-.ps-barwrap{width:100%;flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:0;}
-.ps-bar{width:70%;max-width:40px;border-radius:9px 9px 5px 5px;background:linear-gradient(180deg,#4ade80 0%,#22c55e 100%);min-height:4px;transition:height .25s ease,filter .15s;}
-.ps-col.on .ps-bar{background:linear-gradient(180deg,#22c55e 0%,#15803d 100%);box-shadow:0 6px 14px rgba(34,197,94,.3);}
-.ps-col:hover .ps-bar{filter:brightness(1.06);}
-.ps-lbl{font-size:11px;font-weight:600;color:var(--text-muted);white-space:nowrap;text-transform:capitalize;}
-.ps-col.on .ps-lbl{color:var(--text-primary);}
-.ps-empty{text-align:center;color:var(--text-muted);padding:30px 12px;font-size:13px;}
 .wl-card{background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:28px;box-shadow:0 24px 60px rgba(17,24,39,.1);padding:24px;display:grid;grid-template-columns:400px 1fr;gap:24px;align-items:start;}
 .wl-left{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px;}
 .wl-right{min-width:0;}
@@ -435,7 +418,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
   // Avatar à initiales, teinte stable dérivée du nom (touche moderne, discrète).
   _avatar(name) {
-    const pals = [['#eef2ff', '#4f46e5'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#16a34a'], ['#fff7ed', '#ea580c'], ['#fdf2f8', '#db2777'], ['#f5f3ff', '#DE3E1E'], ['#eff6ff', '#2563eb'], ['#fefce8', '#ca8a04']];
+    const pals = [['#eef2ff', '#4f46e5'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#16a34a'], ['#fff7ed', '#ea580c'], ['#fdf2f8', '#db2777'], ['#f5f3ff', '#7c3aed'], ['#eff6ff', '#2563eb'], ['#fefce8', '#ca8a04']];
     const s = String(name || '?').trim();
     let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
     const [bg, fg] = pals[h % pals.length];
@@ -481,7 +464,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       ...(d.anomalies.workingNotScheduled || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fef3c7;color:#d97706;">!</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">Roule sans être programmé · ${Utils.formatDate(a.date)}</div></div><div class="vx-right"><div class="vx-amt" style="color:#d97706;">${Utils.formatCurrency(a.caBrut)}</div></div></div>`),
       ...(d.anomalies.versementMismatch || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fee2e2;color:#dc2626;">≠</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">${Utils.formatDate(a.date)} · dû ${Utils.formatCurrency(a.du)} / versé ${Utils.formatCurrency(a.verse)}</div></div><div class="vx-right"><div class="vx-amt" style="color:${a.ecart > 0 ? '#dc2626' : '#059669'};">${a.ecart > 0 ? '−' : '+'}${Utils.formatCurrency(Math.abs(a.ecart))}</div></div></div>`)
     ].join('');
-    const progRows = (d.detailProgrammes || []).map(p => `<div class="vx-row"><div class="vx-av" style="background:#f3e8ff;color:#DE3E1E;">${Utils.escHtml((p.prenom || '?').charAt(0).toUpperCase())}</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(((p.prenom || '') + ' ' + (p.nom || '')).trim())}</div><div class="vx-note">${Utils.formatDate(p.date)}</div></div><div class="vx-right"><div class="vx-amt">${Utils.formatCurrency(p.redevance)}</div></div></div>`).join('');
+    const progRows = (d.detailProgrammes || []).map(p => `<div class="vx-row"><div class="vx-av" style="background:#f3e8ff;color:#7c3aed;">${Utils.escHtml((p.prenom || '?').charAt(0).toUpperCase())}</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(((p.prenom || '') + ' ' + (p.nom || '')).trim())}</div><div class="vx-note">${Utils.formatDate(p.date)}</div></div><div class="vx-right"><div class="vx-amt">${Utils.formatCurrency(p.redevance)}</div></div></div>`).join('');
 
     // Générateur d'accordéon (ligne « compte » repliable)
     const acc = (icBg, icFg, icBd, icon, title, sub, val, valCol, bodyHtml, valId) =>
@@ -512,7 +495,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     rows.push(acc(d.anomalies.total > 0 ? '#fef3c7' : '#eef1f7', d.anomalies.total > 0 ? '#d97706' : '#9aa3b2', d.anomalies.total > 0 ? '#fde68a' : '#e9edf4', 'solar:danger-triangle-bold-duotone', 'Anomalies',
       d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK', String(d.anomalies.total), d.anomalies.total > 0 ? '#d97706' : 'var(--text-muted)',
       d.anomalies.total > 0 ? `<div class="vx-list">${anomRows}</div>` : empty('Aucune anomalie détectée')));
-    rows.push(acc('#f3e8ff', '#DE3E1E', '#e9d5ff', 'solar:users-group-rounded-bold-duotone', 'Chauffeurs programmés',
+    rows.push(acc('#f3e8ff', '#7c3aed', '#e9d5ff', 'solar:users-group-rounded-bold-duotone', 'Chauffeurs programmés',
       `Programmés · ${d.periodLabel}`, String(d.nbChauffeursProgrammes), 'var(--text-primary)',
       (d.detailProgrammes || []).length ? `<div class="vx-list">${progRows}</div>` : empty('Aucun chauffeur programmé')));
     if ((d.totalPertes || 0) > 0) rows.push(`<div class="wl-acc"><div class="wl-nav-row" style="cursor:default;"><div class="wl-nav-ic" style="background:#ffe4e6;color:#e11d48;border:1px solid #fecdd3;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div><div class="wl-nav-main"><div class="wl-nav-title">Pertes</div><div class="wl-nav-sub">Montant non recouvrable</div></div><div class="wl-nav-val" style="color:#e11d48;">${fmt(d.totalPertes)}</div></div></div>`);
@@ -660,66 +643,6 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     this._resetToToday();
   },
 
-  // ── Widget récap : versements encaissés période par période (jour/sem/mois) ──
-  _periodSummary() {
-    return `<div class="vx-sec" id="vers-period-summary" style="margin-top:20px;">${this._periodSummaryInner()}</div>`;
-  },
-
-  _setPsGran(key) {
-    this._psGran = key;
-    const el = document.getElementById('vers-period-summary');
-    if (el) { el.replaceChildren(); el.insertAdjacentHTML('beforeend', this._periodSummaryInner()); }
-  },
-
-  _periodSummaryInner() {
-    const gran = this._psGran || 'semaine';
-    const pad = n => String(n).padStart(2, '0');
-    const shortMonth = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
-    const keyFn = {
-      jour: dt => ({ k: dt.toISOString().slice(0, 10), lbl: pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1), sort: dt.getTime() }),
-      semaine: dt => { const d = new Date(dt); const off = (d.getDay() + 6) % 7; d.setDate(d.getDate() - off); return { k: d.toISOString().slice(0, 10), lbl: pad(d.getDate()) + '/' + pad(d.getMonth() + 1), sort: d.getTime() }; },
-      mois: dt => ({ k: dt.getFullYear() + '-' + pad(dt.getMonth() + 1), lbl: shortMonth.format(dt).replace('.', ''), sort: dt.getFullYear() * 12 + dt.getMonth() }),
-    }[gran];
-
-    const vers = (Store.get('versements') || []).filter(_isRealVersement).filter(v => v.statut === 'valide' || v.statut === 'partiel');
-    const map = new Map();
-    vers.forEach(v => {
-      const ds = v.dateService || v.date;
-      if (!ds) return;
-      const dt = new Date(String(ds).slice(0, 10) + 'T00:00:00');
-      if (isNaN(dt)) return;
-      const { k, lbl, sort } = keyFn(dt);
-      const cur = map.get(k) || { sum: 0, lbl, sort };
-      cur.sum += Number(v.montantVerse) || 0;
-      map.set(k, cur);
-    });
-    const periods = [...map.values()].sort((a, b) => a.sort - b.sort).slice(-8);
-    const unit = gran === 'jour' ? '8 derniers jours' : gran === 'mois' ? '8 derniers mois' : '8 dernières semaines';
-    const fmt = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
-    const total = periods.reduce((s, p) => s + p.sum, 0);
-    const maxV = Math.max(1, ...periods.map(p => p.sum));
-
-    const gBtn = (key, label) => `<button type="button" class="ps-tbtn${gran === key ? ' on' : ''}" onclick="VersementsPage._setPsGran('${key}')">${label}</button>`;
-    const head = `<div class="ps-head">
-      <div><div class="ps-title">Évolution des versements</div><div class="ps-sub">${unit}</div></div>
-      <div class="ps-total">${fmt(total)}</div>
-    </div>
-    <div class="ps-toggle">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>`;
-
-    if (!periods.length) return head + `<div class="ps-empty">Aucun versement encaissé sur la période.</div>`;
-
-    const bars = periods.map((p, i) => {
-      const pct = Math.max(3, Math.round(p.sum / maxV * 100));
-      const last = i === periods.length - 1;
-      return `<div class="ps-col${last ? ' on' : ''}" title="${fmt(p.sum)}">
-        <div class="ps-amt">${p.sum > 0 ? fmt(p.sum) : '—'}</div>
-        <div class="ps-barwrap"><div class="ps-bar" style="height:${pct}%;"></div></div>
-        <div class="ps-lbl">${Utils.escHtml(p.lbl)}</div>
-      </div>`;
-    }).join('');
-    return head + `<div class="ps-bars">${bars}</div>`;
-  },
-
   // Palette sémantique des KPI : la couleur reflète la SITUATION (bon / à
   // surveiller / mauvais), pas une teinte décorative fixe.
   _kpiCol(status) {
@@ -727,7 +650,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       good:    { bg: 'rgba(19,222,185,.14)', fg: 'var(--success-dim)' },
       warn:    { bg: 'rgba(255,174,31,.14)', fg: 'var(--warning-dim)' },
       bad:     { bg: 'rgba(250,137,107,.15)', fg: 'var(--danger-dim)' },
-      info:    { bg: 'rgba(245,81,46,.12)', fg: 'var(--pilote-blue)' },
+      info:    { bg: 'rgba(93,135,255,.12)', fg: 'var(--pilote-blue)' },
       neutral: { bg: 'var(--bg-tertiary)',   fg: 'var(--text-muted)' },
     };
     return M[status] || M.neutral;
@@ -749,9 +672,9 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       <div class="wl-title">
         <div class="wl-title-k">Suivi financier</div>
         <div class="wl-title-h">
-          <span style="display:flex;align-items:center;gap:12px;"><iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#F5512E;"></iconify-icon> Versements</span>
+          <span style="display:flex;align-items:center;gap:12px;"><iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#5D87FF;"></iconify-icon> Versements</span>
           <button class="wl-date" onclick="VersementsPage._openDateWheel()">
-            <iconify-icon icon="solar:calendar-bold-duotone" style="color:#F5512E;font-size:17px;"></iconify-icon>
+            <iconify-icon icon="solar:calendar-bold-duotone" style="color:#5D87FF;font-size:17px;"></iconify-icon>
             ${this._selectedPeriod ? Utils.escHtml(Utils.formatDate(this._selectedPeriod)) : "Aujourd'hui"}
             <iconify-icon icon="solar:alt-arrow-down-linear" style="font-size:14px;color:var(--text-muted);"></iconify-icon>
           </button>
@@ -759,8 +682,6 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       </div>
 
       ${this._walletHero(d)}
-
-      ${this._periodSummary()}
 
       </div></div>
     `;
@@ -1266,7 +1187,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     if (versement.wavePaymentRef) auditLines.push(`<b>Réf. paiement</b> : <code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:0.85em;">${versement.wavePaymentRef}</code>`);
     if (versement.dateValidation) auditLines.push(`<b>Validé le</b> : ${new Date(versement.dateValidation).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}`);
     if (versement.dateCreation) auditLines.push(`<b>Créé le</b> : ${new Date(versement.dateCreation).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}`);
-    if (versement.soumisParChauffeur) auditLines.push(`<b>Origine</b> : <span style="color:#F5512E;"><iconify-icon icon="solar:smartphone-bold-duotone" style="font-size:0.9em;"></iconify-icon> Soumis par le chauffeur (app)</span>`);
+    if (versement.soumisParChauffeur) auditLines.push(`<b>Origine</b> : <span style="color:#8b5cf6;"><iconify-icon icon="solar:smartphone-bold-duotone" style="font-size:0.9em;"></iconify-icon> Soumis par le chauffeur (app)</span>`);
     else auditLines.push(`<b>Origine</b> : <span style="color:#f59e0b;"><iconify-icon icon="solar:monitor-bold-duotone" style="font-size:0.9em;"></iconify-icon> Saisi par l'admin</span>`);
     const auditHtml = auditLines.length > 0 ? `<div style="padding:12px 14px;border-radius:8px;background:var(--bg-tertiary);border-left:3px solid #3b82f6;margin-bottom:16px;font-size:var(--font-size-sm);line-height:1.8;">
       <div style="font-weight:700;margin-bottom:6px;color:#3b82f6;"><iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Détails du paiement</div>
@@ -1752,7 +1673,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const html = `
       ${a.total === 0 ? '<div style="text-align:center;color:var(--text-muted);padding:24px;">Aucune anomalie détectée 🎉</div>' : ''}
       ${a.workingNotScheduled.length ? `
-        <div style="font-weight:700;font-size:0.95rem;margin:4px 0 6px;display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:user-cross-bold-duotone" style="color:#F5512E;"></iconify-icon> Roule sans être au planning (${a.workingNotScheduled.length})</div>
+        <div style="font-weight:700;font-size:0.95rem;margin:4px 0 6px;display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:user-cross-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Roule sans être au planning (${a.workingNotScheduled.length})</div>
         <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:8px;">Travaillent aujourd'hui sur Yango sans être programmés — corrigez le planning.</p>
         <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
           <thead><tr style="border-bottom:2px solid var(--border-color);"><th style="${thStyle}">Chauffeur</th><th style="${thStyle}">Jour</th><th style="${thStyle}text-align:right;">CA Yango</th></tr></thead>
@@ -1766,7 +1687,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           <tbody>${mismatchRows}</tbody>
         </table>` : ''}
     `;
-    this._showKpiModal('<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#F5512E;"></iconify-icon> Anomalies', html);
+    this._showKpiModal('<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Anomalies', html);
   },
 
   _exportReceipt(id) {
@@ -3090,8 +3011,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         </div>
 
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <button class="btn" onclick="VersementsPage._detteAction('modifier','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(245,81,46,0.06);border:1px solid rgba(245,81,46,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
-            <iconify-icon icon="solar:pen-bold-duotone" style="font-size:20px;color:#F5512E;"></iconify-icon>
+          <button class="btn" onclick="VersementsPage._detteAction('modifier','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
+            <iconify-icon icon="solar:pen-bold-duotone" style="font-size:20px;color:#5D87FF;"></iconify-icon>
             <div style="text-align:left;"><div style="font-weight:600;color:var(--text-primary);">Modifier le montant</div><div style="font-size:11px;color:var(--text-muted);">Ajuster le montant de la dette</div></div>
           </button>
 
@@ -3126,7 +3047,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
     if (action === 'modifier') {
       Modal.open({
-        title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#F5512E;"></iconify-icon> Modifier la dette',
+        title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#5D87FF;"></iconify-icon> Modifier la dette',
         body: `
           <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:16px;font-size:var(--font-size-sm);">
             <div style="font-weight:600;margin-bottom:4px;">${nom}</div>

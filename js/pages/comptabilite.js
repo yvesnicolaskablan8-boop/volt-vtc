@@ -42,7 +42,7 @@ const ComptabilitePage = {
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Finance</div>
           <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:calculator-bold-duotone" style="color:#F5512E;"></iconify-icon> Comptabilité
+            <iconify-icon icon="solar:calculator-bold-duotone" style="color:#5D87FF;"></iconify-icon> Comptabilité
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -361,13 +361,13 @@ const ComptabilitePage = {
       <!-- Guide rapide pour non-comptable -->
       <div class="d-card" style="margin-bottom:24px;">
         <div style="display:flex;align-items:center;gap:16px;">
-          <div class="d-icon" style="background:rgba(245,81,46,.12);color:#F5512E;width:48px;height:48px;font-size:20px;"><iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon></div>
+          <div class="d-icon" style="background:rgba(99,102,241,.12);color:#5D87FF;width:48px;height:48px;font-size:20px;"><iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon></div>
           <div style="flex:1;">
             <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;">Comment ça marche ?</h3>
             <p style="font-size:13px;line-height:1.6;color:var(--text-secondary);">
               <strong style="color:#10b981;">Encaissement</strong> = argent qui rentre (versements chauffeurs, paiements clients, <strong>commission Yango</strong>)<br>
               <strong style="color:#ef4444;">Décaissement</strong> = argent qui sort (carburant, maintenance, salaires, loyers, assurance)<br>
-              <strong style="color:#F5512E;">Bénéfice</strong> = Encaissements − Décaissements. Si positif, vous gagnez de l'argent !
+              <strong style="color:#5D87FF;">Bénéfice</strong> = Encaissements − Décaissements. Si positif, vous gagnez de l'argent !
             </p>
           </div>
         </div>
@@ -380,10 +380,10 @@ const ComptabilitePage = {
       <div class="d-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
           <div style="display:flex;align-items:center;gap:10px;">
-            <div class="d-icon" style="background:rgba(245,81,46,.12);color:#F5512E;width:32px;height:32px;font-size:14px;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></div>
+            <div class="d-icon" style="background:rgba(99,102,241,.12);color:#5D87FF;width:32px;height:32px;font-size:14px;"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></div>
             <span style="font-weight:700;font-size:14px;">Dernières opérations</span>
           </div>
-          <button class="btn btn-sm" onclick="document.querySelector('[data-tab=journal]').click()" style="border-radius:12px;background:rgba(245,81,46,.1);color:#F5512E;border:none;font-size:12px;padding:6px 14px;">Voir tout</button>
+          <button class="btn btn-sm" onclick="document.querySelector('[data-tab=journal]').click()" style="border-radius:12px;background:rgba(99,102,241,.1);color:#5D87FF;border:none;font-size:12px;padding:6px 14px;">Voir tout</button>
         </div>
         <div id="compta-recent-ops"></div>
       </div>
@@ -416,7 +416,7 @@ const ComptabilitePage = {
 
     // Répartition des dépenses du mois (top 5)
     const catLabels = { carburant: 'Carburant', maintenance: 'Maintenance', assurance: 'Assurance', leasing: 'Leasing', salaire: 'Salaires', loyer: 'Loyer/Bureau', impots: 'Impôts/Taxes', telephone: 'Télécom', divers: 'Divers', marketing: 'Marketing', fournitures: 'Fournitures', recharge_yango: 'Recharge Yango', autres_depenses: 'Autres' };
-    const catColors = ['#F5512E', '#f59e0b', '#ef4444', '#F5512E', '#13DEB9', '#ec4899', '#06b6d4'];
+    const catColors = ['#5D87FF', '#f59e0b', '#ef4444', '#8b5cf6', '#13DEB9', '#ec4899', '#06b6d4'];
     const catMap = {};
     this._thisMonthOps(ops).filter(o => o.type === 'depense').forEach(o => { catMap[o.categorie] = (catMap[o.categorie] || 0) + o.montant; });
     const cats = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -529,7 +529,7 @@ const ComptabilitePage = {
       .cpt-stack span { height:100%; border-radius:99px; }
       .cpt-info { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:20px; padding:18px 20px; }
       .cpt-info-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-      .cpt-info-icon { width:30px; height:30px; border-radius:9px; background:rgba(245,81,46,.14); color:#F5512E; display:flex; align-items:center; justify-content:center; font-size:16px; }
+      .cpt-info-icon { width:30px; height:30px; border-radius:9px; background:rgba(93,135,255,.14); color:#5D87FF; display:flex; align-items:center; justify-content:center; font-size:16px; }
       .cpt-info h4 { margin:0; font-size:14px; font-weight:800; color:var(--text-primary); }
       .cpt-cat { display:flex; align-items:center; gap:8px; margin-bottom:9px; }
       .cpt-cat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
@@ -605,7 +605,7 @@ const ComptabilitePage = {
     monthOps.forEach(o => { catMap[o.categorie] = (catMap[o.categorie] || 0) + o.montant; });
     const cats = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
     const catLabels = { carburant: 'Carburant', maintenance: 'Maintenance', assurance: 'Assurance', leasing: 'Leasing', salaire: 'Salaires', loyer: 'Loyer/Bureau', impots: 'Impôts/Taxes', telephone: 'Télécom', divers: 'Divers', marketing: 'Marketing', fournitures: 'Fournitures' };
-    const catColors = ['#ef4444', '#f59e0b', '#3b82f6', '#F5512E', '#ec4899', '#22d3ee', '#14b8a6', '#f97316', '#F5512E', '#84cc16', '#64748b'];
+    const catColors = ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#22d3ee', '#14b8a6', '#f97316', '#5D87FF', '#84cc16', '#64748b'];
 
     const depCtx = document.getElementById('chart-compta-depenses');
     if (depCtx && cats.length > 0) {
@@ -1216,7 +1216,7 @@ const ComptabilitePage = {
       { id: 'commissions_courses', label: 'Commissions courses', desc: 'Commissions reçues sur les courses des chauffeurs', icon: 'solar:transfer-horizontal-bold-duotone', color: '#22c55e' },
       { id: 'courses_directes', label: 'Courses directes', desc: 'Paiement direct de courses (app & téléphone)', icon: 'solar:wheel-bold-duotone', color: '#3b82f6' },
       { id: 'commission_yango', label: 'Commission Yango (3%)', desc: 'Commission de 3% reversee par Yango sur le CA de la flotte', icon: 'solar:hand-money-bold-duotone', color: '#FC4C02' },
-      { id: 'frais_service', label: 'Frais de service', desc: 'Frais de service des plateformes (Yango, Bolt)', icon: 'solar:smartphone-bold-duotone', color: '#F5512E' },
+      { id: 'frais_service', label: 'Frais de service', desc: 'Frais de service des plateformes (Yango, Bolt)', icon: 'solar:smartphone-bold-duotone', color: '#8b5cf6' },
       { id: 'location_vehicule', label: 'Location véhicule', desc: 'Location de véhicule à un tiers', icon: 'solar:wheel-bold-duotone', color: '#f59e0b' },
       { id: 'autres_recettes', label: 'Autres recettes', desc: 'Autres sources de revenus', icon: 'solar:add-circle-bold-duotone', color: '#22d3ee' }
     ];
@@ -1225,10 +1225,10 @@ const ComptabilitePage = {
       { id: 'carburant', label: 'Carburant', desc: 'Essence, gasoil, recharge électrique', icon: 'solar:gas-station-bold-duotone', color: '#ef4444' },
       { id: 'maintenance', label: 'Maintenance', desc: 'Révisions, réparations, pneus, freins', icon: 'solar:tuning-2-bold-duotone', color: '#f59e0b' },
       { id: 'assurance', label: 'Assurance', desc: 'Assurance véhicules, RC Pro', icon: 'solar:shield-bold-duotone', color: '#3b82f6' },
-      { id: 'leasing', label: 'Leasing véhicules', desc: 'Mensualités de crédit-bail', icon: 'solar:document-bold-duotone', color: '#F5512E' },
+      { id: 'leasing', label: 'Leasing véhicules', desc: 'Mensualités de crédit-bail', icon: 'solar:document-bold-duotone', color: '#8b5cf6' },
       { id: 'salaires', label: 'Salaires', desc: 'Salaires des employés (hors chauffeurs)', icon: 'solar:users-group-rounded-bold-duotone', color: '#ec4899' },
       { id: 'loyer_bureau', label: 'Loyer / Bureau', desc: 'Loyer bureau, parking, entrepôt', icon: 'solar:buildings-bold-duotone', color: '#14b8a6' },
-      { id: 'taxes_impots', label: 'Impôts / Taxes', desc: 'Patente, impôts, taxes diverses', icon: 'solar:bank-bold-duotone', color: '#F5512E' },
+      { id: 'taxes_impots', label: 'Impôts / Taxes', desc: 'Patente, impôts, taxes diverses', icon: 'solar:bank-bold-duotone', color: '#5D87FF' },
       { id: 'telecoms', label: 'Télécom', desc: 'Téléphone, internet, abonnements', icon: 'solar:phone-bold-duotone', color: '#f97316' },
       { id: 'marketing', label: 'Marketing', desc: 'Publicité, communication, branding', icon: 'solar:megaphone-bold-duotone', color: '#84cc16' },
       { id: 'fournitures', label: 'Fournitures', desc: 'Fournitures bureau, consommables', icon: 'solar:box-bold-duotone', color: '#a855f7' },

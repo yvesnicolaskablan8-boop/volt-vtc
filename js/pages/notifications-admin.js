@@ -243,7 +243,7 @@ const NotificationsAdminPage = {
     const map = {
       deadline_rappel: { label: 'Rappel', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
       deadline_retard: { label: 'Retard', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-      document_expiration: { label: 'Document', color: '#F5512E', bg: 'rgba(139,92,246,0.15)' },
+      document_expiration: { label: 'Document', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)' },
       score_faible: { label: 'Score', color: '#ec4899', bg: 'rgba(236,72,153,0.15)' },
       annonce: { label: 'Annonce', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
       bonus: { label: 'Bonus', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
@@ -259,7 +259,7 @@ const NotificationsAdminPage = {
     const map = {
       push: { label: 'Push', color: '#3b82f6' },
       sms: { label: 'SMS', color: '#10b981' },
-      both: { label: 'Push+SMS', color: '#F5512E' },
+      both: { label: 'Push+SMS', color: '#8b5cf6' },
       whatsapp: { label: 'WhatsApp', color: '#25D366' },
       'push+whatsapp': { label: 'Push+WA', color: '#059669' },
       'sms+whatsapp': { label: 'SMS+WA', color: '#0d9488' },

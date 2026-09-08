@@ -108,7 +108,7 @@ const TachesPage = {
   },
 
   _reunionTypeColors: {
-    equipe: '#3b82f6', direction: '#F5512E', operationnel: '#f97316',
+    equipe: '#3b82f6', direction: '#8b5cf6', operationnel: '#f97316',
     urgence: '#ef4444', autre: '#6b7280'
   },
 
@@ -153,7 +153,7 @@ const TachesPage = {
     h1.style.cssText = 'margin:0;font-size:1.4rem;display:flex;align-items:center;gap:8px;';
     const h1Icon = document.createElement('iconify-icon');
     h1Icon.setAttribute('icon', 'solar:checklist-bold-duotone');
-    h1Icon.style.cssText = 'color:#F5512E;font-size:1.5rem;';
+    h1Icon.style.cssText = 'color:#5D87FF;font-size:1.5rem;';
     h1.appendChild(h1Icon);
     h1.appendChild(document.createTextNode(' Gestion des tâches'));
     topbarLeft.appendChild(h1);
@@ -286,19 +286,19 @@ const TachesPage = {
     return `
       <div class="dash-section">
         <div class="dash-kpi-row">
-          ${this._kpiCard('solar:clipboard-list-bold-duotone', '#F5512E', 'Tâches actives', active.length, "TachesPage._kpiNav('liste')")}
+          ${this._kpiCard('solar:clipboard-list-bold-duotone', '#5D87FF', 'Tâches actives', active.length, "TachesPage._kpiNav('liste')")}
           ${this._kpiCard('solar:calendar-bold-duotone', '#f59e0b', "À faire aujourd'hui", aFaireAujourdhui.length, "TachesPage._kpiNav('liste','a_faire')")}
           ${this._kpiCard('solar:alarm-bold-duotone', '#ef4444', 'En retard', enRetard.length, "TachesPage._kpiNav('liste','a_faire')")}
           ${this._kpiCard('solar:play-bold-duotone', '#3b82f6', 'En cours', enCours.length, "TachesPage._kpiNav('liste','en_cours')")}
           ${this._kpiCard('solar:check-circle-bold-duotone', '#22c55e', 'Terminées (semaine)', termineesSemaine.length, "TachesPage._kpiNav('liste','terminee')")}
-          ${this._kpiCard('solar:chart-bold-duotone', '#F5512E', 'Taux complétion', tauxCompletion + '%', "TachesPage._kpiNav('kanban')")}
+          ${this._kpiCard('solar:chart-bold-duotone', '#8b5cf6', 'Taux complétion', tauxCompletion + '%', "TachesPage._kpiNav('kanban')")}
         </div>
       </div>
 
       <div class="dash-grid-2col">
         <div class="dash-card">
           <div class="dash-card-header">
-            <iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:#F5512E;"></iconify-icon>
+            <iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:#5D87FF;"></iconify-icon>
             Charge par membre
           </div>
           <div class="dash-card-body">
@@ -423,7 +423,7 @@ const TachesPage = {
 
   _avatarBubble(name) {
     const initials = this._getUserInitials(name);
-    const colors = ['#F5512E', '#f97316', '#22c55e', '#ef4444', '#F5512E', '#3b82f6', '#ec4899'];
+    const colors = ['#5D87FF', '#f97316', '#22c55e', '#ef4444', '#8b5cf6', '#3b82f6', '#ec4899'];
     const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
     const col = colors[hash % colors.length];
     return '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:' + col + '22;color:' + col + ';font-size:11px;font-weight:700;flex-shrink:0;">' + Utils.escHtml(initials) + '</span>';
@@ -493,7 +493,7 @@ const TachesPage = {
       html += '<span class="kanban-late-badge"><iconify-icon icon="solar:alarm-bold-duotone" style="font-size:12px;"></iconify-icon> Retard</span>';
     }
     if (t.delegation && t.delegation.statut === 'transferee') {
-      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(139,92,246,.12);color:#F5512E;"><iconify-icon icon="solar:hand-shake-bold-duotone" style="font-size:12px;"></iconify-icon> Déléguée par ' + Utils.escHtml(t.delegation.delegueParNom || '') + '</span>';
+      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(139,92,246,.12);color:#8b5cf6;"><iconify-icon icon="solar:hand-shake-bold-duotone" style="font-size:12px;"></iconify-icon> Déléguée par ' + Utils.escHtml(t.delegation.delegueParNom || '') + '</span>';
     }
     if (t.delegation && t.delegation.statut === 'annulee_admin') {
       html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(239,68,68,.12);color:#ef4444;"><iconify-icon icon="solar:close-circle-bold-duotone" style="font-size:12px;"></iconify-icon> Délég. annulée</span>';
@@ -887,7 +887,7 @@ const TachesPage = {
 
     let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">'
       + '<h3 style="margin:0;font-size:1.1rem;color:var(--text-primary);">'
-      + '<iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:#F5512E;"></iconify-icon> '
+      + '<iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:#8b5cf6;"></iconify-icon> '
       + 'Comptes rendus de réunion</h3>'
       + '<button class="btn btn-primary" onclick="TachesPage._openReunionForm()" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;">'
       + '<iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouvelle réunion</button></div>';
@@ -1704,7 +1704,7 @@ const TachesPage = {
       body += '<div style="margin-bottom:16px;"><div style="font-weight:600;font-size:12px;color:var(--text-muted);margin-bottom:6px;">Étiquettes</div>'
         + '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
       t.etiquettes.forEach(tag => {
-        body += '<span style="background:rgba(245,81,46,.12);color:#F5512E;padding:2px 10px;border-radius:12px;font-size:11px;">' + Utils.escHtml(tag) + '</span>';
+        body += '<span style="background:rgba(99,102,241,.12);color:#5D87FF;padding:2px 10px;border-radius:12px;font-size:11px;">' + Utils.escHtml(tag) + '</span>';
       });
       body += '</div></div>';
     }
@@ -1714,7 +1714,7 @@ const TachesPage = {
       const d = t.delegation;
       const session = Auth.getSession();
       const isDelegate = session && session.userId === d.delegueA;
-      const statusColors = { transferee: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#F5512E', label: 'Transférée', icon: 'solar:check-circle-bold-duotone' }, annulee_admin: { bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.2)', color: '#ef4444', label: 'Annulée par admin', icon: 'solar:close-circle-bold-duotone' }, en_attente: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#F5512E', label: 'En attente', icon: 'solar:clock-circle-bold-duotone' } };
+      const statusColors = { transferee: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#8b5cf6', label: 'Transférée', icon: 'solar:check-circle-bold-duotone' }, annulee_admin: { bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.2)', color: '#ef4444', label: 'Annulée par admin', icon: 'solar:close-circle-bold-duotone' }, en_attente: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#8b5cf6', label: 'En attente', icon: 'solar:clock-circle-bold-duotone' } };
       const ds = statusColors[d.statut] || statusColors.en_attente;
       body += '<div style="margin-bottom:16px;padding:12px;border-radius:10px;background:' + ds.bg + ';border:1px solid ' + ds.border + ';">'
         + '<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:' + ds.color + ';margin-bottom:6px;">'
@@ -1737,7 +1737,7 @@ const TachesPage = {
         + '.tl-dot{position:relative;z-index:1;margin-top:15px;width:13px;height:13px;border-radius:50%;background:var(--bg-tertiary);border:2px solid var(--border-color);}'
         + '.tl-dot.done{background:#13DEB9;border-color:#13DEB9;box-shadow:0 0 0 3px rgba(19,222,185,.16);}'
         + '.tl-card{flex:1;border:1px solid var(--border-color);border-radius:12px;padding:11px 14px;transition:border-color .2s,box-shadow .2s;}'
-        + '.tl-card:hover{border-color:var(--pilote-blue);box-shadow:0 2px 10px rgba(245,81,46,.12);}'
+        + '.tl-card:hover{border-color:var(--pilote-blue);box-shadow:0 2px 10px rgba(93,135,255,.12);}'
         + '.tl-card:hover .tl-btn{opacity:1;}'
         + '.tl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}'
         + '.tl-title{font-size:13px;font-weight:600;color:var(--text-primary);}'
@@ -1779,7 +1779,7 @@ const TachesPage = {
     const canDelegate = isAssignee && !isAdmin && (t.statut === 'a_faire' || t.statut === 'en_cours') && (!t.delegation || t.delegation.statut === 'refusee');
     let delegateBtn = '';
     if (canDelegate) {
-      delegateBtn = '<button class="btn btn-sm" style="color:#F5512E;" onclick="TachesPage._openDelegateForm(\'' + t.id + '\')">'
+      delegateBtn = '<button class="btn btn-sm" style="color:#8b5cf6;" onclick="TachesPage._openDelegateForm(\'' + t.id + '\')">'
         + '<iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Déléguer</button>';
     }
     // Admin peut annuler une délégation transférée
@@ -1818,7 +1818,7 @@ const TachesPage = {
     });
 
     Modal.open({
-      title: '<iconify-icon icon="solar:hand-shake-bold-duotone" style="color:#F5512E;"></iconify-icon> Déléguer la tâche',
+      title: '<iconify-icon icon="solar:hand-shake-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Déléguer la tâche',
       body: '<div style="padding:4px;">'
         + '<div style="padding:10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:14px;font-size:13px;">'
         + '<strong>' + Utils.escHtml(t.titre) + '</strong></div>'
@@ -1827,10 +1827,10 @@ const TachesPage = {
         + '<label class="form-label" style="margin-top:12px;">Motif (optionnel)</label>'
         + '<textarea id="deleg-motif" class="form-control" rows="2" placeholder="Raison de la délégation..." style="font-size:13px;"></textarea>'
         + '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;padding:8px;border-radius:6px;background:rgba(139,92,246,.05);">'
-        + '<iconify-icon icon="solar:info-circle-line-duotone" style="color:#F5512E;"></iconify-icon> '
+        + '<iconify-icon icon="solar:info-circle-line-duotone" style="color:#8b5cf6;"></iconify-icon> '
         + 'Le membre choisi recevra une notification et devra accepter ou refuser. L\'administrateur peut aussi annuler la délégation.</div>'
         + '</div>',
-      footer: '<button class="btn" style="background:#F5512E;color:white;border:none;" onclick="TachesPage._confirmDelegate(\'' + taskId + '\')"><iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Déléguer</button>'
+      footer: '<button class="btn" style="background:#8b5cf6;color:white;border:none;" onclick="TachesPage._confirmDelegate(\'' + taskId + '\')"><iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Déléguer</button>'
         + '<button class="btn btn-secondary" onclick="Modal.close();TachesPage._viewTask(\'' + taskId + '\')">Annuler</button>',
       size: 'small'
     });
@@ -1966,20 +1966,20 @@ const TachesPage = {
       }
       .taches-tab:hover { color:var(--text-primary); background:rgba(255,255,255,0.05); }
       .taches-tab.active {
-        background:linear-gradient(135deg, rgba(245,81,46,.2), rgba(245,81,46,.12));
+        background:linear-gradient(135deg, rgba(93,135,255,.2), rgba(93,135,255,.12));
         color:#8AA8FF; font-weight:600;
-        box-shadow:0 2px 8px rgba(245,81,46,.2), inset 0 1px 0 rgba(255,255,255,0.05);
+        box-shadow:0 2px 8px rgba(99,102,241,.2), inset 0 1px 0 rgba(255,255,255,0.05);
       }
       .taches-tab iconify-icon { font-size:1.1rem; }
 
       /* FAB */
       .taches-fab {
         position:fixed; bottom:28px; right:28px; width:56px; height:56px; border-radius:16px;
-        background:linear-gradient(135deg, #F5512E, #DE3E1E); color:#fff; border:none;
+        background:linear-gradient(135deg, #5D87FF, #4570EA); color:#fff; border:none;
         cursor:pointer; display:flex; align-items:center; justify-content:center;
-        box-shadow:0 4px 15px rgba(245,81,46,.4), 0 0 30px rgba(245,81,46,.15); transition:all .25s cubic-bezier(.4,0,.2,1); z-index:100;
+        box-shadow:0 4px 15px rgba(99,102,241,.4), 0 0 30px rgba(99,102,241,.15); transition:all .25s cubic-bezier(.4,0,.2,1); z-index:100;
       }
-      .taches-fab:hover { transform:scale(1.08) rotate(90deg); box-shadow:0 8px 25px rgba(245,81,46,.5); }
+      .taches-fab:hover { transform:scale(1.08) rotate(90deg); box-shadow:0 8px 25px rgba(99,102,241,.5); }
       .taches-fab:active { transform:scale(0.95); }
 
       /* View content */
@@ -1998,7 +1998,7 @@ const TachesPage = {
       }
       .dash-kpi-card::before {
         content:''; position:absolute; top:0; left:0; right:0; height:3px;
-        background:var(--kpi-accent, #F5512E); opacity:0; transition:opacity .2s;
+        background:var(--kpi-accent, #5D87FF); opacity:0; transition:opacity .2s;
       }
       .dash-kpi-card:hover { transform:translateY(-4px); box-shadow:0 8px 25px rgba(0,0,0,.2); background:rgba(255,255,255,0.05); }
       .dash-kpi-card:hover::before { opacity:1; }
@@ -2032,7 +2032,7 @@ const TachesPage = {
       .dash-bar-row { display:flex; align-items:center; gap:10px; padding:6px 0; }
       .dash-bar-label { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-primary); min-width:120px; }
       .dash-bar-track { flex:1; height:8px; border-radius:4px; background:var(--bg-tertiary); overflow:hidden; }
-      .dash-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg, #F5512E, #DE3E1E); transition:width .3s ease; }
+      .dash-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg, #5D87FF, #4570EA); transition:width .3s ease; }
       .dash-bar-count { font-size:12px; font-weight:600; color:var(--text-primary); min-width:24px; text-align:right; }
 
       /* Timeline */
@@ -2088,14 +2088,14 @@ const TachesPage = {
         flex:1; padding:8px; overflow-y:auto; min-height:60px;
         transition:background .15s ease;
       }
-      .kanban-col-body.drag-over { background:rgba(245,81,46,.08); border-radius:0 0 12px 12px; }
+      .kanban-col-body.drag-over { background:rgba(99,102,241,.08); border-radius:0 0 12px 12px; }
       .kanban-empty { text-align:center; color:var(--text-muted); font-size:12px; padding:20px 10px; }
       .kanban-add-btn {
         display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;
         border:none; background:transparent; color:var(--text-muted); cursor:pointer;
         font-size:12px; transition:all .15s; border-top:1px solid rgba(255,255,255,0.04);
       }
-      .kanban-add-btn:hover { color:#F5512E; background:rgba(245,81,46,.06); }
+      .kanban-add-btn:hover { color:#5D87FF; background:rgba(99,102,241,.06); }
 
       /* Kanban cards */
       .kanban-card {
@@ -2121,7 +2121,7 @@ const TachesPage = {
       .kanban-subtask-label { font-size:10px; color:var(--text-muted); }
       .kanban-tags { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:6px; }
       .kanban-tag {
-        background:rgba(245,81,46,.1); color:#8AA8FF; padding:1px 7px; border-radius:8px;
+        background:rgba(99,102,241,.1); color:#8AA8FF; padding:1px 7px; border-radius:8px;
         font-size:10px; font-weight:500;
       }
       .kanban-card-footer { display:flex; align-items:center; justify-content:space-between; }
@@ -2147,7 +2147,7 @@ const TachesPage = {
         border-radius:12px; padding:14px; display:flex; flex-direction:column;
         min-height:200px; transition:background .15s;
       }
-      .eisen-quadrant.drag-over { outline:2px dashed rgba(245,81,46,.4); }
+      .eisen-quadrant.drag-over { outline:2px dashed rgba(99,102,241,.4); }
       .eisen-q-header {
         display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600;
         margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.04);
@@ -2180,7 +2180,7 @@ const TachesPage = {
         cursor:pointer; font-size:12px; font-weight:500; transition:all .15s;
       }
       .gantt-view-btn:hover { background:rgba(255,255,255,0.06); color:var(--text-primary); }
-      .gantt-view-btn.active { background:rgba(245,81,46,.15); color:#8AA8FF; border-color:rgba(245,81,46,.3); font-weight:600; }
+      .gantt-view-btn.active { background:rgba(99,102,241,.15); color:#8AA8FF; border-color:rgba(99,102,241,.3); font-weight:600; }
 
       .gantt-container {
         display:flex; border:1px solid rgba(255,255,255,0.06); border-radius:14px;
@@ -2209,7 +2209,7 @@ const TachesPage = {
       .gantt-chart { flex:1; overflow-x:auto; overflow-y:auto; max-height:600px; }
       .gantt-header { position:sticky; top:0; z-index:2; background:var(--bg-primary); }
       .gantt-months {
-        display:flex; background:rgba(245,81,46,0.08);
+        display:flex; background:rgba(99,102,241,0.08);
         border-bottom:1px solid rgba(255,255,255,0.04);
       }
       .gantt-month {
@@ -2226,7 +2226,7 @@ const TachesPage = {
       }
       .gantt-day-name { font-size:9px; color:var(--text-muted); text-transform:uppercase; }
       .gantt-day-num { font-size:11px; font-weight:600; color:var(--text-primary); }
-      .gantt-day.gantt-today-col { background:rgba(245,81,46,0.08); }
+      .gantt-day.gantt-today-col { background:rgba(99,102,241,0.08); }
       .gantt-day.gantt-today-col .gantt-day-num { color:#8AA8FF; }
       .gantt-day.gantt-weekend { background:rgba(255,255,255,0.01); }
       .gantt-day.gantt-weekend .gantt-day-num { color:var(--text-muted); opacity:.6; }
@@ -2236,7 +2236,7 @@ const TachesPage = {
       .gantt-row-bg { display:flex; position:absolute; top:0; left:0; height:100%; }
       .gantt-cell { border-right:1px solid rgba(255,255,255,0.02); }
       .gantt-cell.gantt-weekend { background:rgba(255,255,255,0.01); }
-      .gantt-cell.gantt-today-col { background:rgba(245,81,46,0.04); }
+      .gantt-cell.gantt-today-col { background:rgba(99,102,241,0.04); }
 
       .gantt-bar {
         position:absolute; top:8px; height:32px; border-radius:8px;
@@ -2287,8 +2287,8 @@ const TachesPage = {
         width:50px; height:50px; border-radius:10px; background:rgba(139,92,246,.12);
         display:flex; flex-direction:column; align-items:center; justify-content:center;
       }
-      .reunion-date-day { font-size:1.2rem; font-weight:700; color:#F5512E; line-height:1; }
-      .reunion-date-month { font-size:10px; color:#F5512E; text-transform:uppercase; font-weight:600; }
+      .reunion-date-day { font-size:1.2rem; font-weight:700; color:#8b5cf6; line-height:1; }
+      .reunion-date-month { font-size:10px; color:#8b5cf6; text-transform:uppercase; font-weight:600; }
       .reunion-card-body { flex:1; min-width:0; }
       .reunion-card-title { font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:4px; }
       .reunion-card-meta { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:6px; }
@@ -2317,7 +2317,7 @@ const TachesPage = {
 
       .liste-bulk-bar {
         display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px;
-        background:rgba(245,81,46,.08); border:1px solid rgba(245,81,46,.15); margin-bottom:12px;
+        background:rgba(99,102,241,.08); border:1px solid rgba(99,102,241,.15); margin-bottom:12px;
         flex-wrap:wrap; font-size:13px; color:var(--text-primary);
       }
 
@@ -2336,10 +2336,10 @@ const TachesPage = {
       }
       .liste-row { transition:background .1s; }
       .liste-row:hover { background:rgba(255,255,255,0.02); }
-      .liste-row.selected { background:rgba(245,81,46,.06); }
+      .liste-row.selected { background:rgba(99,102,241,.06); }
       .liste-title-cell { cursor:pointer; }
       .liste-task-title { font-weight:500; color:var(--text-primary); }
-      .liste-task-title:hover { color:#F5512E; }
+      .liste-task-title:hover { color:#5D87FF; }
       .liste-subtask-info {
         font-size:10px; color:var(--text-muted); background:var(--bg-tertiary);
         padding:1px 6px; border-radius:6px; margin-left:6px;

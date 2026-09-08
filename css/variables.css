@@ -52,46 +52,45 @@
 [data-theme="light"] {
   /* ===== Thème SPIKE (clair) — cartes blanches, fond gris-bleu, accent bleu ===== */
   /* Background layers */
-  /* ===== Thème « Analytics » (clair frais) — gris-vert, accent orange vif, quasi-noir ===== */
-  --bg-primary: #EDF0EE;
+  --bg-primary: #F5F7FB;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #F3F5F3;
+  --bg-tertiary: #F1F5F9;
   --bg-sidebar: #ffffff;
 
   /* Text */
-  --text-primary: #17181A;
-  --text-secondary: #666B70;
-  --text-muted: #9AA0A4;
+  --text-primary: #2A3547;
+  --text-secondary: #5A6A85;
+  --text-muted: #7C8FAC;
 
   /* Borders & Dividers */
-  --border-color: #E7EAE8;
-  --border-accent: rgba(245, 81, 46, 0.20);
+  --border-color: #EBF1F6;
+  --border-accent: rgba(93, 135, 255, 0.18);
 
-  /* Shadows — douces, neutres chaudes */
-  --shadow-card: 0 2px 10px rgba(38, 32, 24, 0.05);
-  --shadow-modal: 0 20px 50px rgba(38, 32, 24, 0.16);
-  --shadow-glow: 0 8px 24px rgba(232, 84, 58, 0.18);
+  /* Shadows — ombre bleutée signature de Spike */
+  --shadow-card: 0 2px 6px rgba(37, 83, 185, 0.10);
+  --shadow-modal: 0 12px 40px rgba(37, 83, 185, 0.14);
+  --shadow-glow: 0 4px 20px rgba(93, 135, 255, 0.14);
 
-  /* Cartes blanches nettes */
+  /* Cartes blanches nettes (plus de glassmorphism) */
   --glass-bg: #ffffff;
   --glass-bg-heavy: #ffffff;
-  --glass-border: #E9E5DD;
-  --glass-shadow: 0 2px 10px rgba(38, 32, 24, 0.05);
+  --glass-border: #EBF1F6;
+  --glass-shadow: 0 2px 6px rgba(37, 83, 185, 0.10);
 
   /* Sidebar solide blanche */
   --bg-sidebar-solid: #ffffff;
 
   /* Card hover */
-  --card-hover-bg: rgba(245, 81, 46, 0.05);
+  --card-hover-bg: rgba(93, 135, 255, 0.05);
 
   /* Accent subtle */
-  --accent-subtle: rgba(245, 81, 46, 0.12);
+  --accent-subtle: rgba(93, 135, 255, 0.12);
 
-  /* Accent « Analytics » orange vif (surcharge du brand, thème clair) */
-  --pilote-blue: #F5512E;
-  --pilote-blue-dim: #DE3E1E;
-  --pilote-blue-glow: rgba(245, 81, 46, 0.16);
-  --pilote-cyan: #F5C542;
+  /* Accent Spike (surcharge du brand, thème clair uniquement) */
+  --pilote-blue: #5D87FF;
+  --pilote-blue-dim: #4570EA;
+  --pilote-blue-glow: rgba(93, 135, 255, 0.14);
+  --pilote-cyan: #49BEFF;
 
   /* Sémantique Spike */
   --success: #13DEB9;
@@ -100,10 +99,10 @@
   --danger-dim: #E8603C;
   --warning: #FFAE1F;
   --warning-dim: #D99000;
-  --info: #F5512E;
+  --info: #5D87FF;
 
   /* Glow */
-  --glow-primary: 0 0 12px rgba(245, 81, 46, 0.14);
+  --glow-primary: 0 0 12px rgba(93, 135, 255, 0.14);
   --glow-success: 0 0 12px rgba(19, 222, 185, 0.14);
   --glow-danger: 0 0 12px rgba(250, 137, 107, 0.14);
   --glow-warning: 0 0 12px rgba(255, 174, 31, 0.14);

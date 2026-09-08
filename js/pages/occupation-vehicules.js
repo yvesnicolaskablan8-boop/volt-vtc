@@ -40,7 +40,7 @@ const OccupationVehiculesPage = {
 
   // Couleur stable par chauffeur (hash simple sur l'id).
   _chColor(id) {
-    const pal = ['#F5512E', '#13DEB9', '#F5512E', '#f97316', '#06b6d4', '#ec4899', '#eab308', '#0a9d78', '#e0603a', '#635BFF'];
+    const pal = ['#5D87FF', '#13DEB9', '#8b5cf6', '#f97316', '#06b6d4', '#ec4899', '#eab308', '#0a9d78', '#e0603a', '#635BFF'];
     let h = 0; const s = String(id || '');
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
     return pal[h % pal.length];
@@ -140,7 +140,7 @@ const OccupationVehiculesPage = {
         </div></div>
         <div class="ov-legend">
           <b style="color:var(--text-primary);">Occupation</b>
-          <span class="ov-lg"><span class="ov-sw" style="background:#F5512E;"></span>Chauffeur affecté</span>
+          <span class="ov-lg"><span class="ov-sw" style="background:#5D87FF;"></span>Chauffeur affecté</span>
           <span class="ov-lg"><span class="ov-sw" style="background:#F5A99A;border:1.5px dashed #E0603A;background:rgba(250,137,107,.15);"></span>Non affecté</span>
           <span style="color:var(--text-muted);">· chaque barre = un chauffeur ; les changements = rotations / doublures · clic → fiche chauffeur</span>
         </div>

@@ -566,7 +566,7 @@ const ChauffeursPage = {
                   ${doc.dateUpload ? `<div style="font-size:10px;color:#22c55e;font-weight:600;margin-top:2px;display:flex;align-items:center;gap:3px"><iconify-icon icon="solar:check-circle-bold" style="font-size:11px"></iconify-icon> Fichier televerse</div>` : ''}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
-                  ${doc.dateUpload && doc.fichierData ? `<button onclick="ChauffeurPage._viewDocument('${doc.type}','${(doc.fichierType || '').replace(/'/g, '')}','${c.id}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-primary);cursor:pointer;font-size:11px;font-weight:600;color:#F5512E;display:flex;align-items:center;gap:4px"><iconify-icon icon="solar:eye-bold-duotone" style="font-size:13px"></iconify-icon> Voir</button>` : ''}
+                  ${doc.dateUpload && doc.fichierData ? `<button onclick="ChauffeurPage._viewDocument('${doc.type}','${(doc.fichierType || '').replace(/'/g, '')}','${c.id}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-primary);cursor:pointer;font-size:11px;font-weight:600;color:#8b5cf6;display:flex;align-items:center;gap:4px"><iconify-icon icon="solar:eye-bold-duotone" style="font-size:13px"></iconify-icon> Voir</button>` : ''}
                   ${Utils.statusBadge(doc.statut)}
                 </div>
               </div>
@@ -1488,7 +1488,7 @@ const ChauffeursPage = {
     const blob = new Blob([byteArray], { type: doc.fichierType || 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
     if (doc.fichierType && doc.fichierType.startsWith('image/')) {
-      Modal.open(`<iconify-icon icon="solar:eye-bold-duotone" style="color:#F5512E"></iconify-icon> ${doc.nom}`,
+      Modal.open(`<iconify-icon icon="solar:eye-bold-duotone" style="color:#8b5cf6"></iconify-icon> ${doc.nom}`,
         `<div style="text-align:center"><img src="${url}" style="max-width:100%;max-height:70vh;border-radius:8px;object-fit:contain;" onload="URL.revokeObjectURL(this.src)"><div style="margin-top:8px;font-size:12px;color:var(--text-muted)">${doc.fichierNom || type} — televerse le ${Utils.formatDate(doc.dateUpload)}</div></div>`);
     } else {
       window.open(url, '_blank');
@@ -2112,8 +2112,8 @@ const ChauffeursPage = {
           <div style="font-size:22px;font-weight:900;color:#ef4444;">${Utils.formatCurrency(totalImpaye)}</div>
           <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Total impay\u00e9</div>
         </div>
-        <div style="flex:1;background:rgba(245,81,46,.1);border:1px solid rgba(245,81,46,.2);border-radius:12px;padding:14px;text-align:center;">
-          <div style="font-size:22px;font-weight:900;color:#F5512E;">${contraventions.length}</div>
+        <div style="flex:1;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:14px;text-align:center;">
+          <div style="font-size:22px;font-weight:900;color:#5D87FF;">${contraventions.length}</div>
           <div style="font-size:11px;color:var(--text-muted);font-weight:600;">Total contraventions</div>
         </div>
       </div>
@@ -2324,7 +2324,7 @@ const ChauffeursPage = {
         date: a.dateDebut,
         type: 'absence',
         icon: 'solar:calendar-mark-bold-duotone',
-        color: a.type === 'suspension' ? '#ef4444' : a.type === 'maladie' ? '#f59e0b' : '#F5512E',
+        color: a.type === 'suspension' ? '#ef4444' : a.type === 'maladie' ? '#f59e0b' : '#8b5cf6',
         label: `${typeLabels[a.type] || a.type}`,
         detail: `${Utils.formatDate(a.dateDebut)} au ${Utils.formatDate(a.dateFin)}`,
         extra: a.motif ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${a.motif}</div>` : ''

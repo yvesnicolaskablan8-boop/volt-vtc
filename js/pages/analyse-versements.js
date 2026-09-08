@@ -325,7 +325,7 @@ const AnalyseVersementsPage = {
       .av-badge.up { color:#0a9d78; background:rgba(19,222,185,.14); }
       .av-badge.down { color:#e0603a; background:rgba(250,137,107,.14); }
       .av-badge.warn { color:#b7791f; background:rgba(255,174,31,.16); }
-      .av-badge.info { color:#F5512E; background:rgba(245,81,46,.14); }
+      .av-badge.info { color:#5D87FF; background:rgba(93,135,255,.14); }
       .av-badge.muted { color:var(--text-muted); background:var(--bg-tertiary); }
       .av-empty { padding:26px 4px; text-align:center; color:var(--text-muted); font-size:13px; }
     </style>`;
