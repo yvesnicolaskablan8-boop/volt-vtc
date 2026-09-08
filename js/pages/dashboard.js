@@ -1107,7 +1107,7 @@ const DashboardPage = {
     // Couleur fixe par carte pour les différencier (alignée sur la couleur de l'icône) :
     // Recouvrement = émeraude, Objectif = indigo.
     const recouvrementColor = '#10b981';
-    const progressColor = '#5D87FF';
+    const progressColor = '#E8543A';
     const session = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : {};
     const userName = session.prenom || 'Patron';
 
@@ -1176,21 +1176,19 @@ const DashboardPage = {
 
         .d-wrap { animation: dSlide .5s cubic-bezier(.16,1,.3,1); }
         .d-bg {
-          background: linear-gradient(160deg, #f0f4ff 0%, #faf5ff 40%, #fdf2f8 100%);
+          background: var(--bg-primary);
           margin: -24px -28px;
           padding: 32px 32px 40px;
           min-height: 100vh;
         }
-        [data-theme="dark"] .d-bg { background: linear-gradient(160deg, #0c0f1a 0%, #13111c 40%, #170f14 100%); }
 
         .d-grid { display:grid; gap:16px; margin-bottom:16px; }
         .d-card {
-          background: rgba(255,255,255,.72);
-          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-          border-radius: 20px;
+          background: var(--bg-secondary);
+          border-radius: 22px;
           padding: 22px 24px;
-          border: 1px solid rgba(255,255,255,.6);
-          box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.04);
+          border: 1px solid var(--border-color);
+          box-shadow: var(--shadow-card);
           transition: all .25s cubic-bezier(.16,1,.3,1);
           position: relative;
           overflow: hidden;
@@ -1200,17 +1198,13 @@ const DashboardPage = {
           border-color: rgba(255,255,255,.06);
           box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 8px 32px rgba(0,0,0,.15);
         }
-        .d-card:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(99,102,241,.1); border-color:rgba(99,102,241,.15); }
-        [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(99,102,241,.15); border-color:rgba(99,102,241,.2); }
+        .d-card:hover { transform:translateY(-2px); box-shadow:0 12px 34px rgba(38,32,24,.09); border-color:var(--border-accent); }
 
         .d-card.hero {
-          background: linear-gradient(135deg, #4570EA 0%, #7c3aed 35%, #a855f7 65%, #c084fc 100%);
-          background-size: 200% 200%;
-          animation: heroGradient 8s ease infinite;
-          border: 1px solid rgba(255,255,255,.18);
+          background: linear-gradient(140deg, #2b2723 0%, #1a1613 100%);
+          border: 1px solid rgba(255,255,255,.08);
           color: #fff;
-          box-shadow: 0 4px 24px rgba(99,102,241,.3), 0 0 60px rgba(139,92,246,.15), inset 0 1px 0 rgba(255,255,255,.15);
-          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+          box-shadow: 0 14px 40px rgba(26,20,16,.3), inset 0 1px 0 rgba(255,255,255,.06);
           position: relative;
           overflow: hidden;
         }
@@ -1219,7 +1213,7 @@ const DashboardPage = {
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-        .d-card.hero:hover { transform:translateY(-3px); box-shadow:0 12px 48px rgba(99,102,241,.4), 0 0 80px rgba(139,92,246,.2), inset 0 1px 0 rgba(255,255,255,.2); }
+        .d-card.hero:hover { transform:translateY(-3px); box-shadow:0 20px 50px rgba(26,20,16,.4), inset 0 1px 0 rgba(255,255,255,.08); }
         .d-card.hero::before {
           content:''; position:absolute; top:-50%; left:-30%; width:260px; height:260px;
           background:radial-gradient(circle, rgba(255,255,255,.1) 0%, transparent 60%);
@@ -1278,7 +1272,7 @@ const DashboardPage = {
         @keyframes miniPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
         .mini-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
         .mini-title { display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); }
-        .mini-dot { width:8px; height:8px; border-radius:50%; background:#13DEB9; animation:miniPulse 1.6s infinite; }
+        .mini-dot { width:8px; height:8px; border-radius:50%; background:#E8543A; animation:miniPulse 1.6s infinite; }
         .mini-val { font-size:17px; font-weight:800; color:var(--text-primary); opacity:.55; min-height:22px; transition:opacity .3s; white-space:nowrap; }
         .mini-chart:hover .mini-val { opacity:1; }
         .mini-gran { display:flex; gap:4px; margin:0 0 12px; }
@@ -1287,7 +1281,7 @@ const DashboardPage = {
         .mini-gran-btn.is-active { background:var(--pilote-blue); color:#fff; }
         .mini-bars { display:flex; align-items:flex-end; gap:8px; height:100px; }
         .mini-col { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
-        .mini-bar { width:100%; border-radius:99px; background:#13DEB9; opacity:.32; transform-origin:bottom; transition:all .3s ease-out; cursor:pointer; }
+        .mini-bar { width:100%; border-radius:99px; background:#E8543A; opacity:.32; transform-origin:bottom; transition:all .3s ease-out; cursor:pointer; }
         .mini-chart:hover .mini-bar { opacity:.42; }
         .mini-bar.is-hover { opacity:1 !important; transform:scaleX(1.12) scaleY(1.02); }
         .mini-bar.is-neighbor { opacity:.35 !important; transform:scaleX(1.05); }
