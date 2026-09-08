@@ -1496,10 +1496,10 @@ const DashboardPage = {
         .fd-c-val{font-size:23px;font-weight:800;letter-spacing:-.5px;}
         .fd-c-pct{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:6px;}
         .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}
-        .fd-surv-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,174,31,.16);color:#9A6800;border:1px solid rgba(255,174,31,.45);font-weight:800;font-size:11px;padding:2px 9px;border-radius:20px;cursor:pointer;font-family:inherit;line-height:1.55;vertical-align:middle;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;}
-        .fd-surv-chip:hover{transform:translateY(-1px);box-shadow:0 5px 12px rgba(255,174,31,.32);background:rgba(255,174,31,.26);}
+        .fd-surv-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.14);color:#D92D20;border:1px solid rgba(239,68,68,.45);font-weight:800;font-size:11px;padding:2px 9px;border-radius:20px;cursor:pointer;font-family:inherit;line-height:1.55;vertical-align:middle;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;}
+        .fd-surv-chip:hover{transform:translateY(-1px);box-shadow:0 5px 12px rgba(239,68,68,.32);background:rgba(239,68,68,.24);}
         .wl-flash{animation:wlFlash 1.7s ease;}
-        @keyframes wlFlash{0%{box-shadow:0 0 0 0 rgba(255,174,31,0);}12%{box-shadow:0 0 0 3px rgba(255,174,31,.6);}55%{box-shadow:0 0 0 3px rgba(255,174,31,.4);}100%{box-shadow:0 0 0 0 rgba(255,174,31,0);}}
+        @keyframes wlFlash{0%{box-shadow:0 0 0 0 rgba(239,68,68,0);}12%{box-shadow:0 0 0 3px rgba(239,68,68,.6);}55%{box-shadow:0 0 0 3px rgba(239,68,68,.4);}100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}}
         @media(max-width:820px){ .fd-cards{grid-template-columns:repeat(2,1fr);} .fd-top{flex-direction:column;} .fd-donut-wrap{margin:0 auto;} .fd-recette{width:100%;} .fd-recette-inner{border-left:none;border-top:1px solid var(--border-color);padding-left:0;padding-top:16px;} }
         /* Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) */
         .iw-grid{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(2,minmax(155px,auto));gap:16px;}
