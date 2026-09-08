@@ -924,30 +924,42 @@ const DashboardPage = {
     const _refVals = _caj.filter(e => { const dt = String(e.date).slice(0, 10); return dt >= _refDebut && dt < jourAtt && (Number(e.caBrut) || 0) > 0; })
       .map(e => Number(e.caBrut) || 0).sort((a, b) => a - b);
     const refParChauffeur = _refVals.length ? _refVals[Math.floor(_refVals.length / 2)] : 65000;
-    // « Journée type » = CA médian d'un chauffeur × nombre en activité. On ne juge le
-    // CA « bas » que le SOIR : la recette VTC se fait surtout la nuit, donc à 15h être
-    // à 20 % d'une journée type est NORMAL (la journée n'est pas finie), pas anormal.
-    const objectifJourActifs = Math.round(refParChauffeur * nbActifsJour);
+    // Rythme jugé EN TEMPS RÉEL sur un ratio ABSOLU de 4000 F / heure travaillée
+    // (et non plus par rapport à la médiane flotte) : un CA bas est signalé même si
+    // TOUTE la flotte est basse. Journée d'exploitation 05h→05h (Abidjan = UTC) ; le
+    // CA attendu à un instant = 4000 × heures écoulées depuis 05h.
+    const TARGET_FH = 4000;                 // CA cible par heure travaillée
+    const HEURE_BASCULE = 5;                // début de journée d'exploitation
+    const CAP_HEURES = 15;                  // journée pleine plafonnée (05h→20h)
+    const _heureDec = now.getUTCHours() + now.getUTCMinutes() / 60;
+    const _heuresEcoulees = (() => {
+      if (!estAujourdhui) return CAP_HEURES;                 // jour échu : journée complète
+      if (_heureDec < HEURE_BASCULE) return CAP_HEURES;      // 00h-05h : journée quasi finie
+      return Math.max(0, Math.min(CAP_HEURES, _heureDec - HEURE_BASCULE));
+    })();
+    const _minHeuresJuge = 2;               // avant 2h écoulées : trop tôt pour juger (bruit)
+    const _peutJuger = !estAujourdhui || _heuresEcoulees >= _minHeuresJuge;
+    const attenduParChauffeur = Math.round(TARGET_FH * _heuresEcoulees);
+    const objectifJourActifs = attenduParChauffeur * nbActifsJour;
     const pctJourType = objectifJourActifs > 0 ? (caBrutJour / objectifJourActifs) : 0;
-    const _heureDec = now.getUTCHours() + now.getUTCMinutes() / 60; // Abidjan = UTC
-    // Une journée passée est complète : on la juge comme une soirée (journée finie).
-    const _soir = !estAujourdhui || _heureDec >= 19 || _heureDec < 5;
     let paceState = 'neutre', paceLabel = estAujourdhui ? 'En attente d’activité' : 'Aucune activité ce jour';
     if (nbActifsJour > 0) {
-      if (pctJourType >= 0.85) { paceState = 'bon'; paceLabel = 'Journée type atteinte'; }
-      else if (_soir && pctJourType < 0.5) { paceState = 'faible'; paceLabel = 'CA anormalement bas'; }
-      else if (_soir && pctJourType < 0.75) { paceState = 'modere'; paceLabel = 'Journée sous la moyenne'; }
+      if (!_peutJuger) { paceState = 'demarrage'; paceLabel = 'Journée en cours'; }
+      else if (pctJourType >= 0.85) { paceState = 'bon'; paceLabel = 'Rythme cible atteint'; }
+      else if (pctJourType < 0.5) { paceState = 'faible'; paceLabel = 'CA anormalement bas'; }
+      else if (pctJourType < 0.75) { paceState = 'modere'; paceLabel = 'Rythme sous l’objectif'; }
       else { paceState = 'demarrage'; paceLabel = 'Journée en cours'; }
     }
 
     // === Liste unifiée « chauffeurs en activité » (programmés + hors planning) ===
-    // Chaque chauffeur reçoit un état couleur selon son CA — même logique que le
-    // rythme global, appliquée individuellement (neutre tant que la journée court).
+    // État couleur par chauffeur sur le MÊME ratio absolu de 4000 F/h, en temps réel :
+    // attendu = 4000 × heures écoulées, comparé au CA du chauffeur.
     const _driverState = (ca) => {
-      if (!ca || ca <= 0) return 'neutre';
-      const pct = refParChauffeur > 0 ? ca / refParChauffeur : 0;
+      if (!ca || ca <= 0) return 'neutre';           // pas d'activité / non démarré
+      if (!_peutJuger) return 'demarrage';           // trop tôt dans la journée
+      const attendu = TARGET_FH * _heuresEcoulees;
+      const pct = attendu > 0 ? ca / attendu : 0;
       if (pct >= 0.85) return 'bon';
-      if (!_soir) return 'demarrage';
       if (pct >= 0.5) return 'modere';
       return 'faible';
     };
@@ -973,6 +985,7 @@ const DashboardPage = {
       chauffeursActifsJour, nbActifsTotal, nbAjouter,
       versementAttenduJour, nbActifsJour,
       caBrutJour, caReelMois, chauffeursProgrammes, nbProgrammesJour, nbProgrammesActifs, chauffeursHorsPlanning, nbHorsPlanning, refParChauffeur, objectifJourActifs, pctJourType, paceState, paceLabel,
+      heuresEcoulees: _heuresEcoulees, targetFH: TARGET_FH,
       estAujourdhui, jourAtt,
       caThisMonth, caTrend, caPrevPeriod, totalVerse, retardCount, totalDettes, totalPertes, nbDetteDrivers, nbPerteDrivers,
       nbVersementsPeriode: monthVersements.filter(v => v.statut !== 'supprime' && v.montantVerse > 0).length,
@@ -1962,7 +1975,8 @@ const DashboardPage = {
       const ch = it.id ? chById.get(it.id) : null;
       const tel = ch && ch.telephone ? String(ch.telephone) : '';
       const badges = it.reasons.map(r => { const m = RSN[r]; return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${m[2]};color:${m[1]};"><iconify-icon icon="${m[3]}" style="font-size:12px;"></iconify-icon>${m[0]}</span>`; }).join('');
-      const caTxt = (it.ca != null) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
+      const _fh = (it.ca != null && d.heuresEcoulees > 0) ? Math.round(it.ca / d.heuresEcoulees) : null;
+      const caTxt = (it.ca != null) ? `<div style="text-align:right;white-space:nowrap;"><div style="font-size:12px;font-weight:800;color:var(--text-primary);">${Utils.formatCurrency(it.ca)}</div>${_fh != null ? `<div style="font-size:10px;font-weight:700;color:${sev};margin-top:1px;">${Utils.formatNumber(_fh)} F/h <span style="color:var(--text-muted);font-weight:600;">/ ${Utils.formatNumber(d.targetFH || 4000)}</span></div>` : ''}</div>` : '';
       const callBtn = tel ? `<a href="tel:${Utils.escHtml(tel)}" title="Appeler" style="width:34px;height:34px;border-radius:9px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:phone-bold"></iconify-icon></a>` : '';
       return `<div style="display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border-color);">
         <div style="width:36px;height:36px;border-radius:50%;background:${sev};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${Utils.escHtml(initial)}</div>
@@ -2258,7 +2272,7 @@ const DashboardPage = {
     const paceBg = d.paceState === 'faible' ? 'rgba(250,137,107,.15)' : d.paceState === 'bon' ? 'rgba(19,222,185,.15)' : d.paceState === 'modere' ? 'rgba(255,174,31,.16)' : 'var(--bg-tertiary)';
     const paceColor = d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)';
     const paceIcon = d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold';
-    const pace = `<div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${paceBg};color:${paceColor};align-self:flex-start;"><iconify-icon icon="${paceIcon}"></iconify-icon>${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% d'une journée type` : ''}</div>`;
+    const pace = `<div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${paceBg};color:${paceColor};align-self:flex-start;"><iconify-icon icon="${paceIcon}"></iconify-icon>${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% du rythme cible (4000 F/h)` : ''}</div>`;
     const gran = this._recetteGran || 'semaine';
     const series = gran === 'jour' ? (d.dailyPayments || []) : gran === 'mois' ? (d.monthlyPayments || []) : (d.weeklyPayments || []);
     const periods = series.slice(-8);
