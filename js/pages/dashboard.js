@@ -1514,7 +1514,41 @@ const DashboardPage = {
         .iw-unit{font-size:13px;font-weight:700;color:var(--text-muted);margin-left:2px;}
         .iw-sub{font-size:11.5px;color:var(--text-muted);font-weight:600;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         @media(max-width:860px){ .iw-grid{grid-template-columns:1fr;grid-template-rows:none;} .iw-hero,.iw-wide,.iw-med,.iw-sm{grid-column:auto;grid-row:auto;} .iw-hero-mid{min-height:190px;} }
+        /* ===== Row hero « Financial Dashboard » (carte compte + income/paid + donut + tendance) ===== */
+        .fb-grid{grid-template-columns:1.5fr 1.15fr .9fr 1.25fr;align-items:stretch;}
+        @media(max-width:1100px){ .fb-grid{grid-template-columns:1fr 1fr;} }
+        @media(max-width:640px){ .fb-grid{grid-template-columns:1fr;} }
+        .fb-acc{background:linear-gradient(140deg,#2c2824 0%,#191512 100%)!important;color:#fff;display:flex;flex-direction:column;justify-content:space-between;min-height:186px;}
+        .fb-acc::after{content:'';position:absolute;top:-45%;right:-12%;width:190px;height:190px;background:radial-gradient(circle,rgba(232,84,58,.4),transparent 62%);pointer-events:none;}
+        .fb-acc-top{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;}
+        .fb-brand{font-weight:800;letter-spacing:1.5px;font-size:13px;}
+        .fb-tag{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.18);padding:3px 10px;border-radius:20px;}
+        .fb-acc-lbl{font-size:12px;color:rgba(255,255,255,.6);margin-top:16px;position:relative;z-index:1;}
+        .fb-acc-val{font-size:29px;font-weight:800;letter-spacing:-.6px;margin-top:2px;position:relative;z-index:1;}
+        .fb-acc-actions{display:flex;gap:10px;margin-top:16px;position:relative;z-index:1;}
+        .fb-btn{flex:1;height:42px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;border:none;transition:.15s;}
+        .fb-btn-a{background:#E8543A;color:#fff;}
+        .fb-btn-a:hover{filter:brightness(1.06);}
+        .fb-btn-b{background:rgba(255,255,255,.12);color:#fff;}
+        .fb-btn-b:hover{background:rgba(255,255,255,.2);}
+        .fb-acc-foot{font-size:12px;color:rgba(255,255,255,.55);margin-top:14px;position:relative;z-index:1;}
+        .fb-acc-foot b{color:#fff;font-weight:700;}
+        .fb-io{display:flex;flex-direction:column;gap:12px;justify-content:center;}
+        .fb-io-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:16px;background:var(--bg-tertiary);}
+        .fb-io-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+        .fb-io-lbl{font-size:12px;color:var(--text-muted);font-weight:600;}
+        .fb-io-val{font-size:19px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px;margin-top:1px;}
+        .fb-growth{background:linear-gradient(140deg,#232020 0%,#100f0e 100%)!important;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+        .fb-growth-lbl{font-size:12px;color:rgba(255,255,255,.65);font-weight:600;}
+        .fb-trend{display:flex;flex-direction:column;}
+        .fb-trend-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+        .fb-trend-lbl{font-size:12px;color:var(--text-muted);font-weight:600;}
+        .fb-trend-val{font-size:22px;font-weight:800;color:var(--text-primary);letter-spacing:-.4px;margin-top:2px;}
+        .fb-trend-svg{flex:1;min-height:60px;margin-top:10px;}
       </style>
+
+      <!-- Row hero : compte + income/paid + recouvrement + tendance -->
+      ${this._renderFinBento(d)}
 
       <!-- Row 0 : Flotte en direct (donut centralisé) -->
       <div class="d-grid" style="grid-template-columns:1fr;">
@@ -1588,6 +1622,80 @@ const DashboardPage = {
       </div>
       </div>
     `;
+  },
+
+  // Rangée hero « Financial Dashboard » : carte compte + income/paid + donut recouvrement + tendance.
+  _renderFinBento(d) {
+    const f = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
+    const encaisseMois = d.totalVerseMonth || 0;
+    const caMois = d.caThisMonth || 0;
+    const depMois = d.totalDepensesMois || 0;
+    const attendu = d.versementAttenduJour || d.caBrutJour || 0;
+    const taux = Math.round(d.tauxRecouvrement || 0);
+    const trend = d.caTrend || 0;
+    const mLabel = d.monthLabel || d.periodLabel || 'ce mois';
+
+    // Donut recouvrement (carte noire)
+    const R = 52, C = 2 * Math.PI * R, dash = Math.max(0, Math.min(100, taux)) / 100 * C;
+    const donut = `<svg viewBox="0 0 130 130" width="132" height="132">
+      <circle cx="65" cy="65" r="${R}" fill="none" stroke="rgba(255,255,255,.13)" stroke-width="12"/>
+      <circle cx="65" cy="65" r="${R}" fill="none" stroke="#E8543A" stroke-width="12" stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" transform="rotate(-90 65 65)" style="transition:stroke-dasharray .8s ease;"/>
+      <text x="65" y="61" text-anchor="middle" font-size="27" font-weight="800" fill="#fff">${taux}%</text>
+      <text x="65" y="80" text-anchor="middle" font-size="11" fill="rgba(255,255,255,.6)">recouvré</text>
+    </svg>`;
+
+    // Courbe de tendance (revenus mensuels)
+    const rev = (d.monthlyRevenue || []).slice(-8).map(m => m.revenue || 0);
+    const lastRev = rev.length ? rev[rev.length - 1] : caMois;
+    let line = '';
+    if (rev.length >= 2) {
+      const max = Math.max(...rev, 1);
+      const pts = rev.map((v, i) => `${((i / (rev.length - 1)) * 100).toFixed(1)},${(38 - (v / max) * 34 - 2).toFixed(1)}`);
+      line = `<svg class="fb-trend-svg" viewBox="0 0 100 40" preserveAspectRatio="none" width="100%">
+        <polygon points="${pts.join(' ')} 100,40 0,40" fill="#E8543A" opacity="0.08"/>
+        <polyline points="${pts.join(' ')}" fill="none" stroke="#E8543A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      </svg>`;
+    }
+    const trendPill = `<span class="d2-pill" style="background:${trend >= 0 ? 'rgba(16,185,129,.12)' : 'rgba(239,68,68,.12)'};color:${trend >= 0 ? '#10b981' : '#ef4444'};">${trend >= 0 ? '▲' : '▼'} ${Math.abs(Math.round(trend))}%</span>`;
+
+    return `<div class="d-grid fb-grid" style="margin-bottom:16px;">
+      <div class="d-card fb-acc">
+        <div class="fb-acc-top"><span class="fb-brand">PILOTE</span><span class="fb-tag">Trésorerie</span></div>
+        <div>
+          <div class="fb-acc-lbl">Encaissé · ${Utils.escHtml(mLabel)}</div>
+          <div class="fb-acc-val">${f(encaisseMois)}</div>
+        </div>
+        <div class="fb-acc-actions">
+          <a href="#/versements" class="fb-btn fb-btn-a"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon> Versement</a>
+          <a href="#/comptabilite" class="fb-btn fb-btn-b"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon> Dépense</a>
+        </div>
+        <div class="fb-acc-foot">Attendu aujourd'hui · <b>${f(attendu)}</b></div>
+      </div>
+
+      <div class="d-card fb-io">
+        <div class="fb-io-row">
+          <div class="fb-io-ic" style="background:rgba(16,185,129,.14);color:#10b981;"><iconify-icon icon="solar:course-up-bold-duotone"></iconify-icon></div>
+          <div><div class="fb-io-lbl">Recette du mois</div><div class="fb-io-val">${f(caMois)}</div></div>
+        </div>
+        <div class="fb-io-row">
+          <div class="fb-io-ic" style="background:rgba(232,84,58,.14);color:#E8543A;"><iconify-icon icon="solar:course-down-bold-duotone"></iconify-icon></div>
+          <div><div class="fb-io-lbl">Dépenses du mois</div><div class="fb-io-val">${f(depMois)}</div></div>
+        </div>
+      </div>
+
+      <a href="#/versements" class="d-card fb-growth" style="text-decoration:none;">
+        ${donut}
+        <div class="fb-growth-lbl">Taux de recouvrement</div>
+      </a>
+
+      <div class="d-card fb-trend">
+        <div class="fb-trend-head">
+          <div><div class="fb-trend-lbl">Tendance recette</div><div class="fb-trend-val">${f(lastRev)}</div></div>
+          ${trendPill}
+        </div>
+        ${line}
+      </div>
+    </div>`;
   },
 
   _renderMesTaches() {
