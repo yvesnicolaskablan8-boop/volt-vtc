@@ -8,7 +8,7 @@ const MenuPage = {
 
     // All pages NOT present in bottom nav tabs (Dashboard, Chauffeurs, Planning, Vehicules)
     const menuItems = [
-      { route: '/yango', icon: 'solar:bus-bold-duotone', label: 'Yango Fleet', color: '#facc15' },
+      { route: '/yango', icon: 'arcticons:yango', label: 'Yango Fleet', color: '#FC4C02' },
       { route: '/taches', icon: 'solar:checklist-bold-duotone', label: 'Taches', color: '#F5512E' },
       { route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements', color: '#22c55e' },
       { route: '/bonus', icon: 'solar:gift-bold-duotone', label: 'Bonus', color: '#a855f7' },
