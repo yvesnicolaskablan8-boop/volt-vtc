@@ -1459,10 +1459,14 @@ const DashboardPage = {
         .fd-spin{animation:fdSpin 1s linear infinite;display:inline-flex;}
         @keyframes fdSpin{to{transform:rotate(360deg)}}
         .fd-top{display:flex;align-items:center;gap:24px;margin:6px 0 20px;}
+        .fd-donut-col{display:flex;flex-direction:column;align-items:center;gap:14px;flex-shrink:0;}
         .fd-donut-wrap{position:relative;width:230px;height:230px;flex-shrink:0;}
         .fd-recette{flex:1;min-width:0;}
         .fd-recette-inner{display:flex;flex-direction:column;gap:12px;cursor:pointer;border-left:1px solid var(--border-color);padding-left:24px;}
-        .fd-voir{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(245,81,46,.32);}
+        .fd-voir{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(245,81,46,.32);border:none;cursor:pointer;font-family:inherit;transition:transform .15s ease,box-shadow .15s ease;}
+        .fd-voir:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(245,81,46,.4);}
+        .fd-voir-alt{align-self:center;background:var(--bg-tertiary);color:var(--text-primary);box-shadow:none;border:1px solid var(--border-color);}
+        .fd-voir-alt:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(0,0,0,.10);background:var(--bg-secondary);}
         .fd-svg{width:100%;height:100%;transform:rotate(-90deg);}
         .fd-seg{transition:stroke-width .2s ease,opacity .2s ease;cursor:pointer;}
         .fd-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;}
@@ -2255,10 +2259,11 @@ const DashboardPage = {
     const paceColor = d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)';
     const paceIcon = d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold';
     const pace = `<div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${paceBg};color:${paceColor};align-self:flex-start;"><iconify-icon icon="${paceIcon}"></iconify-icon>${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% d'une journée type` : ''}</div>`;
+    const gran = this._recetteGran || 'semaine';
+    const series = gran === 'jour' ? (d.dailyPayments || []) : gran === 'mois' ? (d.monthlyPayments || []) : (d.weeklyPayments || []);
+    const periods = series.slice(-8);
+    const lastIdx = Math.max(0, periods.length - 1);
     const bars = (() => {
-      const gran = this._recetteGran || 'semaine';
-      const series = gran === 'jour' ? (d.dailyPayments || []) : gran === 'mois' ? (d.monthlyPayments || []) : (d.weeklyPayments || []);
-      const periods = series.slice(-8);
       const unitLabel = gran === 'jour' ? '8 j.' : gran === 'mois' ? '8 mois' : '8 sem.';
       const maxV = Math.max(1, ...periods.map(w => w.verse || 0));
       const sumV = periods.reduce((s, w) => s + (w.verse || 0), 0);
@@ -2272,10 +2277,10 @@ const DashboardPage = {
       const granBar = `<div class="mini-gran">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>`;
       return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)}" onmouseleave="DashboardPage._miniLeave()"><div class="mini-head"><div class="mini-title"><span class="mini-dot"></span>Recette encaissée · ${unitLabel}</div><div class="mini-val" id="mini-value">${fmt(sumV)}</div></div>${granBar}<div class="mini-bars">${cols}</div></div>`;
     })();
-    return `<div class="fd-recette-inner" onclick="DashboardPage._showActiviteDetail()">
+    return `<div class="fd-recette-inner" onclick="DashboardPage._openAnalyseVersements(${lastIdx})">
       ${pace}
       ${bars}
-      <div class="fd-voir">Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></div>
+      <div class="fd-voir">Analyse des versements <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></div>
     </div>`;
   },
 
@@ -2285,7 +2290,10 @@ const DashboardPage = {
     return `<div class="d-card fd-card">
       <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span></div>
       <div class="fd-top">
-        <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
+        <div class="fd-donut-col">
+          <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
+          <button type="button" class="fd-voir fd-voir-alt" onclick="DashboardPage._showActiviteDetail()">Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button>
+        </div>
         <div class="fd-recette">${this._fleetRecettePanel(d)}</div>
       </div>
       <div class="fd-cards" id="fleet-donut-cards">${this._fleetCardsInner(segments)}</div>
