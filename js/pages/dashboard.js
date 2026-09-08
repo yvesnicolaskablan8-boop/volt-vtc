@@ -2098,7 +2098,7 @@ const DashboardPage = {
   _fleetSegDef() {
     return [
       { key: 'activite', label: 'En activité', color: '#13DEB9', desc: "Roule aujourd'hui" },
-      { key: 'attente', label: 'En attente', color: '#F5512E', desc: 'Planifié, sans recette' },
+      { key: 'attente', label: 'Programmés', color: '#8AB4F8', desc: "Prévus aujourd'hui · journée en cours" },
       { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Hors planning' },
       { key: 'repos', label: 'Repos / Hors service', color: '#C7D0DD', desc: 'Pas de service' },
     ];
