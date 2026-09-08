@@ -1545,6 +1545,11 @@ const DashboardPage = {
         .fb-trend-lbl{font-size:12px;color:var(--text-muted);font-weight:600;}
         .fb-trend-val{font-size:22px;font-weight:800;color:var(--text-primary);letter-spacing:-.4px;margin-top:2px;}
         .fb-trend-svg{flex:1;min-height:60px;margin-top:10px;}
+        /* Carte Rentabilité en noir (cohérente avec le donut de recouvrement) */
+        .iw-hero{background:linear-gradient(140deg,#232020 0%,#100f0e 100%)!important;color:#fff;border:1px solid rgba(255,255,255,.08)!important;box-shadow:0 14px 40px rgba(26,20,16,.26)!important;--bg-tertiary:rgba(255,255,255,.12);--text-muted:rgba(255,255,255,.55);}
+        .iw-hero .iw-label{color:rgba(255,255,255,.82);}
+        .iw-hero .iw-icon{background:rgba(255,255,255,.1)!important;color:#fff!important;}
+        .iw-hero .iw-hero-ctx{color:rgba(255,255,255,.6)!important;}
       </style>
 
       <!-- Row hero : compte + income/paid + recouvrement + tendance -->
