@@ -21,6 +21,16 @@ const AlertesPage = {
     container.innerHTML = this._template();
     this._bindEvents();
     this._loadAlerts();
+    // Synchronise le bouton de filtre actif avec _currentFilter (pré-filtrage
+    // possible depuis la barre d'alerte du tableau de bord).
+    if (this._currentFilter && this._currentFilter !== 'all') {
+      document.querySelectorAll('.alert-filter').forEach(b => {
+        const on = b.dataset.filter === this._currentFilter;
+        b.classList.toggle('btn-primary', on);
+        b.classList.toggle('btn-secondary', !on);
+        b.classList.toggle('active', on);
+      });
+    }
     document.body.classList.add('alertes-focus'); // masque la barre latérale sur la page Alertes
   },
 
