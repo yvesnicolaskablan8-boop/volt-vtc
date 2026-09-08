@@ -592,7 +592,7 @@ const TachesPage = {
       { id: 'q1', urgent: true,  important: true,  label: 'Faire immédiatement', color: '#ef4444', bg: 'rgba(239,68,68,.06)', icon: 'solar:fire-bold-duotone', emptyMsg: "Rien d'urgent et important. Bien joué !" },
       { id: 'q2', urgent: false, important: true,  label: 'Planifier', color: '#635bff', bg: 'rgba(59,130,246,.06)', icon: 'solar:calendar-bold-duotone', emptyMsg: 'Planifiez vos objectifs importants ici.' },
       { id: 'q3', urgent: true,  important: false, label: 'Déléguer', color: '#f5512e', bg: 'rgba(249,115,22,.06)', icon: 'solar:users-group-rounded-bold-duotone', emptyMsg: 'Les tâches urgentes mais non importantes vont ici.' },
-      { id: 'q4', urgent: false, important: false, label: 'Éliminer', color: '#6b7280', bg: 'rgba(107,114,128,.06)', icon: 'solar:trash-bin-minimalistic-bold-duotone', emptyMsg: 'Pensez à supprimer ces distractions.' }
+      { id: 'q4', urgent: false, important: false, label: 'Éliminer', color: '#fa896b', bg: 'rgba(250,137,107,.08)', icon: 'solar:trash-bin-minimalistic-bold-duotone', emptyMsg: 'Pensez à supprimer ces distractions.' }
     ];
 
     return '<div class="eisen-matrix" id="eisen-matrix">'
@@ -763,7 +763,7 @@ const TachesPage = {
     const todayLineHtml = todayIdx >= 0 ? '<div class="gantt-today-line" style="left:' + (todayIdx * dayWidth + dayWidth / 2) + 'px;height:' + Math.max(tasks.length * rowHeight, 200) + 'px;"></div>' : '';
 
     // Status color map
-    const statutColors = { a_faire: '#ffae1f', en_cours: '#635bff', terminee: '#13deb9', annulee: '#6b7280' };
+    const statutColors = { a_faire: '#ffae1f', en_cours: '#635bff', terminee: '#13deb9', annulee: '#fa896b' };
     const statutIcons = { a_faire: 'solar:clipboard-list-bold', en_cours: 'solar:play-bold', terminee: 'solar:check-circle-bold', annulee: 'solar:close-circle-bold' };
     const statutLabels = { a_faire: 'À faire', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
 
@@ -899,7 +899,7 @@ const TachesPage = {
     } else {
       html += '<div class="reunion-list">';
       crs.forEach(cr => {
-        const tColor = typeColors[cr.type] || '#6b7280';
+        const tColor = typeColors[cr.type] || '#0891b2';
         const tLabel = typeLabels[cr.type] || cr.type || 'Autre';
         const nbParticipants = (cr.participants || []).length;
         const nbActions = (cr.actionsAMener || []).length;
@@ -1145,7 +1145,7 @@ const TachesPage = {
     if (!cr) return;
 
     const typeLabel = this._reunionTypeLabels[cr.type] || cr.type || 'Autre';
-    const typeColor = this._reunionTypeColors[cr.type] || '#6b7280';
+    const typeColor = this._reunionTypeColors[cr.type] || '#0891b2';
 
     let body = '<div style="max-height:70vh;overflow-y:auto;">'
       + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">'
@@ -2303,7 +2303,7 @@ const TachesPage = {
       }
       .reunion-statut-brouillon { background:rgba(249,115,22,.1); color:#f5512e; }
       .reunion-statut-valide { background:rgba(34,197,94,.1); color:#13deb9; }
-      .reunion-statut-archive { background:rgba(107,114,128,.1); color:#6b7280; }
+      .reunion-statut-archive { background:rgba(8,145,178,.1); color:#0891b2; }
 
       /* ── Liste ── */
       .liste-toolbar {

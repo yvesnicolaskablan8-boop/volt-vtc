@@ -3726,15 +3726,19 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const today = new Date().toISOString().split('T')[0];
     const typeLabel = source === 'contravention' ? 'contravention' : 'recette';
     const color = source === 'contravention' ? '#ef4444' : '#ffae1f';
+    // Salarié : le montant de référence est son CA Yango du jour (le montant à
+    // encaisser est ajustable). Locataire / contravention : montant dû.
+    const estSalarie = ch && ch.typeContrat === 'salarie';
+    const refLabel = source === 'contravention' ? 'Montant' : (estSalarie ? 'CA Yango' : 'Montant dû');
 
     const formHtml = `
       <div style="display:flex;flex-direction:column;gap:14px;">
         <div style="font-weight:700;font-size:var(--font-size-sm);text-transform:uppercase;letter-spacing:.5px;">Encaisser ${typeLabel} \u2014 ${nom}</div>
         <div style="padding:8px 12px;border-radius:8px;background:${color}0D;border:1px solid ${color}40;font-size:var(--font-size-sm);">
-          Date de service : <strong>${Utils.formatDate(date)}</strong> \u2014 Montant : <strong style="color:${color};">${Utils.formatCurrency(montant)}</strong>
+          Date de service : <strong>${Utils.formatDate(date)}</strong> \u2014 ${refLabel} : <strong style="color:${color};">${Utils.formatCurrency(montant)}</strong>
         </div>
         <div>
-          <label style="font-size:var(--font-size-sm);font-weight:600;display:block;margin-bottom:4px;">Montant encaiss\u00e9 (FCFA) *</label>
+          <label style="font-size:var(--font-size-sm);font-weight:600;display:block;margin-bottom:4px;">Montant \u00e0 encaisser (FCFA) *</label>
           <input type="number" id="edi-montant" value="${montant}" min="1" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-size:var(--font-size-sm);font-family:var(--font-body);">
         </div>
         <div id="edi-reliquat" style="display:none;padding:10px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);">
