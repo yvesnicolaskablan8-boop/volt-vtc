@@ -2801,7 +2801,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           const ds = it.detailSalarie;   // présent uniquement pour un salarié
           const note = it.source === 'contravention'
             ? (it.commentaire || 'Contravention')
-            : ds ? `CA Yango ${Utils.formatCurrency(ds.caBrut)}${ds.commission > 0 ? ' − comm. ' + Utils.formatCurrency(ds.commission) : ''}${ds.charge > 0 ? ' − charges ' + Utils.formatCurrency(ds.charge) : ''} · à régler ${Utils.formatCurrency(ds.du)} (ajustable)${ds.verse ? ' − versé ' + Utils.formatCurrency(ds.verse) : ''}`
+            : ds ? `CA Yango ${Utils.formatCurrency(ds.caBrut)}${ds.commission > 0 ? ' − comm. ' + Utils.formatCurrency(ds.commission) : ''}${ds.charge > 0 ? ' − charges ' + Utils.formatCurrency(ds.charge) : ''}${ds.verse ? ' · versé ' + Utils.formatCurrency(ds.verse) : ''}`
             : isImplicit ? 'Non versé (redevance due)'
             : ('Versé : ' + Utils.formatCurrency(it.montantVerse || 0));
           const chargesBtn = ds ? `<button class="vx-ib" onclick="event.stopPropagation();VersementsPage._gererCharges('${it._chauffeurId}','${it.date}')" title="Déduire / gérer les charges"><iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon></button>` : '';
@@ -3739,13 +3739,20 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         </div>
         <div id="edi-reliquat" style="display:none;padding:10px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);">
           <div style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:8px;">Reliquat : <strong id="edi-reliquat-montant" style="color:#f59e0b;">0 FCFA</strong></div>
-          <div style="display:flex;gap:8px;">
-            <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px;border-radius:6px;border:1px solid var(--border-color);cursor:pointer;font-size:var(--font-size-sm);">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <label style="flex:1;min-width:120px;display:flex;align-items:center;gap:6px;padding:8px;border-radius:6px;border:1px solid var(--border-color);cursor:pointer;font-size:var(--font-size-sm);">
               <input type="radio" name="edi-traitement" value="dette" checked> Garder en dette
             </label>
-            <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px;border-radius:6px;border:1px solid var(--border-color);cursor:pointer;font-size:var(--font-size-sm);">
+            <label style="flex:1;min-width:120px;display:flex;align-items:center;gap:6px;padding:8px;border-radius:6px;border:1px solid var(--border-color);cursor:pointer;font-size:var(--font-size-sm);">
+              <input type="radio" name="edi-traitement" value="charge"> Passer en charge
+            </label>
+            <label style="flex:1;min-width:120px;display:flex;align-items:center;gap:6px;padding:8px;border-radius:6px;border:1px solid var(--border-color);cursor:pointer;font-size:var(--font-size-sm);">
               <input type="radio" name="edi-traitement" value="perte"> Passer en perte
             </label>
+          </div>
+          <div id="edi-charge-detail" style="display:none;margin-top:8px;">
+            <label style="font-size:var(--font-size-sm);font-weight:600;display:block;margin-bottom:4px;">Détails de la charge <span style="font-weight:400;color:var(--text-muted);">(facultatif)</span></label>
+            <input type="text" id="edi-charge-libelle" placeholder="Ex : recharge, lavage, réparation…" style="width:100%;padding:9px 10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-size:var(--font-size-sm);font-family:var(--font-body);">
           </div>
         </div>
         <div>
@@ -3788,6 +3795,14 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       });
     }
 
+    // Affiche le champ « détails de la charge » uniquement sur l'option « Passer en charge »
+    const chargeDetail = document.getElementById('edi-charge-detail');
+    document.querySelectorAll('input[name="edi-traitement"]').forEach(r => {
+      r.addEventListener('change', () => {
+        if (chargeDetail) chargeDetail.style.display = (document.querySelector('input[name="edi-traitement"]:checked')?.value === 'charge') ? '' : 'none';
+      });
+    });
+
     // Bouton confirmer — protection anti-double-clic
     const confirmBtn = document.getElementById('edi-confirm-btn');
     if (confirmBtn) {
@@ -3808,9 +3823,26 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
         Modal.close();
 
+        // Reliquat « passé en charge » : il devient une charge du chauffeur
+        // (comme recharge/lavage) et solde la journée (dette = 0). Détails facultatifs.
+        const estCharge = reliquat > 0 && traitementReliquat === 'charge';
+        const chargeLibelle = estCharge ? ((document.getElementById('edi-charge-libelle')?.value || '').trim()) : '';
+
         try {
           const traitementManquant = reliquat > 0 ? traitementReliquat : null;
-          const statutFinal = paye >= montant ? 'valide' : 'partiel';
+          const statutFinal = (paye >= montant || estCharge) ? 'valide' : 'partiel';
+          const manquantFinal = estCharge ? 0 : Math.max(0, reliquat);
+
+          if (estCharge) {
+            Store.add('charges', {
+              id: 'CHG-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+              chauffeurId, date,
+              type: 'autre',
+              montant: Math.round(reliquat),
+              libelle: chargeLibelle || `Reliquat passé en charge (${Utils.formatDate(date)})`,
+              saisiPar: 'admin'
+            });
+          }
 
           if (isImplicit) {
             Store.add('versements', {
@@ -3818,7 +3850,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
               chauffeurId, date,
               montantVerse: Math.min(paye, montant),
               montantAttendu: montant,
-              manquant: Math.max(0, reliquat),
+              manquant: manquantFinal,
               statut: statutFinal,
               traitementManquant,
               source: source || null,
@@ -3829,7 +3861,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
             });
           } else {
             Store.update('versements', versementId, {
-              manquant: Math.max(0, reliquat),
+              manquant: manquantFinal,
               montantVerse: Math.min(paye, montant),
               statut: statutFinal,
               traitementManquant,
@@ -3845,17 +3877,19 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
             }
           }
 
+          const libReliquat = { dette: 'gard\u00e9 en dette', charge: 'pass\u00e9 en charge', perte: 'pass\u00e9 en perte' }[traitementReliquat] || traitementReliquat;
+
           // Entr\u00e9e comptable
           Store.add('comptabilite', {
             id: Utils.generateId('OP'), type: 'recette', date: dateEnc,
             categorie: source === 'contravention' ? 'autres_recettes' : 'commissions_courses',
-            description: `Recouvrement ${typeLabel} ${nom} du ${Utils.formatDate(date)} \u2014 ${Utils.formatCurrency(paye)}${reliquat > 0 ? ` (reliquat ${Utils.formatCurrency(reliquat)} en ${traitementReliquat})` : ''}`,
+            description: `Recouvrement ${typeLabel} ${nom} du ${Utils.formatDate(date)} \u2014 ${Utils.formatCurrency(paye)}${reliquat > 0 ? ` (reliquat ${Utils.formatCurrency(reliquat)} ${libReliquat})` : ''}`,
             montant: paye, modePaiement: moyen,
             notes: commentaire, dateCreation: new Date().toISOString()
           });
 
           const msg = reliquat > 0
-            ? `${Utils.formatCurrency(paye)} encaiss\u00e9(s). Reliquat de ${Utils.formatCurrency(reliquat)} en ${traitementReliquat}.`
+            ? `${Utils.formatCurrency(paye)} encaiss\u00e9(s). Reliquat de ${Utils.formatCurrency(reliquat)} ${libReliquat}.`
             : `${Utils.formatCurrency(paye)} encaiss\u00e9(s) pour le ${Utils.formatDate(date)}`;
           Toast.success(msg);
         } catch (err) {
