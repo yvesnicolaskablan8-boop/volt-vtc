@@ -22,7 +22,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 622;
+    var APP_VERSION = 623;
     var stored = parseInt(localStorage.getItem('pilote_app_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_app_version', APP_VERSION);
@@ -67,13 +67,13 @@
   <!-- Leaflet, Chart.js, jsPDF: loaded on demand via LazyLibs -->
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/variables.css?v=622">
-  <link rel="stylesheet" href="css/base.css?v=622">
-  <link rel="stylesheet" href="css/layout.css?v=622">
-  <link rel="stylesheet" href="css/components.css?v=622">
-  <link rel="stylesheet" href="css/charts.css?v=622">
-  <link rel="stylesheet" href="css/animations.css?v=622">
-  <link rel="stylesheet" href="css/responsive.css?v=622">
+  <link rel="stylesheet" href="css/variables.css?v=623">
+  <link rel="stylesheet" href="css/base.css?v=623">
+  <link rel="stylesheet" href="css/layout.css?v=623">
+  <link rel="stylesheet" href="css/components.css?v=623">
+  <link rel="stylesheet" href="css/charts.css?v=623">
+  <link rel="stylesheet" href="css/animations.css?v=623">
+  <link rel="stylesheet" href="css/responsive.css?v=623">
 
   <!-- Detect password recovery BEFORE Supabase processes the hash -->
   <script>
@@ -300,68 +300,14 @@
 
   <div class="app-container">
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-logo">
-        <img src="assets/logo-pilote.png" alt="Pilote" class="logo-icon">
-        <div class="sidebar-logo-actions">
-          <button class="theme-toggle" id="btn-refresh-page" title="Actualiser les données" style="position:relative;">
-            <iconify-icon icon="solar:refresh-bold" id="refresh-icon" style="font-size:18px;"></iconify-icon>
-          </button>
-          <button class="theme-toggle" id="theme-toggle" title="Changer de thème">
-            <iconify-icon icon="solar:moon-bold" id="theme-icon" style="font-size:18px;"></iconify-icon>
-          </button>
-        </div>
-      </div>
-
-      <nav class="sidebar-nav" id="sidebar-nav">
-        <!-- Entrées déplacées dans le dock du haut -->
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="header-user sidebar-user" id="header-user-toggle">
-          <div class="header-user-avatar">YN</div>
-          <span class="header-user-name">Yves Nicolas</span>
-          <iconify-icon icon="solar:alt-arrow-up-bold" class="header-user-chevron" style="font-size:14px;margin-left:auto;"></iconify-icon>
-          <!-- User Dropdown -->
-          <div class="header-user-dropdown" id="user-dropdown">
-            <div class="user-dropdown-header">
-              <div class="user-dropdown-avatar">YN</div>
-              <div class="user-dropdown-info">
-                <div class="user-dropdown-name">Yves Nicolas</div>
-                <div class="user-dropdown-role">Administrateur</div>
-              </div>
-            </div>
-            <div class="user-dropdown-divider"></div>
-            <button class="user-dropdown-item" id="user-dropdown-profile">
-              <iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon>
-              <span>Mon compte</span>
-            </button>
-            <button class="user-dropdown-item" id="user-dropdown-settings">
-              <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
-              <span>Paramètres</span>
-            </button>
-            <div class="user-dropdown-divider"></div>
-            <button class="user-dropdown-item user-dropdown-logout" id="user-dropdown-logout">
-              <iconify-icon icon="solar:logout-2-bold-duotone"></iconify-icon>
-              <span>Déconnexion</span>
-            </button>
-          </div>
-        </div>
-        <div class="version" style="margin-top:10px;text-align:center;">Pilote v1.0.0</div>
-      </div>
-    </aside>
-
-    <!-- Sidebar Overlay (mobile) -->
-    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <!-- Barre latérale retirée : navigation dans le dock du haut, contrôles & compte dans le header -->
 
     <!-- Main Content -->
     <main class="main-content">
       <!-- Header -->
       <header class="header">
         <div class="header-left">
-          <button class="header-toggle" id="sidebar-toggle">
-            <iconify-icon icon="solar:hamburger-menu-bold" style="font-size:20px;"></iconify-icon>
-          </button>
+          <a href="#/dashboard" class="header-logo" style="display:inline-flex;align-items:center;margin-right:6px;"><img src="assets/logo-pilote.png" alt="Pilote" style="height:30px;width:auto;display:block;"></a>
           <div class="header-breadcrumb" id="header-breadcrumb">
             <span class="text-muted">Pilote</span>
             <iconify-icon icon="solar:alt-arrow-right-bold" class="text-muted" style="font-size: 12px;"></iconify-icon>
@@ -392,6 +338,12 @@
             <iconify-icon icon="solar:magnifer-bold" style="font-size:16px;"></iconify-icon>
             <input type="text" placeholder="Rechercher..." id="global-search">
           </div>
+          <button class="theme-toggle" id="btn-refresh-page" title="Actualiser les données" style="position:relative;">
+            <iconify-icon icon="solar:refresh-bold" id="refresh-icon" style="font-size:18px;"></iconify-icon>
+          </button>
+          <button class="theme-toggle" id="theme-toggle" title="Changer de thème">
+            <iconify-icon icon="solar:moon-bold" id="theme-icon" style="font-size:18px;"></iconify-icon>
+          </button>
           <div class="header-notifications" id="notifications-toggle">
             <iconify-icon icon="solar:bell-bing-bold-duotone" style="font-size:20px;"></iconify-icon>
             <span class="badge-count" id="notif-count">3</span>
@@ -405,6 +357,35 @@
           </div>
           <!-- Slot du sélecteur de date (rempli par le tableau de bord) -->
           <div id="header-period-slot" class="header-period-slot"></div>
+          <!-- Menu utilisateur (déplacé depuis la sidebar) -->
+          <div class="header-user" id="header-user-toggle">
+            <div class="header-user-avatar">YN</div>
+            <span class="header-user-name">Yves Nicolas</span>
+            <iconify-icon icon="solar:alt-arrow-down-bold" class="header-user-chevron" style="font-size:14px;"></iconify-icon>
+            <div class="header-user-dropdown" id="user-dropdown">
+              <div class="user-dropdown-header">
+                <div class="user-dropdown-avatar">YN</div>
+                <div class="user-dropdown-info">
+                  <div class="user-dropdown-name">Yves Nicolas</div>
+                  <div class="user-dropdown-role">Administrateur</div>
+                </div>
+              </div>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item" id="user-dropdown-profile">
+                <iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon>
+                <span>Mon compte</span>
+              </button>
+              <button class="user-dropdown-item" id="user-dropdown-settings">
+                <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
+                <span>Paramètres</span>
+              </button>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item user-dropdown-logout" id="user-dropdown-logout">
+                <iconify-icon icon="solar:logout-2-bold-duotone"></iconify-icon>
+                <span>Déconnexion</span>
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -509,50 +490,50 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
 
   <!-- App JS -->
-  <script src="js/supabase-config.js?v=622"></script>
-  <script src="js/store.js?v=622"></script>
-  <script src="js/utils.js?v=622"></script>
-  <script src="js/demo-data.js?v=622"></script>
-  <script src="js/auth.js?v=622"></script>
-  <script src="js/components/toast.js?v=622"></script>
-  <script src="js/components/modal.js?v=622"></script>
-  <script src="js/components/sidebar.js?v=622"></script>
-  <script src="js/components/header.js?v=622"></script>
-  <script src="js/components/table.js?v=622"></script>
-  <script src="js/components/form-builder.js?v=622"></script>
-  <script src="js/pages/dashboard.js?v=622"></script>
-  <script src="js/pages/chauffeurs.js?v=622"></script>
-  <script src="js/pages/vehicules.js?v=622"></script>
-  <script src="js/pages/versements.js?v=622"></script>
-  <script src="js/pages/analyse-versements.js?v=622"></script>
-  <script src="js/pages/analyse-rentabilite.js?v=622"></script>
-  <script src="js/pages/bonus.js?v=622"></script>
-  <script src="js/pages/simulateur.js?v=622"></script>
-  <script src="js/pages/rentabilite.js?v=622"></script>
-  <script src="js/pages/suivi-vehicules.js?v=622"></script>
-  <script src="js/pages/controle-conduite.js?v=622"></script>
-  <script src="js/pages/rapports.js?v=622"></script>
-  <script src="js/pages/comptabilite.js?v=622"></script>
-  <script src="js/pages/planning.js?v=622"></script>
-  <script src="js/pages/occupation-vehicules.js?v=622"></script>
-  <script src="js/pages/alertes.js?v=622"></script>
-  <script src="js/pages/parametres.js?v=622"></script>
-  <script src="js/pages/yango.js?v=622"></script>
-  <script src="js/pages/messagerie.js?v=622"></script>
-  <script src="js/pages/garage.js?v=622"></script>
-  <script src="js/pages/incidents.js?v=622"></script>
-  <script src="js/pages/contraventions.js?v=622"></script>
-  <script src="js/pages/depenses.js?v=622"></script>
-  <script src="js/pages/activite.js?v=622"></script>
+  <script src="js/supabase-config.js?v=623"></script>
+  <script src="js/store.js?v=623"></script>
+  <script src="js/utils.js?v=623"></script>
+  <script src="js/demo-data.js?v=623"></script>
+  <script src="js/auth.js?v=623"></script>
+  <script src="js/components/toast.js?v=623"></script>
+  <script src="js/components/modal.js?v=623"></script>
+  <script src="js/components/sidebar.js?v=623"></script>
+  <script src="js/components/header.js?v=623"></script>
+  <script src="js/components/table.js?v=623"></script>
+  <script src="js/components/form-builder.js?v=623"></script>
+  <script src="js/pages/dashboard.js?v=623"></script>
+  <script src="js/pages/chauffeurs.js?v=623"></script>
+  <script src="js/pages/vehicules.js?v=623"></script>
+  <script src="js/pages/versements.js?v=623"></script>
+  <script src="js/pages/analyse-versements.js?v=623"></script>
+  <script src="js/pages/analyse-rentabilite.js?v=623"></script>
+  <script src="js/pages/bonus.js?v=623"></script>
+  <script src="js/pages/simulateur.js?v=623"></script>
+  <script src="js/pages/rentabilite.js?v=623"></script>
+  <script src="js/pages/suivi-vehicules.js?v=623"></script>
+  <script src="js/pages/controle-conduite.js?v=623"></script>
+  <script src="js/pages/rapports.js?v=623"></script>
+  <script src="js/pages/comptabilite.js?v=623"></script>
+  <script src="js/pages/planning.js?v=623"></script>
+  <script src="js/pages/occupation-vehicules.js?v=623"></script>
+  <script src="js/pages/alertes.js?v=623"></script>
+  <script src="js/pages/parametres.js?v=623"></script>
+  <script src="js/pages/yango.js?v=623"></script>
+  <script src="js/pages/messagerie.js?v=623"></script>
+  <script src="js/pages/garage.js?v=623"></script>
+  <script src="js/pages/incidents.js?v=623"></script>
+  <script src="js/pages/contraventions.js?v=623"></script>
+  <script src="js/pages/depenses.js?v=623"></script>
+  <script src="js/pages/activite.js?v=623"></script>
 
-  <script src="js/pages/notifications-admin.js?v=622"></script>
-  <script src="js/pages/taches.js?v=622"></script>
-  <script src="js/pages/gantt-taches.js?v=622"></script>
-  <script src="js/pages/mon-compte.js?v=622"></script>
-  <script src="js/pages/classement.js?v=622"></script>
-  <script src="js/pages/menu.js?v=622"></script>
-  <script src="js/components/bottom-nav.js?v=622"></script>
-  <script src="js/router.js?v=622"></script>
-  <script src="js/app.js?v=622"></script>
+  <script src="js/pages/notifications-admin.js?v=623"></script>
+  <script src="js/pages/taches.js?v=623"></script>
+  <script src="js/pages/gantt-taches.js?v=623"></script>
+  <script src="js/pages/mon-compte.js?v=623"></script>
+  <script src="js/pages/classement.js?v=623"></script>
+  <script src="js/pages/menu.js?v=623"></script>
+  <script src="js/components/bottom-nav.js?v=623"></script>
+  <script src="js/router.js?v=623"></script>
+  <script src="js/app.js?v=623"></script>
 </body>
 </html>
