@@ -308,7 +308,7 @@ const VersementsPage = {
 .dw-btn{flex:1;height:44px;border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.15s;}
 .dw-ghost{background:var(--vx-surface);color:var(--text-secondary);border:1px solid var(--vx-bd);}
 .dw-today{background:#eef2ff;color:#4338ca;border:1px solid #e0e7ff;}
-.dw-ok{background:#ec4899;color:#fff;box-shadow:0 8px 20px rgba(236,72,153,.28);}
+.dw-ok{background:#F5512E;color:#fff;box-shadow:0 8px 20px rgba(245,81,46,.28);}
 .wl-card{background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:28px;box-shadow:0 24px 60px rgba(17,24,39,.1);padding:24px;display:grid;grid-template-columns:400px 1fr;gap:24px;align-items:start;}
 .wl-left{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px;}
 .wl-right{min-width:0;}
@@ -330,8 +330,8 @@ const VersementsPage = {
 .wl-total-sub{display:flex;align-items:center;gap:7px;margin-top:11px;font-weight:700;font-size:14px;}
 .wl-actions{display:flex;gap:10px;}
 .wl-btn{height:48px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:.15s;width:100%;}
-.wl-btn-primary{background:#ec4899;color:#fff;box-shadow:0 8px 20px rgba(236,72,153,.28);}
-.wl-btn-primary:hover{background:#db2777;}
+.wl-btn-primary{background:#F5512E;color:#fff;box-shadow:0 8px 20px rgba(245,81,46,.28);}
+.wl-btn-primary:hover{background:#DE3E1E;}
 .wl-btn-sec{background:var(--vx-surface);color:#374151;border:1px solid var(--vx-bd);}
 .wl-btn-sec:hover{background:#eceff5;}
 .wl-act-1{flex:1;}.wl-act-ic{flex:0 0 48px;width:48px;}
@@ -418,7 +418,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
   // Avatar à initiales, teinte stable dérivée du nom (touche moderne, discrète).
   _avatar(name) {
-    const pals = [['#eef2ff', '#4f46e5'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#16a34a'], ['#fff7ed', '#ea580c'], ['#fdf2f8', '#db2777'], ['#f5f3ff', '#7c3aed'], ['#eff6ff', '#2563eb'], ['#fefce8', '#ca8a04']];
+    const pals = [['#eef2ff', '#4f46e5'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#16a34a'], ['#fff7ed', '#ea580c'], ['#fdf2f8', '#DE3E1E'], ['#f5f3ff', '#7c3aed'], ['#eff6ff', '#2563eb'], ['#fefce8', '#ca8a04']];
     const s = String(name || '?').trim();
     let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
     const [bg, fg] = pals[h % pals.length];
@@ -503,11 +503,11 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     return `<div class="wl-card" id="wl-card">
       <div class="wl-left">
       <div class="wl-pills">
-        <div class="wl-pill" style="background:linear-gradient(120deg,#fbcfe8 0%,#ffe4e6 100%);border:1px solid rgba(244,114,182,.35);">
+        <div class="wl-pill" style="background:linear-gradient(120deg,#FBD7CC 0%,#FFE8E1 100%);border:1px solid rgba(245,81,46,.3);">
           <div class="wl-pill-l"><div class="wl-pill-ic"><iconify-icon icon="solar:wallet-bold"></iconify-icon></div><span class="wl-pill-lbl">Reste à encaisser</span></div>
           <span class="wl-pill-val">${fmt(reste)}</span>
         </div>
-        <div class="wl-pill" style="background:linear-gradient(120deg,#e9d5ff 0%,#e0e7ff 100%);border:1px solid rgba(167,139,250,.35);">
+        <div class="wl-pill" style="background:linear-gradient(120deg,#D1FAE5 0%,#E9FBF2 100%);border:1px solid rgba(52,211,153,.35);">
           <div class="wl-pill-l"><div class="wl-pill-ic"><iconify-icon icon="solar:course-up-bold"></iconify-icon></div><span class="wl-pill-lbl">Déjà encaissé</span></div>
           <span class="wl-pill-val">${fmt(verse)}</span>
         </div>

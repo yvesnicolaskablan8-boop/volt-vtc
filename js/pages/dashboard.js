@@ -1484,7 +1484,7 @@ const DashboardPage = {
         .iw-grid{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(2,minmax(155px,auto));gap:16px;}
         .iw-hero{grid-column:1/span 3;grid-row:1/span 2;}
         .iw-wide{grid-column:4/span 3;grid-row:1;}
-        .iw-med{grid-column:4/span 2;grid-row:2;}
+        .iw-med{grid-column:4/span 3;grid-row:2;}
         .iw-sm{grid-column:6/span 1;grid-row:2;}
         .iw-hero-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
         .iw-hero .iw-gauge{max-width:172px;margin-top:0;}
@@ -1518,7 +1518,22 @@ const DashboardPage = {
         .iw-unit{font-size:13px;font-weight:700;color:var(--text-muted);margin-left:2px;}
         .iw-sub{font-size:11.5px;color:var(--text-muted);font-weight:600;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         @media(max-width:860px){ .iw-grid{grid-template-columns:1fr;grid-template-rows:none;} .iw-hero,.iw-wide,.iw-med,.iw-sm{grid-column:auto;grid-row:auto;} .iw-hero-mid{min-height:190px;} }
+        /* Barre d'alerte compacte en tête de dashboard */
+        .alert-banner{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:16px;border:1px solid var(--border-color);border-left:4px solid var(--alb);text-decoration:none;color:inherit;margin-bottom:16px;box-shadow:var(--shadow-card);transition:transform .15s ease,box-shadow .15s ease;}
+        .alert-banner:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(30,32,34,.10);}
+        .alb-ic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+        .alert-banner.lvl-crit .alb-ic{animation:albPulse 1.6s infinite;}
+        @keyframes albPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}70%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+        .alb-txt{font-size:15px;font-weight:700;color:var(--text-primary);flex:1;min-width:0;}
+        .alb-txt b{font-weight:800;}
+        .alb-chips{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
+        .alb-chip{font-size:11.5px;font-weight:800;padding:5px 11px;border-radius:20px;white-space:nowrap;}
+        .alb-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0;}
+        @media(max-width:640px){ .alb-txt{font-size:13px;} .alb-chips{display:none;} }
       </style>
+
+      <!-- Barre d'alerte (tête de dashboard, visible d'emblée) -->
+      ${this._renderAlertBanner(d)}
 
       <!-- Row 0 : Flotte en direct (donut centralisé) -->
       <div class="d-grid" style="grid-template-columns:1fr;">
@@ -1956,6 +1971,27 @@ const DashboardPage = {
     return head + tilesStrip + `<div style="max-height:340px;overflow-y:auto;">${rows}</div>`;
   },
 
+  // Barre d'alerte compacte en tête de dashboard — accroche l'œil s'il y a du critique/urgent.
+  _renderAlertBanner(d) {
+    const total = d.alertesTotal || 0, crit = d.alertesCritiques || 0, urg = d.alertesUrgentes || 0;
+    const att = Math.max(0, total - crit - urg);
+    const level = crit > 0 ? 'crit' : urg > 0 ? 'urg' : total > 0 ? 'att' : 'ok';
+    const conf = {
+      crit: ['#EF4444', 'rgba(239,68,68,.09)', 'solar:danger-triangle-bold'],
+      urg: ['#E8930C', 'rgba(232,147,12,.10)', 'solar:danger-triangle-bold'],
+      att: ['#0891b2', 'rgba(8,145,178,.09)', 'solar:bell-bing-bold'],
+      ok: ['#0f9d6b', 'rgba(52,211,153,.10)', 'solar:check-circle-bold'],
+    }[level];
+    const chip = (lbl, v, c) => v > 0 ? `<span class="alb-chip" style="color:${c};background:${c}20;">${v} ${lbl}</span>` : '';
+    const msg = total > 0 ? `<b>${total}</b> alerte${total > 1 ? 's' : ''} à traiter` : 'Aucune alerte · tout est en ordre';
+    return `<a href="#/alertes" class="alert-banner lvl-${level}" style="--alb:${conf[0]};background:${conf[1]};">
+      <span class="alb-ic" style="background:${conf[0]}22;color:${conf[0]};"><iconify-icon icon="${conf[2]}"></iconify-icon></span>
+      <span class="alb-txt">${msg}</span>
+      <span class="alb-chips">${chip('critiques', crit, '#EF4444')}${chip('urgentes', urg, '#E8930C')}${chip('à traiter', att, '#0891b2')}</span>
+      <iconify-icon icon="solar:alt-arrow-right-linear" class="alb-arrow"></iconify-icon>
+    </a>`;
+  },
+
   // ============ Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) ============
   // Cartes cliquables affichant la donnée réelle en un coup d'œil (chiffre + détail),
   // en remplacement des pastilles peu parlantes du header.
@@ -2025,18 +2061,7 @@ const DashboardPage = {
           </div>
         </div>
       </div>
-      <div class="iw iw-plain iw-med" style="--iw-accent:${alertAccent};--iw-bg:rgba(239,68,68,.10);">
-        <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></span><span class="iw-label">Alertes</span></div>
-        <div class="iw-wide-row">
-          <a href="#/alertes" class="iw-tres-main"><div class="iw-val" style="font-size:34px;color:${alertAccent};">${totA}</div><div class="iw-tres-lbl">au total</div></a>
-          <div class="iw-tres-chips">
-            <a href="#/alertes" class="iw-chip iw-chip-crit"><span class="iw-chip-lbl">Crit.</span><span class="iw-chip-val">${crit}</span></a>
-            <a href="#/alertes" class="iw-chip iw-chip-urg"><span class="iw-chip-lbl">Urg.</span><span class="iw-chip-val">${urg}</span></a>
-            <a href="#/alertes" class="iw-chip iw-chip-att"><span class="iw-chip-lbl">Att.</span><span class="iw-chip-val">${att}</span></a>
-          </div>
-        </div>
-      </div>
-      <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#F5512E;--iw-bg:rgba(245,81,46,.12);">
+      <a href="#/taches" class="iw iw-plain iw-med" style="--iw-accent:#F5512E;--iw-bg:rgba(245,81,46,.12);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></span><span class="iw-label">Tâches</span></div>
         <div class="iw-val" style="color:#F5512E;margin-top:auto;">${taches}</div>
         <div class="iw-sub">${tachesRetard > 0 ? `<span style="color:#EF4444;">${tachesRetard} en retard</span>` : (taches > 0 ? 'en cours' : 'Rien en attente 🎉')}</div>
