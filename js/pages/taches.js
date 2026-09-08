@@ -94,7 +94,7 @@ const TachesPage = {
     a_faire:  { color: '#f5512e', bg: 'rgba(245,81,46,.12)', label: 'A faire', icon: 'solar:clipboard-list-bold-duotone' },
     en_cours: { color: '#635bff', bg: 'rgba(99,91,255,.12)', label: 'En cours', icon: 'solar:play-bold-duotone' },
     terminee: { color: '#13deb9', bg: 'rgba(19,222,185,.14)', label: 'Terminée', icon: 'solar:check-circle-bold-duotone' },
-    annulee:  { color: '#fa896b', bg: 'rgba(250,137,107,.14)', label: 'Annulée', icon: 'solar:close-circle-bold-duotone' }
+    annulee:  { color: '#ec4899', bg: 'rgba(236,72,153,.14)', label: 'Annulée', icon: 'solar:close-circle-bold-duotone' }
   },
 
   _typeLabels: {
@@ -439,7 +439,7 @@ const TachesPage = {
       { id: 'a_faire', label: 'À faire', color: '#f5512e', icon: 'solar:clipboard-list-bold-duotone' },
       { id: 'en_cours', label: 'En cours', color: '#635bff', icon: 'solar:play-bold-duotone' },
       { id: 'terminee', label: 'Terminée', color: '#13deb9', icon: 'solar:check-circle-bold-duotone' },
-      { id: 'annulee', label: 'Annulée', color: '#fa896b', icon: 'solar:close-circle-bold-duotone' }
+      { id: 'annulee', label: 'Annulée', color: '#ec4899', icon: 'solar:close-circle-bold-duotone' }
     ];
 
     return '<div class="kanban-board" id="kanban-board">'
@@ -589,10 +589,10 @@ const TachesPage = {
     const taches = this._getTaches().filter(t => t.statut === 'a_faire' || t.statut === 'en_cours');
 
     const quadrants = [
-      { id: 'q1', urgent: true,  important: true,  label: 'Faire immédiatement', color: '#ef4444', bg: 'rgba(239,68,68,.06)', icon: 'solar:fire-bold-duotone', emptyMsg: "Rien d'urgent et important. Bien joué !" },
-      { id: 'q2', urgent: false, important: true,  label: 'Planifier', color: '#635bff', bg: 'rgba(59,130,246,.06)', icon: 'solar:calendar-bold-duotone', emptyMsg: 'Planifiez vos objectifs importants ici.' },
-      { id: 'q3', urgent: true,  important: false, label: 'Déléguer', color: '#f5512e', bg: 'rgba(249,115,22,.06)', icon: 'solar:users-group-rounded-bold-duotone', emptyMsg: 'Les tâches urgentes mais non importantes vont ici.' },
-      { id: 'q4', urgent: false, important: false, label: 'Éliminer', color: '#fa896b', bg: 'rgba(250,137,107,.08)', icon: 'solar:trash-bin-minimalistic-bold-duotone', emptyMsg: 'Pensez à supprimer ces distractions.' }
+      { id: 'q1', urgent: true,  important: true,  label: 'Faire immédiatement', color: '#ef4444', bg: 'rgba(239,68,68,.14)', icon: 'solar:fire-bold-duotone', emptyMsg: "Rien d'urgent et important. Bien joué !" },
+      { id: 'q2', urgent: false, important: true,  label: 'Planifier', color: '#635bff', bg: 'rgba(99,91,255,.14)', icon: 'solar:calendar-bold-duotone', emptyMsg: 'Planifiez vos objectifs importants ici.' },
+      { id: 'q3', urgent: true,  important: false, label: 'Déléguer', color: '#e8930c', bg: 'rgba(255,174,31,.16)', icon: 'solar:users-group-rounded-bold-duotone', emptyMsg: 'Les tâches urgentes mais non importantes vont ici.' },
+      { id: 'q4', urgent: false, important: false, label: 'Éliminer', color: '#0891b2', bg: 'rgba(8,145,178,.13)', icon: 'solar:trash-bin-minimalistic-bold-duotone', emptyMsg: 'Pensez à supprimer ces distractions.' }
     ];
 
     return '<div class="eisen-matrix" id="eisen-matrix">'
@@ -603,7 +603,7 @@ const TachesPage = {
           const qTasks = taches.filter(t => !!t.urgent === q.urgent && !!t.important === q.important);
           return '<div class="eisen-quadrant" data-quadrant="' + q.id + '"'
             + ' data-urgent="' + q.urgent + '" data-important="' + q.important + '"'
-            + ' style="background:' + q.bg + ';border:1px solid ' + q.color + '15;"'
+            + ' style="background:' + q.bg + ';border:1px solid ' + q.color + '4d;border-top:3px solid ' + q.color + ';"'
             + ' ondragover="TachesPage._eisenDragOver(event)"'
             + ' ondrop="TachesPage._eisenDrop(event, ' + q.urgent + ', ' + q.important + ')"'
             + ' ondragleave="TachesPage._eisenDragLeave(event)">'
@@ -763,7 +763,7 @@ const TachesPage = {
     const todayLineHtml = todayIdx >= 0 ? '<div class="gantt-today-line" style="left:' + (todayIdx * dayWidth + dayWidth / 2) + 'px;height:' + Math.max(tasks.length * rowHeight, 200) + 'px;"></div>' : '';
 
     // Status color map
-    const statutColors = { a_faire: '#ffae1f', en_cours: '#635bff', terminee: '#13deb9', annulee: '#fa896b' };
+    const statutColors = { a_faire: '#ffae1f', en_cours: '#635bff', terminee: '#13deb9', annulee: '#ec4899' };
     const statutIcons = { a_faire: 'solar:clipboard-list-bold', en_cours: 'solar:play-bold', terminee: 'solar:check-circle-bold', annulee: 'solar:close-circle-bold' };
     const statutLabels = { a_faire: 'À faire', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
 
