@@ -57,10 +57,10 @@ const GaragePage = {
         .maint-filter:hover:not(.active) { background:var(--bg-secondary); }
         .maint-statut-badge { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600; }
         .maint-statut-badge.en_retard, .maint-statut-badge.expire { background:rgba(239,68,68,0.12);color:#ef4444; }
-        .maint-statut-badge.urgent, .maint-statut-badge.bientot { background:rgba(245,158,11,0.12);color:#f59e0b; }
-        .maint-statut-badge.a_venir, .maint-statut-badge.valide { background:rgba(59,130,246,0.1);color:#3b82f6; }
-        .maint-statut-badge.terminee, .maint-statut-badge.favorable, .maint-statut-badge.a_jour { background:rgba(34,197,94,0.1);color:#22c55e; }
-        .maint-statut-badge.en_cours { background:rgba(59,130,246,0.1);color:#3b82f6; }
+        .maint-statut-badge.urgent, .maint-statut-badge.bientot { background:rgba(245,158,11,0.12);color:#ffae1f; }
+        .maint-statut-badge.a_venir, .maint-statut-badge.valide { background:rgba(59,130,246,0.1);color:#635bff; }
+        .maint-statut-badge.terminee, .maint-statut-badge.favorable, .maint-statut-badge.a_jour { background:rgba(34,197,94,0.1);color:#13deb9; }
+        .maint-statut-badge.en_cours { background:rgba(59,130,246,0.1);color:#635bff; }
         .maint-statut-badge.defavorable, .maint-statut-badge.contre_visite { background:rgba(239,68,68,0.12);color:#ef4444; }
       </style>
     `;
@@ -162,9 +162,9 @@ const GaragePage = {
           <span style="font-size:var(--font-size-sm);font-weight:600;color:var(--text-muted);">Filtrer :</span>
           <button class="btn btn-sm maint-filter active" data-filter="all">Toutes (${allMaintenances.length})</button>
           <button class="btn btn-sm maint-filter" data-filter="en_retard" style="color:#ef4444;">En retard (${countRetard})</button>
-          <button class="btn btn-sm maint-filter" data-filter="urgent" style="color:#f59e0b;">Urgentes (${countUrgent})</button>
-          <button class="btn btn-sm maint-filter" data-filter="a_venir" style="color:#3b82f6;">&Agrave; venir (${countAVenir})</button>
-          <button class="btn btn-sm maint-filter" data-filter="terminee" style="color:#22c55e;">Termin&eacute;es (${countComplete})</button>
+          <button class="btn btn-sm maint-filter" data-filter="urgent" style="color:#ffae1f;">Urgentes (${countUrgent})</button>
+          <button class="btn btn-sm maint-filter" data-filter="a_venir" style="color:#635bff;">&Agrave; venir (${countAVenir})</button>
+          <button class="btn btn-sm maint-filter" data-filter="terminee" style="color:#13deb9;">Termin&eacute;es (${countComplete})</button>
         </div>
       </div>
       <div class="card"><div class="card-header"><span class="card-title"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon> Maintenances (${allMaintenances.length})</span><span style="font-size:var(--font-size-xs);color:var(--text-muted);">${vehiculesAvecMaint}/${vehicules.length} v&eacute;hicules</span></div><div id="maintenances-table"></div></div>
@@ -185,8 +185,8 @@ const GaragePage = {
           { label:'Type', key:'type', render:(m) => `<span style="font-weight:600;">${typeLabels[m.type] || m.type}</span>${m.label ? `<br><span style="font-size:var(--font-size-xs);color:var(--text-muted);">${m.label}</span>` : ''}` },
           { label:'V\u00e9hicule', key:'vehiculeLabel', render:(m) => `<span style="font-weight:500;">${m.vehiculeLabel}</span><br><span style="font-size:var(--font-size-xs);color:var(--text-muted);">${m.immatriculation}</span>` },
           { label:'Chauffeur', key:'chauffeurNom', render:(m) => m.chauffeurNom ? `<a href="#/chauffeurs/${m.chauffeurId}" style="color:var(--pilote-blue);text-decoration:none;">${m.chauffeurNom}</a>` : '<span style="color:var(--text-muted);font-style:italic;">-</span>' },
-          { label:'\u00c9ch\u00e9ance', key:'prochaineDate', render:(m) => { let h=''; if(m.prochaineDate){ const j=Math.ceil((new Date(m.prochaineDate)-new Date())/86400000); const c=j<0?'#ef4444':j<=7?'#f59e0b':'var(--text-primary)'; h+=`<span style="color:${c};font-weight:500;">${Utils.formatDate(m.prochaineDate)}</span>`; if(j<0)h+=`<br><span style="font-size:var(--font-size-xs);color:#ef4444;font-weight:600;">${Math.abs(j)}j retard</span>`; else if(j<=7)h+=`<br><span style="font-size:var(--font-size-xs);color:#f59e0b;">dans ${j}j</span>`; } return h||'-'; } },
-          { label:'Pr\u00e9diction', key:'prediction', render:(m) => { if(!m.prediction||m.prediction.joursEstimes==null) return '<span style="color:var(--text-muted)">-</span>'; const j=m.prediction.joursEstimes; const c=j<0?'#ef4444':j<7?'#ef4444':j<30?'#f59e0b':'#22c55e'; const km=m.prediction.kmRestant?` (${m.prediction.kmRestant.toLocaleString('fr-FR')} km)`:''; return j<0?`<span style="color:#ef4444;font-weight:600;">D\u00e9pass\u00e9${km}</span>`:`<span style="color:${c};font-weight:600;">~${j}j${km}</span>`; } },
+          { label:'\u00c9ch\u00e9ance', key:'prochaineDate', render:(m) => { let h=''; if(m.prochaineDate){ const j=Math.ceil((new Date(m.prochaineDate)-new Date())/86400000); const c=j<0?'#ef4444':j<=7?'#ffae1f':'var(--text-primary)'; h+=`<span style="color:${c};font-weight:500;">${Utils.formatDate(m.prochaineDate)}</span>`; if(j<0)h+=`<br><span style="font-size:var(--font-size-xs);color:#ef4444;font-weight:600;">${Math.abs(j)}j retard</span>`; else if(j<=7)h+=`<br><span style="font-size:var(--font-size-xs);color:#ffae1f;">dans ${j}j</span>`; } return h||'-'; } },
+          { label:'Pr\u00e9diction', key:'prediction', render:(m) => { if(!m.prediction||m.prediction.joursEstimes==null) return '<span style="color:var(--text-muted)">-</span>'; const j=m.prediction.joursEstimes; const c=j<0?'#ef4444':j<7?'#ef4444':j<30?'#ffae1f':'#13deb9'; const km=m.prediction.kmRestant?` (${m.prediction.kmRestant.toLocaleString('fr-FR')} km)`:''; return j<0?`<span style="color:#ef4444;font-weight:600;">D\u00e9pass\u00e9${km}</span>`:`<span style="color:${c};font-weight:600;">~${j}j${km}</span>`; } },
           { label:'Co\u00fbt', key:'coutEstime', render:(m) => m.coutEstime ? `${m.coutEstime.toLocaleString('fr-FR')} F` : '-', value:(m) => m.coutEstime||0 }
         ],
         onRowClick:(id) => { const m=maintenances.find(x=>x.id===id); if(m) Router.navigate(`/vehicules/${m.vehiculeId}`); },
@@ -207,14 +207,14 @@ const GaragePage = {
     const ctx1 = document.getElementById('chart-maint-statut');
     if (ctx1) {
       const c = { en_retard: maintenances.filter(m=>m.statut==='en_retard').length, urgent: maintenances.filter(m=>m.statut==='urgent').length, a_venir: maintenances.filter(m=>m.statut==='a_venir').length, terminee: maintenances.filter(m=>m.statut==='terminee').length };
-      this._charts.push(new Chart(ctx1, { type:'doughnut', data:{ labels:['En retard','Urgentes','A venir','Terminees'], datasets:[{ data:[c.en_retard,c.urgent,c.a_venir,c.terminee], backgroundColor:['#ef4444','#f59e0b','#3b82f6','#22c55e'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:12 } } } } }));
+      this._charts.push(new Chart(ctx1, { type:'doughnut', data:{ labels:['En retard','Urgentes','A venir','Terminees'], datasets:[{ data:[c.en_retard,c.urgent,c.a_venir,c.terminee], backgroundColor:['#ef4444','#ffae1f','#635bff','#13deb9'], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:12 } } } } }));
     }
     const ctx2 = document.getElementById('chart-maint-type');
     if (ctx2) {
       const tl = { vidange:'Vidange',revision:'Revision',pneus:'Pneus',freins:'Freins',filtres:'Filtres',climatisation:'Clim.',courroie:'Courroie',controle_technique:'CT',batterie:'Batterie',amortisseurs:'Amort.',echappement:'Echap.',carrosserie:'Carros.',autre:'Autre' };
       const tc = {}; maintenances.forEach(m => { const k=m.type||'autre'; tc[k]=(tc[k]||0)+1; });
       const sorted = Object.entries(tc).sort((a,b) => b[1]-a[1]);
-      const colors = sorted.map(([t]) => { const of2=maintenances.filter(m=>m.type===t); if(of2.some(m=>m.statut==='en_retard'))return '#ef4444'; if(of2.some(m=>m.statut==='urgent'))return '#f59e0b'; return '#3b82f6'; });
+      const colors = sorted.map(([t]) => { const of2=maintenances.filter(m=>m.type===t); if(of2.some(m=>m.statut==='en_retard'))return '#ef4444'; if(of2.some(m=>m.statut==='urgent'))return '#ffae1f'; return '#635bff'; });
       this._charts.push(new Chart(ctx2, { type:'bar', data:{ labels:sorted.map(([k])=>tl[k]||k), datasets:[{ label:'Maintenances', data:sorted.map(([,v])=>v), backgroundColor:colors, borderRadius:4 }] }, options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y', plugins:{ legend:{display:false} }, scales:{ x:{beginAtZero:true,ticks:{stepSize:1}} } } }));
     }
   },
@@ -520,7 +520,7 @@ const GaragePage = {
         { label:'R\u00e9sultat', key:'resultat', render:(c) => `<span class="maint-statut-badge ${c.resultat}">${c.resultat === 'favorable' ? 'Favorable' : c.resultat === 'defavorable' ? 'D\u00e9favorable' : 'Contre-visite'}</span>` },
         { label:'Centre', key:'centre', render:(c) => c.centre || '-' },
         { label:'Co\u00fbt', key:'cout', render:(c) => c.cout ? `${c.cout.toLocaleString('fr-FR')} F` : '-', value:(c)=>c.cout||0 },
-        { label:'Expiration', key:'dateExpiration', render:(c) => { const exp=c.dateExpiration; if(!exp)return'-'; const color=exp<today?'#ef4444':exp<=dans30j?'#f59e0b':'var(--text-primary)'; return `<span style="color:${color};font-weight:500;">${Utils.formatDate(exp)}</span>`; } },
+        { label:'Expiration', key:'dateExpiration', render:(c) => { const exp=c.dateExpiration; if(!exp)return'-'; const color=exp<today?'#ef4444':exp<=dans30j?'#ffae1f':'var(--text-primary)'; return `<span style="color:${color};font-weight:500;">${Utils.formatDate(exp)}</span>`; } },
         { label:'Contre-visite', key:'contreVisiteDate', render:(c) => c.contreVisiteDate ? `${Utils.formatDate(c.contreVisiteDate)} ${c.contreVisiteResultat ? '('+c.contreVisiteResultat+')' : ''}` : '-' }
       ],
       actions:(c) => `
@@ -630,7 +630,7 @@ const GaragePage = {
         { label:'Prime annuelle', key:'primeAnnuelle', render:(v) => v.primeAnnuelle ? `${v.primeAnnuelle.toLocaleString('fr-FR')} F` : '-', value:(v)=>v.primeAnnuelle||0 },
         { label:'Expiration', key:'dateExpirationAssurance', render:(v) => {
           if (!v.dateExpirationAssurance) return '<span class="maint-statut-badge expire">Non renseign\u00e9</span>';
-          const color = v.dateExpirationAssurance < today ? '#ef4444' : v.dateExpirationAssurance <= dans30j ? '#f59e0b' : 'var(--text-primary)';
+          const color = v.dateExpirationAssurance < today ? '#ef4444' : v.dateExpirationAssurance <= dans30j ? '#ffae1f' : 'var(--text-primary)';
           return `<span style="color:${color};font-weight:500;">${Utils.formatDate(v.dateExpirationAssurance)}</span>`;
         }},
         { label:'Statut', key:'_statut', render:(v) => {
@@ -726,11 +726,11 @@ const GaragePage = {
           labels,
           datasets: [
             { label:'Achat', data:tcoData.map(t=>t.achat), backgroundColor:'#F5512E', borderRadius:2 },
-            { label:'Assurance', data:tcoData.map(t=>t.assurance), backgroundColor:'#3b82f6', borderRadius:2 },
-            { label:'Maintenance', data:tcoData.map(t=>t.maintenance), backgroundColor:'#22c55e', borderRadius:2 },
-            { label:'R\u00e9parations', data:tcoData.map(t=>t.reparations), backgroundColor:'#f59e0b', borderRadius:2 },
+            { label:'Assurance', data:tcoData.map(t=>t.assurance), backgroundColor:'#635bff', borderRadius:2 },
+            { label:'Maintenance', data:tcoData.map(t=>t.maintenance), backgroundColor:'#13deb9', borderRadius:2 },
+            { label:'R\u00e9parations', data:tcoData.map(t=>t.reparations), backgroundColor:'#ffae1f', borderRadius:2 },
             { label:'D\u00e9penses', data:tcoData.map(t=>t.depenses), backgroundColor:'#ef4444', borderRadius:2 },
-            { label:'Contraventions', data:tcoData.map(t=>t.contraventions), backgroundColor:'#ec4899', borderRadius:2 }
+            { label:'Contraventions', data:tcoData.map(t=>t.contraventions), backgroundColor:'#f5512e', borderRadius:2 }
           ]
         },
         options: {
@@ -755,7 +755,7 @@ const GaragePage = {
         { label:'Total TCO', key:'totalTCO', render:(t) => `<span style="font-weight:700;color:var(--pilote-orange);">${t.totalTCO.toLocaleString('fr-FR')} F</span>`, value:(t)=>t.totalTCO },
         { label:'F/km', key:'coutKm', render:(t) => {
           const avg = moyKm;
-          const color = t.coutKm > avg * 1.5 ? '#ef4444' : t.coutKm > avg * 1.2 ? '#f59e0b' : '#22c55e';
+          const color = t.coutKm > avg * 1.5 ? '#ef4444' : t.coutKm > avg * 1.2 ? '#ffae1f' : '#13deb9';
           return `<span style="font-weight:600;color:${color};">${t.coutKm.toFixed(0)} F</span>`;
         }, value:(t)=>t.coutKm },
         { label:'', key:'_reco', render:(t) => {
@@ -774,7 +774,7 @@ const GaragePage = {
     const vehicules = Store.get('vehicules') || [];
     const enService = vehicules.filter(v => v.statut === 'en_service');
     const rows = enService.map(v => {
-      const linked = v.yangoVehicleId ? '<iconify-icon icon="solar:link-bold-duotone" style="color:#22c55e;" title="Li\u00e9 \u00e0 Yango"></iconify-icon>' : '<iconify-icon icon="solar:link-broken-bold-duotone" style="color:var(--text-muted);" title="Non li\u00e9"></iconify-icon>';
+      const linked = v.yangoVehicleId ? '<iconify-icon icon="solar:link-bold-duotone" style="color:#13deb9;" title="Li\u00e9 \u00e0 Yango"></iconify-icon>' : '<iconify-icon icon="solar:link-broken-bold-duotone" style="color:var(--text-muted);" title="Non li\u00e9"></iconify-icon>';
       return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-color);">
         <div style="flex:1;">
           <span style="font-weight:500;">${v.marque} ${v.modele}</span>

@@ -189,7 +189,7 @@ const ClassementPage = {
     <div class="classement-page">
       <div class="classement-header">
         <div class="classement-header-left">
-          <h1><iconify-icon icon="solar:cup-star-bold-duotone" style="color:#f59e0b;"></iconify-icon> Classement des chauffeurs</h1>
+          <h1><iconify-icon icon="solar:cup-star-bold-duotone" style="color:#ffae1f;"></iconify-icon> Classement des chauffeurs</h1>
           <p class="classement-subtitle">${Utils.escHtml(periodLabel)} &bull; ${activeCount} chauffeur${activeCount !== 1 ? 's' : ''} actif${activeCount !== 1 ? 's' : ''}</p>
         </div>
         <div class="classement-header-right" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -213,15 +213,15 @@ const ClassementPage = {
 
       <div class="classement-legend">
         <div class="classement-legend-item">
-          <iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#3b82f6;"></iconify-icon>
+          <iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#635bff;"></iconify-icon>
           <span>Recettes <strong>${this._getWeights().recettes}%</strong></span>
         </div>
         <div class="classement-legend-item">
-          <iconify-icon icon="solar:steering-wheel-bold-duotone" style="color:#8b5cf6;"></iconify-icon>
+          <iconify-icon icon="solar:steering-wheel-bold-duotone" style="color:#635bff;"></iconify-icon>
           <span>Conduite <strong>${this._getWeights().conduite}%</strong></span>
         </div>
         <div class="classement-legend-item">
-          <iconify-icon icon="solar:calendar-check-bold-duotone" style="color:#22c55e;"></iconify-icon>
+          <iconify-icon icon="solar:calendar-check-bold-duotone" style="color:#13deb9;"></iconify-icon>
           <span>R&eacute;gularit&eacute; <strong>${this._getWeights().regularite}%</strong></span>
         </div>
         <div class="classement-legend-item">
@@ -307,7 +307,7 @@ const ClassementPage = {
       }
       .classement-legend-item strong { color: var(--text-primary); font-weight: 700; }
 
-      .tendance-up { color: #22c55e; }
+      .tendance-up { color: #13deb9; }
       .tendance-down { color: #ef4444; }
       .tendance-stable { color: #9ca3af; }
 
@@ -333,14 +333,14 @@ const ClassementPage = {
   _renderPodium(top3) {
     const places = [
       { data: top3[1], place: 2, color: '#9ca3af', barBg: 'linear-gradient(to top, #9ca3af22, #9ca3af44)', icon: '&#129352;' },
-      { data: top3[0], place: 1, color: '#f59e0b', barBg: 'linear-gradient(to top, #f59e0b22, #f59e0b44)', icon: '&#129351;' },
+      { data: top3[0], place: 1, color: '#ffae1f', barBg: 'linear-gradient(to top, #ffae1f22, #ffae1f44)', icon: '&#129351;' },
       { data: top3[2], place: 3, color: '#cd7f32', barBg: 'linear-gradient(to top, #cd7f3222, #cd7f3244)', icon: '&#129353;' }
     ];
 
     return `
       <div class="classement-podium">
         ${places.map(p => {
-          const scoreColor = p.data.scoreGlobal >= 75 ? '#22c55e' : p.data.scoreGlobal >= 50 ? '#f59e0b' : '#ef4444';
+          const scoreColor = p.data.scoreGlobal >= 75 ? '#13deb9' : p.data.scoreGlobal >= 50 ? '#ffae1f' : '#ef4444';
           return '<div class="podium-place podium-place-' + p.place + '" onclick="Router.navigate(\'/chauffeurs/' + p.data.id + '\')">'
             + '<div class="podium-avatar" style="background:' + p.color + ';">'
             + Utils.escHtml(p.data.initials)
@@ -382,7 +382,7 @@ const ClassementPage = {
         {
           label: 'Rang', key: 'rang',
           render: (row) => {
-            const medals = { 1: '#f59e0b', 2: '#9ca3af', 3: '#cd7f32' };
+            const medals = { 1: '#ffae1f', 2: '#9ca3af', 3: '#cd7f32' };
             const c = medals[row.rang];
             if (c) return '<div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:' + c + '20;color:' + c + ';">' + row.rang + '</div>';
             return '<span style="font-weight:600;color:var(--text-secondary);padding-left:8px;">' + row.rang + '</span>';
@@ -398,7 +398,7 @@ const ClassementPage = {
         {
           label: 'Score Global', key: 'scoreGlobal', value: (row) => row.scoreGlobal,
           render: (row) => {
-            const color = row.scoreGlobal >= 75 ? '#22c55e' : row.scoreGlobal >= 50 ? '#f59e0b' : '#ef4444';
+            const color = row.scoreGlobal >= 75 ? '#13deb9' : row.scoreGlobal >= 50 ? '#ffae1f' : '#ef4444';
             return '<div style="display:flex;align-items:center;gap:8px;">'
               + '<div style="flex:1;max-width:80px;height:6px;border-radius:3px;background:rgba(0,0,0,.06);"><div style="height:100%;width:' + row.scoreGlobal + '%;border-radius:3px;background:' + color + ';transition:width .4s ease;"></div></div>'
               + '<strong style="color:' + color + ';font-size:14px;">' + row.scoreGlobal + '</strong><span style="font-size:11px;color:var(--text-muted);">/100</span>'
@@ -412,24 +412,24 @@ const ClassementPage = {
         {
           label: 'Score Conduite', key: 'scoreConduite', value: (row) => row.scoreConduite,
           render: (row) => {
-            const color = row.scoreConduite >= 75 ? '#22c55e' : row.scoreConduite >= 50 ? '#f59e0b' : '#ef4444';
+            const color = row.scoreConduite >= 75 ? '#13deb9' : row.scoreConduite >= 50 ? '#ffae1f' : '#ef4444';
             return '<span style="color:' + color + ';font-weight:600;">' + row.scoreConduite + '<span style="font-size:10px;opacity:.6">/100</span></span>';
           }
         },
         {
           label: 'R\u00e9gularit\u00e9', key: 'regularite', value: (row) => row.regularite,
           render: (row) => {
-            const color = row.regularite >= 80 ? '#22c55e' : row.regularite >= 50 ? '#f59e0b' : '#ef4444';
+            const color = row.regularite >= 80 ? '#13deb9' : row.regularite >= 50 ? '#ffae1f' : '#ef4444';
             return '<span style="color:' + color + ';font-weight:600;">' + row.regularite + '%</span>';
           }
         },
         {
           label: 'Infractions', key: 'totalInfractions', value: (row) => row.totalInfractions,
           render: (row) => {
-            if (row.totalInfractions === 0) return '<span style="color:#22c55e;font-weight:600;">0</span>';
+            if (row.totalInfractions === 0) return '<span style="color:#13deb9;font-weight:600;">0</span>';
             const parts = [];
             if (row.nbContras > 0) parts.push('<span style="color:#ef4444;">' + row.nbContras + ' contr.</span>');
-            if (row.nbInfractions > 0) parts.push('<span style="color:#f97316;">' + row.nbInfractions + ' inf.</span>');
+            if (row.nbInfractions > 0) parts.push('<span style="color:#f5512e;">' + row.nbInfractions + ' inf.</span>');
             return '<span style="font-weight:600;">' + parts.join(' + ') + '</span>';
           }
         },
@@ -464,15 +464,15 @@ const ClassementPage = {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
         <div>
-          <label style="${labelStyle}"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#3b82f6;font-size:13px;vertical-align:middle;"></iconify-icon> Recettes (%)</label>
+          <label style="${labelStyle}"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#635bff;font-size:13px;vertical-align:middle;"></iconify-icon> Recettes (%)</label>
           <input type="number" id="cfg-poids-recettes" value="${w.recettes}" min="0" max="100" style="${inputStyle}">
         </div>
         <div>
-          <label style="${labelStyle}"><iconify-icon icon="solar:steering-wheel-bold-duotone" style="color:#8b5cf6;font-size:13px;vertical-align:middle;"></iconify-icon> Conduite (%)</label>
+          <label style="${labelStyle}"><iconify-icon icon="solar:steering-wheel-bold-duotone" style="color:#635bff;font-size:13px;vertical-align:middle;"></iconify-icon> Conduite (%)</label>
           <input type="number" id="cfg-poids-conduite" value="${w.conduite}" min="0" max="100" style="${inputStyle}">
         </div>
         <div>
-          <label style="${labelStyle}"><iconify-icon icon="solar:calendar-check-bold-duotone" style="color:#22c55e;font-size:13px;vertical-align:middle;"></iconify-icon> Regularite (%)</label>
+          <label style="${labelStyle}"><iconify-icon icon="solar:calendar-check-bold-duotone" style="color:#13deb9;font-size:13px;vertical-align:middle;"></iconify-icon> Regularite (%)</label>
           <input type="number" id="cfg-poids-regularite" value="${w.regularite}" min="0" max="100" style="${inputStyle}">
         </div>
         <div>
@@ -480,7 +480,7 @@ const ClassementPage = {
           <input type="number" id="cfg-poids-infractions" value="${w.infractions}" min="0" max="100" style="${inputStyle}">
         </div>
       </div>
-      <div id="cfg-total-indicator" style="font-size:12px;font-weight:600;margin-bottom:14px;padding:8px 12px;border-radius:8px;background:rgba(34,197,94,0.08);color:#22c55e;text-align:center;">Total : 100%</div>
+      <div id="cfg-total-indicator" style="font-size:12px;font-weight:600;margin-bottom:14px;padding:8px 12px;border-radius:8px;background:rgba(34,197,94,0.08);color:#13deb9;text-align:center;">Total : 100%</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
         <div>
           <label style="${labelStyle}">Bonus hebdo (FCFA)</label>
@@ -532,7 +532,7 @@ const ClassementPage = {
     if (el) {
       const ok = total === 100;
       el.style.background = ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)';
-      el.style.color = ok ? '#22c55e' : '#ef4444';
+      el.style.color = ok ? '#13deb9' : '#ef4444';
       el.textContent = 'Total : ' + total + '%' + (ok ? '' : ' (doit faire 100%)');
     }
   },

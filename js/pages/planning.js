@@ -213,7 +213,7 @@ const PlanningPage = {
              <button class="btn btn-sm btn-primary" style="flex:none;" onclick="PlanningPage._reessayerChargement()">Réessayer</button>`);
         } else {
           // 3) Parc reellement vide : etat normal, pas une panne.
-          avis = cadre('rgba(37,99,235,.07)', 'rgba(37,99,235,.2)', '#1d4ed8',
+          avis = cadre('rgba(37,99,235,.07)', 'rgba(37,99,235,.2)', '#4a43c2',
             `<iconify-icon icon="solar:users-group-rounded-bold-duotone" style="font-size:1.5rem;flex:none;"></iconify-icon>
              <div style="flex:1;"><strong>Aucun chauffeur enregistré</strong> — ajoutez vos titulaires et doublures, puis utilisez « Générer le mois » pour remplir ce calendrier automatiquement.</div>
              <button class="btn btn-sm btn-primary" style="flex:none;" onclick="PlanningPage._reessayerChargement()">Aller aux chauffeurs</button>`);
@@ -226,7 +226,7 @@ const PlanningPage = {
     } catch (err) {
       console.error('[Planning] Render error:', err);
       ct.innerHTML = `<div class="card" style="padding:40px;text-align:center;">
-        <iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size:3rem;color:#f59e0b;"></iconify-icon>
+        <iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size:3rem;color:#ffae1f;"></iconify-icon>
         <h3 style="margin:12px 0 8px;">Erreur d'affichage</h3>
         <p style="color:var(--text-muted);font-size:13px;">${err.message}</p>
         <button class="btn btn-primary" onclick="PlanningPage._renderView()" style="margin-top:12px;">Réessayer</button>
@@ -295,7 +295,7 @@ const PlanningPage = {
   },
 
   _absenceTypeColor(type) {
-    const colors = { repos: '#64748b', conge: '#3b82f6', maladie: '#ef4444', formation: '#f59e0b', personnel: '#8b5cf6', suspension: '#dc2626' };
+    const colors = { repos: '#64748b', conge: '#635bff', maladie: '#ef4444', formation: '#ffae1f', personnel: '#635bff', suspension: '#dc2626' };
     return colors[type] || '#64748b';
   },
 
@@ -309,7 +309,7 @@ const PlanningPage = {
   },
 
   _shiftTypeColor(type) {
-    return { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6', custom: '#F5512E' }[type] || '#64748b';
+    return { matin: '#13deb9', apres_midi: '#635bff', journee: '#ffae1f', nuit: '#635bff', custom: '#F5512E' }[type] || '#64748b';
   },
 
   // Helpers pour créneaux personnalisés (acceptent l'objet shift complet)
@@ -453,7 +453,7 @@ const PlanningPage = {
       <div class="card" style="margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);display:flex;gap:var(--space-lg);flex-wrap:wrap;font-size:var(--font-size-xs);color:var(--text-secondary);">
         <span><strong>${filledSlots}</strong> créneau${filledSlots > 1 ? 'x' : ''} programmé${filledSlots > 1 ? 's' : ''}</span>
         <span><strong>${uniqueAbsDrivers}</strong> chauffeur${uniqueAbsDrivers > 1 ? 's' : ''} absent${uniqueAbsDrivers > 1 ? 's' : ''}</span>
-        <span title="Journées d'exploitation assurées sur le total possible cette semaine">Couverture flotte : <strong style="color:${couv.pct >= 95 ? '#16a34a' : couv.pct >= 75 ? '#b45309' : '#b91c1c'}">${couv.couverts}/${couv.total} jours (${couv.pct}%)</strong>${couv.perte > 0 ? ` · <span style="color:#b91c1c" title="Recette non versée (location) ou CA non produit (salarié)">${Utils.formatCurrency(couv.perte)} non produits</span>` : ''}</span>
+        <span title="Journées d'exploitation assurées sur le total possible cette semaine">Couverture flotte : <strong style="color:${couv.pct >= 95 ? '#02b3a9' : couv.pct >= 75 ? '#b45309' : '#b91c1c'}">${couv.couverts}/${couv.total} jours (${couv.pct}%)</strong>${couv.perte > 0 ? ` · <span style="color:#b91c1c" title="Recette non versée (location) ou CA non produit (salarié)">${Utils.formatCurrency(couv.perte)} non produits</span>` : ''}</span>
         <button class="btn btn-sm btn-secondary" id="btn-gen-mois" style="margin-left:auto;"><iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon> Générer le mois</button>
         <button class="btn btn-sm btn-primary" id="btn-gen-semaine"><iconify-icon icon="solar:magic-stick-3-bold-duotone"></iconify-icon> Compléter la semaine</button>
       </div>
@@ -469,7 +469,7 @@ const PlanningPage = {
   // =================== VUE MOBILE (grille compacte comme dashboard) ===================
 
   _renderMobileDayView(chauffeurs, days, vehMap, stats) {
-    const avatarColors = ['#F5512E','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
+    const avatarColors = ['#F5512E','#13deb9','#ffae1f','#ef4444','#635bff','#635bff','#f5512e','#13deb9','#f5512e','#0891b2'];
 
     // KPIs compact
     let html = `
@@ -507,13 +507,13 @@ const PlanningPage = {
         .pm-cell { height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; font-size:11px; font-weight:700; }
         .pm-cell:active { transform:scale(1.1); }
         .pm-shift { background:linear-gradient(135deg,rgba(245,81,46,.15),rgba(139,92,246,.1)); color:#F5512E; }
-        .pm-shift-m { background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.08)); color:#22c55e; }
-        .pm-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.08)); color:#3b82f6; }
-        .pm-shift-j { background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.08)); color:#f59e0b; }
-        .pm-shift-n { background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.08)); color:#8b5cf6; }
-        .pm-absence { background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.06)); color:#f97316; }
+        .pm-shift-m { background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.08)); color:#13deb9; }
+        .pm-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.08)); color:#635bff; }
+        .pm-shift-j { background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.08)); color:#ffae1f; }
+        .pm-shift-n { background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.08)); color:#635bff; }
+        .pm-absence { background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.06)); color:#f5512e; }
         .pm-absence-maladie { background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(239,68,68,.06)); color:#ef4444; }
-        .pm-absence-conge { background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(59,130,246,.06)); color:#3b82f6; }
+        .pm-absence-conge { background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(59,130,246,.06)); color:#635bff; }
         .pm-suspendu { background:repeating-linear-gradient(135deg,transparent,transparent 2px,rgba(239,68,68,.06) 2px,rgba(239,68,68,.06) 4px); color:#ef4444; opacity:.5; }
         .pm-repos { background:rgba(0,0,0,.02); color:#d1d5db; }
         [data-theme="dark"] .pm-repos { background:rgba(255,255,255,.03); color:#4b5563; }
@@ -581,11 +581,11 @@ const PlanningPage = {
 
         <!-- Légende compact -->
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
-          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#22c55e;"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;"></span>Mat</div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:7px;height:7px;border-radius:50%;background:#3b82f6;"></span>AM</div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#f59e0b;"><span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;"></span>Jour</div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#8b5cf6;"><span style="width:7px;height:7px;border-radius:50%;background:#8b5cf6;"></span>Nuit</div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#f97316;"><span style="width:7px;height:7px;border-radius:50%;background:#f97316;"></span>Abs</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#13deb9;"><span style="width:7px;height:7px;border-radius:50%;background:#13deb9;"></span>Mat</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#635bff;"><span style="width:7px;height:7px;border-radius:50%;background:#635bff;"></span>AM</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#ffae1f;"><span style="width:7px;height:7px;border-radius:50%;background:#ffae1f;"></span>Jour</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#635bff;"><span style="width:7px;height:7px;border-radius:50%;background:#635bff;"></span>Nuit</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#f5512e;"><span style="width:7px;height:7px;border-radius:50%;background:#f5512e;"></span>Abs</div>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#ef4444;"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;"></span>Mal</div>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#94a3b8;"><span style="width:7px;height:7px;border-radius:50%;background:#d1d5db;"></span>Repos</div>
           <div style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#ef4444;"><iconify-icon icon="solar:danger-triangle-bold" style="font-size:10px;"></iconify-icon>Retard</div>
@@ -617,7 +617,7 @@ const PlanningPage = {
   },
 
   _renderDesktopGridView(chauffeurs, days, vehMap, stats, todayStr, versements) {
-    const avatarColors = ['#F5512E','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4'];
+    const avatarColors = ['#F5512E','#13deb9','#ffae1f','#ef4444','#635bff','#635bff','#f5512e','#13deb9','#f5512e','#0891b2'];
 
     return `
       <style>
@@ -631,14 +631,14 @@ const PlanningPage = {
           color:#b45309;
           background:linear-gradient(180deg, rgba(251,191,36,.2) 0%, rgba(251,191,36,.08) 100%);
           border-radius:12px 12px 0 0;
-          border-bottom:3px solid #f59e0b;
+          border-bottom:3px solid #ffae1f;
         }
         .pg-head .pg-daynum { display:block; font-size:18px; font-weight:800; color:var(--text-primary); margin-top:2px; }
-        .pg-head.today .pg-daynum { color:#d97706; }
+        .pg-head.today .pg-daynum { color:#e8930c; }
         [data-theme="dark"] .pg-head { color:#6b7280; }
         [data-theme="dark"] .pg-head.today { background:linear-gradient(180deg, rgba(251,191,36,.25) 0%, rgba(251,191,36,.1) 100%); }
         [data-theme="dark"] .pg-head .pg-daynum { color:#d1d5db; }
-        [data-theme="dark"] .pg-head.today .pg-daynum { color:#fbbf24; }
+        [data-theme="dark"] .pg-head.today .pg-daynum { color:#f5c542; }
 
         .pg-driver {
           display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--text-primary);
@@ -669,10 +669,10 @@ const PlanningPage = {
         .pg-cell:hover { transform:scale(1.06); box-shadow:0 4px 12px rgba(0,0,0,.1); z-index:2; }
 
         /* Shift colors — gradient like dashboard */
-        .pg-shift-matin { background:linear-gradient(135deg,rgba(34,197,94,.18),rgba(74,222,128,.1)); color:#22c55e; }
-        .pg-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.18),rgba(96,165,250,.1)); color:#3b82f6; }
-        .pg-shift-journee { background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(251,191,36,.1)); color:#f59e0b; }
-        .pg-shift-nuit { background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(167,139,250,.1)); color:#8b5cf6; }
+        .pg-shift-matin { background:linear-gradient(135deg,rgba(34,197,94,.18),rgba(74,222,128,.1)); color:#13deb9; }
+        .pg-shift-am { background:linear-gradient(135deg,rgba(59,130,246,.18),rgba(96,165,250,.1)); color:#635bff; }
+        .pg-shift-journee { background:linear-gradient(135deg,rgba(245,158,11,.18),rgba(251,191,36,.1)); color:#ffae1f; }
+        .pg-shift-nuit { background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(167,139,250,.1)); color:#635bff; }
         .pg-shift-custom { background:linear-gradient(135deg,rgba(245,81,46,.15),rgba(139,92,246,.1)); color:#F5512E; }
 
         .pg-shift-matin:hover { background:linear-gradient(135deg,rgba(34,197,94,.28),rgba(74,222,128,.18)); }
@@ -688,11 +688,11 @@ const PlanningPage = {
         [data-theme="dark"] .pg-shift-custom { background:linear-gradient(135deg,rgba(245,81,46,.22),rgba(139,92,246,.15)); }
 
         /* Absence */
-        .pg-absence { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f97316; }
+        .pg-absence { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f5512e; }
         .pg-absence:hover { background:linear-gradient(135deg,rgba(249,115,22,.25),rgba(251,146,60,.15)); }
         .pg-absence-maladie { background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(248,113,113,.1)); color:#ef4444; }
         .pg-absence-maladie:hover { background:linear-gradient(135deg,rgba(239,68,68,.28),rgba(248,113,113,.2)); }
-        .pg-absence-conge { background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(96,165,250,.08)); color:#3b82f6; }
+        .pg-absence-conge { background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(96,165,250,.08)); color:#635bff; }
         .pg-absence-conge:hover { background:linear-gradient(135deg,rgba(59,130,246,.25),rgba(96,165,250,.15)); }
 
         /* Repos */
@@ -844,12 +844,12 @@ const PlanningPage = {
 
         <!-- Légende -->
         <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
-          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(34,197,94,.08);font-size:11px;font-weight:600;color:#22c55e;"><span style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></span> Matin</div>
-          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(59,130,246,.08);font-size:11px;font-weight:600;color:#3b82f6;"><span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> AM</div>
-          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.08);font-size:11px;font-weight:600;color:#f59e0b;"><span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Journée</div>
-          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(139,92,246,.08);font-size:11px;font-weight:600;color:#8b5cf6;"><span style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;"></span> Nuit</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(34,197,94,.08);font-size:11px;font-weight:600;color:#13deb9;"><span style="width:6px;height:6px;border-radius:50%;background:#13deb9;"></span> Matin</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(59,130,246,.08);font-size:11px;font-weight:600;color:#635bff;"><span style="width:6px;height:6px;border-radius:50%;background:#635bff;"></span> AM</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(245,158,11,.08);font-size:11px;font-weight:600;color:#ffae1f;"><span style="width:6px;height:6px;border-radius:50%;background:#ffae1f;"></span> Journée</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(139,92,246,.08);font-size:11px;font-weight:600;color:#635bff;"><span style="width:6px;height:6px;border-radius:50%;background:#635bff;"></span> Nuit</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(245,81,46,.08);font-size:11px;font-weight:600;color:#F5512E;"><span style="width:6px;height:6px;border-radius:50%;background:#F5512E;"></span> Perso.</div>
-          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f5512e;"><span style="width:6px;height:6px;border-radius:50%;background:#f5512e;"></span> Absent</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
           <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><iconify-icon icon="solar:danger-triangle-bold" style="font-size:10px;"></iconify-icon> En retard</div>
         </div>
@@ -891,7 +891,7 @@ const PlanningPage = {
     return `
       <div class="card" style="margin-bottom:var(--space-lg);padding:16px 20px;border-radius:16px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <div style="width:34px;height:34px;border-radius:10px;background:rgba(16,185,129,.12);color:#10b981;display:flex;align-items:center;justify-content:center;font-size:15px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(16,185,129,.12);color:#13deb9;display:flex;align-items:center;justify-content:center;font-size:15px;">
             <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
           </div>
           <div>
@@ -901,12 +901,12 @@ const PlanningPage = {
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
           <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(16,185,129,.1);">
-            <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#13deb9;"></span>
             <span style="font-size:11px;color:var(--text-muted);">En service</span>
             <strong style="margin-left:auto;font-size:13px;color:var(--text-primary);">${serviceEnCours}</strong>
           </div>
           <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(249,115,22,.1);">
-            <span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#f5512e;"></span>
             <span style="font-size:11px;color:var(--text-muted);">Pause</span>
             <strong style="margin-left:auto;font-size:13px;color:var(--text-primary);">${serviceEnPause}</strong>
           </div>
@@ -1195,7 +1195,7 @@ const PlanningPage = {
       .pcal-head div { text-align:center; font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--text-muted); }
       .pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
       .pcal-cell { border:1px solid var(--border-color); border-radius:14px; background:var(--bg-secondary); min-height:122px; padding:10px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:6px; }
-      .pcal-cell:hover { border-color:var(--pilote-blue, #3b82f6); box-shadow:0 2px 10px rgba(59,130,246,.10); }
+      .pcal-cell:hover { border-color:var(--pilote-blue, #635bff); box-shadow:0 2px 10px rgba(59,130,246,.10); }
       .pcal-cell-out { background:var(--bg-tertiary); border-color:transparent; cursor:default; opacity:.55; }
       /* Aujourd'hui : cellule teintée bleu clair + pastille de date bleue (style Spike) */
       .pcal-cell-today { background:rgba(245,81,46,.07); border-color:rgba(245,81,46,.45); }
@@ -1338,7 +1338,7 @@ const PlanningPage = {
                   <td style="padding:10px 8px;text-align:center;">
                     <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
                       <div style="width:60px;height:6px;border-radius:3px;background:var(--bg-tertiary);overflow:hidden;">
-                        <div style="height:100%;width:${st.tauxPresence}%;border-radius:3px;background:${st.tauxPresence >= 70 ? '#22c55e' : st.tauxPresence >= 50 ? '#f59e0b' : '#ef4444'};"></div>
+                        <div style="height:100%;width:${st.tauxPresence}%;border-radius:3px;background:${st.tauxPresence >= 70 ? '#13deb9' : st.tauxPresence >= 50 ? '#ffae1f' : '#ef4444'};"></div>
                       </div>
                       <span style="font-size:var(--font-size-xs);font-weight:600;">${st.tauxPresence}%</span>
                     </div>
@@ -1385,8 +1385,8 @@ const PlanningPage = {
 
     const ctx1 = document.getElementById('chart-planning-worked');
     if (ctx1) {
-      const workedBgColors = workedData.map(v => v >= daysInMonth * 0.7 ? '#22c55e' : v >= daysInMonth * 0.5 ? '#f59e0b' : '#ef4444');
-      const workedHoverColors = workedData.map(v => v >= daysInMonth * 0.7 ? '#16a34a' : v >= daysInMonth * 0.5 ? '#d97706' : '#dc2626');
+      const workedBgColors = workedData.map(v => v >= daysInMonth * 0.7 ? '#13deb9' : v >= daysInMonth * 0.5 ? '#ffae1f' : '#ef4444');
+      const workedHoverColors = workedData.map(v => v >= daysInMonth * 0.7 ? '#02b3a9' : v >= daysInMonth * 0.5 ? '#e8930c' : '#dc2626');
       this._charts.push(new Chart(ctx1, {
         type: 'bar',
         data: {
@@ -1872,7 +1872,7 @@ const PlanningPage = {
       title: '<iconify-icon icon="solar:magic-stick-3-bold-duotone" style="color:var(--pilote-blue)"></iconify-icon> Compléter la semaine',
       body: `<div style="font-size:var(--font-size-sm);line-height:1.7">
         <p><strong>${nouveaux.length} créneau(x)</strong> vont être créés — dont <strong>${parRole}</strong> en remplacement par une doublure${nbNuit > 0 ? ` et <strong>${nbNuit}</strong> en service de nuit` : ''}.</p>
-        <p style="padding:10px 12px;border-radius:8px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2)">Recette supplémentaire attendue : <strong style="color:#16a34a">${Utils.formatCurrency(recettePotentielle)}</strong></p>
+        <p style="padding:10px 12px;border-radius:8px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2)">Recette supplémentaire attendue : <strong style="color:#02b3a9">${Utils.formatCurrency(recettePotentielle)}</strong></p>
         ${sansDoublure > 0 ? `<p style="color:#b45309">⚠ ${sansDoublure} jour(s) de repos restent non couverts : aucune doublure n'est désignée sur ces véhicules.</p>` : ''}
         ${bloques > 0 ? `<p style="color:#b45309">⚠ ${bloques} jour(s) écarté(s) : le chauffeur atteindrait 7 jours consécutifs.</p>` : ''}
         <p style="color:var(--text-muted);font-size:var(--font-size-xs)">Les créneaux déjà saisis ne sont pas modifiés.</p>
@@ -2431,7 +2431,7 @@ const PlanningPage = {
     `).join('');
 
     Modal.open({
-      title: '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> Dépenses récurrentes',
+      title: '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#ffae1f;"></iconify-icon> Dépenses récurrentes',
       body: `
         <div style="display:flex;gap:8px;margin-bottom:1rem">
           <button class="btn btn-primary btn-sm" onclick="PlanningPage._addRecModele()"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Nouveau modèle</button>
@@ -2455,7 +2455,7 @@ const PlanningPage = {
     const chauffeurs = Store.get('chauffeurs') || [];
     const typeOptions = this._getDepTypeOptions();
     Modal.form(
-      '<iconify-icon icon="solar:add-circle-bold" style="color:#22c55e;"></iconify-icon> Nouveau modèle de dépense',
+      '<iconify-icon icon="solar:add-circle-bold" style="color:#13deb9;"></iconify-icon> Nouveau modèle de dépense',
       `<form id="form-rec-modele" class="modal-form">
         <div class="form-group"><label>Nom du modèle *</label><input type="text" name="nom" required placeholder="Ex: Carburant journalier"></div>
         <div class="form-group"><label>Chauffeur</label>
@@ -2657,7 +2657,7 @@ const PlanningPage = {
     const totalAmount = grid.filter(g => !g.exists).reduce((s, g) => s + g.montant, 0);
 
     Modal.open({
-      title: '<iconify-icon icon="solar:calculator-bold-duotone" style="color:#22c55e;"></iconify-icon> Grille de dépenses à valider',
+      title: '<iconify-icon icon="solar:calculator-bold-duotone" style="color:#13deb9;"></iconify-icon> Grille de dépenses à valider',
       body: `
         <div style="margin-bottom:1rem;display:flex;gap:1rem;flex-wrap:wrap">
           <span class="badge badge-success">${newCount} nouvelles</span>
@@ -2801,7 +2801,7 @@ const PlanningPage = {
       const el = document.getElementById('yango-balance-value');
       if (el) {
         const bal = data.balance;
-        const color = bal < 0 ? '#ef4444' : bal > 0 ? '#22c55e' : 'var(--text-primary)';
+        const color = bal < 0 ? '#ef4444' : bal > 0 ? '#13deb9' : 'var(--text-primary)';
         el.style.color = color;
         el.textContent = Utils.formatCurrency(bal);
       }

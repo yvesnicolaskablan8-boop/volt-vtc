@@ -81,8 +81,8 @@ const Utils = {
   // Avatar color from string
   getAvatarColor(str) {
     const colors = [
-      '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6',
-      '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#06b6d4'
+      '#635bff', '#13deb9', '#ffae1f', '#ef4444', '#635bff',
+      '#f5512e', '#13deb9', '#f5512e', '#635bff', '#0891b2'
     ];
     let hash = 0;
     for (let i = 0; i < str.length; i++) {

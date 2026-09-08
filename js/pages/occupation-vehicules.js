@@ -40,7 +40,7 @@ const OccupationVehiculesPage = {
 
   // Couleur stable par chauffeur (hash simple sur l'id).
   _chColor(id) {
-    const pal = ['#F5512E', '#13DEB9', '#8b5cf6', '#f97316', '#06b6d4', '#ec4899', '#eab308', '#0a9d78', '#e0603a', '#635BFF'];
+    const pal = ['#F5512E', '#13DEB9', '#635bff', '#f5512e', '#0891b2', '#f5512e', '#e8930c', '#0a9d78', '#e0603a', '#635BFF'];
     let h = 0; const s = String(id || '');
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
     return pal[h % pal.length];

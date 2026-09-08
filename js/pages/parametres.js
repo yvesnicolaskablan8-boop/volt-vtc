@@ -261,10 +261,10 @@ const ParametresPage = {
 
         const levels = [
           { label: 'Très faible', color: '#ef4444', width: '20%' },
-          { label: 'Faible', color: '#f97316', width: '40%' },
-          { label: 'Moyen', color: '#eab308', width: '60%' },
-          { label: 'Fort', color: '#22c55e', width: '80%' },
-          { label: 'Très fort', color: '#10b981', width: '100%' }
+          { label: 'Faible', color: '#f5512e', width: '40%' },
+          { label: 'Moyen', color: '#e8930c', width: '60%' },
+          { label: 'Fort', color: '#13deb9', width: '80%' },
+          { label: 'Très fort', color: '#13deb9', width: '100%' }
         ];
         const level = levels[Math.min(score, 4)];
 
@@ -2115,9 +2115,9 @@ const ParametresPage = {
       </div>
 
       <!-- Bonus de performance -->
-      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #22c55e;">
+      <div class="card" style="margin-top:var(--space-lg);border-top:3px solid #13deb9;">
         <div class="card-header">
-          <span class="card-title"><iconify-icon icon="solar:cup-bold-duotone" style="color:#22c55e;"></iconify-icon> Bonus de performance</span>
+          <span class="card-title"><iconify-icon icon="solar:cup-bold-duotone" style="color:#13deb9;"></iconify-icon> Bonus de performance</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -2181,7 +2181,7 @@ const ParametresPage = {
             </div>
 
             <div style="padding:12px 16px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);font-size:var(--font-size-xs);color:var(--text-secondary);">
-              <iconify-icon icon="solar:info-circle-bold-duotone" style="color:#22c55e;margin-right:6px;"></iconify-icon>
+              <iconify-icon icon="solar:info-circle-bold-duotone" style="color:#13deb9;margin-right:6px;"></iconify-icon>
               Le chauffeur doit atteindre <strong>un score de conduite ≥ <span id="bonus-info-score">${bonus.scoreMinimum || 90}</span>/100</strong> et <strong>un temps d'activité Yango ≥ <span id="bonus-info-activite">${Math.round((bonus.tempsActiviteMin || 600) / 60)}</span>h/jour</strong> pour recevoir le bonus de <strong><span id="bonus-info-valeur">${(bonus.bonusValeur || 5000).toLocaleString('fr-FR')}</span> <span id="bonus-info-unite">${(bonus.bonusType || 'montant_fixe') === 'montant_fixe' ? 'FCFA' : '%'}</span></strong>.
             </div>
           </div>
@@ -2350,7 +2350,7 @@ const ParametresPage = {
 
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border-color);">
               <div>
-                <div style="font-weight:500;font-size:var(--font-size-sm);"><iconify-icon icon="solar:chat-dots-bold-duotone" style="color:#22c55e;margin-right:6px;"></iconify-icon> SMS (Twilio)</div>
+                <div style="font-weight:500;font-size:var(--font-size-sm);"><iconify-icon icon="solar:chat-dots-bold-duotone" style="color:#13deb9;margin-right:6px;"></iconify-icon> SMS (Twilio)</div>
                 <div style="font-size:var(--font-size-xs);color:var(--text-muted);">SMS aux chauffeurs. Necessite un compte Twilio (~0.05$/SMS).</div>
               </div>
               <label class="toggle-switch">
@@ -2388,7 +2388,7 @@ const ParametresPage = {
         <div>
           <div class="card" style="margin-bottom:var(--space-lg);">
             <div class="card-header">
-              <span class="card-title"><iconify-icon icon="solar:hourglass-bold-duotone" style="color:#f59e0b;"></iconify-icon> Rappels deadline</span>
+              <span class="card-title"><iconify-icon icon="solar:hourglass-bold-duotone" style="color:#ffae1f;"></iconify-icon> Rappels deadline</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-sm);padding-top:var(--space-md);">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -2586,7 +2586,7 @@ const ParametresPage = {
               resultDiv.style.display = 'block';
               resultDiv.innerHTML = `
                 <div style="padding:12px 16px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);font-size:var(--font-size-xs);">
-                  <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;margin-right:6px;"></iconify-icon>
+                  <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;margin-right:6px;"></iconify-icon>
                   <strong>${data.sent}</strong> envoyee(s), <strong>${data.failed}</strong> echec(s) sur <strong>${data.total}</strong> chauffeur(s)
                 </div>
               `;
@@ -2765,12 +2765,12 @@ const ParametresPage = {
       { name: 'nom', label: 'Nom du parc', type: 'text', required: true, placeholder: 'Ex: Abidjan Nord' },
       { name: 'adresse', label: 'Adresse / Zone', type: 'text', placeholder: 'Ex: Cocody, Abidjan' },
       { name: 'couleur', label: 'Couleur', type: 'select', options: [
-        { value: '#3b82f6', label: '🔵 Bleu' },
-        { value: '#22c55e', label: '🟢 Vert' },
-        { value: '#f59e0b', label: '🟡 Orange' },
+        { value: '#635bff', label: '🔵 Bleu' },
+        { value: '#13deb9', label: '🟢 Vert' },
+        { value: '#ffae1f', label: '🟡 Orange' },
         { value: '#ef4444', label: '🔴 Rouge' },
-        { value: '#8b5cf6', label: '🟣 Violet' },
-        { value: '#06b6d4', label: '🔵 Cyan' }
+        { value: '#635bff', label: '🟣 Violet' },
+        { value: '#0891b2', label: '🔵 Cyan' }
       ]},
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
     ];
@@ -2798,12 +2798,12 @@ const ParametresPage = {
       { name: 'nom', label: 'Nom du parc', type: 'text', required: true },
       { name: 'adresse', label: 'Adresse / Zone', type: 'text' },
       { name: 'couleur', label: 'Couleur', type: 'select', options: [
-        { value: '#3b82f6', label: '🔵 Bleu' },
-        { value: '#22c55e', label: '🟢 Vert' },
-        { value: '#f59e0b', label: '🟡 Orange' },
+        { value: '#635bff', label: '🔵 Bleu' },
+        { value: '#13deb9', label: '🟢 Vert' },
+        { value: '#ffae1f', label: '🟡 Orange' },
         { value: '#ef4444', label: '🔴 Rouge' },
-        { value: '#8b5cf6', label: '🟣 Violet' },
-        { value: '#06b6d4', label: '🔵 Cyan' }
+        { value: '#635bff', label: '🟣 Violet' },
+        { value: '#0891b2', label: '🔵 Cyan' }
       ]},
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
     ];
@@ -2865,7 +2865,7 @@ const ParametresPage = {
       '<div class="card">' +
         '<div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">' +
           '<span class="card-title" style="display:flex;align-items:center;gap:8px;">' +
-            '<iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:24px;color:#7c3aed;"></iconify-icon> Wave Money' +
+            '<iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:24px;color:#4a43c2;"></iconify-icon> Wave Money' +
           '</span>' +
           '<span class="badge ' + (waveConfigured ? 'badge-success' : 'badge-danger') + '">' +
             (waveConfigured ? 'Connecté' : 'Non configuré') +
@@ -2897,7 +2897,7 @@ const ParametresPage = {
       '<div class="card">' +
         '<div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">' +
           '<span class="card-title" style="display:flex;align-items:center;gap:8px;">' +
-            '<iconify-icon icon="solar:taxi-bold-duotone" style="font-size:24px;color:#f59e0b;"></iconify-icon> Yango Fleet' +
+            '<iconify-icon icon="solar:taxi-bold-duotone" style="font-size:24px;color:#ffae1f;"></iconify-icon> Yango Fleet' +
           '</span>' +
           '<span class="badge ' + (yangoConfigured ? 'badge-success' : 'badge-danger') + '">' +
             (yangoConfigured ? 'Connecté' : 'Non configuré') +

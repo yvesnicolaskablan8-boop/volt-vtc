@@ -129,7 +129,7 @@ const BonusPage = {
     const lignes = resultats.map(r => {
       const estVerse = verseIds.has(r.chauffeurId);
       const statut = estVerse
-        ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;">VERSE</span>'
+        ? '<span style="background:#dcfce7;color:#02b3a9;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;">VERSE</span>'
         : r.bloque
           ? '<span style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;">RETENU</span>'
           : r.montant > 0
@@ -140,7 +140,7 @@ const BonusPage = {
         <td style="padding:9px 10px;font-weight:600;">${Utils.escHtml(r.nom)}
           <div style="font-size:10px;color:var(--text-muted);font-weight:500;">${r.typeContrat === 'salarie' ? 'Salarie' : 'Location'}</div></td>
         <td style="padding:9px 10px;font-size:var(--font-size-xs);color:var(--text-secondary);">${Utils.escHtml(detail)}</td>
-        <td style="padding:9px 10px;text-align:right;font-weight:800;color:${r.montant > 0 && !r.bloque ? '#15803d' : 'var(--text-muted)'};">${r.montant > 0 ? Utils.formatCurrency(r.montant) : '—'}</td>
+        <td style="padding:9px 10px;text-align:right;font-weight:800;color:${r.montant > 0 && !r.bloque ? '#02b3a9' : 'var(--text-muted)'};">${r.montant > 0 ? Utils.formatCurrency(r.montant) : '—'}</td>
         <td style="padding:9px 10px;text-align:center;">${statut}</td>
       </tr>`;
     }).join('');
@@ -149,7 +149,7 @@ const BonusPage = {
       ${avertissementCa ? `<div style="padding:10px 12px;border-radius:8px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.2);color:#b45309;font-size:var(--font-size-sm);margin-bottom:12px;">${avertissementCa}</div>` : ''}
       <div class="d-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;">
         <div class="d-card"><div class="d-lbl">A verser</div><div class="d-val" style="color:#b45309;">${Utils.formatCurrency(total)}</div><div class="d-sub">${aVerser.length} chauffeur(s)</div></div>
-        <div class="d-card"><div class="d-lbl">Deja verse</div><div class="d-val" style="color:#15803d;">${Utils.formatCurrency(totalVerse)}</div><div class="d-sub">${dejaVerses.length} chauffeur(s)</div></div>
+        <div class="d-card"><div class="d-lbl">Deja verse</div><div class="d-val" style="color:#02b3a9;">${Utils.formatCurrency(totalVerse)}</div><div class="d-sub">${dejaVerses.length} chauffeur(s)</div></div>
         <div class="d-card"><div class="d-lbl">Retenus (dette)</div><div class="d-val" style="color:#b91c1c;">${resultats.filter(r => r.bloque).length}</div><div class="d-sub">bonus bloques</div></div>
       </div>
 
@@ -178,7 +178,7 @@ const BonusPage = {
     Modal.open({
       title: '<iconify-icon icon="solar:card-send-bold-duotone" style="color:var(--pilote-blue)"></iconify-icon> Verser les bonus',
       body: `<div style="font-size:var(--font-size-sm);line-height:1.7;">
-        <p><strong>${aVerser.length} bonus</strong> pour un total de <strong style="color:#15803d;">${Utils.formatCurrency(total)}</strong> — semaine du ${this._libelleSemaine()}.</p>
+        <p><strong>${aVerser.length} bonus</strong> pour un total de <strong style="color:#02b3a9;">${Utils.formatCurrency(total)}</strong> — semaine du ${this._libelleSemaine()}.</p>
         <div style="margin:12px 0;">
           <label style="font-weight:600;display:block;margin-bottom:6px;">Moyen de versement</label>
           <select id="bn-moyen" class="form-control">

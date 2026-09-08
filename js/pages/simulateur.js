@@ -210,7 +210,7 @@ const SimulateurPage = {
             <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;">Calendrier du mois</div>
             <div id="sim-cal" style="overflow-x:auto;"></div>
             <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:var(--font-size-xs);margin-top:10px;align-items:center;">
-              <span><span style="display:inline-block;width:13px;height:13px;border-radius:4px;background:#dbeafe;vertical-align:-2px;margin-right:5px;"></span>Titulaire</span>
+              <span><span style="display:inline-block;width:13px;height:13px;border-radius:4px;background:#eef2ff;vertical-align:-2px;margin-right:5px;"></span>Titulaire</span>
               <span><span style="display:inline-block;width:13px;height:13px;border-radius:4px;background:#fef3c7;vertical-align:-2px;margin-right:5px;"></span>Doublure</span>
               <span><span style="display:inline-block;width:13px;height:13px;border-radius:4px;background:#f1f5f9;vertical-align:-2px;margin-right:5px;"></span>Voiture à l'arrêt</span>
             </div>
@@ -306,13 +306,13 @@ const SimulateurPage = {
         <div class="d-val">${titulaires.length + sim.doublures.length}</div>
         <div class="d-sub">${titulaires.length} titulaires + ${sim.doublures.length} doublure${sim.doublures.length > 1 ? 's' : ''}${aRecruter > 0 ? ` · ${aRecruter} à recruter` : ''}</div></div>
       <div class="d-card"><div class="d-lbl">Journées d'exploitation</div>
-        <div class="d-val" style="color:${sim.arrets === 0 ? '#15803d' : '#b91c1c'}">${titulaires.length * sim.nbJours - sim.arrets}/${titulaires.length * sim.nbJours}</div>
+        <div class="d-val" style="color:${sim.arrets === 0 ? '#02b3a9' : '#b91c1c'}">${titulaires.length * sim.nbJours - sim.arrets}/${titulaires.length * sim.nbJours}</div>
         <div class="d-sub">${sim.arrets === 0 ? 'aucune voiture à l\'arrêt' : sim.arrets + ' non couvert(s)'}</div></div>
       <div class="d-card"><div class="d-lbl">Résultat d'exploitation</div>
-        <div class="d-val" style="color:${fin.exploitation >= 0 ? '#15803d' : '#b91c1c'}">${F(fin.exploitation)}</div>
+        <div class="d-val" style="color:${fin.exploitation >= 0 ? '#02b3a9' : '#b91c1c'}">${F(fin.exploitation)}</div>
         <div class="d-sub">avant structure et impôts</div></div>
       <div class="d-card"><div class="d-lbl">Bénéfice net</div>
-        <div class="d-val" style="color:${fin.net >= 0 ? '#15803d' : '#b91c1c'}">${F(fin.net)}</div>
+        <div class="d-val" style="color:${fin.net >= 0 ? '#02b3a9' : '#b91c1c'}">${F(fin.net)}</div>
         <div class="d-sub">${F(fin.net / titulaires.length)} par voiture</div></div>`;
 
     let alertes = '';
@@ -323,10 +323,10 @@ const SimulateurPage = {
     if (sim.arrets > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(185,28,28,.08);border:1px solid rgba(185,28,28,.2);color:#b91c1c;font-size:var(--font-size-sm);margin-bottom:10px;">${sim.arrets} jour(s)-voiture non couvert(s) : la règle des 6 jours consécutifs bloque. Il faut une doublure de plus.</div>`;
     if (this._nbReels === 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.2);color:#b45309;font-size:var(--font-size-sm);margin-bottom:10px;">Aucun véhicule réel n'a été lu : la simulation tourne entièrement sur des voitures fictives. Si votre parc existe bien, actualisez la page — et reconnectez-vous si le problème persiste, votre session a pu expirer.</div>`;
     const ecartParc = titulaires.length - this._nbReels;
-    if (ecartParc !== 0 && this._nbReels > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#1d4ed8;font-size:var(--font-size-sm);margin-bottom:10px;">Simulation sur <strong>${titulaires.length} voiture${titulaires.length > 1 ? 's' : ''}</strong> alors que votre parc réel en compte <strong>${this._nbReels}</strong> — ${ecartParc > 0 ? `${ecartParc} voiture${ecartParc > 1 ? 's' : ''} ajoutée${ecartParc > 1 ? 's' : ''} pour l'hypothèse` : `${-ecartParc} voiture${-ecartParc > 1 ? 's' : ''} mise${-ecartParc > 1 ? 's' : ''} de côté`}. Ramenez le curseur sur ${this._nbReels} pour retrouver votre situation actuelle.</div>`;
+    if (ecartParc !== 0 && this._nbReels > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#4a43c2;font-size:var(--font-size-sm);margin-bottom:10px;">Simulation sur <strong>${titulaires.length} voiture${titulaires.length > 1 ? 's' : ''}</strong> alors que votre parc réel en compte <strong>${this._nbReels}</strong> — ${ecartParc > 0 ? `${ecartParc} voiture${ecartParc > 1 ? 's' : ''} ajoutée${ecartParc > 1 ? 's' : ''} pour l'hypothèse` : `${-ecartParc} voiture${-ecartParc > 1 ? 's' : ''} mise${-ecartParc > 1 ? 's' : ''} de côté`}. Ramenez le curseur sur ${this._nbReels} pour retrouver votre situation actuelle.</div>`;
     const sansRepos2 = titulaires.filter(t => t.repos2Defaut).length;
-    if (sansRepos2 > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#1d4ed8;font-size:var(--font-size-sm);margin-bottom:10px;">Les salariés ont deux jours de repos par semaine. Pour ${sansRepos2} chauffeur(s), le second jour n'est pas encore renseigné : la simulation applique un jour par défaut, décalé de 3 jours du premier. Les totaux sont donc justes, mais les jours exacts sont à confirmer sur les fiches chauffeurs.</div>`;
-    if (!alertes) alertes = `<div style="padding:10px 13px;border-radius:10px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);color:#15803d;font-size:var(--font-size-sm);margin-bottom:10px;">Chaque voiture roule tous les jours du mois, personne ne dépasse 6 jours consécutifs, et les repos sont décalés.</div>`;
+    if (sansRepos2 > 0) alertes += `<div style="padding:10px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#4a43c2;font-size:var(--font-size-sm);margin-bottom:10px;">Les salariés ont deux jours de repos par semaine. Pour ${sansRepos2} chauffeur(s), le second jour n'est pas encore renseigné : la simulation applique un jour par défaut, décalé de 3 jours du premier. Les totaux sont donc justes, mais les jours exacts sont à confirmer sur les fiches chauffeurs.</div>`;
+    if (!alertes) alertes = `<div style="padding:10px 13px;border-radius:10px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);color:#02b3a9;font-size:var(--font-size-sm);margin-bottom:10px;">Chaque voiture roule tous les jours du mois, personne ne dépasse 6 jours consécutifs, et les repos sont décalés.</div>`;
     document.getElementById('sim-alerte').innerHTML = alertes;
 
     const l = (lib, val, couleur) => `<tr style="border-bottom:1px solid var(--border-color);"><td style="padding:6px 8px;">${lib}</td><td style="padding:6px 8px;text-align:right;font-weight:700;${couleur ? 'color:' + couleur : ''}">${val}</td></tr>`;
@@ -344,31 +344,31 @@ const SimulateurPage = {
       <div style="padding:11px 13px;border-radius:10px;background:var(--bg-tertiary);font-size:var(--font-size-xs);line-height:1.55;margin-bottom:12px;">
         <div style="font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:9px;">Base de calcul</div>
         <div style="font-weight:800;">1 — Ce que vit UNE voiture sur le mois : ${sim.nbJours} jours à couvrir</div>
-        ${pt('#15803d', `environ <strong>${moyTit} jours</strong> conduits par son titulaire salarié (il a 2 jours de repos par semaine)`)}
-        ${moyDoub > 0 ? pt(p.doublureSalariee ? '#15803d' : '#2563eb', `environ <strong>${moyDoub} jours</strong> conduits par sa doublure`) : ''}
+        ${pt('#02b3a9', `environ <strong>${moyTit} jours</strong> conduits par son titulaire salarié (il a 2 jours de repos par semaine)`)}
+        ${moyDoub > 0 ? pt(p.doublureSalariee ? '#02b3a9' : '#4a43c2', `environ <strong>${moyDoub} jours</strong> conduits par sa doublure`) : ''}
         ${moyArr > 0 ? pt('#b91c1c', `environ <strong>${moyArr} jours</strong> sans conducteur`) : ''}
         <div style="margin-top:3px;color:var(--text-muted);">${moyTit} + ${moyDoub}${moyArr > 0 ? ' + ' + moyArr : ''} = ${sim.nbJours} jours. Aucun chauffeur ne roule plus de ${sim.nbJours} jours.</div>
         <div style="font-weight:800;margin-top:11px;">2 — Le parc entier : on additionne les ${nbV} voiture${nbV > 1 ? 's' : ''}</div>
         <div style="color:var(--text-muted);margin-bottom:3px;">L'unité devient la <strong>journée d'exploitation</strong> : une voiture qui roule un jour.</div>
-        ${pt('#15803d', `<strong>${sim.joursTitulaires} journées d'exploitation</strong> assurées par les titulaires → le CA vous revient (${F(p.objectifCA)}/j)`)}
-        ${sim.joursDoublures > 0 ? pt(p.doublureSalariee ? '#15803d' : '#2563eb', `<strong>${sim.joursDoublures} journées d'exploitation</strong> assurées par les doublures → ${p.doublureSalariee ? `doublures salariées, le CA vous revient aussi (${F(p.objectifCA)}/j)` : `doublures locataires : elles gardent le CA et vous versent ${F(p.recetteDoublure)}/j`}`) : ''}
+        ${pt('#02b3a9', `<strong>${sim.joursTitulaires} journées d'exploitation</strong> assurées par les titulaires → le CA vous revient (${F(p.objectifCA)}/j)`)}
+        ${sim.joursDoublures > 0 ? pt(p.doublureSalariee ? '#02b3a9' : '#4a43c2', `<strong>${sim.joursDoublures} journées d'exploitation</strong> assurées par les doublures → ${p.doublureSalariee ? `doublures salariées, le CA vous revient aussi (${F(p.objectifCA)}/j)` : `doublures locataires : elles gardent le CA et vous versent ${F(p.recetteDoublure)}/j`}`) : ''}
         ${sim.arrets > 0 ? pt('#b91c1c', `<strong>${sim.arrets} journées d'exploitation</strong> perdues, sans conducteur → aucune recette`) : ''}
         <div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border-color);"><strong>${joursExploites} journées d'exploitation</strong> sur ${joursPossibles} possibles (${nbV} × ${sim.nbJours}) — parc utilisé à ${joursPossibles > 0 ? Math.round(joursExploites / joursPossibles * 100) : 0} %</div>
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:var(--font-size-sm);">
         ${l(libCA, '+ ' + F(fin.caBrut))}
         ${l(`− Commission Yango (${p.commission} %)`, '− ' + F(fin.commission), '#b91c1c')}
-        ${!p.doublureSalariee ? l(`Journées d'exploitation confiées aux doublures (${sim.joursDoublures} × ${F(p.recetteDoublure)})`, '+ ' + F(fin.recettesDoublures), '#15803d') : ''}
+        ${!p.doublureSalariee ? l(`Journées d'exploitation confiées aux doublures (${sim.joursDoublures} × ${F(p.recetteDoublure)})`, '+ ' + F(fin.recettesDoublures), '#02b3a9') : ''}
         ${l(`− Masse salariale chargée (${fin.nbSalaries} salariés)`, '− ' + F(fin.masse), '#b91c1c')}
         ${l('− Énergie', '− ' + F(fin.coutEnergie), '#b91c1c')}
         ${l(`− Entretien, assurance, location (${titulaires.length} voitures)`, '− ' + F(fin.coutFixe), '#b91c1c')}
-        <tr style="background:var(--bg-tertiary);"><td style="padding:7px 8px;"><strong>= Résultat d'exploitation</strong></td><td style="padding:7px 8px;text-align:right;"><strong style="color:${fin.exploitation >= 0 ? '#15803d' : '#b91c1c'}">${F(fin.exploitation)}</strong></td></tr>
+        <tr style="background:var(--bg-tertiary);"><td style="padding:7px 8px;"><strong>= Résultat d'exploitation</strong></td><td style="padding:7px 8px;text-align:right;"><strong style="color:${fin.exploitation >= 0 ? '#02b3a9' : '#b91c1c'}">${F(fin.exploitation)}</strong></td></tr>
         ${l('− Frais de structure', '− ' + F(p.fraisStructure), '#b91c1c')}
         ${l(`− Bonus hebdomadaires (${fin.nbSalaries} × ${F(p.bonusHebdo)}/sem)`, '− ' + F(fin.bonus), '#b91c1c')}
         ${l('− Provision sinistres & réparations', '− ' + F(fin.provisions), '#b91c1c')}
         ${l('<strong>= Résultat avant impôt</strong>', '<strong>' + F(fin.avantImpot) + '</strong>')}
         ${l(`− Impôts & taxes (${p.tauxImpot} %)`, '− ' + F(fin.impot), '#b91c1c')}
-        <tr style="background:var(--bg-tertiary);"><td style="padding:8px;"><strong>BÉNÉFICE NET</strong></td><td style="padding:8px;text-align:right;"><strong style="font-size:1.05rem;color:${fin.net >= 0 ? '#15803d' : '#b91c1c'}">${F(fin.net)}</strong></td></tr>
+        <tr style="background:var(--bg-tertiary);"><td style="padding:8px;"><strong>BÉNÉFICE NET</strong></td><td style="padding:8px;text-align:right;"><strong style="font-size:1.05rem;color:${fin.net >= 0 ? '#02b3a9' : '#b91c1c'}">${F(fin.net)}</strong></td></tr>
       </table>
       <div style="margin-top:12px;padding:11px 13px;border-radius:10px;background:${fin.ecart >= 0 ? 'rgba(22,163,74,.08)' : 'rgba(185,28,28,.08)'};border:1px solid ${fin.ecart >= 0 ? 'rgba(22,163,74,.2)' : 'rgba(185,28,28,.2)'};font-size:var(--font-size-sm);line-height:1.6;">
         <strong>Comparaison (résultat d'exploitation) :</strong> votre modèle de location actuel rapporterait <strong>${F(fin.referenceExploitation)}</strong>.
@@ -393,7 +393,7 @@ const SimulateurPage = {
         <div style="font-size:1.25rem;font-weight:900;color:${couleur};margin-top:2px;">${F(val)}</div>
         <div class="d-sub">${sous}</div>
       </div>`;
-    const vert = '#15803d', rouge = '#b91c1c';
+    const vert = '#02b3a9', rouge = '#b91c1c';
     document.getElementById('sim-jour').innerHTML = `
       <div class="d-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;">
         ${tuile('Bénéfice net / jour', netJour, `sur ${sim.nbJours} jours`, netJour >= 0 ? vert : rouge)}
@@ -426,8 +426,8 @@ const SimulateurPage = {
       rows += `<tr><td style="position:sticky;left:0;background:var(--bg-secondary);z-index:1;padding:5px 9px;text-align:left;font-size:11px;font-weight:700;border-bottom:1px solid var(--border-color);">${Utils.escHtml(t.vehicule || ('Voiture ' + (v + 1)))}<div style="font-weight:400;font-size:9.5px;color:var(--text-muted);">${Utils.escHtml(t.nom)} · repos ${[t.repos, t.repos2].filter(x => x === 0 || x).map(x => NOMS_J[x]).join(' et ')}</div></td>`;
       for (let j = 0; j < sim.nbJours; j++) {
         const c = sim.grille[v][j];
-        const bg = !c ? '#f1f5f9' : (c.role === 'titulaire' ? '#dbeafe' : '#fef3c7');
-        const fg = !c ? '#94a3b8' : (c.role === 'titulaire' ? '#1e3a8a' : '#92400e');
+        const bg = !c ? '#f1f5f9' : (c.role === 'titulaire' ? '#eef2ff' : '#fef3c7');
+        const fg = !c ? '#94a3b8' : (c.role === 'titulaire' ? '#312e81' : '#92400e');
         rows += `<td style="border:1px solid var(--border-color);padding:0;"><div title="${c ? Utils.escHtml(c.nom) : 'Voiture à l\'arrêt'}" style="background:${bg};color:${fg};padding:5px 2px;font-size:9.5px;font-weight:700;overflow:hidden;">${c ? Utils.escHtml(court(c.nom)) : '—'}</div></td>`;
       }
       rows += '</tr>';

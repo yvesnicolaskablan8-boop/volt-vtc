@@ -86,9 +86,9 @@ const CarteTrajetsPage = {
       <div id="ct-legend" class="card" style="margin-bottom:var(--space-md);display:none;">
         <div class="card-body" style="display:flex;flex-wrap:wrap;gap:var(--space-lg);align-items:center;padding:var(--space-sm) var(--space-md);">
           <span style="font-weight:600;font-size:var(--font-size-sm);">L\u00e9gende vitesse :</span>
-          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#22c55e;border-radius:2px;display:inline-block;"></span> &lt; 50 km/h</span>
-          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#eab308;border-radius:2px;display:inline-block;"></span> 50-90 km/h</span>
-          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#f97316;border-radius:2px;display:inline-block;"></span> 90-110 km/h</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#13deb9;border-radius:2px;display:inline-block;"></span> &lt; 50 km/h</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#e8930c;border-radius:2px;display:inline-block;"></span> 50-90 km/h</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#f5512e;border-radius:2px;display:inline-block;"></span> 90-110 km/h</span>
           <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#ef4444;border-radius:2px;display:inline-block;"></span> &gt; 110 km/h</span>
         </div>
       </div>
@@ -194,9 +194,9 @@ const CarteTrajetsPage = {
   },
 
   _speedColor(speed) {
-    if (speed < 50) return '#22c55e';
-    if (speed < 90) return '#eab308';
-    if (speed < 110) return '#f97316';
+    if (speed < 50) return '#13deb9';
+    if (speed < 90) return '#e8930c';
+    if (speed < 110) return '#f5512e';
     return '#ef4444';
   },
 
@@ -222,7 +222,7 @@ const CarteTrajetsPage = {
     const first = samples[0];
     if (first.lat && first.lng) {
       this._startMarker = L.circleMarker([first.lat, first.lng], {
-        radius: 10, color: '#fff', weight: 2, fillColor: '#22c55e', fillOpacity: 1
+        radius: 10, color: '#fff', weight: 2, fillColor: '#13deb9', fillOpacity: 1
       }).addTo(this._map).bindPopup('<b>D\u00e9part</b><br>' + (first.heure || '--'));
       this._layers.push(this._startMarker);
     }

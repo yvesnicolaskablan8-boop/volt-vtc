@@ -140,13 +140,13 @@
 }
 
 /* Icon color variants — gradient backgrounds with shadow */
-.kpi-card.green .kpi-icon { background: linear-gradient(135deg, #22c55e, #4ade80); box-shadow: 0 4px 12px rgba(34,197,94,.25); color: #fff; }
-.kpi-card.yellow .kpi-icon { background: linear-gradient(135deg, #f59e0b, #fbbf24); box-shadow: 0 4px 12px rgba(245,158,11,.25); color: #fff; }
+.kpi-card.green .kpi-icon { background: linear-gradient(135deg, #13deb9, #34d399); box-shadow: 0 4px 12px rgba(34,197,94,.25); color: #fff; }
+.kpi-card.yellow .kpi-icon { background: linear-gradient(135deg, #ffae1f, #f5c542); box-shadow: 0 4px 12px rgba(245,158,11,.25); color: #fff; }
 .kpi-card.red .kpi-icon { background: linear-gradient(135deg, #ef4444, #f87171); box-shadow: 0 4px 12px rgba(239,68,68,.25); color: #fff; }
-.kpi-card.cyan .kpi-icon { background: linear-gradient(135deg, #06b6d4, #22d3ee); box-shadow: 0 4px 12px rgba(6,182,212,.25); color: #fff; }
+.kpi-card.cyan .kpi-icon { background: linear-gradient(135deg, #0891b2, #0891b2); box-shadow: 0 4px 12px rgba(6,182,212,.25); color: #fff; }
 .kpi-card.orange .kpi-icon { background: linear-gradient(135deg, #F5512E, #F5804E); box-shadow: 0 4px 12px rgba(245,81,46,.25); color: #fff; }
-.kpi-card.purple .kpi-icon { background: linear-gradient(135deg, #8b5cf6, #a78bfa); box-shadow: 0 4px 12px rgba(139,92,246,.25); color: #fff; }
-.kpi-card.blue .kpi-icon { background: linear-gradient(135deg, #3b82f6, #60a5fa); box-shadow: 0 4px 12px rgba(59,130,246,.25); color: #fff; }
+.kpi-card.purple .kpi-icon { background: linear-gradient(135deg, #635bff, #8aa8ff); box-shadow: 0 4px 12px rgba(139,92,246,.25); color: #fff; }
+.kpi-card.blue .kpi-icon { background: linear-gradient(135deg, #635bff, #8aa8ff); box-shadow: 0 4px 12px rgba(59,130,246,.25); color: #fff; }
 
 .kpi-value {
   font-size: 2rem;
@@ -1218,7 +1218,7 @@ textarea.form-control {
   font-weight: 600 !important;
   margin-top: 20px;
   border-radius: 10px !important;
-  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  background: linear-gradient(135deg, #635bff, #4a43c2) !important;
   border: none !important;
   letter-spacing: 0.3px;
   transition: all 0.3s ease !important;
@@ -1282,7 +1282,7 @@ textarea.form-control {
   align-items: center;
   justify-content: center;
   font-size: 22px;
-  color: #f59e0b;
+  color: #ffae1f;
 }
 
 .login-back-btn {
@@ -1392,7 +1392,7 @@ textarea.form-control {
   gap: 4px;
   padding: 2px 8px;
   background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  color: #13deb9;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -1404,7 +1404,7 @@ textarea.form-control {
   content: '';
   width: 6px;
   height: 6px;
-  background: #22c55e;
+  background: #13deb9;
   border-radius: 50%;
   animation: yango-dot-pulse 2s ease-in-out infinite;
 }
@@ -1465,7 +1465,7 @@ textarea.form-control {
 
 .yango-icon-green {
   background: rgba(34, 197, 94, 0.15) !important;
-  color: #22c55e !important;
+  color: #13deb9 !important;
 }
 
 .yango-icon-orange {
@@ -1475,12 +1475,12 @@ textarea.form-control {
 
 .yango-icon-blue {
   background: rgba(59, 130, 246, 0.15) !important;
-  color: #3b82f6 !important;
+  color: #635bff !important;
 }
 
 .yango-icon-purple {
   background: rgba(139, 92, 246, 0.15) !important;
-  color: #8b5cf6 !important;
+  color: #635bff !important;
 }
 
 /* Yango status badges */
@@ -1500,12 +1500,12 @@ textarea.form-control {
 
 .yango-status-online {
   background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
+  color: #13deb9;
 }
 
 .yango-status-busy {
   background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
+  color: #ffae1f;
 }
 
 .yango-status-offline {
@@ -1522,8 +1522,8 @@ textarea.form-control {
   margin-right: 2px;
 }
 
-.yango-dot-green { background: #22c55e; }
-.yango-dot-yellow { background: #f59e0b; }
+.yango-dot-green { background: #13deb9; }
+.yango-dot-yellow { background: #ffae1f; }
 .yango-dot-red { background: #ef4444; }
 
 /* Yango drivers card */
@@ -1580,7 +1580,7 @@ textarea.form-control {
 
 .yango-error i {
   font-size: 24px;
-  color: #f59e0b;
+  color: #ffae1f;
 }
 
 .yango-empty {
@@ -1604,7 +1604,7 @@ textarea.form-control {
   height: 28px;
   min-width: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FC4C02, #ff7e47);
+  background: linear-gradient(135deg, #FC4C02, #f5804e);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1875,18 +1875,18 @@ textarea.form-control {
 
 [data-theme="light"] .kpi-icon {
   background: rgba(59, 130, 246, 0.08);
-  color: #3b82f6;
+  color: #635bff;
 }
 
-[data-theme="light"] .yango-icon-green { background: rgba(34, 197, 94, 0.1) !important; color: #16a34a !important; }
+[data-theme="light"] .yango-icon-green { background: rgba(34, 197, 94, 0.1) !important; color: #02b3a9 !important; }
 [data-theme="light"] .yango-icon-orange { background: rgba(252, 76, 2, 0.08) !important; color: #FC4C02 !important; }
-[data-theme="light"] .yango-icon-blue { background: rgba(59, 130, 246, 0.1) !important; color: #2563eb !important; }
-[data-theme="light"] .yango-icon-purple { background: rgba(139, 92, 246, 0.1) !important; color: #7c3aed !important; }
+[data-theme="light"] .yango-icon-blue { background: rgba(59, 130, 246, 0.1) !important; color: #4a43c2 !important; }
+[data-theme="light"] .yango-icon-purple { background: rgba(139, 92, 246, 0.1) !important; color: #4a43c2 !important; }
 
 /* Badge live: ensure green text is visible */
 [data-theme="light"] .yango-badge-live {
   background: rgba(34, 197, 94, 0.12);
-  color: #16a34a;
+  color: #02b3a9;
   font-weight: 700;
 }
 
@@ -1917,7 +1917,7 @@ textarea.form-control {
 }
 
 [data-theme="light"] .yango-balance-positive {
-  color: #16a34a;
+  color: #02b3a9;
 }
 
 [data-theme="light"] .yango-balance-negative {
@@ -1927,12 +1927,12 @@ textarea.form-control {
 /* Status badges */
 [data-theme="light"] .yango-status-online {
   background: rgba(34, 197, 94, 0.1);
-  color: #16a34a;
+  color: #02b3a9;
 }
 
 [data-theme="light"] .yango-status-busy {
   background: rgba(245, 158, 11, 0.1);
-  color: #d97706;
+  color: #e8930c;
 }
 
 [data-theme="light"] .yango-status-offline {
@@ -1980,7 +1980,7 @@ textarea.form-control {
 }
 
 [data-theme="light"] .yango-top-amount {
-  color: #ea580c;
+  color: #de3e1e;
 }
 
 [data-theme="light"] .yango-top-rank {
@@ -2096,7 +2096,7 @@ textarea.form-control {
 [data-theme="light"] .yango-work-rule-badge {
   background: rgba(252, 76, 2, 0.08);
   border-color: rgba(252, 76, 2, 0.2);
-  color: #ea580c;
+  color: #de3e1e;
 }
 
 /* ========== YANGO DATE PICKER BAR ========== */
@@ -2217,7 +2217,7 @@ textarea.form-control {
 }
 
 .yango-date-apply:hover {
-  background: #e04400 !important;
+  background: #de3e1e !important;
   transform: translateY(-1px);
 }
 
@@ -2286,7 +2286,7 @@ textarea.form-control {
 }
 
 [data-theme="light"] .yango-date-label {
-  color: #ea580c;
+  color: #de3e1e;
 }
 
 /* Responsive: stack filter on small screens */
@@ -2396,7 +2396,7 @@ textarea.form-control {
 .kpi-trend.positive,
 .kpi-trend.up {
   background: rgba(16, 185, 129, 0.12);
-  color: #059669;
+  color: #02b3a9;
 }
 
 .kpi-trend.negative,
@@ -2455,7 +2455,7 @@ textarea.form-control {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #FC4C02, #ff7a3d);
+  background: linear-gradient(90deg, #FC4C02, #f5804e);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -2502,15 +2502,15 @@ textarea.form-control {
 }
 
 /* KPI icon circles in light mode */
-[data-theme="light"] .yango-icon-green { background: #ecfdf5 !important; color: #059669 !important; }
-[data-theme="light"] .yango-icon-orange { background: #fff7ed !important; color: #ea580c !important; }
-[data-theme="light"] .yango-icon-blue { background: #eff6ff !important; color: #2563eb !important; }
-[data-theme="light"] .yango-icon-purple { background: #f5f3ff !important; color: #7c3aed !important; }
+[data-theme="light"] .yango-icon-green { background: #ecfdf5 !important; color: #02b3a9 !important; }
+[data-theme="light"] .yango-icon-orange { background: #fff7ed !important; color: #de3e1e !important; }
+[data-theme="light"] .yango-icon-blue { background: #eef2ff !important; color: #4a43c2 !important; }
+[data-theme="light"] .yango-icon-purple { background: #f5f7fb !important; color: #4a43c2 !important; }
 
 [data-theme="light"] .kpi-trend.positive,
 [data-theme="light"] .kpi-trend.up {
   background: #ecfdf5;
-  color: #059669;
+  color: #02b3a9;
 }
 
 [data-theme="light"] .kpi-trend.negative,
@@ -2612,25 +2612,25 @@ textarea.form-control {
 [data-theme="dark"] .kpi-card::before { background: rgba(245,81,46,.12); }
 [data-theme="dark"] .kpi-card.green { background: linear-gradient(135deg, rgba(34,197,94,.20), rgba(34,197,94,.08)); border-color: rgba(34,197,94,.30); }
 [data-theme="dark"] .kpi-card.green::before { background: rgba(34,197,94,.12); }
-[data-theme="dark"] .kpi-card.green .kpi-value { color: #4ade80; }
+[data-theme="dark"] .kpi-card.green .kpi-value { color: #34d399; }
 [data-theme="dark"] .kpi-card.yellow { background: linear-gradient(135deg, rgba(245,158,11,.20), rgba(245,158,11,.08)); border-color: rgba(245,158,11,.30); }
 [data-theme="dark"] .kpi-card.yellow::before { background: rgba(245,158,11,.12); }
-[data-theme="dark"] .kpi-card.yellow .kpi-value { color: #fbbf24; }
+[data-theme="dark"] .kpi-card.yellow .kpi-value { color: #f5c542; }
 [data-theme="dark"] .kpi-card.red { background: linear-gradient(135deg, rgba(239,68,68,.20), rgba(239,68,68,.08)); border-color: rgba(239,68,68,.30); }
 [data-theme="dark"] .kpi-card.red::before { background: rgba(239,68,68,.12); }
 [data-theme="dark"] .kpi-card.red .kpi-value { color: #f87171; }
 [data-theme="dark"] .kpi-card.cyan { background: linear-gradient(135deg, rgba(6,182,212,.20), rgba(6,182,212,.08)); border-color: rgba(6,182,212,.30); }
 [data-theme="dark"] .kpi-card.cyan::before { background: rgba(6,182,212,.12); }
-[data-theme="dark"] .kpi-card.cyan .kpi-value { color: #22d3ee; }
+[data-theme="dark"] .kpi-card.cyan .kpi-value { color: #0891b2; }
 [data-theme="dark"] .kpi-card.orange { background: linear-gradient(135deg, rgba(249,115,22,.20), rgba(249,115,22,.08)); border-color: rgba(249,115,22,.30); }
 [data-theme="dark"] .kpi-card.orange::before { background: rgba(249,115,22,.12); }
-[data-theme="dark"] .kpi-card.orange .kpi-value { color: #fb923c; }
+[data-theme="dark"] .kpi-card.orange .kpi-value { color: #f5804e; }
 [data-theme="dark"] .kpi-card.purple { background: linear-gradient(135deg, rgba(139,92,246,.20), rgba(139,92,246,.08)); border-color: rgba(139,92,246,.30); }
 [data-theme="dark"] .kpi-card.purple::before { background: rgba(139,92,246,.12); }
-[data-theme="dark"] .kpi-card.purple .kpi-value { color: #a78bfa; }
+[data-theme="dark"] .kpi-card.purple .kpi-value { color: #8aa8ff; }
 [data-theme="dark"] .kpi-card.blue { background: linear-gradient(135deg, rgba(59,130,246,.20), rgba(59,130,246,.08)); border-color: rgba(59,130,246,.30); }
 [data-theme="dark"] .kpi-card.blue::before { background: rgba(59,130,246,.12); }
-[data-theme="dark"] .kpi-card.blue .kpi-value { color: #60a5fa; }
+[data-theme="dark"] .kpi-card.blue .kpi-value { color: #8aa8ff; }
 
 [data-theme="dark"] .kpi-card:hover {
   border-color: rgba(255, 255, 255, 0.18);
@@ -2708,7 +2708,7 @@ textarea.form-control {
 
 .d-wrap { animation: dSlide .5s cubic-bezier(.16,1,.3,1); }
 .d-bg {
-  background: linear-gradient(160deg, #f0f4ff 0%, #faf5ff 40%, #fdf2f8 100%);
+  background: linear-gradient(160deg, #eef2ff 0%, #f5f7fb 40%, #fff7ed 100%);
   margin: -24px -28px;
   padding: 32px 32px 40px;
   min-height: 100vh;
@@ -2739,7 +2739,7 @@ textarea.form-control {
 [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(245,81,46,.15); border-color:rgba(245,81,46,.2); }
 
 .d-card.hero {
-  background: linear-gradient(135deg, #F5512E 0%, #8b5cf6 50%, #a855f7 100%);
+  background: linear-gradient(135deg, #F5512E 0%, #635bff 50%, #635bff 100%);
   border: none; color: #fff;
   box-shadow: 0 4px 24px rgba(245,81,46,.25);
 }
@@ -2778,13 +2778,13 @@ textarea.form-control {
   font-size: 11px; font-weight: 700;
 }
 .d-tag.purple { background:rgba(245,81,46,.08); color:#F5512E; }
-.d-tag.green { background:rgba(16,185,129,.08); color:#10b981; }
+.d-tag.green { background:rgba(16,185,129,.08); color:#13deb9; }
 .d-tag.red { background:rgba(239,68,68,.08); color:#ef4444; }
-.d-tag.orange { background:rgba(249,115,22,.08); color:#f97316; }
+.d-tag.orange { background:rgba(249,115,22,.08); color:#f5512e; }
 .d-tag.white { background:rgba(255,255,255,.2); color:#fff; }
-.d-tag.blue { background:rgba(59,130,246,.08); color:#3b82f6; }
-.d-tag.cyan { background:rgba(6,182,212,.08); color:#06b6d4; }
-.d-tag.yellow { background:rgba(245,158,11,.08); color:#f59e0b; }
+.d-tag.blue { background:rgba(59,130,246,.08); color:#635bff; }
+.d-tag.cyan { background:rgba(6,182,212,.08); color:#0891b2; }
+.d-tag.yellow { background:rgba(245,158,11,.08); color:#ffae1f; }
 [data-theme="dark"] .d-tag.purple { background:rgba(245,81,46,.15); }
 [data-theme="dark"] .d-tag.green { background:rgba(16,185,129,.15); }
 [data-theme="dark"] .d-tag.red { background:rgba(239,68,68,.15); }

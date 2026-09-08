@@ -109,7 +109,7 @@ const Header = {
       let alerts = [];
       try { if (typeof AlertesPage !== 'undefined' && AlertesPage._generateAllAlerts) alerts = AlertesPage._generateAllAlerts() || []; } catch (e) { }
       const crit = alerts.filter(a => a.niveau === 'critique').length, urg = alerts.filter(a => a.niveau === 'urgent').length, att = alerts.filter(a => a.niveau === 'attention').length, tot = alerts.length;
-      const ab = document.getElementById('hw-alertes-badge'); if (ab) { ab.textContent = tot ? String(tot) : ''; ab.style.background = crit > 0 ? '#EF4444' : urg > 0 ? '#FFAE1F' : att > 0 ? '#06b6d4' : 'var(--text-muted)'; }
+      const ab = document.getElementById('hw-alertes-badge'); if (ab) { ab.textContent = tot ? String(tot) : ''; ab.style.background = crit > 0 ? '#EF4444' : urg > 0 ? '#FFAE1F' : att > 0 ? '#0891b2' : 'var(--text-muted)'; }
       const aw = document.getElementById('hw-alertes'); if (aw) aw.style.color = tot ? (crit > 0 ? '#EF4444' : urg > 0 ? '#E8930C' : '#0891b2') : '';
       const ad = document.getElementById('hw-alertes-dd');
       if (ad) {
@@ -135,7 +135,7 @@ const Header = {
         const ym = new Date().toISOString().slice(0, 7);
         verse = versements.filter(v => String(v.date || '').slice(0, 7) === ym && v.statut !== 'supprime').reduce((sum, v) => sum + (v.montantVerse || 0), 0);
       } catch (e) { }
-      const trd = document.getElementById('hw-tres-dd'); if (trd) { trd.replaceChildren(); trd.insertAdjacentHTML('beforeend', `<div class="hw-dd-title">Trésorerie</div><div class="hw-dd-row"><span style="color:#02b3a9;">Versé (mois)</span><strong>${fmtK(verse)} F</strong></div><div class="hw-dd-row"><span style="color:#D99000;">Dettes</span><strong>${fmtK(dettes)} F</strong></div><div class="hw-dd-row"><span style="color:#D9583B;">Pertes</span><strong>${fmtK(pertes)} F</strong></div><a href="#/versements" class="hw-dd-link">Voir les versements →</a>`); }
+      const trd = document.getElementById('hw-tres-dd'); if (trd) { trd.replaceChildren(); trd.insertAdjacentHTML('beforeend', `<div class="hw-dd-title">Trésorerie</div><div class="hw-dd-row"><span style="color:#02b3a9;">Versé (mois)</span><strong>${fmtK(verse)} F</strong></div><div class="hw-dd-row"><span style="color:#e8930c;">Dettes</span><strong>${fmtK(dettes)} F</strong></div><div class="hw-dd-row"><span style="color:#e0603a;">Pertes</span><strong>${fmtK(pertes)} F</strong></div><a href="#/versements" class="hw-dd-link">Voir les versements →</a>`); }
     } catch (e) { console.warn('Header widgets:', e.message); }
   },
 
@@ -383,7 +383,7 @@ const Header = {
       notifications.push({
         icon: 'solar:clock-circle-bold-duotone',
         iconBg: 'rgba(245, 158, 11, 0.15)',
-        iconColor: '#f59e0b',
+        iconColor: '#ffae1f',
         text: `<strong>${attenteCount} versement${attenteCount > 1 ? 's' : ''}</strong> en attente de validation`,
         time: "Aujourd'hui"
       });
@@ -394,7 +394,7 @@ const Header = {
       notifications.push({
         icon: doc.statut === 'expire' ? 'solar:file-remove-bold-duotone' : 'solar:file-corrupted-bold-duotone',
         iconBg: doc.statut === 'expire' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-        iconColor: doc.statut === 'expire' ? '#ef4444' : '#f59e0b',
+        iconColor: doc.statut === 'expire' ? '#ef4444' : '#ffae1f',
         text: `<strong>${doc.nom}</strong> de ${chauffeur.prenom} ${chauffeur.nom} ${doc.statut === 'expire' ? 'expiré' : 'à renouveler'}`,
         time: Utils.formatDate(doc.dateExpiration)
       });
@@ -418,7 +418,7 @@ const Header = {
         notifications.push({
           icon: 'solar:hand-shake-bold-duotone',
           iconBg: 'rgba(59,130,246,0.15)',
-          iconColor: '#3b82f6',
+          iconColor: '#635bff',
           text: `<strong>${t.assigneANom}</strong> s'occupe de "${t.titre}"`,
           time: 'En cours'
         });
@@ -427,7 +427,7 @@ const Header = {
         notifications.push({
           icon: 'solar:check-circle-bold-duotone',
           iconBg: 'rgba(34,197,94,0.15)',
-          iconColor: '#22c55e',
+          iconColor: '#13deb9',
           text: `<strong>${t.assigneANom}</strong> a terminé "${t.titre}"`,
           time: t.dateTerminaison ? Utils.formatDate(t.dateTerminaison.split('T')[0]) : ''
         });
@@ -453,7 +453,7 @@ const Header = {
         notifications.push({
           icon: 'solar:hand-shake-bold-duotone',
           iconBg: 'rgba(59,130,246,0.15)',
-          iconColor: '#3b82f6',
+          iconColor: '#635bff',
           text: `<strong>${t.assigneANom}</strong> s'occupe de "${t.titre}"`,
           time: 'En cours'
         });
@@ -466,7 +466,7 @@ const Header = {
         notifications.push({
           icon: 'solar:check-circle-bold-duotone',
           iconBg: 'rgba(34,197,94,0.15)',
-          iconColor: '#22c55e',
+          iconColor: '#13deb9',
           text: `<strong>${t.assigneANom}</strong> a terminé "${t.titre}"`,
           time: t.dateTerminaison ? Utils.formatDate(t.dateTerminaison.split('T')[0]) : ''
         });
@@ -592,7 +592,7 @@ const Header = {
         html += '<div style="padding:8px 14px 4px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;border-top:1px solid var(--border-color);">Véhicules</div>';
         vehicules.forEach(v => {
           html += `<a href="#/vehicules/${v.id}" class="search-result-item" style="display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;color:var(--text-primary);cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='var(--bg-tertiary)'" onmouseleave="this.style.background=''">
-            <div style="width:32px;height:32px;border-radius:50%;background:rgba(34,197,94,0.1);color:#22c55e;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(34,197,94,0.1);color:#13deb9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <iconify-icon icon="solar:wheel-bold-duotone" style="font-size:16px;"></iconify-icon>
             </div>
             <div style="flex:1;min-width:0;">

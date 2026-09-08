@@ -68,7 +68,7 @@ const MonComptePage = {
       <!-- Theme -->
       <div class="d-card" style="margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <div style="width:36px;height:36px;border-radius:10px;background:rgba(139,92,246,.1);display:flex;align-items:center;justify-content:center;color:#8b5cf6;font-size:16px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(139,92,246,.1);display:flex;align-items:center;justify-content:center;color:#635bff;font-size:16px;">
             <iconify-icon icon="solar:palette-bold-duotone"></iconify-icon>
           </div>
           <div style="font-size:16px;font-weight:700;color:var(--text-primary);">Apparence</div>
@@ -77,21 +77,21 @@ const MonComptePage = {
           <label style="flex:1;min-width:100px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:2px solid ${theme === 'dark' ? '#F5512E' : 'var(--border-color)'};cursor:pointer;transition:all .2s;background:var(--bg-secondary);">
             <input type="radio" name="mc-theme" value="dark" ${theme === 'dark' ? 'checked' : ''} style="accent-color:#F5512E;">
             <div>
-              <iconify-icon icon="solar:moon-bold-duotone" style="font-size:18px;color:#8b5cf6;"></iconify-icon>
+              <iconify-icon icon="solar:moon-bold-duotone" style="font-size:18px;color:#635bff;"></iconify-icon>
               <div style="font-size:12px;font-weight:600;margin-top:2px;">Sombre</div>
             </div>
           </label>
           <label style="flex:1;min-width:100px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:2px solid ${theme === 'light' ? '#F5512E' : 'var(--border-color)'};cursor:pointer;transition:all .2s;background:var(--bg-secondary);">
             <input type="radio" name="mc-theme" value="light" ${theme === 'light' ? 'checked' : ''} style="accent-color:#F5512E;">
             <div>
-              <iconify-icon icon="solar:sun-bold-duotone" style="font-size:18px;color:#f59e0b;"></iconify-icon>
+              <iconify-icon icon="solar:sun-bold-duotone" style="font-size:18px;color:#ffae1f;"></iconify-icon>
               <div style="font-size:12px;font-weight:600;margin-top:2px;">Clair</div>
             </div>
           </label>
           <label style="flex:1;min-width:100px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:2px solid ${theme === 'auto' ? '#F5512E' : 'var(--border-color)'};cursor:pointer;transition:all .2s;background:var(--bg-secondary);">
             <input type="radio" name="mc-theme" value="auto" ${theme === 'auto' ? 'checked' : ''} style="accent-color:#F5512E;">
             <div>
-              <iconify-icon icon="solar:monitor-bold-duotone" style="font-size:18px;color:#3b82f6;"></iconify-icon>
+              <iconify-icon icon="solar:monitor-bold-duotone" style="font-size:18px;color:#635bff;"></iconify-icon>
               <div style="font-size:12px;font-weight:600;margin-top:2px;">Auto</div>
             </div>
           </label>
@@ -201,7 +201,7 @@ const MonComptePage = {
 
       if (perm === 'granted' && sub) {
         toggle.checked = true;
-        statusEl.innerHTML = '<span style="color:#10b981;font-weight:500;">Actif — vous recevrez des notifications</span>';
+        statusEl.innerHTML = '<span style="color:#13deb9;font-weight:500;">Actif — vous recevrez des notifications</span>';
       } else if (perm === 'denied') {
         toggle.disabled = true;
         statusEl.innerHTML = '<span style="color:#ef4444;">Bloque — autorisez dans les parametres du navigateur</span>';
@@ -272,7 +272,7 @@ const MonComptePage = {
       }
 
       statusEl.textContent = 'Actif — vous recevrez des notifications';
-      statusEl.style.color = '#10b981';
+      statusEl.style.color = '#13deb9';
       statusEl.style.fontWeight = '500';
       Toast.success('Notifications push activees');
     } catch (e) {

@@ -191,8 +191,8 @@ const DashboardPage = {
       bg: '#F5F7FB', card: '#ffffff', head: '#2A3547', mut: '#5A6A85', mut2: '#7C8FAC', bd: '#EBF1F6',
       blue: '#F5512E', blueS: 'rgba(245,81,46,.10)',
       green: '#02b3a9', greenS: 'rgba(19,222,185,.14)',
-      amber: '#D99000', amberS: 'rgba(255,174,31,.16)',
-      red: '#D9583B', redS: 'rgba(250,137,107,.14)',
+      amber: '#e8930c', amberS: 'rgba(255,174,31,.16)',
+      red: '#e0603a', redS: 'rgba(250,137,107,.14)',
       violet: '#635BFF', violetS: 'rgba(99,91,255,.10)'
     };
     const SH = '0 2px 6px rgba(37,83,185,.10)';
@@ -1119,13 +1119,13 @@ const DashboardPage = {
     const caTrendSign = d.caTrend >= 0 ? '+' : '';
     // Couleur fixe par carte pour les différencier (alignée sur la couleur de l'icône) :
     // Recouvrement = émeraude, Objectif = indigo.
-    const recouvrementColor = '#10b981';
+    const recouvrementColor = '#13deb9';
     const progressColor = '#F5512E';
     const session = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : {};
     const userName = session.prenom || 'Patron';
 
     // SVG semi-donut arc helper (like the Customers chart in reference)
-    const arc = (pct, color, secondColor = '#f97316', size = 120, stroke = 14) => {
+    const arc = (pct, color, secondColor = '#f5512e', size = 120, stroke = 14) => {
       const r = (size - stroke) / 2;
       const circ = Math.PI * r; // semi-circle
       const mainOffset = circ - (Math.min(pct, 100) / 100) * circ;
@@ -1160,7 +1160,7 @@ const DashboardPage = {
     };
 
     // Mini sparkline SVG with area fill
-    const sparkline = (values, color = '#0d9488', w = 90, h = 32) => {
+    const sparkline = (values, color = '#0891b2', w = 90, h = 32) => {
       if (!values || values.length < 2) return '';
       const max = Math.max(...values, 1);
       const min = Math.min(...values, 0);
@@ -1189,7 +1189,7 @@ const DashboardPage = {
 
         .d-wrap { animation: dSlide .5s cubic-bezier(.16,1,.3,1); }
         .d-bg {
-          background: linear-gradient(160deg, #f0f4ff 0%, #faf5ff 40%, #fdf2f8 100%);
+          background: linear-gradient(160deg, #eef2ff 0%, #f5f7fb 40%, #fff7ed 100%);
           margin: -24px -28px;
           padding: 32px 32px 40px;
           min-height: 100vh;
@@ -1217,7 +1217,7 @@ const DashboardPage = {
         [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(245,81,46,.15); border-color:rgba(245,81,46,.2); }
 
         .d-card.hero {
-          background: linear-gradient(135deg, #DE3E1E 0%, #7c3aed 35%, #a855f7 65%, #c084fc 100%);
+          background: linear-gradient(135deg, #DE3E1E 0%, #4a43c2 35%, #635bff 65%, #8aa8ff 100%);
           background-size: 200% 200%;
           animation: heroGradient 8s ease infinite;
           border: 1px solid rgba(255,255,255,.18);
@@ -1325,9 +1325,9 @@ const DashboardPage = {
           font-size: 11px; font-weight: 700;
         }
         .d-tag.purple { background:rgba(245,81,46,.08); color:#F5512E; }
-        .d-tag.green { background:rgba(16,185,129,.08); color:#10b981; }
+        .d-tag.green { background:rgba(16,185,129,.08); color:#13deb9; }
         .d-tag.red { background:rgba(239,68,68,.08); color:#ef4444; }
-        .d-tag.orange { background:rgba(249,115,22,.08); color:#f97316; }
+        .d-tag.orange { background:rgba(249,115,22,.08); color:#f5512e; }
         .d-tag.white { background:rgba(255,255,255,.2); color:#fff; }
         [data-theme="dark"] .d-tag.purple { background:rgba(245,81,46,.15); }
         [data-theme="dark"] .d-tag.green { background:rgba(16,185,129,.15); }
@@ -1403,10 +1403,10 @@ const DashboardPage = {
           position:relative;
         }
         .d-hm-cell:hover { transform:scale(1.1); box-shadow:0 4px 12px rgba(0,0,0,.12); z-index:2; }
-        .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(52,211,153,.12)); color:#10b981; }
+        .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(52,211,153,.12)); color:#13deb9; }
         .hm-programme { background:linear-gradient(135deg,rgba(245,81,46,.15),rgba(139,92,246,.1)); color:#F5512E; }
         .hm-en_retard { background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(248,113,113,.1)); color:#ef4444; }
-        .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f97316; }
+        .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f5512e; }
         .hm-repos { background:rgba(0,0,0,.025); color:#d1d5db; }
         .hm-verse:hover { background:linear-gradient(135deg,rgba(16,185,129,.28),rgba(52,211,153,.2)); }
         .hm-programme:hover { background:linear-gradient(135deg,rgba(245,81,46,.25),rgba(139,92,246,.18)); }
@@ -1467,7 +1467,7 @@ const DashboardPage = {
         .fd-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
         .fd-title{font-size:15px;font-weight:800;color:var(--text-primary);}
         .fd-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-muted);}
-        .fd-dot-live{width:8px;height:8px;border-radius:50%;background:#FA3E3E;animation:fdPulse 1.8s infinite;}
+        .fd-dot-live{width:8px;height:8px;border-radius:50%;background:#ef4444;animation:fdPulse 1.8s infinite;}
         @keyframes fdPulse{0%{box-shadow:0 0 0 0 rgba(250,62,62,.5)}70%{box-shadow:0 0 0 7px rgba(250,62,62,0)}100%{box-shadow:0 0 0 0 rgba(250,62,62,0)}}
         .fd-spin{animation:fdSpin 1s linear infinite;display:inline-flex;}
         @keyframes fdSpin{to{transform:rotate(360deg)}}
@@ -1522,8 +1522,8 @@ const DashboardPage = {
         .iw-chip:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.12);}
         .iw-chip-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;opacity:.85;}
         .iw-chip-val{font-size:16px;font-weight:800;margin-top:2px;}
-        .iw-chip-dette{background:rgba(217,144,0,.13);color:#D99000;}
-        .iw-chip-perte{background:rgba(217,88,59,.13);color:#D9583B;}
+        .iw-chip-dette{background:rgba(217,144,0,.13);color:#e8930c;}
+        .iw-chip-perte{background:rgba(217,88,59,.13);color:#e0603a;}
         .iw-chip-crit{background:rgba(239,68,68,.12);color:#EF4444;}
         .iw-chip-urg{background:rgba(232,147,12,.13);color:#E8930C;}
         .iw-chip-att{background:rgba(8,145,178,.12);color:#0891b2;}
@@ -1668,13 +1668,13 @@ const DashboardPage = {
       cardGrad = 'linear-gradient(135deg,#ef4444,#f87171)';
       cardShadow = '0 4px 20px rgba(239,68,68,.35)';
     } else if (mesTaches.some(t => t.priorite === 'haute')) {
-      cardGrad = 'linear-gradient(135deg,#f97316,#fb923c)';
+      cardGrad = 'linear-gradient(135deg,#f5512e,#f5804e)';
       cardShadow = '0 4px 20px rgba(249,115,22,.35)';
     } else if (mesTaches.length > 0) {
-      cardGrad = 'linear-gradient(135deg,#f59e0b,#fbbf24)';
+      cardGrad = 'linear-gradient(135deg,#ffae1f,#f5c542)';
       cardShadow = '0 4px 20px rgba(245,158,11,.35)';
     } else {
-      cardGrad = 'linear-gradient(135deg,#22c55e,#4ade80)';
+      cardGrad = 'linear-gradient(135deg,#13deb9,#34d399)';
       cardShadow = '0 4px 20px rgba(34,197,94,.35)';
     }
 
@@ -1700,17 +1700,17 @@ const DashboardPage = {
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${top3.length > 0 ? '10px' : '0'};">
           <div style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.2);flex:1;min-width:0;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#fbbf24;flex-shrink:0;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#f5c542;flex-shrink:0;"></span>
             <span style="font-size:10px;color:rgba(255,255,255,.85);white-space:nowrap;">A faire</span>
             <strong style="margin-left:auto;font-size:12px;color:#fff;">${aFaire}</strong>
           </div>
           <div style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.2);flex:1;min-width:0;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#60a5fa;flex-shrink:0;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#8aa8ff;flex-shrink:0;"></span>
             <span style="font-size:10px;color:rgba(255,255,255,.85);white-space:nowrap;">En cours</span>
             <strong style="margin-left:auto;font-size:12px;color:#fff;">${enCours}</strong>
           </div>
           <div style="display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.15);flex:1;min-width:0;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#4ade80;flex-shrink:0;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#34d399;flex-shrink:0;"></span>
             <span style="font-size:10px;color:rgba(255,255,255,.85);white-space:nowrap;">Termin.</span>
             <strong style="margin-left:auto;font-size:12px;color:#fff;">${terminees}</strong>
           </div>
@@ -1737,7 +1737,7 @@ const DashboardPage = {
 
     if (alerts.length === 0) {
       return `<div class="d-card" style="display:flex;align-items:center;gap:14px;">
-        <div class="d-icon" style="background:rgba(16,185,129,.08);color:#10b981;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;">
+        <div class="d-icon" style="background:rgba(16,185,129,.08);color:#13deb9;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;">
           <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
         </div>
         <div>
@@ -1749,7 +1749,7 @@ const DashboardPage = {
 
     const rows = alerts.slice(0, 4).map(m => {
       const isRetard = m.statut === 'en_retard';
-      const color = isRetard ? '#dc2626' : '#d97706';
+      const color = isRetard ? '#dc2626' : '#e8930c';
       const badgeLabel = isRetard ? 'RETARD' : 'URGENT';
       let echeance = '';
       if (m.prochaineDate) {
@@ -1772,7 +1772,7 @@ const DashboardPage = {
     return `<div class="d-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <div class="d-icon" style="background:rgba(249,115,22,.08);color:#f97316;width:34px;height:34px;border-radius:10px;font-size:15px;display:flex;align-items:center;justify-content:center;">
+          <div class="d-icon" style="background:rgba(249,115,22,.08);color:#f5512e;width:34px;height:34px;border-radius:10px;font-size:15px;display:flex;align-items:center;justify-content:center;">
             <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
           </div>
           <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:var(--text-primary);">Maintenance</div>
@@ -1828,7 +1828,7 @@ const DashboardPage = {
     const lastV = vals.length ? vals[vals.length - 1] : 0;
     const pct = avg > 0 ? Math.round((lastV - avg) / avg * 100) : 0;
     const dir = Math.abs(pct) < 1 ? 'flat' : (pct >= 0 ? 'up' : 'down');
-    const ACC = { up: { s: '#10b981', t: '#059669', ic: 'solar:arrow-up-linear' }, down: { s: '#f43f5e', t: '#e11d48', ic: 'solar:arrow-down-linear' }, flat: { s: '#64748b', t: 'var(--text-muted)', ic: 'solar:arrow-right-linear' } }[dir];
+    const ACC = { up: { s: '#13deb9', t: '#02b3a9', ic: 'solar:arrow-up-linear' }, down: { s: '#ef4444', t: '#ef4444', ic: 'solar:arrow-down-linear' }, flat: { s: '#64748b', t: 'var(--text-muted)', ic: 'solar:arrow-right-linear' } }[dir];
     const fmt = n => { n = Math.round(n || 0); const a = Math.abs(n); if (a >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M'; if (a >= 1e3) return Math.round(n / 1e3) + 'k'; return String(n); };
     const trendEl = document.getElementById('rtl-trend'); if (trendEl) { trendEl.style.color = ACC.t; trendEl.replaceChildren(); trendEl.insertAdjacentHTML('beforeend', `<iconify-icon icon="${ACC.ic}"></iconify-icon>${Math.abs(pct)}%`); }
     const deltaEl = document.getElementById('rtl-delta'); if (deltaEl) { deltaEl.style.color = ACC.t; deltaEl.textContent = data.deltaTxt; }
@@ -2018,7 +2018,7 @@ const DashboardPage = {
       crit: ['#EF4444', 'rgba(239,68,68,.09)', 'solar:danger-triangle-bold'],
       urg: ['#E8930C', 'rgba(232,147,12,.10)', 'solar:danger-triangle-bold'],
       att: ['#0891b2', 'rgba(8,145,178,.09)', 'solar:bell-bing-bold'],
-      ok: ['#0f9d6b', 'rgba(52,211,153,.10)', 'solar:check-circle-bold'],
+      ok: ['#0a9d78', 'rgba(52,211,153,.10)', 'solar:check-circle-bold'],
     }[level];
     // Les 3 niveaux sont TOUJOURS affichés ; ceux à 0 sont grisés et non cliquables.
     // Ceux qui ont des alertes ouvrent la page Alertes PRÉ-FILTRÉE (traitement séparé).
@@ -2092,7 +2092,7 @@ const DashboardPage = {
         return `<a href="#/analyse-rentabilite" class="iw iw-plain iw-hero" style="--iw-accent:${gc.rgb};--iw-bg:${gc.soft};">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div>
         <div class="iw-hero-mid">${this._renderRadialGauge(rsi || 0, gc.rgb, 'RSI')}<div class="iw-hero-marge" style="color:${gc.rgb};">${marge != null ? `${fmtK(marge)} F/mois` : '—'}</div><div class="iw-hero-ctx">${recup > 0 && isFinite(recup) ? `récupération en ${recup} mois` : 'marge mensuelle nette'}</div></div>
-      </a>`; })() : `<a href="#/analyse-rentabilite" class="iw iw-hero" style="--iw-accent:#f97316;--iw-bg:rgba(249,115,22,.12);"><div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div><div class="iw-hero-mid" style="color:var(--text-muted);font-weight:600;">Voir l'analyse →</div></a>`}
+      </a>`; })() : `<a href="#/analyse-rentabilite" class="iw iw-hero" style="--iw-accent:#f5512e;--iw-bg:rgba(249,115,22,.12);"><div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon></span><span class="iw-label">Rentabilité</span></div><div class="iw-hero-mid" style="color:var(--text-muted);font-weight:600;">Voir l'analyse →</div></a>`}
       <div class="iw iw-plain iw-wide" style="--iw-accent:#02b3a9;--iw-bg:rgba(19,222,185,.12);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon></span><span class="iw-label">Trésorerie</span></div>
         <div class="iw-wide-row">
@@ -2132,7 +2132,7 @@ const DashboardPage = {
     const cs = 100, sw = 9, R = cs / 2 - sw / 2, cx = cs / 2, cy = cs / 2;
     const C = 2 * Math.PI * R, px = C / 100;
     const gap = 4; // gap (en % du cercle) entre l'arc primaire et l'arc secondaire
-    const col = color || '#22c55e';
+    const col = color || '#13deb9';
     const primeDash = `${Math.max(0, p * px).toFixed(2)} ${C.toFixed(2)}`;
     const secDash = `${Math.max(0, (100 - p - gap * 2) * px).toFixed(2)} ${C.toFixed(2)}`;
     const secRotate = (270 - gap * 3.6).toFixed(2);
@@ -2365,7 +2365,7 @@ const DashboardPage = {
       const ch = chById.get(it.id);
       if (!ch || !ch.yangoDriverId || !parkId) return '';
       const url = `https://fleet.yango.com/contractors/${encodeURIComponent(ch.yangoDriverId)}/details?park_id=${encodeURIComponent(parkId)}`;
-      return `<a href="${url}" target="_blank" rel="noopener" title="Ouvrir la page Yango (surveillance)" style="height:34px;padding:0 13px;border-radius:9px;background:#FC3F1D;color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;font-weight:800;font-style:italic;font-size:12px;letter-spacing:.02em;">YANGO</a>`;
+      return `<a href="${url}" target="_blank" rel="noopener" title="Ouvrir la page Yango (surveillance)" style="height:34px;padding:0 13px;border-radius:9px;background:#f5512e;color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;font-weight:800;font-style:italic;font-size:12px;letter-spacing:.02em;">YANGO</a>`;
     };
     const rows = seg.drivers.length ? seg.drivers.map(it => {
       const initial = (it.prenom || it.nom || '?').charAt(0).toUpperCase();
@@ -2442,7 +2442,7 @@ const DashboardPage = {
     });
 
     const statusLabels = { verse: 'Versé', programme: 'Programmé', en_retard: 'En retard', absent: 'Absent', repos: 'Repos' };
-    const statusColors = { verse: '#10b981', programme: '#F5512E', en_retard: '#ef4444', absent: '#f97316', repos: '#9ca3af' };
+    const statusColors = { verse: '#13deb9', programme: '#F5512E', en_retard: '#ef4444', absent: '#f5512e', repos: '#9ca3af' };
     const MAX_CHIPS = 6;
 
     // Cartes calendrier par jour (style MAURALEX) : les chauffeurs programmés
@@ -2494,10 +2494,10 @@ const DashboardPage = {
 
     // Legend — modern pills
     html += `<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
-      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.08);font-size:11px;font-weight:600;color:#10b981;"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Versé</div>
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.08);font-size:11px;font-weight:600;color:#13deb9;"><span style="width:6px;height:6px;border-radius:50%;background:#13deb9;"></span> Versé</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(245,81,46,.08);font-size:11px;font-weight:600;color:#F5512E;"><span style="width:6px;height:6px;border-radius:50%;background:#F5512E;"></span> Programmé</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> En retard</div>
-      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f5512e;"><span style="width:6px;height:6px;border-radius:50%;background:#f5512e;"></span> Absent</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
     </div>`;
 
@@ -2525,9 +2525,9 @@ const DashboardPage = {
     const maxVal = drivers.length > 0 ? drivers[0].total : 1;
     const rows = drivers.length > 0 ? drivers.map((dr, i) => {
       const pct = maxVal > 0 ? Math.round((dr.total / maxVal) * 100) : 0;
-      const medals = ['#f59e0b', '#9ca3af', '#cd7f32'];
+      const medals = ['#ffae1f', '#9ca3af', '#cd7f32'];
       const medalColor = i < 3 ? medals[i] : '';
-      const scoreColor = dr.total >= 75 ? '#22c55e' : dr.total >= 50 ? '#f59e0b' : '#ef4444';
+      const scoreColor = dr.total >= 75 ? '#13deb9' : dr.total >= 50 ? '#ffae1f' : '#ef4444';
       return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);cursor:pointer;" onclick="Router.navigate('/classement')">
         <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;${medalColor ? 'background:' + medalColor + '20;color:' + medalColor : 'background:rgba(0,0,0,.04);color:#9ca3af;'}">${i + 1}</div>
         <div style="flex:1;min-width:0;">
@@ -2593,7 +2593,7 @@ const DashboardPage = {
   _renderExpiringDocs(d) {
     const docs = d.expiringDocs || [];
     const rows = docs.length > 0 ? docs.slice(0, 8).map(doc => {
-      const urgencyColor = doc.daysLeft <= 7 ? '#ef4444' : doc.daysLeft <= 15 ? '#f97316' : '#d97706';
+      const urgencyColor = doc.daysLeft <= 7 ? '#ef4444' : doc.daysLeft <= 15 ? '#f5512e' : '#e8930c';
       const badgeLabel = doc.daysLeft === 0 ? "Aujourd'hui" : doc.daysLeft + 'j';
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);">
         <div style="width:6px;height:6px;border-radius:50%;background:${urgencyColor};flex-shrink:0;"></div>
@@ -2603,9 +2603,9 @@ const DashboardPage = {
         </div>
         <div style="font-size:10px;font-weight:700;color:${urgencyColor};white-space:nowrap;padding:2px 8px;border-radius:8px;background:${urgencyColor}15;">${badgeLabel}</div>
       </div>`;
-    }).join('') : '<div style="font-size:12px;color:#10b981;text-align:center;padding:20px 0;"><iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:18px;vertical-align:middle;margin-right:4px;color:#10b981;"></iconify-icon>Tous les documents sont à jour</div>';
+    }).join('') : '<div style="font-size:12px;color:#13deb9;text-align:center;padding:20px 0;"><iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:18px;vertical-align:middle;margin-right:4px;color:#13deb9;"></iconify-icon>Tous les documents sont à jour</div>';
 
-    const countColor = docs.length > 5 ? '#ef4444' : docs.length > 0 ? '#f97316' : '#10b981';
+    const countColor = docs.length > 5 ? '#ef4444' : docs.length > 0 ? '#f5512e' : '#13deb9';
     return `<div class="d-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
         <div class="d-icon" style="background:${countColor}14;color:${countColor};width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
@@ -2888,7 +2888,7 @@ const DashboardPage = {
     }).join('');
 
     Modal.open({
-      title: '<iconify-icon icon="solar:bell-bold-duotone" style="color:#3b82f6;"></iconify-icon> Envoyer des rappels',
+      title: '<iconify-icon icon="solar:bell-bold-duotone" style="color:#635bff;"></iconify-icon> Envoyer des rappels',
       body: `
         <div style="margin-bottom:12px;font-size:var(--font-size-sm);">${drivers.length} chauffeur(s) concern\u00e9(s) :</div>
         <div style="max-height:200px;overflow-y:auto;background:var(--bg-tertiary);padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:12px;">${lines}</div>
@@ -2945,7 +2945,7 @@ const DashboardPage = {
     ];
 
     Modal.form(
-      '<iconify-icon icon="solar:letter-bold-duotone" style="color:#3b82f6;"></iconify-icon> Envoyer une annonce',
+      '<iconify-icon icon="solar:letter-bold-duotone" style="color:#635bff;"></iconify-icon> Envoyer une annonce',
       FormBuilder.build(fields),
       async () => {
         const body = document.getElementById('modal-body');
@@ -2987,9 +2987,9 @@ const DashboardPage = {
 
     return `<div class="card" style="margin-top:var(--space-lg);">
       <div class="card-header">
-        <span class="card-title"><iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> D\u00e9penses v\u00e9hicules (${Utils.getMonthShort(new Date().getMonth())})</span>
+        <span class="card-title"><iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#ffae1f;"></iconify-icon> D\u00e9penses v\u00e9hicules (${Utils.getMonthShort(new Date().getMonth())})</span>
         <div style="display:flex;gap:6px;">
-          <span style="font-size:var(--font-size-base);font-weight:700;color:#f59e0b;">${Utils.formatCurrency(d.totalDepensesMois)}</span>
+          <span style="font-size:var(--font-size-base);font-weight:700;color:#ffae1f;">${Utils.formatCurrency(d.totalDepensesMois)}</span>
           <button class="btn btn-sm btn-primary" onclick="DashboardPage._addDepense()"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon></button>
           ${d.depenses && d.depenses.length > 0 ? `<button class="btn btn-sm btn-secondary" onclick="DashboardPage._showDepenses()"><iconify-icon icon="solar:list-bold"></iconify-icon></button>` : ''}
         </div>
@@ -2998,7 +2998,7 @@ const DashboardPage = {
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
           ${typeEntries.map(([type, montant]) => `
             <div style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:var(--font-size-xs);">
-              <iconify-icon icon="${typeIcons[type] || 'solar:bag-bold-duotone'}" style="color:#f59e0b;"></iconify-icon>
+              <iconify-icon icon="${typeIcons[type] || 'solar:bag-bold-duotone'}" style="color:#ffae1f;"></iconify-icon>
               <span>${typeLabels[type] || type}</span>
               <strong>${Utils.formatCurrency(montant)}</strong>
             </div>
@@ -3011,7 +3011,7 @@ const DashboardPage = {
           const vehLabel = veh ? `${veh.marque} ${veh.modele}` : dep.vehiculeId || '';
           return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-xs);">
             <div style="display:flex;align-items:center;gap:6px;">
-              <iconify-icon icon="${typeIcons[dep.typeDepense] || 'solar:bag-bold-duotone'}" style="color:#f59e0b;"></iconify-icon>
+              <iconify-icon icon="${typeIcons[dep.typeDepense] || 'solar:bag-bold-duotone'}" style="color:#ffae1f;"></iconify-icon>
               <div>
                 <span style="font-weight:500;">${typeLabels[dep.typeDepense] || dep.typeDepense}</span>
                 <span style="color:var(--text-muted);"> \u2014 ${vehLabel}</span>
@@ -3052,7 +3052,7 @@ const DashboardPage = {
     ];
 
     Modal.form(
-      '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> Nouvelle d\u00e9pense',
+      '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#ffae1f;"></iconify-icon> Nouvelle d\u00e9pense',
       FormBuilder.build(fields),
       () => {
         const body = document.getElementById('modal-body');
@@ -3104,7 +3104,7 @@ const DashboardPage = {
           ${d.commentaire ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${d.commentaire}</div>` : ''}
         </div>
         <div style="text-align:right;">
-          <div style="font-size:var(--font-size-sm);font-weight:600;color:#f59e0b;">${Utils.formatCurrency(d.montant)}</div>
+          <div style="font-size:var(--font-size-sm);font-weight:600;color:#ffae1f;">${Utils.formatCurrency(d.montant)}</div>
           <button class="btn btn-sm btn-danger" style="margin-top:4px;padding:2px 6px;" onclick="DashboardPage._deleteDepense('${d.id}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
         </div>
       </div>`;
@@ -3113,13 +3113,13 @@ const DashboardPage = {
     const totalAll = depenses.reduce((s, d) => s + (d.montant || 0), 0);
 
     Modal.open({
-      title: `<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> D\u00e9penses (${depenses.length})`,
+      title: `<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#ffae1f;"></iconify-icon> D\u00e9penses (${depenses.length})`,
       body: `
         <div style="padding:8px 12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:12px;">
           <div style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Par v\u00e9hicule</div>
           ${summaryHtml}
           <div style="border-top:1px solid var(--border-color);margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-size:var(--font-size-sm);font-weight:700;">
-            <span>Total</span><span style="color:#f59e0b;">${Utils.formatCurrency(totalAll)}</span>
+            <span>Total</span><span style="color:#ffae1f;">${Utils.formatCurrency(totalAll)}</span>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;">${rows}</div>

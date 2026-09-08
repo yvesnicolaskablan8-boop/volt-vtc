@@ -50,9 +50,9 @@ const RapportsPage = {
     });
     const couts = [
       { label: 'Acquisition', val: Math.round(acq), color: '#F5512E' },
-      { label: 'Assurance', val: Math.round(assur), color: '#eab308' },
+      { label: 'Assurance', val: Math.round(assur), color: '#e8930c' },
       { label: 'Maintenance', val: Math.round(maint), color: '#ef4444' },
-      { label: 'Énergie', val: Math.round(energie), color: '#22c55e' }
+      { label: 'Énergie', val: Math.round(energie), color: '#13deb9' }
     ];
     const coutTotal = couts.reduce((s, c) => s + c.val, 0);
 

@@ -129,7 +129,7 @@ const NotificationsAdminPage = {
 
     container.innerHTML = `
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;">
+        <div class="kpi-icon" style="background:rgba(59,130,246,0.15);color:#635bff;">
           <iconify-icon icon="solar:letter-bold-duotone" style="font-size:24px;"></iconify-icon>
         </div>
         <div class="kpi-info">
@@ -138,7 +138,7 @@ const NotificationsAdminPage = {
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(16,185,129,0.15);color:#10b981;">
+        <div class="kpi-icon" style="background:rgba(16,185,129,0.15);color:#13deb9;">
           <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:24px;"></iconify-icon>
         </div>
         <div class="kpi-info">
@@ -156,7 +156,7 @@ const NotificationsAdminPage = {
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;">
+        <div class="kpi-icon" style="background:rgba(245,158,11,0.15);color:#ffae1f;">
           <iconify-icon icon="solar:wallet-bold-duotone" style="font-size:24px;"></iconify-icon>
         </div>
         <div class="kpi-info">
@@ -241,15 +241,15 @@ const NotificationsAdminPage = {
 
   _typeBadge(type) {
     const map = {
-      deadline_rappel: { label: 'Rappel', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+      deadline_rappel: { label: 'Rappel', color: '#ffae1f', bg: 'rgba(245,158,11,0.15)' },
       deadline_retard: { label: 'Retard', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-      document_expiration: { label: 'Document', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)' },
-      score_faible: { label: 'Score', color: '#ec4899', bg: 'rgba(236,72,153,0.15)' },
-      annonce: { label: 'Annonce', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
-      bonus: { label: 'Bonus', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
-      bienvenue: { label: 'Bienvenue', color: '#06b6d4', bg: 'rgba(6,182,212,0.15)' },
+      document_expiration: { label: 'Document', color: '#635bff', bg: 'rgba(139,92,246,0.15)' },
+      score_faible: { label: 'Score', color: '#f5512e', bg: 'rgba(236,72,153,0.15)' },
+      annonce: { label: 'Annonce', color: '#635bff', bg: 'rgba(59,130,246,0.15)' },
+      bonus: { label: 'Bonus', color: '#13deb9', bg: 'rgba(16,185,129,0.15)' },
+      bienvenue: { label: 'Bienvenue', color: '#0891b2', bg: 'rgba(6,182,212,0.15)' },
       maintenance_urgente: { label: 'Maintenance', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-      maintenance_retard: { label: 'Maint. retard', color: '#f97316', bg: 'rgba(249,115,22,0.15)' }
+      maintenance_retard: { label: 'Maint. retard', color: '#f5512e', bg: 'rgba(249,115,22,0.15)' }
     };
     const info = map[type] || { label: type || '-', color: '#6b7280', bg: 'rgba(107,114,128,0.15)' };
     return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:${info.bg};color:${info.color};">${info.label}</span>`;
@@ -257,13 +257,13 @@ const NotificationsAdminPage = {
 
   _canalBadge(canal) {
     const map = {
-      push: { label: 'Push', color: '#3b82f6' },
-      sms: { label: 'SMS', color: '#10b981' },
-      both: { label: 'Push+SMS', color: '#8b5cf6' },
+      push: { label: 'Push', color: '#635bff' },
+      sms: { label: 'SMS', color: '#13deb9' },
+      both: { label: 'Push+SMS', color: '#635bff' },
       whatsapp: { label: 'WhatsApp', color: '#25D366' },
-      'push+whatsapp': { label: 'Push+WA', color: '#059669' },
-      'sms+whatsapp': { label: 'SMS+WA', color: '#0d9488' },
-      all: { label: 'Tous', color: '#f59e0b' }
+      'push+whatsapp': { label: 'Push+WA', color: '#02b3a9' },
+      'sms+whatsapp': { label: 'SMS+WA', color: '#0891b2' },
+      all: { label: 'Tous', color: '#ffae1f' }
     };
     const info = map[canal] || { label: canal || '-', color: '#6b7280' };
     return `<span style="font-size:11px;font-weight:600;color:${info.color};">${info.label}</span>`;
@@ -271,9 +271,9 @@ const NotificationsAdminPage = {
 
   _statutBadge(statut) {
     const map = {
-      envoyee: { label: 'Envoyee', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+      envoyee: { label: 'Envoyee', color: '#13deb9', bg: 'rgba(16,185,129,0.15)' },
       echec: { label: 'Echec', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-      lue: { label: 'Lue', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' }
+      lue: { label: 'Lue', color: '#635bff', bg: 'rgba(59,130,246,0.15)' }
     };
     const info = map[statut] || { label: statut || '-', color: '#6b7280', bg: 'rgba(107,114,128,0.15)' };
     return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:${info.bg};color:${info.color};">${info.label}</span>`;

@@ -92,17 +92,17 @@ const ContraventionsPage = {
         </div>
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
+            <div class="d-icon" style="background:rgba(16,185,129,.1);color:#13deb9;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
             <div class="d-lbl" style="margin:0;">Payées (mois)</div>
           </div>
-          <div class="d-val" style="color:#10b981;">${data.nbPayees}</div>
+          <div class="d-val" style="color:#13deb9;">${data.nbPayees}</div>
         </div>
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:chat-round-dots-bold-duotone"></iconify-icon></div>
+            <div class="d-icon" style="background:rgba(245,158,11,.1);color:#ffae1f;"><iconify-icon icon="solar:chat-round-dots-bold-duotone"></iconify-icon></div>
             <div class="d-lbl" style="margin:0;">Contestées</div>
           </div>
-          <div class="d-val" style="color:#f59e0b;">${data.nbContestees}</div>
+          <div class="d-val" style="color:#ffae1f;">${data.nbContestees}</div>
         </div>
       </div>
 
@@ -171,7 +171,7 @@ const ContraventionsPage = {
           { label: 'Statut', key: 'statut', render: (v) => {
             let html = statusBadge(v.statut);
             if (v.moyenPaiement === 'wave') {
-              html += ' <span class="badge" style="font-size:0.65rem;background:rgba(13,110,253,0.1);color:#0D6EFD;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
+              html += ' <span class="badge" style="font-size:0.65rem;background:rgba(13,110,253,0.1);color:#635bff;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
             }
             if (v.motifContestation) {
               html += ` <span title="${v.motifContestation}" style="cursor:help;font-size:0.7rem;color:#94a3b8"><iconify-icon icon="solar:chat-round-dots-bold"></iconify-icon></span>`;
@@ -182,7 +182,7 @@ const ContraventionsPage = {
             let btns = `<button class="btn-icon" title="Modifier" onclick="ContraventionsPage._edit('${v.id}')"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>`;
             if (v.statut === 'impayee' || v.statut === 'contestee') {
               btns += ` <button class="btn-icon btn-success" title="Marquer pay\u00e9e" onclick="ContraventionsPage._markPaid('${v.id}')"><iconify-icon icon="solar:check-circle-bold"></iconify-icon></button>`;
-              btns += ` <button class="btn-icon" title="Payer via Wave" onclick="ContraventionsPage._payWave('${v.id}')" style="color:#0D6EFD"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></button>`;
+              btns += ` <button class="btn-icon" title="Payer via Wave" onclick="ContraventionsPage._payWave('${v.id}')" style="color:#635bff"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></button>`;
             }
             btns += ` <button class="btn-icon btn-danger" title="Supprimer" onclick="ContraventionsPage._delete('${v.id}')"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>`;
             return btns;
@@ -290,7 +290,7 @@ const ContraventionsPage = {
   },
 
   _contraLineHtml(idx) {
-    const colors = ['#ef4444', '#f97316', '#8b5cf6', '#3b82f6', '#06b6d4', '#22c55e'];
+    const colors = ['#ef4444', '#f5512e', '#635bff', '#635bff', '#0891b2', '#13deb9'];
     const c = colors[idx % colors.length];
     return `<div class="contra-line" data-idx="${idx}" style="border-left:3px solid ${c};background:linear-gradient(135deg,${c}08,transparent);border-radius:0 14px 14px 0;padding:16px 16px 16px 20px;margin-bottom:12px;position:relative;transition:all .2s;">
       ${idx > 0 ? `<button type="button" onclick="this.closest('.contra-line').remove();ContraventionsPage._updateContraCount()" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;" onmouseenter="this.style.background='#ef4444';this.style.color='#fff'" onmouseleave="this.style.background='rgba(239,68,68,.1)';this.style.color='#ef4444'"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>` : ''}
@@ -336,7 +336,7 @@ const ContraventionsPage = {
       '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#ef4444;"></iconify-icon> D\u00e9claration de contraventions',
       `<form id="form-contravention" class="modal-form" style="padding:0;">
           <!-- En-tete avec icone -->
-          <div style="background:linear-gradient(135deg,#ef4444,#f97316);border-radius:14px;padding:20px;margin-bottom:20px;color:#fff;">
+          <div style="background:linear-gradient(135deg,#ef4444,#f5512e);border-radius:14px;padding:20px;margin-bottom:20px;color:#fff;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
               <iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size:24px;"></iconify-icon>
               <span style="font-size:16px;font-weight:800;">Nouvelle d\u00e9claration</span>
@@ -357,7 +357,7 @@ const ContraventionsPage = {
             </div>
             <div>
               <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
-                <iconify-icon icon="solar:bus-bold-duotone" style="color:#14b8a6;"></iconify-icon> V\u00e9hicule
+                <iconify-icon icon="solar:bus-bold-duotone" style="color:#13deb9;"></iconify-icon> V\u00e9hicule
               </label>
               <select name="vehiculeId" id="contra-vehicule-select" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;">
                 <option value="">Aucun</option>
@@ -369,13 +369,13 @@ const ContraventionsPage = {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
               <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
-                <iconify-icon icon="solar:calendar-bold-duotone" style="color:#f97316;"></iconify-icon> Date *
+                <iconify-icon icon="solar:calendar-bold-duotone" style="color:#f5512e;"></iconify-icon> Date *
               </label>
               <input type="date" name="date" required value="${new Date().toISOString().split('T')[0]}" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;box-sizing:border-box;">
             </div>
             <div>
               <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
-                <iconify-icon icon="solar:clock-circle-bold-duotone" style="color:#3b82f6;"></iconify-icon> Heure
+                <iconify-icon icon="solar:clock-circle-bold-duotone" style="color:#635bff;"></iconify-icon> Heure
               </label>
               <input type="time" name="heure" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;box-sizing:border-box;">
             </div>
@@ -383,7 +383,7 @@ const ContraventionsPage = {
           <!-- Lieu -->
           <div style="margin-bottom:16px;">
             <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
-              <iconify-icon icon="solar:map-point-bold-duotone" style="color:#22c55e;"></iconify-icon> Lieu
+              <iconify-icon icon="solar:map-point-bold-duotone" style="color:#13deb9;"></iconify-icon> Lieu
             </label>
             <input type="text" name="lieu" placeholder="ex: Boulevard Latrille, Cocody" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:500;box-sizing:border-box;">
           </div>
@@ -391,7 +391,7 @@ const ContraventionsPage = {
           <!-- Note admin (compact) -->
           <div style="margin-bottom:20px;">
             <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
-              <iconify-icon icon="solar:chat-round-dots-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Note interne (optionnel)
+              <iconify-icon icon="solar:chat-round-dots-bold-duotone" style="color:#635bff;"></iconify-icon> Note interne (optionnel)
             </label>
             <textarea name="commentaire" rows="2" placeholder="Commentaire pour l'\u00e9quipe..." style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);resize:vertical;box-sizing:border-box;"></textarea>
           </div>
@@ -550,11 +550,11 @@ const ContraventionsPage = {
       notes: 'background:rgba(139,92,246,0.06);'
     };
 
-    const statutColor = c.statut === 'payee' ? '#10b981' : c.statut === 'contestee' ? '#f59e0b' : '#ef4444';
+    const statutColor = c.statut === 'payee' ? '#13deb9' : c.statut === 'contestee' ? '#ffae1f' : '#ef4444';
     const statutLabel = c.statut === 'payee' ? 'Payée' : c.statut === 'contestee' ? 'Contestée' : 'Impayée';
 
     Modal.form(
-      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;font-size:20px;"></iconify-icon> Modifier contravention',
+      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#635bff;font-size:20px;"></iconify-icon> Modifier contravention',
       `<form id="form-contravention-edit">
           <!-- Bandeau statut -->
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;background:${statutColor}12;border:1px solid ${statutColor}30;margin-bottom:4px;">
@@ -568,7 +568,7 @@ const ContraventionsPage = {
           <!-- Section : Assignation -->
           <div style="${sectionBase}${sectionColors.assignation}">
             <div style="${sectionTitleStyle}">
-              <iconify-icon icon="solar:user-bold-duotone" style="color:#3b82f6;font-size:15px;"></iconify-icon> Assignation
+              <iconify-icon icon="solar:user-bold-duotone" style="color:#635bff;font-size:15px;"></iconify-icon> Assignation
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div>
@@ -590,7 +590,7 @@ const ContraventionsPage = {
           <!-- Section : Infraction -->
           <div style="${sectionBase}${sectionColors.infraction}">
             <div style="${sectionTitleStyle}">
-              <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f59e0b;font-size:15px;"></iconify-icon> Infraction
+              <iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#ffae1f;font-size:15px;"></iconify-icon> Infraction
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div>
@@ -613,7 +613,7 @@ const ContraventionsPage = {
           <!-- Section : Financier -->
           <div style="${sectionBase}${sectionColors.financier}">
             <div style="${sectionTitleStyle}">
-              <iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#10b981;font-size:15px;"></iconify-icon> Financier
+              <iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#13deb9;font-size:15px;"></iconify-icon> Financier
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div>
@@ -622,7 +622,7 @@ const ContraventionsPage = {
               </div>
               <div>
                 <label style="${labelStyle}">Statut</label>
-                <select name="statut" style="${inputStyle}" onchange="this.closest('form').querySelector('.statut-indicator').style.background=this.value==='payee'?'#10b98112':this.value==='contestee'?'#f59e0b12':'#ef444412'">
+                <select name="statut" style="${inputStyle}" onchange="this.closest('form').querySelector('.statut-indicator').style.background=this.value==='payee'?'#13deb912':this.value==='contestee'?'#ffae1f12':'#ef444412'">
                   <option value="impayee" ${c.statut === 'impayee' ? 'selected' : ''}>Impayée</option>
                   <option value="payee" ${c.statut === 'payee' ? 'selected' : ''}>Payée</option>
                   <option value="contestee" ${c.statut === 'contestee' ? 'selected' : ''}>Contestée</option>
@@ -634,7 +634,7 @@ const ContraventionsPage = {
           <!-- Section : Notes -->
           <div style="${sectionBase}${sectionColors.notes}">
             <div style="${sectionTitleStyle}">
-              <iconify-icon icon="solar:document-text-bold-duotone" style="color:#8b5cf6;font-size:15px;"></iconify-icon> Notes
+              <iconify-icon icon="solar:document-text-bold-duotone" style="color:#635bff;font-size:15px;"></iconify-icon> Notes
             </div>
             <div>
               <label style="${labelStyle}">Description</label>
@@ -648,7 +648,7 @@ const ContraventionsPage = {
           ${c.motifContestation ? `
           <div style="margin-top:14px;padding:12px 14px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:12px;">
             <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;">
-              <iconify-icon icon="solar:chat-round-warning-bold-duotone" style="font-size:15px;color:#f59e0b;"></iconify-icon> Contestation chauffeur
+              <iconify-icon icon="solar:chat-round-warning-bold-duotone" style="font-size:15px;color:#ffae1f;"></iconify-icon> Contestation chauffeur
             </div>
             <div style="font-size:13px;color:#92400e;line-height:1.5;">${c.motifContestation}</div>
           </div>

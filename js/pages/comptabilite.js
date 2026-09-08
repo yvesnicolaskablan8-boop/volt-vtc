@@ -51,7 +51,7 @@ const ComptabilitePage = {
             <div id="compta-export-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;min-width:170px;overflow:hidden;">
               <button onclick="ComptabilitePage._exportPDF();document.getElementById('compta-export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:document-bold-duotone" style="font-size:16px;color:#ef4444;"></iconify-icon> Exporter en PDF</button>
               <div style="height:1px;background:var(--border-color);margin:0 10px;"></div>
-              <button onclick="ComptabilitePage._exportCSV();document.getElementById('compta-export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#10b981;"></iconify-icon> Exporter en CSV</button>
+              <button onclick="ComptabilitePage._exportCSV();document.getElementById('compta-export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#13deb9;"></iconify-icon> Exporter en CSV</button>
             </div>
           </div>
           <button class="btn btn-secondary" onclick="ComptabilitePage._exportComptable()"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Export comptable</button>
@@ -342,13 +342,13 @@ const ComptabilitePage = {
         </div>
         <div class="d-grid d-g21" id="compta-yango-kpis">
           <div class="d-card">
-            <div class="d-icon" style="background:rgba(16,185,129,.12);color:#10b981;"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
-            <div class="d-val" id="cy-comm-mois" style="color:#10b981;"><div class="yango-skeleton"></div></div>
+            <div class="d-icon" style="background:rgba(16,185,129,.12);color:#13deb9;"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
+            <div class="d-val" id="cy-comm-mois" style="color:#13deb9;"><div class="yango-skeleton"></div></div>
             <div class="d-lbl" id="cy-comm-mois-label">Commission du mois</div>
           </div>
           <div class="d-card">
-            <div class="d-icon" style="background:rgba(16,185,129,.12);color:#10b981;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-            <div class="d-val" id="cy-comm-jour" style="color:#10b981;"><div class="yango-skeleton"></div></div>
+            <div class="d-icon" style="background:rgba(16,185,129,.12);color:#13deb9;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div class="d-val" id="cy-comm-jour" style="color:#13deb9;"><div class="yango-skeleton"></div></div>
             <div class="d-lbl" id="cy-comm-jour-label">Commission aujourd'hui</div>
           </div>
         </div>
@@ -365,7 +365,7 @@ const ComptabilitePage = {
           <div style="flex:1;">
             <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;">Comment ça marche ?</h3>
             <p style="font-size:13px;line-height:1.6;color:var(--text-secondary);">
-              <strong style="color:#10b981;">Encaissement</strong> = argent qui rentre (versements chauffeurs, paiements clients, <strong>commission Yango</strong>)<br>
+              <strong style="color:#13deb9;">Encaissement</strong> = argent qui rentre (versements chauffeurs, paiements clients, <strong>commission Yango</strong>)<br>
               <strong style="color:#ef4444;">Décaissement</strong> = argent qui sort (carburant, maintenance, salaires, loyers, assurance)<br>
               <strong style="color:#F5512E;">Bénéfice</strong> = Encaissements − Décaissements. Si positif, vous gagnez de l'argent !
             </p>
@@ -416,7 +416,7 @@ const ComptabilitePage = {
 
     // Répartition des dépenses du mois (top 5)
     const catLabels = { carburant: 'Carburant', maintenance: 'Maintenance', assurance: 'Assurance', leasing: 'Leasing', salaire: 'Salaires', loyer: 'Loyer/Bureau', impots: 'Impôts/Taxes', telephone: 'Télécom', divers: 'Divers', marketing: 'Marketing', fournitures: 'Fournitures', recharge_yango: 'Recharge Yango', autres_depenses: 'Autres' };
-    const catColors = ['#F5512E', '#f59e0b', '#ef4444', '#8b5cf6', '#13DEB9', '#ec4899', '#06b6d4'];
+    const catColors = ['#F5512E', '#ffae1f', '#ef4444', '#635bff', '#13DEB9', '#f5512e', '#0891b2'];
     const catMap = {};
     this._thisMonthOps(ops).filter(o => o.type === 'depense').forEach(o => { catMap[o.categorie] = (catMap[o.categorie] || 0) + o.montant; });
     const cats = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -454,7 +454,7 @@ const ComptabilitePage = {
           <div class="cpt-goal">
             <div>
               <div class="cpt-goal-eyebrow">Résultat du mois</div>
-              <div class="cpt-goal-amount" style="color:${resultat >= 0 ? '#4ade80' : '#fca5a5'};">${fmt(resultat)}</div>
+              <div class="cpt-goal-amount" style="color:${resultat >= 0 ? '#34d399' : '#fca5a5'};">${fmt(resultat)}</div>
               <div class="cpt-goal-sub">${resultat >= 0 ? 'Bénéfice' : 'Perte'} · encaissé ${fmt(cur.recettes)} / décaissé ${fmt(cur.depenses)}</div>
             </div>
             <div class="cpt-goal-bottom">
@@ -568,7 +568,7 @@ const ComptabilitePage = {
         data: {
           labels: months.map(m => m.label),
           datasets: [
-            { label: 'Encaissements', data: months.map(m => Math.round(m.recettes)), backgroundColor: '#22c55e', hoverBackgroundColor: '#16a34a', borderRadius: 4 },
+            { label: 'Encaissements', data: months.map(m => Math.round(m.recettes)), backgroundColor: '#13deb9', hoverBackgroundColor: '#02b3a9', borderRadius: 4 },
             { label: 'Décaissements', data: months.map(m => Math.round(m.depenses)), backgroundColor: '#ef4444', hoverBackgroundColor: '#dc2626', borderRadius: 4 }
           ]
         },
@@ -605,7 +605,7 @@ const ComptabilitePage = {
     monthOps.forEach(o => { catMap[o.categorie] = (catMap[o.categorie] || 0) + o.montant; });
     const cats = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
     const catLabels = { carburant: 'Carburant', maintenance: 'Maintenance', assurance: 'Assurance', leasing: 'Leasing', salaire: 'Salaires', loyer: 'Loyer/Bureau', impots: 'Impôts/Taxes', telephone: 'Télécom', divers: 'Divers', marketing: 'Marketing', fournitures: 'Fournitures' };
-    const catColors = ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#22d3ee', '#14b8a6', '#f97316', '#F5512E', '#84cc16', '#64748b'];
+    const catColors = ['#ef4444', '#ffae1f', '#635bff', '#635bff', '#f5512e', '#0891b2', '#13deb9', '#f5512e', '#F5512E', '#13deb9', '#64748b'];
 
     const depCtx = document.getElementById('chart-compta-depenses');
     if (depCtx && cats.length > 0) {
@@ -870,7 +870,7 @@ const ComptabilitePage = {
           datasets: [
             { label: 'Encaissements', data: monthly.map(m => Math.round(m.recettes)), backgroundColor: 'rgba(34, 197, 94, 0.7)', borderRadius: 4, order: 2 },
             { label: 'Décaissements', data: monthly.map(m => Math.round(m.depenses)), backgroundColor: 'rgba(239, 68, 68, 0.7)', borderRadius: 4, order: 2 },
-            { label: 'Résultat', data: monthly.map(m => Math.round(m.resultat)), type: 'line', borderColor: '#3b82f6', borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#3b82f6', fill: false, order: 1 }
+            { label: 'Résultat', data: monthly.map(m => Math.round(m.resultat)), type: 'line', borderColor: '#635bff', borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#635bff', fill: false, order: 1 }
           ]
         },
         options: {
@@ -971,10 +971,10 @@ const ComptabilitePage = {
           labels: dates.map(d => d.slice(5)),
           datasets: [{
             label: 'Solde', data: balanceData,
-            borderColor: '#22d3ee', backgroundColor: 'rgba(34, 211, 238, 0.1)',
+            borderColor: '#0891b2', backgroundColor: 'rgba(34, 211, 238, 0.1)',
             fill: true, borderWidth: 2, pointRadius: 2,
             pointHoverRadius: 6,
-            pointHoverBackgroundColor: '#22d3ee',
+            pointHoverBackgroundColor: '#0891b2',
             pointHoverBorderColor: '#fff',
             pointHoverBorderWidth: 2
           }]
@@ -1156,7 +1156,7 @@ const ComptabilitePage = {
       const budgetData = categories.map(c => { const b = budgets.find(x => x.categorie === c); return b ? b.montant : 0; });
       const reelData = categories.map(c => Math.round(ops.filter(o => o.categorie === c).reduce((s, o) => s + o.montant, 0)));
       const reelColors = categories.map((c, i) => {
-        return budgetData[i] > 0 && reelData[i] > budgetData[i] ? '#ef4444' : '#22c55e';
+        return budgetData[i] > 0 && reelData[i] > budgetData[i] ? '#ef4444' : '#13deb9';
       });
       this._charts.push(new Chart(ctx, {
         type: 'bar',
@@ -1164,7 +1164,7 @@ const ComptabilitePage = {
           labels: categories.map(c => catLabels[c]),
           datasets: [
             { label: 'Budget', data: budgetData, backgroundColor: 'rgba(59, 130, 246, 0.5)', hoverBackgroundColor: 'rgba(59, 130, 246, 0.8)', borderRadius: 4 },
-            { label: 'Réel', data: reelData, backgroundColor: reelColors, hoverBackgroundColor: reelColors.map(c => c === '#ef4444' ? '#dc2626' : '#16a34a'), borderRadius: 4 }
+            { label: 'Réel', data: reelData, backgroundColor: reelColors, hoverBackgroundColor: reelColors.map(c => c === '#ef4444' ? '#dc2626' : '#02b3a9'), borderRadius: 4 }
           ]
         },
         options: {
@@ -1213,25 +1213,25 @@ const ComptabilitePage = {
 
   _renderCategories() {
     const recCats = [
-      { id: 'commissions_courses', label: 'Commissions courses', desc: 'Commissions reçues sur les courses des chauffeurs', icon: 'solar:transfer-horizontal-bold-duotone', color: '#22c55e' },
-      { id: 'courses_directes', label: 'Courses directes', desc: 'Paiement direct de courses (app & téléphone)', icon: 'solar:wheel-bold-duotone', color: '#3b82f6' },
+      { id: 'commissions_courses', label: 'Commissions courses', desc: 'Commissions reçues sur les courses des chauffeurs', icon: 'solar:transfer-horizontal-bold-duotone', color: '#13deb9' },
+      { id: 'courses_directes', label: 'Courses directes', desc: 'Paiement direct de courses (app & téléphone)', icon: 'solar:wheel-bold-duotone', color: '#635bff' },
       { id: 'commission_yango', label: 'Commission Yango (3%)', desc: 'Commission de 3% reversee par Yango sur le CA de la flotte', icon: 'solar:hand-money-bold-duotone', color: '#FC4C02' },
-      { id: 'frais_service', label: 'Frais de service', desc: 'Frais de service des plateformes (Yango, Bolt)', icon: 'solar:smartphone-bold-duotone', color: '#8b5cf6' },
-      { id: 'location_vehicule', label: 'Location véhicule', desc: 'Location de véhicule à un tiers', icon: 'solar:wheel-bold-duotone', color: '#f59e0b' },
-      { id: 'autres_recettes', label: 'Autres recettes', desc: 'Autres sources de revenus', icon: 'solar:add-circle-bold-duotone', color: '#22d3ee' }
+      { id: 'frais_service', label: 'Frais de service', desc: 'Frais de service des plateformes (Yango, Bolt)', icon: 'solar:smartphone-bold-duotone', color: '#635bff' },
+      { id: 'location_vehicule', label: 'Location véhicule', desc: 'Location de véhicule à un tiers', icon: 'solar:wheel-bold-duotone', color: '#ffae1f' },
+      { id: 'autres_recettes', label: 'Autres recettes', desc: 'Autres sources de revenus', icon: 'solar:add-circle-bold-duotone', color: '#0891b2' }
     ];
 
     const depCats = [
       { id: 'carburant', label: 'Carburant', desc: 'Essence, gasoil, recharge électrique', icon: 'solar:gas-station-bold-duotone', color: '#ef4444' },
-      { id: 'maintenance', label: 'Maintenance', desc: 'Révisions, réparations, pneus, freins', icon: 'solar:tuning-2-bold-duotone', color: '#f59e0b' },
-      { id: 'assurance', label: 'Assurance', desc: 'Assurance véhicules, RC Pro', icon: 'solar:shield-bold-duotone', color: '#3b82f6' },
-      { id: 'leasing', label: 'Leasing véhicules', desc: 'Mensualités de crédit-bail', icon: 'solar:document-bold-duotone', color: '#8b5cf6' },
-      { id: 'salaires', label: 'Salaires', desc: 'Salaires des employés (hors chauffeurs)', icon: 'solar:users-group-rounded-bold-duotone', color: '#ec4899' },
-      { id: 'loyer_bureau', label: 'Loyer / Bureau', desc: 'Loyer bureau, parking, entrepôt', icon: 'solar:buildings-bold-duotone', color: '#14b8a6' },
+      { id: 'maintenance', label: 'Maintenance', desc: 'Révisions, réparations, pneus, freins', icon: 'solar:tuning-2-bold-duotone', color: '#ffae1f' },
+      { id: 'assurance', label: 'Assurance', desc: 'Assurance véhicules, RC Pro', icon: 'solar:shield-bold-duotone', color: '#635bff' },
+      { id: 'leasing', label: 'Leasing véhicules', desc: 'Mensualités de crédit-bail', icon: 'solar:document-bold-duotone', color: '#635bff' },
+      { id: 'salaires', label: 'Salaires', desc: 'Salaires des employés (hors chauffeurs)', icon: 'solar:users-group-rounded-bold-duotone', color: '#f5512e' },
+      { id: 'loyer_bureau', label: 'Loyer / Bureau', desc: 'Loyer bureau, parking, entrepôt', icon: 'solar:buildings-bold-duotone', color: '#13deb9' },
       { id: 'taxes_impots', label: 'Impôts / Taxes', desc: 'Patente, impôts, taxes diverses', icon: 'solar:bank-bold-duotone', color: '#F5512E' },
-      { id: 'telecoms', label: 'Télécom', desc: 'Téléphone, internet, abonnements', icon: 'solar:phone-bold-duotone', color: '#f97316' },
-      { id: 'marketing', label: 'Marketing', desc: 'Publicité, communication, branding', icon: 'solar:megaphone-bold-duotone', color: '#84cc16' },
-      { id: 'fournitures', label: 'Fournitures', desc: 'Fournitures bureau, consommables', icon: 'solar:box-bold-duotone', color: '#a855f7' },
+      { id: 'telecoms', label: 'Télécom', desc: 'Téléphone, internet, abonnements', icon: 'solar:phone-bold-duotone', color: '#f5512e' },
+      { id: 'marketing', label: 'Marketing', desc: 'Publicité, communication, branding', icon: 'solar:megaphone-bold-duotone', color: '#13deb9' },
+      { id: 'fournitures', label: 'Fournitures', desc: 'Fournitures bureau, consommables', icon: 'solar:box-bold-duotone', color: '#635bff' },
       { id: 'autres_depenses', label: 'Autres dépenses', desc: 'Autres dépenses non classées', icon: 'solar:menu-dots-bold', color: '#64748b' }
     ];
 
@@ -1914,7 +1914,7 @@ const ComptabilitePage = {
         .map(([type, amount]) => `<tr><td>${this._getDepTypeLabel(type)}</td><td style="text-align:right;font-weight:600">${Utils.formatCurrency(amount)}</td></tr>`).join('');
       const total = monthDep.reduce((s, d) => s + (d.montant || 0), 0);
       Modal.open({
-        title: '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> Détail des dépenses du mois',
+        title: '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#ffae1f;"></iconify-icon> Détail des dépenses du mois',
         body: `<table class="table" style="width:100%"><thead><tr><th>Catégorie</th><th style="text-align:right">Montant</th></tr></thead><tbody>${rows}</tbody><tfoot><tr style="font-weight:700;border-top:2px solid var(--border-color)"><td>Total</td><td style="text-align:right">${Utils.formatCurrency(total)}</td></tr></tfoot></table>`,
         footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>'
       });
@@ -1925,7 +1925,7 @@ const ComptabilitePage = {
       const rows = monthDep.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
         .map(d => `<tr><td>${Utils.formatDate(d.date)}</td><td>${chauffeurMap[d.chauffeurId] || '-'}</td><td>${vehiculeMap[d.vehiculeId] || '-'}</td><td>${this._getDepTypeLabel(d.typeDepense)}</td><td style="text-align:right;font-weight:600">${Utils.formatCurrency(d.montant || 0)}</td></tr>`).join('');
       Modal.open({
-        title: '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#3b82f6;"></iconify-icon> Dépenses du mois',
+        title: '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#635bff;"></iconify-icon> Dépenses du mois',
         body: `<div style="max-height:400px;overflow-y:auto"><table class="table" style="width:100%"><thead><tr><th>Date</th><th>Chauffeur</th><th>Véhicule</th><th>Type</th><th style="text-align:right">Montant</th></tr></thead><tbody>${rows || '<tr><td colspan="5" style="text-align:center">Aucune dépense</td></tr>'}</tbody></table></div>`,
         footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>',
         size: 'large'
@@ -1949,7 +1949,7 @@ const ComptabilitePage = {
       const rows = Object.entries(vehTotals).sort((a, b) => b[1] - a[1])
         .map(([vid, amount]) => `<tr><td>${vehiculeMap[vid] || vid}</td><td style="text-align:right;font-weight:600">${Utils.formatCurrency(amount)}</td></tr>`).join('');
       Modal.open({
-        title: '<iconify-icon icon="solar:wheel-bold-duotone" style="color:#3b82f6;"></iconify-icon> Dépenses par véhicule',
+        title: '<iconify-icon icon="solar:wheel-bold-duotone" style="color:#635bff;"></iconify-icon> Dépenses par véhicule',
         body: `<table class="table" style="width:100%"><thead><tr><th>Véhicule</th><th style="text-align:right">Total du mois</th></tr></thead><tbody>${rows || '<tr><td colspan="2" style="text-align:center">Aucune donnée</td></tr>'}</tbody></table>`,
         footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>'
       });
@@ -1960,7 +1960,7 @@ const ComptabilitePage = {
     const vehicules = Store.get('vehicules') || [];
     const chauffeurs = Store.get('chauffeurs') || [];
     Modal.form(
-      '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> Nouvelle dépense',
+      '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#ffae1f;"></iconify-icon> Nouvelle dépense',
       `<form id="form-dep" class="modal-form">
         <div class="form-group"><label>Véhicule *</label>
           <select name="vehiculeId" required><option value="">Sélectionner...</option>
@@ -2016,7 +2016,7 @@ const ComptabilitePage = {
     const vehicules = Store.get('vehicules') || [];
     const chauffeurs = Store.get('chauffeurs') || [];
     Modal.form(
-      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;"></iconify-icon> Modifier dépense',
+      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#635bff;"></iconify-icon> Modifier dépense',
       `<form id="form-dep-edit" class="modal-form">
         <div class="form-group"><label>Véhicule</label>
           <select name="vehiculeId">${vehicules.map(v => `<option value="${v.id}" ${v.id === d.vehiculeId ? 'selected' : ''}>${v.marque} ${v.modele} - ${v.immatriculation || ''}</option>`).join('')}</select></div>

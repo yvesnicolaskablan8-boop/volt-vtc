@@ -310,7 +310,7 @@ const VersementsPage = {
 .dw-actions{display:flex;gap:8px;margin-top:16px;}
 .dw-btn{flex:1;height:44px;border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:.15s;}
 .dw-ghost{background:var(--vx-surface);color:var(--text-secondary);border:1px solid var(--vx-bd);}
-.dw-today{background:#eef2ff;color:#4338ca;border:1px solid #e0e7ff;}
+.dw-today{background:#eef2ff;color:#4a43c2;border:1px solid #e0e7ff;}
 .dw-ok{background:#F5512E;color:#fff;box-shadow:0 8px 20px rgba(245,81,46,.28);}
 .wl-card{background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:28px;box-shadow:0 24px 60px rgba(17,24,39,.1);padding:24px;display:grid;grid-template-columns:400px 1fr;gap:24px;align-items:start;}
 .wl-left{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px;}
@@ -372,7 +372,7 @@ const VersementsPage = {
 .vx-search{position:relative;flex:1;min-width:150px;}
 .vx-search iconify-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--text-muted);pointer-events:none;}
 .vx-input{width:100%;height:42px;padding:0 14px 0 36px;border-radius:14px;border:1px solid var(--vx-bd);background:var(--vx-surface);font-size:13px;font-family:var(--font-body);color:var(--text-primary);outline:none;transition:.15s;box-sizing:border-box;}
-.vx-input:focus{border-color:#c4b5fd;background:var(--vx-card);box-shadow:0 0 0 4px rgba(139,92,246,.12);}
+.vx-input:focus{border-color:#e0e7ff;background:var(--vx-card);box-shadow:0 0 0 4px rgba(139,92,246,.12);}
 select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:auto;min-width:140px;}
 .vx-list{display:flex;flex-direction:column;gap:2px;max-height:460px;overflow-y:auto;padding-right:2px;}
 .vx-date{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:2;background:var(--vx-card);padding:10px 4px 6px;margin-top:4px;}
@@ -421,7 +421,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
   // Avatar à initiales, teinte stable dérivée du nom (touche moderne, discrète).
   _avatar(name) {
-    const pals = [['#eef2ff', '#4f46e5'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#16a34a'], ['#fff7ed', '#ea580c'], ['#fdf2f8', '#DE3E1E'], ['#f5f3ff', '#7c3aed'], ['#eff6ff', '#2563eb'], ['#fefce8', '#ca8a04']];
+    const pals = [['#eef2ff', '#4a43c2'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#02b3a9'], ['#fff7ed', '#de3e1e'], ['#fff7ed', '#DE3E1E'], ['#f5f7fb', '#4a43c2'], ['#eef2ff', '#4a43c2'], ['#fefce8', '#ca8a04']];
     const s = String(name || '?').trim();
     let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
     const [bg, fg] = pals[h % pals.length];
@@ -434,10 +434,10 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
   // reflète la situation : neutre indigo, bon vert, à surveiller ambre, mauvais rose.
   _kpiGrad(status) {
     const M = {
-      good:    { grad: 'linear-gradient(120deg,#d1fae5 0%,#ecfdf5 100%)', fg: '#047857' },
+      good:    { grad: 'linear-gradient(120deg,#d1fae5 0%,#ecfdf5 100%)', fg: '#02b3a9' },
       warn:    { grad: 'linear-gradient(120deg,#fef3c7 0%,#fffbeb 100%)', fg: '#b45309' },
-      bad:     { grad: 'linear-gradient(120deg,#fbcfe8 0%,#ffe4e6 100%)', fg: '#be185d' },
-      neutral: { grad: 'linear-gradient(120deg,#e0e7ff 0%,#eef2ff 100%)', fg: '#4338ca' },
+      bad:     { grad: 'linear-gradient(120deg,#ffe8e1 0%,#ffe4e6 100%)', fg: '#de3e1e' },
+      neutral: { grad: 'linear-gradient(120deg,#e0e7ff 0%,#eef2ff 100%)', fg: '#4a43c2' },
     };
     return M[status] || M.neutral;
   },
@@ -450,24 +450,24 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const reste = Math.max(0, attendu - verse);
     const taux = attendu > 0 ? Math.round(verse / attendu * 100) : null;
     const status = attendu <= 0 ? 'neutral' : (taux >= 85 ? 'good' : taux >= 50 ? 'warn' : 'bad');
-    const subCol = { good: '#059669', warn: '#b45309', bad: '#e11d48', neutral: '#6b7280' }[status];
+    const subCol = { good: '#02b3a9', warn: '#b45309', bad: '#ef4444', neutral: '#6b7280' }[status];
     const subIcon = { good: 'solar:check-circle-bold', warn: 'solar:clock-circle-bold', bad: 'solar:danger-triangle-bold', neutral: 'solar:clock-circle-bold' }[status];
     const fmt = n => Utils.formatCurrency(n || 0);
     const dr = d.detteData || {};
 
     // ── Contenus repliés (accordéons) ──
-    const recetteRows = this._renderDettesByDate(dr.detteListRecettes || [], '#f59e0b', 'recette');
+    const recetteRows = this._renderDettesByDate(dr.detteListRecettes || [], '#ffae1f', 'recette');
     const contraRows = this._renderDettesByDate(dr.detteListContraventions || [], '#ef4444', 'contravention');
     const versements = (d.versements || []).filter(_isRealVersement).sort((a, b) => b.date.localeCompare(a.date));
     const versementRows = this._renderVersementRows(versements, d.chauffeurs);
     const verseTotal = versements.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
     const detteFilterBar = (id) => `<div class="vx-tools"><div class="vx-search"><iconify-icon icon="solar:magnifer-linear"></iconify-icon><input type="text" class="vx-input dette-search-input" data-target="${id}" placeholder="Rechercher un chauffeur..."></div><input type="date" class="vx-input dette-date-filter" data-target="${id}"></div>`;
-    const empty = (txt) => `<div class="vx-empty"><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon>${txt}</div>`;
+    const empty = (txt) => `<div class="vx-empty"><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;"></iconify-icon>${txt}</div>`;
     const anomRows = [
-      ...(d.anomalies.workingNotScheduled || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fef3c7;color:#d97706;">!</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">Roule sans être programmé · ${Utils.formatDate(a.date)}</div></div><div class="vx-right"><div class="vx-amt" style="color:#d97706;">${Utils.formatCurrency(a.caBrut)}</div></div></div>`),
-      ...(d.anomalies.versementMismatch || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fee2e2;color:#dc2626;">≠</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">${Utils.formatDate(a.date)} · dû ${Utils.formatCurrency(a.du)} / versé ${Utils.formatCurrency(a.verse)}</div></div><div class="vx-right"><div class="vx-amt" style="color:${a.ecart > 0 ? '#dc2626' : '#059669'};">${a.ecart > 0 ? '−' : '+'}${Utils.formatCurrency(Math.abs(a.ecart))}</div></div></div>`)
+      ...(d.anomalies.workingNotScheduled || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fef3c7;color:#e8930c;">!</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">Roule sans être programmé · ${Utils.formatDate(a.date)}</div></div><div class="vx-right"><div class="vx-amt" style="color:#e8930c;">${Utils.formatCurrency(a.caBrut)}</div></div></div>`),
+      ...(d.anomalies.versementMismatch || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fee2e2;color:#dc2626;">≠</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">${Utils.formatDate(a.date)} · dû ${Utils.formatCurrency(a.du)} / versé ${Utils.formatCurrency(a.verse)}</div></div><div class="vx-right"><div class="vx-amt" style="color:${a.ecart > 0 ? '#dc2626' : '#02b3a9'};">${a.ecart > 0 ? '−' : '+'}${Utils.formatCurrency(Math.abs(a.ecart))}</div></div></div>`)
     ].join('');
-    const progRows = (d.detailProgrammes || []).map(p => `<div class="vx-row"><div class="vx-av" style="background:#f3e8ff;color:#7c3aed;">${Utils.escHtml((p.prenom || '?').charAt(0).toUpperCase())}</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(((p.prenom || '') + ' ' + (p.nom || '')).trim())}</div><div class="vx-note">${Utils.formatDate(p.date)}</div></div><div class="vx-right"><div class="vx-amt">${Utils.formatCurrency(p.redevance)}</div></div></div>`).join('');
+    const progRows = (d.detailProgrammes || []).map(p => `<div class="vx-row"><div class="vx-av" style="background:#eef2ff;color:#4a43c2;">${Utils.escHtml((p.prenom || '?').charAt(0).toUpperCase())}</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(((p.prenom || '') + ' ' + (p.nom || '')).trim())}</div><div class="vx-note">${Utils.formatDate(p.date)}</div></div><div class="vx-right"><div class="vx-amt">${Utils.formatCurrency(p.redevance)}</div></div></div>`).join('');
 
     // Générateur d'accordéon (ligne « compte » repliable)
     const acc = (icBg, icFg, icBd, icon, title, sub, val, valCol, bodyHtml, valId) =>
@@ -482,31 +482,31 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       </div>`;
 
     const rows = [];
-    rows.push(acc('#fef3c7', '#d97706', '#fde68a', 'solar:wallet-money-bold-duotone', 'Dettes recettes',
+    rows.push(acc('#fef3c7', '#e8930c', '#fde68a', 'solar:wallet-money-bold-duotone', 'Dettes recettes',
       `${dr.nbDriversRecettes || 0} chauffeur${(dr.nbDriversRecettes || 0) > 1 ? 's' : ''} à régulariser`,
-      fmt(dr.totalDettesRecettes), (dr.totalDettesRecettes || 0) > 0 ? '#d97706' : 'var(--text-muted)',
-      `<div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap;"><button class="vx-gbtn" onclick="VersementsPage._resyncCaYango(this)"><iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon> Resync Yango</button><button class="vx-gbtn is-accent" style="background:#f59e0b;" onclick="VersementsPage._ajouterDette()"><iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter</button></div>${(dr.detteListRecettes || []).length > 3 ? detteFilterBar('dette-recettes-list') : ''}${(dr.detteListRecettes || []).length ? `<div id="dette-recettes-list" class="vx-list">${recetteRows}</div>` : empty('Aucune dette recette')}`));
+      fmt(dr.totalDettesRecettes), (dr.totalDettesRecettes || 0) > 0 ? '#e8930c' : 'var(--text-muted)',
+      `<div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap;"><button class="vx-gbtn" onclick="VersementsPage._resyncCaYango(this)"><iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon> Resync Yango</button><button class="vx-gbtn is-accent" style="background:#ffae1f;" onclick="VersementsPage._ajouterDette()"><iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter</button></div>${(dr.detteListRecettes || []).length > 3 ? detteFilterBar('dette-recettes-list') : ''}${(dr.detteListRecettes || []).length ? `<div id="dette-recettes-list" class="vx-list">${recetteRows}</div>` : empty('Aucune dette recette')}`));
     if ((dr.totalDettesContraventions || 0) > 0) rows.push(acc('#fee2e2', '#dc2626', '#fecaca', 'solar:shield-warning-bold-duotone', 'Dettes contraventions',
       `${dr.nbDriversContraventions || 0} chauffeur${(dr.nbDriversContraventions || 0) > 1 ? 's' : ''}`,
       fmt(dr.totalDettesContraventions), '#dc2626',
       `${(dr.detteListContraventions || []).length > 3 ? detteFilterBar('dette-contra-list') : ''}<div id="dette-contra-list" class="vx-list">${contraRows}</div>`));
-    rows.push(acc('#dcfce7', '#16a34a', '#bbf7d0', 'solar:hand-money-bold-duotone', 'Versements',
+    rows.push(acc('#dcfce7', '#02b3a9', '#bbf7d0', 'solar:hand-money-bold-duotone', 'Versements',
       `<span id="versements-count">${versements.length}</span> versement${versements.length > 1 ? 's' : ''} · ${d.periodLabel}`,
-      Utils.formatCurrency(verseTotal), '#16a34a',
+      Utils.formatCurrency(verseTotal), '#02b3a9',
       `<div class="vx-tools"><div class="vx-search"><iconify-icon icon="solar:magnifer-linear"></iconify-icon><input type="text" id="versements-search" class="vx-input" placeholder="Rechercher un chauffeur..." onclick="event.stopPropagation()"></div><select class="vx-input" id="filter-chauffeur" style="min-width:150px;"><option value="">Tous les chauffeurs</option>${d.chauffeurs.map(c => `<option value="${c.id}">${c.prenom} ${c.nom}</option>`).join('')}</select><select class="vx-input" id="filter-statut" style="min-width:130px;"><option value="">Tous statuts</option><option value="valide">Validé</option><option value="en_attente">En attente</option><option value="retard">En retard</option><option value="partiel">Partiel</option><option value="conteste">Contesté</option></select><input type="date" class="vx-input" id="filter-date-paiement" style="min-width:140px;"></div>${versements.length ? `<div id="versements-list" class="vx-list">${versementRows}</div>` : empty('Aucun versement pour cette date')}`,
       'versements-total'));
-    rows.push(acc(d.anomalies.total > 0 ? '#fef3c7' : '#eef1f7', d.anomalies.total > 0 ? '#d97706' : '#9aa3b2', d.anomalies.total > 0 ? '#fde68a' : '#e9edf4', 'solar:danger-triangle-bold-duotone', 'Anomalies',
-      d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK', String(d.anomalies.total), d.anomalies.total > 0 ? '#d97706' : 'var(--text-muted)',
+    rows.push(acc(d.anomalies.total > 0 ? '#fef3c7' : '#eef1f7', d.anomalies.total > 0 ? '#e8930c' : '#9aa3b2', d.anomalies.total > 0 ? '#fde68a' : '#e9edf4', 'solar:danger-triangle-bold-duotone', 'Anomalies',
+      d.anomalies.total > 0 ? 'À vérifier' : 'Tout est OK', String(d.anomalies.total), d.anomalies.total > 0 ? '#e8930c' : 'var(--text-muted)',
       d.anomalies.total > 0 ? `<div class="vx-list">${anomRows}</div>` : empty('Aucune anomalie détectée')));
-    rows.push(acc('#f3e8ff', '#7c3aed', '#e9d5ff', 'solar:users-group-rounded-bold-duotone', 'Chauffeurs programmés',
+    rows.push(acc('#eef2ff', '#4a43c2', '#e0e7ff', 'solar:users-group-rounded-bold-duotone', 'Chauffeurs programmés',
       `Programmés · ${d.periodLabel}`, String(d.nbChauffeursProgrammes), 'var(--text-primary)',
       (d.detailProgrammes || []).length ? `<div class="vx-list">${progRows}</div>` : empty('Aucun chauffeur programmé')));
-    if ((d.totalPertes || 0) > 0) rows.push(`<div class="wl-acc"><div class="wl-nav-row" style="cursor:default;"><div class="wl-nav-ic" style="background:#ffe4e6;color:#e11d48;border:1px solid #fecdd3;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div><div class="wl-nav-main"><div class="wl-nav-title">Pertes</div><div class="wl-nav-sub">Montant non recouvrable</div></div><div class="wl-nav-val" style="color:#e11d48;">${fmt(d.totalPertes)}</div></div></div>`);
+    if ((d.totalPertes || 0) > 0) rows.push(`<div class="wl-acc"><div class="wl-nav-row" style="cursor:default;"><div class="wl-nav-ic" style="background:#ffe4e6;color:#ef4444;border:1px solid #ffe8e1;"><iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon></div><div class="wl-nav-main"><div class="wl-nav-title">Pertes</div><div class="wl-nav-sub">Montant non recouvrable</div></div><div class="wl-nav-val" style="color:#ef4444;">${fmt(d.totalPertes)}</div></div></div>`);
 
     return `<div class="wl-card" id="wl-card">
       <div class="wl-left">
       <div class="wl-pills">
-        <div class="wl-pill" style="background:linear-gradient(120deg,#FBD7CC 0%,#FFE8E1 100%);border:1px solid rgba(245,81,46,.3);">
+        <div class="wl-pill" style="background:linear-gradient(120deg,#ffe8e1 0%,#FFE8E1 100%);border:1px solid rgba(245,81,46,.3);">
           <div class="wl-pill-l"><div class="wl-pill-ic"><iconify-icon icon="solar:wallet-bold"></iconify-icon></div><span class="wl-pill-lbl">Reste à encaisser</span></div>
           <span class="wl-pill-val">${fmt(reste)}</span>
         </div>
@@ -532,7 +532,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           <div id="export-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:14px;box-shadow:0 12px 30px rgba(17,24,39,.12);z-index:100;overflow:hidden;">
             <button onclick="VersementsPage._exportPDF();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:document-bold-duotone" style="font-size:16px;color:#ef4444;"></iconify-icon> Exporter en PDF</button>
             <div style="height:1px;background:var(--vx-bd);"></div>
-            <button onclick="VersementsPage._exportCSV();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#10b981;"></iconify-icon> Exporter en CSV</button>
+            <button onclick="VersementsPage._exportCSV();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#13deb9;"></iconify-icon> Exporter en CSV</button>
           </div>
         </div>
         <button class="wl-btn wl-btn-sec wl-act-ic" title="Nettoyer les versements fantômes" onclick="VersementsPage._cleanupGhosts()"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
@@ -774,8 +774,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
   _renderVersementsSection(d) {
     const versements = d.versements.filter(_isRealVersement).sort((a, b) => b.date.localeCompare(a.date));
-    if (versements.length === 0) return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #22c55e;text-align:center;padding:var(--space-xl);color:var(--text-muted);">
-      <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:2rem;color:#22c55e;display:block;margin-bottom:8px;"></iconify-icon>
+    if (versements.length === 0) return `<div class="card" style="margin-top:var(--space-lg);border-left:4px solid #13deb9;text-align:center;padding:var(--space-xl);color:var(--text-muted);">
+      <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:2rem;color:#13deb9;display:block;margin-bottom:8px;"></iconify-icon>
       Aucun versement pour cette date
     </div>`;
 
@@ -785,10 +785,10 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     return `<div class="vx-sec">
       <div class="vx-head">
         <div class="vx-head-l">
-          <div class="vx-chip" style="background:rgba(34,197,94,.14);color:#22c55e;"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
+          <div class="vx-chip" style="background:rgba(34,197,94,.14);color:#13deb9;"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
           <div class="vx-title">Versements<small><span id="versements-count">${versements.length}</span> ce jour</small></div>
         </div>
-        <div class="vx-head-r"><div class="vx-total"><div class="vx-total-v" style="color:#22c55e;" id="versements-total">${Utils.formatCurrency(totalVerse)}</div></div></div>
+        <div class="vx-head-r"><div class="vx-total"><div class="vx-total-v" style="color:#13deb9;" id="versements-total">${Utils.formatCurrency(totalVerse)}</div></div></div>
       </div>
       <div class="vx-tools">
         <div class="vx-search">
@@ -849,9 +849,9 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
       // Statut badge
       let statutHtml = '';
-      if (v.statut === 'valide') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#22c55e;"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Validé</span>';
-      else if (v.statut === 'partiel') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#3b82f6;"><iconify-icon icon="solar:pie-chart-2-bold"></iconify-icon> Partiel</span>';
-      else if (v.statut === 'en_attente') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#f59e0b;"><iconify-icon icon="solar:clock-circle-bold"></iconify-icon> En attente</span>';
+      if (v.statut === 'valide') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#13deb9;"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Validé</span>';
+      else if (v.statut === 'partiel') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#635bff;"><iconify-icon icon="solar:pie-chart-2-bold"></iconify-icon> Partiel</span>';
+      else if (v.statut === 'en_attente') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#ffae1f;"><iconify-icon icon="solar:clock-circle-bold"></iconify-icon> En attente</span>';
       else if (v.statut === 'retard') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;"><iconify-icon icon="solar:alarm-bold"></iconify-icon> Retard</span>';
       else if (v.statut === 'supprime') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:var(--text-muted);"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon> Supprimé</span>';
       else if (v.statut === 'conteste') statutHtml = '<span style="font-size:var(--font-size-xs);font-weight:600;color:#ef4444;"><iconify-icon icon="solar:shield-warning-bold"></iconify-icon> Contesté</span>';
@@ -862,7 +862,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       const attendu = (v.montantBrut || 0) > 0 ? v.montantBrut : redev;
       if (v.traitementManquant === 'dette') {
         const manque = attendu - (v.montantVerse || 0);
-        manquantHtml = `<span style="font-size:10px;font-weight:700;background:rgba(245,158,11,0.15);color:#d97706;padding:2px 7px;border-radius:4px;"><iconify-icon icon="solar:clock-circle-bold"></iconify-icon> Dette ${manque > 0 ? Utils.formatCurrency(manque) : ''}</span>`;
+        manquantHtml = `<span style="font-size:10px;font-weight:700;background:rgba(245,158,11,0.15);color:#e8930c;padding:2px 7px;border-radius:4px;"><iconify-icon icon="solar:clock-circle-bold"></iconify-icon> Dette ${manque > 0 ? Utils.formatCurrency(manque) : ''}</span>`;
       } else if (v.traitementManquant === 'perte') {
         const manque = attendu - (v.montantVerse || 0);
         manquantHtml = `<span style="font-size:10px;font-weight:700;background:rgba(239,68,68,0.15);color:#dc2626;padding:2px 7px;border-radius:4px;"><iconify-icon icon="solar:danger-triangle-bold"></iconify-icon> Perte ${manque > 0 ? Utils.formatCurrency(manque) : ''}</span>`;
@@ -874,8 +874,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
       // Payment method badge
       let methodHtml = '';
-      if (v.moyenPaiement === 'wave') methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(34,197,94,0.1);color:#22c55e;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
-      else if (v.soumisParChauffeur) methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(59,130,246,0.1);color:#3b82f6;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:smartphone-bold-duotone"></iconify-icon> Chauffeur</span>';
+      if (v.moyenPaiement === 'wave') methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(34,197,94,0.1);color:#13deb9;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon> Wave</span>';
+      else if (v.soumisParChauffeur) methodHtml = '<span style="font-size:10px;font-weight:600;background:rgba(59,130,246,0.1);color:#635bff;padding:1px 6px;border-radius:4px;"><iconify-icon icon="solar:smartphone-bold-duotone"></iconify-icon> Chauffeur</span>';
 
       // Courses
       const coursesHtml = `<span data-yango-courses="${v.id}" style="font-size:var(--font-size-xs);color:var(--text-muted);">${v.nombreCourses > 0 ? `${v.nombreCourses} courses` : '<iconify-icon icon="solar:refresh-bold" class="spin-icon" style="font-size:11px;"></iconify-icon>'}</span>`;
@@ -883,7 +883,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       // Action buttons
       let actionsHtml = '<div class="vx-acts">';
       if (v.statut === 'en_attente' || v.statut === 'retard') {
-        actionsHtml += `<button class="vx-ib" style="color:#22c55e;border-color:rgba(34,197,94,.3);" onclick="event.stopPropagation();VersementsPage._validate('${v.id}')" title="Valider"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button>`;
+        actionsHtml += `<button class="vx-ib" style="color:#13deb9;border-color:rgba(34,197,94,.3);" onclick="event.stopPropagation();VersementsPage._validate('${v.id}')" title="Valider"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></button>`;
         if (v.soumisParChauffeur) {
           actionsHtml += `<button class="vx-ib is-danger" onclick="event.stopPropagation();VersementsPage._contester('${v.id}')" title="Contester le montant déclaré"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></button>`;
         }
@@ -899,9 +899,9 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
       const isDette = v.traitementManquant === 'dette';
       const isPerte = v.traitementManquant === 'perte';
-      const accent = isDeleted ? '' : isDette ? '#f59e0b' : isPerte ? '#ef4444' : v.moyenPaiement === 'wave' ? '#22c55e' : '';
+      const accent = isDeleted ? '' : isDette ? '#ffae1f' : isPerte ? '#ef4444' : v.moyenPaiement === 'wave' ? '#13deb9' : '';
       const rowStyle = `${accent ? `box-shadow:inset 3px 0 0 ${accent};` : ''}${isDeleted ? 'opacity:.5;' : ''}`;
-      const amtColor = isDeleted ? 'var(--text-muted)' : isPerte ? '#ef4444' : isDette ? '#d97706' : v.statut === 'en_attente' ? '#f59e0b' : '#22c55e';
+      const amtColor = isDeleted ? 'var(--text-muted)' : isPerte ? '#ef4444' : isDette ? '#e8930c' : v.statut === 'en_attente' ? '#ffae1f' : '#13deb9';
       return `<div class="vx-row" data-name="${name.toLowerCase()}" style="${rowStyle}">
         ${this._avatar(name)}
         <div class="vx-main">
@@ -920,7 +920,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     return this._groupItemsByDate(versements, v => v.dateService || v.date).map(g => {
       const sub = g.items.filter(v => v.statut === 'valide' || v.statut === 'partiel').reduce((s, v) => s + (v.montantVerse || 0), 0);
       return `<div class="versement-date-group" data-date="${g.date}">
-        ${this._dateHeaderHtml(g.date, `<span class="vx-date-v" style="color:#22c55e;">${Utils.formatCurrency(sub)}</span>`)}
+        ${this._dateHeaderHtml(g.date, `<span class="vx-date-v" style="color:#13deb9;">${Utils.formatCurrency(sub)}</span>`)}
         <div style="display:flex;flex-direction:column;gap:6px;">${g.items.map(renderOne).join('')}</div>
       </div>`;
     }).join('');
@@ -988,7 +988,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       { name: 'statut', label: 'Statut', type: 'select', options: statusOptions },
       { type: 'row-end' },
       { type: 'html', html: '<div id="versement-comparaison" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:var(--font-size-sm);"></div>' },
-      { type: 'html', html: '<div id="versement-traitement-manquant" style="display:none;padding:12px 14px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);margin-bottom:12px;font-size:var(--font-size-sm);"><label style="font-weight:600;margin-bottom:8px;display:block">Traitement du manquant</label><div style="display:flex;gap:10px;flex-wrap:wrap"><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="dette" checked> <iconify-icon icon="solar:clock-circle-bold" style="color:#f59e0b"></iconify-icon> Reporter en dette</label><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="perte"> <iconify-icon icon="solar:close-circle-bold" style="color:#ef4444"></iconify-icon> Passer en perte</label></div><div id="versement-manquant-detail" style="margin-top:8px;font-size:var(--font-size-xs);color:var(--text-muted)"></div></div>' },
+      { type: 'html', html: '<div id="versement-traitement-manquant" style="display:none;padding:12px 14px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);margin-bottom:12px;font-size:var(--font-size-sm);"><label style="font-weight:600;margin-bottom:8px;display:block">Traitement du manquant</label><div style="display:flex;gap:10px;flex-wrap:wrap"><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="dette" checked> <iconify-icon icon="solar:clock-circle-bold" style="color:#ffae1f"></iconify-icon> Reporter en dette</label><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="perte"> <iconify-icon icon="solar:close-circle-bold" style="color:#ef4444"></iconify-icon> Passer en perte</label></div><div id="versement-manquant-detail" style="margin-top:8px;font-size:var(--font-size-xs);color:var(--text-muted)"></div></div>' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
@@ -1135,15 +1135,15 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           if (diff >= 0) {
             compDiv.style.display = '';
             compDiv.style.background = 'rgba(34,197,94,0.08)';
-            compDiv.style.borderLeft = '3px solid #22c55e';
-            compDiv.innerHTML = `<iconify-icon icon="solar:check-circle-bold" style="color:#22c55e"></iconify-icon> <strong style="color:#22c55e">Complet (${pct}%)</strong>${diff > 0 ? ` — Excédent : +${Utils.formatCurrency(diff)}` : ''}`;
+            compDiv.style.borderLeft = '3px solid #13deb9';
+            compDiv.innerHTML = `<iconify-icon icon="solar:check-circle-bold" style="color:#13deb9"></iconify-icon> <strong style="color:#13deb9">Complet (${pct}%)</strong>${diff > 0 ? ` — Excédent : +${Utils.formatCurrency(diff)}` : ''}`;
             if (statutSelect && statutSelect.value !== 'supprime') statutSelect.value = 'valide';
             if (traitementDiv) traitementDiv.style.display = 'none';
           } else {
             compDiv.style.display = '';
             compDiv.style.background = 'rgba(245,158,11,0.08)';
-            compDiv.style.borderLeft = '3px solid #f59e0b';
-            compDiv.innerHTML = `<iconify-icon icon="solar:danger-triangle-bold" style="color:#f59e0b"></iconify-icon> <strong style="color:#f59e0b">Partiel (${pct}%)</strong> — Manque : <strong style="color:#ef4444">${Utils.formatCurrency(Math.abs(diff))}</strong>`;
+            compDiv.style.borderLeft = '3px solid #ffae1f';
+            compDiv.innerHTML = `<iconify-icon icon="solar:danger-triangle-bold" style="color:#ffae1f"></iconify-icon> <strong style="color:#ffae1f">Partiel (${pct}%)</strong> — Manque : <strong style="color:#ef4444">${Utils.formatCurrency(Math.abs(diff))}</strong>`;
             if (statutSelect && statutSelect.value !== 'supprime') statutSelect.value = 'partiel';
             // Show treatment choice
             if (traitementDiv) {
@@ -1185,15 +1185,15 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const editVersement = { ...versement, date: versement.dateService || versement.date };
     // Bloc audit — détails de paiement (lecture seule)
     const auditLines = [];
-    if (versement.moyenPaiement) auditLines.push(`<b>Moyen de paiement</b> : ${versement.moyenPaiement === 'wave' ? '<span style="color:#1da1f2;">Wave</span>' : versement.moyenPaiement === 'especes' ? 'Espèces' : versement.moyenPaiement}`);
+    if (versement.moyenPaiement) auditLines.push(`<b>Moyen de paiement</b> : ${versement.moyenPaiement === 'wave' ? '<span style="color:#635bff;">Wave</span>' : versement.moyenPaiement === 'especes' ? 'Espèces' : versement.moyenPaiement}`);
     if (versement.waveCheckoutId) auditLines.push(`<b>Réf. Wave</b> : <code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:0.85em;">${versement.waveCheckoutId}</code>`);
     if (versement.wavePaymentRef) auditLines.push(`<b>Réf. paiement</b> : <code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:0.85em;">${versement.wavePaymentRef}</code>`);
     if (versement.dateValidation) auditLines.push(`<b>Validé le</b> : ${new Date(versement.dateValidation).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}`);
     if (versement.dateCreation) auditLines.push(`<b>Créé le</b> : ${new Date(versement.dateCreation).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}`);
-    if (versement.soumisParChauffeur) auditLines.push(`<b>Origine</b> : <span style="color:#8b5cf6;"><iconify-icon icon="solar:smartphone-bold-duotone" style="font-size:0.9em;"></iconify-icon> Soumis par le chauffeur (app)</span>`);
-    else auditLines.push(`<b>Origine</b> : <span style="color:#f59e0b;"><iconify-icon icon="solar:monitor-bold-duotone" style="font-size:0.9em;"></iconify-icon> Saisi par l'admin</span>`);
-    const auditHtml = auditLines.length > 0 ? `<div style="padding:12px 14px;border-radius:8px;background:var(--bg-tertiary);border-left:3px solid #3b82f6;margin-bottom:16px;font-size:var(--font-size-sm);line-height:1.8;">
-      <div style="font-weight:700;margin-bottom:6px;color:#3b82f6;"><iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Détails du paiement</div>
+    if (versement.soumisParChauffeur) auditLines.push(`<b>Origine</b> : <span style="color:#635bff;"><iconify-icon icon="solar:smartphone-bold-duotone" style="font-size:0.9em;"></iconify-icon> Soumis par le chauffeur (app)</span>`);
+    else auditLines.push(`<b>Origine</b> : <span style="color:#ffae1f;"><iconify-icon icon="solar:monitor-bold-duotone" style="font-size:0.9em;"></iconify-icon> Saisi par l'admin</span>`);
+    const auditHtml = auditLines.length > 0 ? `<div style="padding:12px 14px;border-radius:8px;background:var(--bg-tertiary);border-left:3px solid #635bff;margin-bottom:16px;font-size:var(--font-size-sm);line-height:1.8;">
+      <div style="font-weight:700;margin-bottom:6px;color:#635bff;"><iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon> Détails du paiement</div>
       ${auditLines.join('<br>')}
     </div>` : '';
 
@@ -1210,7 +1210,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       { name: 'statut', label: 'Statut', type: 'select', options: editStatusOptions },
       { type: 'row-end' },
       { type: 'html', html: '<div id="versement-comparaison" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:var(--font-size-sm);"></div>' },
-      { type: 'html', html: '<div id="versement-traitement-manquant" style="display:none;padding:12px 14px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);margin-bottom:12px;font-size:var(--font-size-sm);"><label style="font-weight:600;margin-bottom:8px;display:block">Traitement du manquant</label><div style="display:flex;gap:10px;flex-wrap:wrap"><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="dette" ' + (versement.traitementManquant !== 'perte' ? 'checked' : '') + '> <iconify-icon icon="solar:clock-circle-bold" style="color:#f59e0b"></iconify-icon> Reporter en dette</label><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="perte" ' + (versement.traitementManquant === 'perte' ? 'checked' : '') + '> <iconify-icon icon="solar:close-circle-bold" style="color:#ef4444"></iconify-icon> Passer en perte</label></div><div id="versement-manquant-detail" style="margin-top:8px;font-size:var(--font-size-xs);color:var(--text-muted)"></div></div>' },
+      { type: 'html', html: '<div id="versement-traitement-manquant" style="display:none;padding:12px 14px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);margin-bottom:12px;font-size:var(--font-size-sm);"><label style="font-weight:600;margin-bottom:8px;display:block">Traitement du manquant</label><div style="display:flex;gap:10px;flex-wrap:wrap"><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="dette" ' + (versement.traitementManquant !== 'perte' ? 'checked' : '') + '> <iconify-icon icon="solar:clock-circle-bold" style="color:#ffae1f"></iconify-icon> Reporter en dette</label><label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:2px solid var(--border-color);background:var(--bg-primary)"><input type="radio" name="traitementManquant" value="perte" ' + (versement.traitementManquant === 'perte' ? 'checked' : '') + '> <iconify-icon icon="solar:close-circle-bold" style="color:#ef4444"></iconify-icon> Passer en perte</label></div><div id="versement-manquant-detail" style="margin-top:8px;font-size:var(--font-size-xs);color:var(--text-muted)"></div></div>' },
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
@@ -1331,15 +1331,15 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           if (diff >= 0) {
             compDiv.style.display = '';
             compDiv.style.background = 'rgba(34,197,94,0.08)';
-            compDiv.style.borderLeft = '3px solid #22c55e';
-            compDiv.innerHTML = `<iconify-icon icon="solar:check-circle-bold" style="color:#22c55e"></iconify-icon> <strong style="color:#22c55e">Complet (${pct}%)</strong>${diff > 0 ? ` — Excédent : +${Utils.formatCurrency(diff)}` : ''}`;
+            compDiv.style.borderLeft = '3px solid #13deb9';
+            compDiv.innerHTML = `<iconify-icon icon="solar:check-circle-bold" style="color:#13deb9"></iconify-icon> <strong style="color:#13deb9">Complet (${pct}%)</strong>${diff > 0 ? ` — Excédent : +${Utils.formatCurrency(diff)}` : ''}`;
             if (statutSelect && statutSelect.value !== 'supprime') statutSelect.value = 'valide';
             if (traitementDiv) traitementDiv.style.display = 'none';
           } else {
             compDiv.style.display = '';
             compDiv.style.background = 'rgba(245,158,11,0.08)';
-            compDiv.style.borderLeft = '3px solid #f59e0b';
-            compDiv.innerHTML = `<iconify-icon icon="solar:danger-triangle-bold" style="color:#f59e0b"></iconify-icon> <strong style="color:#f59e0b">Partiel (${pct}%)</strong> — Manque : <strong style="color:#ef4444">${Utils.formatCurrency(Math.abs(diff))}</strong>`;
+            compDiv.style.borderLeft = '3px solid #ffae1f';
+            compDiv.innerHTML = `<iconify-icon icon="solar:danger-triangle-bold" style="color:#ffae1f"></iconify-icon> <strong style="color:#ffae1f">Partiel (${pct}%)</strong> — Manque : <strong style="color:#ef4444">${Utils.formatCurrency(Math.abs(diff))}</strong>`;
             if (statutSelect && statutSelect.value !== 'supprime') statutSelect.value = 'partiel';
             if (traitementDiv) {
               traitementDiv.style.display = '';
@@ -1422,7 +1422,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const charges = (Store.get('charges') || []).filter(e => e.chauffeurId === v.chauffeurId && e.date === ds).reduce((s, e) => s + (Number(e.montant) || 0), 0);
     const du = Math.max(0, caBrut - charges);
     const infoYango = caBrut > 0
-      ? `<div style="padding:8px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:var(--font-size-xs);margin-bottom:10px;line-height:1.5;">CA Yango <strong>${Utils.formatCurrency(caBrut)}</strong> \u2212 charges <strong>${Utils.formatCurrency(charges)}</strong> \u21d2 <strong style="color:#f59e0b;">${Utils.formatCurrency(du)}</strong> attendu.<br>D\u00e9clar\u00e9 par le chauffeur : <strong style="color:#22c55e;">${Utils.formatCurrency(v.montantVerse || 0)}</strong></div>`
+      ? `<div style="padding:8px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:var(--font-size-xs);margin-bottom:10px;line-height:1.5;">CA Yango <strong>${Utils.formatCurrency(caBrut)}</strong> \u2212 charges <strong>${Utils.formatCurrency(charges)}</strong> \u21d2 <strong style="color:#ffae1f;">${Utils.formatCurrency(du)}</strong> attendu.<br>D\u00e9clar\u00e9 par le chauffeur : <strong style="color:#13deb9;">${Utils.formatCurrency(v.montantVerse || 0)}</strong></div>`
       : '';
     const fields = [{ name: 'motif', label: 'Motif de la contestation', type: 'textarea', required: true, placeholder: 'ex. montant inf\u00e9rieur au CA Yango, charges non justifi\u00e9es\u2026' }];
     Modal.form('<iconify-icon icon="solar:shield-warning-bold-duotone" style="color:#ef4444;"></iconify-icon> Contester \u2014 ' + nom, infoYango + FormBuilder.build(fields), () => {
@@ -1480,7 +1480,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         break;
       }
       case 'verse': {
-        title = '<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon> Détail — Montant versé';
+        title = '<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;"></iconify-icon> Détail — Montant versé';
         const rows = [...d.detailVerse].sort((a,b) => b.montant - a.montant);
         html = `<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px;">Versements validés et partiels pour <strong>${d.periodLabel}</strong></p>
         <table style="width:100%;border-collapse:collapse;">
@@ -1533,12 +1533,12 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           ${rows.map(r => {
             const ecart = r.verse - r.attendu;
             const pct = r.attendu > 0 ? (r.verse / r.attendu * 100) : 0;
-            const pctColor = pct >= 100 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+            const pctColor = pct >= 100 ? '#13deb9' : pct >= 50 ? '#ffae1f' : '#ef4444';
             return `<tr>
               <td style="${tdStyle}font-weight:500;">${r.prenom} ${r.nom}</td>
               <td style="${tdStyle}text-align:right;">${Utils.formatCurrency(r.attendu)}</td>
               <td style="${tdStyle}text-align:right;font-weight:600;">${Utils.formatCurrency(r.verse)}</td>
-              <td style="${tdStyle}text-align:right;color:${ecart >= 0 ? '#22c55e' : '#ef4444'};">${ecart >= 0 ? '+' : ''}${Utils.formatCurrency(ecart)}</td>
+              <td style="${tdStyle}text-align:right;color:${ecart >= 0 ? '#13deb9' : '#ef4444'};">${ecart >= 0 ? '+' : ''}${Utils.formatCurrency(ecart)}</td>
               <td style="${tdStyle}text-align:right;font-weight:700;color:${pctColor};">${pct.toFixed(0)}%</td>
             </tr>`;
           }).join('')}
@@ -1547,7 +1547,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
             <td style="padding:10px 12px;font-weight:700;">Total</td>
             <td style="padding:10px 12px;text-align:right;font-weight:700;">${Utils.formatCurrency(d.totalAttendu)}</td>
             <td style="padding:10px 12px;text-align:right;font-weight:700;">${Utils.formatCurrency(d.totalVerse)}</td>
-            <td style="padding:10px 12px;text-align:right;font-weight:700;color:${d.totalVerse - d.totalAttendu >= 0 ? '#22c55e' : '#ef4444'};">${d.totalVerse - d.totalAttendu >= 0 ? '+' : ''}${Utils.formatCurrency(d.totalVerse - d.totalAttendu)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;color:${d.totalVerse - d.totalAttendu >= 0 ? '#13deb9' : '#ef4444'};">${d.totalVerse - d.totalAttendu >= 0 ? '+' : ''}${Utils.formatCurrency(d.totalVerse - d.totalAttendu)}</td>
             <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:1.05rem;">${d.tauxRecouvrement.toFixed(1)}%</td>
           </tr></tfoot>
         </table>`;
@@ -1576,7 +1576,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           ${rows.map(([id, r]) => {
             const paid = paidDriverIds.has(id);
             const late = retardDriverIds.has(id);
-            const badge = paid ? '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:rgba(34,197,94,0.1);color:#22c55e;">Versé</span>' : late ? '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:rgba(239,68,68,0.1);color:#ef4444;">Impayé</span>' : '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:rgba(107,114,128,0.1);color:#6b7280;">—</span>';
+            const badge = paid ? '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:rgba(34,197,94,0.1);color:#13deb9;">Versé</span>' : late ? '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:rgba(239,68,68,0.1);color:#ef4444;">Impayé</span>' : '<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:rgba(107,114,128,0.1);color:#6b7280;">—</span>';
             return `<tr>
               <td style="${tdStyle}font-weight:500;">${r.prenom} ${r.nom}</td>
               <td style="${tdStyle}text-align:center;">${r.jours}</td>
@@ -1668,7 +1668,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         <td style="${tdStyle}">${Utils.formatDate(m.date)}</td>
         <td style="${tdStyle}text-align:right;">${Utils.formatCurrency(m.du)}</td>
         <td style="${tdStyle}text-align:right;">${Utils.formatCurrency(m.verse)}</td>
-        <td style="${tdStyle}text-align:right;font-weight:700;color:${manque ? '#ef4444' : '#f59e0b'};">${manque ? '−' : '+'}${Utils.formatCurrency(Math.abs(m.ecart))}</td>
+        <td style="${tdStyle}text-align:right;font-weight:700;color:${manque ? '#ef4444' : '#ffae1f'};">${manque ? '−' : '+'}${Utils.formatCurrency(Math.abs(m.ecart))}</td>
         <td style="${tdStyle}text-align:right;"><button class="btn btn-sm btn-outline" onclick="document.getElementById('kpi-detail-overlay')?.remove();VersementsPage._gererCharges('${m.chauffeurId}','${m.date}')"><iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon> Charges</button></td>
       </tr>`;
     }).join('');
@@ -1676,7 +1676,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const html = `
       ${a.total === 0 ? '<div style="text-align:center;color:var(--text-muted);padding:24px;">Aucune anomalie détectée 🎉</div>' : ''}
       ${a.workingNotScheduled.length ? `
-        <div style="font-weight:700;font-size:0.95rem;margin:4px 0 6px;display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:user-cross-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Roule sans être au planning (${a.workingNotScheduled.length})</div>
+        <div style="font-weight:700;font-size:0.95rem;margin:4px 0 6px;display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:user-cross-bold-duotone" style="color:#635bff;"></iconify-icon> Roule sans être au planning (${a.workingNotScheduled.length})</div>
         <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:8px;">Travaillent aujourd'hui sur Yango sans être programmés — corrigez le planning.</p>
         <table style="width:100%;border-collapse:collapse;margin-bottom:18px;">
           <thead><tr style="border-bottom:2px solid var(--border-color);"><th style="${thStyle}">Chauffeur</th><th style="${thStyle}">Jour</th><th style="${thStyle}text-align:right;">CA Yango</th></tr></thead>
@@ -1690,7 +1690,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           <tbody>${mismatchRows}</tbody>
         </table>` : ''}
     `;
-    this._showKpiModal('<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Anomalies', html);
+    this._showKpiModal('<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#635bff;"></iconify-icon> Anomalies', html);
   },
 
   _exportReceipt(id) {
@@ -1768,8 +1768,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const rows = modeles.map(m => {
       const montantDisplay = m.useRedevance
         ? (m.chauffeurId && chMap[m.chauffeurId]
-          ? `<span style="color:#22c55e;font-size:11px;font-weight:600">${Utils.formatCurrency(chMap[m.chauffeurId].redevanceQuotidienne || 0)}</span> <span style="font-size:10px;color:var(--text-muted)">(redevance)</span>`
-          : '<span style="color:#22c55e;font-size:11px;font-weight:600">Selon redevance</span>')
+          ? `<span style="color:#13deb9;font-size:11px;font-weight:600">${Utils.formatCurrency(chMap[m.chauffeurId].redevanceQuotidienne || 0)}</span> <span style="font-size:10px;color:var(--text-muted)">(redevance)</span>`
+          : '<span style="color:#13deb9;font-size:11px;font-weight:600">Selon redevance</span>')
         : Utils.formatCurrency(m.montant);
       return `
       <tr>
@@ -1790,7 +1790,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     }).join('');
 
     Modal.open({
-      title: '<iconify-icon icon="solar:repeat-bold-duotone" style="color:#22c55e;"></iconify-icon> Versements récurrents',
+      title: '<iconify-icon icon="solar:repeat-bold-duotone" style="color:#13deb9;"></iconify-icon> Versements récurrents',
       body: `
         <div style="display:flex;gap:8px;margin-bottom:1rem">
           <button class="btn btn-primary btn-sm" onclick="VersementsPage._addRecVersement()"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Nouveau modèle</button>
@@ -1816,7 +1816,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
   _addRecVersement() {
     const chauffeurs = Store.get('chauffeurs') || [];
     Modal.form(
-      '<iconify-icon icon="solar:add-circle-bold" style="color:#22c55e;"></iconify-icon> Nouveau modèle de versement',
+      '<iconify-icon icon="solar:add-circle-bold" style="color:#13deb9;"></iconify-icon> Nouveau modèle de versement',
       `<form id="form-rec-versement" class="modal-form">
         <div class="form-group"><label>Nom du modèle *</label><input type="text" name="nom" required placeholder="Ex: Recette journalière"></div>
         <div class="form-group"><label>Chauffeur</label>
@@ -2102,7 +2102,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const totalAmount = grid.filter(g => !g.exists).reduce((s, g) => s + g.montant, 0);
 
     Modal.open({
-      title: '<iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#22c55e;"></iconify-icon> Grille de versements à valider',
+      title: '<iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#13deb9;"></iconify-icon> Grille de versements à valider',
       body: `
         <div style="margin-bottom:1rem;display:flex;gap:1rem;flex-wrap:wrap">
           <span class="badge badge-success">${newCount} nouveaux</span>
@@ -2186,7 +2186,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         </div>
         <div style="text-align:right;flex-shrink:0;margin-left:8px;">
           <div style="font-size:var(--font-size-sm);font-weight:600;color:#ef4444;">${Utils.formatCurrency(item.montantDu)}</div>
-          ${item.penalite > 0 ? `<div style="font-size:10px;color:#f59e0b;font-weight:600;">+ ${Utils.formatCurrency(item.penalite)} p\u00e9nalit\u00e9</div>` : ''}
+          ${item.penalite > 0 ? `<div style="font-size:10px;color:#ffae1f;font-weight:600;">+ ${Utils.formatCurrency(item.penalite)} p\u00e9nalit\u00e9</div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -2196,7 +2196,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         <span class="card-title"><iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ef4444;"></iconify-icon> Recettes \u00e0 verser aujourd\u0027hui (${d.unpaidItems.length})</span>
         <div style="text-align:right;">
           <div style="font-size:var(--font-size-base);font-weight:700;color:#ef4444;">${Utils.formatCurrency(d.totalUnpaid)}</div>
-          ${d.totalPenalites > 0 ? `<div style="font-size:var(--font-size-xs);color:#f59e0b;font-weight:600;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> + ${Utils.formatCurrency(d.totalPenalites)} p\u00e9nalit\u00e9s</div>` : ''}
+          ${d.totalPenalites > 0 ? `<div style="font-size:var(--font-size-xs);color:#ffae1f;font-weight:600;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> + ${Utils.formatCurrency(d.totalPenalites)} p\u00e9nalit\u00e9s</div>` : ''}
         </div>
       </div>
       <div style="position:relative;margin-bottom:8px;">
@@ -2282,12 +2282,12 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       const name = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : item.chauffeurId;
       const hasJustif = !!item.justification;
       const creneauLabel = item.heureDebut && item.heureFin ? `${item.heureDebut} \u00e0 ${item.heureFin}` : (item.typeCreneaux || '');
-      const penaliteHtml = item.penalite > 0 ? `<div style="font-size:10px;color:#f59e0b;font-weight:600;">+ ${Utils.formatCurrency(item.penalite)} (${Math.round(item.tauxPenalite*100)}%)</div>` : '';
+      const penaliteHtml = item.penalite > 0 ? `<div style="font-size:10px;color:#ffae1f;font-weight:600;">+ ${Utils.formatCurrency(item.penalite)} (${Math.round(item.tauxPenalite*100)}%)</div>` : '';
 
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--font-size-sm);font-weight:600;"><a href="javascript:void(0)" onclick="event.stopPropagation();VersementsPage._payReceipt('${item.chauffeurId}','${item.date}','${item.planningId}','${item.versementId || ''}',${item.totalDu})" style="color:var(--text-primary);text-decoration:none;cursor:pointer;" onmouseenter="this.style.color='var(--primary)'" onmouseleave="this.style.color='var(--text-primary)'">${name}</a></div>
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${creneauLabel ? ' \u2014 ' + creneauLabel : ''} &bull; <span style="color:${item.joursRetard > 4 ? '#ef4444' : '#f59e0b'};font-weight:600;">${item.joursRetard}j de retard</span></div>
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.formatDate(item.date)}${creneauLabel ? ' \u2014 ' + creneauLabel : ''} &bull; <span style="color:${item.joursRetard > 4 ? '#ef4444' : '#ffae1f'};font-weight:600;">${item.joursRetard}j de retard</span></div>
           ${hasJustif ? `<div style="font-size:var(--font-size-xs);color:var(--pilote-blue);margin-top:2px;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${item.justification}</div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0;">
@@ -2318,7 +2318,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     el.innerHTML = `
       <div><strong>${items.length}</strong> impay\u00e9(s)</div>
       <div>Total: <strong style="color:#ef4444;">${Utils.formatCurrency(total)}</strong></div>
-      ${totalPen > 0 ? `<div>P\u00e9nalit\u00e9s: <strong style="color:#f59e0b;">${Utils.formatCurrency(totalPen)}</strong></div>` : ''}
+      ${totalPen > 0 ? `<div>P\u00e9nalit\u00e9s: <strong style="color:#ffae1f;">${Utils.formatCurrency(totalPen)}</strong></div>` : ''}
       <div>Retard moy: <strong>${avgRetard}j</strong></div>
     `;
   },
@@ -2448,7 +2448,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     } : {};
 
     Modal.form(
-      '<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#22c55e;"></iconify-icon> Encaisser la recette',
+      '<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#13deb9;"></iconify-icon> Encaisser la recette',
       FormBuilder.build(fields, existingValues),
       () => {
         const body = document.getElementById('modal-body');
@@ -2568,7 +2568,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         if (m >= redevance) {
           compDiv.style.background = 'rgba(34,197,94,0.08)';
           compDiv.style.border = '1px solid rgba(34,197,94,0.3)';
-          compDiv.innerHTML = `<span style="color:#22c55e;font-weight:600">\u2713 Complet</span> \u2014 ${Utils.formatCurrency(m)} / ${Utils.formatCurrency(redevance)} (${Math.round(m / redevance * 100)}%)`;
+          compDiv.innerHTML = `<span style="color:#13deb9;font-weight:600">\u2713 Complet</span> \u2014 ${Utils.formatCurrency(m)} / ${Utils.formatCurrency(redevance)} (${Math.round(m / redevance * 100)}%)`;
           if (traitDiv) traitDiv.style.display = 'none';
         } else {
           const manq = redevance - m;
@@ -2586,7 +2586,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
             detteInfo = `<div style="margin-top:6px;color:var(--danger);font-size:12px">\u26a0 Dette existante : ${Utils.formatCurrency(detteExistante)}</div>`;
           }
 
-          compDiv.innerHTML = `<span style="color:#f59e0b;font-weight:600">\u26a0 Partiel</span> \u2014 ${Utils.formatCurrency(m)} / ${Utils.formatCurrency(redevance)} (${pct}%)<br><span style="color:var(--danger)">Manquant : ${Utils.formatCurrency(manq)}</span>${detteInfo}`;
+          compDiv.innerHTML = `<span style="color:#ffae1f;font-weight:600">\u26a0 Partiel</span> \u2014 ${Utils.formatCurrency(m)} / ${Utils.formatCurrency(redevance)} (${pct}%)<br><span style="color:var(--danger)">Manquant : ${Utils.formatCurrency(manq)}</span>${detteInfo}`;
           if (traitDiv) traitDiv.style.display = 'block';
         }
       };
@@ -2705,14 +2705,14 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       </div>`).join('') : '<div style="text-align:center;color:var(--text-muted);padding:8px;font-size:var(--font-size-sm);">Aucune charge ce jour</div>';
 
     Modal.open({
-      title: `<iconify-icon icon="solar:gas-station-bold-duotone" style="color:#f59e0b;"></iconify-icon> Charges — ${nom} · ${Utils.formatDate(date)}`,
+      title: `<iconify-icon icon="solar:gas-station-bold-duotone" style="color:#ffae1f;"></iconify-icon> Charges — ${nom} · ${Utils.formatDate(date)}`,
       body: `
         <div style="display:flex;flex-direction:column;gap:5px;padding:10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:12px;font-size:var(--font-size-sm);">
           <div style="display:flex;justify-content:space-between;"><span>CA Yango (brut)</span><strong>${Utils.formatCurrency(caBrut)}</strong></div>
           <div style="display:flex;justify-content:space-between;color:#ef4444;"><span>− Charges</span><strong>− ${Utils.formatCurrency(totalCharges)}</strong></div>
-          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border-color);padding-top:5px;"><span>= À verser</span><strong style="color:#f59e0b;">${Utils.formatCurrency(du)}</strong></div>
-          <div style="display:flex;justify-content:space-between;"><span>Déjà versé</span><strong style="color:#22c55e;">${Utils.formatCurrency(verse)}</strong></div>
-          <div style="display:flex;justify-content:space-between;"><span>Reste dû</span><strong style="color:${reste > 0 ? '#ef4444' : '#22c55e'};">${Utils.formatCurrency(reste)}</strong></div>
+          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border-color);padding-top:5px;"><span>= À verser</span><strong style="color:#ffae1f;">${Utils.formatCurrency(du)}</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Déjà versé</span><strong style="color:#13deb9;">${Utils.formatCurrency(verse)}</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Reste dû</span><strong style="color:${reste > 0 ? '#ef4444' : '#13deb9'};">${Utils.formatCurrency(reste)}</strong></div>
         </div>
         <div style="font-weight:600;font-size:var(--font-size-sm);margin-bottom:6px;">Charges du jour</div>
         <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">${chargeRows}</div>
@@ -2734,7 +2734,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
             <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Libellé (option.)</label>
             <input id="charge-libelle" type="text" class="form-control" placeholder="ex. station Shell" style="font-size:var(--font-size-xs);">
           </div>
-          <button class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none;" onclick="VersementsPage._ajouterChargeAdmin('${chauffeurId}','${date}')"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter</button>
+          <button class="btn btn-sm" style="background:#ffae1f;color:#fff;border:none;" onclick="VersementsPage._ajouterChargeAdmin('${chauffeurId}','${date}')"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter</button>
         </div>
       `,
       footer: `<button class="btn btn-secondary" data-action="cancel">Fermer</button>`,
@@ -2814,7 +2814,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
             <div class="vx-right">
               <div class="vx-amt" style="color:${color};">${Utils.formatCurrency(it.manquant)}</div>
               <div class="vx-acts">
-                <button class="vx-pill" style="background:#22c55e;" onclick="event.stopPropagation();VersementsPage._encaisserDetteIndividuelle('${it._chauffeurId}','${it.date}',${it.manquant},${isImplicit},'${isImplicit ? '' : it.id}','${it.source || ''}')"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser</button>
+                <button class="vx-pill" style="background:#13deb9;" onclick="event.stopPropagation();VersementsPage._encaisserDetteIndividuelle('${it._chauffeurId}','${it.date}',${it.manquant},${isImplicit},'${isImplicit ? '' : it.id}','${it.source || ''}')"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser</button>
                 ${chargesBtn}
                 <button class="vx-ib" onclick="event.stopPropagation();VersementsPage._showDetteDetail('${it._chauffeurId}','${typeKey}')" title="Voir tout le chauffeur"><iconify-icon icon="solar:list-bold-duotone"></iconify-icon></button>
               </div>
@@ -2838,7 +2838,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       const nbRecette = item.items.filter(v => v.source !== 'contravention').length;
       const totalRecette = item.total - totalContra;
       const typeBadges = [];
-      if (nbRecette > 0) typeBadges.push(`<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(245,158,11,0.1);color:#f59e0b;font-weight:700;">${nbRecette} recette${nbRecette > 1 ? 's' : ''} \u2022 ${Utils.formatCurrency(totalRecette)}</span>`);
+      if (nbRecette > 0) typeBadges.push(`<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(245,158,11,0.1);color:#ffae1f;font-weight:700;">${nbRecette} recette${nbRecette > 1 ? 's' : ''} \u2022 ${Utils.formatCurrency(totalRecette)}</span>`);
       if (nbContra > 0) typeBadges.push(`<span style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:700;">${nbContra} contravention${nbContra > 1 ? 's' : ''} \u2022 ${Utils.formatCurrency(totalContra)}</span>`);
       return `<div class="dette-row" data-nom="${(item.nom || '').toLowerCase()}" style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:var(--radius-sm);background:var(--bg-tertiary);gap:8px;">
         <div style="flex:1;min-width:0;">
@@ -2847,7 +2847,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Derni\u00e8re : ${Utils.formatDate(item.lastDate)}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:var(--font-size-sm);font-weight:700;color:#f59e0b;">${Utils.formatCurrency(item.total)}</div>
+          <div style="font-size:var(--font-size-sm);font-weight:700;color:#ffae1f;">${Utils.formatCurrency(item.total)}</div>
           <div style="display:flex;gap:4px;margin-top:4px;">
             <button class="btn btn-sm btn-success" onclick="event.stopPropagation();VersementsPage._encaisserDette('${item.chauffeurId}')">
               <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser
@@ -2869,7 +2869,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       </div>` : '';
 
     // Sections dettes regroup\u00e9es PAR DATE (jour le plus r\u00e9cent en premier)
-    const recetteRows = this._renderDettesByDate(detteData.detteListRecettes, '#f59e0b', 'recette');
+    const recetteRows = this._renderDettesByDate(detteData.detteListRecettes, '#ffae1f', 'recette');
     const contraRows = this._renderDettesByDate(detteData.detteListContraventions, '#ef4444', 'contravention');
 
     let html = '';
@@ -2888,20 +2888,20 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       html += `<div id="dette-section-recettes" class="vx-sec">
         <div class="vx-head">
           <div class="vx-head-l">
-            <div class="vx-chip" style="background:rgba(245,158,11,.14);color:#f59e0b;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div class="vx-chip" style="background:rgba(245,158,11,.14);color:#ffae1f;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
             <div class="vx-title">Dettes recettes<small>${detteData.detteListRecettes.length} chauffeur${detteData.detteListRecettes.length > 1 ? 's' : ''}</small></div>
           </div>
           <div class="vx-head-r">
             <button class="vx-gbtn" onclick="VersementsPage._resyncCaYango(this)" title="Récupérer le CA réel depuis Yango (30 derniers jours)"><iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon> Resync Yango</button>
-            <button class="vx-gbtn is-accent" style="background:#f59e0b;" onclick="VersementsPage._ajouterDette()"><iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter</button>
+            <button class="vx-gbtn is-accent" style="background:#ffae1f;" onclick="VersementsPage._ajouterDette()"><iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter</button>
             <div class="vx-total">
-              ${detteData.totalDettesRecettes > 0 ? `<div class="vx-total-v" style="color:#f59e0b;">${Utils.formatCurrency(detteData.totalDettesRecettes)}</div>` : ''}
+              ${detteData.totalDettesRecettes > 0 ? `<div class="vx-total-v" style="color:#ffae1f;">${Utils.formatCurrency(detteData.totalDettesRecettes)}</div>` : ''}
               ${detteData.totalPertes > 0 ? `<div class="vx-total-s" style="color:#ef4444;">Pertes : ${Utils.formatCurrency(detteData.totalPertes)}</div>` : ''}
             </div>
           </div>
         </div>
         ${detteData.detteListRecettes.length > 3 ? filterBarHtml('dette-recettes-list') : ''}
-        ${detteData.detteListRecettes.length > 0 ? `<div id="dette-recettes-list" class="vx-list">${recetteRows}</div>` : '<div class="vx-empty"><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon>Aucune dette recette</div>'}
+        ${detteData.detteListRecettes.length > 0 ? `<div id="dette-recettes-list" class="vx-list">${recetteRows}</div>` : '<div class="vx-empty"><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;"></iconify-icon>Aucune dette recette</div>'}
       </div>`;
     }
 
@@ -2935,20 +2935,20 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const filteredTotal = filteredItems.reduce((s, v) => s + (v.manquant || 0), 0);
     const typeLabel = typeFilter === 'contravention' ? 'contraventions' : typeFilter === 'recette' ? 'recettes' : 'dettes';
     const titleIcon = typeFilter === 'contravention' ? 'solar:shield-warning-bold-duotone' : 'solar:wallet-money-bold-duotone';
-    const titleColor = typeFilter === 'contravention' ? '#ef4444' : '#f59e0b';
+    const titleColor = typeFilter === 'contravention' ? '#ef4444' : '#ffae1f';
 
     const rows = filteredItems.map(v => {
       const isImplicit = !!v.implicit;
       const vId = v.implicit ? `implicit_${v.chauffeurId}_${v.date}` : v.id;
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:var(--radius-sm);background:var(--bg-tertiary);font-size:var(--font-size-sm);gap:6px;">
         <div style="flex:1;min-width:0;">
-          <div style="font-weight:500;display:flex;align-items:center;gap:6px;">${Utils.formatDate(v.date)}${isImplicit ? '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(245,158,11,0.1);color:#f59e0b;font-weight:700;">IMPAY\u00c9</span>' : ''}${v.source === 'contravention' ? '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:700;">CONTRAVENTION</span>' : ''}</div>
+          <div style="font-weight:500;display:flex;align-items:center;gap:6px;">${Utils.formatDate(v.date)}${isImplicit ? '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(245,158,11,0.1);color:#ffae1f;font-weight:700;">IMPAY\u00c9</span>' : ''}${v.source === 'contravention' ? '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:700;">CONTRAVENTION</span>' : ''}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${isImplicit ? 'Non vers\u00e9 (redevance due)' : v.source === 'contravention' ? (v.commentaire || 'Contravention') : 'Vers\u00e9 : ' + Utils.formatCurrency(v.montantVerse || 0) + ' sur ' + Utils.formatCurrency((v.montantVerse || 0) + v.manquant)}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-weight:700;color:${titleColor};">${Utils.formatCurrency(v.manquant)}</div>
           <div style="display:flex;gap:3px;margin-top:3px;flex-wrap:wrap;justify-content:flex-end;">
-            <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 6px;background:#22c55e;color:white;border:none;" onclick="event.stopPropagation();Modal.close();VersementsPage._encaisserDetteIndividuelle('${v.chauffeurId}','${v.date}',${v.manquant},${isImplicit},'${isImplicit ? '' : v.id}','${v.source || ''}')">
+            <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 6px;background:#13deb9;color:white;border:none;" onclick="event.stopPropagation();Modal.close();VersementsPage._encaisserDetteIndividuelle('${v.chauffeurId}','${v.date}',${v.manquant},${isImplicit},'${isImplicit ? '' : v.id}','${v.source || ''}')">
               <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Encaisser
             </button>
             <button class="btn btn-sm btn-outline" style="font-size:0.6rem;padding:2px 6px;" onclick="event.stopPropagation();VersementsPage.${isImplicit ? `_modifierDetteImplicite('${v.chauffeurId}','${v.date}',${v.manquant})` : `_modifierDette('${v.id}')`}">
@@ -3004,12 +3004,12 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : v.chauffeurId;
 
     Modal.open({
-      title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b;"></iconify-icon> Gérer la dette',
+      title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#ffae1f;"></iconify-icon> Gérer la dette',
       body: `
         <div style="margin-bottom:16px;">
           <div style="font-weight:700;font-size:var(--font-size-md);margin-bottom:4px;">${nom}</div>
           <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);font-size:var(--font-size-sm);">
-            Date : <strong>${Utils.formatDate(v.date)}</strong> — Montant : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
+            Date : <strong>${Utils.formatDate(v.date)}</strong> — Montant : <strong style="color:#ffae1f;">${Utils.formatCurrency(v.manquant)}</strong>
           </div>
         </div>
 
@@ -3020,12 +3020,12 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           </button>
 
           <button class="btn" onclick="VersementsPage._detteAction('regler','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
-            <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:20px;color:#10b981;"></iconify-icon>
+            <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:20px;color:#13deb9;"></iconify-icon>
             <div style="text-align:left;"><div style="font-weight:600;color:var(--text-primary);">Régler la dette</div><div style="font-size:11px;color:var(--text-muted);">Marquer comme payée (montant ramené à 0)</div></div>
           </button>
 
           <button class="btn" onclick="VersementsPage._detteAction('perte','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
-            <iconify-icon icon="solar:bill-cross-bold-duotone" style="font-size:20px;color:#f59e0b;"></iconify-icon>
+            <iconify-icon icon="solar:bill-cross-bold-duotone" style="font-size:20px;color:#ffae1f;"></iconify-icon>
             <div style="text-align:left;"><div style="font-weight:600;color:var(--text-primary);">Passer en perte</div><div style="font-size:11px;color:var(--text-muted);">Considérer cette dette comme irrécouvrable</div></div>
           </button>
 
@@ -3054,7 +3054,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         body: `
           <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:16px;font-size:var(--font-size-sm);">
             <div style="font-weight:600;margin-bottom:4px;">${nom}</div>
-            Date : <strong>${Utils.formatDate(v.date)}</strong> — Manquant : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong>
+            Date : <strong>${Utils.formatDate(v.date)}</strong> — Manquant : <strong style="color:#ffae1f;">${Utils.formatCurrency(v.manquant)}</strong>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
             <div>
@@ -3076,12 +3076,12 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     } else if (action === 'regler') {
       const manquant = v.manquant || 0;
       Modal.open({
-        title: '<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#10b981;"></iconify-icon> Régler la dette',
+        title: '<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;"></iconify-icon> Régler la dette',
         body: `
           <div style="padding:12px;border-radius:var(--radius-sm);background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);font-size:var(--font-size-sm);margin-bottom:16px;">
             <div style="font-weight:600;margin-bottom:6px;">${nom}</div>
             <div>Date : ${Utils.formatDate(v.date)}</div>
-            <div>Montant de la dette : <strong style="color:#f59e0b;">${Utils.formatCurrency(manquant)}</strong></div>
+            <div>Montant de la dette : <strong style="color:#ffae1f;">${Utils.formatCurrency(manquant)}</strong></div>
           </div>
           <div style="margin-bottom:12px;">
             <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Montant versé (FCFA) <span style="color:#ef4444;">*</span></label>
@@ -3100,7 +3100,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           </div>
           <div id="dette-reliquat-info" style="display:none;margin-bottom:12px;">
             <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);font-size:var(--font-size-sm);margin-bottom:8px;">
-              Reliquat : <strong id="dette-reliquat-montant" style="color:#f59e0b;">0 FCFA</strong>
+              Reliquat : <strong id="dette-reliquat-montant" style="color:#ffae1f;">0 FCFA</strong>
             </div>
             <label style="display:block;font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;">Que faire du reliquat ?</label>
             <div style="display:flex;gap:8px;">
@@ -3118,14 +3118,14 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       });
     } else if (action === 'perte') {
       Modal.open({
-        title: '<iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#f59e0b;"></iconify-icon> Passer en perte ?',
+        title: '<iconify-icon icon="solar:bill-cross-bold-duotone" style="color:#ffae1f;"></iconify-icon> Passer en perte ?',
         body: `<div style="padding:12px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);font-size:var(--font-size-sm);">
           <div style="font-weight:600;margin-bottom:6px;">${nom}</div>
           <div>Date : ${Utils.formatDate(v.date)}</div>
-          <div>Montant : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong></div>
+          <div>Montant : <strong style="color:#ffae1f;">${Utils.formatCurrency(v.manquant)}</strong></div>
           <div style="margin-top:8px;color:var(--text-muted);font-size:var(--font-size-xs);">La dette sera considérée comme irrécouvrable. Le chauffeur ne sera plus marqué en retard pour cette date.</div>
         </div>`,
-        footer: `<button class="btn" style="background:#f59e0b;color:#fff;" onclick="VersementsPage._confirmDetteAction('perte','${versementId}','${v.chauffeurId}')"><iconify-icon icon="solar:bill-cross-bold-duotone"></iconify-icon> Confirmer la perte</button><button class="btn btn-secondary" onclick="VersementsPage._modifierDette('${versementId}')">Retour</button>`,
+        footer: `<button class="btn" style="background:#ffae1f;color:#fff;" onclick="VersementsPage._confirmDetteAction('perte','${versementId}','${v.chauffeurId}')"><iconify-icon icon="solar:bill-cross-bold-duotone"></iconify-icon> Confirmer la perte</button><button class="btn btn-secondary" onclick="VersementsPage._modifierDette('${versementId}')">Retour</button>`,
         size: 'small'
       });
     } else if (action === 'supprimer') {
@@ -3134,7 +3134,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         body: `<div style="padding:12px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);font-size:var(--font-size-sm);">
           <div style="font-weight:600;margin-bottom:6px;">${nom}</div>
           <div>Date : ${Utils.formatDate(v.date)}</div>
-          <div>Montant : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong></div>
+          <div>Montant : <strong style="color:#ffae1f;">${Utils.formatCurrency(v.manquant)}</strong></div>
           <div style="margin-top:8px;color:#ef4444;font-size:var(--font-size-xs);font-weight:600;">⚠ Cette action est irréversible. La dette sera définitivement supprimée.</div>
         </div>`,
         footer: `<button class="btn btn-danger" onclick="VersementsPage._confirmDetteAction('supprimer','${versementId}','${v.chauffeurId}')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon> Supprimer</button><button class="btn btn-secondary" onclick="VersementsPage._modifierDette('${versementId}')">Retour</button>`,
@@ -3289,7 +3289,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         <div style="padding:12px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);font-size:var(--font-size-sm);">
           <div style="font-weight:600;margin-bottom:6px;">${nom}</div>
           <div>Date : ${Utils.formatDate(v.date)}</div>
-          <div>Montant dette : <strong style="color:#f59e0b;">${Utils.formatCurrency(v.manquant)}</strong></div>
+          <div>Montant dette : <strong style="color:#ffae1f;">${Utils.formatCurrency(v.manquant)}</strong></div>
           <div style="margin-top:8px;color:var(--text-muted);font-size:var(--font-size-xs);">La dette sera mise \u00e0 z\u00e9ro et le traitement sera supprim\u00e9. Cette action est irr\u00e9versible.</div>
         </div>
       `,
@@ -3318,12 +3318,12 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : chauffeurId;
 
     Modal.open({
-      title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b;"></iconify-icon> Modifier le montant',
+      title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#ffae1f;"></iconify-icon> Modifier le montant',
       body: `
         <div style="padding:12px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);font-size:var(--font-size-sm);margin-bottom:16px;">
           <div style="font-weight:600;">${nom}</div>
           <div>Date : ${Utils.formatDate(date)}</div>
-          <div>Montant actuel : <strong style="color:#f59e0b;">${Utils.formatCurrency(montant)}</strong></div>
+          <div>Montant actuel : <strong style="color:#ffae1f;">${Utils.formatCurrency(montant)}</strong></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
@@ -3336,7 +3336,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           </div>
         </div>
       `,
-      footer: `<button class="btn" style="background:#f59e0b;color:white;border:none;" id="btn-save-implicit" onclick="this.disabled=true;VersementsPage._confirmModifierImplicite('${chauffeurId}','${date}',${montant})"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" onclick="Modal.close();VersementsPage._showDetteDetail('${chauffeurId}')">Retour</button>`
+      footer: `<button class="btn" style="background:#ffae1f;color:white;border:none;" id="btn-save-implicit" onclick="this.disabled=true;VersementsPage._confirmModifierImplicite('${chauffeurId}','${date}',${montant})"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" onclick="Modal.close();VersementsPage._showDetteDetail('${chauffeurId}')">Retour</button>`
     });
   },
 
@@ -3389,7 +3389,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         <div style="padding:12px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);font-size:var(--font-size-sm);">
           <div style="font-weight:600;">${nom}</div>
           <div>Date : ${Utils.formatDate(date)}</div>
-          <div>Montant : <strong style="color:#f59e0b;">${Utils.formatCurrency(redevance)}</strong></div>
+          <div>Montant : <strong style="color:#ffae1f;">${Utils.formatCurrency(redevance)}</strong></div>
           <div style="margin-top:8px;color:var(--text-muted);font-size:var(--font-size-xs);">Le chauffeur ne sera plus considéré en dette pour cette date.</div>
         </div>
       `,
@@ -3422,7 +3422,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const labelStyle = 'font-size:var(--font-size-sm);font-weight:600;margin-bottom:4px;display:block;';
 
     Modal.open({
-      title: '<iconify-icon icon="solar:add-circle-bold" style="color:#f59e0b"></iconify-icon> Ajouter des dettes',
+      title: '<iconify-icon icon="solar:add-circle-bold" style="color:#ffae1f"></iconify-icon> Ajouter des dettes',
       size: 'lg',
       body: `<div style="display:flex;flex-direction:column;gap:16px;">
         <div>
@@ -3439,7 +3439,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         <div style="border-top:1px solid var(--border-color);padding-top:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <label style="${labelStyle}margin-bottom:0;">Lignes de dette *</label>
-            <button type="button" class="btn btn-sm" style="background:#f59e0b;color:white;border:none;display:flex;align-items:center;gap:4px;padding:4px 10px;font-size:var(--font-size-xs);border-radius:var(--radius-sm);" onclick="VersementsPage._ajouterLigneDette()">
+            <button type="button" class="btn btn-sm" style="background:#ffae1f;color:white;border:none;display:flex;align-items:center;gap:4px;padding:4px 10px;font-size:var(--font-size-xs);border-radius:var(--radius-sm);" onclick="VersementsPage._ajouterLigneDette()">
               <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter une ligne
             </button>
           </div>
@@ -3454,11 +3454,11 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
             </div>
           </div>
           <div id="dette-total" style="margin-top:10px;padding:8px 12px;border-radius:var(--radius-sm);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);font-size:var(--font-size-sm);display:none;">
-            Total : <strong id="dette-total-montant" style="color:#f59e0b;">0 FCFA</strong> — <span id="dette-total-lignes">0</span> ligne(s)
+            Total : <strong id="dette-total-montant" style="color:#ffae1f;">0 FCFA</strong> — <span id="dette-total-lignes">0</span> ligne(s)
           </div>
         </div>
       </div>`,
-      footer: `<button class="btn" style="background:#f59e0b;color:white;border:none;" onclick="VersementsPage._confirmAjouterDette()"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`
+      footer: `<button class="btn" style="background:#ffae1f;color:white;border:none;" onclick="VersementsPage._confirmAjouterDette()"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`
     });
   },
 
@@ -3579,7 +3579,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const today = new Date().toISOString().split('T')[0];
     const fields = [
       { type: 'heading', label: `Recouvrement ${typeFilter ? typeLabel : 'dette'} \u2014 ${driver.nom}` },
-      { type: 'html', html: `<div style="padding:8px 12px;border-radius:8px;background:${typeFilter === 'contravention' ? 'rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3)'};margin-bottom:10px;font-size:var(--font-size-sm);">Total : <strong style="color:${typeFilter === 'contravention' ? '#ef4444' : '#f59e0b'};">${Utils.formatCurrency(filteredTotal)}</strong> (${filteredItems.length} ${typeFilter ? typeLabel : 'versement' + (filteredItems.length > 1 ? 's' : '')})</div>` },
+      { type: 'html', html: `<div style="padding:8px 12px;border-radius:8px;background:${typeFilter === 'contravention' ? 'rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3)'};margin-bottom:10px;font-size:var(--font-size-sm);">Total : <strong style="color:${typeFilter === 'contravention' ? '#ef4444' : '#ffae1f'};">${Utils.formatCurrency(filteredTotal)}</strong> (${filteredItems.length} ${typeFilter ? typeLabel : 'versement' + (filteredItems.length > 1 ? 's' : '')})</div>` },
       { type: 'html', html: `<div style="padding:6px 12px;border-radius:8px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);margin-bottom:6px;font-size:11px;color:var(--text-muted);">Chaque dette sera sold\u00e9e \u00e0 sa date de service d'origine.</div>` },
       { name: 'montant', label: 'Montant \u00e0 encaisser (FCFA)', type: 'number', required: true, min: 1, step: 100, default: filteredTotal },
       { name: 'dateEncaissement', label: 'Date d\u2019encaissement', type: 'date', required: true, default: today },
@@ -3596,7 +3596,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     ];
 
     Modal.form(
-      '<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#22c55e;"></iconify-icon> Encaisser la dette',
+      '<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#13deb9;"></iconify-icon> Encaisser la dette',
       FormBuilder.build(fields),
       () => {
         const body = document.getElementById('modal-body');
@@ -3725,7 +3725,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const nom = ch ? `${Utils.escHtml(ch.prenom)} ${Utils.escHtml(ch.nom)}` : chauffeurId;
     const today = new Date().toISOString().split('T')[0];
     const typeLabel = source === 'contravention' ? 'contravention' : 'recette';
-    const color = source === 'contravention' ? '#ef4444' : '#f59e0b';
+    const color = source === 'contravention' ? '#ef4444' : '#ffae1f';
 
     const formHtml = `
       <div style="display:flex;flex-direction:column;gap:14px;">
@@ -3738,7 +3738,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           <input type="number" id="edi-montant" value="${montant}" min="1" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-secondary);font-size:var(--font-size-sm);font-family:var(--font-body);">
         </div>
         <div id="edi-reliquat" style="display:none;padding:10px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);">
-          <div style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:8px;">Reliquat : <strong id="edi-reliquat-montant" style="color:#f59e0b;">0 FCFA</strong></div>
+          <div style="font-size:var(--font-size-sm);font-weight:600;margin-bottom:8px;">Reliquat : <strong id="edi-reliquat-montant" style="color:#ffae1f;">0 FCFA</strong></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <label style="flex:1;min-width:120px;display:flex;align-items:center;gap:6px;padding:8px;border-radius:6px;border:1px solid var(--border-color);cursor:pointer;font-size:var(--font-size-sm);">
               <input type="radio" name="edi-traitement" value="dette" checked> Garder en dette
@@ -3773,7 +3773,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     `;
 
     Modal.open({
-      title: `<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#22c55e;"></iconify-icon> Encaisser`,
+      title: `<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#13deb9;"></iconify-icon> Encaisser`,
       body: formHtml,
       footer: `<button class="btn btn-success" id="edi-confirm-btn"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Enregistrer</button><button class="btn btn-secondary" data-action="cancel">Annuler</button>`
     });

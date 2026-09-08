@@ -195,7 +195,7 @@ const DepensesPage = {
 
   _add(vehicules) {
     Modal.form(
-      '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#f59e0b;"></iconify-icon> Nouvelle dépense',
+      '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#ffae1f;"></iconify-icon> Nouvelle dépense',
       `<form id="form-depense" class="modal-form">
         <div class="form-group">
           <label>Véhicule *</label>
@@ -284,7 +284,7 @@ const DepensesPage = {
     const vehicules = Store.get('vehicules') || [];
 
     Modal.form(
-      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;"></iconify-icon> Modifier dépense',
+      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#635bff;"></iconify-icon> Modifier dépense',
       `<form id="form-depense-edit" class="modal-form">
         <div class="form-group">
           <label>Véhicule</label>

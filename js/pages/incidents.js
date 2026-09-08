@@ -27,7 +27,7 @@ const IncidentsPage = {
     return `
       <!-- Stats header -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:var(--space-lg);">
-        <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-secondary);border-left:4px solid #f97316;">
+        <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-secondary);border-left:4px solid #f5512e;">
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Total incidents</div>
           <div style="font-size:var(--font-size-xl);font-weight:800;">${incidents.length}</div>
         </div>
@@ -35,13 +35,13 @@ const IncidentsPage = {
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">En cours</div>
           <div style="font-size:var(--font-size-xl);font-weight:800;color:#ef4444;">${ouverts.length}</div>
         </div>
-        <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-secondary);border-left:4px solid #f59e0b;">
+        <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-secondary);border-left:4px solid #ffae1f;">
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Coût total</div>
-          <div style="font-size:var(--font-size-xl);font-weight:800;color:#f59e0b;">${Utils.formatCurrency(coutTotal)}</div>
+          <div style="font-size:var(--font-size-xl);font-weight:800;color:#ffae1f;">${Utils.formatCurrency(coutTotal)}</div>
         </div>
-        <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-secondary);border-left:4px solid #22c55e;">
+        <div style="padding:14px;border-radius:var(--radius-md);background:var(--bg-secondary);border-left:4px solid #13deb9;">
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Résolus</div>
-          <div style="font-size:var(--font-size-xl);font-weight:800;color:#22c55e;">${incidents.filter(i => i.statut === 'resolu' || i.statut === 'clos').length}</div>
+          <div style="font-size:var(--font-size-xl);font-weight:800;color:#13deb9;">${incidents.filter(i => i.statut === 'resolu' || i.statut === 'clos').length}</div>
         </div>
       </div>
 
@@ -63,11 +63,11 @@ const IncidentsPage = {
       <style>
         .incident-tab { background:none;border:none;padding:10px 20px;cursor:pointer;font-size:var(--font-size-sm);font-weight:600;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;display:flex;align-items:center;gap:6px;white-space:nowrap;font-family:inherit; }
         .incident-tab:hover { color:var(--text-primary);background:var(--bg-secondary);border-radius:var(--radius-md) var(--radius-md) 0 0; }
-        .incident-tab.active { color:#f97316;border-bottom-color:#f97316; }
+        .incident-tab.active { color:#f5512e;border-bottom-color:#f5512e; }
         .incident-gravite { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600; }
-        .incident-gravite.mineur { background:rgba(59,130,246,0.12);color:#3b82f6; }
-        .incident-gravite.moyen { background:rgba(245,158,11,0.12);color:#f59e0b; }
-        .incident-gravite.grave { background:rgba(249,115,22,0.12);color:#f97316; }
+        .incident-gravite.mineur { background:rgba(59,130,246,0.12);color:#635bff; }
+        .incident-gravite.moyen { background:rgba(245,158,11,0.12);color:#ffae1f; }
+        .incident-gravite.grave { background:rgba(249,115,22,0.12);color:#f5512e; }
         .incident-gravite.critique { background:rgba(239,68,68,0.12);color:#ef4444; }
       </style>
     `;
@@ -76,7 +76,7 @@ const IncidentsPage = {
   _pageTemplate() {
     return `
       <div class="page-header">
-        <h1><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f97316;"></iconify-icon> Incidents & Sinistres</h1>
+        <h1><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f5512e;"></iconify-icon> Incidents & Sinistres</h1>
         <div class="page-actions">
           <button class="btn btn-primary" onclick="IncidentsPage._addIncident()">
             <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Déclarer un incident
@@ -135,7 +135,7 @@ const IncidentsPage = {
       containerId: 'incident-tab-content',
       columns: [
         { label: 'Date', key: 'date', render: (i) => `<div><div style="font-weight:600;">${Utils.formatDate(i.date)}</div>${i.heure ? `<div style="font-size:10px;color:var(--text-muted);">${i.heure}</div>` : ''}</div>` },
-        { label: 'Type', key: 'type', render: (i) => `<div style="display:flex;align-items:center;gap:6px;"><iconify-icon icon="${typeIcons[i.type] || typeIcons.autre}" style="color:#f97316;"></iconify-icon> ${typeLabels[i.type] || i.type}</div>` },
+        { label: 'Type', key: 'type', render: (i) => `<div style="display:flex;align-items:center;gap:6px;"><iconify-icon icon="${typeIcons[i.type] || typeIcons.autre}" style="color:#f5512e;"></iconify-icon> ${typeLabels[i.type] || i.type}</div>` },
         { label: 'Chauffeur', key: 'chauffeurId', render: (i) => {
           const ch = chauffeurs.find(c => c.id === i.chauffeurId);
           return ch ? `<a href="#/chauffeurs/${ch.id}" style="color:var(--primary);text-decoration:none;">${ch.prenom} ${ch.nom}</a>` : i.chauffeurId;
@@ -169,7 +169,7 @@ const IncidentsPage = {
   _addIncident() {
     const fields = this._formFields();
     Modal.form(
-      '<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f97316;"></iconify-icon> Déclarer un incident',
+      '<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f5512e;"></iconify-icon> Déclarer un incident',
       FormBuilder.build(fields),
       () => {
         const body = document.getElementById('modal-body');
@@ -201,7 +201,7 @@ const IncidentsPage = {
 
     const fields = this._formFields(incident);
     Modal.form(
-      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#f97316;"></iconify-icon> Modifier l\'incident',
+      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#f5512e;"></iconify-icon> Modifier l\'incident',
       FormBuilder.build(fields),
       () => {
         const body = document.getElementById('modal-body');
@@ -236,10 +236,10 @@ const IncidentsPage = {
     const typeLabels = { accident: 'Accident', panne: 'Panne', vol: 'Vol', agression: 'Agression', contravention: 'Contravention', autre: 'Autre' };
     const graviteLabels = { mineur: 'Mineur', moyen: 'Moyen', grave: 'Grave', critique: 'Critique' };
     const statutLabels = { ouvert: 'Ouvert', en_cours: 'En cours', resolu: 'Résolu', clos: 'Clos' };
-    const graviteColors = { mineur: '#3b82f6', moyen: '#f59e0b', grave: '#f97316', critique: '#ef4444' };
+    const graviteColors = { mineur: '#635bff', moyen: '#ffae1f', grave: '#f5512e', critique: '#ef4444' };
 
     Modal.open({
-      title: `<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:${graviteColors[incident.gravite] || '#f97316'};"></iconify-icon> Incident — ${typeLabels[incident.type] || incident.type}`,
+      title: `<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:${graviteColors[incident.gravite] || '#f5512e'};"></iconify-icon> Incident — ${typeLabels[incident.type] || incident.type}`,
       body: `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:var(--font-size-sm);">
           <div><span class="text-muted">Date</span><br><strong>${Utils.formatDate(incident.date)}${incident.heure ? ' à ' + incident.heure : ''}</strong></div>
@@ -250,7 +250,7 @@ const IncidentsPage = {
           <div><span class="text-muted">Lieu</span><br><strong>${incident.lieu || '—'}</strong></div>
           <div style="grid-column:1/-1;"><span class="text-muted">Description</span><br><div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-top:4px;">${incident.description || '—'}</div></div>
           <div><span class="text-muted">Coût estimé</span><br><strong>${incident.coutEstime ? Utils.formatCurrency(incident.coutEstime) : '—'}</strong></div>
-          <div><span class="text-muted">Coût réel</span><br><strong style="color:#f97316;">${incident.coutReel ? Utils.formatCurrency(incident.coutReel) : '—'}</strong></div>
+          <div><span class="text-muted">Coût réel</span><br><strong style="color:#f5512e;">${incident.coutReel ? Utils.formatCurrency(incident.coutReel) : '—'}</strong></div>
           <div><span class="text-muted">Assurance</span><br><strong>${incident.assurancePriseEnCharge ? '✅ Prise en charge' : '❌ Non'}</strong></div>
           <div><span class="text-muted">Réf. assurance</span><br><strong>${incident.referenceAssurance || '—'}</strong></div>
           ${incident.notes ? `<div style="grid-column:1/-1;"><span class="text-muted">Notes</span><br><div style="padding:8px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-top:4px;">${incident.notes}</div></div>` : ''}

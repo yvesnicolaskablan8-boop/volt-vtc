@@ -187,7 +187,7 @@ const YangoPage = {
         <div class="kpi-card cyan">
           <div class="kpi-icon"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon></div>
           <div class="kpi-label" id="yp-commission-label">Commission partenaire</div>
-          <div class="kpi-value" style="color:#10b981;" id="yp-commission"><div class="yango-skeleton"></div></div>
+          <div class="kpi-value" style="color:#13deb9;" id="yp-commission"><div class="yango-skeleton"></div></div>
           <div class="d-sub" id="yp-commission-detail" style="margin-top:6px;"><div class="yango-skeleton-sm"></div></div>
         </div>
       </div>
@@ -250,7 +250,7 @@ const YangoPage = {
       <div class="d-card" style="margin-top:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
           <div style="display:flex;align-items:center;gap:10px;">
-            <div class="d-icon" style="background:rgba(30,64,175,.08);color:#1e40af;">
+            <div class="d-icon" style="background:rgba(30,64,175,.08);color:#4a43c2;">
               <iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon>
             </div>
             <div>
@@ -382,7 +382,7 @@ const YangoPage = {
         const nuitTranche = (h.heure >= 22 || h.heure < 5);
         const brideParConsigne = (h.heure >= 0 && h.heure < 5);
         const hauteur = Math.max(2, Math.round((h.caMoyenParJour / maxCa) * 100));
-        const couleur = brideParConsigne ? '#cbd5e1' : nuitTranche ? '#1e40af' : '#60a5fa';
+        const couleur = brideParConsigne ? '#cbd5e1' : nuitTranche ? '#4a43c2' : '#8aa8ff';
         return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;" title="${h.heure}h — ${Utils.formatCurrency(h.caMoyenParJour)}/jour · ${h.courses} course(s)">
           <div style="width:100%;height:90px;display:flex;align-items:flex-end;">
             <div style="width:100%;height:${hauteur}%;background:${couleur};border-radius:3px 3px 0 0;"></div>
@@ -399,14 +399,14 @@ const YangoPage = {
       horaireHtml = `
         <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border-color);">
           <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">Repartition du CA par heure</div>
-          <div class="d-sub" style="margin-bottom:10px;">CA moyen par jour actif · <span style="color:#1e40af;font-weight:700;">bleu fonce</span> = tranche de nuit · <span style="color:#94a3b8;font-weight:700;">gris</span> = apres minuit, brides par votre consigne</div>
+          <div class="d-sub" style="margin-bottom:10px;">CA moyen par jour actif · <span style="color:#4a43c2;font-weight:700;">bleu fonce</span> = tranche de nuit · <span style="color:#94a3b8;font-weight:700;">gris</span> = apres minuit, brides par votre consigne</div>
           <div style="display:flex;gap:2px;align-items:flex-end;">${barres}</div>
 
           <div style="margin-top:14px;padding:12px;border-radius:10px;background:rgba(30,64,175,.06);border:1px solid rgba(30,64,175,.18);font-size:var(--font-size-sm);line-height:1.7;">
             <div style="font-weight:700;margin-bottom:6px;">Faisabilite du service de nuit (22h-05h)</div>
             <div>Productivite mesuree en soiree (22h-00h) : <strong>${Utils.formatCurrency(nuit.caParHeureSoiree || 0)} / heure</strong> sur ${nuit.joursObserves || 0} soiree(s) observee(s).</div>
-            <div>Projection sur une nuit complete de 7 h : <strong style="color:#1e40af;">${Utils.formatCurrency(projection)} de CA</strong>.</div>
-            <div style="margin-top:6px;">Avec une recette de nuit a ${Utils.formatCurrency(recetteNuitCible)}, il resterait environ <strong style="color:${resteChauffeur > 8000 ? '#15803d' : '#b91c1c'};">${Utils.formatCurrency(resteChauffeur)}</strong> au chauffeur de nuit (apres commission Yango et carburant).</div>
+            <div>Projection sur une nuit complete de 7 h : <strong style="color:#4a43c2;">${Utils.formatCurrency(projection)} de CA</strong>.</div>
+            <div style="margin-top:6px;">Avec une recette de nuit a ${Utils.formatCurrency(recetteNuitCible)}, il resterait environ <strong style="color:${resteChauffeur > 8000 ? '#02b3a9' : '#b91c1c'};">${Utils.formatCurrency(resteChauffeur)}</strong> au chauffeur de nuit (apres commission Yango et carburant).</div>
             ${nuit.biaisConnu ? `<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(180,83,9,.08);color:#b45309;font-weight:600;">
               Donnees apres minuit quasi nulles (${Utils.formatCurrency(nuit.caApresMinuitObserve || 0)}) : c'est votre consigne de ne pas rouler apres minuit, pas l'absence de demande. La projection ci-dessus suppose que la nuit profonde vaut autant que la soiree — a confirmer par un test reel.
             </div>` : ''}
@@ -417,10 +417,10 @@ const YangoPage = {
     const ligneHtml = lignes.map(l => {
       const atteint = l.caMoyenJour >= seuil;
       const capable = l.potentielJour >= seuil;
-      const couleur = atteint ? '#15803d' : l.caMoyenJour >= seuil * 0.85 ? '#b45309' : '#b91c1c';
-      const ecartCouleur = l.ecart < 0 ? '#b91c1c' : '#15803d';
+      const couleur = atteint ? '#02b3a9' : l.caMoyenJour >= seuil * 0.85 ? '#b45309' : '#b91c1c';
+      const ecartCouleur = l.ecart < 0 ? '#b91c1c' : '#02b3a9';
       const badge = atteint
-        ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;">DEJA AU NIVEAU</span>'
+        ? '<span style="background:#dcfce7;color:#02b3a9;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;">DEJA AU NIVEAU</span>'
         : capable
           ? '<span style="background:#fef3c7;color:#b45309;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;" title="Sa productivite horaire suffit : il ne travaille pas assez longtemps">CAPABLE — SOUS-EXPLOITE</span>'
           : '<span style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;" title="Meme en travaillant une journee complete, il n atteindrait pas le seuil">PAS AU NIVEAU</span>';
@@ -430,7 +430,7 @@ const YangoPage = {
         <td style="padding:8px 10px;text-align:right;font-weight:800;color:${couleur};">${Utils.formatCurrency(l.caMoyenJour)}</td>
         <td style="padding:8px 10px;text-align:right;">${l.amplitudeMoyenne > 0 ? l.amplitudeMoyenne + ' h' : '—'}</td>
         <td style="padding:8px 10px;text-align:right;font-weight:700;">${l.caParHeure > 0 ? Utils.formatCurrency(l.caParHeure) : '—'}</td>
-        <td style="padding:8px 10px;text-align:right;font-weight:800;color:${capable ? '#15803d' : '#b91c1c'};">${l.potentielJour > 0 ? Utils.formatCurrency(l.potentielJour) : '—'}</td>
+        <td style="padding:8px 10px;text-align:right;font-weight:800;color:${capable ? '#02b3a9' : '#b91c1c'};">${l.potentielJour > 0 ? Utils.formatCurrency(l.potentielJour) : '—'}</td>
         <td style="padding:8px 10px;text-align:right;">${l.ch ? Utils.formatCurrency(l.verse) : '—'}</td>
         <td style="padding:8px 10px;text-align:right;color:${ecartCouleur};font-weight:700;">${l.ch && l.attendu > 0 ? (l.ecart >= 0 ? '+' : '') + Utils.formatCurrency(l.ecart) : '—'}</td>
         <td style="padding:8px 10px;text-align:center;">${badge}</td>
@@ -449,7 +449,7 @@ const YangoPage = {
         </div>
         <div style="padding:12px;border-radius:12px;background:${eligibles.length > 0 ? 'rgba(22,163,74,.08)' : 'var(--bg-tertiary)'};">
           <div class="d-sub">Au-dessus du seuil</div>
-          <div style="font-size:1.4rem;font-weight:800;color:${eligibles.length > 0 ? '#15803d' : 'var(--text-primary)'};">${eligibles.length} / ${lignes.length}</div>
+          <div style="font-size:1.4rem;font-weight:800;color:${eligibles.length > 0 ? '#02b3a9' : 'var(--text-primary)'};">${eligibles.length} / ${lignes.length}</div>
         </div>
       </div>
 
@@ -788,15 +788,15 @@ const YangoPage = {
     // CA with cash/card breakdown
     setVal('yp-ca-today', Utils.formatCurrency(caToday));
     setHtml('yp-ca-detail', `
-      <iconify-icon icon="solar:money-bag-bold-duotone" style="color:#22c55e;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cashToday)}
+      <iconify-icon icon="solar:money-bag-bold-duotone" style="color:#13deb9;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cashToday)}
       <span style="margin:0 3px">&bull;</span>
-      <iconify-icon icon="solar:card-bold-duotone" style="color:#3b82f6;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cardToday)}
+      <iconify-icon icon="solar:card-bold-duotone" style="color:#635bff;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cardToday)}
     `);
 
     setVal('yp-courses-today', coursesToday);
     const courseParts = [];
     if (enCours > 0) courseParts.push(`<span class="yango-dot yango-dot-green"></span> ${enCours} en cours`);
-    if (terminees > 0) courseParts.push(`<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;font-size:9px"></iconify-icon> ${terminees} ok`);
+    if (terminees > 0) courseParts.push(`<iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;font-size:9px"></iconify-icon> ${terminees} ok`);
     if (annulees > 0) courseParts.push(`<iconify-icon icon="solar:close-circle-bold" style="color:#ef4444;font-size:9px"></iconify-icon> ${annulees} ann.`);
     if (courseParts.length === 0) courseParts.push(`<iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> ${coursesMonth} ce mois`);
     setHtml('yp-courses-detail', courseParts.join(' <span style="margin:0 3px">&bull;</span> '));
@@ -915,7 +915,7 @@ const YangoPage = {
     resultDiv.innerHTML = `
       <div style="padding:14px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;font-size:1rem;"></iconify-icon>
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;font-size:1rem;"></iconify-icon>
           <span style="font-weight:600;font-size:var(--font-size-sm);">Synchronisation terminée — ${result.date}</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;">
@@ -928,7 +928,7 @@ const YangoPage = {
             <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Courses Yango</div>
           </div>
           <div style="text-align:center;padding:8px;background:var(--bg-secondary);border-radius:var(--radius-sm);">
-            <div style="font-size:1.1rem;font-weight:700;color:#22c55e;">${okCount}</div>
+            <div style="font-size:1.1rem;font-weight:700;color:#13deb9;">${okCount}</div>
             <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Mis a jour</div>
           </div>
           <div style="text-align:center;padding:8px;background:var(--bg-secondary);border-radius:var(--radius-sm);">
@@ -956,7 +956,7 @@ const YangoPage = {
                     <td style="padding:4px 8px;font-weight:500;">${d.chauffeur}</td>
                     <td style="padding:4px 8px;">${d.courses || 0}</td>
                     <td style="padding:4px 8px;">${d.tempsActivite ? Math.floor(d.tempsActivite/60) + 'h' + String(d.tempsActivite%60).padStart(2,'0') : '--'}</td>
-                    <td style="padding:4px 8px;font-weight:600;color:${d.scoreActivite >= 70 ? '#22c55e' : d.scoreActivite >= 50 ? '#f59e0b' : '#ef4444'};">${d.scoreActivite}/100</td>
+                    <td style="padding:4px 8px;font-weight:600;color:${d.scoreActivite >= 70 ? '#13deb9' : d.scoreActivite >= 50 ? '#ffae1f' : '#ef4444'};">${d.scoreActivite}/100</td>
                     <td style="padding:4px 8px;">${(d.revenu || 0).toLocaleString('fr-FR')} F</td>
                   </tr>
                 `).join('')}
@@ -984,7 +984,7 @@ const YangoPage = {
               `).join('')}
             </div>
             <div style="margin-top:8px;font-size:10px;color:var(--text-muted);">
-              <iconify-icon icon="solar:lightbulb-bold-duotone" style="color:#f59e0b;"></iconify-icon> <strong>Solutions :</strong> Verifiez l'orthographe du nom/prenom, ou allez dans la fiche du chauffeur pour le lier manuellement a un profil Yango.
+              <iconify-icon icon="solar:lightbulb-bold-duotone" style="color:#ffae1f;"></iconify-icon> <strong>Solutions :</strong> Verifiez l'orthographe du nom/prenom, ou allez dans la fiche du chauffeur pour le lier manuellement a un profil Yango.
             </div>
           </div>
         ` : ''}
@@ -1117,7 +1117,7 @@ const YangoPage = {
     const totalKmAll = rows.reduce((s, r) => s + getDriverKm(r.chauffeur.id), 0);
 
     // Shift helpers
-    const shiftColors = { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#8b5cf6', custom: '#F5512E' };
+    const shiftColors = { matin: '#13deb9', apres_midi: '#635bff', journee: '#ffae1f', nuit: '#635bff', custom: '#F5512E' };
     const shiftLabels = { matin: 'M', apres_midi: 'AM', journee: 'J', nuit: 'N', custom: 'P' };
     const getShiftBadge = (shift) => {
       const type = shift.typeCreneaux || 'custom';
@@ -1135,7 +1135,7 @@ const YangoPage = {
           Programmés : <strong style="color:var(--text-primary);font-size:var(--font-size-sm);">${scheduled.length}</strong>
         </div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
-          Liés Yango : <strong style="color:#22c55e;font-size:var(--font-size-sm);">${linked.length}</strong>
+          Liés Yango : <strong style="color:#13deb9;font-size:var(--font-size-sm);">${linked.length}</strong>
         </div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
           CA total : <strong style="color:#FC4C02;font-size:var(--font-size-sm);">${Utils.formatCurrency(totalCA)}</strong>
@@ -1144,7 +1144,7 @@ const YangoPage = {
           Courses : <strong style="color:var(--text-primary);font-size:var(--font-size-sm);">${totalCourses}</strong>
         </div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
-          Km total : <strong style="color:#8b5cf6;font-size:var(--font-size-sm);">${totalKmAll.toFixed(1)} km</strong>
+          Km total : <strong style="color:#635bff;font-size:var(--font-size-sm);">${totalKmAll.toFixed(1)} km</strong>
         </div>
         ${errCount > 0 ? `<div style="font-size:var(--font-size-xs);color:var(--warning);">${errCount} non chargé(s)</div>` : ''}
       </div>
@@ -1171,12 +1171,12 @@ const YangoPage = {
               // Objectif CA
               const objectif = c.objectifCA || 0;
               const caPct = objectif > 0 ? Math.min(100, Math.round(ca / objectif * 100)) : null;
-              const caPctColor = caPct !== null ? (caPct >= 100 ? '#22c55e' : caPct >= 60 ? '#f59e0b' : '#ef4444') : null;
+              const caPctColor = caPct !== null ? (caPct >= 100 ? '#13deb9' : caPct >= 60 ? '#ffae1f' : '#ef4444') : null;
               // Activité
               const totalShiftMin = r.shifts.reduce((sum, sh) => sum + this._getShiftDurationMinutes(sh), 0);
               const actMin = s?.tempsActiviteMinutes || 0;
               const actPct = totalShiftMin > 0 ? Math.min(100, Math.round(actMin / totalShiftMin * 100)) : 0;
-              const actColor = actPct >= 80 ? '#22c55e' : actPct >= 40 ? '#f59e0b' : '#ef4444';
+              const actColor = actPct >= 80 ? '#13deb9' : actPct >= 40 ? '#ffae1f' : '#ef4444';
               const actH = Math.floor(actMin / 60);
               const actM = actMin % 60;
               const actLabel = actMin > 0 ? `${actH}h${String(Math.round(actM)).padStart(2, '0')}` : '--';
@@ -1217,10 +1217,10 @@ const YangoPage = {
                     </div>` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}</td>
                   <td style="text-align:right;font-weight:600;">${s ? (s.nbCourses || 0) : '—'}</td>
                   <td style="text-align:right;">
-                    ${driverKm > 0 ? `<div><span style="font-weight:600;color:#8b5cf6;">${driverKm.toFixed(1)}</span> <span style="font-size:10px;color:var(--text-muted);">km</span></div>${driverVitMoy > 0 ? `<div style="font-size:9px;color:var(--text-muted);">~${driverVitMoy.toFixed(0)} km/h</div>` : ''}` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}
+                    ${driverKm > 0 ? `<div><span style="font-weight:600;color:#635bff;">${driverKm.toFixed(1)}</span> <span style="font-size:10px;color:var(--text-muted);">km</span></div>${driverVitMoy > 0 ? `<div style="font-size:9px;color:var(--text-muted);">~${driverVitMoy.toFixed(0)} km/h</div>` : ''}` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}
                   </td>
-                  <td style="text-align:right;color:#22c55e;">${s ? Utils.formatCurrency(s.totalCash || 0) : '—'}</td>
-                  <td style="text-align:right;color:#3b82f6;">${s ? Utils.formatCurrency(s.totalCard || 0) : '—'}</td>
+                  <td style="text-align:right;color:#13deb9;">${s ? Utils.formatCurrency(s.totalCash || 0) : '—'}</td>
+                  <td style="text-align:right;color:#635bff;">${s ? Utils.formatCurrency(s.totalCard || 0) : '—'}</td>
                 </tr>
               `;
             }).join('')}

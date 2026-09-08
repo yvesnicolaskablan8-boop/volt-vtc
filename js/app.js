@@ -195,7 +195,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 640;
+      const SW_VERSION = 641;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
@@ -667,7 +667,7 @@ const App = {
 
           const icon = document.createElement('iconify-icon');
           icon.setAttribute('icon', 'solar:letter-bold-duotone');
-          icon.style.cssText = 'font-size:3rem;color:#3b82f6;display:block;text-align:center;margin-bottom:1rem;';
+          icon.style.cssText = 'font-size:3rem;color:#635bff;display:block;text-align:center;margin-bottom:1rem;';
           forgotSection.appendChild(icon);
 
           const title = document.createElement('h2');
@@ -922,7 +922,7 @@ const App = {
 
       const icon = document.createElement('iconify-icon');
       icon.setAttribute('icon', 'solar:lock-bold-duotone');
-      icon.style.cssText = 'font-size:3rem;color:#3b82f6;display:block;text-align:center;margin-bottom:1rem;';
+      icon.style.cssText = 'font-size:3rem;color:#635bff;display:block;text-align:center;margin-bottom:1rem;';
       loginSection.appendChild(icon);
 
       const title = document.createElement('h2');

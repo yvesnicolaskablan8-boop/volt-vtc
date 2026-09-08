@@ -369,7 +369,7 @@ const GpsConduitePage = {
           if (this._trailLines[pos.chauffeurId]) {
             this._trailLines[pos.chauffeurId].setLatLngs(trail);
           } else {
-            this._trailLines[pos.chauffeurId] = L.polyline(trail, { color: '#3b82f6', weight: 3, opacity: 0.45 }).addTo(this._map);
+            this._trailLines[pos.chauffeurId] = L.polyline(trail, { color: '#635bff', weight: 3, opacity: 0.45 }).addTo(this._map);
           }
         }
 
@@ -384,7 +384,7 @@ const GpsConduitePage = {
         `;
 
         // Couleur d'\u00e9tat : vert = en mouvement, bleu = \u00e0 l'arr\u00eat, gris = signal ancien
-        const markerColor = isStale ? '#94a3b8' : isMoving ? '#22c55e' : '#3b82f6';
+        const markerColor = isStale ? '#94a3b8' : isMoving ? '#13deb9' : '#635bff';
         const markerIcon = L.divIcon({
           className: 'gps-marker-icon',
           html: `
@@ -579,10 +579,10 @@ const GpsConduitePage = {
         data: {
           labels: data.map(g => g.date.slice(5)),
           datasets: [
-            { label: 'Global', data: data.map(g => g.scoreGlobal), borderColor: '#3b82f6', borderWidth: 2, pointRadius: 1, pointHoverRadius: 8, pointHoverBorderWidth: 3 },
-            { label: 'Vitesse', data: data.map(g => g.scoreVitesse), borderColor: '#22c55e', borderWidth: 1.5, pointRadius: 0, borderDash: [3, 3], pointHoverRadius: 8, pointHoverBorderWidth: 3 },
+            { label: 'Global', data: data.map(g => g.scoreGlobal), borderColor: '#635bff', borderWidth: 2, pointRadius: 1, pointHoverRadius: 8, pointHoverBorderWidth: 3 },
+            { label: 'Vitesse', data: data.map(g => g.scoreVitesse), borderColor: '#13deb9', borderWidth: 1.5, pointRadius: 0, borderDash: [3, 3], pointHoverRadius: 8, pointHoverBorderWidth: 3 },
             { label: 'Freinage', data: data.map(g => g.scoreFreinage), borderColor: '#ef4444', borderWidth: 1.5, pointRadius: 0, borderDash: [3, 3], pointHoverRadius: 8, pointHoverBorderWidth: 3 },
-            { label: 'Acc\u00e9l\u00e9ration', data: data.map(g => g.scoreAcceleration), borderColor: '#facc15', borderWidth: 1.5, pointRadius: 0, borderDash: [3, 3], pointHoverRadius: 8, pointHoverBorderWidth: 3 }
+            { label: 'Acc\u00e9l\u00e9ration', data: data.map(g => g.scoreAcceleration), borderColor: '#ffae1f', borderWidth: 1.5, pointRadius: 0, borderDash: [3, 3], pointHoverRadius: 8, pointHoverBorderWidth: 3 }
           ]
         },
         options: {
@@ -626,8 +626,8 @@ const GpsConduitePage = {
           labels: last7.map(g => g.date.slice(5)),
           datasets: [
             { label: 'Freinages brusques', data: last7.map(g => g.evenements.freinagesBrusques), backgroundColor: '#ef4444', hoverBackgroundColor: '#dc2626' },
-            { label: 'Acc\u00e9l\u00e9rations', data: last7.map(g => g.evenements.accelerationsBrusques), backgroundColor: '#facc15', hoverBackgroundColor: '#eab308' },
-            { label: 'Exc\u00e8s vitesse', data: last7.map(g => g.evenements.excesVitesse), backgroundColor: '#f97316', hoverBackgroundColor: '#ea580c' }
+            { label: 'Acc\u00e9l\u00e9rations', data: last7.map(g => g.evenements.accelerationsBrusques), backgroundColor: '#ffae1f', hoverBackgroundColor: '#e8930c' },
+            { label: 'Exc\u00e8s vitesse', data: last7.map(g => g.evenements.excesVitesse), backgroundColor: '#f5512e', hoverBackgroundColor: '#de3e1e' }
           ]
         },
         options: {
@@ -658,7 +658,7 @@ const GpsConduitePage = {
     const gaugeCtx = document.getElementById('chart-gps-gauge');
     if (gaugeCtx) {
       const score = latest.scoreGlobal;
-      const gaugeColor = score >= 85 ? '#22c55e' : score >= 70 ? '#3b82f6' : score >= 55 ? '#f59e0b' : '#ef4444';
+      const gaugeColor = score >= 85 ? '#13deb9' : score >= 70 ? '#635bff' : score >= 55 ? '#ffae1f' : '#ef4444';
       const gaugeQualif = score > 80 ? 'Excellent' : score > 65 ? 'Bon' : score > 50 ? 'Moyen' : 'Faible';
       this._charts.push(new Chart(gaugeCtx, {
         type: 'doughnut',
@@ -718,10 +718,10 @@ const GpsConduitePage = {
           datasets: [{
             label: 'Score actuel',
             data: [latest.scoreVitesse, latest.scoreFreinage, latest.scoreAcceleration, latest.scoreVirage, latest.scoreRegularite],
-            borderColor: '#3b82f6',
+            borderColor: '#635bff',
             backgroundColor: 'rgba(59, 130, 246, 0.15)',
             borderWidth: 2,
-            pointBackgroundColor: '#3b82f6',
+            pointBackgroundColor: '#635bff',
             pointHoverRadius: 8,
             pointHoverBorderWidth: 3
           }, {
@@ -836,9 +836,9 @@ const GpsConduitePage = {
       <div id="ct-legend" class="card" style="margin-bottom:var(--space-md);display:none;">
         <div class="card-body" style="display:flex;flex-wrap:wrap;gap:var(--space-lg);align-items:center;padding:var(--space-sm) var(--space-md);">
           <span style="font-weight:600;font-size:var(--font-size-sm);">L\u00e9gende vitesse :</span>
-          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#22c55e;border-radius:2px;display:inline-block;"></span> &lt; 50 km/h</span>
-          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#eab308;border-radius:2px;display:inline-block;"></span> 50-90 km/h</span>
-          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#f97316;border-radius:2px;display:inline-block;"></span> 90-110 km/h</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#13deb9;border-radius:2px;display:inline-block;"></span> &lt; 50 km/h</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#e8930c;border-radius:2px;display:inline-block;"></span> 50-90 km/h</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#f5512e;border-radius:2px;display:inline-block;"></span> 90-110 km/h</span>
           <span style="display:flex;align-items:center;gap:4px;font-size:var(--font-size-sm);"><span style="width:20px;height:4px;background:#ef4444;border-radius:2px;display:inline-block;"></span> &gt; 110 km/h</span>
         </div>
       </div>
@@ -943,9 +943,9 @@ const GpsConduitePage = {
   },
 
   _histSpeedColor(speed) {
-    if (speed < 50) return '#22c55e';
-    if (speed < 90) return '#eab308';
-    if (speed < 110) return '#f97316';
+    if (speed < 50) return '#13deb9';
+    if (speed < 90) return '#e8930c';
+    if (speed < 110) return '#f5512e';
     return '#ef4444';
   },
 
@@ -970,7 +970,7 @@ const GpsConduitePage = {
     const first = samples[0];
     if (first.lat && first.lng) {
       this._histStartMarker = L.circleMarker([first.lat, first.lng], {
-        radius: 10, color: '#fff', weight: 2, fillColor: '#22c55e', fillOpacity: 1
+        radius: 10, color: '#fff', weight: 2, fillColor: '#13deb9', fillOpacity: 1
       }).addTo(this._histMap).bindPopup('<b>D\u00e9part</b><br>' + (first.heure || '--'));
       this._histLayers.push(this._histStartMarker);
     }

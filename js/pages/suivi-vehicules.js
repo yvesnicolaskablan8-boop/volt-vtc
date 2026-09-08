@@ -85,7 +85,7 @@ const SuiviVehiculesPage = {
       if (erreur) {
         alerte.innerHTML = `<div style="padding:11px 13px;border-radius:10px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.25);color:#b45309;font-size:var(--font-size-sm);margin-bottom:12px;">Impossible de joindre le service GPS : ${Utils.escHtml(String(erreur))}</div>`;
       } else if (!equipes.length) {
-        alerte.innerHTML = `<div style="padding:11px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#1d4ed8;font-size:var(--font-size-sm);margin-bottom:12px;">Aucun véhicule n'est encore relié à un boîtier GPS. Renseignez l'identifiant du boîtier sur la fiche du véhicule.</div>`;
+        alerte.innerHTML = `<div style="padding:11px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#4a43c2;font-size:var(--font-size-sm);margin-bottom:12px;">Aucun véhicule n'est encore relié à un boîtier GPS. Renseignez l'identifiant du boîtier sur la fiche du véhicule.</div>`;
       } else {
         alerte.innerHTML = '';
       }
@@ -102,10 +102,10 @@ const SuiviVehiculesPage = {
     const ageMin = p.vuLe ? (Date.now() - new Date(p.vuLe).getTime()) / 60000 : Infinity;
     if (p.contact && (p.vitesse || 0) > 3) {
       if (ageMin > 20) return { libelle: 'Dernier signal en mouvement', couleur: '#64748b', roule: false };
-      return { libelle: 'En route', couleur: '#15803d', roule: true };
+      return { libelle: 'En route', couleur: '#02b3a9', roule: true };
     }
     if (p.contact) return { libelle: 'Allumée, à l\'arrêt', couleur: '#b45309', roule: false };
-    return { libelle: 'À l\'arrêt', couleur: '#2563eb', roule: false };
+    return { libelle: 'À l\'arrêt', couleur: '#4a43c2', roule: false };
   },
 
   /**
@@ -122,7 +122,7 @@ const SuiviVehiculesPage = {
     const pct = Math.round(reste / capacite * 100);
     return {
       km, reste: Math.round(reste), pct,
-      couleur: pct > 40 ? '#15803d' : pct > 15 ? '#b45309' : '#b91c1c',
+      couleur: pct > 40 ? '#02b3a9' : pct > 15 ? '#b45309' : '#b91c1c',
       libelle: pct > 40 ? 'Batterie estimée' : pct > 15 ? 'À recharger bientôt' : 'À recharger',
     };
   },

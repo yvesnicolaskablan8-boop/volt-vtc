@@ -307,7 +307,7 @@ const ChauffeursPage = {
             let badge = Utils.statusBadge(c.statut);
             if (ptg) {
               const labels = { en_service: 'En service', pause: 'En pause', termine: 'Termin\u00e9' };
-              const colors = { en_service: '#22c55e', pause: '#f59e0b', termine: '#94a3b8' };
+              const colors = { en_service: '#13deb9', pause: '#ffae1f', termine: '#94a3b8' };
               badge += `<br><span style="font-size:0.65rem;font-weight:600;color:${colors[ptg.statut]}">${labels[ptg.statut]}</span>`;
             }
             return badge;
@@ -390,7 +390,7 @@ const ChauffeursPage = {
             const ptg = (Store.get('pointages') || []).find(p => p.chauffeurId === c.id && p.date === today);
             if (!ptg) return '';
             const labels = { en_service: 'En service', pause: 'En pause', termine: 'Terminé' };
-            const colors = { en_service: '#22c55e', pause: '#f59e0b', termine: '#94a3b8' };
+            const colors = { en_service: '#13deb9', pause: '#ffae1f', termine: '#94a3b8' };
             return ` <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600;background:${colors[ptg.statut]}20;color:${colors[ptg.statut]};margin-left:6px">${labels[ptg.statut]}</span>`;
           })()}</h2>
           <p>${c.email} &bull; ${c.telephone}</p>
@@ -543,7 +543,7 @@ const ChauffeursPage = {
         ${c.yangoDriverId ? `
         <div class="card">
           <div class="card-header">
-            <span class="card-title"><iconify-icon icon="solar:graph-up-bold-duotone" style="color:#3b82f6;"></iconify-icon> Historique 30 jours</span>
+            <span class="card-title"><iconify-icon icon="solar:graph-up-bold-duotone" style="color:#635bff;"></iconify-icon> Historique 30 jours</span>
           </div>
           <div style="height:200px;">
             <canvas id="chart-perf-30j"></canvas>
@@ -563,10 +563,10 @@ const ChauffeursPage = {
                 <div>
                   <div style="font-size:var(--font-size-sm); font-weight:500;">${doc.nom}</div>
                   <div style="font-size:var(--font-size-xs); color:var(--text-muted);">Expire : ${Utils.formatDate(doc.dateExpiration)}</div>
-                  ${doc.dateUpload ? `<div style="font-size:10px;color:#22c55e;font-weight:600;margin-top:2px;display:flex;align-items:center;gap:3px"><iconify-icon icon="solar:check-circle-bold" style="font-size:11px"></iconify-icon> Fichier televerse</div>` : ''}
+                  ${doc.dateUpload ? `<div style="font-size:10px;color:#13deb9;font-weight:600;margin-top:2px;display:flex;align-items:center;gap:3px"><iconify-icon icon="solar:check-circle-bold" style="font-size:11px"></iconify-icon> Fichier televerse</div>` : ''}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
-                  ${doc.dateUpload && doc.fichierData ? `<button onclick="ChauffeurPage._viewDocument('${doc.type}','${(doc.fichierType || '').replace(/'/g, '')}','${c.id}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-primary);cursor:pointer;font-size:11px;font-weight:600;color:#8b5cf6;display:flex;align-items:center;gap:4px"><iconify-icon icon="solar:eye-bold-duotone" style="font-size:13px"></iconify-icon> Voir</button>` : ''}
+                  ${doc.dateUpload && doc.fichierData ? `<button onclick="ChauffeurPage._viewDocument('${doc.type}','${(doc.fichierType || '').replace(/'/g, '')}','${c.id}')" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-primary);cursor:pointer;font-size:11px;font-weight:600;color:#635bff;display:flex;align-items:center;gap:4px"><iconify-icon icon="solar:eye-bold-duotone" style="font-size:13px"></iconify-icon> Voir</button>` : ''}
                   ${Utils.statusBadge(doc.statut)}
                 </div>
               </div>
@@ -728,12 +728,12 @@ const ChauffeursPage = {
   _renderPerformanceSection(chauffeur) {
     const perf = this._computePerformance(chauffeur.id);
 
-    const fiabColor = perf.scoreFiabilite >= 80 ? '#22c55e' : perf.scoreFiabilite >= 50 ? '#f59e0b' : '#ef4444';
+    const fiabColor = perf.scoreFiabilite >= 80 ? '#13deb9' : perf.scoreFiabilite >= 50 ? '#ffae1f' : '#ef4444';
     const fiabLabel = perf.scoreFiabilite >= 80 ? 'Excellent' : perf.scoreFiabilite >= 50 ? 'Bon' : 'À surveiller';
-    const ponctColor = perf.tauxPonctualite >= 80 ? '#22c55e' : perf.tauxPonctualite >= 50 ? '#f59e0b' : '#ef4444';
-    const recColor = perf.tauxRecouvrement >= 80 ? '#22c55e' : perf.tauxRecouvrement >= 50 ? '#f59e0b' : '#ef4444';
+    const ponctColor = perf.tauxPonctualite >= 80 ? '#13deb9' : perf.tauxPonctualite >= 50 ? '#ffae1f' : '#ef4444';
+    const recColor = perf.tauxRecouvrement >= 80 ? '#13deb9' : perf.tauxRecouvrement >= 50 ? '#ffae1f' : '#ef4444';
     const evoIcon = perf.evolutionCA >= 0 ? 'solar:arrow-up-bold' : 'solar:arrow-down-bold';
-    const evoColor = perf.evolutionCA >= 0 ? '#22c55e' : '#ef4444';
+    const evoColor = perf.evolutionCA >= 0 ? '#13deb9' : '#ef4444';
     const evoSign = perf.evolutionCA >= 0 ? '+' : '';
 
     // Store perf data for chart rendering
@@ -780,7 +780,7 @@ const ChauffeursPage = {
           <!-- Streak -->
           <div style="padding:12px;border-radius:var(--radius-sm);background:var(--bg-tertiary);text-align:center;">
             <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">Streak</div>
-            <div style="font-size:var(--font-size-lg);font-weight:800;color:${perf.streak >= 7 ? '#22c55e' : perf.streak >= 3 ? '#f59e0b' : '#ef4444'};">${perf.streak}j</div>
+            <div style="font-size:var(--font-size-lg);font-weight:800;color:${perf.streak >= 7 ? '#13deb9' : perf.streak >= 3 ? '#ffae1f' : '#ef4444'};">${perf.streak}j</div>
             <div style="font-size:10px;color:var(--text-muted);">sans impayé</div>
           </div>
 
@@ -803,14 +803,14 @@ const ChauffeursPage = {
           </div>` : ''}
           ${perf.totalPertes > 0 ? `
           <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-sm);background:rgba(249,115,22,0.1);font-size:var(--font-size-xs);">
-            <iconify-icon icon="solar:fire-bold-duotone" style="color:#f97316;"></iconify-icon>
-            <span style="font-weight:600;color:#f97316;">${perf.nbPertes} perte${perf.nbPertes > 1 ? 's' : ''}</span>
+            <iconify-icon icon="solar:fire-bold-duotone" style="color:#f5512e;"></iconify-icon>
+            <span style="font-weight:600;color:#f5512e;">${perf.nbPertes} perte${perf.nbPertes > 1 ? 's' : ''}</span>
             <span style="color:var(--text-muted);">(${Utils.formatCurrency(perf.totalPertes)})</span>
           </div>` : ''}
         </div>` : `
         <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-sm);background:rgba(34,197,94,0.1);font-size:var(--font-size-xs);margin-bottom:16px;">
-          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon>
-          <span style="font-weight:600;color:#22c55e;">Aucune dette ni perte</span>
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;"></iconify-icon>
+          <span style="font-weight:600;color:#13deb9;">Aucune dette ni perte</span>
         </div>`}
 
         <!-- Mini chart CA mensuel -->
@@ -837,10 +837,10 @@ const ChauffeursPage = {
             datasets: [{
               label: 'Score',
               data: [latest.scoreVitesse, latest.scoreFreinage, latest.scoreAcceleration, latest.scoreVirage, latest.scoreRegularite],
-              borderColor: '#3b82f6',
+              borderColor: '#635bff',
               backgroundColor: 'rgba(59, 130, 246, 0.15)',
               borderWidth: 2,
-              pointBackgroundColor: '#3b82f6',
+              pointBackgroundColor: '#635bff',
               pointHoverRadius: 8,
               pointHoverBorderWidth: 3
             }]
@@ -889,7 +889,7 @@ const ChauffeursPage = {
           datasets: [{
             label: 'Versé',
             data: versements.map(v => Math.round(v.montantVerse)),
-            borderColor: '#22c55e',
+            borderColor: '#13deb9',
             backgroundColor: 'rgba(34, 197, 94, 0.1)',
             fill: true,
             borderWidth: 2,
@@ -898,7 +898,7 @@ const ChauffeursPage = {
           }, {
             label: 'Commission',
             data: versements.map(v => Math.round(v.commission)),
-            borderColor: '#facc15',
+            borderColor: '#ffae1f',
             borderWidth: 2,
             borderDash: [5, 5],
             pointHoverRadius: 7,
@@ -947,7 +947,7 @@ const ChauffeursPage = {
             label: 'CA mensuel',
             data: perf.caMensuel.map(m => m.value),
             backgroundColor: perf.caMensuel.map(m => m.value >= perf.caMoyenMensuel ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.5)'),
-            hoverBackgroundColor: perf.caMensuel.map(m => m.value >= perf.caMoyenMensuel ? '#22c55e' : '#ef4444'),
+            hoverBackgroundColor: perf.caMensuel.map(m => m.value >= perf.caMoyenMensuel ? '#13deb9' : '#ef4444'),
             borderRadius: 4,
             borderSkipped: false
           }]
@@ -1151,11 +1151,11 @@ const ChauffeursPage = {
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">CA Total</div>
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
-          <div style="font-size:var(--font-size-lg);font-weight:600;color:#22c55e;">${Utils.formatCurrency(stats.totalCash)}</div>
+          <div style="font-size:var(--font-size-lg);font-weight:600;color:#13deb9;">${Utils.formatCurrency(stats.totalCash)}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:money-bag-bold-duotone" style="font-size:9px"></iconify-icon> Espèces</div>
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
-          <div style="font-size:var(--font-size-lg);font-weight:600;color:#3b82f6;">${Utils.formatCurrency(stats.totalCard)}</div>
+          <div style="font-size:var(--font-size-lg);font-weight:600;color:#635bff;">${Utils.formatCurrency(stats.totalCard)}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:card-bold-duotone" style="font-size:9px"></iconify-icon> Carte</div>
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
@@ -1225,7 +1225,7 @@ const ChauffeursPage = {
             label: 'Courses',
             data: coursesData,
             type: 'line',
-            borderColor: '#3b82f6',
+            borderColor: '#635bff',
             backgroundColor: 'transparent',
             borderWidth: 2,
             pointRadius: 0,
@@ -1488,7 +1488,7 @@ const ChauffeursPage = {
     const blob = new Blob([byteArray], { type: doc.fichierType || 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
     if (doc.fichierType && doc.fichierType.startsWith('image/')) {
-      Modal.open(`<iconify-icon icon="solar:eye-bold-duotone" style="color:#8b5cf6"></iconify-icon> ${doc.nom}`,
+      Modal.open(`<iconify-icon icon="solar:eye-bold-duotone" style="color:#635bff"></iconify-icon> ${doc.nom}`,
         `<div style="text-align:center"><img src="${url}" style="max-width:100%;max-height:70vh;border-radius:8px;object-fit:contain;" onload="URL.revokeObjectURL(this.src)"><div style="margin-top:8px;font-size:12px;color:var(--text-muted)">${doc.fichierNom || type} — televerse le ${Utils.formatDate(doc.dateUpload)}</div></div>`);
     } else {
       window.open(url, '_blank');
@@ -1625,7 +1625,7 @@ const ChauffeursPage = {
           <input type="text" class="form-control" id="yango-form-filter-input" placeholder="Filtrer par nom..." style="font-size:var(--font-size-xs);padding:6px 10px;"
             oninput="ChauffeursPage._filterYangoFormResults()">
         </div>
-        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#22c55e;margin-bottom:6px;"><iconify-icon icon="solar:star-bold-duotone"></iconify-icon> ${matchCount} correspondance(s) probable(s)</div>` : ''}
+        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#13deb9;margin-bottom:6px;"><iconify-icon icon="solar:star-bold-duotone"></iconify-icon> ${matchCount} correspondance(s) probable(s)</div>` : ''}
         ${(!prenom && !nom && !telephone) ? '<div style="font-size:var(--font-size-xs);color:var(--warning);margin-bottom:6px;"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Remplissez nom/téléphone pour un meilleur tri</div>' : ''}
         <div id="yango-form-drivers-list" style="max-height:200px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);">
           ${this._renderYangoFormDriversList(top)}
@@ -1647,7 +1647,7 @@ const ChauffeursPage = {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border-color);font-size:var(--font-size-xs);${d._score >= 80 ? 'background:rgba(34,197,94,0.06);' : ''}">
         <div style="flex:1;">
           <div style="font-weight:500;">
-            ${d._score >= 80 ? '<iconify-icon icon="solar:star-bold-duotone" style="color:#22c55e;font-size:9px;"></iconify-icon> ' : ''}
+            ${d._score >= 80 ? '<iconify-icon icon="solar:star-bold-duotone" style="color:#13deb9;font-size:9px;"></iconify-icon> ' : ''}
             ${d.prenom} ${d.nom}
           </div>
           <div style="color:var(--text-muted);font-size:10px;">${d.telephone || 'Pas de tel'} &bull; ${d.workStatus || '?'}</div>
@@ -1691,7 +1691,7 @@ const ChauffeursPage = {
     if (container) {
       container.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-sm);font-size:var(--font-size-xs);margin-top:4px;">
-          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon>
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;"></iconify-icon>
           <span>Lié à <strong>${yangoNom}</strong> (${yangoId})</span>
           <button type="button" class="btn btn-sm" style="margin-left:auto;padding:2px 8px;font-size:10px;" onclick="ChauffeursPage._unlinkYangoFromForm()">
             <iconify-icon icon="solar:close-circle-bold"></iconify-icon>
@@ -1911,7 +1911,7 @@ const ChauffeursPage = {
           <input type="text" class="form-control" id="yango-search-input" placeholder="Filtrer par nom..." style="font-size:var(--font-size-xs);padding:6px 10px;"
             oninput="ChauffeursPage._filterYangoResults()">
         </div>
-        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#22c55e;margin-bottom:6px;"><iconify-icon icon="solar:star-bold-duotone"></iconify-icon> ${matchCount} correspondance(s) probable(s)</div>` : ''}
+        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#13deb9;margin-bottom:6px;"><iconify-icon icon="solar:star-bold-duotone"></iconify-icon> ${matchCount} correspondance(s) probable(s)</div>` : ''}
         <div id="yango-drivers-list" style="max-height:250px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);">
           ${this._renderYangoDriversList(top, chauffeurId)}
         </div>
@@ -1933,7 +1933,7 @@ const ChauffeursPage = {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border-color);font-size:var(--font-size-xs);${d._score >= 80 ? 'background:rgba(34,197,94,0.06);' : ''}">
         <div style="flex:1;">
           <div style="font-weight:500;">
-            ${d._score >= 80 ? '<iconify-icon icon="solar:star-bold-duotone" style="color:#22c55e;font-size:9px;"></iconify-icon> ' : ''}
+            ${d._score >= 80 ? '<iconify-icon icon="solar:star-bold-duotone" style="color:#13deb9;font-size:9px;"></iconify-icon> ' : ''}
             ${d.prenom} ${d.nom}
           </div>
           <div style="color:var(--text-muted);font-size:10px;">${d.telephone || 'Pas de tel'} &bull; ${d.workStatus || '?'}</div>
@@ -2055,7 +2055,7 @@ const ChauffeursPage = {
       const el = document.getElementById('yango-balance-value');
       if (el) {
         const bal = data.balance;
-        const color = bal < 0 ? '#ef4444' : bal > 0 ? '#22c55e' : 'var(--text-primary)';
+        const color = bal < 0 ? '#ef4444' : bal > 0 ? '#13deb9' : 'var(--text-primary)';
         el.style.color = color;
         el.textContent = Utils.formatCurrency(bal);
       }
@@ -2084,13 +2084,13 @@ const ChauffeursPage = {
     if (!ch) return;
     const contraventions = (Store.get('contraventions') || []).filter(c => c.chauffeurId === chauffeurId);
     const typeLabels = { exces_vitesse: 'Exc\u00e8s de vitesse', stationnement: 'Stationnement', feu_rouge: 'Feu rouge', documents: 'Documents', telephone: 'T\u00e9l\u00e9phone', autre: 'Autre' };
-    const statutColors = { impayee: '#ef4444', payee: '#22c55e', contestee: '#f59e0b' };
+    const statutColors = { impayee: '#ef4444', payee: '#13deb9', contestee: '#ffae1f' };
     const statutLabels = { impayee: 'Impay\u00e9e', payee: 'Pay\u00e9e', contestee: 'Contest\u00e9e' };
 
     const totalImpaye = contraventions.filter(c => c.statut === 'impayee').reduce((s, c) => s + (c.montant || 0), 0);
 
     const listHtml = contraventions.length === 0
-      ? '<div style="text-align:center;padding:30px;color:var(--text-muted);"><iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:40px;color:#22c55e;display:block;margin-bottom:8px;"></iconify-icon>Aucune contravention</div>'
+      ? '<div style="text-align:center;padding:30px;color:var(--text-muted);"><iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:40px;color:#13deb9;display:block;margin-bottom:8px;"></iconify-icon>Aucune contravention</div>'
       : contraventions.sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(c => {
         const sc = statutColors[c.statut] || '#6b7280';
         return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:var(--bg-secondary);border:1px solid var(--border-color);margin-bottom:8px;">
@@ -2206,15 +2206,15 @@ const ChauffeursPage = {
     const body = `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
         <div style="padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);text-align:center;">
-          <div style="font-size:var(--font-size-xl);font-weight:700;color:#3b82f6;">${joursTravailles}</div>
+          <div style="font-size:var(--font-size-xl);font-weight:700;color:#635bff;">${joursTravailles}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Jours travaill\u00e9s</div>
         </div>
         <div style="padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);text-align:center;">
-          <div style="font-size:var(--font-size-xl);font-weight:700;color:#f59e0b;">${joursAbsence}</div>
+          <div style="font-size:var(--font-size-xl);font-weight:700;color:#ffae1f;">${joursAbsence}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Jours d'absence</div>
         </div>
         <div style="padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);text-align:center;">
-          <div style="font-size:var(--font-size-xl);font-weight:700;color:#22c55e;">${Utils.formatCurrency(totalPaye)}</div>
+          <div style="font-size:var(--font-size-xl);font-weight:700;color:#13deb9;">${Utils.formatCurrency(totalPaye)}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Redevances pay\u00e9es</div>
         </div>
         <div style="padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);text-align:center;">
@@ -2226,11 +2226,11 @@ const ChauffeursPage = {
       <div style="padding:12px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:12px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <span style="font-size:var(--font-size-sm);font-weight:600;">Solde</span>
-          <span style="font-size:var(--font-size-lg);font-weight:700;color:${solde >= 0 ? '#22c55e' : '#ef4444'};">${solde >= 0 ? '+' : ''}${Utils.formatCurrency(solde)}</span>
+          <span style="font-size:var(--font-size-lg);font-weight:700;color:${solde >= 0 ? '#13deb9' : '#ef4444'};">${solde >= 0 ? '+' : ''}${Utils.formatCurrency(solde)}</span>
         </div>
         ${totalPenalites > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <span style="font-size:var(--font-size-sm);color:#f59e0b;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> P\u00e9nalit\u00e9s</span>
-          <span style="font-size:var(--font-size-sm);font-weight:600;color:#f59e0b;">${Utils.formatCurrency(totalPenalites)}</span>
+          <span style="font-size:var(--font-size-sm);color:#ffae1f;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> P\u00e9nalit\u00e9s</span>
+          <span style="font-size:var(--font-size-sm);font-weight:600;color:#ffae1f;">${Utils.formatCurrency(totalPenalites)}</span>
         </div>` : ''}
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <span style="font-size:var(--font-size-sm);color:var(--text-muted);">CA courses (mois)</span>
@@ -2239,15 +2239,15 @@ const ChauffeursPage = {
       </div>
 
       <div style="font-size:var(--font-size-xs);color:var(--text-muted);display:flex;gap:12px;flex-wrap:wrap;">
-        <span><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon> ${monthVersements.filter(v => v.statut === 'valide').length} valid\u00e9(s)</span>
-        <span><iconify-icon icon="solar:clock-circle-bold-duotone" style="color:#f59e0b;"></iconify-icon> ${totalEnAttente} en attente</span>
+        <span><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;"></iconify-icon> ${monthVersements.filter(v => v.statut === 'valide').length} valid\u00e9(s)</span>
+        <span><iconify-icon icon="solar:clock-circle-bold-duotone" style="color:#ffae1f;"></iconify-icon> ${totalEnAttente} en attente</span>
         <span><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#ef4444;"></iconify-icon> ${totalRetard} en retard</span>
         <span><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon> ${monthCourses.length} courses</span>
       </div>
     `;
 
     Modal.open({
-      title: `<iconify-icon icon="solar:chart-bold-duotone" style="color:#3b82f6;"></iconify-icon> Bilan mensuel \u2014 ${name}`,
+      title: `<iconify-icon icon="solar:chart-bold-duotone" style="color:#635bff;"></iconify-icon> Bilan mensuel \u2014 ${name}`,
       body: `<div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:12px;">${monthLabel} &bull; Redevance: ${Utils.formatCurrency(redevance)}/jour</div>${body}`,
       footer: `<button class="btn btn-secondary" onclick="ChauffeursPage._exportBilanPDF('${chauffeurId}')" style="margin-right:auto;"><iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon> PDF</button><button class="btn btn-secondary" data-action="cancel">Fermer</button>`,
       size: 'medium'
@@ -2311,7 +2311,7 @@ const ChauffeursPage = {
         date: v.date,
         type: 'versement',
         icon: 'solar:hand-money-bold-duotone',
-        color: v.statut === 'valide' ? '#22c55e' : v.statut === 'retard' ? '#ef4444' : '#f59e0b',
+        color: v.statut === 'valide' ? '#13deb9' : v.statut === 'retard' ? '#ef4444' : '#ffae1f',
         label: `Versement ${v.statut === 'valide' ? 'valid\u00e9' : v.statut === 'retard' ? 'en retard' : v.statut}`,
         detail: `${Utils.formatCurrency(v.montantVerse)}${v.moyenPaiement ? ' \u2014 ' + v.moyenPaiement : ''}`,
         extra: v.justification ? `<div style="font-size:10px;color:var(--pilote-blue);margin-top:2px;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon> ${v.justification}</div>` : ''
@@ -2324,7 +2324,7 @@ const ChauffeursPage = {
         date: a.dateDebut,
         type: 'absence',
         icon: 'solar:calendar-mark-bold-duotone',
-        color: a.type === 'suspension' ? '#ef4444' : a.type === 'maladie' ? '#f59e0b' : '#8b5cf6',
+        color: a.type === 'suspension' ? '#ef4444' : a.type === 'maladie' ? '#ffae1f' : '#635bff',
         label: `${typeLabels[a.type] || a.type}`,
         detail: `${Utils.formatDate(a.dateDebut)} au ${Utils.formatDate(a.dateFin)}`,
         extra: a.motif ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${a.motif}</div>` : ''
@@ -2336,7 +2336,7 @@ const ChauffeursPage = {
         date: p.date,
         type: 'planning',
         icon: 'solar:clock-circle-bold-duotone',
-        color: '#3b82f6',
+        color: '#635bff',
         label: `Shift ${p.typeCreneaux || ''}`,
         detail: p.heureDebut && p.heureFin ? `${p.heureDebut} \u00e0 ${p.heureFin}` : p.typeCreneaux || '',
         extra: ''
@@ -2372,7 +2372,7 @@ const ChauffeursPage = {
     `;
 
     Modal.open({
-      title: `<iconify-icon icon="solar:history-bold-duotone" style="color:#3b82f6;"></iconify-icon> Historique \u2014 ${name}`,
+      title: `<iconify-icon icon="solar:history-bold-duotone" style="color:#635bff;"></iconify-icon> Historique \u2014 ${name}`,
       body: stats + `<div style="max-height:55vh;overflow-y:auto;">${rows || '<div style="text-align:center;color:var(--text-muted);padding:20px;">Aucun historique</div>'}</div>`,
       footer: '<button class="btn btn-secondary" data-action="cancel">Fermer</button>',
       size: 'large'
@@ -2441,7 +2441,7 @@ const ChauffeursPage = {
     const elM = enLigneMin % 60;
     const elLabel = elH + 'h' + String(elM).padStart(2, '0');
     const elPct = Math.min(100, Math.round((enLigneMin / objMin) * 100));
-    const elColor = enLigneMin >= objMin ? '#22c55e' : (elPct >= 50 ? '#f59e0b' : '#ef4444');
+    const elColor = enLigneMin >= objMin ? '#13deb9' : (elPct >= 50 ? '#ffae1f' : '#ef4444');
 
     const ocH = Math.floor(occupeMin / 60);
     const ocM = occupeMin % 60;
@@ -2451,7 +2451,7 @@ const ChauffeursPage = {
     let tauxHTML;
     if (enLigneMin > 0 && occupeMin > 0) {
       const taux = Math.round(occupeMin / enLigneMin * 100);
-      tauxHTML = '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Taux d\'occupation : <strong style="color:' + (taux >= 70 ? '#22c55e' : '#f59e0b') + '">' + taux + '%</strong></div>';
+      tauxHTML = '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Taux d\'occupation : <strong style="color:' + (taux >= 70 ? '#13deb9' : '#ffae1f') + '">' + taux + '%</strong></div>';
     } else if (occupeMin > 0) {
       tauxHTML = '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:12px">Données Yango disponibles</div>';
     } else {
@@ -2460,7 +2460,7 @@ const ChauffeursPage = {
 
     // Statut badge + bouton Aujourd'hui
     const statutLabels = { en_service: 'En service', pause: 'En pause', termine: 'Terminé', non_commence: 'Non commencé' };
-    const statutColors = { en_service: '#22c55e', pause: '#f59e0b', termine: '#94a3b8', non_commence: '#94a3b8' };
+    const statutColors = { en_service: '#13deb9', pause: '#ffae1f', termine: '#94a3b8', non_commence: '#94a3b8' };
     if (badgeEl) {
       let badgeHTML = '';
       if (!isToday) {
@@ -2531,7 +2531,7 @@ const ChauffeursPage = {
       const pctEL = maxVal > 0 ? Math.round((d.enLigne / maxVal) * 100) : 0;
       return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;cursor:pointer" onclick="document.getElementById(\'temps-date-filter\').value=\'' + d.date + '\';ChauffeursPage._renderTempsEnLigneCard(\'' + chauffeurId + '\',\'' + d.date + '\',\'' + (yangoDriverId || '') + '\')">' +
         '<div style="display:flex;align-items:flex-end;height:50px;width:100%">' +
-          '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctEL + '%;background:' + (d.enLigne >= objMin ? '#22c55e' : '#3b82f6') + ';border-radius:2px;min-height:' + (d.enLigne > 0 ? '3px' : '0') + '"></div></div>' +
+          '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="width:100%;height:' + pctEL + '%;background:' + (d.enLigne >= objMin ? '#13deb9' : '#635bff') + ';border-radius:2px;min-height:' + (d.enLigne > 0 ? '3px' : '0') + '"></div></div>' +
         '</div>' +
         '<div style="font-size:0.58rem;color:' + (d.isSelected ? 'var(--primary)' : 'var(--text-muted)') + ';font-weight:' + (d.isSelected ? '700' : '400') + '">' + d.jour + '</div>' +
       '</div>';
@@ -2551,7 +2551,7 @@ const ChauffeursPage = {
       '<div data-kpi-box style="margin-bottom:16px">' +
         '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-            '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
+            '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#635bff"></iconify-icon>' +
             '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps en ligne' + (enLigneSource === 'yango' ? ' <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span>' : '') + '</span>' +
           '</div>' +
           '<div style="font-size:1.5rem;font-weight:900;color:' + elColor + '">' + elLabel + '</div>' +
@@ -2570,7 +2570,7 @@ const ChauffeursPage = {
       '<div style="display:flex;gap:16px;padding:8px 0;border-top:1px solid var(--border-color);margin-top:8px">' +
         '<div style="flex:1;text-align:center">' +
           '<div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:2px">Moy. en ligne / jour</div>' +
-          '<div style="font-size:0.85rem;font-weight:700;color:#3b82f6">' + avgELH + 'h' + String(avgELM).padStart(2, '0') + '</div>' +
+          '<div style="font-size:0.85rem;font-weight:700;color:#635bff">' + avgELH + 'h' + String(avgELM).padStart(2, '0') + '</div>' +
         '</div>' +
       '</div>';
 
@@ -2625,7 +2625,7 @@ const ChauffeursPage = {
       const m = actMin % 60;
       const label = actMin > 0 ? h + 'h' + String(m).padStart(2, '0') : '--';
       const pct = actMin > 0 ? Math.min(100, Math.round((actMin / objMin) * 100)) : 0;
-      const color = actMin >= objMin ? '#22c55e' : (pct >= 50 ? '#f59e0b' : '#ef4444');
+      const color = actMin >= objMin ? '#13deb9' : (pct >= 50 ? '#ffae1f' : '#ef4444');
 
       // Update badge
       if (badgeEl) {
@@ -2659,7 +2659,7 @@ const ChauffeursPage = {
           kpiContainer.innerHTML =
             '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
               '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-                '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
+                '<iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size:1rem;color:#635bff"></iconify-icon>' +
                 '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Temps en ligne <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span></span>' +
               '</div>' +
               '<div style="font-size:1.5rem;font-weight:900;color:' + color + '">' + label + '</div>' +
@@ -2672,10 +2672,10 @@ const ChauffeursPage = {
           kpiContainer.innerHTML =
             '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">' +
               '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-                '<iconify-icon icon="solar:map-arrow-right-bold-duotone" style="font-size:1rem;color:#3b82f6"></iconify-icon>' +
+                '<iconify-icon icon="solar:map-arrow-right-bold-duotone" style="font-size:1rem;color:#635bff"></iconify-icon>' +
                 '<span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary)">Courses <span style="font-size:0.55rem;color:#FC4C02;font-weight:600">(Yango)</span></span>' +
               '</div>' +
-              '<div style="font-size:1.5rem;font-weight:900;color:#3b82f6">' + nbCourses + '</div>' +
+              '<div style="font-size:1.5rem;font-weight:900;color:#635bff">' + nbCourses + '</div>' +
               '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:8px">Courses effectuées · CA : ' + Utils.formatCurrency(totalCA) + '</div>' +
             '</div>';
         }

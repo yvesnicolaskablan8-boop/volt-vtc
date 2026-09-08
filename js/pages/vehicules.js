@@ -128,7 +128,7 @@ const VehiculesPage = {
         <h1><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Véhicules & Garage</h1>
         <div class="page-actions" id="vehicules-page-actions">
           <button class="btn btn-warning" onclick="VehiculesPage._renderListTab('maintenance')" style="display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Garage</button>
-          <button class="btn btn-outline" onclick="VehiculesPage._renderListTab('incidents')" style="display:flex;align-items:center;gap:6px;color:#f97316;border-color:#f97316;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Incidents</button>
+          <button class="btn btn-outline" onclick="VehiculesPage._renderListTab('incidents')" style="display:flex;align-items:center;gap:6px;color:#f5512e;border-color:#f5512e;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Incidents</button>
           <button class="btn btn-primary" id="btn-add-vehicule"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter</button>
         </div>
       </div>
@@ -484,7 +484,7 @@ const VehiculesPage = {
           labels: ['Acquisition', 'Assurance', 'Maintenance', energyLabel],
           datasets: [{
             data: costsData,
-            backgroundColor: ['#3b82f6', '#facc15', '#ef4444', isEVChart ? '#22c55e' : '#22d3ee'],
+            backgroundColor: ['#635bff', '#ffae1f', '#ef4444', isEVChart ? '#13deb9' : '#0891b2'],
             borderColor: '#111827',
             borderWidth: 2,
             hoverOffset: 12
@@ -533,8 +533,8 @@ const VehiculesPage = {
           datasets: [{
             label: 'CA',
             data: monthlyRev.map(m => m.revenue),
-            backgroundColor: '#3b82f6',
-            hoverBackgroundColor: '#60a5fa',
+            backgroundColor: '#635bff',
+            hoverBackgroundColor: '#8aa8ff',
             borderRadius: 4
           }]
         },
@@ -644,11 +644,11 @@ const VehiculesPage = {
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);">CA Total</div>
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
-          <div style="font-size:var(--font-size-lg);font-weight:600;color:#22c55e;">${Utils.formatCurrency(stats.totalCash)}</div>
+          <div style="font-size:var(--font-size-lg);font-weight:600;color:#13deb9;">${Utils.formatCurrency(stats.totalCash)}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:money-bag-bold-duotone" style="font-size:9px"></iconify-icon> Espèces</div>
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
-          <div style="font-size:var(--font-size-lg);font-weight:600;color:#3b82f6;">${Utils.formatCurrency(stats.totalCard)}</div>
+          <div style="font-size:var(--font-size-lg);font-weight:600;color:#635bff;">${Utils.formatCurrency(stats.totalCard)}</div>
           <div style="font-size:var(--font-size-xs);color:var(--text-muted);"><iconify-icon icon="solar:card-bold-duotone" style="font-size:9px"></iconify-icon> Carte</div>
         </div>
         <div style="text-align:center;padding:var(--space-sm);">
@@ -1464,7 +1464,7 @@ const VehiculesPage = {
           <input type="text" class="form-control" id="yango-vehicle-search-input" placeholder="Filtrer par immatriculation ou marque..." style="font-size:var(--font-size-xs);padding:6px 10px;"
             oninput="VehiculesPage._filterYangoVehicleResults()">
         </div>
-        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#22c55e;margin-bottom:6px;"><iconify-icon icon="solar:star-bold-duotone"></iconify-icon> ${matchCount} correspondance(s) probable(s)</div>` : ''}
+        ${matchCount > 0 ? `<div style="font-size:var(--font-size-xs);color:#13deb9;margin-bottom:6px;"><iconify-icon icon="solar:star-bold-duotone"></iconify-icon> ${matchCount} correspondance(s) probable(s)</div>` : ''}
         <div id="yango-vehicles-list" style="max-height:250px;overflow-y:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);">
           ${this._renderYangoVehiclesList(top, vehiculeId)}
         </div>
@@ -1485,7 +1485,7 @@ const VehiculesPage = {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border-color);font-size:var(--font-size-xs);${v._score >= 70 ? 'background:rgba(34,197,94,0.06);' : ''}">
         <div style="flex:1;">
           <div style="font-weight:500;">
-            ${v._score >= 70 ? '<iconify-icon icon="solar:star-bold-duotone" style="color:#22c55e;font-size:9px;"></iconify-icon> ' : ''}
+            ${v._score >= 70 ? '<iconify-icon icon="solar:star-bold-duotone" style="color:#13deb9;font-size:9px;"></iconify-icon> ' : ''}
             ${v.marque} ${v.modele}
           </div>
           <div style="color:var(--text-muted);font-size:10px;">${v.immatriculation || 'Pas de plaque'} &bull; ${v.couleur || '?'} &bull; ${v.annee || '?'}</div>
@@ -1637,7 +1637,7 @@ const VehiculesPage = {
     if (container) {
       container.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius-sm);font-size:var(--font-size-xs);margin-top:4px;">
-          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#22c55e;"></iconify-icon>
+          <iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;"></iconify-icon>
           <span>Lié à <strong>${yangoLabel}</strong></span>
           <button type="button" class="btn btn-sm" style="margin-left:auto;padding:2px 8px;font-size:10px;" onclick="VehiculesPage._unlinkYangoFromVehicleForm()">
             <iconify-icon icon="solar:close-circle-bold"></iconify-icon>

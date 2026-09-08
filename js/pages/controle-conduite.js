@@ -83,14 +83,14 @@ const ControleConduitePage = {
 
         .cc-cat-badge { display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700; }
         .cc-cat-1 { background:rgba(234,179,8,.15);color:#ca8a04; }
-        .cc-cat-2 { background:rgba(249,115,22,.15);color:#ea580c; }
+        .cc-cat-2 { background:rgba(249,115,22,.15);color:#de3e1e; }
         .cc-cat-3 { background:rgba(239,68,68,.15);color:#dc2626; }
         .cc-cat-4 { background:rgba(127,29,29,.2);color:#7f1d1d; }
 
         .cc-stat-badge { display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700; }
-        .cc-stat-detectee { background:rgba(249,115,22,.15);color:#ea580c; }
-        .cc-stat-confirmee { background:rgba(59,130,246,.15);color:#2563eb; }
-        .cc-stat-convertie { background:rgba(34,197,94,.15);color:#16a34a; }
+        .cc-stat-detectee { background:rgba(249,115,22,.15);color:#de3e1e; }
+        .cc-stat-confirmee { background:rgba(59,130,246,.15);color:#4a43c2; }
+        .cc-stat-convertie { background:rgba(34,197,94,.15);color:#02b3a9; }
         .cc-stat-annulee { background:rgba(107,114,128,.15);color:#6b7280; }
 
         .cc-zone-cards { display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:20px; }
@@ -103,14 +103,14 @@ const ControleConduitePage = {
         .cc-zone-actions { display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-color); }
 
         .cc-type-badge { display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700; }
-        .cc-type-ville { background:rgba(59,130,246,.12);color:#2563eb; }
+        .cc-type-ville { background:rgba(59,130,246,.12);color:#4a43c2; }
         .cc-type-autoroute { background:rgba(245,81,46,.12);color:#F5512E; }
         .cc-type-zone_scolaire { background:rgba(234,179,8,.12);color:#ca8a04; }
-        .cc-type-zone_travaux { background:rgba(249,115,22,.12);color:#ea580c; }
+        .cc-type-zone_travaux { background:rgba(249,115,22,.12);color:#de3e1e; }
         .cc-type-personnalisee { background:rgba(107,114,128,.12);color:#6b7280; }
 
         .cc-toggle { position:relative;width:40px;height:22px;border-radius:11px;background:var(--border-color);cursor:pointer;transition:background .2s;border:none; }
-        .cc-toggle.active { background:#22c55e; }
+        .cc-toggle.active { background:#13deb9; }
         .cc-toggle::after { content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2); }
         .cc-toggle.active::after { transform:translateX(18px); }
 
@@ -266,10 +266,10 @@ const ControleConduitePage = {
         </div>
         <div class="cc-kpi">
           <div class="cc-kpi-top">
-            <div class="cc-kpi-icon" style="background:rgba(249,115,22,.1);color:#f97316;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
+            <div class="cc-kpi-icon" style="background:rgba(249,115,22,.1);color:#f5512e;"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
             <div class="cc-kpi-label">Montant amendes du mois</div>
           </div>
-          <div class="cc-kpi-val" style="color:#f97316;">${Utils.formatCurrency(totalAmende)}</div>
+          <div class="cc-kpi-val" style="color:#f5512e;">${Utils.formatCurrency(totalAmende)}</div>
         </div>
         <div class="cc-kpi">
           <div class="cc-kpi-top">
@@ -281,7 +281,7 @@ const ControleConduitePage = {
         </div>
         <div class="cc-kpi">
           <div class="cc-kpi-top">
-            <div class="cc-kpi-icon" style="background:rgba(234,179,8,.1);color:#eab308;"><iconify-icon icon="solar:tag-bold-duotone"></iconify-icon></div>
+            <div class="cc-kpi-icon" style="background:rgba(234,179,8,.1);color:#e8930c;"><iconify-icon icon="solar:tag-bold-duotone"></iconify-icon></div>
             <div class="cc-kpi-label">Cat\u00e9gorie la plus fr\u00e9quente</div>
           </div>
           <div class="cc-kpi-val" style="font-size:1rem;">${topCat}</div>
@@ -361,7 +361,7 @@ const ControleConduitePage = {
         { label: 'Zone / Lieu', key: 'zoneNom', render: (i) => {
           let html = '<div style="font-weight:600;">' + (i.zoneNom || '-') + '</div>';
           if (i.position && i.position.lat && i.position.lng) {
-            html += '<a href="https://www.google.com/maps?q=' + i.position.lat + ',' + i.position.lng + '" target="_blank" style="font-size:10px;color:#3b82f6;text-decoration:none;" onclick="event.stopPropagation();">'
+            html += '<a href="https://www.google.com/maps?q=' + i.position.lat + ',' + i.position.lng + '" target="_blank" style="font-size:10px;color:#635bff;text-decoration:none;" onclick="event.stopPropagation();">'
               + '<iconify-icon icon="solar:map-point-bold" style="font-size:10px;"></iconify-icon> '
               + parseFloat(i.position.lat).toFixed(4) + ', ' + parseFloat(i.position.lng).toFixed(4) + '</a>';
           }
@@ -381,11 +381,11 @@ const ControleConduitePage = {
         { label: 'Actions', key: 'actions', render: (i) => {
           let btns = '';
           if (i.statut === 'detectee') {
-            btns += '<button class="btn-icon" title="Confirmer" style="color:#2563eb;" onclick="ControleConduitePage._confirmer(\'' + i.id + '\')"><iconify-icon icon="solar:check-circle-bold"></iconify-icon></button>';
-            btns += '<button class="btn-icon" title="Convertir en contravention" style="color:#16a34a;" onclick="ControleConduitePage._convertir(\'' + i.id + '\')"><iconify-icon icon="solar:document-add-bold"></iconify-icon></button>';
+            btns += '<button class="btn-icon" title="Confirmer" style="color:#4a43c2;" onclick="ControleConduitePage._confirmer(\'' + i.id + '\')"><iconify-icon icon="solar:check-circle-bold"></iconify-icon></button>';
+            btns += '<button class="btn-icon" title="Convertir en contravention" style="color:#02b3a9;" onclick="ControleConduitePage._convertir(\'' + i.id + '\')"><iconify-icon icon="solar:document-add-bold"></iconify-icon></button>';
             btns += '<button class="btn-icon" title="Annuler" style="color:#6b7280;" onclick="ControleConduitePage._annuler(\'' + i.id + '\')"><iconify-icon icon="solar:close-circle-bold"></iconify-icon></button>';
           } else if (i.statut === 'confirmee') {
-            btns += '<button class="btn-icon" title="Convertir en contravention" style="color:#16a34a;" onclick="ControleConduitePage._convertir(\'' + i.id + '\')"><iconify-icon icon="solar:document-add-bold"></iconify-icon></button>';
+            btns += '<button class="btn-icon" title="Convertir en contravention" style="color:#02b3a9;" onclick="ControleConduitePage._convertir(\'' + i.id + '\')"><iconify-icon icon="solar:document-add-bold"></iconify-icon></button>';
             btns += '<button class="btn-icon" title="Annuler" style="color:#6b7280;" onclick="ControleConduitePage._annuler(\'' + i.id + '\')"><iconify-icon icon="solar:close-circle-bold"></iconify-icon></button>';
           }
           if (i.statut === 'convertie' && i.contraventionId) {
@@ -517,10 +517,10 @@ const ControleConduitePage = {
             <span style="width:10px;height:10px;border-radius:50%;background:#6b7280;display:inline-block;"></span> Radar inactif
           </div>
           <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);">
-            <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span> Nouveau (cliquez sur la carte)
+            <span style="width:10px;height:10px;border-radius:50%;background:#ffae1f;display:inline-block;"></span> Nouveau (cliquez sur la carte)
           </div>
         </div>
-        <button class="btn btn-sm" id="cc-map-add-mode" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;">
+        <button class="btn btn-sm" id="cc-map-add-mode" style="background:linear-gradient(135deg,#ffae1f,#e8930c);color:#fff;border:none;font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;">
           <iconify-icon icon="solar:map-point-add-bold"></iconify-icon> Placer un radar
         </button>
       </div>
@@ -589,14 +589,14 @@ const ControleConduitePage = {
           }).addTo(radarGroup).bindPopup(
             '<div style="font-family:system-ui;padding:6px 2px;min-width:180px;">' +
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
-            '<div style="width:32px;height:32px;border-radius:8px;background:' + (isActive ? 'linear-gradient(135deg,#7c3aed,#a78bfa)' : '#6b7280') + ';display:flex;align-items:center;justify-content:center;">' +
+            '<div style="width:32px;height:32px;border-radius:8px;background:' + (isActive ? 'linear-gradient(135deg,#4a43c2,#8aa8ff)' : '#6b7280') + ';display:flex;align-items:center;justify-content:center;">' +
             '<span style="font-size:16px;">📡</span></div>' +
             '<div><div style="font-weight:700;font-size:13px;">' + safeName + '</div>' +
             '<div style="font-size:11px;color:#9ca3af;">' + safeType + '</div></div></div>' +
             '<div style="display:flex;gap:12px;padding:6px 0;border-top:1px solid rgba(0,0,0,.08);">' +
-            '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:' + (isActive ? '#7c3aed' : '#6b7280') + ';">' + (z.vitesseMax || 0) + '</div><div style="font-size:10px;color:#9ca3af;">km/h max</div></div>' +
-            '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:' + (isActive ? '#22c55e' : '#ef4444') + ';">' + (isActive ? '●' : '○') + '</div><div style="font-size:10px;color:#9ca3af;">' + (isActive ? 'Actif' : 'Off') + '</div></div>' +
-            '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:#f59e0b;">' + (rayon) + '</div><div style="font-size:10px;color:#9ca3af;">m rayon</div></div>' +
+            '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:' + (isActive ? '#4a43c2' : '#6b7280') + ';">' + (z.vitesseMax || 0) + '</div><div style="font-size:10px;color:#9ca3af;">km/h max</div></div>' +
+            '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:' + (isActive ? '#13deb9' : '#ef4444') + ';">' + (isActive ? '●' : '○') + '</div><div style="font-size:10px;color:#9ca3af;">' + (isActive ? 'Actif' : 'Off') + '</div></div>' +
+            '<div style="text-align:center;flex:1;"><div style="font-size:18px;font-weight:700;color:#ffae1f;">' + (rayon) + '</div><div style="font-size:10px;color:#9ca3af;">m rayon</div></div>' +
             '</div></div>'
           );
 
@@ -633,7 +633,7 @@ const ControleConduitePage = {
             hint.style.display = 'block';
             this._map.getContainer().style.cursor = 'crosshair';
           } else {
-            addBtn.style.background = 'linear-gradient(135deg,#f59e0b,#d97706)';
+            addBtn.style.background = 'linear-gradient(135deg,#ffae1f,#e8930c)';
             addBtn.innerHTML = '<iconify-icon icon="solar:map-point-add-bold"></iconify-icon> Placer un radar';
             hint.style.display = 'none';
             this._map.getContainer().style.cursor = '';
@@ -651,8 +651,8 @@ const ControleConduitePage = {
         // Add pulsing marker at clicked location
         this._tempMarker = L.circleMarker([e.latlng.lat, e.latlng.lng], {
           radius: 8,
-          color: '#f59e0b',
-          fillColor: '#f59e0b',
+          color: '#ffae1f',
+          fillColor: '#ffae1f',
           fillOpacity: 0.6,
           weight: 3
         }).addTo(this._map);
@@ -662,7 +662,7 @@ const ControleConduitePage = {
         const addBtn2 = document.getElementById('cc-map-add-mode');
         const hint2 = document.getElementById('cc-map-hint');
         if (addBtn2) {
-          addBtn2.style.background = 'linear-gradient(135deg,#f59e0b,#d97706)';
+          addBtn2.style.background = 'linear-gradient(135deg,#ffae1f,#e8930c)';
           addBtn2.innerHTML = '<iconify-icon icon="solar:map-point-add-bold"></iconify-icon> Placer un radar';
         }
         if (hint2) hint2.style.display = 'none';
@@ -784,11 +784,11 @@ const ControleConduitePage = {
 
     content.innerHTML = '<div class="cc-stats-grid">'
       + '<div class="cc-chart-card"><div class="cc-chart-title"><iconify-icon icon="solar:chart-bold-duotone" style="color:#F5512E;"></iconify-icon> Infractions par cat\u00e9gorie (30 jours)</div><canvas id="cc-chart-categories" height="250"></canvas></div>'
-      + '<div class="cc-chart-card"><div class="cc-chart-title"><iconify-icon icon="solar:graph-up-bold-duotone" style="color:#f97316;"></iconify-icon> Infractions par jour (30 jours)</div><canvas id="cc-chart-daily" height="250"></canvas></div>'
+      + '<div class="cc-chart-card"><div class="cc-chart-title"><iconify-icon icon="solar:graph-up-bold-duotone" style="color:#f5512e;"></iconify-icon> Infractions par jour (30 jours)</div><canvas id="cc-chart-daily" height="250"></canvas></div>'
       + '</div>'
       + '<div class="cc-stats-grid">'
       + '<div class="cc-chart-card"><div class="cc-chart-title"><iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="color:#ef4444;"></iconify-icon> Top 5 chauffeurs (30 jours)</div><ul class="cc-top-list" id="cc-top-chauffeurs"></ul></div>'
-      + '<div class="cc-chart-card"><div class="cc-chart-title"><iconify-icon icon="solar:map-point-bold-duotone" style="color:#22c55e;"></iconify-icon> Top 5 zones (30 jours)</div><ul class="cc-top-list" id="cc-top-zones"></ul></div>'
+      + '<div class="cc-chart-card"><div class="cc-chart-title"><iconify-icon icon="solar:map-point-bold-duotone" style="color:#13deb9;"></iconify-icon> Top 5 zones (30 jours)</div><ul class="cc-top-list" id="cc-top-zones"></ul></div>'
       + '</div>';
 
     this._renderCategoryChart(recent);
@@ -814,7 +814,7 @@ const ControleConduitePage = {
           label: 'Infractions',
           data: [catCounts.cat1, catCounts.cat2, catCounts.cat3, catCounts.cat4],
           backgroundColor: ['rgba(234,179,8,.6)', 'rgba(249,115,22,.6)', 'rgba(239,68,68,.6)', 'rgba(127,29,29,.6)'],
-          borderColor: ['#eab308', '#f97316', '#ef4444', '#7f1d1d'],
+          borderColor: ['#e8930c', '#f5512e', '#ef4444', '#7f1d1d'],
           borderWidth: 1,
           borderRadius: 8
         }]
@@ -853,7 +853,7 @@ const ControleConduitePage = {
         datasets: [{
           label: 'Infractions',
           data: counts,
-          borderColor: '#f97316',
+          borderColor: '#f5512e',
           backgroundColor: 'rgba(249,115,22,.1)',
           fill: true,
           tension: 0.3,
@@ -975,17 +975,17 @@ const ControleConduitePage = {
         </div>
         <div class="cc-kpi">
           <div class="cc-kpi-top">
-            <div class="cc-kpi-icon" style="background:rgba(16,185,129,.1);color:#10b981;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
+            <div class="cc-kpi-icon" style="background:rgba(16,185,129,.1);color:#13deb9;"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div>
             <div class="cc-kpi-label">Pay\u00e9es (mois)</div>
           </div>
-          <div class="cc-kpi-val" style="color:#10b981;">${data.nbPayees}</div>
+          <div class="cc-kpi-val" style="color:#13deb9;">${data.nbPayees}</div>
         </div>
         <div class="cc-kpi">
           <div class="cc-kpi-top">
-            <div class="cc-kpi-icon" style="background:rgba(245,158,11,.1);color:#f59e0b;"><iconify-icon icon="solar:chat-round-dots-bold-duotone"></iconify-icon></div>
+            <div class="cc-kpi-icon" style="background:rgba(245,158,11,.1);color:#ffae1f;"><iconify-icon icon="solar:chat-round-dots-bold-duotone"></iconify-icon></div>
             <div class="cc-kpi-label">Contest\u00e9es</div>
           </div>
-          <div class="cc-kpi-val" style="color:#f59e0b;">${data.nbContestees}</div>
+          <div class="cc-kpi-val" style="color:#ffae1f;">${data.nbContestees}</div>
         </div>
       </div>
 
@@ -1055,10 +1055,10 @@ const ControleConduitePage = {
             return '<div style="position:relative;display:inline-block;">'
               + '<button class="btn-icon" onclick="event.stopPropagation();ControleConduitePage._toggleActionMenu(\'' + v.id + '\')" style="font-size:18px;"><iconify-icon icon="solar:menu-dots-bold"></iconify-icon></button>'
               + '<div id="action-menu-' + v.id + '" style="display:none;position:absolute;right:0;top:100%;background:var(--bg-primary);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:100;min-width:160px;padding:4px 0;">'
-              + '<button onclick="event.stopPropagation();ControleConduitePage._editContravention(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:var(--text-primary);font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:pen-bold" style="color:#3b82f6;"></iconify-icon> Modifier</button>'
+              + '<button onclick="event.stopPropagation();ControleConduitePage._editContravention(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:var(--text-primary);font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:pen-bold" style="color:#635bff;"></iconify-icon> Modifier</button>'
               + (v.statut === 'impayee' || v.statut === 'contestee' ? ''
-                + '<button onclick="event.stopPropagation();ControleConduitePage._markContraventionPaid(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:var(--text-primary);font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:check-circle-bold" style="color:#22c55e;"></iconify-icon> Marquer payee</button>'
-                + '<button onclick="event.stopPropagation();ControleConduitePage._payContraventionWave(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:var(--text-primary);font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#0D6EFD;"></iconify-icon> Payer via Wave</button>'
+                + '<button onclick="event.stopPropagation();ControleConduitePage._markContraventionPaid(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:var(--text-primary);font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:check-circle-bold" style="color:#13deb9;"></iconify-icon> Marquer payee</button>'
+                + '<button onclick="event.stopPropagation();ControleConduitePage._payContraventionWave(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:var(--text-primary);font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#635bff;"></iconify-icon> Payer via Wave</button>'
               : '')
               + '<button onclick="event.stopPropagation();ControleConduitePage._deleteContravention(\'' + v.id + '\')" style="display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;color:#ef4444;font-size:13px;cursor:pointer;text-align:left;"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon> Supprimer</button>'
               + '</div></div>';
@@ -1151,7 +1151,7 @@ const ControleConduitePage = {
   ],
 
   _contraLineHtml(idx) {
-    const colors = ['#ef4444', '#f97316', '#8b5cf6', '#3b82f6', '#06b6d4', '#22c55e'];
+    const colors = ['#ef4444', '#f5512e', '#635bff', '#635bff', '#0891b2', '#13deb9'];
     const c = colors[idx % colors.length];
     return '<div class="contra-line" data-idx="' + idx + '" style="border-left:3px solid ' + c + ';background:linear-gradient(135deg,' + c + '08,transparent);border-radius:0 14px 14px 0;padding:16px 16px 16px 20px;margin-bottom:12px;position:relative;transition:all .2s;">'
       + (idx > 0 ? '<button type="button" onclick="this.closest(\'.contra-line\').remove();ControleConduitePage._updateContraLineCount()" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;" onmouseenter="this.style.background=\'#ef4444\';this.style.color=\'#fff\'" onmouseleave="this.style.background=\'rgba(239,68,68,.1)\';this.style.color=\'#ef4444\'"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>' : '')
@@ -1184,7 +1184,7 @@ const ControleConduitePage = {
     Modal.form(
       '<iconify-icon icon="solar:document-text-bold-duotone" style="color:#ef4444;"></iconify-icon> D\u00e9claration de contraventions',
       '<form id="cc-form-contravention" class="modal-form" style="padding:0;">'
-        + '<div style="background:linear-gradient(135deg,#ef4444,#f97316);border-radius:14px;padding:20px;margin-bottom:20px;color:#fff;">'
+        + '<div style="background:linear-gradient(135deg,#ef4444,#f5512e);border-radius:14px;padding:20px;margin-bottom:20px;color:#fff;">'
         + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">'
         + '<iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size:24px;"></iconify-icon>'
         + '<span style="font-size:16px;font-weight:800;">Nouvelle d\u00e9claration</span></div>'
@@ -1197,23 +1197,23 @@ const ControleConduitePage = {
         + chauffeurs.map(c => '<option value="' + c.id + '" data-vehicule="' + (c.vehiculeAssigne || '') + '" ' + (c.id === preselectedChauffeurId ? 'selected' : '') + '>' + c.prenom + ' ' + c.nom + '</option>').join('')
         + '</select></div>'
         + '<div><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
-        + '<iconify-icon icon="solar:bus-bold-duotone" style="color:#14b8a6;"></iconify-icon> V\u00e9hicule</label>'
+        + '<iconify-icon icon="solar:bus-bold-duotone" style="color:#13deb9;"></iconify-icon> V\u00e9hicule</label>'
         + '<select name="vehiculeId" id="cc-contra-vehicule-select" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;">'
         + '<option value="">Aucun</option>'
         + (Store.get('vehicules') || []).map(v => '<option value="' + v.id + '">' + v.immatriculation + (v.marque ? ' \u2014 ' + v.marque + ' ' + (v.modele || '') : '') + '</option>').join('')
         + '</select></div></div>'
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">'
         + '<div><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
-        + '<iconify-icon icon="solar:calendar-bold-duotone" style="color:#f97316;"></iconify-icon> Date *</label>'
+        + '<iconify-icon icon="solar:calendar-bold-duotone" style="color:#f5512e;"></iconify-icon> Date *</label>'
         + '<input type="date" name="date" required value="' + new Date().toISOString().split('T')[0] + '" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;box-sizing:border-box;"></div>'
         + '<div><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
-        + '<iconify-icon icon="solar:clock-circle-bold-duotone" style="color:#3b82f6;"></iconify-icon> Heure</label>'
+        + '<iconify-icon icon="solar:clock-circle-bold-duotone" style="color:#635bff;"></iconify-icon> Heure</label>'
         + '<input type="time" name="heure" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;box-sizing:border-box;"></div></div>'
         + '<div style="margin-bottom:16px;"><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
-        + '<iconify-icon icon="solar:map-point-bold-duotone" style="color:#22c55e;"></iconify-icon> Lieu</label>'
+        + '<iconify-icon icon="solar:map-point-bold-duotone" style="color:#13deb9;"></iconify-icon> Lieu</label>'
         + '<input type="text" name="lieu" placeholder="ex: Boulevard Latrille, Cocody" style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:500;box-sizing:border-box;"></div>'
         + '<div style="margin-bottom:20px;"><label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
-        + '<iconify-icon icon="solar:chat-round-dots-bold-duotone" style="color:#8b5cf6;"></iconify-icon> Note interne (optionnel)</label>'
+        + '<iconify-icon icon="solar:chat-round-dots-bold-duotone" style="color:#635bff;"></iconify-icon> Note interne (optionnel)</label>'
         + '<textarea name="commentaire" rows="2" placeholder="Commentaire pour l\'\u00e9quipe..." style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);resize:vertical;box-sizing:border-box;"></textarea></div>'
         + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--border-color);">'
         + '<div style="display:flex;align-items:center;gap:8px;">'
@@ -1348,18 +1348,18 @@ const ControleConduitePage = {
     };
     const sectionTitleStyle = 'display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;';
 
-    const statutColor = c.statut === 'payee' ? '#10b981' : c.statut === 'contestee' ? '#f59e0b' : '#ef4444';
+    const statutColor = c.statut === 'payee' ? '#13deb9' : c.statut === 'contestee' ? '#ffae1f' : '#ef4444';
     const statutLabel = c.statut === 'payee' ? 'Pay\u00e9e' : c.statut === 'contestee' ? 'Contest\u00e9e' : 'Impay\u00e9e';
 
     Modal.form(
-      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#3b82f6;font-size:20px;"></iconify-icon> Modifier contravention',
+      '<iconify-icon icon="solar:pen-bold-duotone" style="color:#635bff;font-size:20px;"></iconify-icon> Modifier contravention',
       '<form id="cc-form-contravention-edit">'
         + '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;background:' + statutColor + '12;border:1px solid ' + statutColor + '30;margin-bottom:4px;">'
         + '<div style="display:flex;align-items:center;gap:8px;"><div style="width:8px;height:8px;border-radius:50%;background:' + statutColor + ';"></div>'
         + '<span style="font-size:13px;font-weight:600;color:' + statutColor + ';">' + statutLabel + '</span></div>'
         + '<span style="font-size:18px;font-weight:700;color:var(--text-primary);">' + (Utils.formatMoney ? Utils.formatMoney(c.montant || 0) : (c.montant || 0).toLocaleString()) + ' FCFA</span></div>'
         + '<div style="' + sectionBase + sectionColors.assignation + '">'
-        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:user-bold-duotone" style="color:#3b82f6;font-size:15px;"></iconify-icon> Assignation</div>'
+        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:user-bold-duotone" style="color:#635bff;font-size:15px;"></iconify-icon> Assignation</div>'
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
         + '<div><label style="' + labelStyle + '"><iconify-icon icon="solar:user-bold" style="font-size:13px;"></iconify-icon> Chauffeur <span style="color:#ef4444;">*</span></label>'
         + '<select name="chauffeurId" style="' + inputStyle + '">'
@@ -1369,7 +1369,7 @@ const ControleConduitePage = {
         + vehicules.map(v => '<option value="' + v.id + '" ' + (v.id === c.vehiculeId ? 'selected' : '') + '>' + (v.immatriculation || '') + ' ' + (v.marque || '') + ' ' + (v.modele || '') + '</option>').join('')
         + '</select></div></div></div>'
         + '<div style="' + sectionBase + sectionColors.infraction + '">'
-        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#f59e0b;font-size:15px;"></iconify-icon> Infraction</div>'
+        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#ffae1f;font-size:15px;"></iconify-icon> Infraction</div>'
         + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">'
         + '<div><label style="' + labelStyle + '">Date <span style="color:#ef4444;">*</span></label>'
         + '<input type="date" name="date" value="' + (c.date || '') + '" style="' + inputStyle + '"></div>'
@@ -1381,7 +1381,7 @@ const ControleConduitePage = {
         + '<div style="margin-top:12px;"><label style="' + labelStyle + '"><iconify-icon icon="solar:map-point-bold" style="font-size:13px;"></iconify-icon> Lieu</label>'
         + '<input type="text" name="lieu" value="' + (c.lieu || '') + '" placeholder="Lieu de l\'infraction" style="' + inputStyle + '"></div></div>'
         + '<div style="' + sectionBase + sectionColors.financier + '">'
-        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#10b981;font-size:15px;"></iconify-icon> Financier</div>'
+        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#13deb9;font-size:15px;"></iconify-icon> Financier</div>'
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
         + '<div><label style="' + labelStyle + '">Montant (FCFA) <span style="color:#ef4444;">*</span></label>'
         + '<input type="number" name="montant" value="' + (c.montant || 0) + '" min="1" style="' + inputStyle + '"></div>'
@@ -1392,14 +1392,14 @@ const ControleConduitePage = {
         + '<option value="contestee" ' + (c.statut === 'contestee' ? 'selected' : '') + '>Contest\u00e9e</option>'
         + '</select></div></div></div>'
         + '<div style="' + sectionBase + sectionColors.notes + '">'
-        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:document-text-bold-duotone" style="color:#8b5cf6;font-size:15px;"></iconify-icon> Notes</div>'
+        + '<div style="' + sectionTitleStyle + '"><iconify-icon icon="solar:document-text-bold-duotone" style="color:#635bff;font-size:15px;"></iconify-icon> Notes</div>'
         + '<div><label style="' + labelStyle + '">Description</label>'
         + '<textarea name="description" rows="2" placeholder="D\u00e9tails de la contravention..." style="' + inputStyle + 'resize:vertical;">' + (c.description || '') + '</textarea></div>'
         + '<div style="margin-top:12px;"><label style="' + labelStyle + '">Commentaire admin</label>'
         + '<textarea name="commentaire" rows="2" placeholder="Note interne..." style="' + inputStyle + 'resize:vertical;">' + (c.commentaire || '') + '</textarea></div></div>'
         + (c.motifContestation ? '<div style="margin-top:14px;padding:12px 14px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:12px;">'
           + '<div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;">'
-          + '<iconify-icon icon="solar:chat-round-warning-bold-duotone" style="font-size:15px;color:#f59e0b;"></iconify-icon> Contestation chauffeur</div>'
+          + '<iconify-icon icon="solar:chat-round-warning-bold-duotone" style="font-size:15px;color:#ffae1f;"></iconify-icon> Contestation chauffeur</div>'
           + '<div style="font-size:13px;color:#92400e;line-height:1.5;">' + c.motifContestation + '</div></div>' : '')
         + '<div class="statut-indicator" style="display:none;"></div>'
         + '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;">'
@@ -1565,7 +1565,7 @@ const ControleConduitePage = {
               <input type="number" id="cfg-poids-regularite" value="${cfg.poidsRegularite}" min="0" max="100" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:var(--radius-md);background:var(--input-bg);color:var(--text-primary);font-size:16px;font-weight:700;text-align:center;">
             </div>
           </div>
-          <div id="cfg-poids-total" style="text-align:right;margin-top:8px;font-size:13px;font-weight:600;color:#22c55e;">Total : 100%</div>
+          <div id="cfg-poids-total" style="text-align:right;margin-top:8px;font-size:13px;font-weight:600;color:#13deb9;">Total : 100%</div>
         </div>
 
         <!-- Penalites par categorie -->
@@ -1580,8 +1580,8 @@ const ControleConduitePage = {
             <thead>
               <tr style="border-bottom:2px solid var(--border-color);">
                 <th style="text-align:left;padding:8px 12px;font-size:13px;color:var(--text-muted);font-weight:600;">Cat\u00e9gorie</th>
-                <th style="text-align:center;padding:8px 12px;font-size:13px;color:#f59e0b;font-weight:600;">Faible</th>
-                <th style="text-align:center;padding:8px 12px;font-size:13px;color:#f97316;font-weight:600;">Mod\u00e9r\u00e9</th>
+                <th style="text-align:center;padding:8px 12px;font-size:13px;color:#ffae1f;font-weight:600;">Faible</th>
+                <th style="text-align:center;padding:8px 12px;font-size:13px;color:#f5512e;font-weight:600;">Mod\u00e9r\u00e9</th>
                 <th style="text-align:center;padding:8px 12px;font-size:13px;color:#ef4444;font-weight:600;">S\u00e9v\u00e8re</th>
               </tr>
             </thead>
@@ -1617,7 +1617,7 @@ const ControleConduitePage = {
         <!-- Moyenne mobile -->
         <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-            <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:22px;color:#22c55e;"></iconify-icon>
+            <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:22px;color:#13deb9;"></iconify-icon>
             <div style="font-size:18px;font-weight:700;color:var(--text-primary);">Moyenne mobile</div>
           </div>
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Comment le score du jour impacte le score global du chauffeur (total doit faire 100%)</div>
@@ -1650,7 +1650,7 @@ const ControleConduitePage = {
       if (inp) inp.addEventListener('input', () => {
         const total = poidsInputs.reduce((s, i) => s + (parseInt(i.value) || 0), 0);
         totalDiv.textContent = 'Total : ' + total + '%';
-        totalDiv.style.color = total === 100 ? '#22c55e' : '#ef4444';
+        totalDiv.style.color = total === 100 ? '#13deb9' : '#ef4444';
       });
     });
 

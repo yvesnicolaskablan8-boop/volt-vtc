@@ -1000,7 +1000,7 @@ const AlertesPage = {
     const attention = alerts.filter(a => a.niveau === 'attention').length;
 
     const cur = this._currentFilter || 'all';
-    const totalCol = alerts.length === 0 ? '#10b981' : '#17181A';
+    const totalCol = alerts.length === 0 ? '#13deb9' : '#17181A';
     const card = (filt, val, valCol, lbl, pillTxt, pillIc, icon, cCol) => `
       <div class="al-kpi" onclick="AlertesPage._filterBy('${filt}')" style="${cur === filt ? `box-shadow:0 0 0 2px ${cCol}, var(--shadow-card);` : ''}">
         <div class="al-kpi-top">
@@ -1012,9 +1012,9 @@ const AlertesPage = {
       </div>`;
     const html =
       card('critique', critiques, '#EF4444', 'Alertes critiques', 'Action immédiate', 'solar:fire-bold', 'solar:danger-circle-bold-duotone', '#EF4444') +
-      card('urgent', urgentes, '#F59E0B', 'Alertes urgentes', 'Cette semaine', 'solar:clock-circle-bold', 'solar:danger-triangle-bold-duotone', '#F59E0B') +
+      card('urgent', urgentes, '#ffae1f', 'Alertes urgentes', 'Cette semaine', 'solar:clock-circle-bold', 'solar:danger-triangle-bold-duotone', '#ffae1f') +
       card('attention', attention, '#0891b2', "Points d'attention", 'À surveiller', 'solar:eye-bold', 'solar:info-circle-bold-duotone', '#0891b2') +
-      card('all', alerts.length, totalCol, 'Total alertes', alerts.length === 0 ? 'Tout est en ordre' : 'Vue complète', alerts.length === 0 ? 'solar:check-circle-bold' : 'solar:list-bold', 'solar:bell-bing-bold-duotone', alerts.length === 0 ? '#10b981' : '#F5512E');
+      card('all', alerts.length, totalCol, 'Total alertes', alerts.length === 0 ? 'Tout est en ordre' : 'Vue complète', alerts.length === 0 ? 'solar:check-circle-bold' : 'solar:list-bold', 'solar:bell-bing-bold-duotone', alerts.length === 0 ? '#13deb9' : '#F5512E');
     const el = document.getElementById('alerts-kpis');
     if (el) { el.replaceChildren(); el.insertAdjacentHTML('beforeend', html); }
   },
@@ -1097,8 +1097,8 @@ const AlertesPage = {
     container.innerHTML = filtered.map(alert => {
       const niveauConfig = {
         critique: { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.3)', icon: 'solar:danger-circle-bold-duotone', label: 'CRITIQUE' },
-        urgent: { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.3)', icon: 'solar:danger-triangle-bold-duotone', label: 'URGENT' },
-        attention: { color: '#22d3ee', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.3)', icon: 'solar:info-circle-bold-duotone', label: 'ATTENTION' }
+        urgent: { color: '#ffae1f', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.3)', icon: 'solar:danger-triangle-bold-duotone', label: 'URGENT' },
+        attention: { color: '#0891b2', bg: 'rgba(34,211,238,0.08)', border: 'rgba(34,211,238,0.3)', icon: 'solar:info-circle-bold-duotone', label: 'ATTENTION' }
       };
       const cfg = niveauConfig[alert.niveau] || niveauConfig.attention;
 
@@ -1147,7 +1147,7 @@ const AlertesPage = {
     const catCounts = {};
     alerts.forEach(a => { catCounts[a.categorie] = (catCounts[a.categorie] || 0) + 1; });
     const catLabels = { documents: 'Documents', vehicules: 'Véhicules', versements: 'Versements', conduite: 'Conduite', finance: 'Finance', yango: 'Yango' };
-    const catColors = { documents: '#F5512E', vehicules: '#f59e0b', versements: '#ef4444', conduite: '#8b5cf6', finance: '#22c55e', yango: '#FC4C02' };
+    const catColors = { documents: '#F5512E', vehicules: '#ffae1f', versements: '#ef4444', conduite: '#635bff', finance: '#13deb9', yango: '#FC4C02' };
     const catEntries = Object.entries(catCounts);
 
     const ctx1 = document.getElementById('chart-alerts-category');
@@ -1197,8 +1197,8 @@ const AlertesPage = {
           labels: ['Critiques', 'Urgentes', 'Attention'],
           datasets: [{
             data: [critiques, urgentes, attention],
-            backgroundColor: ['#ef4444', '#f59e0b', '#22d3ee'],
-            hoverBackgroundColor: ['#dc2626', '#d97706', '#06b6d4'],
+            backgroundColor: ['#ef4444', '#ffae1f', '#0891b2'],
+            hoverBackgroundColor: ['#dc2626', '#e8930c', '#0891b2'],
             borderRadius: 6
           }]
         },

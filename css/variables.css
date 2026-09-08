@@ -94,7 +94,7 @@
 
   /* Sémantique (vert / rouge / jaune-vert) */
   --success: #34D399;
-  --success-dim: #0f9d6b;
+  --success-dim: #0a9d78;
   --danger: #F5512E;
   --danger-dim: #DE3E1E;
   --warning: #F5C542;
@@ -117,21 +117,21 @@
 /* ========== SHARED VARIABLES (both themes) ========== */
 :root {
   /* Accent colors - "Pilote" brand (same in both themes) */
-  --pilote-blue: #5D87FF;
-  --pilote-blue-dim: #4570EA;
+  --pilote-blue: #8aa8ff;
+  --pilote-blue-dim: #635bff;
   --pilote-blue-glow: rgba(99, 102, 241, 0.12);
-  --pilote-yellow: #facc15;
-  --pilote-yellow-dim: #eab308;
-  --pilote-cyan: #8b5cf6;
+  --pilote-yellow: #ffae1f;
+  --pilote-yellow-dim: #e8930c;
+  --pilote-cyan: #635bff;
 
   /* Semantic colors (same in both themes) */
-  --success: #22c55e;
-  --success-dim: #16a34a;
+  --success: #13deb9;
+  --success-dim: #02b3a9;
   --danger: #ef4444;
   --danger-dim: #dc2626;
-  --warning: #f59e0b;
-  --warning-dim: #d97706;
-  --info: #3b82f6;
+  --warning: #ffae1f;
+  --warning-dim: #e8930c;
+  --info: #635bff;
 
   /* Spacing scale */
   --space-xs: 4px;

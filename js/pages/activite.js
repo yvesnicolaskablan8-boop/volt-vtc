@@ -154,7 +154,7 @@ const ActivitePage = {
 
     container.innerHTML = `
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(16,185,129,0.15);color:#10b981;">
+        <div class="kpi-icon" style="background:rgba(16,185,129,0.15);color:#13deb9;">
           <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:24px;"></iconify-icon>
         </div>
         <div class="kpi-info">
@@ -163,7 +163,7 @@ const ActivitePage = {
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;">
+        <div class="kpi-icon" style="background:rgba(59,130,246,0.15);color:#635bff;">
           <iconify-icon icon="solar:graph-up-bold-duotone" style="font-size:24px;"></iconify-icon>
         </div>
         <div class="kpi-info">
@@ -172,7 +172,7 @@ const ActivitePage = {
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;">
+        <div class="kpi-icon" style="background:rgba(245,158,11,0.15);color:#ffae1f;">
           <iconify-icon icon="solar:user-bold-duotone" style="font-size:24px;"></iconify-icon>
         </div>
         <div class="kpi-info">
@@ -181,7 +181,7 @@ const ActivitePage = {
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(139,92,246,0.15);color:#8b5cf6;">
+        <div class="kpi-icon" style="background:rgba(139,92,246,0.15);color:#635bff;">
           <iconify-icon icon="solar:database-bold-duotone" style="font-size:24px;"></iconify-icon>
         </div>
         <div class="kpi-info">
@@ -257,10 +257,10 @@ const ActivitePage = {
 
   _actionBadge(action) {
     const map = {
-      create: { label: 'Creation', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
-      update: { label: 'Modification', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+      create: { label: 'Creation', color: '#13deb9', bg: 'rgba(16,185,129,0.15)' },
+      update: { label: 'Modification', color: '#635bff', bg: 'rgba(59,130,246,0.15)' },
       delete: { label: 'Suppression', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-      bulk_replace: { label: 'Remplacement', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' }
+      bulk_replace: { label: 'Remplacement', color: '#ffae1f', bg: 'rgba(245,158,11,0.15)' }
     };
     const info = map[action] || { label: action, color: '#6b7280', bg: 'rgba(107,114,128,0.15)' };
     return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600;background:${info.bg};color:${info.color};">${info.label}</span>`;
