@@ -85,16 +85,16 @@ const TachesPage = {
 
   _prioriteConfig: {
     urgente: { color: '#ef4444', bg: 'rgba(239,68,68,.12)', icon: 'solar:danger-bold-duotone', label: 'Urgente' },
-    haute:   { color: '#f5512e', bg: 'rgba(249,115,22,.12)', icon: 'solar:arrow-up-bold-duotone', label: 'Haute' },
-    normale: { color: '#635bff', bg: 'rgba(59,130,246,.12)', icon: 'solar:minus-circle-bold-duotone', label: 'Normale' },
-    basse:   { color: '#6b7280', bg: 'rgba(107,114,128,.12)', icon: 'solar:arrow-down-bold-duotone', label: 'Basse' }
+    haute:   { color: '#f5512e', bg: 'rgba(245,81,46,.12)', icon: 'solar:arrow-up-bold-duotone', label: 'Haute' },
+    normale: { color: '#635bff', bg: 'rgba(99,91,255,.12)', icon: 'solar:minus-circle-bold-duotone', label: 'Normale' },
+    basse:   { color: '#0891b2', bg: 'rgba(8,145,178,.12)', icon: 'solar:arrow-down-bold-duotone', label: 'Basse' }
   },
 
   _statutConfig: {
-    a_faire:  { color: '#f5512e', bg: 'rgba(249,115,22,.12)', label: 'A faire', icon: 'solar:clipboard-list-bold-duotone' },
-    en_cours: { color: '#635bff', bg: 'rgba(59,130,246,.12)', label: 'En cours', icon: 'solar:play-bold-duotone' },
-    terminee: { color: '#13deb9', bg: 'rgba(34,197,94,.12)', label: 'Terminée', icon: 'solar:check-circle-bold-duotone' },
-    annulee:  { color: '#6b7280', bg: 'rgba(107,114,128,.12)', label: 'Annulée', icon: 'solar:close-circle-bold-duotone' }
+    a_faire:  { color: '#f5512e', bg: 'rgba(245,81,46,.12)', label: 'A faire', icon: 'solar:clipboard-list-bold-duotone' },
+    en_cours: { color: '#635bff', bg: 'rgba(99,91,255,.12)', label: 'En cours', icon: 'solar:play-bold-duotone' },
+    terminee: { color: '#13deb9', bg: 'rgba(19,222,185,.14)', label: 'Terminée', icon: 'solar:check-circle-bold-duotone' },
+    annulee:  { color: '#fa896b', bg: 'rgba(250,137,107,.14)', label: 'Annulée', icon: 'solar:close-circle-bold-duotone' }
   },
 
   _typeLabels: {
@@ -109,7 +109,7 @@ const TachesPage = {
 
   _reunionTypeColors: {
     equipe: '#635bff', direction: '#635bff', operationnel: '#f5512e',
-    urgence: '#ef4444', autre: '#6b7280'
+    urgence: '#ef4444', autre: '#0891b2'
   },
 
   // ── Main Render ────────────────────────────────────────────────────────
@@ -439,7 +439,7 @@ const TachesPage = {
       { id: 'a_faire', label: 'À faire', color: '#f5512e', icon: 'solar:clipboard-list-bold-duotone' },
       { id: 'en_cours', label: 'En cours', color: '#635bff', icon: 'solar:play-bold-duotone' },
       { id: 'terminee', label: 'Terminée', color: '#13deb9', icon: 'solar:check-circle-bold-duotone' },
-      { id: 'annulee', label: 'Annulée', color: '#6b7280', icon: 'solar:close-circle-bold-duotone' }
+      { id: 'annulee', label: 'Annulée', color: '#fa896b', icon: 'solar:close-circle-bold-duotone' }
     ];
 
     return '<div class="kanban-board" id="kanban-board">'
