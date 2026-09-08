@@ -1529,6 +1529,8 @@ const DashboardPage = {
         .alb-chips{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
         .alb-chip{font-size:11.5px;font-weight:800;padding:6px 12px;border-radius:20px;white-space:nowrap;text-decoration:none;cursor:pointer;transition:transform .12s ease,filter .12s ease;}
         .alb-chip:hover{transform:translateY(-1px);filter:brightness(.94);}
+        .alb-chip-off{color:var(--text-muted)!important;background:var(--bg-tertiary)!important;cursor:default;opacity:.7;}
+        .alb-chip-off:hover{transform:none;filter:none;}
         .alb-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0;}
         @media(max-width:640px){ .alb-txt{font-size:13px;} .alb-chips{display:none;} }
       </style>
@@ -1983,8 +1985,11 @@ const DashboardPage = {
       att: ['#0891b2', 'rgba(8,145,178,.09)', 'solar:bell-bing-bold'],
       ok: ['#0f9d6b', 'rgba(52,211,153,.10)', 'solar:check-circle-bold'],
     }[level];
-    // Chaque chip ouvre la page Alertes PRÉ-FILTRÉE sur son niveau (traitement séparé).
-    const chip = (lbl, v, c, filt) => v > 0 ? `<a href="#/alertes" class="alb-chip" style="color:${c};background:${c}20;" onclick="event.stopPropagation();if(window.AlertesPage)AlertesPage._currentFilter='${filt}';">${v} ${lbl}</a>` : '';
+    // Les 3 niveaux sont TOUJOURS affichés ; ceux à 0 sont grisés et non cliquables.
+    // Ceux qui ont des alertes ouvrent la page Alertes PRÉ-FILTRÉE (traitement séparé).
+    const chip = (lbl, v, c, filt) => v > 0
+      ? `<a href="#/alertes" class="alb-chip" style="color:${c};background:${c}20;" onclick="event.stopPropagation();if(window.AlertesPage)AlertesPage._currentFilter='${filt}';">${v} ${lbl}</a>`
+      : `<span class="alb-chip alb-chip-off">0 ${lbl}</span>`;
     const msg = total > 0 ? `<b>${total}</b> alerte${total > 1 ? 's' : ''} à traiter` : 'Aucune alerte · tout est en ordre';
     return `<div class="alert-banner lvl-${level}" style="--alb:${conf[0]};background:${conf[1]};cursor:pointer;" onclick="if(window.AlertesPage)AlertesPage._currentFilter='all';location.hash='#/alertes';">
       <span class="alb-ic" style="background:${conf[0]}22;color:${conf[0]};"><iconify-icon icon="${conf[2]}"></iconify-icon></span>

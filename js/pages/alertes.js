@@ -1138,7 +1138,7 @@ const AlertesPage = {
     const catCounts = {};
     alerts.forEach(a => { catCounts[a.categorie] = (catCounts[a.categorie] || 0) + 1; });
     const catLabels = { documents: 'Documents', vehicules: 'Véhicules', versements: 'Versements', conduite: 'Conduite', finance: 'Finance', yango: 'Yango' };
-    const catColors = { documents: '#3b82f6', vehicules: '#f59e0b', versements: '#ef4444', conduite: '#8b5cf6', finance: '#22c55e', yango: '#FC4C02' };
+    const catColors = { documents: '#F5512E', vehicules: '#f59e0b', versements: '#ef4444', conduite: '#8b5cf6', finance: '#22c55e', yango: '#FC4C02' };
     const catEntries = Object.entries(catCounts);
 
     const ctx1 = document.getElementById('chart-alerts-category');
