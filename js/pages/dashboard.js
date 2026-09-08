@@ -2556,43 +2556,48 @@ const DashboardPage = {
 
   // =================== TOP CHAUFFEURS & DOCS WIDGETS ===================
 
+  // Top recettes en cercles concentriques (style « Annual profits » du reference).
   _renderTopDriversRevenue(d) {
-    const drivers = d.topDriversRevenue || [];
-    const maxVal = drivers.length > 0 ? drivers[0].total : 1;
-    const rows = drivers.length > 0 ? drivers.map((dr, i) => {
-      const pct = maxVal > 0 ? Math.round((dr.total / maxVal) * 100) : 0;
-      const medals = ['#f59e0b', '#9ca3af', '#cd7f32'];
-      const medalColor = i < 3 ? medals[i] : '';
-      const scoreColor = dr.total >= 75 ? '#22c55e' : dr.total >= 50 ? '#f59e0b' : '#ef4444';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);cursor:pointer;" onclick="Router.navigate('/classement')">
-        <div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;${medalColor ? 'background:' + medalColor + '20;color:' + medalColor : 'background:rgba(0,0,0,.04);color:#9ca3af;'}">${i + 1}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dr.nom}</div>
-          <div style="display:flex;gap:6px;margin-top:4px;font-size:9px;color:var(--text-muted);">
-            <span title="Recettes">${Utils.formatCurrency(dr.ca)}</span>
-            <span>•</span>
-            <span title="Conduite">${dr.scoreConduite}/100</span>
-            <span>•</span>
-            <span title="Regularite">${dr.regularite}%</span>
-            ${dr.nbContras > 0 ? '<span>•</span><span style="color:#ef4444;" title="Infractions">' + dr.nbContras + ' inf.</span>' : ''}
-          </div>
-        </div>
-        <div style="font-size:14px;font-weight:800;color:${scoreColor};white-space:nowrap;">${dr.total}<span style="font-size:9px;font-weight:600;opacity:.7">/100</span></div>
-      </div>`;
-    }).join('') : '<div style="font-size:12px;color:#9ca3af;text-align:center;padding:20px 0;">Aucun chauffeur actif</div>';
-
-    return `<div class="d-card">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
+    const drivers = [...(d.topDriversRevenue || [])].sort((a, b) => (b.ca || 0) - (a.ca || 0)).slice(0, 4);
+    const fk = n => { n = Math.round(n || 0); const a = Math.abs(n); return a >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + 'M' : a >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n); };
+    const shades = ['#FADFD6', '#F3AF99', '#ED7C5E', '#E8543A'];
+    const header = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div class="d-icon" style="background:rgba(232,84,58,.12);color:#E8543A;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
           <iconify-icon icon="solar:cup-star-bold-duotone"></iconify-icon>
         </div>
         <div style="flex:1;">
-          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 chauffeurs</div>
-          <div style="font-size:11px;color:#9ca3af;">Score global (${d.monthLabel})</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top recettes</div>
+          <div style="font-size:11px;color:var(--text-muted);">${Utils.escHtml(d.monthLabel || '')}</div>
         </div>
-        <a href="#/classement" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout &rarr;</a>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
+        <a href="#/classement" style="font-size:11px;font-weight:600;color:#E8543A;text-decoration:none;">Voir tout &rarr;</a>
+      </div>`;
+
+    if (!drivers.length) {
+      return `<div class="d-card">${header}<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:26px 0;">Aucun chauffeur actif</div></div>`;
+    }
+
+    const maxCa = drivers[0].ca || 1;
+    const baseline = 182, cx = 100, rMax = 84, rMin = 26;
+    let circles = '', labels = '';
+    drivers.forEach((dr, i) => {
+      const ratio = maxCa > 0 ? (dr.ca || 0) / maxCa : 0;
+      const r = Math.max(rMin, rMax * (0.35 + 0.65 * ratio));  // borne basse pour rester lisible
+      const cy = baseline - r;
+      circles += `<circle cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" fill="${shades[i] || shades[3]}"/>`;
+      const lc = i < 2 ? '#8a3a26' : '#fff';
+      labels += `<text x="${cx}" y="${(cy - r + 16).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="800" fill="${lc}">${fk(dr.ca)} F</text>`;
+    });
+    const svg = `<svg viewBox="0 0 200 190" width="100%" style="max-width:230px;display:block;margin:0 auto;">${circles}${labels}</svg>`;
+    const legend = drivers.map((dr, i) => `<div style="display:flex;align-items:center;gap:8px;">
+        <span style="width:10px;height:10px;border-radius:50%;background:${shades[i] || shades[3]};flex-shrink:0;"></span>
+        <span style="flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Utils.escHtml(dr.nom || '')}</span>
+        <strong style="font-size:12px;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(dr.ca)}</strong>
+      </div>`).join('');
+
+    return `<div class="d-card" style="display:flex;flex-direction:column;">
+      ${header}
+      ${svg}
+      <div style="display:flex;flex-direction:column;gap:9px;margin-top:14px;">${legend}</div>
     </div>`;
   },
 
