@@ -1496,6 +1496,10 @@ const DashboardPage = {
         .fd-c-val{font-size:23px;font-weight:800;letter-spacing:-.5px;}
         .fd-c-pct{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:6px;}
         .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}
+        .fd-surv-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,174,31,.16);color:#9A6800;border:1px solid rgba(255,174,31,.45);font-weight:800;font-size:11px;padding:2px 9px;border-radius:20px;cursor:pointer;font-family:inherit;line-height:1.55;vertical-align:middle;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;}
+        .fd-surv-chip:hover{transform:translateY(-1px);box-shadow:0 5px 12px rgba(255,174,31,.32);background:rgba(255,174,31,.26);}
+        .wl-flash{animation:wlFlash 1.7s ease;}
+        @keyframes wlFlash{0%{box-shadow:0 0 0 0 rgba(255,174,31,0);}12%{box-shadow:0 0 0 3px rgba(255,174,31,.6);}55%{box-shadow:0 0 0 3px rgba(255,174,31,.4);}100%{box-shadow:0 0 0 0 rgba(255,174,31,0);}}
         @media(max-width:820px){ .fd-cards{grid-template-columns:repeat(2,1fr);} .fd-top{flex-direction:column;} .fd-donut-wrap{margin:0 auto;} .fd-recette{width:100%;} .fd-recette-inner{border-left:none;border-top:1px solid var(--border-color);padding-left:0;padding-top:16px;} }
         /* Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) */
         .iw-grid{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(2,minmax(155px,auto));gap:16px;}
@@ -1912,9 +1916,22 @@ const DashboardPage = {
   // sur NOS données du jour. (La présence Yango n'est plus utilisée : son API
   // renvoyait « offline » pour tous les chauffeurs.)
   _renderWatchlist(d) {
-    return `<div class="d-card" style="padding:0;overflow:hidden;">
+    return `<div class="d-card" id="dash-watchlist-card" style="padding:0;overflow:hidden;">
       <div id="dash-watchlist">${this._watchlistInner(d)}</div>
     </div>`;
+  },
+
+  // Clic sur « dont N à surveiller » (carte En service) → défile jusqu'à la
+  // carte « Chauffeurs à surveiller » et la met brièvement en évidence.
+  _scrollToWatchlist() {
+    const card = document.getElementById('dash-watchlist-card')
+      || (document.getElementById('dash-watchlist') || {}).closest?.('.d-card');
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.remove('wl-flash');
+    void card.offsetWidth;           // relance l'animation si déjà déclenchée
+    card.classList.add('wl-flash');
+    setTimeout(() => card.classList.remove('wl-flash'), 1700);
   },
 
   // Bandeau de synthèse d'activité (En activité / En forme / À surveiller / Inactif /
@@ -2258,7 +2275,7 @@ const DashboardPage = {
       const handlers = clickable ? `onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
       const notes = [];
       if (s.recentCount) notes.push(`<span style="color:#13DEB9;font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#13DEB9;margin-right:4px;vertical-align:middle;"></span>${s.recentCount} actif${s.recentCount > 1 ? 's' : ''} à l'instant</span>`);
-      if (s.note) notes.push(`<span style="color:#FFAE1F;font-weight:700;">${s.note}</span>`);
+      if (s.note) notes.push(`<button type="button" class="fd-surv-chip" onclick="event.stopPropagation();DashboardPage._scrollToWatchlist()" title="Voir les chauffeurs à surveiller"><iconify-icon icon="solar:eye-scan-bold" style="font-size:12px;"></iconify-icon>${s.note}</button>`);
       return `<div class="fd-c${clickable ? '' : ' fd-c-off'}" data-i="${i}" ${handlers}>
         <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}</div>
         <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span></div>
