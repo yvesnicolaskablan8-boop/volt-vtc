@@ -2417,7 +2417,7 @@ const ParametresPage = {
           <!-- Documents -->
           <div class="card">
             <div class="card-header">
-              <span class="card-title"><iconify-icon icon="solar:user-id-bold-duotone" style="color:#5D87FF;"></iconify-icon> Expiration documents</span>
+              <span class="card-title"><iconify-icon icon="solar:user-id-bold-duotone" style="color:#E8543A;"></iconify-icon> Expiration documents</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-sm);padding-top:var(--space-md);">
               <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
@@ -2769,7 +2769,7 @@ const ParametresPage = {
         { value: '#22c55e', label: '🟢 Vert' },
         { value: '#f59e0b', label: '🟡 Orange' },
         { value: '#ef4444', label: '🔴 Rouge' },
-        { value: '#8b5cf6', label: '🟣 Violet' },
+        { value: '#E8543A', label: '🟣 Violet' },
         { value: '#06b6d4', label: '🔵 Cyan' }
       ]},
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
@@ -2802,7 +2802,7 @@ const ParametresPage = {
         { value: '#22c55e', label: '🟢 Vert' },
         { value: '#f59e0b', label: '🟡 Orange' },
         { value: '#ef4444', label: '🔴 Rouge' },
-        { value: '#8b5cf6', label: '🟣 Violet' },
+        { value: '#E8543A', label: '🟣 Violet' },
         { value: '#06b6d4', label: '🔵 Cyan' }
       ]},
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
@@ -2865,7 +2865,7 @@ const ParametresPage = {
       '<div class="card">' +
         '<div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">' +
           '<span class="card-title" style="display:flex;align-items:center;gap:8px;">' +
-            '<iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:24px;color:#7c3aed;"></iconify-icon> Wave Money' +
+            '<iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:24px;color:#D23E22;"></iconify-icon> Wave Money' +
           '</span>' +
           '<span class="badge ' + (waveConfigured ? 'badge-success' : 'badge-danger') + '">' +
             (waveConfigured ? 'Connecté' : 'Non configuré') +

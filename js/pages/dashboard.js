@@ -189,7 +189,7 @@ const DashboardPage = {
     // === Style Modernize / Spike (bleu #E8543A, cartes arrondies pastel, ombre douce) ===
     const C = {
       bg: '#F5F7FB', card: '#ffffff', head: '#2A3547', mut: '#5A6A85', mut2: '#7C8FAC', bd: '#EBF1F6',
-      blue: '#E8543A', blueS: 'rgba(93,135,255,.10)',
+      blue: '#E8543A', blueS: 'rgba(232,84,58,.10)',
       green: '#02b3a9', greenS: 'rgba(19,222,185,.14)',
       amber: '#D99000', amberS: 'rgba(255,174,31,.16)',
       red: '#D9583B', redS: 'rgba(250,137,107,.14)',
@@ -243,7 +243,7 @@ const DashboardPage = {
         <td style="padding:13px 14px;text-align:right;font-size:13px;color:${C.mut};">${l.roule ? l.courses : '—'}</td>
         <td style="padding:13px 14px;text-align:right;font-size:13px;color:${C.mut};">${l.verse > 0 ? money(l.verse) : '—'}</td>
         <td style="padding:13px 14px;text-align:right;font-size:14px;font-weight:800;color:${C.head};">${money(l.ca)}</td>
-        <td style="padding:13px 14px;text-align:right;">${(l.roule && !l.programme) ? `<button onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${l.id}')" style="font-size:12px;font-weight:700;color:#fff;background:${C.blue};border:none;border-radius:9px;padding:6px 12px;cursor:pointer;box-shadow:0 4px 10px rgba(93,135,255,.30);">+ Planning</button>` : ''}</td>
+        <td style="padding:13px 14px;text-align:right;">${(l.roule && !l.programme) ? `<button onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${l.id}')" style="font-size:12px;font-weight:700;color:#fff;background:${C.blue};border:none;border-radius:9px;padding:6px 12px;cursor:pointer;box-shadow:0 4px 10px rgba(232,84,58,.30);">+ Planning</button>` : ''}</td>
       </tr>`;
     }).join('');
     const tableOrEmpty = lignes.length ? `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:560px;"><thead><tr>${th('Chauffeur')}${th('Statut')}${th('Courses', 'right')}${th('Versé', 'right')}${th('CA', 'right')}${th('', 'right')}</tr></thead><tbody>${rows}</tbody></table></div>` : `<div style="text-align:center;color:${C.mut2};padding:40px;font-size:14px;">Aucune activité ${estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
@@ -277,7 +277,7 @@ const DashboardPage = {
             <span style="font-size:13px;color:${C.mut};">vs mois dernier</span>
           </div>
         </div>
-        <div style="width:44px;height:44px;border-radius:50%;background:${C.blue};color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 8px 18px rgba(93,135,255,.32);flex-shrink:0;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
+        <div style="width:44px;height:44px;border-radius:50%;background:${C.blue};color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 8px 18px rgba(232,84,58,.32);flex-shrink:0;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
       </div>
       <div style="margin-top:16px;">${sparkline(_spark)}</div>
     </div>`;
@@ -1457,7 +1457,7 @@ const DashboardPage = {
         .fd-donut-col{display:flex;flex-direction:column;align-items:center;gap:14px;flex-shrink:0;}
         .fd-recette{flex:1;min-width:0;}
         .fd-recette-inner{display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--border-color);padding-left:24px;}
-        .fd-voir{display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:10px 18px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);border:none;cursor:pointer;transition:.15s;}
+        .fd-voir{display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:10px 18px;border-radius:12px;box-shadow:0 8px 18px rgba(232,84,58,.32);border:none;cursor:pointer;transition:.15s;}
         .fd-voir:hover{filter:brightness(1.05);}
         .fd-svg{width:100%;height:100%;transform:rotate(-90deg);}
         .fd-seg{transition:stroke-width .2s ease,opacity .2s ease;cursor:pointer;}
@@ -2266,7 +2266,7 @@ const DashboardPage = {
           </div>
         </div>
       </div>
-      <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#E8543A;--iw-bg:rgba(93,135,255,.12);">
+      <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#E8543A;--iw-bg:rgba(232,84,58,.12);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></span><span class="iw-label">Tâches</span></div>
         <div class="iw-val" style="color:#E8543A;margin-top:auto;">${taches}</div>
         <div class="iw-sub">${tachesRetard > 0 ? `<span style="color:#EF4444;">${tachesRetard} en retard</span>` : (taches > 0 ? 'en cours' : 'Rien en attente 🎉')}</div>
@@ -2535,7 +2535,7 @@ const DashboardPage = {
       const caTxt = (it.ca != null && it.ca > 0) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
       const call = it.tel ? `<a href="tel:${Utils.escHtml(String(it.tel))}" title="Appeler" style="width:34px;height:34px;border-radius:9px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:phone-bold"></iconify-icon></a>` : '';
       // Pour les non planifiés : bouton pour les inscrire au planning du jour.
-      const planif = key === 'nonpl' ? `<button onclick="DashboardPage._planifierNonpl('${Utils.escHtml(String(it.id))}')" title="Planifier aujourd'hui" style="height:34px;padding:0 12px;border-radius:9px;border:none;background:rgba(93,135,255,.14);color:#E8543A;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;white-space:nowrap;"><iconify-icon icon="solar:calendar-add-bold"></iconify-icon>Planifier</button>` : '';
+      const planif = key === 'nonpl' ? `<button onclick="DashboardPage._planifierNonpl('${Utils.escHtml(String(it.id))}')" title="Planifier aujourd'hui" style="height:34px;padding:0 12px;border-radius:9px;border:none;background:rgba(232,84,58,.14);color:#E8543A;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;white-space:nowrap;"><iconify-icon icon="solar:calendar-add-bold"></iconify-icon>Planifier</button>` : '';
       return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);">
         <div style="width:36px;height:36px;border-radius:50%;background:${seg.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${Utils.escHtml(initial)}</div>
         <div style="flex:1;min-width:0;">

@@ -37,7 +37,7 @@ const GanttTachesPage = {
     if (retard) return ['#FA896B', 'En retard'];
     switch (statut) {
       case 'terminee': return ['#13DEB9', 'Terminée'];
-      case 'en_cours': return ['#5D87FF', 'En cours'];
+      case 'en_cours': return ['#E8543A', 'En cours'];
       case 'a_faire': return ['#94a3b8', 'À faire'];
       default: return ['#94a3b8', statut || '—'];
     }
@@ -105,7 +105,7 @@ const GanttTachesPage = {
 
     const title = `${days[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} – ${days[N - 1].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`;
     const dBtn = (n, l) => `<button type="button" class="gt-dbtn${N === n ? ' is-active' : ''}" onclick="GanttTachesPage._setDays(${n})">${l}</button>`;
-    const legend = [['À faire', '#94a3b8'], ['En cours', '#5D87FF'], ['Terminée', '#13DEB9'], ['En retard', '#FA896B']];
+    const legend = [['À faire', '#94a3b8'], ['En cours', '#E8543A'], ['Terminée', '#13DEB9'], ['En retard', '#FA896B']];
 
     return `
       ${this._styles()}

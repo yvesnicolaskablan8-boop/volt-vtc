@@ -441,8 +441,8 @@ const Header = {
       if (nouvelles.length > 0) {
         notifications.push({
           icon: 'solar:checklist-bold-duotone',
-          iconBg: 'rgba(99,102,241,0.15)',
-          iconColor: '#5D87FF',
+          iconBg: 'rgba(232,84,58,0.15)',
+          iconColor: '#E8543A',
           text: `<strong>${nouvelles.length} tache${nouvelles.length > 1 ? 's' : ''}</strong> à effectuer`,
           time: "Aujourd'hui"
         });
