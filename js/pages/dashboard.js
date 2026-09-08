@@ -1550,7 +1550,23 @@ const DashboardPage = {
         .iw-hero .iw-label{color:rgba(255,255,255,.82);}
         .iw-hero .iw-icon{background:rgba(255,255,255,.1)!important;color:#fff!important;}
         .iw-hero .iw-hero-ctx{color:rgba(255,255,255,.6)!important;}
+        /* En-tête d'accueil (date + tâches + salutation) façon reference */
+        .dh-row{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px;}
+        .dh-left{display:flex;align-items:center;gap:14px;}
+        .dh-date{display:flex;align-items:center;gap:11px;border:1px solid var(--border-color);background:var(--bg-secondary);border-radius:18px;padding:9px 17px;box-shadow:var(--shadow-card);}
+        .dh-daynum{font-size:27px;font-weight:800;color:var(--text-primary);letter-spacing:-1px;line-height:1;}
+        .dh-dtxt{font-size:12px;font-weight:700;color:var(--text-secondary);line-height:1.15;text-transform:capitalize;}
+        .dh-tasks{display:inline-flex;align-items:center;gap:8px;background:#E8543A;color:#fff;font-weight:700;font-size:13px;padding:12px 20px;border-radius:26px;text-decoration:none;box-shadow:0 8px 18px rgba(232,84,58,.28);transition:.15s;}
+        .dh-tasks:hover{filter:brightness(1.06);}
+        .dh-ic{width:46px;height:46px;border-radius:50%;border:1px solid var(--border-color);background:var(--bg-secondary);display:inline-flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:20px;text-decoration:none;box-shadow:var(--shadow-card);}
+        .dh-right{text-align:right;min-width:0;}
+        .dh-hi{font-size:30px;font-weight:800;color:var(--text-primary);letter-spacing:-.8px;line-height:1.05;}
+        .dh-sub{font-size:15px;color:var(--text-muted);font-weight:500;margin-top:6px;}
+        @media(max-width:760px){ .dh-row{flex-direction:column;align-items:flex-start;} .dh-right{text-align:left;} .dh-hi{font-size:24px;} }
       </style>
+
+      <!-- En-tête d'accueil -->
+      ${this._renderGreeting(d)}
 
       <!-- Row hero : compte + income/paid + recouvrement + tendance -->
       ${this._renderFinBento(d)}
@@ -1627,6 +1643,26 @@ const DashboardPage = {
       </div>
       </div>
     `;
+  },
+
+  // En-tête d'accueil façon reference : date + « Mes tâches » + salutation.
+  _renderGreeting(d) {
+    const session = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : {};
+    const name = session.prenom || 'Patron';
+    const now = (d.estAujourdhui || !d.jourAtt) ? new Date() : new Date(String(d.jourAtt) + 'T00:00:00');
+    const wd = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' }).format(now).replace('.', '');
+    const mo = new Intl.DateTimeFormat('fr-FR', { month: 'short' }).format(now).replace('.', '');
+    return `<div class="dh-row">
+      <div class="dh-left">
+        <div class="dh-date"><span class="dh-daynum">${now.getDate()}</span><span class="dh-dtxt">${wd}<br>${mo}</span></div>
+        <a href="#/taches" class="dh-tasks"><iconify-icon icon="solar:checklist-minimalistic-bold"></iconify-icon> Mes tâches <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></a>
+        <a href="#/planning" class="dh-ic" title="Planning"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></a>
+      </div>
+      <div class="dh-right">
+        <div class="dh-hi">Bonjour ${Utils.escHtml(name)} 👋</div>
+        <div class="dh-sub">Voici l'activité de votre flotte.</div>
+      </div>
+    </div>`;
   },
 
   // Rangée hero « Financial Dashboard » : carte compte + income/paid + donut recouvrement + tendance.
