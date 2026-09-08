@@ -52,45 +52,46 @@
 [data-theme="light"] {
   /* ===== Thème SPIKE (clair) — cartes blanches, fond gris-bleu, accent bleu ===== */
   /* Background layers */
-  --bg-primary: #F5F7FB;
+  /* ===== Thème « Financial Dashboard » (clair chaud) — crème, accent orange, quasi-noir ===== */
+  --bg-primary: #ECEAE4;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #F1F5F9;
+  --bg-tertiary: #F4F2ED;
   --bg-sidebar: #ffffff;
 
   /* Text */
-  --text-primary: #2A3547;
-  --text-secondary: #5A6A85;
-  --text-muted: #7C8FAC;
+  --text-primary: #1B1A18;
+  --text-secondary: #6E6A62;
+  --text-muted: #A6A198;
 
   /* Borders & Dividers */
-  --border-color: #EBF1F6;
-  --border-accent: rgba(93, 135, 255, 0.18);
+  --border-color: #E9E5DD;
+  --border-accent: rgba(232, 84, 58, 0.20);
 
-  /* Shadows — ombre bleutée signature de Spike */
-  --shadow-card: 0 2px 6px rgba(37, 83, 185, 0.10);
-  --shadow-modal: 0 12px 40px rgba(37, 83, 185, 0.14);
-  --shadow-glow: 0 4px 20px rgba(93, 135, 255, 0.14);
+  /* Shadows — douces, neutres chaudes */
+  --shadow-card: 0 2px 10px rgba(38, 32, 24, 0.05);
+  --shadow-modal: 0 20px 50px rgba(38, 32, 24, 0.16);
+  --shadow-glow: 0 8px 24px rgba(232, 84, 58, 0.18);
 
-  /* Cartes blanches nettes (plus de glassmorphism) */
+  /* Cartes blanches nettes */
   --glass-bg: #ffffff;
   --glass-bg-heavy: #ffffff;
-  --glass-border: #EBF1F6;
-  --glass-shadow: 0 2px 6px rgba(37, 83, 185, 0.10);
+  --glass-border: #E9E5DD;
+  --glass-shadow: 0 2px 10px rgba(38, 32, 24, 0.05);
 
   /* Sidebar solide blanche */
   --bg-sidebar-solid: #ffffff;
 
   /* Card hover */
-  --card-hover-bg: rgba(93, 135, 255, 0.05);
+  --card-hover-bg: rgba(232, 84, 58, 0.05);
 
   /* Accent subtle */
-  --accent-subtle: rgba(93, 135, 255, 0.12);
+  --accent-subtle: rgba(232, 84, 58, 0.12);
 
-  /* Accent Spike (surcharge du brand, thème clair uniquement) */
-  --pilote-blue: #5D87FF;
-  --pilote-blue-dim: #4570EA;
-  --pilote-blue-glow: rgba(93, 135, 255, 0.14);
-  --pilote-cyan: #49BEFF;
+  /* Accent « Financial » orange (surcharge du brand, thème clair) */
+  --pilote-blue: #E8543A;
+  --pilote-blue-dim: #D23E22;
+  --pilote-blue-glow: rgba(232, 84, 58, 0.16);
+  --pilote-cyan: #F0946E;
 
   /* Sémantique Spike */
   --success: #13DEB9;
@@ -99,10 +100,10 @@
   --danger-dim: #E8603C;
   --warning: #FFAE1F;
   --warning-dim: #D99000;
-  --info: #5D87FF;
+  --info: #E8543A;
 
   /* Glow */
-  --glow-primary: 0 0 12px rgba(93, 135, 255, 0.14);
+  --glow-primary: 0 0 12px rgba(232, 84, 58, 0.14);
   --glow-success: 0 0 12px rgba(19, 222, 185, 0.14);
   --glow-danger: 0 0 12px rgba(250, 137, 107, 0.14);
   --glow-warning: 0 0 12px rgba(255, 174, 31, 0.14);

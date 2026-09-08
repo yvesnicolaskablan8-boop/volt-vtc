@@ -309,6 +309,23 @@ const VersementsPage = {
 .dw-ghost{background:var(--vx-surface);color:var(--text-secondary);border:1px solid var(--vx-bd);}
 .dw-today{background:#eef2ff;color:#4338ca;border:1px solid #e0e7ff;}
 .dw-ok{background:#ec4899;color:#fff;box-shadow:0 8px 20px rgba(236,72,153,.28);}
+.ps-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;}
+.ps-title{font-size:15px;font-weight:800;color:var(--text-primary);letter-spacing:-.2px;}
+.ps-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.ps-total{font-size:19px;font-weight:800;color:#16a34a;letter-spacing:-.4px;white-space:nowrap;}
+.ps-toggle{display:inline-flex;background:var(--vx-surface);border:1px solid var(--vx-bd);border-radius:12px;padding:3px;gap:2px;margin-bottom:20px;}
+.ps-tbtn{border:none;background:transparent;font-size:12.5px;font-weight:700;color:var(--text-secondary);padding:6px 15px;border-radius:9px;cursor:pointer;transition:.15s;}
+.ps-tbtn.on{background:var(--vx-card);color:var(--text-primary);box-shadow:0 2px 6px rgba(17,24,39,.08);}
+.ps-bars{display:flex;align-items:flex-end;gap:12px;height:170px;}
+.ps-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;}
+.ps-amt{font-size:11px;font-weight:700;color:var(--text-secondary);white-space:nowrap;}
+.ps-barwrap{width:100%;flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:0;}
+.ps-bar{width:70%;max-width:40px;border-radius:9px 9px 5px 5px;background:linear-gradient(180deg,#4ade80 0%,#22c55e 100%);min-height:4px;transition:height .25s ease,filter .15s;}
+.ps-col.on .ps-bar{background:linear-gradient(180deg,#22c55e 0%,#15803d 100%);box-shadow:0 6px 14px rgba(34,197,94,.3);}
+.ps-col:hover .ps-bar{filter:brightness(1.06);}
+.ps-lbl{font-size:11px;font-weight:600;color:var(--text-muted);white-space:nowrap;text-transform:capitalize;}
+.ps-col.on .ps-lbl{color:var(--text-primary);}
+.ps-empty{text-align:center;color:var(--text-muted);padding:30px 12px;font-size:13px;}
 .wl-card{background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:28px;box-shadow:0 24px 60px rgba(17,24,39,.1);padding:24px;display:grid;grid-template-columns:400px 1fr;gap:24px;align-items:start;}
 .wl-left{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px;}
 .wl-right{min-width:0;}
@@ -643,6 +660,66 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     this._resetToToday();
   },
 
+  // ── Widget récap : versements encaissés période par période (jour/sem/mois) ──
+  _periodSummary() {
+    return `<div class="vx-sec" id="vers-period-summary" style="margin-top:20px;">${this._periodSummaryInner()}</div>`;
+  },
+
+  _setPsGran(key) {
+    this._psGran = key;
+    const el = document.getElementById('vers-period-summary');
+    if (el) { el.replaceChildren(); el.insertAdjacentHTML('beforeend', this._periodSummaryInner()); }
+  },
+
+  _periodSummaryInner() {
+    const gran = this._psGran || 'semaine';
+    const pad = n => String(n).padStart(2, '0');
+    const shortMonth = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+    const keyFn = {
+      jour: dt => ({ k: dt.toISOString().slice(0, 10), lbl: pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1), sort: dt.getTime() }),
+      semaine: dt => { const d = new Date(dt); const off = (d.getDay() + 6) % 7; d.setDate(d.getDate() - off); return { k: d.toISOString().slice(0, 10), lbl: pad(d.getDate()) + '/' + pad(d.getMonth() + 1), sort: d.getTime() }; },
+      mois: dt => ({ k: dt.getFullYear() + '-' + pad(dt.getMonth() + 1), lbl: shortMonth.format(dt).replace('.', ''), sort: dt.getFullYear() * 12 + dt.getMonth() }),
+    }[gran];
+
+    const vers = (Store.get('versements') || []).filter(_isRealVersement).filter(v => v.statut === 'valide' || v.statut === 'partiel');
+    const map = new Map();
+    vers.forEach(v => {
+      const ds = v.dateService || v.date;
+      if (!ds) return;
+      const dt = new Date(String(ds).slice(0, 10) + 'T00:00:00');
+      if (isNaN(dt)) return;
+      const { k, lbl, sort } = keyFn(dt);
+      const cur = map.get(k) || { sum: 0, lbl, sort };
+      cur.sum += Number(v.montantVerse) || 0;
+      map.set(k, cur);
+    });
+    const periods = [...map.values()].sort((a, b) => a.sort - b.sort).slice(-8);
+    const unit = gran === 'jour' ? '8 derniers jours' : gran === 'mois' ? '8 derniers mois' : '8 dernières semaines';
+    const fmt = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
+    const total = periods.reduce((s, p) => s + p.sum, 0);
+    const maxV = Math.max(1, ...periods.map(p => p.sum));
+
+    const gBtn = (key, label) => `<button type="button" class="ps-tbtn${gran === key ? ' on' : ''}" onclick="VersementsPage._setPsGran('${key}')">${label}</button>`;
+    const head = `<div class="ps-head">
+      <div><div class="ps-title">Évolution des versements</div><div class="ps-sub">${unit}</div></div>
+      <div class="ps-total">${fmt(total)}</div>
+    </div>
+    <div class="ps-toggle">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>`;
+
+    if (!periods.length) return head + `<div class="ps-empty">Aucun versement encaissé sur la période.</div>`;
+
+    const bars = periods.map((p, i) => {
+      const pct = Math.max(3, Math.round(p.sum / maxV * 100));
+      const last = i === periods.length - 1;
+      return `<div class="ps-col${last ? ' on' : ''}" title="${fmt(p.sum)}">
+        <div class="ps-amt">${p.sum > 0 ? fmt(p.sum) : '—'}</div>
+        <div class="ps-barwrap"><div class="ps-bar" style="height:${pct}%;"></div></div>
+        <div class="ps-lbl">${Utils.escHtml(p.lbl)}</div>
+      </div>`;
+    }).join('');
+    return head + `<div class="ps-bars">${bars}</div>`;
+  },
+
   // Palette sémantique des KPI : la couleur reflète la SITUATION (bon / à
   // surveiller / mauvais), pas une teinte décorative fixe.
   _kpiCol(status) {
@@ -682,6 +759,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       </div>
 
       ${this._walletHero(d)}
+
+      ${this._periodSummary()}
 
       </div></div>
     `;

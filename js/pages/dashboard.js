@@ -1460,9 +1460,11 @@ const DashboardPage = {
         @keyframes fdSpin{to{transform:rotate(360deg)}}
         .fd-top{display:flex;align-items:center;gap:24px;margin:6px 0 20px;}
         .fd-donut-wrap{position:relative;width:230px;height:230px;flex-shrink:0;}
+        .fd-donut-col{display:flex;flex-direction:column;align-items:center;gap:14px;flex-shrink:0;}
         .fd-recette{flex:1;min-width:0;}
-        .fd-recette-inner{display:flex;flex-direction:column;gap:12px;cursor:pointer;border-left:1px solid var(--border-color);padding-left:24px;}
-        .fd-voir{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);}
+        .fd-recette-inner{display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--border-color);padding-left:24px;}
+        .fd-voir{display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:10px 18px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);border:none;cursor:pointer;transition:.15s;}
+        .fd-voir:hover{filter:brightness(1.05);}
         .fd-svg{width:100%;height:100%;transform:rotate(-90deg);}
         .fd-seg{transition:stroke-width .2s ease,opacity .2s ease;cursor:pointer;}
         .fd-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;}
@@ -2241,10 +2243,9 @@ const DashboardPage = {
       const granBar = `<div class="mini-gran">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>`;
       return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)}" onmouseleave="DashboardPage._miniLeave()"><div class="mini-head"><div class="mini-title"><span class="mini-dot"></span>Recette encaissée · ${unitLabel}</div><div class="mini-val" id="mini-value">${fmt(sumV)}</div></div>${granBar}<div class="mini-bars">${cols}</div></div>`;
     })();
-    return `<div class="fd-recette-inner" onclick="DashboardPage._showActiviteDetail()">
+    return `<div class="fd-recette-inner">
       ${pace}
       ${bars}
-      <div class="fd-voir">Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></div>
     </div>`;
   },
 
@@ -2254,7 +2255,10 @@ const DashboardPage = {
     return `<div class="d-card fd-card">
       <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span></div>
       <div class="fd-top">
-        <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
+        <div class="fd-donut-col">
+          <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, segments, total)}</div>
+          <button class="fd-voir" onclick="DashboardPage._showActiviteDetail()">Voir l'activité en détail <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button>
+        </div>
         <div class="fd-recette">${this._fleetRecettePanel(d)}</div>
       </div>
       <div class="fd-cards" id="fleet-donut-cards">${this._fleetCardsInner(segments)}</div>
