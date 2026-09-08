@@ -199,7 +199,7 @@ const VehiculesPage = {
             if (!c) c = chauffeurs.find(x => x.vehiculeAssigne === v.id);
             if (!c) return '<span class="text-muted">-</span>';
             return `<div style="display:flex;align-items:center;gap:6px;">
-              <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#E8543A,#8AA8FF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;">${c.prenom[0]}${c.nom[0]}</div>
+              <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#F5512E,#8AA8FF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;">${c.prenom[0]}${c.nom[0]}</div>
               <span style="font-weight:600;font-size:12px;">${c.prenom} ${c.nom}</span>
             </div>`;
           }

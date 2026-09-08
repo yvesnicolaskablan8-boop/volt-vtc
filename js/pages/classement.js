@@ -203,7 +203,7 @@ const ClassementPage = {
               <option value="3months" ${this._selectedPeriod === '3months' ? 'selected' : ''}>3 derniers mois</option>
             </optgroup>
           </select>
-          <button id="classement-config-btn" class="btn btn-sm" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#E8543A,#8AA8FF);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(232,84,58,.25);">
+          <button id="classement-config-btn" class="btn btn-sm" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#F5512E,#8AA8FF);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(245,81,46,.25);">
             <iconify-icon icon="solar:ruler-bold-duotone" style="font-size:15px;"></iconify-icon> Regles
           </button>
         </div>
@@ -217,7 +217,7 @@ const ClassementPage = {
           <span>Recettes <strong>${this._getWeights().recettes}%</strong></span>
         </div>
         <div class="classement-legend-item">
-          <iconify-icon icon="solar:steering-wheel-bold-duotone" style="color:#E8543A;"></iconify-icon>
+          <iconify-icon icon="solar:steering-wheel-bold-duotone" style="color:#F5512E;"></iconify-icon>
           <span>Conduite <strong>${this._getWeights().conduite}%</strong></span>
         </div>
         <div class="classement-legend-item">
@@ -455,7 +455,7 @@ const ClassementPage = {
     return `<div class="d-card" style="padding:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <iconify-icon icon="solar:settings-bold-duotone" style="font-size:20px;color:#E8543A;"></iconify-icon>
+          <iconify-icon icon="solar:settings-bold-duotone" style="font-size:20px;color:#F5512E;"></iconify-icon>
           <div>
             <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Criteres de classement</div>
             <div style="font-size:11px;color:var(--text-muted);">Ajustez les poids de chaque critere (total doit faire 100%)</div>
@@ -468,7 +468,7 @@ const ClassementPage = {
           <input type="number" id="cfg-poids-recettes" value="${w.recettes}" min="0" max="100" style="${inputStyle}">
         </div>
         <div>
-          <label style="${labelStyle}"><iconify-icon icon="solar:steering-wheel-bold-duotone" style="color:#E8543A;font-size:13px;vertical-align:middle;"></iconify-icon> Conduite (%)</label>
+          <label style="${labelStyle}"><iconify-icon icon="solar:steering-wheel-bold-duotone" style="color:#F5512E;font-size:13px;vertical-align:middle;"></iconify-icon> Conduite (%)</label>
           <input type="number" id="cfg-poids-conduite" value="${w.conduite}" min="0" max="100" style="${inputStyle}">
         </div>
         <div>
@@ -492,7 +492,7 @@ const ClassementPage = {
         </div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:10px;">
-        <button id="cfg-save-btn" class="btn" style="background:linear-gradient(135deg,#E8543A,#8AA8FF);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-weight:700;font-size:13px;cursor:pointer;">
+        <button id="cfg-save-btn" class="btn" style="background:linear-gradient(135deg,#F5512E,#8AA8FF);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-weight:700;font-size:13px;cursor:pointer;">
           <iconify-icon icon="solar:check-circle-bold" style="margin-right:4px;"></iconify-icon> Enregistrer
         </button>
       </div>

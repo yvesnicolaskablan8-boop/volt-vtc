@@ -4,7 +4,7 @@
  * chauffeurs. Lecture seule, données issues du Store. Montants entiers (FCFA).
  */
 const RapportsPage = {
-  _acc: '#E8543A',
+  _acc: '#F5512E',
 
   render() {
     this._d = this._getData();
@@ -49,7 +49,7 @@ const RapportsPage = {
       energie += ((v.kilometrageMensuel || 2500) * 12 * conso / 100) * coutE;
     });
     const couts = [
-      { label: 'Acquisition', val: Math.round(acq), color: '#E8543A' },
+      { label: 'Acquisition', val: Math.round(acq), color: '#F5512E' },
       { label: 'Assurance', val: Math.round(assur), color: '#eab308' },
       { label: 'Maintenance', val: Math.round(maint), color: '#ef4444' },
       { label: 'Énergie', val: Math.round(energie), color: '#22c55e' }
@@ -226,7 +226,7 @@ const RapportsPage = {
       .rp-sw { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
       .rp-info { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:22px; padding:20px; }
       .rp-info-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-      .rp-info-icon { width:32px; height:32px; border-radius:10px; background:rgba(232,84,58,.14); color:#E8543A; display:flex; align-items:center; justify-content:center; font-size:18px; }
+      .rp-info-icon { width:32px; height:32px; border-radius:10px; background:rgba(245,81,46,.14); color:#F5512E; display:flex; align-items:center; justify-content:center; font-size:18px; }
       .rp-info h4 { margin:0; font-size:15px; font-weight:800; color:var(--text-primary); }
       .rp-info p { margin:0; font-size:13px; line-height:1.55; color:var(--text-secondary); }
       .rp-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
@@ -249,7 +249,7 @@ const RapportsPage = {
       .rp-rank { width:26px; color:var(--text-muted); font-weight:800; }
       .rp-name { font-weight:700; }
       .rp-barcell { width:45%; }
-      .rp-bar { display:block; height:8px; border-radius:99px; background:linear-gradient(90deg,#E8543A,#8AA8FF); min-width:4px; }
+      .rp-bar { display:block; height:8px; border-radius:99px; background:linear-gradient(90deg,#F5512E,#8AA8FF); min-width:4px; }
       .rp-td-num { text-align:right; }
       .rp-td-strong { font-weight:800; white-space:nowrap; }
       .rp-empty { padding:26px 4px; text-align:center; color:var(--text-muted); font-size:13px; }

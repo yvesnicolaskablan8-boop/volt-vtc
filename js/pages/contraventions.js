@@ -64,7 +64,7 @@ const ContraventionsPage = {
         <div>
           <div style="font-size:14px;color:#9ca3af;font-weight:500;">Gestion</div>
           <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:document-text-bold-duotone" style="color:#E8543A;"></iconify-icon> Contraventions
+            <iconify-icon icon="solar:document-text-bold-duotone" style="color:#F5512E;"></iconify-icon> Contraventions
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -85,7 +85,7 @@ const ContraventionsPage = {
         </div>
         <div class="d-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <div class="d-icon" style="background:rgba(232,84,58,.08);color:#E8543A;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
+            <div class="d-icon" style="background:rgba(245,81,46,.08);color:#F5512E;"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
             <div class="d-lbl" style="margin:0;">Ce mois</div>
           </div>
           <div class="d-val">${data.nbMois}</div>
@@ -290,7 +290,7 @@ const ContraventionsPage = {
   },
 
   _contraLineHtml(idx) {
-    const colors = ['#ef4444', '#f97316', '#E8543A', '#3b82f6', '#06b6d4', '#22c55e'];
+    const colors = ['#ef4444', '#f97316', '#F5512E', '#3b82f6', '#06b6d4', '#22c55e'];
     const c = colors[idx % colors.length];
     return `<div class="contra-line" data-idx="${idx}" style="border-left:3px solid ${c};background:linear-gradient(135deg,${c}08,transparent);border-radius:0 14px 14px 0;padding:16px 16px 16px 20px;margin-bottom:12px;position:relative;transition:all .2s;">
       ${idx > 0 ? `<button type="button" onclick="this.closest('.contra-line').remove();ContraventionsPage._updateContraCount()" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;" onmouseenter="this.style.background='#ef4444';this.style.color='#fff'" onmouseleave="this.style.background='rgba(239,68,68,.1)';this.style.color='#ef4444'"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>` : ''}
@@ -348,7 +348,7 @@ const ContraventionsPage = {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
             <div>
               <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
-                <iconify-icon icon="solar:user-bold-duotone" style="color:#E8543A;"></iconify-icon> Chauffeur *
+                <iconify-icon icon="solar:user-bold-duotone" style="color:#F5512E;"></iconify-icon> Chauffeur *
               </label>
               <select name="chauffeurId" id="contra-chauffeur-select" required style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-weight:600;">
                 <option value="">S\u00e9lectionner un chauffeur...</option>
@@ -391,7 +391,7 @@ const ContraventionsPage = {
           <!-- Note admin (compact) -->
           <div style="margin-bottom:20px;">
             <label style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:4px;">
-              <iconify-icon icon="solar:chat-round-dots-bold-duotone" style="color:#E8543A;"></iconify-icon> Note interne (optionnel)
+              <iconify-icon icon="solar:chat-round-dots-bold-duotone" style="color:#F5512E;"></iconify-icon> Note interne (optionnel)
             </label>
             <textarea name="commentaire" rows="2" placeholder="Commentaire pour l'\u00e9quipe..." style="width:100%;font-size:13px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);resize:vertical;box-sizing:border-box;"></textarea>
           </div>
@@ -407,7 +407,7 @@ const ContraventionsPage = {
                 <div style="font-size:11px;color:var(--text-muted);"><span id="contra-count-badge">1</span> infraction(s)</div>
               </div>
             </div>
-            <button type="button" id="btn-add-contra-line" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#E8543A,#8AA8FF);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(232,84,58,.3);transition:all .2s;" onmouseenter="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 16px rgba(232,84,58,.4)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(232,84,58,.3)'">
+            <button type="button" id="btn-add-contra-line" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#F5512E,#8AA8FF);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(245,81,46,.3);transition:all .2s;" onmouseenter="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 16px rgba(245,81,46,.4)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 8px rgba(245,81,46,.3)'">
               <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter
             </button>
           </div>
@@ -634,7 +634,7 @@ const ContraventionsPage = {
           <!-- Section : Notes -->
           <div style="${sectionBase}${sectionColors.notes}">
             <div style="${sectionTitleStyle}">
-              <iconify-icon icon="solar:document-text-bold-duotone" style="color:#E8543A;font-size:15px;"></iconify-icon> Notes
+              <iconify-icon icon="solar:document-text-bold-duotone" style="color:#F5512E;font-size:15px;"></iconify-icon> Notes
             </div>
             <div>
               <label style="${labelStyle}">Description</label>

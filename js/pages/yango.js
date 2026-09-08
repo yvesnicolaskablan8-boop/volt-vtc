@@ -1117,7 +1117,7 @@ const YangoPage = {
     const totalKmAll = rows.reduce((s, r) => s + getDriverKm(r.chauffeur.id), 0);
 
     // Shift helpers
-    const shiftColors = { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#E8543A', custom: '#E8543A' };
+    const shiftColors = { matin: '#22c55e', apres_midi: '#3b82f6', journee: '#f59e0b', nuit: '#F5512E', custom: '#F5512E' };
     const shiftLabels = { matin: 'M', apres_midi: 'AM', journee: 'J', nuit: 'N', custom: 'P' };
     const getShiftBadge = (shift) => {
       const type = shift.typeCreneaux || 'custom';
@@ -1144,7 +1144,7 @@ const YangoPage = {
           Courses : <strong style="color:var(--text-primary);font-size:var(--font-size-sm);">${totalCourses}</strong>
         </div>
         <div style="font-size:var(--font-size-xs);color:var(--text-muted);">
-          Km total : <strong style="color:#E8543A;font-size:var(--font-size-sm);">${totalKmAll.toFixed(1)} km</strong>
+          Km total : <strong style="color:#F5512E;font-size:var(--font-size-sm);">${totalKmAll.toFixed(1)} km</strong>
         </div>
         ${errCount > 0 ? `<div style="font-size:var(--font-size-xs);color:var(--warning);">${errCount} non chargé(s)</div>` : ''}
       </div>
@@ -1217,7 +1217,7 @@ const YangoPage = {
                     </div>` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}</td>
                   <td style="text-align:right;font-weight:600;">${s ? (s.nbCourses || 0) : '—'}</td>
                   <td style="text-align:right;">
-                    ${driverKm > 0 ? `<div><span style="font-weight:600;color:#E8543A;">${driverKm.toFixed(1)}</span> <span style="font-size:10px;color:var(--text-muted);">km</span></div>${driverVitMoy > 0 ? `<div style="font-size:9px;color:var(--text-muted);">~${driverVitMoy.toFixed(0)} km/h</div>` : ''}` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}
+                    ${driverKm > 0 ? `<div><span style="font-weight:600;color:#F5512E;">${driverKm.toFixed(1)}</span> <span style="font-size:10px;color:var(--text-muted);">km</span></div>${driverVitMoy > 0 ? `<div style="font-size:9px;color:var(--text-muted);">~${driverVitMoy.toFixed(0)} km/h</div>` : ''}` : '<span style="color:var(--text-muted);font-size:10px;">—</span>'}
                   </td>
                   <td style="text-align:right;color:#22c55e;">${s ? Utils.formatCurrency(s.totalCash || 0) : '—'}</td>
                   <td style="text-align:right;color:#3b82f6;">${s ? Utils.formatCurrency(s.totalCard || 0) : '—'}</td>

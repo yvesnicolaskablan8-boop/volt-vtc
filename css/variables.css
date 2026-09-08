@@ -52,20 +52,20 @@
 [data-theme="light"] {
   /* ===== Thème SPIKE (clair) — cartes blanches, fond gris-bleu, accent bleu ===== */
   /* Background layers */
-  /* ===== Thème « Financial Dashboard » (clair chaud) — crème, accent orange, quasi-noir ===== */
-  --bg-primary: #ECEAE4;
+  /* ===== Thème « Analytics » (clair frais) — gris-vert, accent orange vif, quasi-noir ===== */
+  --bg-primary: #EDF0EE;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #F4F2ED;
+  --bg-tertiary: #F3F5F3;
   --bg-sidebar: #ffffff;
 
   /* Text */
-  --text-primary: #1B1A18;
-  --text-secondary: #6E6A62;
-  --text-muted: #A6A198;
+  --text-primary: #17181A;
+  --text-secondary: #666B70;
+  --text-muted: #9AA0A4;
 
   /* Borders & Dividers */
-  --border-color: #E9E5DD;
-  --border-accent: rgba(232, 84, 58, 0.20);
+  --border-color: #E7EAE8;
+  --border-accent: rgba(245, 81, 46, 0.20);
 
   /* Shadows — douces, neutres chaudes */
   --shadow-card: 0 2px 10px rgba(38, 32, 24, 0.05);
@@ -82,16 +82,16 @@
   --bg-sidebar-solid: #ffffff;
 
   /* Card hover */
-  --card-hover-bg: rgba(232, 84, 58, 0.05);
+  --card-hover-bg: rgba(245, 81, 46, 0.05);
 
   /* Accent subtle */
-  --accent-subtle: rgba(232, 84, 58, 0.12);
+  --accent-subtle: rgba(245, 81, 46, 0.12);
 
-  /* Accent « Financial » orange (surcharge du brand, thème clair) */
-  --pilote-blue: #E8543A;
-  --pilote-blue-dim: #D23E22;
-  --pilote-blue-glow: rgba(232, 84, 58, 0.16);
-  --pilote-cyan: #F0946E;
+  /* Accent « Analytics » orange vif (surcharge du brand, thème clair) */
+  --pilote-blue: #F5512E;
+  --pilote-blue-dim: #DE3E1E;
+  --pilote-blue-glow: rgba(245, 81, 46, 0.16);
+  --pilote-cyan: #F5C542;
 
   /* Sémantique Spike */
   --success: #13DEB9;
@@ -100,10 +100,10 @@
   --danger-dim: #E8603C;
   --warning: #FFAE1F;
   --warning-dim: #D99000;
-  --info: #E8543A;
+  --info: #F5512E;
 
   /* Glow */
-  --glow-primary: 0 0 12px rgba(232, 84, 58, 0.14);
+  --glow-primary: 0 0 12px rgba(245, 81, 46, 0.14);
   --glow-success: 0 0 12px rgba(19, 222, 185, 0.14);
   --glow-danger: 0 0 12px rgba(250, 137, 107, 0.14);
   --glow-warning: 0 0 12px rgba(255, 174, 31, 0.14);

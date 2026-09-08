@@ -181,7 +181,7 @@ const ActivitePage = {
         </div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-icon" style="background:rgba(139,92,246,0.15);color:#E8543A;">
+        <div class="kpi-icon" style="background:rgba(139,92,246,0.15);color:#F5512E;">
           <iconify-icon icon="solar:database-bold-duotone" style="font-size:24px;"></iconify-icon>
         </div>
         <div class="kpi-info">

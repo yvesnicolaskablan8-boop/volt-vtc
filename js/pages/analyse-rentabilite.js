@@ -247,7 +247,7 @@ const AnalyseRentabilitePage = {
       .ar-badge { display:inline-flex; align-items:center; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:20px; }
       .ar-badge.up { color:#0a9d78; background:rgba(19,222,185,.14); }
       .ar-badge.down { color:#e0603a; background:rgba(250,137,107,.14); }
-      .ar-badge.info { color:#E8543A; background:rgba(232,84,58,.14); }
+      .ar-badge.info { color:#F5512E; background:rgba(245,81,46,.14); }
       .ar-badge.muted { color:var(--text-muted); background:var(--bg-tertiary); }
       .ar-empty { padding:26px 4px; text-align:center; color:var(--text-muted); font-size:13px; }
     </style>`;
