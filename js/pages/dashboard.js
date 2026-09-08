@@ -1606,6 +1606,23 @@ const DashboardPage = {
         .os-row{grid-template-columns:1.6fr 1fr;}
         @media(max-width:960px){ .os-bars{height:170px;} }
         @media(max-width:900px){ .os-row{grid-template-columns:1fr;} }
+        /* Bande de cartes stat (recouvrement / panier / transactions / dette) */
+        .sb-grid{grid-template-columns:repeat(4,1fr);}
+        @media(max-width:1000px){ .sb-grid{grid-template-columns:repeat(2,1fr);} }
+        @media(max-width:560px){ .sb-grid{grid-template-columns:1fr;} }
+        .sb-card{display:flex;flex-direction:column;justify-content:space-between;min-height:150px;}
+        .sb-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+        .sb-num{font-size:30px;font-weight:800;letter-spacing:-1px;color:var(--text-primary);line-height:1;}
+        .sb-pill{font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px;background:rgba(52,211,153,.16);color:#0f9d6b;white-space:nowrap;}
+        .sb-pill.neg{background:rgba(239,68,68,.14);color:#dc2626;}
+        .sb-lbl{font-size:13px;color:var(--text-muted);font-weight:600;margin-top:10px;}
+        .sb-ic{width:34px;height:34px;border-radius:10px;background:var(--bg-tertiary);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+        .sb-dots{display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:12px;}
+        .sb-dcol{display:flex;flex-direction:column;gap:4px;flex:1;align-items:center;justify-content:flex-end;}
+        .sb-dot{width:9px;height:9px;border-radius:50%;background:#F5512E;flex-shrink:0;}
+        .sb-black{background:linear-gradient(160deg,#26221f 0%,#111 100%)!important;color:#fff;align-items:center;justify-content:center;text-align:center;gap:4px;}
+        .sb-black .sb-cap{font-size:13px;color:rgba(255,255,255,.7);font-weight:600;}
+        .sb-black .sb-big{font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1;}
       </style>
 
       <!-- En-tête d'accueil -->
@@ -1616,6 +1633,9 @@ const DashboardPage = {
         ${this._renderSalesChart(d)}
         ${this._renderSourceCard(d)}
       </div>
+
+      <!-- Bande stat : recouvrement / panier / transactions / dette -->
+      ${this._renderStatBand(d)}
 
       <!-- Row : compte + income/paid + recouvrement + tendance -->
       ${this._renderFinBento(d)}
@@ -1775,6 +1795,39 @@ const DashboardPage = {
         <div class="dh-hi">Bonjour ${Utils.escHtml(name)} 👋</div>
         <div class="dh-sub">Voici l'activité de votre flotte.</div>
       </div>
+    </div>`;
+  },
+
+  // Bande de cartes stat façon reference (recouvrement / panier / transactions / dette).
+  _renderStatBand(d) {
+    const f = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
+    const taux = Math.round(d.tauxRecouvrement || 0);
+    const panier = d.monthCourses > 0 ? Math.round((d.caThisMonth || 0) / d.monthCourses) : 0;
+    const nbV = d.nbVersementsPeriode || 0;
+    const trend = Math.round(d.caTrend || 0);
+    const detteRate = d.totalAttendu > 0 ? Math.round((d.totalDettes || 0) / d.totalAttendu * 100) : 0;
+    const weeks = (d.weeklyPayments || []).slice(-8);
+    const maxw = Math.max(1, ...weeks.map(w => w.verse || 0));
+    const dots = weeks.length ? weeks.map(w => { const n = Math.max(1, Math.round((w.verse || 0) / maxw * 6)); return `<div class="sb-dcol">${Array.from({ length: n }).map(() => '<span class="sb-dot"></span>').join('')}</div>`; }).join('') : '';
+    const pill = (v) => `<span class="sb-pill${v < 0 ? ' neg' : ''}">${v >= 0 ? '+' : ''}${v}%</span>`;
+    return `<div class="d-grid sb-grid">
+      <a href="#/versements" class="d-card sb-card" style="text-decoration:none;">
+        <div class="sb-top"><div class="sb-num">${taux}%</div>${pill(trend)}</div>
+        <div class="sb-lbl">Taux de recouvrement</div>
+      </a>
+      <div class="d-card sb-card">
+        <div class="sb-top"><div class="sb-num" style="font-size:26px;">${f(panier)}</div><div class="sb-ic"><iconify-icon icon="solar:bag-smile-bold-duotone"></iconify-icon></div></div>
+        <div class="sb-lbl">Panier moyen / course</div>
+      </div>
+      <div class="d-card sb-card">
+        <div class="sb-top"><div><div class="sb-num" style="font-size:26px;">${Utils.formatNumber(nbV)}</div><div class="sb-lbl" style="margin-top:3px;">Versements ce mois</div></div>${pill(trend)}</div>
+        <div class="sb-dots">${dots}</div>
+      </div>
+      <a href="#/versements" class="d-card sb-card sb-black" style="text-decoration:none;">
+        <div class="sb-cap">Taux de dette</div>
+        <div class="sb-big">${detteRate}<span style="font-size:22px;">%</span></div>
+        <span style="color:#fff;font-size:12px;font-weight:700;background:rgba(255,255,255,.14);padding:8px 16px;border-radius:20px;margin-top:6px;">Voir →</span>
+      </a>
     </div>`;
   },
 
