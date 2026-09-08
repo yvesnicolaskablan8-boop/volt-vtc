@@ -1469,7 +1469,7 @@ const DashboardPage = {
         .fd-center-lbl{font-size:12px;font-weight:600;color:var(--text-muted);}
         .fd-center-val{font-size:24px;font-weight:800;letter-spacing:-.5px;line-height:1.05;margin-top:2px;color:var(--text-primary);white-space:nowrap;}
         .fd-center-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
-        .fd-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+        .fd-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
         .fd-c{background:var(--bg-tertiary);border:1px solid transparent;border-radius:14px;padding:13px 14px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;}
         .fd-c.fd-c-off{cursor:default;opacity:.65;}
         .fd-c:not(.fd-c-off):hover,.fd-c.hot{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.10);}
@@ -2097,49 +2097,48 @@ const DashboardPage = {
   // plus utilisée comme source de présence temps réel.
   _fleetSegDef() {
     return [
-      { key: 'activite', label: 'En activité', color: '#13DEB9', desc: "Roule aujourd'hui" },
-      { key: 'attente', label: 'Programmés', color: '#8AB4F8', desc: "Prévus aujourd'hui · journée en cours" },
-      { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Hors planning' },
+      { key: 'service', label: 'En service', color: '#13DEB9', desc: "Au planning aujourd'hui" },
+      { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Roulent hors planning' },
       { key: 'repos', label: 'Repos / Hors service', color: '#C7D0DD', desc: 'Pas de service' },
     ];
   },
 
+  // États de la flotte fondés sur le PLANNING du jour (donnée fiable et propre à
+  // aujourd'hui) : En service = au planning ; Non planifiés = roulent sans être
+  // prévus ; Repos = ni prévus ni actifs. La « recette du jour » n'est plus un
+  // critère de tri (versements = jours passés, CA Yango différé) — elle ne sert
+  // qu'au sous-indicateur « à surveiller » (CA anormalement bas).
   _fleetBuckets(d) {
     const chauffeurs = (typeof Store !== 'undefined' && Store.get) ? (Store.get('chauffeurs') || []) : [];
     const fleet = chauffeurs.filter(c => (c.statut || 'actif') !== 'inactif');
     const infoById = new Map((d.chauffeursActifsJour || []).map(c => [c.id, c]));
 
-    const B = { activite: [], attente: [], nonpl: [], repos: [] };
+    const B = { service: [], nonpl: [], repos: [] };
     fleet.forEach(ch => {
       const info = infoById.get(ch.id) || null;
       const ca = info ? (info.ca || 0) : 0;
       const programme = info ? !!info.programme : false;
-      const actif = info ? !!info.actif : false;   // a une recette aujourd'hui (ca > 0)
+      const actif = info ? !!info.actif : false;   // a une activité/CA enregistré aujourd'hui
       const state = info ? info.state : null;
       const reasons = [];
       if (state === 'faible') reasons.push('ca_faible'); else if (state === 'modere') reasons.push('ca_modere');
       if (actif && !programme) reasons.push('hors_planning');
       const courses = info ? (info.courses || 0) : 0;
       const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, courses, programme, reasons };
-      // Un chauffeur qui roule (recette > 0) compte toujours « en activité », même
-      // si son CA est bas — l'alerte « à surveiller » devient un sous-compteur.
-      // Priorité : hors-planning > en activité > planifié en attente > repos.
-      if (actif && !programme) B.nonpl.push(entry);
-      else if (actif) B.activite.push(entry);
-      else if (programme) B.attente.push(entry);
+      if (programme) B.service.push(entry);        // au planning = en service
+      else if (actif) B.nonpl.push(entry);         // pas au planning mais roule → à régulariser
       else B.repos.push(entry);
     });
 
     const segments = this._fleetSegDef().map(s => ({ ...s, count: B[s.key].length, drivers: B[s.key] }));
-    const act = segments.find(s => s.key === 'activite');
-    // Sous-compteur « à surveiller » (CA bas) parmi les chauffeurs en activité.
-    const survCount = B.activite.filter(e => e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere')).length;
-    if (act && survCount) act.note = `dont ${survCount} à surveiller`;
-    // Sous-compteur « actif à l'instant » : chauffeurs dont le nombre de courses a
-    // augmenté récemment (proxy de présence, faute de statut temps réel Yango).
-    if (act && this._isToday()) {
-      const recent = this._recentActiveIds(B.activite);
-      if (recent.size) act.recentCount = recent.size;
+    const svc = segments.find(s => s.key === 'service');
+    // Sous-indicateur « à surveiller » : chauffeurs en service au CA anormalement bas.
+    const survCount = B.service.filter(e => e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere')).length;
+    if (svc && survCount) svc.note = `dont ${survCount} à surveiller`;
+    // Sous-compteur « actif à l'instant » (courses en hausse récente) parmi les en service.
+    if (svc && this._isToday()) {
+      const recent = this._recentActiveIds(B.service);
+      if (recent.size) svc.recentCount = recent.size;
     }
     return { segments, total: fleet.length };
   },
