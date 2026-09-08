@@ -1563,6 +1563,27 @@ const DashboardPage = {
         .dh-hi{font-size:30px;font-weight:800;color:var(--text-primary);letter-spacing:-.8px;line-height:1.05;}
         .dh-sub{font-size:15px;color:var(--text-muted);font-weight:500;margin-top:6px;}
         @media(max-width:760px){ .dh-row{flex-direction:column;align-items:flex-start;} .dh-right{text-align:left;} .dh-hi{font-size:24px;} }
+        /* Activity manager (activité du jour : recherche + tags + liste) */
+        .dact-head{display:flex;align-items:center;gap:11px;margin-bottom:14px;}
+        .dact-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+        .dact-search{position:relative;flex:1;min-width:180px;}
+        .dact-search iconify-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:15px;pointer-events:none;}
+        .dact-search input{width:100%;height:40px;padding:0 12px 0 34px;border-radius:13px;border:1px solid var(--border-color);background:var(--bg-tertiary);font-size:13px;color:var(--text-primary);outline:none;box-sizing:border-box;}
+        .dact-search input:focus{border-color:var(--pilote-blue);}
+        .dact-tags{display:flex;gap:7px;flex-wrap:wrap;}
+        .dact-tag{border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-secondary);font-size:12px;font-weight:700;padding:7px 14px;border-radius:20px;cursor:pointer;transition:.15s;}
+        .dact-tag:hover{background:var(--bg-tertiary);}
+        .dact-tag.on{background:#1b1a18;color:#fff;border-color:#1b1a18;}
+        .dact-list{display:flex;flex-direction:column;gap:3px;max-height:360px;overflow-y:auto;}
+        .dact-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:14px;transition:.14s;}
+        .dact-row:hover{background:var(--bg-tertiary);}
+        .dact-av{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;}
+        .dact-main{flex:1;min-width:0;}
+        .dact-name{font-size:14px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .dact-sub{font-size:12px;color:var(--text-muted);margin-top:1px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+        .dact-pill{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;}
+        .dact-amt{font-size:15px;font-weight:800;flex-shrink:0;white-space:nowrap;}
+        .dact-empty{text-align:center;color:var(--text-muted);font-size:13px;padding:26px 0;}
       </style>
 
       <!-- En-tête d'accueil -->
@@ -1578,6 +1599,11 @@ const DashboardPage = {
 
       <!-- Row 1 : Widgets de visibilité (Trésorerie / Rentabilité / Tâches / Alertes) -->
       ${this._renderInsightWidgets(d)}
+
+      <!-- Row 1.5 : Activity manager (activité du jour) -->
+      <div class="d-grid" style="grid-template-columns:1fr;">
+        ${this._renderActivityManager(d)}
+      </div>
 
       <!-- Row 2 : Planning (pleine largeur) -->
       <div class="d-grid d2-r2">
@@ -1643,6 +1669,65 @@ const DashboardPage = {
       </div>
       </div>
     `;
+  },
+
+  // Bloc « Activity manager » : activité des chauffeurs du jour, recherche + tags.
+  _renderActivityManager(d) {
+    const list = [...(d.chauffeursActifsJour || [])].sort((a, b) => (b.ca || 0) - (a.ca || 0));
+    const pals = [['#eef2ff', '#4f46e5'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#16a34a'], ['#fff7ed', '#ea580c'], ['#fdf2f8', '#db2777'], ['#f5f3ff', '#7c3aed']];
+    const av = (nom) => { const s = String(nom || '?'); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; const [bg, fg] = pals[h % pals.length]; const p = s.trim().split(/\s+/); const ini = ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase(); return `<div class="dact-av" style="background:${bg};color:${fg};">${Utils.escHtml(ini)}</div>`; };
+    const zoneOf = (c) => !c.actif ? 'inactif' : (c.state === 'faible' || c.state === 'modere') ? 'surv' : 'forme';
+    const stMap = { forme: ['En forme', '#10b981', 'rgba(16,185,129,.12)'], surv: ['À surveiller', '#D99000', 'rgba(255,174,31,.16)'], inactif: ['Inactif', '#9aa3b2', 'rgba(0,0,0,.05)'] };
+
+    const rows = list.length ? list.map(c => {
+      const nom = ((c.prenom || '') + ' ' + (c.nom || '')).trim() || 'Chauffeur';
+      const zone = zoneOf(c);
+      const st = stMap[zone];
+      const hors = c.programme ? '0' : '1';
+      const courses = c.courses ? `${c.courses} course${c.courses > 1 ? 's' : ''}` : 'aucune course';
+      return `<div class="dact-row" data-name="${Utils.escHtml(nom.toLowerCase())}" data-zone="${zone}" data-hors="${hors}">
+        ${av(nom)}
+        <div class="dact-main">
+          <div class="dact-name">${Utils.escHtml(nom)}</div>
+          <div class="dact-sub"><span class="dact-pill" style="color:${st[1]};background:${st[2]};">${st[0]}</span>${hors === '1' ? '<span class="dact-pill" style="color:#E8543A;background:rgba(232,84,58,.12);">Hors planning</span>' : ''}<span>${courses}</span></div>
+        </div>
+        <div class="dact-amt" style="color:${c.ca > 0 ? 'var(--text-primary)' : 'var(--text-muted)'};">${c.ca > 0 ? Utils.formatCurrency(c.ca) : '—'}</div>
+      </div>`;
+    }).join('') : '<div class="dact-empty">Aucune activité aujourd\'hui.</div>';
+
+    const tag = (key, label, on) => `<button class="dact-tag${on ? ' on' : ''}" onclick="DashboardPage._dactFilter('${key}',this)">${label}</button>`;
+    return `<div class="d-card">
+      <div class="dact-head">
+        <div class="d-icon" style="background:rgba(232,84,58,.12);color:#E8543A;"><iconify-icon icon="solar:widget-5-bold-duotone"></iconify-icon></div>
+        <div style="flex:1;"><div style="font-size:15px;font-weight:800;color:var(--text-primary);">Activité du jour</div><div style="font-size:11px;color:var(--text-muted);">${list.length} chauffeur${list.length > 1 ? 's' : ''} · ${d.periodLabel || ''}</div></div>
+        <a href="#/chauffeurs" style="font-size:11px;font-weight:700;color:#E8543A;text-decoration:none;">Voir tout →</a>
+      </div>
+      <div class="dact-tools">
+        <div class="dact-search"><iconify-icon icon="solar:magnifer-linear"></iconify-icon><input type="text" placeholder="Rechercher un chauffeur…" oninput="DashboardPage._dactSearch(this)"></div>
+        <div class="dact-tags">${tag('all', 'Tous', true)}${tag('forme', 'En forme')}${tag('surv', 'À surveiller')}${tag('hors', 'Hors planning')}</div>
+      </div>
+      <div class="dact-list">${rows}</div>
+    </div>`;
+  },
+
+  _dactFilter(key, btn) {
+    const card = btn.closest('.d-card'); if (!card) return;
+    card.querySelectorAll('.dact-tag').forEach(t => t.classList.toggle('on', t === btn));
+    card._dactKey = key;
+    this._dactApply(card);
+  },
+  _dactSearch(inp) { const card = inp.closest('.d-card'); if (card) this._dactApply(card); },
+  _dactApply(card) {
+    const key = card._dactKey || 'all';
+    const q = (card.querySelector('.dact-search input') || {}).value || '';
+    const qq = q.toLowerCase().trim();
+    card.querySelectorAll('.dact-row').forEach(r => {
+      let ok = true;
+      if (key === 'hors') ok = r.dataset.hors === '1';
+      else if (key !== 'all') ok = r.dataset.zone === key;
+      if (ok && qq) ok = (r.dataset.name || '').includes(qq);
+      r.style.display = ok ? '' : 'none';
+    });
   },
 
   // En-tête d'accueil façon reference : date + « Mes tâches » + salutation.
