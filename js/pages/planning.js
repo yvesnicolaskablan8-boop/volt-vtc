@@ -516,7 +516,7 @@ const PlanningPage = {
         .pm-absence-conge { background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(59,130,246,.06)); color:#635bff; }
         .pm-suspendu { background:repeating-linear-gradient(135deg,transparent,transparent 2px,rgba(239,68,68,.06) 2px,rgba(239,68,68,.06) 4px); color:#ef4444; opacity:.5; }
         .pm-repos { background:rgba(0,0,0,.02); color:#d1d5db; }
-        [data-theme="dark"] .pm-repos { background:rgba(255,255,255,.03); color:#4b5563; }
+        [data-theme="dark"] .pm-repos { background:var(--bg-tertiary); color:#4b5563; }
         .pm-empty { border:1px dashed var(--border-color); opacity:.3; }
         .pm-row-even .pm-driver, .pm-row-even .pm-cell { background:rgba(0,0,0,.01); }
         [data-theme="dark"] .pm-row-even .pm-driver, [data-theme="dark"] .pm-row-even .pm-cell { background:rgba(255,255,255,.02); }
@@ -697,7 +697,7 @@ const PlanningPage = {
 
         /* Repos */
         .pg-repos { background:rgba(0,0,0,.025); color:#d1d5db; }
-        [data-theme="dark"] .pg-repos { background:rgba(255,255,255,.03); color:#4b5563; }
+        [data-theme="dark"] .pg-repos { background:var(--bg-tertiary); color:#4b5563; }
 
         /* Suspendu */
         .pg-suspendu { background:linear-gradient(135deg,rgba(239,68,68,.1),rgba(248,113,113,.05)); color:#ef4444; }

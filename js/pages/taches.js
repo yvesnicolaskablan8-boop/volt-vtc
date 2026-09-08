@@ -397,7 +397,7 @@ const TachesPage = {
         const name = el.dataset.member;
         if (name) this._filterByMember(name);
       });
-      el.addEventListener('mouseenter', () => { el.style.background = 'rgba(255,255,255,0.04)'; });
+      el.addEventListener('mouseenter', () => { el.style.background = 'var(--bg-tertiary)'; });
       el.addEventListener('mouseleave', () => { el.style.background = ''; });
     });
   },
@@ -812,7 +812,7 @@ const TachesPage = {
       + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#635bff;"></span>En cours</span>'
       + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#13deb9;"></span>Terminée</span>'
       + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#ef4444;"></span>En retard</span>'
-      + '<span class="gantt-legend-item"><span style="width:10px;height:2px;background:#8AA8FF;border-radius:1px;"></span>Aujourd\'hui</span>'
+      + '<span class="gantt-legend-item"><span style="width:10px;height:2px;background:var(--pilote-blue);border-radius:1px;"></span>Aujourd\'hui</span>'
       + '</div>';
 
     return `
@@ -1956,18 +1956,18 @@ const TachesPage = {
 
       /* Tabs */
       .taches-tabs {
-        display:flex; gap:3px; background:rgba(255,255,255,0.03); border-radius:12px; padding:4px;
-        border:1px solid rgba(255,255,255,0.06); backdrop-filter:blur(8px);
+        display:flex; gap:3px; background:var(--bg-secondary); border-radius:12px; padding:4px;
+        border:1px solid var(--border-color); backdrop-filter:blur(8px);
       }
       .taches-tab {
         display:flex; align-items:center; gap:6px; padding:8px 16px; border:none; border-radius:9px;
         background:transparent; color:var(--text-muted); cursor:pointer; font-size:13px; font-weight:500;
         transition:all .2s cubic-bezier(.4,0,.2,1); white-space:nowrap; position:relative;
       }
-      .taches-tab:hover { color:var(--text-primary); background:rgba(255,255,255,0.05); }
+      .taches-tab:hover { color:var(--text-primary); background:var(--bg-tertiary); }
       .taches-tab.active {
         background:linear-gradient(135deg, rgba(245,81,46,.2), rgba(245,81,46,.12));
-        color:#8AA8FF; font-weight:600;
+        color:var(--pilote-blue); font-weight:600;
         box-shadow:0 2px 8px rgba(245,81,46,.2), inset 0 1px 0 rgba(255,255,255,0.05);
       }
       .taches-tab iconify-icon { font-size:1.1rem; }
@@ -1992,7 +1992,7 @@ const TachesPage = {
         display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:12px; margin-bottom:20px;
       }
       .dash-kpi-card {
-        background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+        background:var(--bg-secondary); border:1px solid var(--border-color);
         border-radius:16px; padding:20px 16px; text-align:center;
         transition:all .2s cubic-bezier(.4,0,.2,1); cursor:pointer; position:relative; overflow:hidden;
       }
@@ -2000,7 +2000,7 @@ const TachesPage = {
         content:''; position:absolute; top:0; left:0; right:0; height:3px;
         background:var(--kpi-accent, #F5512E); opacity:0; transition:opacity .2s;
       }
-      .dash-kpi-card:hover { transform:translateY(-4px); box-shadow:0 8px 25px rgba(0,0,0,.2); background:rgba(255,255,255,0.05); }
+      .dash-kpi-card:hover { transform:translateY(-4px); box-shadow:0 8px 25px rgba(0,0,0,.08); background:var(--bg-tertiary); }
       .dash-kpi-card:hover::before { opacity:1; }
       .dash-kpi-card:active { transform:translateY(-1px); }
       .dash-kpi-icon {
@@ -2015,16 +2015,16 @@ const TachesPage = {
       @media(max-width:768px) { .dash-grid-2col { grid-template-columns:1fr; } }
 
       .dash-card {
-        background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+        background:var(--bg-secondary); border:1px solid var(--border-color);
         border-radius:16px; overflow:hidden; backdrop-filter:blur(8px);
         transition:box-shadow .2s;
       }
-      .dash-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.12); }
+      .dash-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.07); }
       .dash-card-header {
         display:flex; align-items:center; gap:8px; padding:16px 18px;
         font-size:13px; font-weight:600; color:var(--text-primary);
-        border-bottom:1px solid rgba(255,255,255,0.04);
-        background:rgba(255,255,255,0.01);
+        border-bottom:1px solid var(--border-color);
+        background:var(--bg-tertiary);
       }
       .dash-card-body { padding:14px 18px; }
 
@@ -2038,9 +2038,9 @@ const TachesPage = {
       /* Timeline */
       .dash-timeline-item {
         display:flex; align-items:flex-start; gap:10px; padding:8px 0; cursor:pointer;
-        border-bottom:1px solid rgba(255,255,255,0.03); transition:background .15s;
+        border-bottom:1px solid var(--border-color); transition:background .15s;
       }
-      .dash-timeline-item:hover { background:rgba(255,255,255,0.02); }
+      .dash-timeline-item:hover { background:var(--bg-tertiary); }
       .dash-timeline-item:last-child { border-bottom:none; }
       .dash-timeline-dot { width:10px; height:10px; border-radius:50%; margin-top:4px; flex-shrink:0; }
       .dash-timeline-content { flex:1; }
@@ -2050,9 +2050,9 @@ const TachesPage = {
       /* Activity */
       .dash-activity-item {
         display:flex; align-items:center; gap:10px; padding:8px 0; cursor:pointer;
-        border-bottom:1px solid rgba(255,255,255,0.03); transition:background .15s;
+        border-bottom:1px solid var(--border-color); transition:background .15s;
       }
-      .dash-activity-item:hover { background:rgba(255,255,255,0.02); }
+      .dash-activity-item:hover { background:var(--bg-tertiary); }
       .dash-activity-item:last-child { border-bottom:none; }
       .dash-activity-badge {
         width:32px; height:32px; border-radius:8px; display:flex; align-items:center;
@@ -2070,13 +2070,13 @@ const TachesPage = {
       @media(max-width:600px) { .kanban-board { grid-template-columns:1fr; } }
 
       .kanban-column {
-        background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05);
+        background:var(--bg-tertiary); border:1px solid var(--border-color);
         border-radius:16px; display:flex; flex-direction:column; min-height:300px;
         backdrop-filter:blur(4px);
       }
       .kanban-col-header {
         padding:14px 16px; border-radius:16px 16px 0 0;
-        background:rgba(255,255,255,0.03);
+        background:var(--bg-secondary);
       }
       .kanban-col-title {
         display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--text-primary);
@@ -2093,17 +2093,17 @@ const TachesPage = {
       .kanban-add-btn {
         display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;
         border:none; background:transparent; color:var(--text-muted); cursor:pointer;
-        font-size:12px; transition:all .15s; border-top:1px solid rgba(255,255,255,0.04);
+        font-size:12px; transition:all .15s; border-top:1px solid var(--border-color);
       }
       .kanban-add-btn:hover { color:#F5512E; background:rgba(245,81,46,.06); }
 
       /* Kanban cards */
       .kanban-card {
-        background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);
+        background:var(--bg-secondary); border:1px solid var(--border-color);
         border-radius:12px; padding:12px 14px; margin-bottom:8px; cursor:pointer;
         transition:all .15s cubic-bezier(.4,0,.2,1); position:relative;
       }
-      .kanban-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.2); background:rgba(255,255,255,0.06); }
+      .kanban-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.08); background:var(--bg-tertiary); }
       .kanban-card:active { transform:scale(0.98); }
       .kanban-card-top { display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
       .kanban-prio-badge {
@@ -2121,7 +2121,7 @@ const TachesPage = {
       .kanban-subtask-label { font-size:10px; color:var(--text-muted); }
       .kanban-tags { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:6px; }
       .kanban-tag {
-        background:rgba(245,81,46,.1); color:#8AA8FF; padding:1px 7px; border-radius:8px;
+        background:rgba(245,81,46,.1); color:var(--pilote-blue); padding:1px 7px; border-radius:8px;
         font-size:10px; font-weight:500;
       }
       .kanban-card-footer { display:flex; align-items:center; justify-content:space-between; }
@@ -2150,7 +2150,7 @@ const TachesPage = {
       .eisen-quadrant.drag-over { outline:2px dashed rgba(245,81,46,.4); }
       .eisen-q-header {
         display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600;
-        margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.04);
+        margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border-color);
       }
       .eisen-q-count {
         padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; margin-left:auto;
@@ -2161,11 +2161,11 @@ const TachesPage = {
         font-style:italic;
       }
       .eisen-card {
-        background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);
+        background:var(--bg-secondary); border:1px solid var(--border-color);
         border-radius:8px; padding:8px 10px; margin-bottom:6px; cursor:pointer;
         transition:transform .12s, box-shadow .12s;
       }
-      .eisen-card:hover { transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.12); }
+      .eisen-card:hover { transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.07); }
       .eisen-card-title { font-size:12px; font-weight:500; color:var(--text-primary); margin-bottom:4px; }
       .eisen-card-meta { display:flex; align-items:center; gap:6px; }
 
@@ -2175,30 +2175,30 @@ const TachesPage = {
       }
       .gantt-toolbar-right { display:flex; gap:4px; }
       .gantt-view-btn {
-        display:flex; align-items:center; gap:4px; padding:6px 14px; border:1px solid rgba(255,255,255,0.08);
-        border-radius:8px; background:rgba(255,255,255,0.03); color:var(--text-muted);
+        display:flex; align-items:center; gap:4px; padding:6px 14px; border:1px solid var(--border-color);
+        border-radius:8px; background:var(--bg-secondary); color:var(--text-muted);
         cursor:pointer; font-size:12px; font-weight:500; transition:all .15s;
       }
-      .gantt-view-btn:hover { background:rgba(255,255,255,0.06); color:var(--text-primary); }
-      .gantt-view-btn.active { background:rgba(245,81,46,.15); color:#8AA8FF; border-color:rgba(245,81,46,.3); font-weight:600; }
+      .gantt-view-btn:hover { background:var(--bg-tertiary); color:var(--text-primary); }
+      .gantt-view-btn.active { background:rgba(245,81,46,.15); color:var(--pilote-blue); border-color:rgba(245,81,46,.3); font-weight:600; }
 
       .gantt-container {
-        display:flex; border:1px solid rgba(255,255,255,0.06); border-radius:14px;
-        overflow:hidden; background:rgba(255,255,255,0.02); backdrop-filter:blur(4px);
+        display:flex; border:1px solid var(--border-color); border-radius:14px;
+        overflow:hidden; background:var(--bg-tertiary); backdrop-filter:blur(4px);
       }
       .gantt-sidebar {
-        min-width:220px; max-width:260px; border-right:1px solid rgba(255,255,255,0.06);
+        min-width:220px; max-width:260px; border-right:1px solid var(--border-color);
         flex-shrink:0; overflow-y:auto;
       }
       .gantt-sidebar-header {
         display:flex; align-items:center; padding:0 14px;
-        border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02);
+        border-bottom:1px solid var(--border-color); background:var(--bg-tertiary);
       }
       .gantt-task-label {
         display:flex; align-items:center; gap:8px; padding:0 14px; cursor:pointer;
-        border-bottom:1px solid rgba(255,255,255,0.02); transition:background .1s;
+        border-bottom:1px solid var(--border-color); transition:background .1s;
       }
-      .gantt-task-label:hover { background:rgba(255,255,255,0.03); }
+      .gantt-task-label:hover { background:var(--bg-secondary); }
       .gantt-task-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
       .gantt-task-info { min-width:0; }
       .gantt-task-name { font-size:12px; font-weight:500; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -2210,32 +2210,32 @@ const TachesPage = {
       .gantt-header { position:sticky; top:0; z-index:2; background:var(--bg-primary); }
       .gantt-months {
         display:flex; background:rgba(245,81,46,0.08);
-        border-bottom:1px solid rgba(255,255,255,0.04);
+        border-bottom:1px solid var(--border-color);
       }
       .gantt-month {
-        padding:6px 10px; font-size:12px; font-weight:600; color:#8AA8FF;
-        text-transform:capitalize; border-right:1px solid rgba(255,255,255,0.04);
+        padding:6px 10px; font-size:12px; font-weight:600; color:var(--pilote-blue);
+        text-transform:capitalize; border-right:1px solid var(--border-color);
         text-align:center;
       }
       .gantt-days {
-        display:flex; background:rgba(255,255,255,0.02);
-        border-bottom:1px solid rgba(255,255,255,0.06);
+        display:flex; background:var(--bg-tertiary);
+        border-bottom:1px solid var(--border-color);
       }
       .gantt-day {
-        text-align:center; padding:4px 0; border-right:1px solid rgba(255,255,255,0.02);
+        text-align:center; padding:4px 0; border-right:1px solid var(--border-color);
       }
       .gantt-day-name { font-size:9px; color:var(--text-muted); text-transform:uppercase; }
       .gantt-day-num { font-size:11px; font-weight:600; color:var(--text-primary); }
       .gantt-day.gantt-today-col { background:rgba(245,81,46,0.08); }
-      .gantt-day.gantt-today-col .gantt-day-num { color:#8AA8FF; }
-      .gantt-day.gantt-weekend { background:rgba(255,255,255,0.01); }
+      .gantt-day.gantt-today-col .gantt-day-num { color:var(--pilote-blue); }
+      .gantt-day.gantt-weekend { background:var(--bg-tertiary); }
       .gantt-day.gantt-weekend .gantt-day-num { color:var(--text-muted); opacity:.6; }
 
       .gantt-body { position:relative; }
-      .gantt-row { position:relative; border-bottom:1px solid rgba(255,255,255,0.02); }
+      .gantt-row { position:relative; border-bottom:1px solid var(--border-color); }
       .gantt-row-bg { display:flex; position:absolute; top:0; left:0; height:100%; }
-      .gantt-cell { border-right:1px solid rgba(255,255,255,0.02); }
-      .gantt-cell.gantt-weekend { background:rgba(255,255,255,0.01); }
+      .gantt-cell { border-right:1px solid var(--border-color); }
+      .gantt-cell.gantt-weekend { background:var(--bg-tertiary); }
       .gantt-cell.gantt-today-col { background:rgba(245,81,46,0.04); }
 
       .gantt-bar {
@@ -2243,7 +2243,7 @@ const TachesPage = {
         display:flex; align-items:center; cursor:pointer; overflow:hidden;
         transition:transform .12s, box-shadow .12s; z-index:1;
       }
-      .gantt-bar:hover { transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.2); z-index:2; }
+      .gantt-bar:hover { transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.08); z-index:2; }
       .gantt-bar-fill { position:absolute; top:0; left:0; height:100%; border-radius:8px; opacity:.6; transition:width .3s; }
       .gantt-bar-label {
         position:relative; z-index:1; padding:0 8px; font-size:11px; font-weight:500;
@@ -2251,17 +2251,17 @@ const TachesPage = {
       }
 
       .gantt-today-line {
-        position:absolute; top:0; width:2px; background:#8AA8FF;
+        position:absolute; top:0; width:2px; background:var(--pilote-blue);
         z-index:3; pointer-events:none; opacity:.7;
       }
       .gantt-today-line::before {
         content:''; position:absolute; top:-4px; left:-4px;
-        width:10px; height:10px; border-radius:50%; background:#8AA8FF;
+        width:10px; height:10px; border-radius:50%; background:var(--pilote-blue);
       }
 
       .gantt-legend {
         display:flex; align-items:center; gap:16px; padding:12px 16px; margin-top:12px;
-        background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+        background:var(--bg-tertiary); border:1px solid var(--border-color);
         border-radius:10px; flex-wrap:wrap;
       }
       .gantt-legend-item {
@@ -2278,10 +2278,10 @@ const TachesPage = {
       .reunion-list { display:flex; flex-direction:column; gap:10px; }
       .reunion-card {
         display:flex; align-items:center; gap:14px; padding:16px 18px; border-radius:16px;
-        background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+        background:var(--bg-secondary); border:1px solid var(--border-color);
         cursor:pointer; transition:all .2s cubic-bezier(.4,0,.2,1); backdrop-filter:blur(4px);
       }
-      .reunion-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.18); background:rgba(255,255,255,0.05); }
+      .reunion-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.18); background:var(--bg-tertiary); }
       .reunion-card-left { flex-shrink:0; }
       .reunion-date-block {
         width:50px; height:50px; border-radius:10px; background:rgba(139,92,246,.12);
@@ -2331,11 +2331,11 @@ const TachesPage = {
         border-bottom:1px solid var(--border-color); background:var(--bg-secondary);
       }
       .liste-table td {
-        padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.03);
+        padding:10px 12px; border-bottom:1px solid var(--border-color);
         vertical-align:middle;
       }
       .liste-row { transition:background .1s; }
-      .liste-row:hover { background:rgba(255,255,255,0.02); }
+      .liste-row:hover { background:var(--bg-tertiary); }
       .liste-row.selected { background:rgba(245,81,46,.06); }
       .liste-title-cell { cursor:pointer; }
       .liste-task-title { font-weight:500; color:var(--text-primary); }
@@ -2354,7 +2354,7 @@ const TachesPage = {
         background:none; border:none; cursor:pointer; padding:4px; border-radius:6px;
         transition:background .15s; display:inline-flex; align-items:center; justify-content:center;
       }
-      .btn-icon-sm:hover { background:rgba(255,255,255,0.06); }
+      .btn-icon-sm:hover { background:var(--bg-tertiary); }
 
       .form-control-sm { padding:5px 10px !important; }
     `;

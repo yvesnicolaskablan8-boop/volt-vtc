@@ -280,7 +280,7 @@ const RentabilitePage = {
 
   _template(d) {
     const rsiColor = d.rsiGlobal >= 50 ? '#34d399' : d.rsiGlobal >= 0 ? '#fde68a' : '#fca5a5';
-    const rsiBarColor = d.rsiGlobal >= 100 ? '#34d399' : d.rsiGlobal >= 50 ? '#8aa8ff' : d.rsiGlobal >= 0 ? '#fde68a' : '#fca5a5';
+    const rsiBarColor = d.rsiGlobal >= 100 ? '#34d399' : d.rsiGlobal >= 50 ? 'var(--pilote-blue)' : d.rsiGlobal >= 0 ? '#fde68a' : '#fca5a5';
     const rsiPct = Math.min(Math.max(d.rsiGlobal, 0), 100);
 
     return `
@@ -289,8 +289,8 @@ const RentabilitePage = {
         .rent-hero::before { content:'';position:absolute;top:-50%;right:-30%;width:80%;height:200%;background:radial-gradient(circle,rgba(139,92,246,.15) 0%,transparent 70%);pointer-events:none; }
         .rent-hero::after { content:'';position:absolute;bottom:-40%;left:-20%;width:60%;height:150%;background:radial-gradient(circle,rgba(16,185,129,.1) 0%,transparent 60%);pointer-events:none; }
         .rent-hero * { position:relative;z-index:1; }
-        .rent-kpi-glass { background:rgba(255,255,255,.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:20px;text-align:center;transition:transform .2s,box-shadow .2s; }
-        .rent-kpi-glass:hover { transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.2); }
+        .rent-kpi-glass { background:var(--bg-secondary);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:20px;text-align:center;transition:transform .2s,box-shadow .2s; }
+        .rent-kpi-glass:hover { transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.08); }
         .rent-kpi-val { font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.1; }
         .rent-kpi-lbl { font-size:11px;color:rgba(255,255,255,.6);margin-top:6px;font-weight:500; }
         .rent-progress { height:10px;border-radius:10px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:18px; }
@@ -361,7 +361,7 @@ const RentabilitePage = {
         </div>
         <div style="text-align:right;margin-top:8px;font-size:12px;font-weight:700;color:${rsiBarColor};">${rsiPct.toFixed(0)}% de l'investissement récupéré</div>
 
-        <div style="margin-top:16px;padding:14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);">
+        <div style="margin-top:16px;padding:14px;border-radius:12px;background:var(--bg-tertiary);border:1px solid var(--border-color);">
           <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);margin-bottom:8px;"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon> Détail du calcul</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
             <div style="color:rgba(255,255,255,.5);font-weight:600;">Revenus (versements) :</div><div style="color:#34d399;font-weight:600;text-align:right;">+ ${Utils.formatCurrency(d.fleetTotalRevenue)}</div>
@@ -369,10 +369,10 @@ const RentabilitePage = {
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont dépenses :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.vehiculeDepenses, 0))}</div>
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont réparations :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.vehiculeReparations, 0))}</div>
             <div style="color:rgba(255,255,255,.3);font-size:10px;padding-left:10px;">dont maintenance :</div><div style="color:rgba(255,255,255,.3);font-size:10px;text-align:right;">${Utils.formatCurrency(d.analysis.reduce((s,a) => s + a.maintenanceTotal, 0))}</div>
-            <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:#8aa8ff;font-weight:700;">= Profit d'exploitation :</div><div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:${d.profitExploitation >= 0 ? '#34d399' : '#f87171'};font-weight:700;text-align:right;">${Utils.formatCurrency(d.profitExploitation)}</div>
+            <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:var(--pilote-blue);font-weight:700;">= Profit d'exploitation :</div><div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:${d.profitExploitation >= 0 ? '#34d399' : '#f87171'};font-weight:700;text-align:right;">${Utils.formatCurrency(d.profitExploitation)}</div>
             <div style="color:rgba(255,255,255,.4);">Leasing payé :</div><div style="color:#f87171;font-weight:600;text-align:right;">− ${Utils.formatCurrency(d.investPaye)}</div>
             <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:rgba(255,255,255,.6);font-weight:700;">= Profit net réel :</div><div style="border-top:1px solid rgba(255,255,255,.1);padding-top:4px;color:${d.profitNet >= 0 ? '#34d399' : '#f87171'};font-weight:700;text-align:right;">${Utils.formatCurrency(d.profitNet)}</div>
-            <div style="color:rgba(255,255,255,.3);font-size:10px;">RSI = Profit exploitation ÷ Investissement total (${Utils.formatCurrency(d.investTotal)})</div><div style="color:#8aa8ff;font-size:10px;font-weight:600;text-align:right;">${d.rsiGlobal.toFixed(1)}%</div>
+            <div style="color:rgba(255,255,255,.3);font-size:10px;">RSI = Profit exploitation ÷ Investissement total (${Utils.formatCurrency(d.investTotal)})</div><div style="color:var(--pilote-blue);font-size:10px;font-weight:600;text-align:right;">${d.rsiGlobal.toFixed(1)}%</div>
           </div>
         </div>
       </div>
@@ -754,13 +754,13 @@ const RentabilitePage = {
             <span style="font-size:10px;color:var(--text-muted);">Profit: ${Utils.formatCurrency(a.totalRevenue - a.totalCost)}</span>
           </div>
           <div style="display:flex;gap:4px;align-items:center;">
-            <div style="flex:1;height:14px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden;">
+            <div style="flex:1;height:14px;background:var(--bg-tertiary);border-radius:8px;overflow:hidden;">
               <div style="height:100%;width:${revPct}%;background:linear-gradient(90deg,#13deb9,#34d399);border-radius:8px;transition:width .8s ease;"></div>
             </div>
             <span style="font-size:10px;color:#13deb9;min-width:70px;text-align:right;">${Utils.formatCurrency(a.totalRevenue)}</span>
           </div>
           <div style="display:flex;gap:4px;align-items:center;margin-top:3px;">
-            <div style="flex:1;height:14px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden;">
+            <div style="flex:1;height:14px;background:var(--bg-tertiary);border-radius:8px;overflow:hidden;">
               <div style="height:100%;width:${costPct}%;background:linear-gradient(90deg,#ef4444,#f87171);border-radius:8px;transition:width .8s ease;"></div>
             </div>
             <span style="font-size:10px;color:#ef4444;min-width:70px;text-align:right;">${Utils.formatCurrency(a.totalCost)}</span>
@@ -780,7 +780,7 @@ const RentabilitePage = {
       const costData = [totalAcq, totalMaint, totalDep, totalRep].map(v => Math.round(v));
       const costLabels = ['Leasing / Achat', 'Maintenance', 'Dépenses', 'Réparations'];
       const costColors = ['#F5512E', '#f87171', '#f5c542', '#0891b2'];
-      const costHover = ['#8AA8FF', '#fca5a5', '#f5c542', '#67e8f9'];
+      const costHover = ['var(--pilote-blue)', '#fca5a5', '#f5c542', '#67e8f9'];
 
       this._charts.push(new Chart(costBrkCtx, {
         type: 'doughnut',
@@ -824,7 +824,7 @@ const RentabilitePage = {
         const label = a.vehicule.immatriculation || `${a.vehicule.marque} ${a.vehicule.modele}`.slice(0, 10);
         return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
           <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:75px;text-align:right;">${label}</span>
-          <div style="flex:1;height:20px;background:rgba(255,255,255,.05);border-radius:10px;overflow:hidden;">
+          <div style="flex:1;height:20px;background:var(--bg-tertiary);border-radius:10px;overflow:hidden;">
             <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${color},${gradEnd});border-radius:10px;transition:width .8s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;">
               ${pct > 25 ? `<span style="font-size:9px;font-weight:800;color:#fff;">${Utils.formatCurrency(a.monthlyProfit)}/mois</span>` : ''}
             </div>
