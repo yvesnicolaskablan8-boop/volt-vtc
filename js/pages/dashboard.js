@@ -186,10 +186,10 @@ const DashboardPage = {
     const nbActifs = lignes.filter(l => l.roule).length;
     const nbHors = lignes.filter(l => l.roule && !l.programme).length;
 
-    // === Style Modernize / Spike (bleu #5D87FF, cartes arrondies pastel, ombre douce) ===
+    // === Style Modernize / Spike (bleu #F5512E, cartes arrondies pastel, ombre douce) ===
     const C = {
       bg: '#F5F7FB', card: '#ffffff', head: '#2A3547', mut: '#5A6A85', mut2: '#7C8FAC', bd: '#EBF1F6',
-      blue: '#5D87FF', blueS: 'rgba(93,135,255,.10)',
+      blue: '#F5512E', blueS: 'rgba(245,81,46,.10)',
       green: '#02b3a9', greenS: 'rgba(19,222,185,.14)',
       amber: '#D99000', amberS: 'rgba(255,174,31,.16)',
       red: '#D9583B', redS: 'rgba(250,137,107,.14)',
@@ -224,7 +224,7 @@ const DashboardPage = {
       <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px;">
         ${topCA.map(l => `<div style="display:flex;align-items:center;gap:14px;">
           <div style="width:120px;flex-shrink:0;font-size:13px;font-weight:700;color:${C.head};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${Utils.escHtml(l.prenom)} ${Utils.escHtml((l.nom || '').charAt(0))}.</div>
-          <div style="flex:1;height:24px;background:${C.bg};border-radius:8px;overflow:hidden;"><div style="height:100%;width:${(l.ca / maxCA * 100).toFixed(1)}%;background:linear-gradient(90deg,#5D87FF,#8AA8FF);border-radius:8px;min-width:4px;"></div></div>
+          <div style="flex:1;height:24px;background:${C.bg};border-radius:8px;overflow:hidden;"><div style="height:100%;width:${(l.ca / maxCA * 100).toFixed(1)}%;background:linear-gradient(90deg,#F5512E,#8AA8FF);border-radius:8px;min-width:4px;"></div></div>
           <div style="width:100px;flex-shrink:0;text-align:right;font-size:13px;font-weight:800;color:${C.head};">${money(l.ca)}</div>
         </div>`).join('')}
       </div>
@@ -243,7 +243,7 @@ const DashboardPage = {
         <td style="padding:13px 14px;text-align:right;font-size:13px;color:${C.mut};">${l.roule ? l.courses : '—'}</td>
         <td style="padding:13px 14px;text-align:right;font-size:13px;color:${C.mut};">${l.verse > 0 ? money(l.verse) : '—'}</td>
         <td style="padding:13px 14px;text-align:right;font-size:14px;font-weight:800;color:${C.head};">${money(l.ca)}</td>
-        <td style="padding:13px 14px;text-align:right;">${(l.roule && !l.programme) ? `<button onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${l.id}')" style="font-size:12px;font-weight:700;color:#fff;background:${C.blue};border:none;border-radius:9px;padding:6px 12px;cursor:pointer;box-shadow:0 4px 10px rgba(93,135,255,.30);">+ Planning</button>` : ''}</td>
+        <td style="padding:13px 14px;text-align:right;">${(l.roule && !l.programme) ? `<button onclick="event.stopPropagation();DashboardPage._ajouterAuPlanning('${l.id}')" style="font-size:12px;font-weight:700;color:#fff;background:${C.blue};border:none;border-radius:9px;padding:6px 12px;cursor:pointer;box-shadow:0 4px 10px rgba(245,81,46,.30);">+ Planning</button>` : ''}</td>
       </tr>`;
     }).join('');
     const tableOrEmpty = lignes.length ? `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:560px;"><thead><tr>${th('Chauffeur')}${th('Statut')}${th('Courses', 'right')}${th('Versé', 'right')}${th('CA', 'right')}${th('', 'right')}</tr></thead><tbody>${rows}</tbody></table></div>` : `<div style="text-align:center;color:${C.mut2};padding:40px;font-size:14px;">Aucune activité ${estAujourdhui ? 'aujourd’hui' : 'ce jour-là'}.</div>`;
@@ -264,7 +264,7 @@ const DashboardPage = {
       const pts = vals.map((v, i) => ({ x: +(i / (n - 1) * W).toFixed(1), y: +(H - 6 - (v / max) * (H - 12)).toFixed(1) }));
       let dd = `M${pts[0].x},${pts[0].y}`;
       for (let i = 0; i < pts.length - 1; i++) { const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2; dd += ` C${(p1.x + (p2.x - p0.x) / 6).toFixed(1)},${(p1.y + (p2.y - p0.y) / 6).toFixed(1)} ${(p2.x - (p3.x - p1.x) / 6).toFixed(1)},${(p2.y - (p3.y - p1.y) / 6).toFixed(1)} ${p2.x},${p2.y}`; }
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:60px;display:block;"><defs><linearGradient id="meGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#49BEFF" stop-opacity=".28"/><stop offset="1" stop-color="#49BEFF" stop-opacity="0"/></linearGradient></defs><path d="${dd} L${W},${H} L0,${H} Z" fill="url(#meGrad)"/><path d="${dd}" fill="none" stroke="#49BEFF" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:60px;display:block;"><defs><linearGradient id="meGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F5C542" stop-opacity=".28"/><stop offset="1" stop-color="#F5C542" stop-opacity="0"/></linearGradient></defs><path d="${dd} L${W},${H} L0,${H} Z" fill="url(#meGrad)"/><path d="${dd}" fill="none" stroke="#F5C542" stroke-width="2.5" stroke-linecap="round"/></svg>`;
     };
     const monthlyCard = `<div style="${cardCss}padding:24px 28px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
@@ -277,7 +277,7 @@ const DashboardPage = {
             <span style="font-size:13px;color:${C.mut};">vs mois dernier</span>
           </div>
         </div>
-        <div style="width:44px;height:44px;border-radius:50%;background:${C.blue};color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 8px 18px rgba(93,135,255,.32);flex-shrink:0;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
+        <div style="width:44px;height:44px;border-radius:50%;background:${C.blue};color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 8px 18px rgba(245,81,46,.32);flex-shrink:0;"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
       </div>
       <div style="margin-top:16px;">${sparkline(_spark)}</div>
     </div>`;
@@ -1107,7 +1107,7 @@ const DashboardPage = {
     // Couleur fixe par carte pour les différencier (alignée sur la couleur de l'icône) :
     // Recouvrement = émeraude, Objectif = indigo.
     const recouvrementColor = '#10b981';
-    const progressColor = '#5D87FF';
+    const progressColor = '#F5512E';
     const session = (typeof Auth !== 'undefined' && Auth.getSession) ? Auth.getSession() : {};
     const userName = session.prenom || 'Patron';
 
@@ -1172,7 +1172,7 @@ const DashboardPage = {
         .live-chip { animation: dSlide .4s ease both; }
         @keyframes dSlide { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         #live-indicator.pulse { animation:flash-indicator 1.5s }
-        @keyframes flash-indicator { 0%{background:rgba(99,102,241,.3)} 100%{background:rgba(99,102,241,.08)} }
+        @keyframes flash-indicator { 0%{background:rgba(245,81,46,.3)} 100%{background:rgba(245,81,46,.08)} }
 
         .d-wrap { animation: dSlide .5s cubic-bezier(.16,1,.3,1); }
         .d-bg {
@@ -1200,16 +1200,16 @@ const DashboardPage = {
           border-color: rgba(255,255,255,.06);
           box-shadow: 0 1px 3px rgba(0,0,0,.2), 0 8px 32px rgba(0,0,0,.15);
         }
-        .d-card:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(99,102,241,.1); border-color:rgba(99,102,241,.15); }
-        [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(99,102,241,.15); border-color:rgba(99,102,241,.2); }
+        .d-card:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(245,81,46,.1); border-color:rgba(245,81,46,.15); }
+        [data-theme="dark"] .d-card:hover { box-shadow:0 8px 40px rgba(245,81,46,.15); border-color:rgba(245,81,46,.2); }
 
         .d-card.hero {
-          background: linear-gradient(135deg, #4570EA 0%, #7c3aed 35%, #a855f7 65%, #c084fc 100%);
+          background: linear-gradient(135deg, #DE3E1E 0%, #7c3aed 35%, #a855f7 65%, #c084fc 100%);
           background-size: 200% 200%;
           animation: heroGradient 8s ease infinite;
           border: 1px solid rgba(255,255,255,.18);
           color: #fff;
-          box-shadow: 0 4px 24px rgba(99,102,241,.3), 0 0 60px rgba(139,92,246,.15), inset 0 1px 0 rgba(255,255,255,.15);
+          box-shadow: 0 4px 24px rgba(245,81,46,.3), 0 0 60px rgba(139,92,246,.15), inset 0 1px 0 rgba(255,255,255,.15);
           backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
           position: relative;
           overflow: hidden;
@@ -1219,7 +1219,7 @@ const DashboardPage = {
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-        .d-card.hero:hover { transform:translateY(-3px); box-shadow:0 12px 48px rgba(99,102,241,.4), 0 0 80px rgba(139,92,246,.2), inset 0 1px 0 rgba(255,255,255,.2); }
+        .d-card.hero:hover { transform:translateY(-3px); box-shadow:0 12px 48px rgba(245,81,46,.4), 0 0 80px rgba(139,92,246,.2), inset 0 1px 0 rgba(255,255,255,.2); }
         .d-card.hero::before {
           content:''; position:absolute; top:-50%; left:-30%; width:260px; height:260px;
           background:radial-gradient(circle, rgba(255,255,255,.1) 0%, transparent 60%);
@@ -1311,12 +1311,12 @@ const DashboardPage = {
           display:inline-flex; align-items:center; gap:3px; padding:4px 10px; border-radius:20px;
           font-size: 11px; font-weight: 700;
         }
-        .d-tag.purple { background:rgba(99,102,241,.08); color:#5D87FF; }
+        .d-tag.purple { background:rgba(245,81,46,.08); color:#F5512E; }
         .d-tag.green { background:rgba(16,185,129,.08); color:#10b981; }
         .d-tag.red { background:rgba(239,68,68,.08); color:#ef4444; }
         .d-tag.orange { background:rgba(249,115,22,.08); color:#f97316; }
         .d-tag.white { background:rgba(255,255,255,.2); color:#fff; }
-        [data-theme="dark"] .d-tag.purple { background:rgba(99,102,241,.15); }
+        [data-theme="dark"] .d-tag.purple { background:rgba(245,81,46,.15); }
         [data-theme="dark"] .d-tag.green { background:rgba(16,185,129,.15); }
         [data-theme="dark"] .d-tag.red { background:rgba(239,68,68,.15); }
         [data-theme="dark"] .d-tag.orange { background:rgba(249,115,22,.15); }
@@ -1361,15 +1361,15 @@ const DashboardPage = {
           border-bottom:2px solid transparent;
         }
         .d-hm-head.today {
-          color:#5D87FF;
-          background:linear-gradient(180deg, rgba(99,102,241,.06) 0%, rgba(99,102,241,.02) 100%);
+          color:#F5512E;
+          background:linear-gradient(180deg, rgba(245,81,46,.06) 0%, rgba(245,81,46,.02) 100%);
           border-radius:12px 12px 0 0;
-          border-bottom:2px solid #5D87FF;
+          border-bottom:2px solid #F5512E;
         }
         .d-hm-head .d-hm-daynum { display:block; font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px; }
-        .d-hm-head.today .d-hm-daynum { color:#5D87FF; }
+        .d-hm-head.today .d-hm-daynum { color:#F5512E; }
         [data-theme="dark"] .d-hm-head { color:#6b7280; }
-        [data-theme="dark"] .d-hm-head.today { background:rgba(99,102,241,.1); }
+        [data-theme="dark"] .d-hm-head.today { background:rgba(245,81,46,.1); }
         [data-theme="dark"] .d-hm-head .d-hm-daynum { color:#d1d5db; }
         .d-hm-driver {
           display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:var(--text-primary);
@@ -1391,16 +1391,16 @@ const DashboardPage = {
         }
         .d-hm-cell:hover { transform:scale(1.1); box-shadow:0 4px 12px rgba(0,0,0,.12); z-index:2; }
         .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(52,211,153,.12)); color:#10b981; }
-        .hm-programme { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#5D87FF; }
+        .hm-programme { background:linear-gradient(135deg,rgba(245,81,46,.15),rgba(139,92,246,.1)); color:#F5512E; }
         .hm-en_retard { background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(248,113,113,.1)); color:#ef4444; }
         .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f97316; }
         .hm-repos { background:rgba(0,0,0,.025); color:#d1d5db; }
         .hm-verse:hover { background:linear-gradient(135deg,rgba(16,185,129,.28),rgba(52,211,153,.2)); }
-        .hm-programme:hover { background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(139,92,246,.18)); }
+        .hm-programme:hover { background:linear-gradient(135deg,rgba(245,81,46,.25),rgba(139,92,246,.18)); }
         .hm-en_retard:hover { background:linear-gradient(135deg,rgba(239,68,68,.28),rgba(248,113,113,.2)); }
         .hm-absent:hover { background:linear-gradient(135deg,rgba(249,115,22,.25),rgba(251,146,60,.15)); }
         [data-theme="dark"] .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.22),rgba(52,211,153,.15)); }
-        [data-theme="dark"] .hm-programme { background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(139,92,246,.15)); }
+        [data-theme="dark"] .hm-programme { background:linear-gradient(135deg,rgba(245,81,46,.22),rgba(139,92,246,.15)); }
         [data-theme="dark"] .hm-en_retard { background:linear-gradient(135deg,rgba(239,68,68,.22),rgba(248,113,113,.15)); }
         [data-theme="dark"] .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.2),rgba(251,146,60,.12)); }
         [data-theme="dark"] .hm-repos { background:rgba(255,255,255,.03); color:#4b5563; }
@@ -1462,7 +1462,7 @@ const DashboardPage = {
         .fd-donut-wrap{position:relative;width:230px;height:230px;flex-shrink:0;}
         .fd-recette{flex:1;min-width:0;}
         .fd-recette-inner{display:flex;flex-direction:column;gap:12px;cursor:pointer;border-left:1px solid var(--border-color);padding-left:24px;}
-        .fd-voir{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(93,135,255,.32);}
+        .fd-voir{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(245,81,46,.32);}
         .fd-svg{width:100%;height:100%;transform:rotate(-90deg);}
         .fd-seg{transition:stroke-width .2s ease,opacity .2s ease;cursor:pointer;}
         .fd-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;}
@@ -1738,7 +1738,7 @@ const DashboardPage = {
           </div>
           <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:var(--text-primary);">Maintenance</div>
         </div>
-        <a href="#/garage" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout →</a>
+        <a href="#/garage" style="font-size:11px;font-weight:600;color:#F5512E;text-decoration:none;">Voir tout →</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
       ${alerts.length > 4 ? `<div style="text-align:center;padding:4px;font-size:10px;color:#9ca3af;margin-top:4px;">+ ${alerts.length - 4} autre(s)</div>` : ''}
@@ -2036,9 +2036,9 @@ const DashboardPage = {
           </div>
         </div>
       </div>
-      <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">
+      <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#F5512E;--iw-bg:rgba(245,81,46,.12);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></span><span class="iw-label">Tâches</span></div>
-        <div class="iw-val" style="color:#5D87FF;margin-top:auto;">${taches}</div>
+        <div class="iw-val" style="color:#F5512E;margin-top:auto;">${taches}</div>
         <div class="iw-sub">${tachesRetard > 0 ? `<span style="color:#EF4444;">${tachesRetard} en retard</span>` : (taches > 0 ? 'en cours' : 'Rien en attente 🎉')}</div>
       </a>
     </div>`;
@@ -2098,7 +2098,7 @@ const DashboardPage = {
   _fleetSegDef() {
     return [
       { key: 'activite', label: 'En activité', color: '#13DEB9', desc: "Roule aujourd'hui" },
-      { key: 'attente', label: 'En attente', color: '#5D87FF', desc: 'Planifié, sans recette' },
+      { key: 'attente', label: 'En attente', color: '#F5512E', desc: 'Planifié, sans recette' },
       { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Hors planning' },
       { key: 'repos', label: 'Repos / Hors service', color: '#C7D0DD', desc: 'Pas de service' },
     ];
@@ -2303,7 +2303,7 @@ const DashboardPage = {
       const caTxt = (it.ca != null && it.ca > 0) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
       const call = it.tel ? `<a href="tel:${Utils.escHtml(String(it.tel))}" title="Appeler" style="width:34px;height:34px;border-radius:9px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:phone-bold"></iconify-icon></a>` : '';
       // Pour les non planifiés : bouton pour les inscrire au planning du jour.
-      const planif = key === 'nonpl' ? `<button onclick="DashboardPage._planifierNonpl('${Utils.escHtml(String(it.id))}')" title="Planifier aujourd'hui" style="height:34px;padding:0 12px;border-radius:9px;border:none;background:rgba(93,135,255,.14);color:#5D87FF;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;white-space:nowrap;"><iconify-icon icon="solar:calendar-add-bold"></iconify-icon>Planifier</button>` : '';
+      const planif = key === 'nonpl' ? `<button onclick="DashboardPage._planifierNonpl('${Utils.escHtml(String(it.id))}')" title="Planifier aujourd'hui" style="height:34px;padding:0 12px;border-radius:9px;border:none;background:rgba(245,81,46,.14);color:#F5512E;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;white-space:nowrap;"><iconify-icon icon="solar:calendar-add-bold"></iconify-icon>Planifier</button>` : '';
       return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);">
         <div style="width:36px;height:36px;border-radius:50%;background:${seg.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${Utils.escHtml(initial)}</div>
         <div style="flex:1;min-width:0;">
@@ -2354,7 +2354,7 @@ const DashboardPage = {
     const days = d.heatmapWeekDays || [];
     if (drivers.length === 0) {
       return `<div class="d-card" style="display:flex;align-items:center;gap:14px;">
-        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
+        <div class="d-icon" style="background:rgba(245,81,46,.08);color:#F5512E;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
         <div>
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Planning semaine</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Aucun chauffeur actif</div>
@@ -2372,7 +2372,7 @@ const DashboardPage = {
     });
 
     const statusLabels = { verse: 'Versé', programme: 'Programmé', en_retard: 'En retard', absent: 'Absent', repos: 'Repos' };
-    const statusColors = { verse: '#10b981', programme: '#5D87FF', en_retard: '#ef4444', absent: '#f97316', repos: '#9ca3af' };
+    const statusColors = { verse: '#10b981', programme: '#F5512E', en_retard: '#ef4444', absent: '#f97316', repos: '#9ca3af' };
     const MAX_CHIPS = 6;
 
     // Cartes calendrier par jour (style MAURALEX) : les chauffeurs programmés
@@ -2408,8 +2408,8 @@ const DashboardPage = {
         .d-pcal-wrap { overflow-x:auto; }
         .d-pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; min-width:640px; animation:dSlide .5s cubic-bezier(.16,1,.3,1); }
         .d-pcal-cell { border:1px solid var(--border-color); border-radius:12px; background:var(--bg-secondary); min-height:120px; padding:8px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:5px; }
-        .d-pcal-cell:hover { border-color:#5D87FF; box-shadow:0 2px 10px rgba(99,102,241,.10); }
-        .d-pcal-cell-today { border-color:rgba(99,102,241,.45); }
+        .d-pcal-cell:hover { border-color:#F5512E; box-shadow:0 2px 10px rgba(245,81,46,.10); }
+        .d-pcal-cell-today { border-color:rgba(245,81,46,.45); }
         .d-pcal-num { font-size:12px; font-weight:700; color:var(--text-primary); line-height:22px; }
         .d-pcal-today { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--text-primary); color:var(--bg-secondary); font-weight:800; }
         .d-pcal-chips { display:flex; flex-direction:column; gap:3px; overflow:hidden; }
@@ -2425,7 +2425,7 @@ const DashboardPage = {
     // Legend — modern pills
     html += `<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.08);font-size:11px;font-weight:600;color:#10b981;"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Versé</div>
-      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#5D87FF;"><span style="width:6px;height:6px;border-radius:50%;background:#5D87FF;"></span> Programmé</div>
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(245,81,46,.08);font-size:11px;font-weight:600;color:#F5512E;"><span style="width:6px;height:6px;border-radius:50%;background:#F5512E;"></span> Programmé</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> En retard</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
@@ -2434,7 +2434,7 @@ const DashboardPage = {
     return `<div class="d-card" style="padding:24px 20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#5D87FF,#4570EA);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
+          <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#F5512E,#DE3E1E);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(245,81,46,.25);">
             <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#fff;"></iconify-icon>
           </div>
           <div>
@@ -2442,7 +2442,7 @@ const DashboardPage = {
             <div style="font-size:11px;color:#9ca3af;font-weight:500;margin-top:1px;">${drivers.length} chauffeur${drivers.length > 1 ? 's' : ''} actif${drivers.length > 1 ? 's' : ''}</div>
           </div>
         </div>
-        <a href="#/planning" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout →</a>
+        <a href="#/planning" style="font-size:11px;font-weight:600;color:#F5512E;text-decoration:none;">Voir tout →</a>
       </div>
       ${html}
     </div>`;
@@ -2477,14 +2477,14 @@ const DashboardPage = {
 
     return `<div class="d-card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
+        <div class="d-icon" style="background:rgba(245,81,46,.08);color:#F5512E;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
           <iconify-icon icon="solar:cup-star-bold-duotone"></iconify-icon>
         </div>
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 chauffeurs</div>
           <div style="font-size:11px;color:#9ca3af;">Score global (${d.monthLabel})</div>
         </div>
-        <a href="#/classement" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout &rarr;</a>
+        <a href="#/classement" style="font-size:11px;font-weight:600;color:#F5512E;text-decoration:none;">Voir tout &rarr;</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
     </div>`;
@@ -2514,7 +2514,7 @@ const DashboardPage = {
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 dettes</div>
           <div style="font-size:11px;color:#9ca3af;">${drivers.length} chauffeur${drivers.length !== 1 ? 's' : ''} &bull; Total ${Utils.formatCurrency(d.totalDettes)}</div>
         </div>
-        <a href="#/versements" onclick="setTimeout(()=>{var el=document.getElementById('dette-section-recettes');if(el)el.scrollIntoView({behavior:'smooth'})},500)" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout &rarr;</a>
+        <a href="#/versements" onclick="setTimeout(()=>{var el=document.getElementById('dette-section-recettes');if(el)el.scrollIntoView({behavior:'smooth'})},500)" style="font-size:11px;font-weight:600;color:#F5512E;text-decoration:none;">Voir tout &rarr;</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
     </div>`;
@@ -2623,7 +2623,7 @@ const DashboardPage = {
               bodyFont: { size: 13, weight: '700' },
               padding: { top: 6, bottom: 6, left: 10, right: 10 },
               cornerRadius: 10,
-              borderColor: 'rgba(99,102,241,.15)',
+              borderColor: 'rgba(245,81,46,.15)',
               borderWidth: 1,
               displayColors: false,
               caretSize: 6,

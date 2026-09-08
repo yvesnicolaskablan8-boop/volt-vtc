@@ -650,7 +650,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       good:    { bg: 'rgba(19,222,185,.14)', fg: 'var(--success-dim)' },
       warn:    { bg: 'rgba(255,174,31,.14)', fg: 'var(--warning-dim)' },
       bad:     { bg: 'rgba(250,137,107,.15)', fg: 'var(--danger-dim)' },
-      info:    { bg: 'rgba(93,135,255,.12)', fg: 'var(--pilote-blue)' },
+      info:    { bg: 'rgba(245,81,46,.12)', fg: 'var(--pilote-blue)' },
       neutral: { bg: 'var(--bg-tertiary)',   fg: 'var(--text-muted)' },
     };
     return M[status] || M.neutral;
@@ -672,9 +672,9 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       <div class="wl-title">
         <div class="wl-title-k">Suivi financier</div>
         <div class="wl-title-h">
-          <span style="display:flex;align-items:center;gap:12px;"><iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#5D87FF;"></iconify-icon> Versements</span>
+          <span style="display:flex;align-items:center;gap:12px;"><iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#F5512E;"></iconify-icon> Versements</span>
           <button class="wl-date" onclick="VersementsPage._openDateWheel()">
-            <iconify-icon icon="solar:calendar-bold-duotone" style="color:#5D87FF;font-size:17px;"></iconify-icon>
+            <iconify-icon icon="solar:calendar-bold-duotone" style="color:#F5512E;font-size:17px;"></iconify-icon>
             ${this._selectedPeriod ? Utils.escHtml(Utils.formatDate(this._selectedPeriod)) : "Aujourd'hui"}
             <iconify-icon icon="solar:alt-arrow-down-linear" style="font-size:14px;color:var(--text-muted);"></iconify-icon>
           </button>
@@ -3011,8 +3011,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         </div>
 
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <button class="btn" onclick="VersementsPage._detteAction('modifier','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
-            <iconify-icon icon="solar:pen-bold-duotone" style="font-size:20px;color:#5D87FF;"></iconify-icon>
+          <button class="btn" onclick="VersementsPage._detteAction('modifier','${versementId}')" style="display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:12px 16px;background:rgba(245,81,46,0.06);border:1px solid rgba(245,81,46,0.2);border-radius:10px;text-align:left;cursor:pointer;width:100%;">
+            <iconify-icon icon="solar:pen-bold-duotone" style="font-size:20px;color:#F5512E;"></iconify-icon>
             <div style="text-align:left;"><div style="font-weight:600;color:var(--text-primary);">Modifier le montant</div><div style="font-size:11px;color:var(--text-muted);">Ajuster le montant de la dette</div></div>
           </button>
 
@@ -3047,7 +3047,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
     if (action === 'modifier') {
       Modal.open({
-        title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#5D87FF;"></iconify-icon> Modifier la dette',
+        title: '<iconify-icon icon="solar:pen-bold-duotone" style="color:#F5512E;"></iconify-icon> Modifier la dette',
         body: `
           <div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);margin-bottom:16px;font-size:var(--font-size-sm);">
             <div style="font-weight:600;margin-bottom:4px;">${nom}</div>

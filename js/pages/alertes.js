@@ -150,7 +150,7 @@ const AlertesPage = {
       </style>
       <div class="page-header">
         <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-          <button onclick="AlertesPage._goBack()" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:var(--pilote-blue);color:#fff;border:none;font-weight:700;font-size:14px;padding:10px 20px;border-radius:12px;cursor:pointer;box-shadow:0 6px 16px rgba(93,135,255,.35);"><iconify-icon icon="solar:arrow-left-linear" style="font-size:19px;"></iconify-icon> Retour</button>
+          <button onclick="AlertesPage._goBack()" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:var(--pilote-blue);color:#fff;border:none;font-weight:700;font-size:14px;padding:10px 20px;border-radius:12px;cursor:pointer;box-shadow:0 6px 16px rgba(245,81,46,.35);"><iconify-icon icon="solar:arrow-left-linear" style="font-size:19px;"></iconify-icon> Retour</button>
           <h1 style="margin:0;"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon> Centre d'Alertes</h1>
         </div>
         <div class="page-actions">
@@ -268,7 +268,7 @@ const AlertesPage = {
       banner.innerHTML = `
         <div class="card" style="border-left:4px solid var(--primary);background:linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));">
           <div style="display:flex;align-items:center;gap:var(--space-md);flex-wrap:wrap;">
-            <div style="width:40px;height:40px;border-radius:50%;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--primary);">
+            <div style="width:40px;height:40px;border-radius:50%;background:rgba(245,81,46,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--primary);">
               <iconify-icon icon="solar:plain-bold-duotone"></iconify-icon>
             </div>
             <div style="flex:1;min-width:200px;">
