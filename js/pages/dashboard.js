@@ -186,10 +186,10 @@ const DashboardPage = {
     const nbActifs = lignes.filter(l => l.roule).length;
     const nbHors = lignes.filter(l => l.roule && !l.programme).length;
 
-    // === Style Modernize / Spike (bleu #5D87FF, cartes arrondies pastel, ombre douce) ===
+    // === Style Modernize / Spike (bleu #E8543A, cartes arrondies pastel, ombre douce) ===
     const C = {
       bg: '#F5F7FB', card: '#ffffff', head: '#2A3547', mut: '#5A6A85', mut2: '#7C8FAC', bd: '#EBF1F6',
-      blue: '#5D87FF', blueS: 'rgba(93,135,255,.10)',
+      blue: '#E8543A', blueS: 'rgba(93,135,255,.10)',
       green: '#02b3a9', greenS: 'rgba(19,222,185,.14)',
       amber: '#D99000', amberS: 'rgba(255,174,31,.16)',
       red: '#D9583B', redS: 'rgba(250,137,107,.14)',
@@ -224,7 +224,7 @@ const DashboardPage = {
       <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px;">
         ${topCA.map(l => `<div style="display:flex;align-items:center;gap:14px;">
           <div style="width:120px;flex-shrink:0;font-size:13px;font-weight:700;color:${C.head};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${Utils.escHtml(l.prenom)} ${Utils.escHtml((l.nom || '').charAt(0))}.</div>
-          <div style="flex:1;height:24px;background:${C.bg};border-radius:8px;overflow:hidden;"><div style="height:100%;width:${(l.ca / maxCA * 100).toFixed(1)}%;background:linear-gradient(90deg,#5D87FF,#8AA8FF);border-radius:8px;min-width:4px;"></div></div>
+          <div style="flex:1;height:24px;background:${C.bg};border-radius:8px;overflow:hidden;"><div style="height:100%;width:${(l.ca / maxCA * 100).toFixed(1)}%;background:linear-gradient(90deg,#E8543A,#8AA8FF);border-radius:8px;min-width:4px;"></div></div>
           <div style="width:100px;flex-shrink:0;text-align:right;font-size:13px;font-weight:800;color:${C.head};">${money(l.ca)}</div>
         </div>`).join('')}
       </div>
@@ -1172,7 +1172,7 @@ const DashboardPage = {
         .live-chip { animation: dSlide .4s ease both; }
         @keyframes dSlide { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         #live-indicator.pulse { animation:flash-indicator 1.5s }
-        @keyframes flash-indicator { 0%{background:rgba(99,102,241,.3)} 100%{background:rgba(99,102,241,.08)} }
+        @keyframes flash-indicator { 0%{background:rgba(232,84,58,.3)} 100%{background:rgba(232,84,58,.08)} }
 
         .d-wrap { animation: dSlide .5s cubic-bezier(.16,1,.3,1); }
         .d-bg {
@@ -1305,12 +1305,12 @@ const DashboardPage = {
           display:inline-flex; align-items:center; gap:3px; padding:4px 10px; border-radius:20px;
           font-size: 11px; font-weight: 700;
         }
-        .d-tag.purple { background:rgba(99,102,241,.08); color:#5D87FF; }
+        .d-tag.purple { background:rgba(232,84,58,.08); color:#E8543A; }
         .d-tag.green { background:rgba(16,185,129,.08); color:#10b981; }
         .d-tag.red { background:rgba(239,68,68,.08); color:#ef4444; }
         .d-tag.orange { background:rgba(249,115,22,.08); color:#f97316; }
         .d-tag.white { background:rgba(255,255,255,.2); color:#fff; }
-        [data-theme="dark"] .d-tag.purple { background:rgba(99,102,241,.15); }
+        [data-theme="dark"] .d-tag.purple { background:rgba(232,84,58,.15); }
         [data-theme="dark"] .d-tag.green { background:rgba(16,185,129,.15); }
         [data-theme="dark"] .d-tag.red { background:rgba(239,68,68,.15); }
         [data-theme="dark"] .d-tag.orange { background:rgba(249,115,22,.15); }
@@ -1355,15 +1355,15 @@ const DashboardPage = {
           border-bottom:2px solid transparent;
         }
         .d-hm-head.today {
-          color:#5D87FF;
-          background:linear-gradient(180deg, rgba(99,102,241,.06) 0%, rgba(99,102,241,.02) 100%);
+          color:#E8543A;
+          background:linear-gradient(180deg, rgba(232,84,58,.06) 0%, rgba(232,84,58,.02) 100%);
           border-radius:12px 12px 0 0;
-          border-bottom:2px solid #5D87FF;
+          border-bottom:2px solid #E8543A;
         }
         .d-hm-head .d-hm-daynum { display:block; font-size:16px; font-weight:800; color:var(--text-primary); margin-top:2px; }
-        .d-hm-head.today .d-hm-daynum { color:#5D87FF; }
+        .d-hm-head.today .d-hm-daynum { color:#E8543A; }
         [data-theme="dark"] .d-hm-head { color:#6b7280; }
-        [data-theme="dark"] .d-hm-head.today { background:rgba(99,102,241,.1); }
+        [data-theme="dark"] .d-hm-head.today { background:rgba(232,84,58,.1); }
         [data-theme="dark"] .d-hm-head .d-hm-daynum { color:#d1d5db; }
         .d-hm-driver {
           display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:var(--text-primary);
@@ -1385,16 +1385,16 @@ const DashboardPage = {
         }
         .d-hm-cell:hover { transform:scale(1.1); box-shadow:0 4px 12px rgba(0,0,0,.12); z-index:2; }
         .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(52,211,153,.12)); color:#10b981; }
-        .hm-programme { background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1)); color:#5D87FF; }
+        .hm-programme { background:linear-gradient(135deg,rgba(232,84,58,.15),rgba(139,92,246,.1)); color:#E8543A; }
         .hm-en_retard { background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(248,113,113,.1)); color:#ef4444; }
         .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(251,146,60,.08)); color:#f97316; }
         .hm-repos { background:rgba(0,0,0,.025); color:#d1d5db; }
         .hm-verse:hover { background:linear-gradient(135deg,rgba(16,185,129,.28),rgba(52,211,153,.2)); }
-        .hm-programme:hover { background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(139,92,246,.18)); }
+        .hm-programme:hover { background:linear-gradient(135deg,rgba(232,84,58,.25),rgba(139,92,246,.18)); }
         .hm-en_retard:hover { background:linear-gradient(135deg,rgba(239,68,68,.28),rgba(248,113,113,.2)); }
         .hm-absent:hover { background:linear-gradient(135deg,rgba(249,115,22,.25),rgba(251,146,60,.15)); }
         [data-theme="dark"] .hm-verse { background:linear-gradient(135deg,rgba(16,185,129,.22),rgba(52,211,153,.15)); }
-        [data-theme="dark"] .hm-programme { background:linear-gradient(135deg,rgba(99,102,241,.22),rgba(139,92,246,.15)); }
+        [data-theme="dark"] .hm-programme { background:linear-gradient(135deg,rgba(232,84,58,.22),rgba(139,92,246,.15)); }
         [data-theme="dark"] .hm-en_retard { background:linear-gradient(135deg,rgba(239,68,68,.22),rgba(248,113,113,.15)); }
         [data-theme="dark"] .hm-absent { background:linear-gradient(135deg,rgba(249,115,22,.2),rgba(251,146,60,.12)); }
         [data-theme="dark"] .hm-repos { background:rgba(255,255,255,.03); color:#4b5563; }
@@ -1674,7 +1674,7 @@ const DashboardPage = {
   // Bloc « Activity manager » : activité des chauffeurs du jour, recherche + tags.
   _renderActivityManager(d) {
     const list = [...(d.chauffeursActifsJour || [])].sort((a, b) => (b.ca || 0) - (a.ca || 0));
-    const pals = [['#eef2ff', '#4f46e5'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#16a34a'], ['#fff7ed', '#ea580c'], ['#fdf2f8', '#db2777'], ['#f5f3ff', '#7c3aed']];
+    const pals = [['#eef2ff', '#4f46e5'], ['#ecfeff', '#0891b2'], ['#f0fdf4', '#16a34a'], ['#fff7ed', '#ea580c'], ['#fdf2f8', '#db2777'], ['#f5f3ff', '#D23E22']];
     const av = (nom) => { const s = String(nom || '?'); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; const [bg, fg] = pals[h % pals.length]; const p = s.trim().split(/\s+/); const ini = ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase(); return `<div class="dact-av" style="background:${bg};color:${fg};">${Utils.escHtml(ini)}</div>`; };
     const zoneOf = (c) => !c.actif ? 'inactif' : (c.state === 'faible' || c.state === 'modere') ? 'surv' : 'forme';
     const stMap = { forme: ['En forme', '#10b981', 'rgba(16,185,129,.12)'], surv: ['À surveiller', '#D99000', 'rgba(255,174,31,.16)'], inactif: ['Inactif', '#9aa3b2', 'rgba(0,0,0,.05)'] };
@@ -1968,7 +1968,7 @@ const DashboardPage = {
           </div>
           <div class="d-lbl" style="margin:0;font-size:14px;font-weight:700;color:var(--text-primary);">Maintenance</div>
         </div>
-        <a href="#/garage" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout →</a>
+        <a href="#/garage" style="font-size:11px;font-weight:600;color:#E8543A;text-decoration:none;">Voir tout →</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;">${rows}</div>
       ${alerts.length > 4 ? `<div style="text-align:center;padding:4px;font-size:10px;color:#9ca3af;margin-top:4px;">+ ${alerts.length - 4} autre(s)</div>` : ''}
@@ -2266,9 +2266,9 @@ const DashboardPage = {
           </div>
         </div>
       </div>
-      <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#5D87FF;--iw-bg:rgba(93,135,255,.12);">
+      <a href="#/taches" class="iw iw-plain iw-sm" style="--iw-accent:#E8543A;--iw-bg:rgba(93,135,255,.12);">
         <div class="iw-top"><span class="iw-icon"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></span><span class="iw-label">Tâches</span></div>
-        <div class="iw-val" style="color:#5D87FF;margin-top:auto;">${taches}</div>
+        <div class="iw-val" style="color:#E8543A;margin-top:auto;">${taches}</div>
         <div class="iw-sub">${tachesRetard > 0 ? `<span style="color:#EF4444;">${tachesRetard} en retard</span>` : (taches > 0 ? 'en cours' : 'Rien en attente 🎉')}</div>
       </a>
     </div>`;
@@ -2328,7 +2328,7 @@ const DashboardPage = {
   _fleetSegDef() {
     return [
       { key: 'activite', label: 'En activité', color: '#13DEB9', desc: "Roule aujourd'hui" },
-      { key: 'attente', label: 'En attente', color: '#5D87FF', desc: 'Planifié, sans recette' },
+      { key: 'attente', label: 'En attente', color: '#E8543A', desc: 'Planifié, sans recette' },
       { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Hors planning' },
       { key: 'repos', label: 'Repos / Hors service', color: '#C7D0DD', desc: 'Pas de service' },
     ];
@@ -2535,7 +2535,7 @@ const DashboardPage = {
       const caTxt = (it.ca != null && it.ca > 0) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
       const call = it.tel ? `<a href="tel:${Utils.escHtml(String(it.tel))}" title="Appeler" style="width:34px;height:34px;border-radius:9px;background:rgba(19,222,185,.14);color:var(--success-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;"><iconify-icon icon="solar:phone-bold"></iconify-icon></a>` : '';
       // Pour les non planifiés : bouton pour les inscrire au planning du jour.
-      const planif = key === 'nonpl' ? `<button onclick="DashboardPage._planifierNonpl('${Utils.escHtml(String(it.id))}')" title="Planifier aujourd'hui" style="height:34px;padding:0 12px;border-radius:9px;border:none;background:rgba(93,135,255,.14);color:#5D87FF;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;white-space:nowrap;"><iconify-icon icon="solar:calendar-add-bold"></iconify-icon>Planifier</button>` : '';
+      const planif = key === 'nonpl' ? `<button onclick="DashboardPage._planifierNonpl('${Utils.escHtml(String(it.id))}')" title="Planifier aujourd'hui" style="height:34px;padding:0 12px;border-radius:9px;border:none;background:rgba(93,135,255,.14);color:#E8543A;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;white-space:nowrap;"><iconify-icon icon="solar:calendar-add-bold"></iconify-icon>Planifier</button>` : '';
       return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);">
         <div style="width:36px;height:36px;border-radius:50%;background:${seg.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${Utils.escHtml(initial)}</div>
         <div style="flex:1;min-width:0;">
@@ -2586,7 +2586,7 @@ const DashboardPage = {
     const days = d.heatmapWeekDays || [];
     if (drivers.length === 0) {
       return `<div class="d-card" style="display:flex;align-items:center;gap:14px;">
-        <div class="d-icon" style="background:rgba(99,102,241,.08);color:#5D87FF;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
+        <div class="d-icon" style="background:rgba(232,84,58,.08);color:#E8543A;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon></div>
         <div>
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Planning semaine</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Aucun chauffeur actif</div>
@@ -2604,7 +2604,7 @@ const DashboardPage = {
     });
 
     const statusLabels = { verse: 'Versé', programme: 'Programmé', en_retard: 'En retard', absent: 'Absent', repos: 'Repos' };
-    const statusColors = { verse: '#10b981', programme: '#5D87FF', en_retard: '#ef4444', absent: '#f97316', repos: '#9ca3af' };
+    const statusColors = { verse: '#10b981', programme: '#E8543A', en_retard: '#ef4444', absent: '#f97316', repos: '#9ca3af' };
     const MAX_CHIPS = 6;
 
     // Cartes calendrier par jour (style MAURALEX) : les chauffeurs programmés
@@ -2640,8 +2640,8 @@ const DashboardPage = {
         .d-pcal-wrap { overflow-x:auto; }
         .d-pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; min-width:640px; animation:dSlide .5s cubic-bezier(.16,1,.3,1); }
         .d-pcal-cell { border:1px solid var(--border-color); border-radius:12px; background:var(--bg-secondary); min-height:120px; padding:8px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; flex-direction:column; gap:5px; }
-        .d-pcal-cell:hover { border-color:#5D87FF; box-shadow:0 2px 10px rgba(99,102,241,.10); }
-        .d-pcal-cell-today { border-color:rgba(99,102,241,.45); }
+        .d-pcal-cell:hover { border-color:#E8543A; box-shadow:0 2px 10px rgba(232,84,58,.10); }
+        .d-pcal-cell-today { border-color:rgba(232,84,58,.45); }
         .d-pcal-num { font-size:12px; font-weight:700; color:var(--text-primary); line-height:22px; }
         .d-pcal-today { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--text-primary); color:var(--bg-secondary); font-weight:800; }
         .d-pcal-chips { display:flex; flex-direction:column; gap:3px; overflow:hidden; }
@@ -2657,7 +2657,7 @@ const DashboardPage = {
     // Legend — modern pills
     html += `<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(16,185,129,.08);font-size:11px;font-weight:600;color:#10b981;"><span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span> Versé</div>
-      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(99,102,241,.08);font-size:11px;font-weight:600;color:#5D87FF;"><span style="width:6px;height:6px;border-radius:50%;background:#5D87FF;"></span> Programmé</div>
+      <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(232,84,58,.08);font-size:11px;font-weight:600;color:#E8543A;"><span style="width:6px;height:6px;border-radius:50%;background:#E8543A;"></span> Programmé</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.08);font-size:11px;font-weight:600;color:#ef4444;"><span style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> En retard</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(249,115,22,.08);font-size:11px;font-weight:600;color:#f97316;"><span style="width:6px;height:6px;border-radius:50%;background:#f97316;"></span> Absent</div>
       <div style="display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;background:rgba(0,0,0,.03);font-size:11px;font-weight:600;color:#9ca3af;"><span style="width:6px;height:6px;border-radius:50%;background:#d1d5db;"></span> Repos</div>
@@ -2666,7 +2666,7 @@ const DashboardPage = {
     return `<div class="d-card" style="padding:24px 20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#5D87FF,#4570EA);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(99,102,241,.25);">
+          <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#E8543A,#D23E22);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(232,84,58,.25);">
             <iconify-icon icon="solar:calendar-bold-duotone" style="font-size:18px;color:#fff;"></iconify-icon>
           </div>
           <div>
@@ -2674,7 +2674,7 @@ const DashboardPage = {
             <div style="font-size:11px;color:#9ca3af;font-weight:500;margin-top:1px;">${drivers.length} chauffeur${drivers.length > 1 ? 's' : ''} actif${drivers.length > 1 ? 's' : ''}</div>
           </div>
         </div>
-        <a href="#/planning" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout →</a>
+        <a href="#/planning" style="font-size:11px;font-weight:600;color:#E8543A;text-decoration:none;">Voir tout →</a>
       </div>
       ${html}
     </div>`;
@@ -2751,7 +2751,7 @@ const DashboardPage = {
           <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 dettes</div>
           <div style="font-size:11px;color:#9ca3af;">${drivers.length} chauffeur${drivers.length !== 1 ? 's' : ''} &bull; Total ${Utils.formatCurrency(d.totalDettes)}</div>
         </div>
-        <a href="#/versements" onclick="setTimeout(()=>{var el=document.getElementById('dette-section-recettes');if(el)el.scrollIntoView({behavior:'smooth'})},500)" style="font-size:11px;font-weight:600;color:#5D87FF;text-decoration:none;">Voir tout &rarr;</a>
+        <a href="#/versements" onclick="setTimeout(()=>{var el=document.getElementById('dette-section-recettes');if(el)el.scrollIntoView({behavior:'smooth'})},500)" style="font-size:11px;font-weight:600;color:#E8543A;text-decoration:none;">Voir tout &rarr;</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
     </div>`;
@@ -2860,7 +2860,7 @@ const DashboardPage = {
               bodyFont: { size: 13, weight: '700' },
               padding: { top: 6, bottom: 6, left: 10, right: 10 },
               cornerRadius: 10,
-              borderColor: 'rgba(99,102,241,.15)',
+              borderColor: 'rgba(232,84,58,.15)',
               borderWidth: 1,
               displayColors: false,
               caretSize: 6,
