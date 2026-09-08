@@ -157,6 +157,32 @@ const AlertesPage = {
         body.alertes-focus .sidebar { display: none !important; }
         body.alertes-focus .main-content { margin-left: 0 !important; }
         body.alertes-focus #sidebar-toggle { display: none !important; }
+        /* ===== Centre d'Alertes — refonte moderne ===== */
+        .al-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:var(--space-lg);}
+        @media(max-width:900px){ .al-kpis{grid-template-columns:repeat(2,1fr);} }
+        @media(max-width:520px){ .al-kpis{grid-template-columns:1fr;} }
+        .al-kpi{position:relative;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:20px;padding:20px;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease;box-shadow:var(--shadow-card);}
+        .al-kpi:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(30,32,34,.10);}
+        .al-kpi-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+        .al-kpi-val{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text-primary);}
+        .al-kpi-ic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+        .al-kpi-lbl{font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-top:14px;}
+        .al-kpi-pill{display:inline-flex;align-items:center;gap:5px;margin-top:12px;padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;}
+        /* Filtres en pastilles */
+        #alert-filters .alert-filter{border-radius:22px!important;font-weight:700;border:1px solid var(--border-color)!important;background:var(--bg-secondary)!important;color:var(--text-secondary)!important;box-shadow:none!important;transition:.14s;}
+        #alert-filters .alert-filter:hover{background:var(--bg-tertiary)!important;color:var(--text-primary)!important;}
+        #alert-filters .alert-filter.btn-primary{background:#17181A!important;color:#fff!important;border-color:#17181A!important;}
+        /* Lignes d'alerte */
+        #alerts-list .al-row{background:var(--bg-secondary);border:1px solid var(--border-color);border-left:4px solid var(--al-c);border-radius:16px;padding:16px 18px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;box-shadow:var(--shadow-card);transition:transform .14s ease,box-shadow .14s ease;}
+        #alerts-list .al-row:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(30,32,34,.08);}
+        .al-row-ic{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:color-mix(in srgb, var(--al-c) 14%, transparent);color:var(--al-c);}
+        .al-row-main{flex:1;min-width:0;}
+        .al-row-badges{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;}
+        .al-badge{font-size:10px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:20px;background:color-mix(in srgb, var(--al-c) 15%, transparent);color:var(--al-c);}
+        .al-cat{font-size:10.5px;font-weight:700;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px;background:var(--bg-tertiary);padding:3px 9px;border-radius:20px;}
+        .al-row-title{font-size:15px;font-weight:800;color:var(--text-primary);letter-spacing:-.2px;}
+        .al-row-desc{font-size:13px;color:var(--text-secondary);margin-top:3px;line-height:1.45;}
+        .al-row-act{flex-shrink:0;display:flex;align-items:center;gap:8px;}
       </style>
       <div class="page-header">
         <div style="display:flex;align-items:center;gap:12px;min-width:0;">
@@ -173,7 +199,7 @@ const AlertesPage = {
       <div id="notif-stats-banner" style="margin-bottom:var(--space-lg);display:none;"></div>
 
       <!-- KPIs -->
-      <div class="grid-4" id="alerts-kpis" style="margin-bottom:var(--space-lg);"></div>
+      <div class="al-kpis" id="alerts-kpis"></div>
 
       <!-- Filtres par catégorie -->
       <div class="card" style="margin-bottom:var(--space-lg);padding:var(--space-sm) var(--space-md);">
@@ -973,32 +999,24 @@ const AlertesPage = {
     const urgentes = alerts.filter(a => a.niveau === 'urgent').length;
     const attention = alerts.filter(a => a.niveau === 'attention').length;
 
-    document.getElementById('alerts-kpis').innerHTML = `
-      <div class="kpi-card red" onclick="AlertesPage._filterBy('critique')" style="cursor:pointer;">
-        <div class="kpi-icon"><iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon></div>
-        <div class="kpi-value" style="color:var(--danger);">${critiques}</div>
-        <div class="kpi-label">Alertes critiques</div>
-        <div class="kpi-trend down"><iconify-icon icon="solar:fire-bold-duotone"></iconify-icon> Action immédiate requise</div>
-      </div>
-      <div class="kpi-card yellow" onclick="AlertesPage._filterBy('urgent')" style="cursor:pointer;">
-        <div class="kpi-icon"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon></div>
-        <div class="kpi-value" style="color:var(--warning);">${urgentes}</div>
-        <div class="kpi-label">Alertes urgentes</div>
-        <div class="kpi-trend down"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon> À traiter cette semaine</div>
-      </div>
-      <div class="kpi-card cyan" onclick="AlertesPage._filterBy('attention')" style="cursor:pointer;">
-        <div class="kpi-icon"><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon></div>
-        <div class="kpi-value">${attention}</div>
-        <div class="kpi-label">Points d'attention</div>
-        <div class="kpi-trend"><iconify-icon icon="solar:eye-bold"></iconify-icon> À surveiller</div>
-      </div>
-      <div class="kpi-card ${alerts.length === 0 ? 'green' : ''}" onclick="AlertesPage._filterBy('all')" style="cursor:pointer;">
-        <div class="kpi-icon"><iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon></div>
-        <div class="kpi-value">${alerts.length}</div>
-        <div class="kpi-label">Total alertes</div>
-        ${alerts.length === 0 ? '<div class="kpi-trend up"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Tout est en ordre !</div>' : ''}
-      </div>
-    `;
+    const cur = this._currentFilter || 'all';
+    const totalCol = alerts.length === 0 ? '#10b981' : '#17181A';
+    const card = (filt, val, valCol, lbl, pillTxt, pillIc, icon, cCol) => `
+      <div class="al-kpi" onclick="AlertesPage._filterBy('${filt}')" style="${cur === filt ? `box-shadow:0 0 0 2px ${cCol}, var(--shadow-card);` : ''}">
+        <div class="al-kpi-top">
+          <div class="al-kpi-val" style="color:${valCol};">${val}</div>
+          <div class="al-kpi-ic" style="background:${cCol}1a;color:${cCol};"><iconify-icon icon="${icon}"></iconify-icon></div>
+        </div>
+        <div class="al-kpi-lbl">${lbl}</div>
+        <span class="al-kpi-pill" style="background:${cCol}14;color:${cCol};"><iconify-icon icon="${pillIc}"></iconify-icon> ${pillTxt}</span>
+      </div>`;
+    const html =
+      card('critique', critiques, '#EF4444', 'Alertes critiques', 'Action immédiate', 'solar:fire-bold', 'solar:danger-circle-bold-duotone', '#EF4444') +
+      card('urgent', urgentes, '#F59E0B', 'Alertes urgentes', 'Cette semaine', 'solar:clock-circle-bold', 'solar:danger-triangle-bold-duotone', '#F59E0B') +
+      card('attention', attention, '#0891b2', "Points d'attention", 'À surveiller', 'solar:eye-bold', 'solar:info-circle-bold-duotone', '#0891b2') +
+      card('all', alerts.length, totalCol, 'Total alertes', alerts.length === 0 ? 'Tout est en ordre' : 'Vue complète', alerts.length === 0 ? 'solar:check-circle-bold' : 'solar:list-bold', 'solar:bell-bing-bold-duotone', alerts.length === 0 ? '#10b981' : '#F5512E');
+    const el = document.getElementById('alerts-kpis');
+    if (el) { el.replaceChildren(); el.insertAdjacentHTML('beforeend', html); }
   },
 
   // ----- Alertes ignorées (uniquement les non sévères / niveau « attention ») -----
@@ -1095,38 +1113,29 @@ const AlertesPage = {
       const catCfg = catConfig[alert.categorie] || { icon: 'solar:bell-bing-bold-duotone', label: alert.categorie };
 
       return `
-        <div class="card" style="margin-bottom:var(--space-sm);padding:var(--space-md);border-left:4px solid ${cfg.color};background:${cfg.bg};border-color:${cfg.border};">
-          <div style="display:flex;align-items:flex-start;gap:var(--space-md);">
-            <!-- Icône niveau -->
-            <div style="width:42px;height:42px;border-radius:var(--radius-sm);background:${cfg.color}22;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <iconify-icon icon="${alert.icon || cfg.icon}" style="color:${cfg.color};font-size:16px;"></iconify-icon>
+        <div class="al-row" style="--al-c:${cfg.color};">
+          <div class="al-row-ic"><iconify-icon icon="${alert.icon || cfg.icon}"></iconify-icon></div>
+          <div class="al-row-main">
+            <div class="al-row-badges">
+              <span class="al-badge">${cfg.label}</span>
+              <span class="al-cat"><iconify-icon icon="${catCfg.icon}"></iconify-icon> ${catCfg.label}</span>
             </div>
-
-            <!-- Contenu -->
-            <div style="flex:1;min-width:0;">
-              <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:4px;flex-wrap:wrap;">
-                <span style="font-size:9px;font-weight:700;color:${cfg.color};background:${cfg.color}22;padding:2px 8px;border-radius:10px;letter-spacing:0.5px;">${cfg.label}</span>
-                <span style="font-size:9px;font-weight:600;color:var(--text-muted);background:var(--bg-tertiary);padding:2px 8px;border-radius:10px;"><iconify-icon icon="${catCfg.icon}" style="font-size:8px;margin-right:4px;"></iconify-icon>${catCfg.label}</span>
-              </div>
-              <div style="font-weight:600;font-size:var(--font-size-sm);margin-bottom:4px;">${alert.titre}</div>
-              <div style="font-size:var(--font-size-xs);color:var(--text-muted);line-height:1.5;">${alert.description}</div>
-            </div>
-
-            <!-- Actions -->
-            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-              ${alert.inlineType ? `
-                <button type="button" class="btn btn-sm btn-secondary" style="white-space:nowrap;" onclick="AlertesPage._resolveInline('${alert.inlineType}','${alert.chauffeurId}')">
-                  ${alert.action} <iconify-icon icon="solar:settings-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
-                </button>
-              ` : (alert.actionRoute ? `
-                <a href="${alert.actionRoute}" class="btn btn-sm btn-secondary" style="white-space:nowrap;">
-                  ${alert.action} <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
-                </a>
-              ` : '')}
-              ${alert.niveau === 'attention' ? `
-                <button type="button" class="btn btn-sm btn-secondary" title="Ignorer cette alerte" onclick="AlertesPage._ignoreAlert('${alert.id}')" style="white-space:nowrap;"><iconify-icon icon="solar:eye-closed-bold"></iconify-icon></button>
-              ` : ''}
-            </div>
+            <div class="al-row-title">${alert.titre}</div>
+            <div class="al-row-desc">${alert.description}</div>
+          </div>
+          <div class="al-row-act">
+            ${alert.inlineType ? `
+              <button type="button" class="btn btn-sm btn-secondary" style="white-space:nowrap;" onclick="AlertesPage._resolveInline('${alert.inlineType}','${alert.chauffeurId}')">
+                ${alert.action} <iconify-icon icon="solar:settings-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
+              </button>
+            ` : (alert.actionRoute ? `
+              <a href="${alert.actionRoute}" class="btn btn-sm btn-secondary" style="white-space:nowrap;">
+                ${alert.action} <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
+              </a>
+            ` : '')}
+            ${alert.niveau === 'attention' ? `
+              <button type="button" class="btn btn-sm btn-secondary" title="Ignorer cette alerte" onclick="AlertesPage._ignoreAlert('${alert.id}')" style="white-space:nowrap;"><iconify-icon icon="solar:eye-closed-bold"></iconify-icon></button>
+            ` : ''}
           </div>
         </div>
       `;
