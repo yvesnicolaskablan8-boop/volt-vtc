@@ -13,7 +13,8 @@ const ControleConduitePage = {
 
   render() {
     const container = document.getElementById('page-content');
-    container.innerHTML = this._template();
+    container.replaceChildren();
+    container.insertAdjacentHTML('beforeend', this._template());
     this._bindTabEvents();
     this._renderTab(this._activeTab);
   },
@@ -31,20 +32,13 @@ const ControleConduitePage = {
 
   _template() {
     return `
-      <div class="d-wrap"><div class="d-bg">
+      <div class="fleet-module fleet-control"><div>
 
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
-        <div>
-          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Suivi</div>
-          <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:shield-check-bold-duotone" style="color:#F5512E;"></iconify-icon> Contr\u00f4le de conduite
-          </div>
-        </div>
-      </div>
+      <header class="fleet-heading"><div><span class="fleet-eyebrow">PILOTAGE DE LA FLOTTE</span><h1>Une conduite <span>mieux maîtrisée.</span></h1><p>Suivez les infractions, gérez les zones et accompagnez vos chauffeurs.</p></div><span class="fleet-control-emblem"><iconify-icon icon="solar:shield-check-linear"></iconify-icon></span></header>
+      ${SuiviVehiculesPage._navigation('controle-conduite')}
 
       <!-- Tabs -->
-      <div class="cc-tabs" style="display:flex;gap:0;margin-bottom:var(--space-lg);border-bottom:2px solid var(--border-color);overflow-x:auto;">
+      <div class="cc-tabs" aria-label="Rubriques du contrôle de conduite">
         <button class="cc-tab ${this._activeTab === 'infractions' ? 'active' : ''}" data-tab="infractions">
           <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Infractions
         </button>
@@ -140,10 +134,12 @@ const ControleConduitePage = {
 
   _bindTabEvents() {
     document.querySelectorAll('.cc-tab').forEach(tab => {
+      tab.setAttribute('aria-pressed', String(tab.dataset.tab === this._activeTab));
       tab.addEventListener('click', () => {
         this._activeTab = tab.dataset.tab;
-        document.querySelectorAll('.cc-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.cc-tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-pressed', 'false'); });
         tab.classList.add('active');
+        tab.setAttribute('aria-pressed', 'true');
         // Cleanup before switching
         this._charts.forEach(c => c.destroy());
         this._charts = [];

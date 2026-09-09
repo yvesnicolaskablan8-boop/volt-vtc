@@ -10,6 +10,8 @@ const TachesPage = {
   _listFilters: { statut: '', priorite: '', assigneA: '', type: '', search: '' },
   _selectedTasks: new Set(),
   _reunionDraft: null,
+  _scope: 'all',
+  _search: '',
 
   // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -86,14 +88,14 @@ const TachesPage = {
   _prioriteConfig: {
     urgente: { color: '#ef4444', bg: 'rgba(239,68,68,.12)', icon: 'solar:danger-bold-duotone', label: 'Urgente' },
     haute:   { color: '#f5512e', bg: 'rgba(245,81,46,.12)', icon: 'solar:arrow-up-bold-duotone', label: 'Haute' },
-    normale: { color: '#635bff', bg: 'rgba(99,91,255,.12)', icon: 'solar:minus-circle-bold-duotone', label: 'Normale' },
+    normale: { color: '#6964ed', bg: 'rgba(99,91,255,.12)', icon: 'solar:minus-circle-bold-duotone', label: 'Normale' },
     basse:   { color: '#0891b2', bg: 'rgba(8,145,178,.12)', icon: 'solar:arrow-down-bold-duotone', label: 'Basse' }
   },
 
   _statutConfig: {
-    a_faire:  { color: '#f5512e', bg: 'rgba(245,81,46,.12)', label: 'A faire', icon: 'solar:clipboard-list-bold-duotone' },
-    en_cours: { color: '#635bff', bg: 'rgba(99,91,255,.12)', label: 'En cours', icon: 'solar:play-bold-duotone' },
-    terminee: { color: '#13deb9', bg: 'rgba(19,222,185,.14)', label: 'Terminée', icon: 'solar:check-circle-bold-duotone' },
+    a_faire:  { color: '#f5512e', bg: 'rgba(245,81,46,.12)', label: 'À faire', icon: 'solar:clipboard-list-bold-duotone' },
+    en_cours: { color: '#6964ed', bg: 'rgba(99,91,255,.12)', label: 'En cours', icon: 'solar:play-bold-duotone' },
+    terminee: { color: '#119d80', bg: 'rgba(19,222,185,.14)', label: 'Terminée', icon: 'solar:check-circle-bold-duotone' },
     annulee:  { color: '#ec4899', bg: 'rgba(236,72,153,.14)', label: 'Annulée', icon: 'solar:close-circle-bold-duotone' }
   },
 
@@ -108,7 +110,7 @@ const TachesPage = {
   },
 
   _reunionTypeColors: {
-    equipe: '#635bff', direction: '#635bff', operationnel: '#f5512e',
+    equipe: '#6964ed', direction: '#6964ed', operationnel: '#f5512e',
     urgence: '#ef4444', autre: '#0891b2'
   },
 
@@ -143,43 +145,42 @@ const TachesPage = {
     const moduleDiv = document.createElement('div');
     moduleDiv.className = 'taches-module';
 
-    // Top bar
-    const topbar = document.createElement('div');
-    topbar.className = 'taches-topbar';
-
-    const topbarLeft = document.createElement('div');
-    topbarLeft.className = 'taches-topbar-left';
-    const h1 = document.createElement('h1');
-    h1.style.cssText = 'margin:0;font-size:1.4rem;display:flex;align-items:center;gap:8px;';
-    const h1Icon = document.createElement('iconify-icon');
-    h1Icon.setAttribute('icon', 'solar:checklist-bold-duotone');
-    h1Icon.style.cssText = 'color:#F5512E;font-size:1.5rem;';
-    h1.appendChild(h1Icon);
-    h1.appendChild(document.createTextNode(' Gestion des tâches'));
-    topbarLeft.appendChild(h1);
-    topbar.appendChild(topbarLeft);
-
-    const tabsDiv = document.createElement('div');
-    tabsDiv.className = 'taches-tabs';
-    tabsDiv.id = 'taches-tabs';
-    this._buildTabButtons(tabsDiv);
-    topbar.appendChild(tabsDiv);
-    moduleDiv.appendChild(topbar);
-
-    const viewContent = document.createElement('div');
-    viewContent.id = 'taches-view-content';
-    viewContent.className = 'taches-view-content';
-    moduleDiv.appendChild(viewContent);
-
-    const fab = document.createElement('button');
-    fab.className = 'taches-fab';
-    fab.title = 'Nouvelle tâche';
-    fab.addEventListener('click', () => TachesPage._openTaskForm());
-    const fabIcon = document.createElement('iconify-icon');
-    fabIcon.setAttribute('icon', 'solar:add-circle-bold-duotone');
-    fabIcon.style.fontSize = '1.5rem';
-    fab.appendChild(fabIcon);
-    moduleDiv.appendChild(fab);
+    moduleDiv.insertAdjacentHTML('beforeend', `
+      <div class="taches-topbar">
+        <div class="taches-topbar-left">
+          <span class="task-eyebrow">ESPACE DE TRAVAIL</span>
+          <h1>Tâches <span class="task-title-dot">&</span> équipe</h1>
+          <p>Des priorités claires. Une équipe qui avance.</p>
+        </div>
+        <button class="task-primary" id="task-create"><iconify-icon icon="solar:add-circle-linear"></iconify-icon> Nouvelle tâche</button>
+      </div>
+      <nav class="taches-tabs" id="taches-tabs" aria-label="Vues des tâches"></nav>
+      <div class="task-toolbar" id="task-toolbar">
+        <div class="task-scopes" aria-label="Filtrer les tâches">
+          <button data-scope="all">Toutes les tâches</button>
+          <button data-scope="mine"><iconify-icon icon="solar:user-linear"></iconify-icon> Mes tâches</button>
+          <button data-scope="today">Aujourd’hui</button>
+          <button data-scope="late">En retard</button>
+        </div>
+        <label class="task-search"><iconify-icon icon="solar:magnifer-linear"></iconify-icon><input id="task-search" type="search" aria-label="Rechercher une tâche" placeholder="Rechercher une tâche…"></label>
+      </div>
+      <div class="task-view-heading"><div><h2 id="task-view-title"></h2><p id="task-view-help"></p></div><button class="task-text-button" id="task-reset" hidden>Effacer les filtres</button></div>
+      <div id="taches-view-content" class="taches-view-content"></div>
+    `);
+    this._buildTabButtons(moduleDiv.querySelector('#taches-tabs'));
+    moduleDiv.querySelector('#task-create').addEventListener('click', () => {
+      if (this._activeView === 'reunions') this._openReunionForm();
+      else this._openTaskForm();
+    });
+    moduleDiv.querySelectorAll('[data-scope]').forEach(button => {
+      button.addEventListener('click', () => this._setScope(button.dataset.scope));
+    });
+    const search = moduleDiv.querySelector('#task-search');
+    search.value = this._search;
+    search.addEventListener('input', () => { this._search = search.value; this._selectedTasks.clear(); this._renderActiveView(); });
+    moduleDiv.querySelector('#task-reset').addEventListener('click', () => {
+      this._search = ''; search.value = ''; this._setScope('all');
+    });
 
     ct.appendChild(moduleDiv);
     this._renderActiveView();
@@ -193,10 +194,10 @@ const TachesPage = {
 
   _buildTabButtons(container) {
     const tabs = [
-      { id: 'dashboard', icon: 'solar:chart-square-bold-duotone', label: 'Dashboard' },
+      { id: 'dashboard', icon: 'solar:chart-square-bold-duotone', label: 'Vue d’ensemble' },
       { id: 'kanban', icon: 'solar:widget-4-bold-duotone', label: 'Tableau' },
       { id: 'eisenhower', icon: 'solar:target-bold-duotone', label: 'Priorités' },
-      { id: 'gantt', icon: 'solar:chart-2-bold-duotone', label: 'Gantt' },
+      { id: 'gantt', icon: 'solar:chart-2-bold-duotone', label: 'Calendrier · Gantt' },
       { id: 'reunions', icon: 'solar:users-group-rounded-bold-duotone', label: 'Réunions' },
       { id: 'liste', icon: 'solar:list-bold-duotone', label: 'Liste' }
     ];
@@ -204,17 +205,15 @@ const TachesPage = {
       const btn = document.createElement('button');
       btn.className = 'taches-tab' + (this._activeView === t.id ? ' active' : '');
       btn.dataset.view = t.id;
+      btn.setAttribute('aria-current', this._activeView === t.id ? 'page' : 'false');
       const icon = document.createElement('iconify-icon');
-      icon.setAttribute('icon', t.icon);
+      icon.setAttribute('icon', t.icon.replace('-bold-duotone', '-linear'));
       btn.appendChild(icon);
       const span = document.createElement('span');
       span.textContent = t.label;
       btn.appendChild(span);
       btn.addEventListener('click', () => {
-        this._activeView = t.id;
-        container.querySelectorAll('.taches-tab').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this._renderActiveView();
+        this._switchTab(t.id);
       });
       container.appendChild(btn);
     });
@@ -223,23 +222,88 @@ const TachesPage = {
   _renderActiveView() {
     const ct = document.getElementById('taches-view-content');
     if (!ct) return;
-    // Using a document fragment built with DOM methods where practical,
-    // but for complex templating we build HTML strings with escaped user data
-    // (Utils.escHtml) then assign via innerHTML — this is the standard pattern
-    // across the entire codebase and user data is always escaped.
+    this._syncToolbar();
+    ct.replaceChildren();
     switch (this._activeView) {
-      case 'dashboard': ct.innerHTML = this._renderDashboard(); this._bindDashboardClicks(ct); break;
-      case 'kanban': ct.innerHTML = this._renderKanban(); this._bindKanbanDragDrop(); break;
-      case 'eisenhower': ct.innerHTML = this._renderEisenhower(); this._bindEisenhowerDragDrop(); break;
+      case 'dashboard': ct.insertAdjacentHTML('beforeend', this._renderDashboard()); this._bindDashboardClicks(ct); break;
+      case 'kanban': ct.insertAdjacentHTML('beforeend', this._renderKanban()); this._bindKanbanDragDrop(); break;
+      case 'eisenhower': ct.insertAdjacentHTML('beforeend', this._renderEisenhower()); this._bindEisenhowerDragDrop(); break;
       case 'gantt':
         // Nouvelle frise Gantt (widget dédié) : début→échéance, couleur par statut,
         // retards en rouge. Remplace l'ancien rendu interne.
         ct.replaceChildren();
         GanttTachesPage.renderInto(ct);
         break;
-      case 'reunions': ct.innerHTML = this._renderReunions(); break;
-      case 'liste': ct.innerHTML = this._renderListe(); this._bindListeEvents(); break;
+      case 'reunions': ct.insertAdjacentHTML('beforeend', this._renderReunions()); break;
+      case 'liste': ct.insertAdjacentHTML('beforeend', this._renderListe()); this._bindListeEvents(); break;
     }
+    ct.querySelectorAll('.kanban-card, .eisen-card, .reunion-card, .liste-title-cell').forEach(card => {
+      card.setAttribute('role', 'button');
+      card.tabIndex = 0;
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+      });
+    });
+  },
+
+  _getVisibleTaches() {
+    const today = this._today();
+    const query = this._search.trim().toLocaleLowerCase('fr');
+    return this._getTaches().filter(t => {
+      const active = ['a_faire', 'en_cours'].includes(t.statut);
+      if (this._scope === 'mine' && t.assigneA !== this._currentUserId()) return false;
+      if (this._scope === 'today' && (!active || String(t.dateEcheance || '').slice(0, 10) !== today)) return false;
+      if (this._scope === 'late' && (!active || !t.dateEcheance || t.dateEcheance >= today)) return false;
+      if (this._scope === 'active' && !active) return false;
+      return !query || [t.titre, t.description, t.assigneANom, this._getUserName(t.assigneA), ...(t.etiquettes || [])].filter(Boolean).join(' ').toLocaleLowerCase('fr').includes(query);
+    });
+  },
+
+  _setScope(scope, view) {
+    this._scope = scope;
+    this._listFilters = { statut: '', priorite: '', assigneA: '', type: '', search: '' };
+    this._selectedTasks.clear();
+    if (view) this._switchTab(view);
+    else this._renderActiveView();
+  },
+
+  _syncToolbar() {
+    const descriptions = {
+      dashboard: ['Vue d’ensemble', 'L’essentiel pour organiser votre journée.'],
+      kanban: ['Le travail, étape par étape', 'Déplacez les cartes pour faire avancer les tâches.'],
+      eisenhower: ['Concentrez-vous sur l’essentiel', 'Classez les tâches selon leur urgence et leur importance.'],
+      gantt: ['Gardez une longueur d’avance', 'Visualisez les échéances. Cliquez sur une barre pour ouvrir la tâche.'],
+      reunions: ['Les décisions deviennent des actions', 'Préparez vos réunions et suivez les engagements de l’équipe.'],
+      liste: ['Toutes les tâches, en détail', 'Filtrez, sélectionnez et mettez à jour plusieurs tâches à la fois.']
+    };
+    const [title, help] = descriptions[this._activeView] || descriptions.dashboard;
+    document.getElementById('task-view-title').textContent = title;
+    document.getElementById('task-view-help').textContent = this._activeView === 'liste' && this._listFilters.completedWeek ? 'Terminées cette semaine · du lundi au dimanche.' : this._scope === 'active' ? help + ' Tâches actives uniquement.' : help;
+    document.getElementById('task-toolbar').hidden = this._activeView === 'reunions';
+    document.getElementById('task-reset').hidden = this._activeView === 'reunions' || !(this._scope !== 'all' || this._search || Object.values(this._listFilters).some(Boolean));
+    const create = document.getElementById('task-create');
+    create.lastChild.textContent = this._activeView === 'reunions' ? ' Nouvelle réunion' : ' Nouvelle tâche';
+    document.querySelectorAll('[data-scope]').forEach(button => {
+      const selected = button.dataset.scope === this._scope;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
+  },
+
+  _emptyState(title, message, action = 'create') {
+    return `<div class="task-empty"><div class="task-empty-icon"><iconify-icon icon="solar:checklist-minimalistic-linear"></iconify-icon></div><h3>${Utils.escHtml(title)}</h3><p>${Utils.escHtml(message)}</p>${action === 'create' ? '<button class="task-primary" onclick="TachesPage._openTaskForm()"><iconify-icon icon="solar:add-circle-linear"></iconify-icon> Créer une tâche</button>' : ''}</div>`;
+  },
+
+  _taskRow(t) {
+    const status = this._statutConfig[t.statut] || this._statutConfig.a_faire;
+    const late = ['a_faire', 'en_cours'].includes(t.statut) && t.dateEcheance && t.dateEcheance < this._today();
+    const date = !t.dateEcheance ? 'Sans échéance' : t.dateEcheance === this._today() ? 'Aujourd’hui' : Utils.formatDate(t.dateEcheance);
+    return `<button class="task-focus-row" data-open-task="${Utils.escHtml(t.id)}">
+      <span class="task-status-mark" style="--status-color:${status.color}"><iconify-icon icon="${status.icon.replace('-bold-duotone', '-linear')}"></iconify-icon></span>
+      <span class="task-row-text"><strong>${Utils.escHtml(t.titre || 'Tâche')}</strong><small>${Utils.escHtml(t.assigneANom || this._getUserName(t.assigneA) || 'Non assignée')} · ${status.label}</small></span>
+      <span class="task-row-date${late ? ' is-late' : ''}">${late ? 'En retard · ' : ''}${date}</span>
+      <iconify-icon class="task-row-arrow" icon="solar:alt-arrow-right-linear"></iconify-icon>
+    </button>`;
   },
 
   // =====================================================================
@@ -247,208 +311,43 @@ const TachesPage = {
   // =====================================================================
 
   _renderDashboard() {
-    const taches = this._getTaches();
-    const today = this._today();
-    const weekStart = this._startOfWeek();
-    const weekEnd = this._endOfWeek();
-
-    const active = taches.filter(t => t.statut === 'a_faire' || t.statut === 'en_cours');
-    const aFaireAujourdhui = taches.filter(t => (t.statut === 'a_faire' || t.statut === 'en_cours') && t.dateEcheance && t.dateEcheance <= today);
-    const enRetard = taches.filter(t => (t.statut === 'a_faire' || t.statut === 'en_cours') && t.dateEcheance && t.dateEcheance < today);
-    const enCours = taches.filter(t => t.statut === 'en_cours');
-    const termineesSemaine = taches.filter(t => t.statut === 'terminee' && t.dateTerminaison && t.dateTerminaison >= weekStart && t.dateTerminaison <= weekEnd);
-    const totalDone = taches.filter(t => t.statut === 'terminee').length;
-    const tauxCompletion = taches.length > 0 ? Math.round((totalDone / taches.length) * 100) : 0;
-
-    // Charge par membre
-    const userLoad = {};
-    active.forEach(t => {
-      if (t.assigneA) {
-        const name = t.assigneANom || this._getUserName(t.assigneA) || 'Non assigné';
-        userLoad[name] = (userLoad[name] || 0) + 1;
-      }
-    });
-    const userLoadArr = Object.entries(userLoad).sort((a, b) => b[1] - a[1]);
-    const maxLoad = userLoadArr.length > 0 ? userLoadArr[0][1] : 1;
-
-    // Echeances proches (7 jours)
-    const upcoming = taches
-      .filter(t => (t.statut === 'a_faire' || t.statut === 'en_cours') && t.dateEcheance && t.dateEcheance >= today && t.dateEcheance <= this._daysFromNow(7))
-      .sort((a, b) => a.dateEcheance.localeCompare(b.dateEcheance))
-      .slice(0, 10);
-
-    // Activite recente
-    const recent = [...taches]
-      .filter(t => t.dateModification)
-      .sort((a, b) => (b.dateModification || '').localeCompare(a.dateModification || ''))
-      .slice(0, 10);
-
-    // Répartition par statut (structure Resq.io : résumé à pastilles + bulles) — palette claire.
-    const _st = this._statutConfig;
-    const dist = ['a_faire', 'en_cours', 'terminee', 'annulee'].map(k => ({ k, label: (_st[k] || {}).label || k, color: (_st[k] || {}).color || '#94a3b8', n: taches.filter(t => t.statut === k).length }));
-    const distTotal = dist.reduce((s, d) => s + d.n, 0);
-    const distMax = Math.max(1, ...dist.map(d => d.n));
-    const sumRows = dist.map(d => `<div class="tk-sum-row"><span class="tk-sum-dot" style="background:${d.color};"></span><span class="tk-sum-lbl">${Utils.escHtml(d.label)}</span><span class="tk-sum-track"><span class="tk-sum-fill" style="width:${Math.round(d.n / distMax * 100)}%;background:${d.color};"></span></span><span class="tk-sum-val">${d.n}</span></div>`).join('');
-    const ranked = dist.filter(d => d.n > 0).sort((a, b) => b.n - a.n);
-    const bslots = [{ l: 4, t: 12 }, { l: 47, t: 4 }, { l: 42, t: 50 }, { l: 4, t: 54 }];
-    const bubbles = ranked.map((d, i) => { const sz = 54 + Math.round(d.n / distMax * 66); const p = bslots[i] || { l: 24, t: 30 }; return `<div class="tk-bub" style="width:${sz}px;height:${sz}px;left:${p.l}%;top:${p.t}%;background:${d.color};" title="${Utils.escHtml(d.label)} : ${d.n}">${Math.round(d.n / distTotal * 100)}%</div>`; }).join('');
-
-    // Carte d'accent (style « Vulnerability » de Resq.io) : met en avant l'urgence du moment.
-    let coTone = 'ok', coNum = 0, coLbl = 'Tout est sous contrôle', coIcon = 'solar:check-circle-bold', coCta = '';
-    if (enRetard.length > 0) { coTone = 'danger'; coNum = enRetard.length; coLbl = enRetard.length > 1 ? 'tâches en retard' : 'tâche en retard'; coIcon = 'solar:danger-triangle-bold'; coCta = "TachesPage._kpiNav('liste','a_faire')"; }
-    else if (aFaireAujourdhui.length > 0) { coTone = 'warn'; coNum = aFaireAujourdhui.length; coLbl = "à faire aujourd'hui"; coIcon = 'solar:calendar-bold'; coCta = "TachesPage._kpiNav('liste','a_faire')"; }
-    else if (upcoming.length > 0) { coTone = 'info'; coNum = upcoming.length; coLbl = upcoming.length > 1 ? 'échéances sous 7 jours' : 'échéance sous 7 jours'; coIcon = 'solar:calendar-bold'; }
-    const callout = `<div class="tk-callout tk-callout-${coTone}"${coCta ? ` onclick="${coCta}" style="cursor:pointer;"` : ''}>
-        <div class="tk-callout-ic"><iconify-icon icon="${coIcon}"></iconify-icon></div>
-        <div class="tk-callout-num">${coNum}</div>
-        <div class="tk-callout-lbl">${coLbl}</div>
-        ${coCta ? '<div class="tk-callout-cta">Traiter <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></div>' : ''}
-      </div>`;
-    // Liste des tâches actives (style « Active incidents »).
-    const activeCards = active.slice(0, 5).map(t => {
-      const sc2 = this._statutConfig[t.statut] || this._statutConfig.a_faire;
-      const pc2 = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
-      return `<div class="tk-act" onclick="TachesPage._viewTask('${t.id}')">
-        <span class="tk-act-badge" style="background:${sc2.bg};color:${sc2.color};">${sc2.label}</span>
-        <div class="tk-act-title">${Utils.escHtml(t.titre || 'Tâche')}</div>
-        <div class="tk-act-meta"><span class="tk-act-prio" style="color:${pc2.color};">● ${pc2.label}</span>${t.assigneANom ? ' · ' + Utils.escHtml(t.assigneANom) : ''}</div>
-      </div>`;
-    }).join('');
-
-    return `
-      <div class="dash-section">
-        <div class="dash-kpi-row">
-          ${this._kpiCard('solar:clipboard-list-bold-duotone', '#F5512E', 'Tâches actives', active.length, "TachesPage._kpiNav('liste')")}
-          ${this._kpiCard('solar:calendar-bold-duotone', '#ffae1f', "À faire aujourd'hui", aFaireAujourdhui.length, "TachesPage._kpiNav('liste','a_faire')")}
-          ${this._kpiCard('solar:alarm-bold-duotone', '#ef4444', 'En retard', enRetard.length, "TachesPage._kpiNav('liste','a_faire')")}
-          ${this._kpiCard('solar:play-bold-duotone', '#635bff', 'En cours', enCours.length, "TachesPage._kpiNav('liste','en_cours')")}
-          ${this._kpiCard('solar:check-circle-bold-duotone', '#13deb9', 'Terminées (semaine)', termineesSemaine.length, "TachesPage._kpiNav('liste','terminee')")}
-          ${this._kpiCard('solar:chart-bold-duotone', '#635bff', 'Taux complétion', tauxCompletion + '%', "TachesPage._kpiNav('kanban')")}
-        </div>
+    const tasks = this._getVisibleTaches();
+    const active = tasks.filter(t => ['a_faire', 'en_cours'].includes(t.statut));
+    const late = active.filter(t => t.dateEcheance && t.dateEcheance < this._today());
+    const due = active.filter(t => t.dateEcheance === this._today());
+    const done = tasks.filter(t => t.statut === 'terminee');
+    const weekDone = done.filter(t => String(t.dateTerminaison || '').slice(0, 10) >= this._startOfWeek() && String(t.dateTerminaison || '').slice(0, 10) <= this._endOfWeek());
+    const counted = tasks.filter(t => t.statut !== 'annulee');
+    const progress = counted.length ? Math.round(done.length / counted.length * 100) : 0;
+    const priority = { urgente: 0, haute: 1, normale: 2, basse: 3 };
+    const focus = [...active].sort((a, b) => (a.dateEcheance || '9999').localeCompare(b.dateEcheance || '9999') || (priority[a.priorite] ?? 2) - (priority[b.priorite] ?? 2)).slice(0, 5);
+    const stats = [
+      ['active', 'Tâches actives', active.length, 'solar:layers-linear'],
+      ['today', 'Pour aujourd’hui', due.length, 'solar:calendar-linear'],
+      ['late', 'En retard', late.length, 'solar:alarm-linear'],
+      ['done', 'Terminées cette semaine', weekDone.length, 'solar:check-circle-linear']
+    ];
+    const metrics = `<div class="task-metrics">${stats.map(([scope, label, count, icon]) => `<button class="task-metric ${scope === 'late' && count ? 'needs-attention' : ''}" data-metric="${scope}"><span>${label}<iconify-icon icon="${icon}"></iconify-icon></span><strong>${count}</strong><small>${scope === 'done' ? 'Du lundi au dimanche' : scope === 'late' ? 'Échéance dépassée' : scope === 'today' ? 'À faire ou en cours' : 'À faire et en cours'}<iconify-icon icon="solar:arrow-right-linear"></iconify-icon></small></button>`).join('')}</div>`;
+    if (!tasks.length) {
+      const filtered = this._getTaches().length > 0;
+      return `${metrics}<div class="task-onboarding"><div><span class="task-eyebrow">${filtered ? 'VOTRE SÉLECTION' : 'UN NOUVEAU DÉPART'}</span><h2>${filtered ? 'Un peu de place pour souffler.' : 'Les bonnes journées commencent avec un plan.'}</h2><p>${filtered ? 'Aucune tâche ne correspond à ces filtres. Explorez les autres vues ou effacez votre sélection.' : 'Une maintenance à prévoir, un document à renouveler, une idée à concrétiser… Donnez à chaque action un responsable et une échéance.'}</p><button class="task-primary" onclick="${filtered ? "document.getElementById('task-reset').click()" : 'TachesPage._openTaskForm()'}"><iconify-icon icon="solar:add-circle-linear"></iconify-icon>${filtered ? 'Voir toutes les tâches' : 'Créer ma première tâche'}</button></div><div class="task-plan-art" aria-hidden="true"><span class="task-art-label">VOTRE PROCHAIN OBJECTIF</span><div><i>✓</i><span>Définir une action</span></div><div><i>✓</i><span>Choisir un responsable</span></div><div><i>3</i><span>Fixer une échéance</span></div><span class="task-art-line"></span><small>Chaque étape compte.</small></div></div><div class="task-start-grid"><button onclick="TachesPage._switchTab('kanban')"><iconify-icon icon="solar:widget-4-linear"></iconify-icon><strong>Organisez visuellement</strong><span>Un tableau pour suivre chaque étape.</span></button><button onclick="TachesPage._switchTab('gantt')"><iconify-icon icon="solar:calendar-linear"></iconify-icon><strong>Anticipez les échéances</strong><span>Votre planning sur 7, 14 ou 30 jours.</span></button><button onclick="TachesPage._switchTab('reunions')"><iconify-icon icon="solar:users-group-rounded-linear"></iconify-icon><strong>Avancez ensemble</strong><span>Transformez vos réunions en actions.</span></button></div>`;
+    }
+    const loads = new Map();
+    active.forEach(t => { const id = t.assigneA || ''; const entry = loads.get(id) || { name: t.assigneANom || this._getUserName(id) || 'Non assignées', count: 0 }; entry.count++; loads.set(id, entry); });
+    const team = [...loads.entries()].sort((a, b) => b[1].count - a[1].count);
+    const maxLoad = Math.max(1, ...team.map(([, u]) => u.count));
+    const upcoming = active.filter(t => t.dateEcheance > this._today() && t.dateEcheance <= this._daysFromNow(7)).sort((a, b) => a.dateEcheance.localeCompare(b.dateEcheance)).slice(0, 4);
+    const distribution = ['a_faire', 'en_cours', 'terminee', 'annulee'].map(key => ({...this._statutConfig[key], count: tasks.filter(t => t.statut === key).length, key}));
+    return `${metrics}
+      <div class="task-overview-grid">
+        <section class="task-panel task-focus-panel"><div class="task-panel-heading"><div><span class="task-eyebrow">VOTRE FEUILLE DE ROUTE</span><h3>À traiter en priorité</h3></div><button class="task-text-button" onclick="TachesPage._setScope('active','liste')">Voir tout <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button></div>${focus.length ? focus.map(t => this._taskRow(t)).join('') : this._emptyState('Tout est à jour', 'Aucune tâche active dans cette sélection.', 'none')}</section>
+        <aside class="task-progress-panel"><span class="task-eyebrow">UNE ÉTAPE APRÈS L’AUTRE</span><h3>Votre progression</h3><div class="task-progress-ring" style="--progress:${progress}%"><div><strong>${progress}<small>%</small></strong><span>terminées</span></div></div><p><strong>${done.length}</strong> tâche${done.length > 1 ? 's' : ''} terminée${done.length > 1 ? 's' : ''} sur ${counted.length}</p><span class="task-progress-caption">Hors tâches annulées</span><button onclick="TachesPage._switchTab('kanban')">Ouvrir le tableau <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button></aside>
+        <section class="task-panel"><div class="task-panel-heading"><h3>La semaine en vue</h3><span class="task-muted">7 prochains jours</span></div>${upcoming.length ? upcoming.map(t => this._taskRow(t)).join('') : this._emptyState('L’horizon est dégagé', 'Aucune échéance prévue dans les 7 prochains jours.', 'none')}</section>
+        <section class="task-panel"><div class="task-panel-heading"><h3>La charge de l’équipe</h3><iconify-icon icon="solar:users-group-rounded-linear"></iconify-icon></div><div class="task-team">${team.length ? team.slice(0, 5).map(([id, member]) => `<button data-team-member="${Utils.escHtml(id)}">${this._avatarBubble(member.name)}<span><strong>${Utils.escHtml(member.name)}</strong><i><em style="width:${member.count / maxLoad * 100}%"></em></i></span><b>${member.count}</b></button>`).join('') : '<p class="task-muted">Aucune tâche active à répartir.</p>'}</div></section>
       </div>
-
-      <div class="dash-grid-freq">
-        <div class="dash-card">
-          <div class="dash-card-header"><iconify-icon icon="solar:pie-chart-2-bold-duotone" style="color:#635bff;"></iconify-icon> Résumé</div>
-          <div class="dash-card-body">
-            ${distTotal ? `<div class="tk-sum">${sumRows}</div>` : '<div class="tk-empty">Aucune tâche</div>'}
-          </div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-header"><iconify-icon icon="solar:graph-up-bold-duotone" style="color:#F5512E;"></iconify-icon> Fréquence des tâches <span class="tk-freq-sub">14 derniers jours</span></div>
-          <div class="dash-card-body">
-            ${this._freqChart(taches)}
-            <div class="tk-legend"><span class="tk-lg"><span class="tk-ldot" style="background:#F5512E;"></span>Créées</span><span class="tk-lg"><span class="tk-ldot" style="background:#13DEB9;"></span>Terminées</span></div>
-          </div>
-        </div>
-        ${callout}
-      </div>
-
-      <div class="dash-grid-3">
-        <div class="dash-card">
-          <div class="dash-card-header"><iconify-icon icon="solar:playlist-bold-duotone" style="color:#F5512E;"></iconify-icon> Tâches actives</div>
-          <div class="dash-card-body">
-            ${activeCards || '<div class="tk-empty">Aucune tâche active</div>'}
-          </div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-header"><iconify-icon icon="solar:chart-square-bold-duotone" style="color:#635bff;"></iconify-icon> Statistiques</div>
-          <div class="dash-card-body">
-            ${distTotal ? `<div class="tk-bubbles">${bubbles}</div>` : '<div class="tk-empty">Aucune donnée</div>'}
-          </div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-header"><iconify-icon icon="solar:bolt-bold-duotone" style="color:#13deb9;"></iconify-icon> Actions rapides</div>
-          <div class="dash-card-body">
-            <div class="tk-qa">
-              <button class="tk-qa-btn" onclick="TachesPage._openTaskForm('a_faire')"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouvelle tâche</button>
-              <button class="tk-qa-btn" onclick="TachesPage._switchTab('tableau')"><iconify-icon icon="solar:widget-bold-duotone"></iconify-icon> Tableau</button>
-              <button class="tk-qa-btn" onclick="TachesPage._switchTab('priorites')"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon> Priorités</button>
-              <button class="tk-qa-btn" onclick="TachesPage._switchTab('reunions')"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon> Réunions</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="dash-grid-2col">
-        <div class="dash-card">
-          <div class="dash-card-header">
-            <iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:#F5512E;"></iconify-icon>
-            Charge par membre
-          </div>
-          <div class="dash-card-body">
-            ${userLoadArr.length === 0 ? '<div style="color:var(--text-muted);text-align:center;padding:20px;">Aucune tâche assignée</div>' :
-              userLoadArr.map(([name, count]) => `
-                <div class="dash-bar-row dash-member-click" style="cursor:pointer;border-radius:8px;padding:6px 8px;transition:background .15s;" data-member="${Utils.escHtml(name)}">
-                  <div class="dash-bar-label">${this._avatarBubble(name)} ${Utils.escHtml(name)}</div>
-                  <div class="dash-bar-track">
-                    <div class="dash-bar-fill" style="width:${Math.round((count / maxLoad) * 100)}%;"></div>
-                  </div>
-                  <div class="dash-bar-count">${count}</div>
-                </div>
-              `).join('')
-            }
-          </div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-header">
-            <iconify-icon icon="solar:calendar-bold-duotone" style="color:#f5512e;"></iconify-icon>
-            Échéances proches (7j)
-          </div>
-          <div class="dash-card-body">
-            ${upcoming.length === 0 ? '<div style="color:var(--text-muted);text-align:center;padding:20px;">Aucune échéance dans les 7 prochains jours</div>' :
-              upcoming.map(t => {
-                const pCfg = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
-                const daysLeft = Math.ceil((new Date(t.dateEcheance) - new Date(today)) / 86400000);
-                const dayLabel = daysLeft === 0 ? "Aujourd'hui" : daysLeft === 1 ? 'Demain' : 'Dans ' + daysLeft + 'j';
-                return `
-                  <div class="dash-timeline-item" onclick="TachesPage._viewTask('${t.id}')">
-                    <div class="dash-timeline-dot" style="background:${pCfg.color};"></div>
-                    <div class="dash-timeline-content">
-                      <div class="dash-timeline-title">${Utils.escHtml(t.titre)}</div>
-                      <div class="dash-timeline-meta">
-                        <span style="color:${daysLeft === 0 ? '#ef4444' : daysLeft === 1 ? '#f5512e' : 'var(--text-muted)'};">${dayLabel}</span>
-                        ${t.assigneANom ? ' &middot; ' + Utils.escHtml(t.assigneANom) : ''}
-                      </div>
-                    </div>
-                  </div>
-                `;
-              }).join('')
-            }
-          </div>
-        </div>
-      </div>
-
-      <div class="dash-card" style="margin-top:16px;">
-        <div class="dash-card-header">
-          <iconify-icon icon="solar:history-bold-duotone" style="color:#13deb9;"></iconify-icon>
-          Activité récente
-        </div>
-        <div class="dash-card-body">
-          ${recent.length === 0 ? '<div style="color:var(--text-muted);text-align:center;padding:20px;">Aucune activité récente</div>' :
-            recent.map(t => {
-              const sCfg = this._statutConfig[t.statut] || this._statutConfig.a_faire;
-              return `
-                <div class="dash-activity-item" onclick="TachesPage._viewTask('${t.id}')">
-                  <div class="dash-activity-badge" style="background:${sCfg.bg};color:${sCfg.color};">
-                    <iconify-icon icon="${sCfg.icon}"></iconify-icon>
-                  </div>
-                  <div class="dash-activity-info">
-                    <div class="dash-activity-title">${Utils.escHtml(t.titre)}</div>
-                    <div class="dash-activity-meta">${sCfg.label} &middot; ${t.dateModification ? Utils.formatDate(t.dateModification) : ''}</div>
-                  </div>
-                </div>
-              `;
-            }).join('')
-          }
-        </div>
-      </div>
-    `;
+      <div class="task-bottom-grid"><section class="task-panel"><div class="task-panel-heading"><h3>Le rythme de l’équipe</h3><span class="task-muted">14 derniers jours</span></div><div class="task-chart">${this._freqChart(tasks)}</div><div class="task-chart-legend"><span>● Créées</span><span>● Terminées</span></div></section><section class="task-panel"><div class="task-panel-heading"><h3>Répartition des tâches</h3><span class="task-muted">${tasks.length} au total</span></div><div class="task-distribution">${distribution.map(d => `<button data-status="${d.key}"><span style="background:${d.color}"></span><strong>${d.label}</strong><b>${d.count}</b></button>`).join('')}</div></section></div>`;
   },
 
-  // Graphe à double courbe lissée (style « Incident frequency » de Resq.io) :
-  // tâches créées (orange) vs terminées (teal) sur 14 jours.
   _freqChart(taches) {
     const days = [];
     for (let i = 13; i >= 0; i--) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i); days.push(d); }
@@ -480,7 +379,7 @@ const TachesPage = {
     return `<svg viewBox="0 0 ${W} ${H}" class="tk-freq" preserveAspectRatio="none" role="img" aria-label="Tâches créées vs terminées">
       <line x1="${padX}" y1="${padTop + innerH}" x2="${W - padX}" y2="${padTop + innerH}" class="tk-freq-axis"></line>
       <path d="${smooth(sc)}" fill="none" stroke="#F5512E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
-      <path d="${smooth(st)}" fill="none" stroke="#13DEB9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="${smooth(st)}" fill="none" stroke="#119D80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
       ${labels}
     </svg>`;
   },
@@ -498,45 +397,34 @@ const TachesPage = {
 
   _switchTab(tabId) {
     this._activeView = tabId;
+    this._selectedTasks.clear();
     document.querySelectorAll('.taches-tab').forEach(b => {
       b.classList.toggle('active', b.dataset.view === tabId);
+      b.setAttribute('aria-current', b.dataset.view === tabId ? 'page' : 'false');
     });
     this._renderActiveView();
   },
 
   _bindDashboardClicks(ct) {
-    ct.querySelectorAll('.dash-member-click').forEach(el => {
-      el.addEventListener('click', () => {
-        const name = el.dataset.member;
-        if (name) this._filterByMember(name);
-      });
-      el.addEventListener('mouseenter', () => { el.style.background = 'var(--bg-tertiary)'; });
-      el.addEventListener('mouseleave', () => { el.style.background = ''; });
-    });
-  },
-
-  _filterByMember(name) {
-    this._currentMemberFilter = name;
-    this._switchTab('liste');
-    setTimeout(() => {
-      const search = document.getElementById('liste-search-input');
-      if (search) { search.value = name; search.dispatchEvent(new Event('input')); }
-    }, 200);
-  },
-
-  _kpiNav(tab, statut) {
-    this._switchTab(tab);
-    if (statut) {
-      setTimeout(() => {
-        const s = document.querySelector('.tl-filter-statut');
-        if (s) { s.value = statut; s.dispatchEvent(new Event('change')); }
-      }, 150);
-    }
+    ct.querySelectorAll('[data-open-task]').forEach(el => el.addEventListener('click', () => this._viewTask(el.dataset.openTask)));
+    ct.querySelectorAll('[data-metric]').forEach(el => el.addEventListener('click', () => {
+      const metric = el.dataset.metric;
+      this._setScope(metric === 'done' ? 'all' : metric);
+      if (metric === 'done') this._listFilters.statut = 'terminee';
+      if (metric === 'done') this._listFilters.completedWeek = true;
+      this._switchTab('liste');
+    }));
+    ct.querySelectorAll('[data-status]').forEach(el => el.addEventListener('click', () => {
+      this._listFilters.statut = el.dataset.status; this._listFilters.completedWeek = false; this._switchTab('liste');
+    }));
+    ct.querySelectorAll('[data-team-member]').forEach(el => el.addEventListener('click', () => {
+      this._setScope('active'); this._listFilters.assigneA = el.dataset.teamMember || '__unassigned'; this._switchTab('liste');
+    }));
   },
 
   _avatarBubble(name) {
     const initials = this._getUserInitials(name);
-    const colors = ['#F5512E', '#f5512e', '#13deb9', '#ef4444', '#635bff', '#635bff', '#f5512e'];
+    const colors = ['#F5512E', '#f5512e', '#119d80', '#ef4444', '#6964ed', '#6964ed', '#f5512e'];
     const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
     const col = colors[hash % colors.length];
     return '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:' + col + '22;color:' + col + ';font-size:11px;font-weight:700;flex-shrink:0;">' + Utils.escHtml(initials) + '</span>';
@@ -547,11 +435,11 @@ const TachesPage = {
   // =====================================================================
 
   _renderKanban() {
-    const taches = this._getTaches();
+    const taches = this._getVisibleTaches();
     const columns = [
       { id: 'a_faire', label: 'À faire', color: '#f5512e', icon: 'solar:clipboard-list-bold-duotone' },
-      { id: 'en_cours', label: 'En cours', color: '#635bff', icon: 'solar:play-bold-duotone' },
-      { id: 'terminee', label: 'Terminée', color: '#13deb9', icon: 'solar:check-circle-bold-duotone' },
+      { id: 'en_cours', label: 'En cours', color: '#6964ed', icon: 'solar:play-bold-duotone' },
+      { id: 'terminee', label: 'Terminée', color: '#119d80', icon: 'solar:check-circle-bold-duotone' },
       { id: 'annulee', label: 'Annulée', color: '#ec4899', icon: 'solar:close-circle-bold-duotone' }
     ];
 
@@ -606,7 +494,7 @@ const TachesPage = {
       html += '<span class="kanban-late-badge"><iconify-icon icon="solar:alarm-bold-duotone" style="font-size:12px;"></iconify-icon> Retard</span>';
     }
     if (t.delegation && t.delegation.statut === 'transferee') {
-      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(139,92,246,.12);color:#635bff;"><iconify-icon icon="solar:hand-shake-bold-duotone" style="font-size:12px;"></iconify-icon> Déléguée par ' + Utils.escHtml(t.delegation.delegueParNom || '') + '</span>';
+      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(139,92,246,.12);color:#6964ed;"><iconify-icon icon="solar:hand-shake-bold-duotone" style="font-size:12px;"></iconify-icon> Déléguée par ' + Utils.escHtml(t.delegation.delegueParNom || '') + '</span>';
     }
     if (t.delegation && t.delegation.statut === 'annulee_admin') {
       html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(239,68,68,.12);color:#ef4444;"><iconify-icon icon="solar:close-circle-bold-duotone" style="font-size:12px;"></iconify-icon> Délég. annulée</span>';
@@ -699,11 +587,11 @@ const TachesPage = {
   // =====================================================================
 
   _renderEisenhower() {
-    const taches = this._getTaches().filter(t => t.statut === 'a_faire' || t.statut === 'en_cours');
+    const taches = this._getVisibleTaches().filter(t => t.statut === 'a_faire' || t.statut === 'en_cours');
 
     const quadrants = [
       { id: 'q1', urgent: true,  important: true,  label: 'Faire immédiatement', color: '#ef4444', bg: 'rgba(239,68,68,.14)', icon: 'solar:fire-bold-duotone', emptyMsg: "Rien d'urgent et important. Bien joué !" },
-      { id: 'q2', urgent: false, important: true,  label: 'Planifier', color: '#635bff', bg: 'rgba(99,91,255,.14)', icon: 'solar:calendar-bold-duotone', emptyMsg: 'Planifiez vos objectifs importants ici.' },
+      { id: 'q2', urgent: false, important: true,  label: 'Planifier', color: '#6964ed', bg: 'rgba(99,91,255,.14)', icon: 'solar:calendar-bold-duotone', emptyMsg: 'Planifiez vos objectifs importants ici.' },
       { id: 'q3', urgent: true,  important: false, label: 'Déléguer', color: '#e8930c', bg: 'rgba(255,174,31,.16)', icon: 'solar:users-group-rounded-bold-duotone', emptyMsg: 'Les tâches urgentes mais non importantes vont ici.' },
       { id: 'q4', urgent: false, important: false, label: 'Éliminer', color: '#0891b2', bg: 'rgba(8,145,178,.13)', icon: 'solar:trash-bin-minimalistic-bold-duotone', emptyMsg: 'Pensez à supprimer ces distractions.' }
     ];
@@ -876,7 +764,7 @@ const TachesPage = {
     const todayLineHtml = todayIdx >= 0 ? '<div class="gantt-today-line" style="left:' + (todayIdx * dayWidth + dayWidth / 2) + 'px;height:' + Math.max(tasks.length * rowHeight, 200) + 'px;"></div>' : '';
 
     // Status color map
-    const statutColors = { a_faire: '#ffae1f', en_cours: '#635bff', terminee: '#13deb9', annulee: '#ec4899' };
+    const statutColors = { a_faire: '#ffae1f', en_cours: '#6964ed', terminee: '#119d80', annulee: '#ec4899' };
     const statutIcons = { a_faire: 'solar:clipboard-list-bold', en_cours: 'solar:play-bold', terminee: 'solar:check-circle-bold', annulee: 'solar:close-circle-bold' };
     const statutLabels = { a_faire: 'À faire', en_cours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
 
@@ -922,8 +810,8 @@ const TachesPage = {
     // Legend
     const legendHtml = '<div class="gantt-legend">'
       + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#ffae1f;"></span>À faire</span>'
-      + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#635bff;"></span>En cours</span>'
-      + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#13deb9;"></span>Terminée</span>'
+      + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#6964ed;"></span>En cours</span>'
+      + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#119d80;"></span>Terminée</span>'
       + '<span class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#ef4444;"></span>En retard</span>'
       + '<span class="gantt-legend-item"><span style="width:10px;height:2px;background:var(--pilote-blue);border-radius:1px;"></span>Aujourd\'hui</span>'
       + '</div>';
@@ -994,21 +882,14 @@ const TachesPage = {
   // =====================================================================
 
   _renderReunions() {
-    const crs = this._getComptesRendus().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const crs = [...this._getComptesRendus()].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const typeLabels = this._reunionTypeLabels;
     const typeColors = this._reunionTypeColors;
 
-    let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">'
-      + '<h3 style="margin:0;font-size:1.1rem;color:var(--text-primary);">'
-      + '<iconify-icon icon="solar:users-group-rounded-bold-duotone" style="color:#635bff;"></iconify-icon> '
-      + 'Comptes rendus de réunion</h3>'
-      + '<button class="btn btn-primary" onclick="TachesPage._openReunionForm()" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;">'
-      + '<iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouvelle réunion</button></div>';
+    let html = '';
 
     if (crs.length === 0) {
-      html += '<div class="dash-card" style="text-align:center;padding:40px;">'
-        + '<iconify-icon icon="solar:notebook-bold-duotone" style="font-size:3rem;color:var(--text-muted);"></iconify-icon>'
-        + '<p style="color:var(--text-muted);margin-top:12px;">Aucun compte rendu de réunion</p></div>';
+      html += `<div class="task-meeting-empty">${this._emptyState('De bonnes décisions, au même endroit.', 'Créez votre premier compte rendu, notez les décisions et transformez-les en tâches pour votre équipe.', 'none')}<button class="task-primary" onclick="TachesPage._openReunionForm()">Créer une réunion</button></div>`;
     } else {
       html += '<div class="reunion-list">';
       crs.forEach(cr => {
@@ -1041,7 +922,7 @@ const TachesPage = {
           + '<span><iconify-icon icon="solar:checklist-line-duotone"></iconify-icon> ' + nbActions + ' action' + (nbActions > 1 ? 's' : '') + '</span>';
 
         if (actionsLiees > 0) {
-          html += '<span style="color:#13deb9;"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> ' + actionsLiees + ' tâche' + (actionsLiees > 1 ? 's' : '') + ' liée' + (actionsLiees > 1 ? 's' : '') + '</span>';
+          html += '<span style="color:#119d80;"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> ' + actionsLiees + ' tâche' + (actionsLiees > 1 ? 's' : '') + ' liée' + (actionsLiees > 1 ? 's' : '') + '</span>';
         }
 
         const statutLabel = cr.statut === 'valide' ? 'Validé' : cr.statut === 'archive' ? 'Archivé' : 'Brouillon';
@@ -1122,7 +1003,7 @@ const TachesPage = {
     const footer = '<button class="btn" onclick="Modal.close()">Annuler</button>'
       + '<button class="btn btn-primary" onclick="TachesPage._saveReunion(\'' + (cr.id || '') + '\')">' + (isEdit ? 'Mettre à jour' : 'Enregistrer') + '</button>';
 
-    Modal.open({ title: isEdit ? 'Modifier la réunion' : 'Nouvelle réunion', body: body, footer: footer, size: 'lg' });
+    Modal.open({ title: isEdit ? 'Modifier la réunion' : 'Nouvelle réunion', body: body, footer: footer, size: 'lg task-dialog' });
   },
 
   _reunionActionRow(a, index, users) {
@@ -1295,7 +1176,7 @@ const TachesPage = {
           + '<div style="display:flex;gap:12px;margin-top:4px;color:var(--text-muted);font-size:12px;">';
         if (a.responsableNom) body += '<span><iconify-icon icon="solar:user-line-duotone"></iconify-icon> ' + Utils.escHtml(a.responsableNom) + '</span>';
         if (a.dateEcheance) body += '<span><iconify-icon icon="solar:calendar-line-duotone"></iconify-icon> ' + Utils.formatDate(a.dateEcheance) + '</span>';
-        if (a.tacheId) body += '<span style="color:#13deb9;"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Tâche liée</span>';
+        if (a.tacheId) body += '<span style="color:#119d80;"><iconify-icon icon="solar:link-bold-duotone"></iconify-icon> Tâche liée</span>';
         body += '</div></div>';
       });
       body += '</div>';
@@ -1312,14 +1193,14 @@ const TachesPage = {
 
     let footer = '';
     if (hasUngeneratedActions) {
-      footer += '<button class="btn" style="color:#13deb9;border-color:#13deb9;" onclick="TachesPage._generateTasksFromReunion(\'' + cr.id + '\')">'
+      footer += '<button class="btn" style="color:#119d80;border-color:#119d80;" onclick="TachesPage._generateTasksFromReunion(\'' + cr.id + '\')">'
         + '<iconify-icon icon="solar:magic-stick-3-bold-duotone"></iconify-icon> Générer les tâches</button>';
     }
     footer += '<button class="btn" onclick="TachesPage._openReunionForm(TachesPage._getComptesRendus().find(function(c){return c.id===\'' + cr.id + '\'}))">'
       + '<iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>'
       + '<button class="btn" onclick="Modal.close()">Fermer</button>';
 
-    Modal.open({ title: cr.titre, body: body, footer: footer, size: 'lg' });
+    Modal.open({ title: Utils.escHtml(cr.titre), body: body, footer: footer, size: 'lg task-dialog' });
   },
 
   _generateTasksFromReunion(crId) {
@@ -1375,14 +1256,15 @@ const TachesPage = {
   // =====================================================================
 
   _renderListe() {
-    const taches = this._getTaches();
+    const taches = this._getVisibleTaches();
     const users = this._getUsers();
     const f = this._listFilters;
 
     let filtered = taches.slice();
     if (f.statut) filtered = filtered.filter(t => t.statut === f.statut);
     if (f.priorite) filtered = filtered.filter(t => t.priorite === f.priorite);
-    if (f.assigneA) filtered = filtered.filter(t => t.assigneA === f.assigneA);
+    if (f.assigneA) filtered = filtered.filter(t => f.assigneA === '__unassigned' ? !t.assigneA : t.assigneA === f.assigneA);
+    if (f.completedWeek) filtered = filtered.filter(t => String(t.dateTerminaison || '').slice(0, 10) >= this._startOfWeek() && String(t.dateTerminaison || '').slice(0, 10) <= this._endOfWeek());
     if (f.type) filtered = filtered.filter(t => t.type === f.type);
     if (f.search) {
       const q = f.search.toLowerCase();
@@ -1402,12 +1284,11 @@ const TachesPage = {
       userOpts += '<option value="' + u.id + '"' + (f.assigneA === u.id ? ' selected' : '') + '>' + Utils.escHtml(name) + '</option>';
     });
 
+    const visibleIds = new Set(filtered.map(t => t.id));
+    this._selectedTasks.forEach(id => { if (!visibleIds.has(id)) this._selectedTasks.delete(id); });
     const selectedCount = this._selectedTasks.size;
 
     let html = '<div class="liste-toolbar">'
-      + '<div class="liste-search">'
-      + '<iconify-icon icon="solar:magnifer-line-duotone" style="color:var(--text-muted);font-size:1.1rem;"></iconify-icon>'
-      + '<input type="text" id="liste-search-input" class="form-control" placeholder="Rechercher..." value="' + Utils.escHtml(f.search) + '" style="border:none;background:transparent;flex:1;font-size:13px;"></div>'
       + '<div class="liste-filters">'
       + '<select id="liste-f-statut" class="form-control form-control-sm" style="font-size:12px;min-width:100px;">'
       + '<option value="">Tous statuts</option>'
@@ -1424,7 +1305,8 @@ const TachesPage = {
       + '<option value="basse"' + (f.priorite === 'basse' ? ' selected' : '') + '>Basse</option>'
       + '</select>'
       + '<select id="liste-f-assigne" class="form-control form-control-sm" style="font-size:12px;min-width:120px;">'
-      + '<option value="">Tous assignés</option>' + userOpts + '</select>'
+      + '<option value="">Tous assignés</option>'
+      + '<option value="__unassigned"' + (f.assigneA === '__unassigned' ? ' selected' : '') + '>Non assignées</option>' + userOpts + '</select>'
       + '<select id="liste-f-type" class="form-control form-control-sm" style="font-size:12px;min-width:100px;">'
       + '<option value="">Tous types</option>'
       + '<option value="maintenance"' + (f.type === 'maintenance' ? ' selected' : '') + '>Maintenance</option>'
@@ -1514,6 +1396,8 @@ const TachesPage = {
         el.addEventListener('change', () => {
           const key = id.replace('liste-f-', '').replace('assigne', 'assigneA');
           this._listFilters[key] = el.value;
+          if (key === 'statut') this._listFilters.completedWeek = false;
+          this._selectedTasks.clear();
           this._renderActiveView();
         });
       }
@@ -1592,12 +1476,13 @@ const TachesPage = {
 
     const tags = (t.etiquettes || []).join(', ');
 
-    const body = '<div style="max-height:70vh;overflow-y:auto;padding:4px;">'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
+    const body = '<div class="task-form"><p class="task-form-intro">Une action claire, un responsable et une échéance. Le reste peut attendre.</p>'
+      + '<div class="task-form-grid">'
       + '<div style="grid-column:1/-1;"><label class="form-label">Titre *</label>'
-      + '<input type="text" id="tf-titre" class="form-control" value="' + Utils.escHtml(t.titre || '') + '" placeholder="Titre de la tâche"></div>'
+      + '<input type="text" id="tf-titre" class="form-control" value="' + Utils.escHtml(t.titre || '') + '" placeholder="Ex. Planifier la révision du véhicule"></div>'
       + '<div style="grid-column:1/-1;"><label class="form-label">Description</label>'
       + '<textarea id="tf-description" class="form-control" rows="3" style="font-size:13px;" placeholder="Description détaillée...">' + Utils.escHtml(t.description || '') + '</textarea></div>'
+      + '<div class="task-form-section">Organisation</div>'
       + '<div><label class="form-label">Type</label>'
       + '<select id="tf-type" class="form-control">'
       + '<option value="autre"' + (t.type === 'autre' || !t.type ? ' selected' : '') + '>Autre</option>'
@@ -1613,10 +1498,11 @@ const TachesPage = {
       + '<option value="haute"' + (t.priorite === 'haute' ? ' selected' : '') + '>Haute</option>'
       + '<option value="urgente"' + (t.priorite === 'urgente' ? ' selected' : '') + '>Urgente</option>'
       + '</select></div>'
-      + '<div><label class="form-label">Assigné à</label>'
+      + '<div><label class="form-label">Responsable</label>'
       + '<select id="tf-assigne" class="form-control"><option value="">Non assigné</option>' + userOpts + '</select></div>'
-      + '<div><label class="form-label">Date échéance</label>'
+      + '<div><label class="form-label">Échéance</label>'
       + '<input type="date" id="tf-echeance" class="form-control" value="' + (t.dateEcheance || '') + '"></div>'
+      + '<div class="task-form-section">Planification</div>'
       + '<div><label class="form-label">Temps estimé (min)</label>'
       + '<input type="number" id="tf-temps" class="form-control" value="' + (t.tempsEstime || '') + '" placeholder="60" min="0"></div>'
       + '<div><label class="form-label">Récurrence</label>'
@@ -1633,7 +1519,7 @@ const TachesPage = {
       + '<span style="color:#ef4444;font-weight:600;">Urgent</span></label>'
       + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;">'
       + '<input type="checkbox" id="tf-important"' + (t.important ? ' checked' : '') + '>'
-      + '<span style="color:#635bff;font-weight:600;">Important</span></label></div>'
+      + '<span style="color:#6964ed;font-weight:600;">Important</span></label></div>'
       + '<div style="margin-top:14px;"><label class="form-label">Étiquettes <span style="font-weight:normal;color:var(--text-muted);">(séparées par des virgules)</span></label>'
       + '<input type="text" id="tf-etiquettes" class="form-control" value="' + Utils.escHtml(tags) + '" placeholder="urgent, client, flotte..." style="font-size:13px;"></div>'
       + '<div style="margin-top:14px;"><label class="form-label">Sous-tâches</label>'
@@ -1650,7 +1536,7 @@ const TachesPage = {
       + '<button class="btn btn-primary" onclick="TachesPage._saveTask(\'' + (editTaskId || '') + '\', \'' + (defaultStatut || '') + '\')">'
       + (isEdit ? 'Mettre à jour' : 'Créer la tâche') + '</button>';
 
-    Modal.open({ title: isEdit ? 'Modifier la tâche' : 'Nouvelle tâche', body: body, footer: footer, size: 'lg' });
+    Modal.open({ title: isEdit ? 'Modifier la tâche' : 'Nouvelle tâche', body: body, footer: footer, size: 'lg task-dialog' });
   },
 
   _addSubtaskRow() {
@@ -1780,7 +1666,7 @@ const TachesPage = {
       + '<iconify-icon icon="' + pCfg.icon + '" style="font-size:13px;"></iconify-icon> ' + pCfg.label + '</span>';
 
     if (t.urgent) body += '<span style="background:rgba(239,68,68,.1);color:#ef4444;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">URGENT</span>';
-    if (t.important) body += '<span style="background:rgba(59,130,246,.1);color:#635bff;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">IMPORTANT</span>';
+    if (t.important) body += '<span style="background:rgba(59,130,246,.1);color:#6964ed;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;">IMPORTANT</span>';
     if (isLate) body += '<span style="background:rgba(239,68,68,.1);color:#ef4444;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;">EN RETARD</span>';
     body += '</div>';
 
@@ -1827,7 +1713,7 @@ const TachesPage = {
       const d = t.delegation;
       const session = Auth.getSession();
       const isDelegate = session && session.userId === d.delegueA;
-      const statusColors = { transferee: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#635bff', label: 'Transférée', icon: 'solar:check-circle-bold-duotone' }, annulee_admin: { bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.2)', color: '#ef4444', label: 'Annulée par admin', icon: 'solar:close-circle-bold-duotone' }, en_attente: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#635bff', label: 'En attente', icon: 'solar:clock-circle-bold-duotone' } };
+      const statusColors = { transferee: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#6964ed', label: 'Transférée', icon: 'solar:check-circle-bold-duotone' }, annulee_admin: { bg: 'rgba(239,68,68,.08)', border: 'rgba(239,68,68,.2)', color: '#ef4444', label: 'Annulée par admin', icon: 'solar:close-circle-bold-duotone' }, en_attente: { bg: 'rgba(139,92,246,.08)', border: 'rgba(139,92,246,.2)', color: '#6964ed', label: 'En attente', icon: 'solar:clock-circle-bold-duotone' } };
       const ds = statusColors[d.statut] || statusColors.en_attente;
       body += '<div style="margin-bottom:16px;padding:12px;border-radius:10px;background:' + ds.bg + ';border:1px solid ' + ds.border + ';">'
         + '<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:' + ds.color + ';margin-bottom:6px;">'
@@ -1848,7 +1734,7 @@ const TachesPage = {
         + '.tl-rail{position:relative;width:16px;flex-shrink:0;display:flex;justify-content:center;}'
         + '.tl-line{position:absolute;top:20px;bottom:-12px;left:50%;transform:translateX(-50%);width:2px;background:var(--border-color);}'
         + '.tl-dot{position:relative;z-index:1;margin-top:15px;width:13px;height:13px;border-radius:50%;background:var(--bg-tertiary);border:2px solid var(--border-color);}'
-        + '.tl-dot.done{background:#13DEB9;border-color:#13DEB9;box-shadow:0 0 0 3px rgba(19,222,185,.16);}'
+        + '.tl-dot.done{background:#119D80;border-color:#119D80;box-shadow:0 0 0 3px rgba(19,222,185,.16);}'
         + '.tl-card{flex:1;border:1px solid var(--border-color);border-radius:12px;padding:11px 14px;transition:border-color .2s,box-shadow .2s;}'
         + '.tl-card:hover{border-color:var(--pilote-blue);box-shadow:0 2px 10px rgba(245,81,46,.12);}'
         + '.tl-card:hover .tl-btn{opacity:1;}'
@@ -1892,7 +1778,7 @@ const TachesPage = {
     const canDelegate = isAssignee && !isAdmin && (t.statut === 'a_faire' || t.statut === 'en_cours') && (!t.delegation || t.delegation.statut === 'refusee');
     let delegateBtn = '';
     if (canDelegate) {
-      delegateBtn = '<button class="btn btn-sm" style="color:#635bff;" onclick="TachesPage._openDelegateForm(\'' + t.id + '\')">'
+      delegateBtn = '<button class="btn btn-sm" style="color:#6964ed;" onclick="TachesPage._openDelegateForm(\'' + t.id + '\')">'
         + '<iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Déléguer</button>';
     }
     // Admin peut annuler une délégation transférée
@@ -1914,7 +1800,7 @@ const TachesPage = {
       + '<iconify-icon icon="solar:pen-bold-duotone"></iconify-icon> Modifier</button>'
       + '<button class="btn" onclick="Modal.close()">Fermer</button>';
 
-    Modal.open({ title: t.titre, body: body, footer: footer, size: 'lg' });
+    Modal.open({ title: Utils.escHtml(t.titre), body: body, footer: footer, size: 'lg task-dialog' });
   },
 
   _openDelegateForm(taskId) {
@@ -1931,7 +1817,7 @@ const TachesPage = {
     });
 
     Modal.open({
-      title: '<iconify-icon icon="solar:hand-shake-bold-duotone" style="color:#635bff;"></iconify-icon> Déléguer la tâche',
+      title: '<iconify-icon icon="solar:hand-shake-bold-duotone" style="color:#6964ed;"></iconify-icon> Déléguer la tâche',
       body: '<div style="padding:4px;">'
         + '<div style="padding:10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:14px;font-size:13px;">'
         + '<strong>' + Utils.escHtml(t.titre) + '</strong></div>'
@@ -1940,10 +1826,10 @@ const TachesPage = {
         + '<label class="form-label" style="margin-top:12px;">Motif (optionnel)</label>'
         + '<textarea id="deleg-motif" class="form-control" rows="2" placeholder="Raison de la délégation..." style="font-size:13px;"></textarea>'
         + '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;padding:8px;border-radius:6px;background:rgba(139,92,246,.05);">'
-        + '<iconify-icon icon="solar:info-circle-line-duotone" style="color:#635bff;"></iconify-icon> '
+        + '<iconify-icon icon="solar:info-circle-line-duotone" style="color:#6964ed;"></iconify-icon> '
         + 'Le membre choisi recevra une notification et devra accepter ou refuser. L\'administrateur peut aussi annuler la délégation.</div>'
         + '</div>',
-      footer: '<button class="btn" style="background:#635bff;color:white;border:none;" onclick="TachesPage._confirmDelegate(\'' + taskId + '\')"><iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Déléguer</button>'
+      footer: '<button class="btn" style="background:#6964ed;color:white;border:none;" onclick="TachesPage._confirmDelegate(\'' + taskId + '\')"><iconify-icon icon="solar:hand-shake-bold-duotone"></iconify-icon> Déléguer</button>'
         + '<button class="btn btn-secondary" onclick="Modal.close();TachesPage._viewTask(\'' + taskId + '\')">Annuler</button>',
       size: 'small'
     });
@@ -2168,7 +2054,7 @@ const TachesPage = {
       .tk-callout-danger { background:linear-gradient(150deg,#ef4444,#b91c1c); }
       .tk-callout-warn { background:linear-gradient(150deg,#F5A623,#E8930C); }
       .tk-callout-info { background:linear-gradient(150deg,#635BFF,#4a43c2); }
-      .tk-callout-ok { background:linear-gradient(150deg,#13DEB9,#02b3a9); }
+      .tk-callout-ok { background:linear-gradient(150deg,#119D80,#02b3a9); }
       .tk-callout-ic { width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:6px; }
       .tk-callout-num { font-size:44px; font-weight:800; line-height:1; letter-spacing:-2px; }
       .tk-callout-lbl { font-size:14px; font-weight:600; opacity:.95; }
@@ -2277,7 +2163,7 @@ const TachesPage = {
       .kanban-card-title { font-size:13px; font-weight:500; color:var(--text-primary); line-height:1.3; margin-bottom:6px; }
       .kanban-subtask-bar { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
       .kanban-subtask-track { flex:1; height:4px; border-radius:2px; background:var(--bg-tertiary); overflow:hidden; }
-      .kanban-subtask-fill { height:100%; border-radius:2px; background:#13deb9; }
+      .kanban-subtask-fill { height:100%; border-radius:2px; background:#119d80; }
       .kanban-subtask-label { font-size:10px; color:var(--text-muted); }
       .kanban-tags { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:6px; }
       .kanban-tag {
@@ -2447,8 +2333,8 @@ const TachesPage = {
         width:50px; height:50px; border-radius:10px; background:rgba(139,92,246,.12);
         display:flex; flex-direction:column; align-items:center; justify-content:center;
       }
-      .reunion-date-day { font-size:1.2rem; font-weight:700; color:#635bff; line-height:1; }
-      .reunion-date-month { font-size:10px; color:#635bff; text-transform:uppercase; font-weight:600; }
+      .reunion-date-day { font-size:1.2rem; font-weight:700; color:#6964ed; line-height:1; }
+      .reunion-date-month { font-size:10px; color:#6964ed; text-transform:uppercase; font-weight:600; }
       .reunion-card-body { flex:1; min-width:0; }
       .reunion-card-title { font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:4px; }
       .reunion-card-meta { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:6px; }
@@ -2462,7 +2348,7 @@ const TachesPage = {
         padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;
       }
       .reunion-statut-brouillon { background:rgba(249,115,22,.1); color:#f5512e; }
-      .reunion-statut-valide { background:rgba(34,197,94,.1); color:#13deb9; }
+      .reunion-statut-valide { background:rgba(34,197,94,.1); color:#119d80; }
       .reunion-statut-archive { background:rgba(8,145,178,.1); color:#0891b2; }
 
       /* ── Liste ── */

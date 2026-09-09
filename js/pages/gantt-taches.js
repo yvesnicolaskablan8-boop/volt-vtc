@@ -34,10 +34,10 @@ const GanttTachesPage = {
   _setDays(n) { this._days = n; this._paint(); },
 
   _statusMeta(statut, retard) {
-    if (retard) return ['#FA896B', 'En retard'];
+    if (retard) return ['#c7654c', 'En retard'];
     switch (statut) {
-      case 'terminee': return ['#13DEB9', 'Terminée'];
-      case 'en_cours': return ['#F5512E', 'En cours'];
+      case 'terminee': return ['#119D80', 'Terminée'];
+      case 'en_cours': return ['#6964ed', 'En cours'];
       case 'a_faire': return ['#94a3b8', 'À faire'];
       default: return ['#94a3b8', statut || '—'];
     }
@@ -54,6 +54,11 @@ const GanttTachesPage = {
     if (!c) return;
     c.replaceChildren();
     c.insertAdjacentHTML('beforeend', this._template());
+    c.querySelectorAll('[data-gantt-task]').forEach(bar => {
+      const open = () => TachesPage._viewTask(bar.dataset.ganttTask);
+      bar.addEventListener('click', open);
+      bar.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
   },
 
   _template() {
@@ -68,7 +73,7 @@ const GanttTachesPage = {
     const todayIdx = days.findIndex(d => this._dateStr(d) === todayStr);
 
     // Tâches actives (hors annulées) chevauchant la fenêtre, triées par début.
-    const rowsData = (Store.get('taches') || [])
+    const rowsData = (this._container && typeof TachesPage !== 'undefined' ? TachesPage._getVisibleTaches() : (Store.get('taches') || []))
       .filter(t => t.statut !== 'annulee')
       .map(t => {
         const deb = this._parse(t.dateDebut) || this._parse(t.dateCreation) || this._parse(t.dateEcheance);
@@ -94,7 +99,7 @@ const GanttTachesPage = {
       const overflowL = startIdx < 0, overflowR = endIdxExcl > N;
       const bg = days.map(d => `<div class="gt-tcell ${isWE(d) ? 'we' : ''}"></div>`).join('');
       const titre = t.titre || 'Tâche';
-      const bar = `<div class="gt-seg${retard ? ' late' : ''}" style="left:${left}px;width:${w}px;background:${col};${overflowL ? 'border-top-left-radius:0;border-bottom-left-radius:0;' : ''}${overflowR ? 'border-top-right-radius:0;border-bottom-right-radius:0;' : ''}" title="${Utils.escHtml(titre)} — ${lbl}" onclick="Router.navigate('/taches')">${retard ? '<iconify-icon icon=\'solar:danger-triangle-bold\' style=\'margin-right:5px\'></iconify-icon>' : ''}${Utils.escHtml(titre)}</div>`;
+      const bar = `<div class="gt-seg${retard ? ' late' : ''}" style="left:${left}px;width:${w}px;background:${col};${overflowL ? 'border-top-left-radius:0;border-bottom-left-radius:0;' : ''}${overflowR ? 'border-top-right-radius:0;border-bottom-right-radius:0;' : ''}" title="${Utils.escHtml(titre)} — ${lbl}" role="button" tabindex="0" data-gantt-task="${Utils.escHtml(t.id)}">${retard ? '<iconify-icon icon=\'solar:danger-triangle-bold\' style=\'margin-right:5px\'></iconify-icon>' : ''}${Utils.escHtml(titre)}</div>`;
       const now = todayIdx >= 0 ? `<div class="gt-now" style="left:${todayIdx * COLW + COLW / 2}px"></div>` : '';
       const initiale = (this._assignee(t).charAt(0) || '?').toUpperCase();
       return `<div class="gt-row">
@@ -105,15 +110,15 @@ const GanttTachesPage = {
 
     const title = `${days[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} – ${days[N - 1].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`;
     const dBtn = (n, l) => `<button type="button" class="gt-dbtn${N === n ? ' is-active' : ''}" onclick="GanttTachesPage._setDays(${n})">${l}</button>`;
-    const legend = [['À faire', '#94a3b8'], ['En cours', '#F5512E'], ['Terminée', '#13DEB9'], ['En retard', '#FA896B']];
+    const legend = [['À faire', '#94a3b8'], ['En cours', '#6964ed'], ['Terminée', '#119D80'], ['En retard', '#c7654c']];
 
     return `
       ${this._styles()}
       <div class="gt-toolbar">
         <div class="gt-days">${dBtn(7, '7 j')}${dBtn(14, '14 j')}${dBtn(30, '30 j')}</div>
         <button class="btn btn-sm btn-secondary" onclick="GanttTachesPage._today()">Aujourd'hui</button>
-        <button class="btn btn-sm btn-secondary" onclick="GanttTachesPage._nav(-7)"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>
-        <button class="btn btn-sm btn-secondary" onclick="GanttTachesPage._nav(7)"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>
+        <button class="btn btn-sm btn-secondary" aria-label="Semaine précédente" onclick="GanttTachesPage._nav(-7)"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>
+        <button class="btn btn-sm btn-secondary" aria-label="Semaine suivante" onclick="GanttTachesPage._nav(7)"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>
       </div>
 
       <div class="gt-card">
@@ -125,7 +130,7 @@ const GanttTachesPage = {
         <div class="gt-legend">
           <b style="color:var(--text-primary);">Statut</b>
           ${legend.map(l => `<span class="gt-lg"><span class="gt-sw" style="background:${l[1]};"></span>${l[0]}</span>`).join('')}
-          <span style="color:var(--text-muted);">· barre = début → échéance · clic → tâches</span>
+          <span style="color:var(--text-muted);">· début → échéance · cliquez pour ouvrir</span>
         </div>
       </div>
     `;

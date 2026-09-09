@@ -10,98 +10,159 @@ const SuiviVehiculesPage = {
   _marqueurs: {},
   _minuteur: null,
 
+  _filtre: 'all',
+  _recherche: '',
+  _selection: null,
+  _generation: 0,
+  _erreur: null,
+
   render() {
+    this.destroy();
     const container = document.getElementById('page-content');
-    container.innerHTML = this._template();
-    // La liste s'affiche tout de suite ; les marqueurs attendent que la carte
-    // soit REELLEMENT prete. Sans cela, le premier trace partait avant la fin
-    // du chargement de Leaflet et la carte restait vide une minute entiere.
+    container.replaceChildren();
+    container.insertAdjacentHTML('beforeend', this._template());
     this._rafraichir();
-    this._initCarte().then(() => this._rafraichir());
-    // Meme rythme que la synchronisation : inutile d'aller plus vite, les
-    // boitiers eux-memes n'emettent pas en continu.
-    if (this._minuteur) clearInterval(this._minuteur);
+    this._initCarte();
     this._minuteur = setInterval(() => this._rafraichir(), 60 * 1000);
     const btn = document.getElementById('sv-actualiser');
-    if (btn) btn.addEventListener('click', () => this._forcer(btn));
+    btn.addEventListener('click', () => this._forcer(btn));
+    document.getElementById('sv-search').value = this._recherche;
+    document.getElementById('sv-search').addEventListener('input', e => { this._recherche = e.target.value; this._rafraichir(); });
+    document.querySelectorAll('[data-sv-filter]').forEach(button => button.addEventListener('click', () => {
+      this._filtre = button.dataset.svFilter; this._cadre = false; this._rafraichir();
+    }));
+    document.getElementById('sv-fit').addEventListener('click', () => { this._cadre = false; this._placerMarqueurs(this._visibles()); });
   },
 
   destroy() {
+    this._generation++;
     if (this._minuteur) { clearInterval(this._minuteur); this._minuteur = null; }
-    if (this._map) { this._map.remove(); this._map = null; this._marqueurs = {}; }
+    if (this._map) { this._map.remove(); this._map = null; }
+    this._marqueurs = {}; this._cadre = false;
+  },
+
+  _navigation(active) {
+    return `<nav class="fleet-tabs" aria-label="Suivi et sécurité">
+      ${[['suivi-vehicules', 'solar:map-point-wave-linear', 'Suivi des véhicules'], ['controle-conduite', 'solar:shield-check-linear', 'Contrôle de conduite']].filter(([route]) => typeof Auth === 'undefined' || !Auth.canAccessRoute || Auth.canAccessRoute('/' + route)).map(([route, icon, label]) => `<a href="#/${route}" class="${active === route ? 'is-active' : ''}"${active === route ? ' aria-current="page"' : ''}><iconify-icon icon="${icon}"></iconify-icon>${label}</a>`).join('')}
+    </nav>`;
   },
 
   _template() {
-    return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:map-point-wave-bold-duotone"></iconify-icon> Suivi des véhicules</h1>
-        <div class="page-actions">
-          <button class="btn btn-sm btn-primary" id="sv-actualiser">
-            <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser
-          </button>
-        </div>
+    return `<div class="fleet-module">
+      <header class="fleet-heading"><div><span class="fleet-eyebrow">PILOTAGE DE LA FLOTTE</span><h1>Votre flotte, <span>en un regard.</span></h1><p>Localisez vos véhicules et anticipez les prochaines recharges.</p></div><button class="fleet-primary" id="sv-actualiser"><iconify-icon icon="solar:refresh-linear"></iconify-icon> Actualiser</button></header>
+      ${this._navigation('suivi-vehicules')}
+      <div id="sv-stats" class="fleet-stats"></div>
+      <div id="sv-alerte" role="status"></div>
+      <div class="fleet-workspace">
+        <aside class="fleet-sidebar"><div class="fleet-sidebar-heading"><h2>Mes véhicules <span id="sv-count"></span></h2><span class="fleet-eyebrow">BOÎTIERS GPS</span></div>
+          <label class="fleet-search"><iconify-icon icon="solar:magnifer-linear"></iconify-icon><input id="sv-search" type="search" placeholder="Plaque, marque, modèle…" aria-label="Rechercher un véhicule"></label>
+          <div class="fleet-filters" aria-label="Filtrer les véhicules"><button data-sv-filter="all">Tous</button><button data-sv-filter="moving">En route</button><button data-sv-filter="stopped">À l’arrêt</button><button data-sv-filter="offline">Sans signal récent</button><button data-sv-filter="battery">À recharger</button></div>
+          <div id="sv-liste" class="fleet-vehicle-list"></div>
+        </aside>
+        <section class="fleet-map-panel" aria-label="Carte des véhicules"><div class="fleet-map-heading"><div><span class="fleet-map-dot"></span><strong>La flotte sur la carte</strong></div><button id="sv-fit"><iconify-icon icon="solar:map-point-rotate-linear"></iconify-icon> Tout voir</button></div>
+          <div class="fleet-map-area"><div id="sv-map"></div><div id="sv-map-status" class="fleet-map-status" role="status">Chargement de la carte…</div></div>
+          <div class="fleet-map-footer"><span><i class="moving"></i> En route</span><span><i class="stopped"></i> À l’arrêt</span><span><i class="offline"></i> Signal ancien</span><small>Position du boîtier · affichage actualisé chaque minute</small></div>
+        </section>
       </div>
-      <div class="d-sub" style="margin-bottom:var(--space-md);">
-        Position transmise par le boîtier posé sur le véhicule. Actualisée automatiquement chaque minute.
-      </div>
-      <div id="sv-alerte"></div>
-      <div class="d-grid" style="grid-template-columns:minmax(260px,340px) 1fr;gap:var(--space-lg);align-items:start;">
-        <div id="sv-liste"></div>
-        <div class="card" style="padding:0;overflow:hidden;">
-          <div id="sv-map" style="height:520px;width:100%;"></div>
-        </div>
-      </div>`;
+      <p class="fleet-footnote"><iconify-icon icon="solar:info-circle-linear"></iconify-icon> L’autonomie est une estimation. Le pourcentage relevé au tableau de bord reste la référence.</p>
+    </div>`;
   },
 
   async _initCarte() {
     const el = document.getElementById('sv-map');
+    const generation = this._generation;
     if (!el || this._map) return;
-    if (typeof L === 'undefined' && typeof LazyLibs !== 'undefined') await LazyLibs.leaflet();
-    if (typeof L === 'undefined') return;
-    this._map = L.map(el).setView([5.3600, -4.0083], 12);   // Abidjan
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap', maxZoom: 19
-    }).addTo(this._map);
+    try {
+      if (typeof L === 'undefined' && typeof LazyLibs !== 'undefined') await LazyLibs.leaflet();
+      if (generation !== this._generation || !el.isConnected) return;
+      if (typeof L === 'undefined') throw new Error('Carte indisponible');
+      this._map = L.map(el, { zoomControl: false }).setView([5.3600, -4.0083], 12);
+      L.control.zoom({ position: 'bottomright' }).addTo(this._map);
+      const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(this._map);
+      const status = document.getElementById('sv-map-status');
+      let tileFailed = false;
+      tiles.on('tileerror', () => { tileFailed = true; if (status.isConnected) { status.hidden = false; status.textContent = 'Fond de carte indisponible. Les positions restent accessibles dans la liste.'; } });
+      tiles.on('load', () => { if (status.isConnected && !tileFailed) status.hidden = true; });
+      status.hidden = true;
+      this._rafraichir();
+    } catch (error) {
+      if (generation !== this._generation) return;
+      const status = document.getElementById('sv-map-status');
+      if (status) { status.textContent = 'La carte n’a pas pu être chargée. '; const retry = document.createElement('button'); retry.textContent = 'Réessayer'; retry.addEventListener('click', () => this._initCarte()); status.appendChild(retry); }
+    }
   },
 
   async _forcer(btn) {
-    const avant = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualisation...';
-    const r = await Store.synchroniserPositions();
-    if (r && !r.error) { await Store.rechargerCollection('vehicules'); }
-    btn.disabled = false; btn.innerHTML = avant;
-    this._rafraichir(r && r.error ? r.error : null);
-  },
-
-  _equipes() {
-    return (Store.get('vehicules') || []).filter(v => v.gpsCarId);
-  },
-
-  _rafraichir(erreur) {
-    const equipes = this._equipes();
-    const alerte = document.getElementById('sv-alerte');
-    if (alerte) {
-      if (erreur) {
-        alerte.innerHTML = `<div style="padding:11px 13px;border-radius:10px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.25);color:#b45309;font-size:var(--font-size-sm);margin-bottom:12px;">Impossible de joindre le service GPS : ${Utils.escHtml(String(erreur))}</div>`;
-      } else if (!equipes.length) {
-        alerte.innerHTML = `<div style="padding:11px 13px;border-radius:10px;background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:#4a43c2;font-size:var(--font-size-sm);margin-bottom:12px;">Aucun véhicule n'est encore relié à un boîtier GPS. Renseignez l'identifiant du boîtier sur la fiche du véhicule.</div>`;
-      } else {
-        alerte.innerHTML = '';
-      }
+    if (btn.disabled) return;
+    const generation = this._generation;
+    btn.disabled = true; btn.textContent = 'Actualisation…';
+    try {
+      const result = await Store.synchroniserPositions();
+      if (result && result.error) throw new Error(result.error);
+      await Store.rechargerCollection('vehicules');
+      if (generation === this._generation) { this._erreur = null; this._rafraichir(); }
+    } catch (error) {
+      if (generation === this._generation) { this._erreur = error.message || String(error); this._rafraichir(); }
+    } finally {
+      if (btn.isConnected) { btn.disabled = false; btn.replaceChildren(); btn.insertAdjacentHTML('beforeend', '<iconify-icon icon="solar:refresh-linear"></iconify-icon> Actualiser'); }
     }
-    this._rendreListe(equipes);
-    this._placerMarqueurs(equipes);
   },
 
-  /**  /** Un boitier peut etre en ligne sans avoir bouge : on distingue les deux. */
+  _equipes() { return (Store.get('vehicules') || []).filter(v => v.gpsCarId); },
+
+  _ancien(v) {
+    const p = v.gpsPosition;
+    const date = p && p.vuLe ? new Date(p.vuLe).getTime() : NaN;
+    return !p || !p.enLigne || !Number.isFinite(date) || Date.now() - date > 20 * 60000;
+  },
+
+  _positionValide(v) {
+    const p = v.gpsPosition;
+    return !!p && p.lat != null && p.lng != null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Math.abs(Number(p.lat)) <= 90 && Math.abs(Number(p.lng)) <= 180;
+  },
+
+  _visibles() {
+    const query = this._recherche.trim().toLocaleLowerCase('fr');
+    return this._equipes().filter(v => {
+      if (query && ![v.immatriculation, v.marque, v.modele].filter(Boolean).join(' ').toLocaleLowerCase('fr').includes(query)) return false;
+      if (this._filtre === 'moving') return this._etat(v).roule;
+      if (this._filtre === 'stopped') return !this._ancien(v) && !this._etat(v).roule;
+      if (this._filtre === 'offline') return this._ancien(v);
+      if (this._filtre === 'battery') { const a = this._autonomie(v); return a && a.pct <= 15; }
+      return true;
+    });
+  },
+
+  _rafraichir() {
+    if (!document.getElementById('sv-liste')) return;
+    const equipes = this._equipes();
+    const visibles = this._visibles();
+    const stats = document.getElementById('sv-stats');
+    const low = equipes.filter(v => { const a = this._autonomie(v); return a && a.pct <= 15; }).length;
+    stats.replaceChildren();
+    stats.insertAdjacentHTML('beforeend', [
+      ['all', 'Véhicules équipés', equipes.length, 'solar:wheel-linear', 'coral'],
+      ['moving', 'En route', equipes.filter(v => this._etat(v).roule).length, 'solar:routing-linear', 'mint'],
+      ['offline', 'Sans signal récent', equipes.filter(v => this._ancien(v)).length, 'solar:wi-fi-router-minimalistic-linear', 'blue'],
+      ['battery', 'À recharger', low, 'solar:battery-low-linear', 'amber']
+    ].map(([filter, label, count, icon, tone]) => `<button class="fleet-stat ${tone}" data-stat-filter="${filter}"><span>${label}<iconify-icon icon="${icon}"></iconify-icon></span><strong>${count}</strong><small>${filter === 'battery' ? 'Estimation ≤ 15 %' : filter === 'offline' ? 'Hors ligne ou plus de 20 min' : filter === 'moving' ? 'Dernier signal de moins de 20 min' : 'Reliés à un boîtier GPS'}<iconify-icon icon="solar:arrow-right-linear"></iconify-icon></small></button>`).join(''));
+    stats.querySelectorAll('[data-stat-filter]').forEach(button => button.addEventListener('click', () => { this._filtre = button.dataset.statFilter; this._cadre = false; this._rafraichir(); }));
+    const alerte = document.getElementById('sv-alerte');
+    alerte.textContent = this._erreur ? 'Le service GPS est indisponible : ' + this._erreur + '. Les dernières positions connues sont conservées.' : !equipes.length ? 'Aucun boîtier relié. Ajoutez son identifiant depuis la fiche d’un véhicule pour commencer le suivi.' : '';
+    alerte.hidden = !alerte.textContent;
+    document.getElementById('sv-count').textContent = `${visibles.length} / ${equipes.length}`;
+    document.querySelectorAll('[data-sv-filter]').forEach(button => { const active = button.dataset.svFilter === this._filtre; button.classList.toggle('is-active', active); button.setAttribute('aria-pressed', String(active)); });
+    this._rendreListe(visibles);
+    this._placerMarqueurs(visibles);
+  },
+
+  /** Un boitier peut etre en ligne sans avoir bouge : on distingue les deux. */
   _etat(v) {
     const p = v.gpsPosition || null;
     if (!p) return { libelle: 'Aucun signal', couleur: '#94a3b8', roule: false };
     if (!p.enLigne) return { libelle: 'Hors ligne', couleur: '#b91c1c', roule: false };
-    const ageMin = p.vuLe ? (Date.now() - new Date(p.vuLe).getTime()) / 60000 : Infinity;
+    if (this._ancien(v)) return { libelle: 'Signal ancien', couleur: '#7c89a3', roule: false };
     if (p.contact && (p.vitesse || 0) > 3) {
-      if (ageMin > 20) return { libelle: 'Dernier signal en mouvement', couleur: '#64748b', roule: false };
       return { libelle: 'En route', couleur: '#02b3a9', roule: true };
     }
     if (p.contact) return { libelle: 'Allumée, à l\'arrêt', couleur: '#b45309', roule: false };
@@ -214,41 +275,30 @@ const SuiviVehiculesPage = {
   _rendreListe(equipes) {
     const zone = document.getElementById('sv-liste');
     if (!zone) return;
-    if (!equipes.length) { zone.innerHTML = ''; return; }
-    zone.innerHTML = equipes.map(v => {
+    const opened = new Set([...zone.querySelectorAll('details[open]')].map(d => d.dataset.vehicleDetails));
+    zone.replaceChildren();
+    if (!equipes.length) {
+      zone.insertAdjacentHTML('beforeend', '<div class="fleet-empty"><iconify-icon icon="solar:map-point-search-linear"></iconify-icon><h3>Aucun véhicule à afficher</h3><p>Choisissez un autre filtre ou modifiez votre recherche.</p><button id="sv-reset">Voir tous les véhicules</button></div>');
+      document.getElementById('sv-reset').addEventListener('click', () => { this._filtre = 'all'; this._recherche = ''; document.getElementById('sv-search').value = ''; this._rafraichir(); });
+      return;
+    }
+    zone.insertAdjacentHTML('beforeend', equipes.map(v => {
       const p = v.gpsPosition || {};
       const e = this._etat(v);
-      return `<div class="card" style="padding:13px 15px;margin-bottom:10px;cursor:pointer;" onclick="SuiviVehiculesPage._centrer('${v.id}')">
-        <div style="display:flex;align-items:center;gap:9px;">
-          <span style="width:10px;height:10px;border-radius:50%;background:${e.couleur};flex:none;"></span>
-          <strong style="flex:1;">${Utils.escHtml(v.immatriculation || v.id)}</strong>
-          <span style="font-size:var(--font-size-xs);font-weight:700;color:${e.couleur};">${e.libelle}</span>
-        </div>
-        <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:6px;line-height:1.6;">
-          ${e.roule ? `<strong>${Math.round(p.vitesse || 0)} km/h</strong> · ` : ''}Vu ${this._depuis(p.vuLe)}${p.tension != null ? ` · ${Number(p.tension).toFixed(1).replace('.', ',')} V` : ''}
-          ${p.lat != null ? `<br>${Number(p.lat).toFixed(5)}, ${Number(p.lng).toFixed(5)}` : ''}
-        </div>
-        ${(() => {
-          const a = this._autonomie(v);
-          if (!a) return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);font-size:var(--font-size-xs);color:var(--text-muted);display:flex;align-items:center;gap:8px;">
-            <span style="flex:1;">Autonomie non suivie — marquez la prochaine recharge.</span>
-            <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();SuiviVehiculesPage._marquerChargee('${v.id}')">Chargée</button>
-          </div>`;
-          return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);">
-            <div style="display:flex;align-items:center;gap:8px;font-size:var(--font-size-xs);">
-              <span style="font-weight:800;color:${a.couleur};">${a.libelle} ~${a.pct} %</span>
-              <span style="flex:1;color:var(--text-muted);">reste ~${a.reste} km</span>
-              <button class="btn btn-sm btn-secondary" title="Recopier le pourcentage du tableau de bord" onclick="event.stopPropagation();SuiviVehiculesPage._saisirPourcentage('${v.id}')">% réel</button>
-              <button class="btn btn-sm btn-secondary" title="Recharge effectuée" onclick="event.stopPropagation();SuiviVehiculesPage._marquerChargee('${v.id}')">Chargée</button>
-            </div>
-            <div style="height:7px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden;margin-top:6px;">
-              <div style="height:100%;width:${a.pct}%;background:${a.couleur};border-radius:4px;transition:width .4s;"></div>
-            </div>
-            <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">${a.km.toFixed(1).replace('.', ',')} km depuis la charge du ${new Date(v.derniereChargeLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}${v.chargeMarqueePar ? ' (' + Utils.escHtml(v.chargeMarqueePar) + ')' : ''} — estimation</div>
-          </div>`;
-        })()}
-      </div>`;
-    }).join('');
+      const a = this._autonomie(v);
+      const ancien = this._ancien(v);
+      return `<article class="fleet-vehicle${this._selection === v.id ? ' is-selected' : ''}">
+        <button class="fleet-vehicle-select" data-center="${Utils.escHtml(v.id)}" aria-pressed="${this._selection === v.id}"><span class="fleet-car-icon" style="--state:${e.couleur}"><iconify-icon icon="solar:wheel-linear"></iconify-icon></span><span><strong>${Utils.escHtml(v.immatriculation || v.id)}</strong><small>${Utils.escHtml([v.marque, v.modele].filter(Boolean).join(' ') || 'Véhicule équipé')}</small></span><iconify-icon class="fleet-locate-icon" icon="solar:map-point-linear"></iconify-icon></button>
+        <div class="fleet-vehicle-state"><span style="--state:${e.couleur}"><i></i>${e.libelle}</span>${e.roule ? `<b>${Math.round(p.vitesse || 0)} <small>km/h</small></b>` : ''}</div>
+        <p class="fleet-last-seen${ancien ? ' is-old' : ''}"><iconify-icon icon="solar:clock-circle-linear"></iconify-icon>Dernier signal ${this._depuis(p.vuLe)}${ancien ? ' · position ancienne' : ''}</p>
+        <div class="fleet-battery">${a ? `<div><span><iconify-icon icon="solar:battery-charge-linear"></iconify-icon> Autonomie estimée</span><strong style="color:${a.couleur}">~${a.pct}<small> %</small></strong></div><div class="fleet-battery-track"><span style="width:${a.pct}%;background:${a.couleur}"></span></div><p><strong>~${a.reste} km</strong> restants${a.pct <= 15 ? '<span class="fleet-charge-warning">Recharge à prévoir</span>' : ''}</p>` : '<p class="fleet-no-battery">Autonomie non renseignée. Relevez le pourcentage ou confirmez une recharge.</p>'}</div>
+        <div class="fleet-vehicle-actions"><button data-battery="${Utils.escHtml(v.id)}"><iconify-icon icon="solar:pen-linear"></iconify-icon> Relever la batterie</button><button data-charge="${Utils.escHtml(v.id)}"><iconify-icon icon="solar:bolt-linear"></iconify-icon> Recharge faite</button></div>
+        <details class="fleet-details" data-vehicle-details="${Utils.escHtml(v.id)}"${opened.has(v.id) ? ' open' : ''}><summary>Détails du boîtier et de la charge</summary><p>${p.tension != null ? `Tension du boîtier : ${Number(p.tension).toFixed(1).replace('.', ',')} V<br>` : ''}${this._positionValide(v) ? `Coordonnées : ${Number(p.lat).toFixed(5)}, ${Number(p.lng).toFixed(5)}` : 'Position indisponible'}</p>${a ? `<p>${a.km.toFixed(1).replace('.', ',')} km depuis la charge du ${new Date(v.derniereChargeLe).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}${v.chargeMarqueePar ? ' · ' + Utils.escHtml(v.chargeMarqueePar) : ''}.</p>` : ''}</details>
+      </article>`;
+    }).join(''));
+    zone.querySelectorAll('[data-center]').forEach(button => button.addEventListener('click', () => this._centrer(button.dataset.center)));
+    zone.querySelectorAll('[data-battery]').forEach(button => button.addEventListener('click', () => this._saisirPourcentage(button.dataset.battery)));
+    zone.querySelectorAll('[data-charge]').forEach(button => button.addEventListener('click', () => this._marquerChargee(button.dataset.charge)));
   },
 
   /**
@@ -282,10 +332,12 @@ const SuiviVehiculesPage = {
 
   _placerMarqueurs(equipes) {
     if (!this._map || typeof L === 'undefined') return;
+    const visibleIds = new Set(equipes.filter(v => this._positionValide(v)).map(v => v.id));
+    Object.keys(this._marqueurs).forEach(id => { if (!visibleIds.has(id)) { this._map.removeLayer(this._marqueurs[id]); delete this._marqueurs[id]; } });
     const points = [];
     equipes.forEach(v => {
       const p = v.gpsPosition;
-      if (!p || p.lat == null || p.lng == null) return;
+      if (!this._positionValide(v)) return;
       const e = this._etat(v);
       const icone = L.divIcon({
         className: '',
@@ -297,7 +349,8 @@ const SuiviVehiculesPage = {
       if (this._marqueurs[v.id]) {
         this._marqueurs[v.id].setLatLng([p.lat, p.lng]).setIcon(icone);
       } else {
-        this._marqueurs[v.id] = L.marker([p.lat, p.lng], { icon: icone }).addTo(this._map);
+        this._marqueurs[v.id] = L.marker([p.lat, p.lng], { icon: icone, title: v.immatriculation || 'Véhicule' }).addTo(this._map);
+        this._marqueurs[v.id].on('click', () => { this._selection = v.id; this._rendreListe(this._visibles()); const button = [...document.querySelectorAll('[data-center]')].find(b => b.dataset.center === v.id); button?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
       }
       this._marqueurs[v.id].bindPopup(
         `<strong>${Utils.escHtml(v.immatriculation || '')}</strong><br>${e.libelle}<br>Vu ${this._depuis(p.vuLe)}`);
@@ -314,8 +367,13 @@ const SuiviVehiculesPage = {
 
   _centrer(id) {
     const v = this._equipes().find(x => x.id === id);
-    if (!v || !v.gpsPosition || v.gpsPosition.lat == null || !this._map) return;
+    if (!v) return;
+    this._selection = id;
+    this._rendreListe(this._visibles());
+    if (!this._positionValide(v)) { Toast.info('Aucune position disponible pour ce véhicule.'); return; }
+    if (!this._map) { Toast.info('La carte est en cours de chargement.'); return; }
     this._map.setView([v.gpsPosition.lat, v.gpsPosition.lng], 16);
     if (this._marqueurs[id]) this._marqueurs[id].openPopup();
+    if (window.innerWidth <= 900) document.querySelector('.fleet-map-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 };
