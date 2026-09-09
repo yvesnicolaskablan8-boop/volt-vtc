@@ -1120,7 +1120,7 @@ async function handleSync(req, res) {
             updated_at: new Date().toISOString()
           };
 
-          await fetch(`${SUPABASE_URL}/rest/v1/fleet_versements`, {
+          const up = await fetch(`${SUPABASE_URL}/rest/v1/fleet_versements`, {
             method: 'POST',
             headers: {
               'apikey': SUPABASE_ANON_KEY,
@@ -1130,18 +1130,34 @@ async function handleSync(req, res) {
             },
             body: JSON.stringify(versement)
           });
+          // Un 400 PostgREST (colonne inconnue…) ne lève pas d'exception : on le
+          // vérifie explicitement, sinon la synchro déclarait « success » sans
+          // avoir rien écrit.
+          if (!up.ok) {
+            const t = await up.text();
+            throw new Error(`Supabase ${up.status}: ${t.substring(0, 200)}`);
+          }
+          results[results.length - 1].ecrit = true;
         } catch (e) {
+          results[results.length - 1].ecrit = false;
+          results[results.length - 1].erreurEcriture = e.message;
           console.warn(`[sync] Versement upsert error for ${ch.id}:`, e.message);
         }
       }
     }
 
+    // Bilan d'écriture explicite : `matched` compte les chauffeurs avec activité,
+    // pas les versements réellement enregistrés.
+    const ecrits = results.filter(r => r.ecrit === true).length;
+    const erreursEcriture = results.filter(r => r.ecrit === false).length;
     res.json({
       success: true,
       date: targetDate,
       totalChauffeurs: chauffeurs.length,
       matched,
       matchedCount: matched,
+      ecrits,
+      erreursEcriture,
       results
     });
 
