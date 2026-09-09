@@ -631,6 +631,18 @@ async function handleVehiclesAll(req, res) {
 }
 
 // ---------- fleet-status ----------
+// Normalise la famille des statuts Yango (current_status.status) en 4 états
+// internes. Yango peut renvoyer des variantes (in_order_busy, in_order_free,
+// online…) : tout ce qui n'était pas strictement free/busy/in_order tombait en
+// « offline » — d'où des chauffeurs EN COURSE affichés « hors ligne ».
+function normalizeYangoStatus(raw) {
+  const s = String(raw || '').toLowerCase();
+  if (s.startsWith('in_order')) return 'in_order';
+  if (s === 'free' || s === 'online') return 'free';
+  if (s === 'busy') return 'busy';
+  return 'offline';
+}
+
 async function handleFleetStatus(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -696,7 +708,11 @@ async function handleFleetStatus(req, res) {
       const TERMINAL = new Set(['complete', 'finished', 'cancelled', 'canceled', 'failed', 'expired', 'rejected', 'none']);
       for (const o of (ord.orders || [])) {
         if (!o.status || TERMINAL.has(o.status)) continue;
-        const did = (o.performer && o.performer.driver_profile_id) || o.driver_profile_id;
+        // orderDriverId = chemin RÉEL de l'id chauffeur (driver_profile.id /
+        // driver.id / performer.driver_id), déjà utilisé par 3 autres handlers.
+        // L'ancien chemin deviné ne correspondait jamais → « en commande »
+        // ne s'allumait pas.
+        const did = orderDriverId(o);
         if (did) enCommandeIds.add(did);
       }
     } catch (e) { console.warn('[fleet-status] orders error:', e.message); }
@@ -711,8 +727,8 @@ async function handleFleetStatus(req, res) {
       const pilote = piloteByYango[dp.id];
       if (!pilote) continue;
       const cs = p.current_status || {};
-      let status = cs.status || 'offline';
-      if (counts[status] === undefined) status = 'offline';
+      const rawStatus = cs.status || null;           // valeur brute Yango (diagnostic)
+      let status = normalizeYangoStatus(rawStatus);
       const enCommande = enCommandeIds.has(dp.id);
       // Une course active prime : en commande même si Yango dit encore « busy ».
       if (enCommande && status !== 'in_order') status = 'in_order';
@@ -723,6 +739,7 @@ async function handleFleetStatus(req, res) {
         nom: pilote.nom,
         statutPilote: pilote.statutPilote,
         status,
+        rawStatus,
         enCommande,
         statusTs: cs.status_updated_ts || null
       });
@@ -826,7 +843,7 @@ async function handleStats(req, res) {
     // (Avant : statuts comptés sur tout le parc mais total après filtre → « -3 ».)
     const driversList = profiles.map(p => {
       const dp = p.driver_profile || {};
-      const cs = (p.current_status || {}).status || 'offline';
+      const cs = normalizeYangoStatus((p.current_status || {}).status);
       const balance = parseFloat(((p.accounts || [])[0] || {}).balance || 0);
       const isPilote = piloteYangoIds.has(dp.id);
       const nom = isPilote ? piloteNameMap[dp.id] : [dp.first_name, dp.last_name].filter(Boolean).join(' ');
