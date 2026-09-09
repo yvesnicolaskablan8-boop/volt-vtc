@@ -755,36 +755,37 @@ async function handleStats(req, res) {
     const workRuleIds = workRuleParam ? workRuleParam.split(',').filter(Boolean) : [];
 
     // =================== 1) DRIVERS ===================
-    const driverQuery = {
-      park: {
-        id: parkId,
-        driver_profile: { work_status: ['working'] }
-      }
-    };
-    if (workRuleIds.length) driverQuery.park.driver_profile.work_rule_id = workRuleIds;
-
-    // Pagination obligatoire : le parc compte plus de 100 profils « working »
-    // (la plupart inactifs mais jamais radiés). Une seule page de 100 ne
-    // contenait aucun chauffeur Pilote → total 0 sur la page Yango. On lit
-    // toutes les pages (300 max par appel, comme drivers-all).
-    const PAGE = 300, MAX_PAGES = 5;
+    // On lit EXACTEMENT ce que lit drivers-all (tout le parc, sans filtre
+    // serveur, 300/page, 10 pages) : c'est la seule requête dont on a la preuve
+    // qu'elle ramène les chauffeurs Pilote (vérifié le 09/09 : les 8 ids stockés
+    // sont bien présents et « working »). Le filtre work_status côté Yango,
+    // combiné au plafond de lecture, les laissait hors de portée dans ce parc
+    // très grand → « 0 chauffeur ». Les filtres working / catégorie sont donc
+    // appliqués ici, côté Pilote.
+    const PAGE = 300, MAX_PAGES = 10;
     let profiles = [];
     for (let page = 0; page < MAX_PAGES; page++) {
       const driversData = await yangoFetch('/v1/parks/driver-profiles/list', {
         fields: {
-          driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_rule_id'],
+          driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_rule_id', 'work_status'],
           current_status: ['status'],
           car: ['id', 'brand', 'model', 'number'],
           account: ['balance']
         },
         limit: PAGE,
         offset: page * PAGE,
-        query: driverQuery
+        query: { park: { id: parkId } }
       });
       const batch = driversData.driver_profiles || [];
       profiles = profiles.concat(batch);
       if (batch.length < PAGE) break;
     }
+    profiles = profiles.filter(p => {
+      const dp = p.driver_profile || {};
+      if (dp.work_status !== 'working') return false;
+      if (workRuleIds.length && !workRuleIds.includes(dp.work_rule_id)) return false;
+      return true;
+    });
 
     // =================== 2) PILOTE chauffeurs (from Supabase) ===================
     let piloteDrivers = [];
@@ -804,17 +805,13 @@ async function handleStats(req, res) {
       piloteNameMap[c.yango_driver_id] = `${c.prenom || ''} ${c.nom || ''}`.trim();
     }
 
-    // Build driver list
-    let enLigne = 0, occupes = 0, horsLigne = 0;
+    // Build driver list — statuts comptés sur les SEULS chauffeurs Pilote, pour
+    // que total / dispo / occupés / hors ligne décrivent la même population.
+    // (Avant : statuts comptés sur tout le parc mais total après filtre → « -3 ».)
     const driversList = profiles.map(p => {
       const dp = p.driver_profile || {};
       const cs = (p.current_status || {}).status || 'offline';
       const balance = parseFloat(((p.accounts || [])[0] || {}).balance || 0);
-
-      if (cs === 'free') enLigne++;
-      else if (cs === 'busy' || cs === 'in_order') occupes++;
-      else horsLigne++;
-
       const isPilote = piloteYangoIds.has(dp.id);
       const nom = isPilote ? piloteNameMap[dp.id] : [dp.first_name, dp.last_name].filter(Boolean).join(' ');
 
@@ -827,6 +824,13 @@ async function handleStats(req, res) {
         workRuleId: dp.work_rule_id || ''
       };
     }).filter(d => d.isPilote); // Only show Pilote-linked drivers
+
+    let enLigne = 0, occupes = 0, horsLigne = 0;
+    for (const d of driversList) {
+      if (d.statut === 'free') enLigne++;
+      else if (d.statut === 'busy' || d.statut === 'in_order') occupes++;
+      else horsLigne++;
+    }
 
     // =================== 3) ORDERS (today) ===================
     let coursesAujourdhui = 0, coursesEnCours = 0, coursesTerminees = 0, coursesAnnulees = 0;
