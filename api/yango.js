@@ -681,14 +681,32 @@ async function handleFleetStatus(req, res) {
       }
     }
 
-    const enLigne = counts.free + counts.busy + counts.in_order;
+    // « Commandes en cours » FIABLE via l'API commandes (le champ current_status
+    // renvoie « offline » pour tous les profils sur ce parc — non exploitable).
+    // Une course active = statut en cours (driving/transporting/waiting).
+    let enCourse = 0;
+    let enCourseDrivers = 0;
+    try {
+      const ord = await yangoFetch('/v1/parks/orders/list', {
+        limit: 500,
+        query: { park: { id: parkId, order: {} } }
+      });
+      const ACTIVE = new Set(['driving', 'transporting', 'waiting']);
+      const actifs = (ord.orders || []).filter(o => ACTIVE.has(o.status));
+      enCourse = actifs.length;
+      enCourseDrivers = new Set(actifs.map(o => (o.performer && o.performer.driver_profile_id) || o.driver_profile_id).filter(Boolean)).size;
+    } catch (e) { console.warn('[fleet-status] orders error:', e.message); }
+
+    const enLigne = counts.free + counts.busy + Math.max(counts.in_order, enCourse);
 
     res.json({
       counts,
       disponible: counts.free,
-      commandeActive: counts.in_order,
+      commandeActive: Math.max(counts.in_order, enCourse), // fiable via commandes
+      enCourseDrivers,
       occupe: counts.busy,
       horsLigne: counts.offline,
+      statusFiable: (counts.free + counts.busy + counts.in_order) > 0, // current_status exploitable ?
       total: profiles.length,
       enLigne,
       drivers

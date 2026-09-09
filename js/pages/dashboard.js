@@ -1486,6 +1486,7 @@ const DashboardPage = {
         .fd-yango{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;margin:2px 0 16px;padding:10px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;}
         .fd-yango-lbl{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);}
         .fd-yango-lbl iconify-icon{font-size:15px;color:#F5512E;}
+        .fd-yango-body{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px 16px;color:var(--text-muted);font-size:12.5px;font-weight:600;}
         .fd-yg{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text-secondary);}
         .fd-yg b{font-weight:800;color:var(--text-primary);font-variant-numeric:tabular-nums;}
         .fd-yg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
@@ -1827,11 +1828,24 @@ const DashboardPage = {
     } catch (e) { /* silencieux */ }
   },
   _fillYangoLive(r) {
-    const set = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
-    set('fd-yg-dispo', r.disponible != null ? r.disponible : (r.counts && r.counts.free) || 0);
-    set('fd-yg-course', r.commandeActive != null ? r.commandeActive : (r.counts && r.counts.in_order) || 0);
-    set('fd-yg-occ', r.occupe != null ? r.occupe : (r.counts && r.counts.busy) || 0);
-    set('fd-yg-off', r.horsLigne != null ? r.horsLigne : (r.counts && r.counts.offline) || 0);
+    const body = document.getElementById('fd-yango-body');
+    if (!body) return;
+    const chip = (color, val, lbl) => `<span class="fd-yg"><span class="fd-yg-dot" style="background:${color};"></span><b>${val}</b> ${lbl}</span>`;
+    const enCourse = r.commandeActive != null ? r.commandeActive : ((r.counts && r.counts.in_order) || 0);
+    let html;
+    if (r.statusFiable) {
+      // current_status exploitable : on affiche le détail complet.
+      html = chip('#13DEB9', r.disponible || 0, 'disponibles')
+        + chip('#F5512E', enCourse, 'en course')
+        + chip('#FFAE1F', r.occupe || 0, 'occupés')
+        + `<span class="fd-yg fd-yg-muted"><span class="fd-yg-dot" style="background:#C7D0DD;"></span><b>${r.horsLigne || 0}</b> hors ligne</span>`;
+    } else {
+      // current_status renvoie « offline » pour tous : seule la course active est fiable.
+      html = chip('#F5512E', enCourse, enCourse > 1 ? 'courses en cours' : 'course en cours')
+        + `<span class="fd-yg fd-yg-muted" title="L'API Yango n'expose pas les statuts en ligne/occupé détaillés">statuts détaillés non fournis par l'API</span>`;
+    }
+    body.replaceChildren();
+    body.insertAdjacentHTML('beforeend', html);
     const el = document.getElementById('fd-yango'); if (el) el.classList.remove('fd-yango-err');
   },
 
@@ -2385,10 +2399,7 @@ const DashboardPage = {
       <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span></div>
       <div class="fd-yango" id="fd-yango" title="Statut temps réel des chauffeurs sur l'application Yango">
         <span class="fd-yango-lbl"><iconify-icon icon="arcticons:yango"></iconify-icon> Yango temps réel</span>
-        <span class="fd-yg"><span class="fd-yg-dot" style="background:#13DEB9;"></span><b id="fd-yg-dispo">·</b> disponibles</span>
-        <span class="fd-yg"><span class="fd-yg-dot" style="background:#F5512E;"></span><b id="fd-yg-course">·</b> en course</span>
-        <span class="fd-yg"><span class="fd-yg-dot" style="background:#FFAE1F;"></span><b id="fd-yg-occ">·</b> occupés</span>
-        <span class="fd-yg fd-yg-muted"><span class="fd-yg-dot" style="background:#C7D0DD;"></span><b id="fd-yg-off">·</b> hors ligne</span>
+        <span class="fd-yango-body" id="fd-yango-body">chargement…</span>
       </div>
       <div class="fd-top">
         <div class="fd-donut-col">
