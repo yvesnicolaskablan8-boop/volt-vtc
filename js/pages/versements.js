@@ -1795,29 +1795,59 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const d = this._getDetteData();
-      const rows = [];
+      // Formateur sûr pour jsPDF : l'espace fine insécable (U+202F) utilisée par
+      // Intl fr-FR comme séparateur de milliers n'existe pas dans la police
+      // standard du PDF et s'y affiche « / » (ex. « 41/000 »). On la remplace
+      // par une espace normale, et le suffixe « FCFA » passe dans l'en-tête.
+      const money = n => Utils.formatNumber(Math.round(n || 0)).replace(/[  ]/g, ' ');
+      // Regroupement par date (les plus récentes d'abord), comme l'affichage écran.
+      const byDate = {};
       (d.detteList || []).forEach(drv => {
         (drv.items || []).forEach(it => {
-          const ds = it.detailSalarie;
-          const type = it.source === 'contravention' ? 'Contravention' : 'Recette';
-          const detail = it.source === 'contravention'
-            ? (it.commentaire || 'Contravention')
-            : (ds ? `CA net ${Utils.formatCurrency(ds.caNet || 0)}${ds.charge > 0 ? ' − ch. ' + Utils.formatCurrency(ds.charge) : ''}` : '');
-          rows.push([drv.nom || it.chauffeurId, Utils.formatDate(it.date), type, Utils.formatCurrency(it.manquant || 0), ds ? Utils.formatCurrency(ds.caBrut || 0) : '—', detail]);
+          const date = it.date || '';
+          (byDate[date] = byDate[date] || []).push({ nom: drv.nom || it.chauffeurId, it });
         });
       });
-      if (!rows.length) { Toast.info('Aucune dette à exporter'); return; }
-      rows.sort((a, b) => String(b[1]).localeCompare(String(a[1])) || String(a[0]).localeCompare(String(b[0])));
-      doc.setFontSize(18); doc.text('Rapport des dettes', 14, 22);
+      const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+      if (!dates.length) { Toast.info('Aucune dette à exporter'); return; }
+
+      // Une ligne = un chauffeur. On affiche le CA Yango : le montant dû reste à
+      // déterminer, donc il n'apparaît plus. Le « Détail » n'est renseigné que
+      // s'il apporte une info (commission Yango, contravention, dette manuelle).
+      const caOf = it => (it.detailSalarie && it.detailSalarie.caBrut) || 0;
+      const rowFor = ({ nom, it }) => {
+        const ds = it.detailSalarie;
+        if (it.source === 'contravention') return [nom, '—', it.commentaire || 'Contravention'];
+        if (ds) {
+          const detail = ds.commission > 0 ? `CA net ${money(ds.caNet)} (comm. ${money(ds.commission)})` : '—';
+          return [nom, money(ds.caBrut || 0), detail];
+        }
+        return [nom, '—', 'dette saisie manuellement'];
+      };
+
+      const totalCA = (d.detteList || []).reduce((s, drv) => s + (drv.items || []).reduce((t, it) => t + caOf(it), 0), 0);
+
+      // Corps : une bande orange par date, puis les chauffeurs concernés ce jour-là.
+      const body = [];
+      dates.forEach(date => {
+        const entries = byDate[date].sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+        const caJour = entries.reduce((s, e) => s + caOf(e.it), 0);
+        body.push([{ content: `${Utils.formatDate(date)}    ·    CA Yango ${money(caJour)} FCFA`, colSpan: 3, styles: { fillColor: [245, 81, 46], textColor: 255, fontStyle: 'bold', halign: 'left' } }]);
+        entries.forEach(e => body.push(rowFor(e)));
+      });
+
+      doc.setFontSize(18); doc.text('Rapport des dettes', 14, 20);
       doc.setFontSize(10);
-      doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
-      doc.text(`Total dû : ${Utils.formatCurrency(d.totalDettes || 0)} · ${d.nbDetteDrivers || 0} chauffeur(s)`, 14, 36);
+      doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 28);
+      doc.text(`CA Yango à régulariser : ${money(totalCA)} FCFA · ${d.nbDetteDrivers || 0} chauffeur(s)`, 14, 34);
       doc.autoTable({
-        head: [['Chauffeur', 'Date', 'Type', 'Montant dû', 'CA Yango', 'Détail']],
-        body: rows,
-        startY: 42,
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [245, 81, 46] }
+        head: [['Chauffeur', 'CA Yango (FCFA)', 'Détail']],
+        body,
+        startY: 40,
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [60, 60, 60] },
+        columnStyles: { 1: { halign: 'right' } },
+        margin: { left: 14, right: 14 }
       });
       doc.save(`pilote-dettes-${new Date().toISOString().split('T')[0]}.pdf`);
       Toast.success('PDF des dettes exporté');
