@@ -279,7 +279,28 @@ const VersementsPage = {
       if (Math.abs(ecart) > 500) anomMismatch.push({ chauffeurId: e.chauffeurId, nom: `${ch.prenom} ${ch.nom}`, date: e.date, caBrut: Number(e.caBrut) || 0, charge: chargeAllIdx[k] || 0, du, verse, ecart });
     });
     anomMismatch.sort((a, b) => b.date.localeCompare(a.date));
-    const anomalies = { workingNotScheduled: anomWorking, versementMismatch: anomMismatch, total: anomWorking.length + anomMismatch.length };
+    // (3) Chauffeur NON salarié planifié sur un jour échu SANS redevance définie :
+    // computeDebts ne peut alors chiffrer aucune dette (redevance = 0), donc de
+    // l'argent potentiellement dû reste invisible. On le signale pour corriger la
+    // fiche chauffeur (redevance quotidienne) ou le planning (override).
+    const thirtyAgo = new Date(now); thirtyAgo.setDate(now.getDate() - 30);
+    const thirtyAgoStr = thirtyAgo.toISOString().split('T')[0];
+    const noRedevMap = new Map(); const seenNoRedev = new Set();
+    planning.forEach(p => {
+      if (!p.date || p.date < thirtyAgoStr || p.date >= todayStr) return;
+      const key = `${p.chauffeurId}|${p.date}`;
+      if (seenNoRedev.has(key)) return; seenNoRedev.add(key);
+      const ch = chauffeurs.find(c => c.id === p.chauffeurId);
+      if (!ch || ch.statut === 'inactif' || ch.typeContrat === 'salarie') return;
+      if (absences.some(ab => ab.chauffeurId === p.chauffeurId && p.date >= ab.dateDebut && p.date <= ab.dateFin)) return;
+      const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+      if (redevance > 0) return;
+      const cur = noRedevMap.get(p.chauffeurId) || { chauffeurId: p.chauffeurId, nom: `${ch.prenom} ${ch.nom}`, count: 0, lastDate: '' };
+      cur.count++; if (p.date > cur.lastDate) cur.lastDate = p.date;
+      noRedevMap.set(p.chauffeurId, cur);
+    });
+    const anomNoRedevance = [...noRedevMap.values()].sort((a, b) => b.lastDate.localeCompare(a.lastDate));
+    const anomalies = { workingNotScheduled: anomWorking, versementMismatch: anomMismatch, locationSansRedevance: anomNoRedevance, total: anomWorking.length + anomMismatch.length + anomNoRedevance.length };
 
     return { versements, chauffeurs, totalAttendu, totalVerse, tauxRecouvrement, byStatus, weeklyEvo, periodLabel, selectedDay, detailProgrammes, detailAttendu, detailRetard, detailVerse, nbChauffeursProgrammes, unpaidItems, totalUnpaid, totalPenalites, totalDettes, totalPertes, nbDetteDrivers, detteData, anomalies };
   },
@@ -465,7 +486,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const empty = (txt) => `<div class="vx-empty"><iconify-icon icon="solar:check-circle-bold-duotone" style="color:#13deb9;"></iconify-icon>${txt}</div>`;
     const anomRows = [
       ...(d.anomalies.workingNotScheduled || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fef3c7;color:#e8930c;">!</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">Roule sans être programmé · ${Utils.formatDate(a.date)}</div></div><div class="vx-right"><div class="vx-amt" style="color:#e8930c;">${Utils.formatCurrency(a.caBrut)}</div></div></div>`),
-      ...(d.anomalies.versementMismatch || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fee2e2;color:#dc2626;">≠</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">${Utils.formatDate(a.date)} · dû ${Utils.formatCurrency(a.du)} / versé ${Utils.formatCurrency(a.verse)}</div></div><div class="vx-right"><div class="vx-amt" style="color:${a.ecart > 0 ? '#dc2626' : '#02b3a9'};">${a.ecart > 0 ? '−' : '+'}${Utils.formatCurrency(Math.abs(a.ecart))}</div></div></div>`)
+      ...(d.anomalies.versementMismatch || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fee2e2;color:#dc2626;">≠</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">${Utils.formatDate(a.date)} · dû ${Utils.formatCurrency(a.du)} / versé ${Utils.formatCurrency(a.verse)}</div></div><div class="vx-right"><div class="vx-amt" style="color:${a.ecart > 0 ? '#dc2626' : '#02b3a9'};">${a.ecart > 0 ? '−' : '+'}${Utils.formatCurrency(Math.abs(a.ecart))}</div></div></div>`),
+      ...(d.anomalies.locationSansRedevance || []).map(a => `<div class="vx-row"><div class="vx-av" style="background:#fef3c7;color:#e8930c;">⚠</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(a.nom || '')}</div><div class="vx-note">Location sans redevance · ${a.count} jour${a.count > 1 ? 's' : ''} planifié${a.count > 1 ? 's' : ''} (dernier ${Utils.formatDate(a.lastDate)})</div></div><div class="vx-right"><div class="vx-amt" style="color:#e8930c;">à définir</div></div></div>`)
     ].join('');
     const progRows = (d.detailProgrammes || []).map(p => `<div class="vx-row"><div class="vx-av" style="background:#eef2ff;color:#4a43c2;">${Utils.escHtml((p.prenom || '?').charAt(0).toUpperCase())}</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(((p.prenom || '') + ' ' + (p.nom || '')).trim())}</div><div class="vx-note">${Utils.formatDate(p.date)}</div></div><div class="vx-right"><div class="vx-amt">${Utils.formatCurrency(p.redevance)}</div></div></div>`).join('');
 
@@ -1654,7 +1676,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
   _showAnomalies() {
     const d = this._kpiData;
     if (!d) return;
-    const a = d.anomalies || { workingNotScheduled: [], versementMismatch: [], total: 0 };
+    const a = d.anomalies || { workingNotScheduled: [], versementMismatch: [], locationSansRedevance: [], total: 0 };
     const thStyle = 'padding:10px 12px;text-align:left;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);';
     const tdStyle = 'padding:10px 12px;border-bottom:1px solid var(--border-color);';
 
@@ -1676,6 +1698,12 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       </tr>`;
     }).join('');
 
+    const noRedevRows = (a.locationSansRedevance || []).map(n => `<tr>
+      <td style="${tdStyle}font-weight:500;">${n.nom}</td>
+      <td style="${tdStyle}text-align:right;">${n.count}</td>
+      <td style="${tdStyle}">${Utils.formatDate(n.lastDate)}</td>
+    </tr>`).join('');
+
     const html = `
       ${a.total === 0 ? '<div style="text-align:center;color:var(--text-muted);padding:24px;">Aucune anomalie détectée 🎉</div>' : ''}
       ${a.workingNotScheduled.length ? `
@@ -1691,6 +1719,13 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         <table style="width:100%;border-collapse:collapse;">
           <thead><tr style="border-bottom:2px solid var(--border-color);"><th style="${thStyle}">Chauffeur</th><th style="${thStyle}">Jour</th><th style="${thStyle}text-align:right;">Attendu</th><th style="${thStyle}text-align:right;">Versé</th><th style="${thStyle}text-align:right;">Écart</th><th style="${thStyle}"></th></tr></thead>
           <tbody>${mismatchRows}</tbody>
+        </table>` : ''}
+      ${(a.locationSansRedevance && a.locationSansRedevance.length) ? `
+        <div style="font-weight:700;font-size:0.95rem;margin:14px 0 6px;display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#e8930c;"></iconify-icon> Location sans redevance définie (${a.locationSansRedevance.length})</div>
+        <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:8px;">Chauffeurs en location planifiés sur des jours échus mais sans redevance quotidienne : aucune dette ne peut être calculée tant que le montant journalier n'est pas renseigné (fiche chauffeur ou planning).</p>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="border-bottom:2px solid var(--border-color);"><th style="${thStyle}">Chauffeur</th><th style="${thStyle}text-align:right;">Jours planifiés</th><th style="${thStyle}">Dernier jour</th></tr></thead>
+          <tbody>${noRedevRows}</tbody>
         </table>` : ''}
     `;
     this._showKpiModal('<iconify-icon icon="solar:danger-triangle-bold-duotone" style="color:#635bff;"></iconify-icon> Anomalies', html);
