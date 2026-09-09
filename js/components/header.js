@@ -16,47 +16,49 @@ const Header = {
     this._initHDock();
   },
 
-  // Dock de navigation (icônes rondes, effet magnify) : les icônes grossissent
-  // à l'approche du curseur ; le nom s'affiche dans un tooltip position:fixed
-  // (qui échappe à tout overflow du header).
+  // Navigation stable, avec infobulles au survol et au clavier.
   _initHDock() {
-    const nav = document.getElementById('hdock'); if (!nav) return;
+    const nav = document.getElementById('hdock');
+    if (!nav) return;
     const items = Array.from(nav.querySelectorAll('.mdock-item'));
-    if (!items.length) return;
-    const BASE = 40, MAG = 58, DIST = 130;
-
-    // Tooltip partagé, en position:fixed sur <body> → jamais clippé.
     let tip = document.getElementById('mdock-tip');
-    if (!tip) { tip = document.createElement('div'); tip.id = 'mdock-tip'; tip.className = 'mdock-tip'; document.body.appendChild(tip); }
-
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.id = 'mdock-tip';
+      tip.className = 'mdock-tip';
+      tip.setAttribute('role', 'tooltip');
+      document.body.appendChild(tip);
+    }
+    const hideTip = () => tip.classList.remove('show');
     const setActive = () => {
-      const h = (location.hash || '').replace(/^#/, '');
-      items.forEach(t => { const r = t.getAttribute('data-route'); t.classList.toggle('is-active', !!(r && (h === r || h.startsWith(r + '/')))); });
+      const hash = (location.hash || '').replace(/^#/, '');
+      items.forEach(item => {
+        const route = item.getAttribute('data-route');
+        const active = !!(route && (hash === route || hash.startsWith(route + '/')));
+        item.classList.toggle('is-active', active);
+        if (active) item.setAttribute('aria-current', 'page');
+        else item.removeAttribute('aria-current');
+      });
+      hideTip();
     };
-    const showTip = (it) => {
-      const r = it.getBoundingClientRect();
-      tip.textContent = it.getAttribute('aria-label') || '';
-      tip.style.left = (r.left + r.width / 2) + 'px';
-      tip.style.top = (r.bottom + 8) + 'px';
+    const showTip = item => {
+      const rect = item.getBoundingClientRect();
+      tip.textContent = item.getAttribute('aria-label') || '';
+      tip.style.top = (rect.bottom + 10) + 'px';
+      const half = tip.offsetWidth / 2 + 8;
+      tip.style.left = Math.max(half, Math.min(window.innerWidth - half, rect.left + rect.width / 2)) + 'px';
       tip.classList.add('show');
     };
-    const magnify = (mouseX) => {
-      let hovered = null;
-      items.forEach(it => {
-        const r = it.getBoundingClientRect();
-        const center = r.left + r.width / 2;
-        const d = Math.abs(mouseX - center);
-        const sz = d < DIST ? BASE + (MAG - BASE) * (1 - d / DIST) : BASE;
-        it.style.setProperty('--sz', sz.toFixed(1) + 'px');
-        if (d < r.width / 2) hovered = it;
-      });
-      if (hovered) showTip(hovered);
-    };
-    const reset = () => { items.forEach(it => it.style.setProperty('--sz', BASE + 'px')); tip.classList.remove('show'); };
-
-    this._on('mdockMove', nav, 'mousemove', (e) => magnify(e.clientX));
-    this._on('mdockLeave', nav, 'mouseleave', reset);
-    this._on('mdockHash', window, 'hashchange', setActive);
+    items.forEach((item, index) => {
+      this._on('dockEnter' + index, item, 'mouseenter', () => showTip(item));
+      this._on('dockFocus' + index, item, 'focus', () => showTip(item));
+      this._on('dockBlur' + index, item, 'blur', hideTip);
+    });
+    this._on('dockLeave', nav, 'mouseleave', hideTip);
+    this._on('dockScroll', nav, 'scroll', hideTip);
+    this._on('dockEscape', nav, 'keydown', e => { if (e.key === 'Escape') hideTip(); });
+    this._on('dockResize', window, 'resize', hideTip);
+    this._on('dockHash', window, 'hashchange', setActive);
     setActive();
   },
 
