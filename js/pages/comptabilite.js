@@ -254,6 +254,22 @@ const ComptabilitePage = {
 
   // ========================= VUE D'ENSEMBLE =========================
 
+  // Bande KPI réutilisable (style Boostboard) partagée par tous les onglets.
+  // items: [{ lbl, val, trend?:{pct,dir:'up'|'down',good}, badge?:{text,tone:'good'|'bad'|'neutral'}, onclick?, id?, attrs?, clickable? }]
+  _band(items) {
+    const cell = (it) => {
+      let x = '';
+      if (it.trend) x = `<span class="cmp-band-trend ${it.trend.good ? 'good' : 'bad'}"><span class="cmp-tri ${it.trend.dir}"></span>${it.trend.pct}</span>`;
+      else if (it.badge) x = `<span class="cmp-band-badge ${it.badge.tone || 'neutral'}">${it.badge.text}</span>`;
+      const clickable = it.onclick || it.clickable;
+      return `<div class="cmp-band-item${clickable ? ' clickable' : ''}"${it.id ? ` id="${it.id}"` : ''}${it.attrs ? ' ' + it.attrs : ''}${it.onclick ? ` onclick="${it.onclick}"` : ''}>
+          <div class="cmp-band-lbl">${it.lbl}</div>
+          <div class="cmp-band-val">${it.val}${x}</div>
+        </div>`;
+    };
+    return `<div class="cmp-band"><span class="cmp-band-bar"></span>${(items || []).map(cell).join('')}</div>`;
+  },
+
   _renderOverview() {
     const ops = this._getOperations();
     const now = new Date();
@@ -289,43 +305,12 @@ const ComptabilitePage = {
     });
 
     return `
-      <style>
-        .cmp-band{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:26px;padding:26px 30px 26px 40px;margin-bottom:24px;box-shadow:0 1px 2px rgba(0,0,0,.03);}
-        @media(max-width:860px){.cmp-band{grid-template-columns:repeat(2,1fr);row-gap:22px;}}
-        .cmp-band-bar{position:absolute;left:18px;top:24px;bottom:24px;width:5px;border-radius:99px;background:var(--pilote-blue);}
-        .cmp-band-item{min-width:0;}
-        .cmp-band-lbl{font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-        .cmp-band-val{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:clamp(18px,1.9vw,28px);font-weight:800;color:var(--text-primary);letter-spacing:-1px;line-height:1.05;}
-        .cmp-band-trend{display:inline-flex;align-items:center;font-size:12px;font-weight:800;}
-        .cmp-band-trend.good{color:#0a9d78;}
-        .cmp-band-trend.bad{color:#e0603a;}
-        .cmp-tri{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;margin-right:5px;display:inline-block;}
-        .cmp-tri.up{border-bottom:8px solid currentColor;}
-        .cmp-tri.down{border-top:8px solid currentColor;}
-        .cmp-band-badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:0;}
-        .cmp-band-badge.good{color:#0a9d78;background:rgba(19,222,185,.16);}
-        .cmp-band-badge.bad{color:#e0603a;background:rgba(250,137,107,.16);}
-      </style>
-      <!-- KPIs financiers (bande style Boostboard) -->
-      <div class="cmp-band">
-        <span class="cmp-band-bar"></span>
-        <div class="cmp-band-item">
-          <div class="cmp-band-lbl">Encaissements du mois</div>
-          <div class="cmp-band-val">${Utils.formatCurrency(totalRecettes)}<span class="cmp-band-trend ${trendRecettes >= 0 ? 'good' : 'bad'}"><span class="cmp-tri ${trendRecettes >= 0 ? 'up' : 'down'}"></span>${Math.abs(trendRecettes).toFixed(1)}%</span></div>
-        </div>
-        <div class="cmp-band-item">
-          <div class="cmp-band-lbl">Décaissements du mois</div>
-          <div class="cmp-band-val">${Utils.formatCurrency(totalDepenses)}<span class="cmp-band-trend ${trendDepenses <= 0 ? 'good' : 'bad'}"><span class="cmp-tri ${trendDepenses >= 0 ? 'up' : 'down'}"></span>${Math.abs(trendDepenses).toFixed(1)}%</span></div>
-        </div>
-        <div class="cmp-band-item">
-          <div class="cmp-band-lbl">${resultat >= 0 ? 'Bénéfice du mois' : 'Perte du mois'}</div>
-          <div class="cmp-band-val">${Utils.formatCurrency(resultat)}<span class="cmp-band-badge ${resultat >= 0 ? 'good' : 'bad'}">${resultat >= 0 ? 'Positif' : 'Négatif'}</span></div>
-        </div>
-        <div class="cmp-band-item">
-          <div class="cmp-band-lbl">Solde de trésorerie</div>
-          <div class="cmp-band-val">${Utils.formatCurrency(soldeTotal)}${totalImpaye > 0 ? `<span class="cmp-band-badge bad">${Utils.formatCurrency(totalImpaye)} impayé</span>` : '<span class="cmp-band-badge good">À jour</span>'}</div>
-        </div>
-      </div>
+      ${this._band([
+        { lbl: 'Encaissements du mois', val: Utils.formatCurrency(totalRecettes), trend: { pct: Math.abs(trendRecettes).toFixed(1) + '%', dir: trendRecettes >= 0 ? 'up' : 'down', good: trendRecettes >= 0 } },
+        { lbl: 'Décaissements du mois', val: Utils.formatCurrency(totalDepenses), trend: { pct: Math.abs(trendDepenses).toFixed(1) + '%', dir: trendDepenses >= 0 ? 'up' : 'down', good: trendDepenses <= 0 } },
+        { lbl: resultat >= 0 ? 'Bénéfice du mois' : 'Perte du mois', val: Utils.formatCurrency(resultat), badge: { text: resultat >= 0 ? 'Positif' : 'Négatif', tone: resultat >= 0 ? 'good' : 'bad' } },
+        { lbl: 'Solde de trésorerie', val: Utils.formatCurrency(soldeTotal), badge: totalImpaye > 0 ? { text: Utils.formatCurrency(totalImpaye) + ' impayé', tone: 'bad' } : { text: 'À jour', tone: 'good' } }
+      ])}
 
       <!-- Commission Partenaire Yango -->
       <div class="d-card" id="compta-yango-section" style="margin-bottom:24px;">
@@ -667,7 +652,16 @@ const ComptabilitePage = {
 
   _renderJournal() {
     const ops = this._getOperations().sort((a, b) => b.date.localeCompare(a.date));
+    const jRec = ops.filter(o => o.type === 'recette').reduce((s, o) => s + o.montant, 0);
+    const jDep = ops.filter(o => o.type === 'depense').reduce((s, o) => s + o.montant, 0);
+    const jSolde = jRec - jDep;
     return `
+      ${this._band([
+        { lbl: 'Opérations', val: ops.length },
+        { lbl: 'Encaissements', val: Utils.formatCurrency(jRec) },
+        { lbl: 'Décaissements', val: Utils.formatCurrency(jDep) },
+        { lbl: 'Solde', val: Utils.formatCurrency(jSolde), badge: { text: jSolde >= 0 ? 'positif' : 'négatif', tone: jSolde >= 0 ? 'good' : 'bad' } }
+      ])}
       <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);flex-wrap:wrap;align-items:center;">
         <select class="form-control" id="journal-type" style="width:180px;">
           <option value="">Tous types</option>
@@ -783,23 +777,11 @@ const ComptabilitePage = {
     const marge = totalRec > 0 ? (resultat / totalRec * 100) : 0;
 
     return `
-      <div class="grid-3" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card green">
-          <div class="kpi-icon"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(totalRec)}</div>
-          <div class="kpi-label">Total encaissements ${year}</div>
-        </div>
-        <div class="kpi-card red">
-          <div class="kpi-icon"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(totalDep)}</div>
-          <div class="kpi-label">Total décaissements ${year}</div>
-        </div>
-        <div class="kpi-card ${resultat >= 0 ? 'green' : 'red'}">
-          <div class="kpi-icon"><iconify-icon icon="solar:scale-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(resultat)}</div>
-          <div class="kpi-label">Résultat net (marge: ${marge.toFixed(1)}%)</div>
-        </div>
-      </div>
+      ${this._band([
+        { lbl: `Total encaissements ${year}`, val: Utils.formatCurrency(totalRec) },
+        { lbl: `Total décaissements ${year}`, val: Utils.formatCurrency(totalDep) },
+        { lbl: 'Résultat net', val: Utils.formatCurrency(resultat), badge: { text: `marge ${marge.toFixed(1)}%`, tone: resultat >= 0 ? 'good' : 'bad' } }
+      ])}
 
       <!-- Compte de résultat simplifié -->
       <div class="grid-2" style="margin-bottom:var(--space-lg);">
@@ -918,32 +900,32 @@ const ComptabilitePage = {
 
     // By payment mode
     const byMode = {};
+    let totalRec = 0, totalDep = 0;
     ops.forEach(o => {
       const mode = o.modePaiement || 'non_specifie';
       if (!byMode[mode]) byMode[mode] = { recettes: 0, depenses: 0 };
-      if (o.type === 'recette') byMode[mode].recettes += o.montant;
-      else byMode[mode].depenses += o.montant;
+      if (o.type === 'recette') { byMode[mode].recettes += o.montant; totalRec += o.montant; }
+      else { byMode[mode].depenses += o.montant; totalDep += o.montant; }
     });
 
     return `
-      <div class="grid-2" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card cyan" style="text-align:center;">
-          <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:8px;">SOLDE ACTUEL</div>
-          <div class="kpi-value" style="font-size:var(--font-size-3xl);color:${balance >= 0 ? 'var(--success)' : 'var(--danger)'}">${Utils.formatCurrency(balance)}</div>
-        </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Par mode de paiement</span></div>
-          ${Object.entries(byMode).map(([mode, data]) => `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:var(--font-size-sm);">
-              <span class="badge badge-info">${this._modeLabel(mode)}</span>
-              <div>
-                <span class="text-success">${Utils.formatCurrency(data.recettes)}</span>
-                <span class="text-muted" style="margin:0 4px;">/</span>
-                <span class="text-danger">${Utils.formatCurrency(data.depenses)}</span>
-              </div>
+      ${this._band([
+        { lbl: 'Solde actuel', val: Utils.formatCurrency(balance), badge: { text: balance >= 0 ? 'positif' : 'négatif', tone: balance >= 0 ? 'good' : 'bad' } },
+        { lbl: 'Total encaissé', val: Utils.formatCurrency(totalRec) },
+        { lbl: 'Total décaissé', val: Utils.formatCurrency(totalDep) }
+      ])}
+      <div class="card" style="margin-bottom:var(--space-lg);">
+        <div class="card-header"><span class="card-title">Par mode de paiement</span></div>
+        ${Object.entries(byMode).map(([mode, data]) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:var(--font-size-sm);">
+            <span class="badge badge-info">${this._modeLabel(mode)}</span>
+            <div>
+              <span class="text-success">${Utils.formatCurrency(data.recettes)}</span>
+              <span class="text-muted" style="margin:0 4px;">/</span>
+              <span class="text-danger">${Utils.formatCurrency(data.depenses)}</span>
             </div>
-          `).join('')}
-        </div>
+          </div>
+        `).join('')}
       </div>
 
       <div class="chart-card">
@@ -1024,12 +1006,12 @@ const ComptabilitePage = {
     };
 
     return `
-      <div class="grid-4" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card"><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total factures</div></div>
-        <div class="kpi-card green"><div class="kpi-value">${stats.payee}</div><div class="kpi-label">Payées</div></div>
-        <div class="kpi-card yellow"><div class="kpi-value">${stats.en_attente}</div><div class="kpi-label">En attente</div></div>
-        <div class="kpi-card red"><div class="kpi-value">${Utils.formatCurrency(stats.montantDu)}</div><div class="kpi-label">Montant dû</div></div>
-      </div>
+      ${this._band([
+        { lbl: 'Total factures', val: stats.total },
+        { lbl: 'Payées', val: stats.payee, badge: { text: `${stats.total ? Math.round(stats.payee / stats.total * 100) : 0}%`, tone: 'good' } },
+        { lbl: 'En attente', val: stats.en_attente, badge: { text: 'à suivre', tone: stats.en_attente ? 'neutral' : 'good' } },
+        { lbl: 'Montant dû', val: Utils.formatCurrency(stats.montantDu), badge: { text: stats.montantDu ? 'à encaisser' : 'à jour', tone: stats.montantDu ? 'bad' : 'good' } }
+      ])}
 
       <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);">
         <button class="btn btn-primary" id="btn-add-facture"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouvelle facture</button>
@@ -1094,7 +1076,16 @@ const ComptabilitePage = {
     const categories = ['carburant', 'maintenance', 'assurance', 'leasing', 'salaires', 'loyer_bureau', 'taxes_impots', 'telecoms', 'marketing', 'fournitures', 'autres_depenses'];
     const catLabels = { carburant: 'Carburant', maintenance: 'Maintenance', assurance: 'Assurance', leasing: 'Leasing véhicules', salaires: 'Salaires', loyer_bureau: 'Loyer / Bureau', taxes_impots: 'Impôts / Taxes', telecoms: 'Télécom', marketing: 'Marketing', fournitures: 'Fournitures', autres_depenses: 'Autres dépenses' };
 
+    const totalBudget = budgets.reduce((s, b) => s + (b.montant || 0), 0);
+    const totalSpent = monthOps.reduce((s, o) => s + o.montant, 0);
+    const reste = totalBudget - totalSpent;
+
     return `
+      ${this._band([
+        { lbl: 'Budget du mois', val: Utils.formatCurrency(totalBudget) },
+        { lbl: 'Dépensé', val: Utils.formatCurrency(totalSpent), badge: { text: totalBudget > 0 ? `${Math.round(totalSpent / totalBudget * 100)}%` : '—', tone: totalBudget > 0 && totalSpent > totalBudget ? 'bad' : 'neutral' } },
+        { lbl: reste >= 0 ? 'Reste disponible' : 'Dépassement', val: Utils.formatCurrency(Math.abs(reste)), badge: { text: reste >= 0 ? 'dans le budget' : 'dépassé', tone: reste >= 0 ? 'good' : 'bad' } }
+      ])}
       <div class="card" style="margin-bottom:var(--space-lg);border-left:4px solid var(--pilote-yellow);">
         <div style="display:flex;align-items:center;gap:var(--space-md);">
           <iconify-icon icon="solar:lightbulb-bold-duotone" style="font-size:24px;color:var(--pilote-yellow);"></iconify-icon>
@@ -1807,28 +1798,12 @@ const ComptabilitePage = {
           <button class="btn btn-primary" id="btn-add-dep"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Ajouter</button>
         </div>
       </div>
-      <div class="kpi-grid grid-4">
-        <div class="kpi-card kpi-warning" id="kpi-dep-total" style="cursor:pointer" title="Voir le détail par catégorie">
-          <div class="kpi-icon"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(totalMois)}</div>
-          <div class="kpi-label">Total ce mois</div>
-        </div>
-        <div class="kpi-card" id="kpi-dep-count" style="cursor:pointer" title="Voir la liste des dépenses">
-          <div class="kpi-icon"><iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${monthDep.length}</div>
-          <div class="kpi-label">Dépenses ce mois</div>
-        </div>
-        <div class="kpi-card kpi-danger" id="kpi-dep-top" style="cursor:pointer" title="Filtrer par cette catégorie" data-top-type="${topType}">
-          <div class="kpi-icon"><iconify-icon icon="solar:tag-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${this._getDepTypeLabel(topType)}</div>
-          <div class="kpi-label">Top catégorie</div>
-        </div>
-        <div class="kpi-card kpi-info" id="kpi-dep-avg" style="cursor:pointer" title="Voir le détail par véhicule">
-          <div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(moyVehicule)}</div>
-          <div class="kpi-label">Moy. / véhicule</div>
-        </div>
-      </div>
+      ${this._band([
+        { lbl: 'Total ce mois', val: Utils.formatCurrency(totalMois), id: 'kpi-dep-total', clickable: true, attrs: 'title="Voir le détail par catégorie"' },
+        { lbl: 'Dépenses ce mois', val: monthDep.length, id: 'kpi-dep-count', clickable: true, attrs: 'title="Voir la liste des dépenses"' },
+        { lbl: 'Top catégorie', val: this._getDepTypeLabel(topType), id: 'kpi-dep-top', clickable: true, attrs: `title="Filtrer par cette catégorie" data-top-type="${topType}"` },
+        { lbl: 'Moy. / véhicule', val: Utils.formatCurrency(moyVehicule), id: 'kpi-dep-avg', clickable: true, attrs: 'title="Voir le détail par véhicule"' }
+      ])}
       <div class="filters-bar" style="margin-bottom:1rem">
         <select id="dep-filter-chauffeur" class="filter-select">
           <option value="">Tous les chauffeurs</option>
