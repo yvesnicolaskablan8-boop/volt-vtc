@@ -688,9 +688,13 @@ async function handleFleetStatus(req, res) {
     let enCourseDrivers = 0;
     let debug = { nbOrders: 0, statusCounts: {} };
     try {
+      // L'API commandes EXIGE query.order.booked_at (from/to). On regarde les
+      // commandes des dernières heures pour attraper celles en cours.
+      const nowTs = new Date();
+      const fromTs = new Date(nowTs.getTime() - 8 * 3600 * 1000);
       const ord = await yangoFetch('/v1/parks/orders/list', {
         limit: 500,
-        query: { park: { id: parkId, order: {} } }
+        query: { park: { id: parkId, order: { booked_at: { from: fromTs.toISOString(), to: nowTs.toISOString() } } } }
       });
       const all = ord.orders || [];
       const statusCounts = {};
