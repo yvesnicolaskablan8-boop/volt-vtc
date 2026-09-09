@@ -59,6 +59,7 @@ const DashboardPage = {
       if (_ps) _ps.innerHTML = this._renderPeriodPicker();
       this._bindPeriodSelector();
       this._renderFleetDonutInto(data);
+      this._loadFleetLive();          // statut Yango par chauffeur (fleet-status), re-remplit les cartes via _lastData
       this._loadRecetteLive();
       if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
@@ -113,6 +114,7 @@ const DashboardPage = {
     this._stopAutoRefresh();
     this._refreshInterval = setInterval(() => {
       this._maybeRefreshCa();  // re-synchronise le CA Yango (auto-throttlé)
+      this._loadFleetLive();   // statut live Yango par chauffeur (auto-throttlé 60 s)
       this._silentRefresh();   // ré-affiche depuis le cache
     }, 30000);
   },
@@ -1519,6 +1521,7 @@ const DashboardPage = {
         .fd-c-val{font-size:23px;font-weight:800;letter-spacing:-.5px;}
         .fd-c-live{display:inline-flex;align-items:center;gap:6px;background:rgba(19,222,185,.16);color:#0a9d78;font-weight:800;font-size:12px;padding:4px 11px;border-radius:20px;white-space:nowrap;}
         .fd-c-live-dot{width:8px;height:8px;border-radius:50%;background:#13DEB9;flex-shrink:0;box-shadow:0 0 0 0 rgba(19,222,185,.55);animation:fdLivePulse 1.8s ease-out infinite;}
+        .fd-c-live-off{background:var(--bg-tertiary);color:var(--text-muted);}
         @keyframes fdLivePulse{0%{box-shadow:0 0 0 0 rgba(19,222,185,.55);}70%{box-shadow:0 0 0 8px rgba(19,222,185,0);}100%{box-shadow:0 0 0 0 rgba(19,222,185,0);}}
         .fd-c-pct{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:6px;}
         .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}
@@ -1813,6 +1816,25 @@ const DashboardPage = {
   // ============ Recette en direct (courbe CA par heure, intégrée au hero blanc) ============
   // Compteur « en ligne » temps réel Yango via supply-hours (temps de mise à
   // disposition sur 10 min) pour les chauffeurs du jour. Throttlé à 90 s.
+  // Statut live Yango par chauffeur (fleet-status : free / busy / in_order /
+  // offline + enCommande), restreint aux chauffeurs Pilote. Throttlé à 60 s.
+  // Après réception, seules les cartes du donut sont re-remplies en place.
+  async _loadFleetLive() {
+    if (!this._isToday()) return;
+    if (typeof Store === 'undefined' || !Store.getFleetStatus) return;
+    const now = Date.now();
+    if (this._flTs && (now - this._flTs) < 60000) return;
+    this._flTs = now;
+    try {
+      const r = await Store.getFleetStatus();
+      if (!r || r.error || !Array.isArray(r.drivers)) return;
+      const byId = new Map();
+      r.drivers.forEach(dv => { if (dv && dv.chauffeurId) byId.set(dv.chauffeurId, dv); });
+      this._fleetLive = { byId, at: now };
+      if (this._lastData) this._renderFleetDonutInto(this._lastData);
+    } catch (e) { /* silencieux : la pastille heuristique reste affichée */ }
+  },
+
   async _loadYangoOnline() {
     const el = document.getElementById('fd-yango-online');
     if (!el || !this._isToday()) return;
@@ -2262,6 +2284,23 @@ const DashboardPage = {
       const recent = this._recentActiveIds(B.service);
       if (recent.size) svc.recentCount = recent.size;
     }
+    // État live Yango par chauffeur EN SERVICE (source fleet-status, cf.
+    // _loadFleetLive). Noms regroupés par état ; la carte affiche les compteurs
+    // et les noms en info-bulle. Absent tant que le statut live n'est pas chargé
+    // → repli sur l'heuristique recentCount.
+    if (svc && this._isToday() && this._fleetLive && this._fleetLive.byId) {
+      const live = { enCommande: [], dispo: [], occupe: [], horsLigne: [], inconnu: [] };
+      B.service.forEach(e => {
+        const dv = this._fleetLive.byId.get(e.id);
+        const nom = `${e.prenom || ''} ${e.nom || ''}`.trim();
+        if (!dv) { live.inconnu.push(nom); return; }
+        if (dv.enCommande || dv.status === 'in_order') live.enCommande.push(nom);
+        else if (dv.status === 'free') live.dispo.push(nom);
+        else if (dv.status === 'busy') live.occupe.push(nom);
+        else live.horsLigne.push(nom);
+      });
+      if (B.service.length - live.inconnu.length > 0) svc.live = live;
+    }
     // Le donut décompose la flotte du jour : En service performants (teal) +
     // À surveiller (orange) + Non planifiés (indigo). Le repos est le reste non bagué.
     // On scinde les planifiés en « ok » et « à surveiller » (sans double comptage).
@@ -2343,12 +2382,31 @@ const DashboardPage = {
       const notes = [];
       if (s.inactifCount) notes.push(`<span style="color:#E8930C;font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#E8930C;margin-right:4px;vertical-align:middle;"></span>${s.inactifCount} pas actif${s.inactifCount > 1 ? 's' : ''}</span>`);
       if (s.note) notes.push(`<button type="button" class="fd-surv-chip" onclick="event.stopPropagation();DashboardPage._scrollToWatchlist()" title="Voir les chauffeurs à surveiller"><iconify-icon icon="solar:eye-scan-bold" style="font-size:12px;"></iconify-icon>${s.note}</button>`);
-      // « Actifs à l'instant » mis en avant : pastille verte proéminente avec point pulsant.
-      const liveChip = s.recentCount ? `<span class="fd-c-live" title="Chauffeurs dont le compteur de courses a augmenté récemment"><span class="fd-c-live-dot"></span>${s.recentCount} actif${s.recentCount > 1 ? 's' : ''} à l'instant</span>` : '';
+      // État live Yango (fleet-status) s'il est chargé : « N en commande » en
+      // pastille, puis dispo / occupés / hors ligne avec les noms en info-bulle.
+      // Sinon, repli sur l'heuristique « actifs à l'instant » (courses en hausse).
+      let liveChip = '';
+      let liveNotes = '';
+      if (s.live) {
+        const L = s.live;
+        const t = a => a.length ? Utils.escHtml(a.join(', ')) : '—';
+        const nEC = L.enCommande.length;
+        liveChip = nEC
+          ? `<span class="fd-c-live" title="En commande : ${t(L.enCommande)}"><span class="fd-c-live-dot"></span>${nEC} en commande</span>`
+          : `<span class="fd-c-live fd-c-live-off" title="Aucune course en cours">0 en commande</span>`;
+        const chip = (n, lbl, names, col) => `<span title="${lbl} : ${t(names)}" style="color:${col};font-weight:700;white-space:nowrap;">${n} ${lbl}</span>`;
+        liveNotes = [
+          chip(L.dispo.length, 'dispo', L.dispo, '#0a9d78'),
+          chip(L.occupe.length, L.occupe.length > 1 ? 'occupés' : 'occupé', L.occupe, '#e8930c'),
+          chip(L.horsLigne.length, 'hors ligne', L.horsLigne, '#9aa3b2')
+        ].join(' · ');
+      } else if (s.recentCount) {
+        liveChip = `<span class="fd-c-live" title="Chauffeurs dont le compteur de courses a augmenté récemment"><span class="fd-c-live-dot"></span>${s.recentCount} actif${s.recentCount > 1 ? 's' : ''} à l'instant</span>`;
+      }
       return `<div class="fd-c${clickable ? '' : ' fd-c-off'}" data-i="${i}" ${handlers}>
         <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}</div>
         <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span>${liveChip}</div>
-        <div class="fd-c-desc">${s.desc}${notes.length ? ' · ' + notes.join(' · ') : ''}</div>
+        <div class="fd-c-desc">${s.desc}${notes.length ? ' · ' + notes.join(' · ') : ''}${liveNotes ? `<div style="margin-top:6px;">${liveNotes}</div>` : ''}</div>
       </div>`;
     }).join('');
   },

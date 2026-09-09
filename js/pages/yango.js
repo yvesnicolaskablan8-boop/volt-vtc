@@ -748,7 +748,9 @@ const YangoPage = {
     const online = stats.chauffeurs?.enLigne || 0;
     const total = stats.chauffeurs?.total || 0;
     const busy = stats.chauffeurs?.occupes || 0;
-    const offline = total - online - busy;
+    // Jamais négatif : total est compté APRÈS le filtre Pilote alors que
+    // online/busy le sont avant (cf. stats) — sans borne on affichait « -3 ».
+    const offline = Math.max(0, total - online - busy);
 
     // Revenue from real transactions (cash + card)
     const caToday = stats.chiffreAffaires?.aujourd_hui || 0;
@@ -850,14 +852,19 @@ const YangoPage = {
       console.log('[YangoSync] Sync récente (<5min), skip auto-sync');
       return;
     }
-    const result = await Store.triggerYangoSync(null);
+    // Décision du 2026-09-09 (option A) : l'auto-synchro alimente fleet_ca_jour
+    // via sync-ca, cohérent avec le modèle salarié (dette = CA Yango net). La
+    // synchro « versements » (action sync) reste MANUELLE uniquement : elle
+    // créerait des versements « valide » qui effaceraient les dettes ; son
+    // écriture est d'ailleurs volontairement laissée en échec.
+    const result = await Store.synchroniserCaJour(null);
     if (result && !result.error) {
       // Sync réussie — enregistrer le timestamp
       localStorage.setItem('pilote_last_yango_sync', String(Date.now()));
-      this._renderSyncResult(result);
+      console.log('[YangoSync] CA du jour synchronisé (sync-ca)', result);
     } else {
       // Sync échouée — ne pas enregistrer le timestamp (réessayer au prochain chargement)
-      console.warn('[YangoSync] Auto-sync échouée:', result?.error);
+      console.warn('[YangoSync] Auto-sync CA échouée:', result?.error);
     }
   },
 

@@ -535,9 +535,15 @@ const Store = {
   },
 
   /**
-   * Statut temps réel de la flotte Yango : { counts:{free,busy,in_order,offline},
-   * disponible, commandeActive, occupe, horsLigne, total, enLigne, drivers:[{id,nom,status}] }.
-   * `status === 'busy'` = chauffeur qui s'est mis en « occupé » (distinct de `in_order`).
+   * Statut temps réel des SEULS chauffeurs Pilote liés à Yango (working), TOUS
+   * statuts inclus (hors ligne compris) — source de l'état live par chauffeur
+   * du dashboard. Forme (api/yango.js fleet-status, depuis d1b1cbb) :
+   * { total, counts:{free,busy,in_order,offline}, disponible, occupe,
+   *   commandeActive, horsLigne, enLigne,
+   *   drivers:[{ chauffeurId, yangoId, nom, statutPilote, status, enCommande, statusTs }] }.
+   * `status` : free (disponible) | busy (mis en « occupé ») | in_order (en
+   * commande) | offline. `enCommande` vient des commandes actives (orders/list)
+   * et prime sur un « busy » résiduel.
    */
   async getFleetStatus() {
     try {

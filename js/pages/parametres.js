@@ -3004,15 +3004,13 @@ const ParametresPage = {
         testYangoBtn.disabled = true;
         testYangoBtn.innerHTML = '<iconify-icon icon="solar:refresh-bold" class="spin-icon"></iconify-icon> Test...';
         try {
-          const res = await fetch('/api/yango/test');
-          const data = await res.json();
-          if (data.success) {
-            Toast.success(data.message || 'Connexion Yango reussie');
-          } else {
-            Toast.error(data.error || 'Echec de la connexion Yango');
-          }
+          // Passe par Store._yangoApi : URL ?action=test + jeton Bearer. L'ancien
+          // fetch('/api/yango/test') visait une route Express disparue, sans
+          // authentification → le bouton ne pouvait jamais réussir.
+          const data = await Store._yangoApi('test');
+          Toast.success(data.message || 'Connexion Yango reussie');
         } catch (e) {
-          Toast.error('Erreur réseau: ' + e.message);
+          Toast.error(e.message || 'Echec de la connexion Yango');
         } finally {
           testYangoBtn.disabled = false;
           testYangoBtn.innerHTML = '<iconify-icon icon="solar:test-tube-bold-duotone"></iconify-icon> Tester';

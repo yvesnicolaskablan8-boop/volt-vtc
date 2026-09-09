@@ -58,6 +58,20 @@ const PlanningPage = {
 
   _template() {
     return `
+      <style id="pl-nav-styles">
+        .pl-nav { display:flex; align-items:center; gap:8px; min-width:0; }
+        .pl-navbtn { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); cursor:pointer; font-size:15px; flex-shrink:0; transition:border-color .15s, box-shadow .15s; }
+        .pl-navbtn:hover { border-color:var(--pilote-blue); box-shadow:0 2px 10px -4px rgba(245,81,46,.4); }
+        .pl-datebtn { position:relative; display:inline-flex; align-items:center; gap:8px; padding:7px 12px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:20px; cursor:pointer; color:var(--text-primary); font-weight:700; font-size:13px; min-width:0; transition:border-color .15s, box-shadow .15s; }
+        .pl-datebtn:hover { border-color:var(--pilote-blue); box-shadow:0 2px 10px -4px rgba(245,81,46,.4); }
+        .pl-datebtn-cal { color:var(--pilote-blue); font-size:16px; flex-shrink:0; }
+        .pl-datebtn-lbl { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+        .pl-datebtn-chev { color:var(--text-muted); font-size:14px; flex-shrink:0; }
+        .pl-datebtn input[type=date] { position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0; border:none; opacity:0; cursor:pointer; }
+        .pl-datebtn input[type=date]::-webkit-calendar-picker-indicator { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
+        .pl-todaybtn { display:inline-flex; align-items:center; padding:7px 14px; border-radius:20px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-weight:700; font-size:12px; cursor:pointer; flex-shrink:0; transition:border-color .15s, box-shadow .15s; }
+        .pl-todaybtn:hover { border-color:var(--pilote-blue); box-shadow:0 2px 10px -4px rgba(245,81,46,.4); }
+      </style>
       <div style="max-width:100%;box-sizing:border-box;overflow:hidden;">
         <div class="page-header" style="flex-wrap:wrap;">
           <h1 style="font-size:clamp(1rem,4vw,1.5rem);"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning</h1>
@@ -70,11 +84,16 @@ const PlanningPage = {
         <!-- Navigation & Filtres -->
         <div class="card planning-nav-card" style="margin-bottom:var(--space-lg);padding:var(--space-sm) var(--space-md);overflow:hidden;max-width:100%;box-sizing:border-box;">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
-            <div style="display:flex;align-items:center;gap:6px;min-width:0;">
-              <button class="btn btn-sm btn-secondary" id="btn-prev" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-left-bold"></iconify-icon></button>
-              <button class="btn btn-sm btn-secondary" id="btn-today" style="font-size:11px;padding:4px 8px;flex-shrink:0;">Auj.</button>
-              <h3 id="planning-period-label" style="margin:0;text-align:center;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;"></h3>
-              <button class="btn btn-sm btn-secondary" id="btn-next" style="padding:4px 8px;flex-shrink:0;"><iconify-icon icon="solar:alt-arrow-right-bold"></iconify-icon></button>
+            <div class="pl-nav">
+              <button class="pl-navbtn" id="btn-prev" title="Précédent"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>
+              <label class="pl-datebtn" title="Aller à une date">
+                <iconify-icon icon="solar:calendar-bold-duotone" class="pl-datebtn-cal"></iconify-icon>
+                <span id="planning-period-label" class="pl-datebtn-lbl"></span>
+                <iconify-icon icon="solar:alt-arrow-down-linear" class="pl-datebtn-chev"></iconify-icon>
+                <input type="date" id="planning-date-jump" onchange="PlanningPage._jumpToDate(this.value)">
+              </label>
+              <button class="pl-navbtn" id="btn-next" title="Suivant"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>
+              <button class="pl-todaybtn" id="btn-today">Auj.</button>
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
               <div style="display:flex;align-items:center;gap:4px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:2px 6px;">
@@ -86,7 +105,6 @@ const PlanningPage = {
                 <div class="tab ${this._currentView === 'week' ? 'active' : ''}" data-view="week" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Sem.</div>
                 <div class="tab ${this._currentView === 'day' ? 'active' : ''}" data-view="day" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:sun-2-bold-duotone"></iconify-icon> Jour</div>
                 <div class="tab ${this._currentView === 'stats' ? 'active' : ''}" data-view="stats" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:chart-bold-duotone"></iconify-icon> Stats</div>
-                <div class="tab ${this._currentView === 'gantt' ? 'active' : ''}" data-view="gantt" style="padding:6px 10px;font-size:12px;"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon> Gantt</div>
               </div>
             </div>
           </div>
@@ -142,6 +160,20 @@ const PlanningPage = {
     this._renderView();
   },
 
+  // Saut direct à une date via le sélecteur calendrier de la pastille de période.
+  _jumpToDate(value) {
+    if (!value) return;
+    const d = new Date(value + 'T12:00:00');
+    if (isNaN(d)) return;
+    this._currentDay = new Date(value + 'T00:00:00');
+    this._currentMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+    const dow = d.getDay();
+    this._currentWeekStart = new Date(d);
+    this._currentWeekStart.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+    this._currentWeekStart.setHours(0, 0, 0, 0);
+    this._renderView();
+  },
+
   _renderView() {
     this._charts.forEach(c => c.destroy());
     this._charts = [];
@@ -175,12 +207,6 @@ const PlanningPage = {
           label.textContent = `${Utils.getMonthName(this._currentMonth.getMonth())} ${this._currentMonth.getFullYear()}`;
           ct.innerHTML = this._renderStatsView();
           this._loadStatsCharts();
-          break;
-        case 'gantt':
-          label.textContent = 'Occupation des véhicules';
-          ct.replaceChildren();
-          if (typeof OccupationVehiculesPage !== 'undefined') OccupationVehiculesPage.renderInto(ct);
-          else ct.insertAdjacentHTML('beforeend', '<div style="padding:30px;text-align:center;color:var(--text-muted);">Vue indisponible.</div>');
           break;
       }
 
