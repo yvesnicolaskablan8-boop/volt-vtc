@@ -1818,11 +1818,11 @@ const DashboardPage = {
     const now = Date.now();
     if (this._yoTs && (now - this._yoTs) < 90000 && this._yoData) return this._fillYangoOnline(this._yoData);
     if (typeof Store === 'undefined' || !Store.getYangoOnline) return;
-    const d = this._lastData; if (!d) return;
-    const chById = new Map((Store.get('chauffeurs') || []).map(c => [c.id, c]));
-    const ids = (d.chauffeursActifsJour || [])
-      .map(c => { const ch = chById.get(c.id); return ch && ch.yangoDriverId; })
-      .filter(Boolean);
+    // Toute la flotte active liée à Yango (pas seulement les planifiés du jour) :
+    // les chauffeurs en ligne côté Yango ne sont pas forcément au planning Pilote.
+    const ids = (Store.get('chauffeurs') || [])
+      .filter(c => (c.statut || 'actif') !== 'inactif' && c.yangoDriverId)
+      .map(c => c.yangoDriverId);
     if (!ids.length) { el.replaceChildren(); return; }
     try {
       const r = await Store.getYangoOnline(ids);
@@ -1836,7 +1836,7 @@ const DashboardPage = {
     if (!el) return;
     el.replaceChildren();
     el.insertAdjacentHTML('beforeend',
-      `<span class="fd-yg-dot" style="background:${r.enLigne > 0 ? '#13DEB9' : '#C7D0DD'};"></span><b>${r.enLigne}</b> en ligne <span class="fd-yg-muted">/ ${r.checked} du jour</span>`);
+      `<span class="fd-yg-dot" style="background:${r.enLigne > 0 ? '#13DEB9' : '#C7D0DD'};"></span><b>${r.enLigne}</b> en ligne <span class="fd-yg-muted">/ ${r.checked} chauffeurs</span>`);
   },
 
   async _loadRecetteLive() {

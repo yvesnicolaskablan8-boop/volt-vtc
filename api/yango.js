@@ -1312,7 +1312,7 @@ async function handleOnlineStatus(req, res) {
     if (!ids.length) return res.json({ enLigne: 0, checked: 0, drivers: [] });
 
     const now = new Date();
-    const from = new Date(now.getTime() - 10 * 60 * 1000); // 10 dernières minutes
+    const from = new Date(now.getTime() - 15 * 60 * 1000); // 15 dernières minutes (présence récente)
     const results = await Promise.allSettled(ids.map(id =>
       yangoGet('/v2/parks/contractors/supply-hours', {
         contractor_profile_id: id,
