@@ -763,19 +763,28 @@ async function handleStats(req, res) {
     };
     if (workRuleIds.length) driverQuery.park.driver_profile.work_rule_id = workRuleIds;
 
-    const driversData = await yangoFetch('/v1/parks/driver-profiles/list', {
-      fields: {
-        driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_rule_id'],
-        current_status: ['status'],
-        car: ['id', 'brand', 'model', 'number'],
-        account: ['balance']
-      },
-      limit: 100,
-      offset: 0,
-      query: driverQuery
-    });
-
-    const profiles = driversData.driver_profiles || [];
+    // Pagination obligatoire : le parc compte plus de 100 profils « working »
+    // (la plupart inactifs mais jamais radiés). Une seule page de 100 ne
+    // contenait aucun chauffeur Pilote → total 0 sur la page Yango. On lit
+    // toutes les pages (300 max par appel, comme drivers-all).
+    const PAGE = 300, MAX_PAGES = 5;
+    let profiles = [];
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const driversData = await yangoFetch('/v1/parks/driver-profiles/list', {
+        fields: {
+          driver_profile: ['id', 'first_name', 'last_name', 'phones', 'work_rule_id'],
+          current_status: ['status'],
+          car: ['id', 'brand', 'model', 'number'],
+          account: ['balance']
+        },
+        limit: PAGE,
+        offset: page * PAGE,
+        query: driverQuery
+      });
+      const batch = driversData.driver_profiles || [];
+      profiles = profiles.concat(batch);
+      if (batch.length < PAGE) break;
+    }
 
     // =================== 2) PILOTE chauffeurs (from Supabase) ===================
     let piloteDrivers = [];
@@ -1042,7 +1051,7 @@ async function handleSync(req, res) {
     // 1) Get Pilote chauffeurs linked to Yango
     const chauffeurs = await supabaseQuery(
       'fleet_chauffeurs',
-      'yango_driver_id=not.is.null&yango_driver_id=neq.&select=id,prenom,nom,yango_driver_id,vehicule_id',
+      'yango_driver_id=not.is.null&yango_driver_id=neq.&select=id,prenom,nom,yango_driver_id,vehicule_assigne',
       token
     );
 
@@ -1098,7 +1107,7 @@ async function handleSync(req, res) {
           const versement = {
             id: versementId,
             chauffeur_id: ch.id,
-            vehicule_id: ch.vehicule_id || null,
+            vehicule_id: ch.vehicule_assigne || null,
             date: targetDate,
             montant: Math.round(agg.totalCA),
             montant_cash: Math.round(agg.cash),
