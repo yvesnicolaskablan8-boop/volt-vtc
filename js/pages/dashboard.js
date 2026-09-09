@@ -60,6 +60,7 @@ const DashboardPage = {
       this._bindPeriodSelector();
       this._renderFleetDonutInto(data);
       this._loadRecetteLive();
+      this._loadYangoOnline();
       if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
       this._autoGenerateVersements();
@@ -410,6 +411,7 @@ const DashboardPage = {
       this._bindPeriodSelector();
       this._renderFleetDonutInto(data);
       this._loadRecetteLive();
+      this._loadYangoOnline();
       this._startAutoRefresh();
     } catch (err) {
       console.error('DashboardPage._silentRefresh() error:', err);
@@ -1808,49 +1810,33 @@ const DashboardPage = {
   },
 
   // ============ Recette en direct (courbe CA par heure, intégrée au hero blanc) ============
-  // Statut temps réel Yango (disponible / en course / occupé / hors ligne).
-  // Appel live throttlé (60 s) — reflète l'app chauffeur, pas nos données CA.
-  async _loadYangoLive() {
-    const el = document.getElementById('fd-yango');
+  // Compteur « en ligne » temps réel Yango via supply-hours (temps de mise à
+  // disposition sur 10 min) pour les chauffeurs du jour. Throttlé à 90 s.
+  async _loadYangoOnline() {
+    const el = document.getElementById('fd-yango-online');
     if (!el || !this._isToday()) return;
     const now = Date.now();
-    if (this._yangoLiveTs && (now - this._yangoLiveTs) < 60000 && this._yangoLiveData) {
-      return this._fillYangoLive(this._yangoLiveData);
-    }
-    if (typeof Store === 'undefined' || !Store.getFleetStatus) return;
+    if (this._yoTs && (now - this._yoTs) < 90000 && this._yoData) return this._fillYangoOnline(this._yoData);
+    if (typeof Store === 'undefined' || !Store.getYangoOnline) return;
+    const d = this._lastData; if (!d) return;
+    const chById = new Map((Store.get('chauffeurs') || []).map(c => [c.id, c]));
+    const ids = (d.chauffeursActifsJour || [])
+      .map(c => { const ch = chById.get(c.id); return ch && ch.yangoDriverId; })
+      .filter(Boolean);
+    if (!ids.length) { el.replaceChildren(); return; }
     try {
-      const r = await Store.getFleetStatus();
-      if (!r || r.error) { el.classList.add('fd-yango-err'); return; }
-      this._yangoLiveTs = now; this._yangoLiveData = r;
-      this._fillYangoLive(r);
+      const r = await Store.getYangoOnline(ids);
+      if (!r || r.error) return;
+      this._yoTs = now; this._yoData = r;
+      this._fillYangoOnline(r);
     } catch (e) { /* silencieux */ }
   },
-  _fillYangoLive(r) {
-    const body = document.getElementById('fd-yango-body');
-    if (!body) return;
-    const chip = (color, val, lbl) => `<span class="fd-yg"><span class="fd-yg-dot" style="background:${color};"></span><b>${val}</b> ${lbl}</span>`;
-    const enCourse = r.commandeActive != null ? r.commandeActive : ((r.counts && r.counts.in_order) || 0);
-    let html;
-    if (r.statusFiable) {
-      // current_status exploitable : on affiche le détail complet.
-      html = chip('#13DEB9', r.disponible || 0, 'disponibles')
-        + chip('#F5512E', enCourse, 'en course')
-        + chip('#FFAE1F', r.occupe || 0, 'occupés')
-        + `<span class="fd-yg fd-yg-muted"><span class="fd-yg-dot" style="background:#C7D0DD;"></span><b>${r.horsLigne || 0}</b> hors ligne</span>`;
-    } else {
-      // current_status renvoie « offline » pour tous : seule la course active est fiable.
-      html = chip('#F5512E', enCourse, enCourse > 1 ? 'courses en cours' : 'course en cours')
-        + `<span class="fd-yg fd-yg-muted" title="L'API Yango n'expose pas les statuts en ligne/occupé détaillés">statuts détaillés non fournis par l'API</span>`;
-    }
-    // Diagnostic temporaire : statuts réels renvoyés par l'API commandes.
-    if (r.debug) {
-      const sc = r.debug.statusCounts || {};
-      const parts = Object.keys(sc).sort((a, b) => sc[b] - sc[a]).slice(0, 8).map(k => `${k}:${sc[k]}`).join(', ');
-      html += `<span class="fd-yg fd-yg-muted" style="width:100%;font-size:10.5px;opacity:.7;">diag · ${r.debug.nbOrders} commandes${parts ? ' · ' + parts : ''}${r.debug.error ? ' · ERR ' + r.debug.error : ''}</span>`;
-    }
-    body.replaceChildren();
-    body.insertAdjacentHTML('beforeend', html);
-    const el = document.getElementById('fd-yango'); if (el) el.classList.remove('fd-yango-err');
+  _fillYangoOnline(r) {
+    const el = document.getElementById('fd-yango-online');
+    if (!el) return;
+    el.replaceChildren();
+    el.insertAdjacentHTML('beforeend',
+      `<span class="fd-yg-dot" style="background:${r.enLigne > 0 ? '#13DEB9' : '#C7D0DD'};"></span><b>${r.enLigne}</b> en ligne <span class="fd-yg-muted">/ ${r.checked} du jour</span>`);
   },
 
   async _loadRecetteLive() {
@@ -2401,6 +2387,10 @@ const DashboardPage = {
     const live = this._isToday() ? "Aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt));
     return `<div class="d-card fd-card">
       <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span></div>
+      <div class="fd-yango" id="fd-yango" title="Chauffeurs du jour actuellement en ligne sur l'application Yango (temps de mise à disposition sur 10 min)">
+        <span class="fd-yango-lbl"><iconify-icon icon="arcticons:yango"></iconify-icon> Yango temps réel</span>
+        <span class="fd-yg" id="fd-yango-online"><span class="fd-yg-dot" style="background:#C7D0DD;"></span><span class="fd-yg-muted">…</span></span>
+      </div>
       <div class="fd-top">
         <div class="fd-donut-col">
           <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, ringSegments, total)}</div>

@@ -552,6 +552,23 @@ const Store = {
   },
 
   /**
+   * Statut « en ligne » temps réel via supply-hours : { enLigne, checked, drivers }.
+   * `ids` = liste de contractor_profile_id (yangoDriverId) à vérifier (chauffeurs
+   * planifiés/actifs du jour). En ligne = temps de mise à disposition > 0 sur 10 min.
+   */
+  async getYangoOnline(ids) {
+    try {
+      const list = (ids || []).filter(Boolean);
+      if (!list.length) return { enLigne: 0, checked: 0, drivers: [] };
+      const q = '?ids=' + encodeURIComponent(list.join(','));
+      return await this._yangoApi('online-status', { query: q });
+    } catch (e) {
+      console.warn('Store: getYangoOnline error:', e.message);
+      return null;
+    }
+  },
+
+  /**
    * CA de la flotte pour la journée d'exploitation en cours (5 h → maintenant),
    * réparti par heure. Renvoie l'objet ca-report ({ repartitionHoraire, ... }).
    */

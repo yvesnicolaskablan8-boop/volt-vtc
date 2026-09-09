@@ -1297,6 +1297,38 @@ async function handleCaReport(req, res) {
   }
 }
 
+// ---------- online-status ----------
+// Statut « en ligne » temps réel via l'API supply-hours (temps de mise à
+// disposition). Pour chaque chauffeur demandé (ids = contractor_profile_id),
+// on regarde s'il a été en ligne dans les 10 dernières minutes → en ligne.
+async function handleOnlineStatus(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  const user = await verifyAuth(req);
+  if (!user) return res.status(401).json({ error: 'Non autorise' });
+  try {
+    await assertYangoCreds();
+    const idsParam = (req.query.ids || '').trim();
+    const ids = idsParam ? idsParam.split(',').map(s => s.trim()).filter(Boolean).slice(0, 40) : [];
+    if (!ids.length) return res.json({ enLigne: 0, checked: 0, drivers: [] });
+
+    const now = new Date();
+    const from = new Date(now.getTime() - 10 * 60 * 1000); // 10 dernières minutes
+    const results = await Promise.allSettled(ids.map(id =>
+      yangoGet('/v2/parks/contractors/supply-hours', {
+        contractor_profile_id: id,
+        period_from: from.toISOString(),
+        period_to: now.toISOString()
+      }).then(r => ({ id, seconds: Number(r && r.supply_duration_seconds) || 0 }))
+    ));
+    const drivers = results.map((r, i) => r.status === 'fulfilled' ? r.value : { id: ids[i], seconds: 0, error: (r.reason && r.reason.message) || 'err' });
+    const enLigne = drivers.filter(d => d.seconds > 0).length;
+    res.json({ enLigne, checked: ids.length, drivers });
+  } catch (err) {
+    console.error('[online-status] Error:', err.message);
+    res.status(502).json({ error: 'Erreur API Yango', details: err.message });
+  }
+}
+
 const ACTION_MAP = {
   'test':          handleTest,
   'balance':       handleBalance,
@@ -1313,6 +1345,7 @@ const ACTION_MAP = {
   'sync':          handleSync,
   'ca-report':     handleCaReport,
   'sync-ca':       handleSyncCa,
+  'online-status': handleOnlineStatus,
 };
 
 module.exports = async function handler(req, res) {
