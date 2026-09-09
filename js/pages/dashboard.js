@@ -1515,8 +1515,11 @@ const DashboardPage = {
         .fd-c:not(.fd-c-off):hover,.fd-c.hot{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.10);}
         .fd-c-top{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--text-secondary);}
         .fd-c-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-        .fd-c-mid{margin-top:8px;}
+        .fd-c-mid{margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
         .fd-c-val{font-size:23px;font-weight:800;letter-spacing:-.5px;}
+        .fd-c-live{display:inline-flex;align-items:center;gap:6px;background:rgba(19,222,185,.16);color:#0a9d78;font-weight:800;font-size:12px;padding:4px 11px;border-radius:20px;white-space:nowrap;}
+        .fd-c-live-dot{width:8px;height:8px;border-radius:50%;background:#13DEB9;flex-shrink:0;box-shadow:0 0 0 0 rgba(19,222,185,.55);animation:fdLivePulse 1.8s ease-out infinite;}
+        @keyframes fdLivePulse{0%{box-shadow:0 0 0 0 rgba(19,222,185,.55);}70%{box-shadow:0 0 0 8px rgba(19,222,185,0);}100%{box-shadow:0 0 0 0 rgba(19,222,185,0);}}
         .fd-c-pct{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:6px;}
         .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}
         .fd-surv-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,.14);color:#D92D20;border:1px solid rgba(239,68,68,.45);font-weight:800;font-size:11px;padding:2px 9px;border-radius:20px;cursor:pointer;font-family:inherit;line-height:1.55;vertical-align:middle;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;}
@@ -2338,12 +2341,13 @@ const DashboardPage = {
       const clickable = s.count > 0;
       const handlers = clickable ? `onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
       const notes = [];
-      if (s.recentCount) notes.push(`<span style="color:#13DEB9;font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#13DEB9;margin-right:4px;vertical-align:middle;"></span>${s.recentCount} actif${s.recentCount > 1 ? 's' : ''} à l'instant</span>`);
       if (s.inactifCount) notes.push(`<span style="color:#E8930C;font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#E8930C;margin-right:4px;vertical-align:middle;"></span>${s.inactifCount} pas actif${s.inactifCount > 1 ? 's' : ''}</span>`);
       if (s.note) notes.push(`<button type="button" class="fd-surv-chip" onclick="event.stopPropagation();DashboardPage._scrollToWatchlist()" title="Voir les chauffeurs à surveiller"><iconify-icon icon="solar:eye-scan-bold" style="font-size:12px;"></iconify-icon>${s.note}</button>`);
+      // « Actifs à l'instant » mis en avant : pastille verte proéminente avec point pulsant.
+      const liveChip = s.recentCount ? `<span class="fd-c-live" title="Chauffeurs dont le compteur de courses a augmenté récemment"><span class="fd-c-live-dot"></span>${s.recentCount} actif${s.recentCount > 1 ? 's' : ''} à l'instant</span>` : '';
       return `<div class="fd-c${clickable ? '' : ' fd-c-off'}" data-i="${i}" ${handlers}>
         <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}</div>
-        <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span></div>
+        <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span>${liveChip}</div>
         <div class="fd-c-desc">${s.desc}${notes.length ? ' · ' + notes.join(' · ') : ''}</div>
       </div>`;
     }).join('');
