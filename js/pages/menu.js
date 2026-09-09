@@ -10,7 +10,7 @@ const MenuPage = {
     const menuItems = [
       { route: '/yango', icon: 'arcticons:yango', label: 'Yango Fleet', color: '#FC4C02' },
       { route: '/taches', icon: 'solar:checklist-bold-duotone', label: 'Taches', color: '#F5512E' },
-      { route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements', color: '#13deb9' },
+      { route: '/versements', icon: 'solar:wallet-money-bold-duotone', label: 'Caisse', color: '#13deb9' },
       { route: '/bonus', icon: 'solar:gift-bold-duotone', label: 'Bonus', color: '#635bff' },
       { route: '/simulateur', icon: 'solar:calculator-minimalistic-bold-duotone', label: 'Simulateur', color: '#0891b2' },
       { route: '/rentabilite', icon: 'solar:pie-chart-2-bold-duotone', label: 'Rentabilité', color: '#635bff' },

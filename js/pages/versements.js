@@ -675,7 +675,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       <div class="wl-title">
         <div class="wl-title-k">Suivi financier</div>
         <div class="wl-title-h">
-          <span style="display:flex;align-items:center;gap:12px;"><iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="color:#F5512E;"></iconify-icon> Versements</span>
+          <span style="display:flex;align-items:center;gap:12px;"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#F5512E;"></iconify-icon> Caisse</span>
           <button class="wl-date" onclick="VersementsPage._openDateWheel()">
             <iconify-icon icon="solar:calendar-bold-duotone" style="color:#F5512E;font-size:17px;"></iconify-icon>
             ${this._selectedPeriod ? Utils.escHtml(Utils.formatDate(this._selectedPeriod)) : "Aujourd'hui"}

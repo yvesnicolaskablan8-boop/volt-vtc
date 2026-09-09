@@ -1,16 +1,18 @@
 /**
  * AnalyseVersementsPage — Analyse des versements (recette encaissée)
  * Ouverte depuis le widget « Recette encaissée » du tableau de bord (clic sur
- * une barre) ou directement via #/analyse-versements. Design inspiré d'un
- * dashboard analytique : grand graphique d'aire + objectif + tendance + KPI +
- * table des versements de la période sélectionnée. Montants en entier (FCFA).
+ * une barre) ou directement via #/analyse-versements. Style « Boostboard » :
+ * grande bande KPI à gros chiffres, barres en pilules empilées, bulles de
+ * répartition, table des versements de la période. Montants en entier (FCFA).
  */
 const AnalyseVersementsPage = {
   _ctx: null,       // contexte passé par le dashboard : { gran, index }
   _gran: 'semaine', // jour | semaine | mois
   _sel: 7,          // index de la période mise en avant (0..7)
   _series: [],
-  _acc: '#13DEB9',
+  _ENC: '#F5512E',  // encaissé (orange brand)
+  _REST: '#FFC93C', // reste à recouvrer (jaune)
+  _IND: '#635BFF',  // accent indigo
 
   // Appelé par le dashboard juste avant Router.navigate pour cibler une période.
   setContext(ctx) { this._ctx = ctx || null; },
@@ -29,7 +31,6 @@ const AnalyseVersementsPage = {
 
   // ---- Données -----------------------------------------------------------
 
-  // Bornes des 8 dernières périodes selon la granularité.
   _periodsBounds(gran) {
     const now = new Date();
     const out = [];
@@ -74,6 +75,7 @@ const AnalyseVersementsPage = {
 
   _fmt(n) { return Utils.formatNumber(Math.round(n || 0)) + ' F'; },
   _pct(n) { return (n >= 0 ? '+' : '') + Math.round(n) + '%'; },
+  _tri(up) { return `<span class="av-tri ${up ? 'up' : 'down'}"></span>`; },
 
   // ---- Rendu -------------------------------------------------------------
 
@@ -97,30 +99,42 @@ const AnalyseVersementsPage = {
 
     const gBtn = (k, l) => `<button type="button" class="av-gran-btn${this._gran === k ? ' is-active' : ''}" onclick="AnalyseVersementsPage._setGran('${k}')">${l}</button>`;
 
-    const kpis = [
-      { lbl: 'Recette encaissée', val: this._fmt(cur.encaisse), tag: this._pct(trend), up: trendUp },
-      { lbl: 'Versements reçus', val: Utils.formatNumber(cur.nb), tag: null },
-      { lbl: 'Versement moyen', val: this._fmt(ticket), tag: null },
-      { lbl: 'Reste à recouvrer', val: this._fmt(cur.manquant), tag: cur.manquant > 0 ? 'à relancer' : 'soldé', up: cur.manquant === 0 }
-    ];
-    const kpiRow = kpis.map(k => `
-      <div class="av-kpi">
-        <div class="av-kpi-lbl">${k.lbl}</div>
-        <div class="av-kpi-row">
-          <div class="av-kpi-val">${k.val}</div>
-          ${k.tag ? `<span class="av-kpi-tag ${k.up ? 'up' : 'down'}">${k.tag}</span>` : ''}
+    // Grande bande KPI façon Boostboard : barre d'accent + gros chiffres noirs.
+    const band = `
+      <div class="av-band">
+        <span class="av-band-bar"></span>
+        <div class="av-band-item">
+          <div class="av-band-lbl">Recette encaissée</div>
+          <div class="av-band-val">${this._fmt(cur.encaisse)}${this._tri(trendUp)}</div>
         </div>
-      </div>`).join('');
+        <div class="av-band-item">
+          <div class="av-band-lbl">Versements reçus</div>
+          <div class="av-band-val">${Utils.formatNumber(cur.nb)}</div>
+        </div>
+        <div class="av-band-item">
+          <div class="av-band-lbl">Versement moyen</div>
+          <div class="av-band-val">${this._fmt(ticket)}</div>
+        </div>
+        <div class="av-band-item">
+          <div class="av-band-lbl">Reste à recouvrer</div>
+          <div class="av-band-val">${this._fmt(cur.manquant)}${cur.manquant > 0 ? this._tri(false) : '<span class="av-solde">soldé</span>'}</div>
+        </div>
+      </div>`;
 
     return `
       ${this._styles()}
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon> Analyse des versements</h1>
+      <div class="page-header av-header">
+        <div class="av-hgroup">
+          <div class="av-heyebrow">Suivi financier</div>
+          <h1><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon> Analyse des versements</h1>
+        </div>
         <div class="page-actions">
           <div class="av-gran">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>
-          <button class="btn btn-sm btn-secondary" onclick="Router.navigate('/dashboard')"><iconify-icon icon="solar:arrow-left-linear"></iconify-icon> Tableau de bord</button>
+          <button class="av-back" onclick="Router.navigate('/dashboard')"><iconify-icon icon="solar:arrow-left-linear"></iconify-icon> Tableau de bord</button>
         </div>
       </div>
+
+      ${band}
 
       <div class="av-grid">
         <div class="av-main">
@@ -131,10 +145,14 @@ const AnalyseVersementsPage = {
             </div>
             <div class="av-main-total">
               <div class="av-main-amount">${this._fmt(totalEncaisse)}</div>
-              <span class="av-trend ${trendUp ? 'up' : 'down'}"><iconify-icon icon="${trendUp ? 'solar:arrow-right-up-linear' : 'solar:arrow-right-down-linear'}"></iconify-icon>${this._pct(trend)}</span>
+              <span class="av-trend ${trendUp ? 'up' : 'down'}">${this._tri(trendUp)}${this._pct(trend)}</span>
             </div>
           </div>
-          ${this._areaChart(s, this._sel)}
+          ${this._pillBars(s, this._sel)}
+          <div class="av-legend">
+            <span class="av-lg"><span class="av-ldot" style="background:${this._ENC}"></span>Encaissé</span>
+            <span class="av-lg"><span class="av-ldot" style="background:${this._REST}"></span>Reste à recouvrer</span>
+          </div>
         </div>
 
         <div class="av-side">
@@ -144,24 +162,13 @@ const AnalyseVersementsPage = {
               <div class="av-goal-title">Encaissé / attendu</div>
             </div>
             <div class="av-goal-bottom">
-              <div class="av-goal-line">
-                <span class="av-goal-pct">${recouvr}%</span>
-                <span class="av-goal-target">Attendu&nbsp;: ${this._fmt(cur.attendu)}</span>
-              </div>
+              <div class="av-goal-line"><span class="av-goal-pct">${recouvr}%</span><span class="av-goal-target">Attendu&nbsp;: ${this._fmt(cur.attendu)}</span></div>
               <div class="av-goal-bar"><div class="av-goal-fill" style="width:${recouvr}%"></div></div>
             </div>
           </div>
-          <div class="av-info">
-            <div class="av-info-head">
-              <div class="av-info-icon"><iconify-icon icon="${trendUp ? 'solar:graph-up-bold' : 'solar:graph-down-bold'}"></iconify-icon></div>
-              <h4>Tendance</h4>
-            </div>
-            <p>La recette de cette ${granLbl} est ${trendUp ? 'en hausse' : 'en baisse'} de <b>${this._pct(Math.abs(trend))}</b> ${prev ? `par rapport à la ${granLbl} précédente (${this._fmt(prev.encaisse)}).` : '.'}</p>
-          </div>
+          ${this._bubbleChart(cur)}
         </div>
       </div>
-
-      <div class="av-kpis">${kpiRow}</div>
 
       <div class="av-table-card">
         <div class="av-table-head">
@@ -179,6 +186,58 @@ const AnalyseVersementsPage = {
     const last = new Date(p.end); last.setDate(last.getDate() - 1);
     if (this._gran === 'jour') return f(p.start);
     return `${f(p.start)} → ${f(last)}`;
+  },
+
+  // Barres en pilules empilées : encaissé (orange) + reste à recouvrer (jaune).
+  _pillBars(series, sel) {
+    const max = Math.max(1, ...series.map(s => (s.encaisse || 0) + (s.manquant || 0)));
+    const cols = series.map((s, i) => {
+      const total = (s.encaisse || 0) + (s.manquant || 0);
+      const hPct = total > 0 ? (total / max * 100) : 2;
+      const encPct = total > 0 ? (s.encaisse / total * 100) : 0;
+      const on = i === sel;
+      return `<div class="av-bcol${on ? ' on' : ''}" onclick="AnalyseVersementsPage._openPeriod(${i})">
+          <div class="av-btip">${Utils.escHtml(this._fmt(s.encaisse))}</div>
+          <div class="av-bstack" style="height:${Math.max(3, hPct).toFixed(1)}%;">
+            ${s.manquant > 0 ? `<div class="av-bseg" style="flex:${(100 - encPct).toFixed(2)};background:${this._REST};"></div>` : ''}
+            <div class="av-bseg" style="flex:${Math.max(0.01, encPct).toFixed(2)};background:${this._ENC};"></div>
+          </div>
+          <div class="av-blbl">${Utils.escHtml(s.label || '')}</div>
+        </div>`;
+    }).join('');
+    return `<div class="av-bars">${cols}</div>`;
+  },
+
+  // Bulles de répartition des versements de la période par statut.
+  _bubbleChart(cur) {
+    const items = cur.items || [];
+    const groups = [
+      { key: 'valide', label: 'Validé', color: this._ENC },
+      { key: 'partiel', label: 'Partiel', color: this._REST },
+      { key: 'en_attente', label: 'En attente', color: this._IND },
+    ];
+    const counts = groups.map(g => ({ ...g, n: items.filter(v => v.statut === g.key).length }));
+    const total = counts.reduce((s, c) => s + c.n, 0);
+    const head = `<div class="av-info-head"><div class="av-info-icon"><iconify-icon icon="solar:pie-chart-2-bold"></iconify-icon></div><h4>Répartition</h4></div>`;
+    if (total === 0) {
+      return `<div class="av-info">${head}<div class="av-bub-empty">Aucun versement sur la période</div></div>`;
+    }
+    const maxN = Math.max(1, ...counts.map(c => c.n));
+    const ranked = counts.filter(c => c.n > 0).sort((a, b) => b.n - a.n);
+    const slots = [ { l: 4, t: 14 }, { l: 44, t: 4 }, { l: 40, t: 46 } ];
+    const bubbles = ranked.map((c, i) => {
+      const sz = 54 + Math.round((c.n / maxN) * 58); // 54..112 px
+      const pos = slots[i] || { l: 10 + i * 20, t: 30 };
+      return `<div class="av-bubble" style="width:${sz}px;height:${sz}px;left:${pos.l}%;top:${pos.t}%;background:${c.color};">${c.n}</div>`;
+    }).join('');
+    const legend = counts.map(c => {
+      const pct = total > 0 ? Math.round(c.n / total * 100) : 0;
+      return `<div class="av-blg-row"><span class="av-ldot" style="background:${c.color}"></span><span class="av-blg-lbl">${c.label}</span><span class="av-blg-val">${c.n} · ${pct}%</span></div>`;
+    }).join('');
+    return `<div class="av-info">${head}
+      <div class="av-bubbles">${bubbles}</div>
+      <div class="av-blg">${legend}</div>
+    </div>`;
   },
 
   _table(p) {
@@ -213,42 +272,6 @@ const AnalyseVersementsPage = {
     </table></div>`;
   },
 
-  // Graphique d'aire lissé (Catmull-Rom → Bézier), période sélectionnée en relief.
-  _areaChart(series, sel) {
-    const W = 720, H = 240, padX = 8, padTop = 26, padBot = 34;
-    const n = series.length;
-    const vals = series.map(s => s.encaisse || 0);
-    const max = Math.max(1, ...vals);
-    const innerW = W - padX * 2, innerH = H - padTop - padBot;
-    const xs = i => padX + (n === 1 ? innerW / 2 : i / (n - 1) * innerW);
-    const ys = v => padTop + innerH - (v / max) * innerH;
-    const pts = vals.map((v, i) => [+xs(i).toFixed(1), +ys(v).toFixed(1)]);
-    let line = pts.length ? `M ${pts[0][0]} ${pts[0][1]}` : '';
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-      const c1x = (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1), c1y = (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1);
-      const c2x = (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1), c2y = (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1);
-      line += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]}`;
-    }
-    const area = pts.length ? `${line} L ${pts[n - 1][0]},${padTop + innerH} L ${pts[0][0]},${padTop + innerH} Z` : '';
-    const dots = pts.map((p, i) => {
-      const on = i === sel;
-      return `<circle cx="${p[0]}" cy="${p[1]}" r="${on ? 6 : 3.5}" fill="${on ? this._acc : 'var(--bg-secondary)'}" stroke="${this._acc}" stroke-width="${on ? 3 : 2}" class="av-dot" style="cursor:pointer" onclick="AnalyseVersementsPage._openPeriod(${i})"></circle>`;
-    }).join('');
-    const labels = series.map((s, i) => `<text x="${xs(i).toFixed(1)}" y="${H - 12}" text-anchor="middle" class="av-xlbl ${i === sel ? 'on' : ''}">${Utils.escHtml(s.label || '')}</text>`).join('');
-    const selPt = pts[sel];
-    const tip = selPt ? `<g transform="translate(${selPt[0]},${Math.max(16, selPt[1] - 14)})"><rect x="-52" y="-20" width="104" height="22" rx="6" fill="var(--text-primary)"></rect><text x="0" y="-5" text-anchor="middle" class="av-tip-txt">${Utils.escHtml(this._fmt(vals[sel]))}</text></g>` : '';
-    return `<svg viewBox="0 0 ${W} ${H}" class="av-chart" preserveAspectRatio="none" role="img" aria-label="Recette encaissée par période">
-      <defs><linearGradient id="avGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${this._acc}" stop-opacity="0.28"/>
-        <stop offset="100%" stop-color="${this._acc}" stop-opacity="0"/>
-      </linearGradient></defs>
-      <path d="${area}" fill="url(#avGrad)"></path>
-      <path d="${line}" fill="none" stroke="${this._acc}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
-      ${dots}${labels}${tip}
-    </svg>`;
-  },
-
   _setGran(g) {
     if (!['jour', 'semaine', 'mois'].includes(g)) return;
     this._gran = g;
@@ -264,68 +287,98 @@ const AnalyseVersementsPage = {
 
   _styles() {
     return `<style>
+      .av-header { align-items:flex-end; }
+      .av-hgroup { display:flex; flex-direction:column; gap:2px; }
+      .av-heyebrow { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.14em; color:var(--text-muted); }
+      .av-back { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:12px; font-weight:700; padding:8px 14px; border-radius:20px; cursor:pointer; }
+      .av-back:hover { background:var(--bg-tertiary); }
+
+      /* Bande KPI */
+      .av-band { position:relative; display:grid; grid-template-columns:repeat(4,1fr); gap:20px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:26px; padding:26px 30px 26px 40px; margin-bottom:18px; box-shadow:0 1px 2px rgba(0,0,0,.03); }
+      @media (max-width:860px){ .av-band{ grid-template-columns:repeat(2,1fr); row-gap:22px; } }
+      .av-band-bar { position:absolute; left:18px; top:24px; bottom:24px; width:5px; border-radius:99px; background:${this._ENC}; }
+      .av-band-item { min-width:0; }
+      .av-band-lbl { font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:4px; white-space:nowrap; }
+      .av-band-val { display:flex; align-items:center; font-size:clamp(24px,2.6vw,38px); font-weight:800; color:var(--text-primary); letter-spacing:-1.4px; line-height:1; white-space:nowrap; }
+      .av-solde { font-size:11px; font-weight:800; color:#0a9d78; background:rgba(19,222,185,.16); padding:3px 8px; border-radius:20px; margin-left:8px; letter-spacing:0; }
+      .av-tri { display:inline-block; width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; margin-left:8px; }
+      .av-tri.up { border-bottom:8px solid #13DEB9; }
+      .av-tri.down { border-top:8px solid #EF4444; }
+
       .av-grid { display:grid; grid-template-columns:2fr 1fr; gap:18px; margin-bottom:18px; }
       @media (max-width:900px){ .av-grid{ grid-template-columns:1fr; } }
-      .av-main { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:22px; padding:22px 24px; }
-      .av-main-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:6px; }
+      .av-main { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:26px; padding:24px 26px; box-shadow:0 1px 2px rgba(0,0,0,.03); }
+      .av-main-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:14px; }
       .av-eyebrow { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.18em; color:var(--text-muted); }
-      .av-main-title { font-size:18px; font-weight:800; color:var(--text-primary); margin-top:4px; }
+      .av-main-title { font-size:19px; font-weight:800; color:var(--text-primary); margin-top:4px; letter-spacing:-.02em; }
       .av-main-total { text-align:right; }
-      .av-main-amount { font-size:24px; font-weight:900; color:var(--text-primary); letter-spacing:-.02em; white-space:nowrap; }
-      .av-trend { display:inline-flex; align-items:center; gap:3px; font-size:12px; font-weight:800; padding:2px 8px; border-radius:20px; margin-top:4px; }
+      .av-main-amount { font-size:26px; font-weight:800; color:var(--text-primary); letter-spacing:-1px; white-space:nowrap; }
+      .av-trend { display:inline-flex; align-items:center; gap:3px; font-size:12px; font-weight:800; padding:2px 9px; border-radius:20px; margin-top:6px; }
       .av-trend.up { color:#0a9d78; background:rgba(19,222,185,.15); }
       .av-trend.down { color:#e0603a; background:rgba(250,137,107,.15); }
-      .av-chart { width:100%; height:240px; display:block; margin-top:8px; overflow:visible; }
-      .av-xlbl { fill:var(--text-muted); font-size:11px; font-weight:600; }
-      .av-xlbl.on { fill:var(--text-primary); font-weight:800; }
-      .av-tip-txt { fill:var(--bg-secondary); font-size:11px; font-weight:700; }
-      .av-side { display:flex; flex-direction:column; gap:14px; }
-      .av-goal { background:#18181b; color:#fff; border-radius:22px; padding:22px; display:flex; flex-direction:column; justify-content:space-between; min-height:150px; }
+
+      /* Barres pilules */
+      .av-bars { display:flex; align-items:flex-end; gap:12px; height:230px; padding-top:24px; }
+      .av-bcol { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; cursor:pointer; }
+      .av-bstack { width:100%; max-width:46px; display:flex; flex-direction:column; border-radius:99px; overflow:hidden; transition:transform .2s cubic-bezier(.34,1.56,.64,1), filter .2s; filter:saturate(.6) opacity(.55); }
+      .av-bseg { width:100%; }
+      .av-bcol:hover .av-bstack { filter:none; }
+      .av-bcol.on .av-bstack { filter:none; transform:scaleY(1.02); box-shadow:0 8px 18px -8px rgba(245,81,46,.5); }
+      .av-blbl { margin-top:10px; font-size:12px; font-weight:600; color:var(--text-muted); }
+      .av-bcol.on .av-blbl { color:var(--text-primary); font-weight:800; }
+      .av-btip { position:absolute; top:-22px; opacity:0; background:var(--text-primary); color:var(--bg-secondary); font-size:11px; font-weight:700; padding:3px 8px; border-radius:7px; white-space:nowrap; pointer-events:none; transition:opacity .15s; z-index:3; }
+      .av-bcol:hover .av-btip, .av-bcol.on .av-btip { opacity:1; }
+      .av-legend { display:flex; gap:18px; margin-top:16px; padding-top:14px; border-top:1px solid var(--border-color); }
+      .av-lg { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--text-secondary); }
+      .av-ldot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+
+      .av-side { display:flex; flex-direction:column; gap:16px; }
+      .av-goal { background:#18181b; color:#fff; border-radius:26px; padding:24px; display:flex; flex-direction:column; justify-content:space-between; min-height:150px; box-shadow:0 16px 34px -20px rgba(0,0,0,.5); }
       .av-goal-eyebrow { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.2em; color:#8b8b96; }
       .av-goal-title { font-size:18px; font-weight:800; margin-top:4px; }
       .av-goal-line { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px; }
-      .av-goal-pct { font-size:30px; font-weight:800; letter-spacing:-.02em; }
-      .av-goal-target { font-size:12px; color:#a1a1aa; margin-bottom:4px; }
-      .av-goal-bar { width:100%; height:6px; background:rgba(255,255,255,.14); border-radius:99px; overflow:hidden; }
-      .av-goal-fill { height:100%; background:#fff; border-radius:99px; transition:width .5s cubic-bezier(.25,1,.5,1); }
-      .av-info { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:22px; padding:20px; }
-      .av-info-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-      .av-info-icon { width:32px; height:32px; border-radius:10px; background:rgba(19,222,185,.14); color:#0a9d78; display:flex; align-items:center; justify-content:center; font-size:18px; }
+      .av-goal-pct { font-size:34px; font-weight:800; letter-spacing:-1px; }
+      .av-goal-target { font-size:12px; color:#a1a1aa; margin-bottom:5px; }
+      .av-goal-bar { width:100%; height:7px; background:rgba(255,255,255,.14); border-radius:99px; overflow:hidden; }
+      .av-goal-fill { height:100%; background:${this._ENC}; border-radius:99px; transition:width .6s cubic-bezier(.25,1,.5,1); }
+
+      .av-info { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:26px; padding:22px; box-shadow:0 1px 2px rgba(0,0,0,.03); }
+      .av-info-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+      .av-info-icon { width:34px; height:34px; border-radius:11px; background:rgba(245,81,46,.14); color:${this._ENC}; display:flex; align-items:center; justify-content:center; font-size:18px; }
       .av-info h4 { margin:0; font-size:15px; font-weight:800; color:var(--text-primary); }
-      .av-info p { margin:0; font-size:13px; line-height:1.5; color:var(--text-secondary); }
-      .av-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
-      @media (max-width:760px){ .av-kpis{ grid-template-columns:repeat(2,1fr); } }
-      .av-kpi { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:16px; padding:16px 18px; }
-      .av-kpi-lbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--text-muted); margin-bottom:8px; }
-      .av-kpi-row { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
-      .av-kpi-val { font-size:20px; font-weight:900; color:var(--text-primary); letter-spacing:-.02em; white-space:nowrap; }
-      .av-kpi-tag { font-size:11px; font-weight:800; padding:2px 7px; border-radius:6px; white-space:nowrap; }
-      .av-kpi-tag.up { color:#0a9d78; background:rgba(19,222,185,.14); }
-      .av-kpi-tag.down { color:#e0603a; background:rgba(250,137,107,.14); }
-      .av-gran { display:inline-flex; gap:4px; padding:3px; background:var(--bg-tertiary); border-radius:20px; }
-      .av-gran-btn { border:none; background:transparent; color:var(--text-muted); font-size:12px; font-weight:700; padding:5px 13px; border-radius:20px; cursor:pointer; transition:all .15s; }
+      .av-bub-empty { padding:22px 4px; text-align:center; color:var(--text-muted); font-size:13px; }
+      .av-bubbles { position:relative; height:150px; margin:2px 0 12px; }
+      .av-bubble { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:17px; box-shadow:0 8px 18px -6px rgba(0,0,0,.28); }
+      .av-blg { display:flex; flex-direction:column; gap:8px; }
+      .av-blg-row { display:flex; align-items:center; gap:8px; font-size:12.5px; }
+      .av-blg-lbl { font-weight:600; color:var(--text-secondary); }
+      .av-blg-val { margin-left:auto; font-weight:800; color:var(--text-primary); }
+
+      .av-gran { display:inline-flex; gap:4px; padding:4px; background:var(--bg-tertiary); border-radius:20px; border:1px solid var(--border-color); }
+      .av-gran-btn { border:none; background:transparent; color:var(--text-secondary); font-size:12px; font-weight:700; padding:6px 14px; border-radius:16px; cursor:pointer; transition:color .15s, background .15s, box-shadow .15s; }
       .av-gran-btn:hover { color:var(--text-primary); }
-      .av-gran-btn.is-active { background:var(--bg-secondary); color:var(--text-primary); box-shadow:0 1px 3px rgba(0,0,0,.12); }
-      .av-table-card { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:22px; padding:20px 24px; }
+      .av-gran-btn.is-active { background:var(--bg-secondary); color:var(--pilote-blue); box-shadow:0 2px 8px -2px rgba(30,32,34,.2); }
+
+      .av-table-card { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:26px; padding:22px 26px; box-shadow:0 1px 2px rgba(0,0,0,.03); }
       .av-table-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
-      .av-table-head h3 { margin:0; font-size:16px; font-weight:800; color:var(--text-primary); }
+      .av-table-head h3 { margin:0; font-size:16px; font-weight:800; color:var(--text-primary); letter-spacing:-.02em; }
       .av-table-sub { font-size:12px; color:var(--text-muted); font-weight:600; }
       .av-table-wrap { overflow-x:auto; }
       .av-table { width:100%; border-collapse:collapse; font-size:13px; }
       .av-table th { text-align:left; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); padding:8px 10px; border-bottom:1px solid var(--border-color); }
-      .av-table td { padding:11px 10px; border-bottom:1px solid var(--border-color); color:var(--text-primary); }
+      .av-table td { padding:12px 10px; border-bottom:1px solid var(--border-color); color:var(--text-primary); }
       .av-table tbody tr:last-child td { border-bottom:none; }
       .av-td-num { text-align:right; }
       .av-td-strong { font-weight:800; }
       .av-td-muted { color:var(--text-muted); }
       .av-name { font-weight:600; }
       .av-tel { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; text-decoration:none; vertical-align:-5px; margin-left:3px; font-size:13px; background:rgba(19,222,185,.14); color:#0a9d78; }
-      .av-yango { display:inline-flex; align-items:center; justify-content:center; padding:2px 7px; border-radius:6px; text-decoration:none; vertical-align:-4px; margin-left:4px; font-size:10px; font-weight:800; font-style:italic; letter-spacing:.02em; background:#f5512e; color:#fff; }
+      .av-yango { display:inline-flex; align-items:center; justify-content:center; padding:2px 7px; border-radius:6px; text-decoration:none; vertical-align:-4px; margin-left:4px; font-size:10px; font-weight:800; font-style:italic; letter-spacing:.02em; background:${this._ENC}; color:#fff; }
       .av-badge { display:inline-flex; align-items:center; font-size:11px; font-weight:800; padding:3px 9px; border-radius:20px; }
       .av-badge.up { color:#0a9d78; background:rgba(19,222,185,.14); }
       .av-badge.down { color:#e0603a; background:rgba(250,137,107,.14); }
       .av-badge.warn { color:#b45309; background:rgba(255,174,31,.16); }
-      .av-badge.info { color:#F5512E; background:rgba(245,81,46,.14); }
+      .av-badge.info { color:${this._ENC}; background:rgba(245,81,46,.14); }
       .av-badge.muted { color:var(--text-muted); background:var(--bg-tertiary); }
       .av-empty { padding:26px 4px; text-align:center; color:var(--text-muted); font-size:13px; }
     </style>`;
