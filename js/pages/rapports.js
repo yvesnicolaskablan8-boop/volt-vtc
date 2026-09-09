@@ -106,12 +106,16 @@ const RapportsPage = {
     const coutLegend = d.couts.map(c => `<span class="rp-cl"><span class="rp-sw" style="background:${c.color};"></span>${c.label} · <b>${this._fmt(c.val)}</b></span>`).join('');
 
     const best = d.drivers[0];
+    const tri = (u) => `<span class="rp-tri ${u ? 'up' : 'down'}"></span>`;
+    const band = `<div class="rp-band"><span class="rp-band-bar"></span>${kpis.map(k => `<div class="rp-band-item"><div class="rp-band-lbl">${k.lbl}</div><div class="rp-band-val">${k.val}${k.tag ? tri(k.up) : ''}</div></div>`).join('')}</div>`;
 
     return `
       ${this._styles()}
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon> Rapports</h1>
+      <div class="page-header rp-header">
+        <div class="rp-hgroup"><div class="rp-heyebrow">Suivi financier</div><h1><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon> Rapports</h1></div>
       </div>
+
+      ${band}
 
       <div class="rp-grid">
         <div class="rp-main">
@@ -122,10 +126,10 @@ const RapportsPage = {
             </div>
             <div class="rp-main-total">
               <div class="rp-main-amount">${this._fmt(cur.encaisse)}</div>
-              <span class="rp-trend ${up ? 'up' : 'down'}"><iconify-icon icon="${up ? 'solar:arrow-right-up-linear' : 'solar:arrow-right-down-linear'}"></iconify-icon>${this._pct(trend)} vs mois préc.</span>
+              <span class="rp-trend ${up ? 'up' : 'down'}">${tri(up)}${this._pct(trend)} vs mois préc.</span>
             </div>
           </div>
-          ${this._areaChart(m)}
+          ${this._pillBars(m)}
         </div>
 
         <div class="rp-side">
@@ -150,8 +154,6 @@ const RapportsPage = {
         </div>
       </div>
 
-      <div class="rp-kpis">${kpiRow}</div>
-
       <div class="rp-table-card">
         <div class="rp-table-head"><h3>Performance des chauffeurs</h3><span class="rp-table-sub">CA encaissé cumulé · top ${d.drivers.length}</span></div>
         ${this._table(d.drivers)}
@@ -171,35 +173,47 @@ const RapportsPage = {
     return `<div class="rp-table-wrap"><table class="rp-table"><tbody>${rows}</tbody></table></div>`;
   },
 
-  _areaChart(months) {
-    const W = 720, H = 250, padX = 8, padTop = 26, padBot = 34;
-    const n = months.length;
-    const vals = months.map(m => m.encaisse || 0);
-    const max = Math.max(1, ...vals);
-    const innerW = W - padX * 2, innerH = H - padTop - padBot;
-    const xs = i => padX + (n === 1 ? innerW / 2 : i / (n - 1) * innerW);
-    const ys = v => padTop + innerH - (v / max) * innerH;
-    const pts = vals.map((v, i) => [+xs(i).toFixed(1), +ys(v).toFixed(1)]);
-    let line = pts.length ? `M ${pts[0][0]} ${pts[0][1]}` : '';
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-      const c1x = (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1), c1y = (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1);
-      const c2x = (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1), c2y = (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1);
-      line += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]}`;
-    }
-    const area = pts.length ? `${line} L ${pts[n - 1][0]},${padTop + innerH} L ${pts[0][0]},${padTop + innerH} Z` : '';
-    const dots = pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="var(--bg-secondary)" stroke="${this._acc}" stroke-width="2"><title>${Utils.escHtml(months[i].label)} : ${this._fmt(vals[i])}</title></circle>`).join('');
-    const labels = months.map((mo, i) => `<text x="${xs(i).toFixed(1)}" y="${H - 12}" text-anchor="middle" class="rp-xlbl">${Utils.escHtml(mo.label)}</text>`).join('');
-    return `<svg viewBox="0 0 ${W} ${H}" class="rp-chart" preserveAspectRatio="none" role="img" aria-label="CA encaissé par mois">
-      <defs><linearGradient id="rpGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${this._acc}" stop-opacity="0.28"/><stop offset="100%" stop-color="${this._acc}" stop-opacity="0"/></linearGradient></defs>
-      <path d="${area}" fill="url(#rpGrad)"></path>
-      <path d="${line}" fill="none" stroke="${this._acc}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
-      ${dots}${labels}
-    </svg>`;
+  // Barres en pilules arrondies (style Boostboard) — CA encaissé par mois,
+  // le mois courant (dernier) mis en avant, les autres estompés.
+  _pillBars(months) {
+    const max = Math.max(1, ...months.map(m => m.encaisse || 0));
+    const last = months.length - 1;
+    const cols = months.map((m, i) => {
+      const on = i === last;
+      const h = (m.encaisse || 0) > 0 ? (m.encaisse / max * 100) : 2;
+      return `<div class="rp-bcol${on ? ' on' : ''}" title="${Utils.escHtml(m.label)} : ${this._fmt(m.encaisse || 0)}">
+          <div class="rp-btip">${this._fmt(m.encaisse || 0)}</div>
+          <div class="rp-bstack" style="height:${Math.max(3, h).toFixed(1)}%;background:${this._acc};"></div>
+          <div class="rp-blbl">${Utils.escHtml(m.label || '')}</div>
+        </div>`;
+    }).join('');
+    return `<div class="rp-bars">${cols}</div>`;
   },
 
   _styles() {
     return `<style>
+      .rp-hgroup { display:flex; flex-direction:column; gap:2px; }
+      .rp-heyebrow { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.14em; color:var(--text-muted); }
+      /* Bande KPI façon Boostboard */
+      .rp-band { position:relative; display:grid; grid-template-columns:repeat(4,1fr); gap:20px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:26px; padding:26px 30px 26px 40px; margin-bottom:18px; box-shadow:0 1px 2px rgba(0,0,0,.03); }
+      @media (max-width:860px){ .rp-band{ grid-template-columns:repeat(2,1fr); row-gap:22px; } }
+      .rp-band-bar { position:absolute; left:18px; top:24px; bottom:24px; width:5px; border-radius:99px; background:var(--pilote-blue); }
+      .rp-band-item { min-width:0; }
+      .rp-band-lbl { font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:4px; white-space:nowrap; }
+      .rp-band-val { display:flex; align-items:center; font-size:clamp(22px,2.5vw,36px); font-weight:800; color:var(--text-primary); letter-spacing:-1.4px; line-height:1; white-space:nowrap; }
+      .rp-tri { display:inline-block; width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; margin-left:8px; }
+      .rp-tri.up { border-bottom:8px solid #13DEB9; }
+      .rp-tri.down { border-top:8px solid #EF4444; }
+      /* Barres pilules */
+      .rp-bars { display:flex; align-items:flex-end; gap:12px; height:250px; padding-top:24px; margin-top:8px; }
+      .rp-bcol { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+      .rp-bstack { width:100%; max-width:52px; border-radius:99px; transition:filter .2s, transform .2s cubic-bezier(.34,1.56,.64,1); filter:saturate(.6) opacity(.5); }
+      .rp-bcol:hover .rp-bstack { filter:none; }
+      .rp-bcol.on .rp-bstack { filter:none; transform:scaleY(1.02); box-shadow:0 8px 18px -8px rgba(245,81,46,.5); }
+      .rp-blbl { margin-top:10px; font-size:12px; font-weight:600; color:var(--text-muted); }
+      .rp-bcol.on .rp-blbl { color:var(--text-primary); font-weight:800; }
+      .rp-btip { position:absolute; top:-4px; opacity:0; background:var(--text-primary); color:var(--bg-secondary); font-size:11px; font-weight:700; padding:3px 8px; border-radius:7px; white-space:nowrap; pointer-events:none; transition:opacity .15s; z-index:3; }
+      .rp-bcol:hover .rp-btip, .rp-bcol.on .rp-btip { opacity:1; }
       .rp-grid { display:grid; grid-template-columns:2fr 1fr; gap:18px; margin-bottom:18px; }
       @media (max-width:900px){ .rp-grid{ grid-template-columns:1fr; } }
       .rp-main { background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:22px; padding:22px 24px; }
