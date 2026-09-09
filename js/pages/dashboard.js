@@ -2221,9 +2221,18 @@ const DashboardPage = {
       const recent = this._recentActiveIds(B.service);
       if (recent.size) svc.recentCount = recent.size;
     }
-    // Le donut ne bague que la présence (En service + Non planifiés). « À surveiller »
-    // est un sous-ensemble des en service (KPI, pas une tranche) ; le repos est le reste non bagué.
-    const ringSegments = segments.filter(s => s.key === 'service' || s.key === 'nonpl');
+    // Le donut décompose la flotte du jour : En service performants (teal) +
+    // À surveiller (orange) + Non planifiés (indigo). Le repos est le reste non bagué.
+    // On scinde les planifiés en « ok » et « à surveiller » (sans double comptage).
+    const svcSeg = segments.find(s => s.key === 'service');
+    const survSeg = segments.find(s => s.key === 'surveiller');
+    const nonplSeg = segments.find(s => s.key === 'nonpl');
+    const okCount = Math.max(0, (svcSeg ? svcSeg.count : 0) - (survSeg ? survSeg.count : 0));
+    const ringSegments = [
+      svcSeg ? { ...svcSeg, count: okCount } : null,
+      survSeg || null,
+      nonplSeg || null,
+    ].filter(s => s && s.count > 0);
     return { segments, ringSegments, total: fleet.length };
   },
 
