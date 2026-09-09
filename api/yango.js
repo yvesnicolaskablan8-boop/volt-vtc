@@ -1329,6 +1329,42 @@ async function handleOnlineStatus(req, res) {
   }
 }
 
+// ---------- suivi de course (orders/track) ----------
+// Position temps réel du chauffeur qui exécute une commande ACTIVE. Nécessite
+// le droit « Récupération d'un suivi de course/livraison » sur la clé API.
+// Le format de réponse Yango n'étant pas documenté publiquement, on renvoie une
+// position normalisée (dernier point trouvé) ET la charge brute pour ajuster.
+async function handleOrderTrack(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  const user = await verifyAuth(req);
+  if (!user) return res.status(401).json({ error: 'Non autorise' });
+  try {
+    const { parkId } = await assertYangoCreds();
+    const orderId = (req.query.orderId || '').trim();
+    if (!orderId) return res.status(400).json({ error: 'Parametre "orderId" manquant' });
+
+    const raw = await yangoFetch('/v1/parks/orders/track', {
+      query: { park: { id: parkId }, order: { id: orderId } }
+    });
+
+    // Dernier point : tableau `track` (le plus récent en fin) ou objet position.
+    const pts = Array.isArray(raw && raw.track) ? raw.track : (raw && raw.position ? [raw.position] : []);
+    const last = pts.length ? pts[pts.length - 1] : (raw && (raw.lat != null || raw.latitude != null) ? raw : null);
+    const num = v => (v == null || v === '' || isNaN(Number(v))) ? null : Number(v);
+    const position = last ? {
+      lat: num(last.lat != null ? last.lat : last.latitude),
+      lng: num(last.lon != null ? last.lon : (last.lng != null ? last.lng : last.longitude)),
+      at: last.timestamp || last.at || last.time || null,
+      speed: num(last.speed)
+    } : null;
+
+    res.json({ orderId, position, status: (raw && raw.status) || null, raw });
+  } catch (err) {
+    console.error('[order-track] Error:', err.message);
+    res.status(502).json({ error: 'Erreur API Yango', details: err.message });
+  }
+}
+
 const ACTION_MAP = {
   'test':          handleTest,
   'balance':       handleBalance,
@@ -1346,6 +1382,7 @@ const ACTION_MAP = {
   'ca-report':     handleCaReport,
   'sync-ca':       handleSyncCa,
   'online-status': handleOnlineStatus,
+  'order-track':   handleOrderTrack,
 };
 
 module.exports = async function handler(req, res) {
