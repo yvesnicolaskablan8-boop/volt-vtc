@@ -60,6 +60,7 @@ const DashboardPage = {
       this._bindPeriodSelector();
       this._renderFleetDonutInto(data);
       this._loadRecetteLive();
+      this._loadYangoLive();
       if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
       this._autoGenerateVersements();
@@ -410,6 +411,7 @@ const DashboardPage = {
       this._bindPeriodSelector();
       this._renderFleetDonutInto(data);
       this._loadRecetteLive();
+      this._loadYangoLive();
       this._startAutoRefresh();
     } catch (err) {
       console.error('DashboardPage._silentRefresh() error:', err);
@@ -1481,6 +1483,14 @@ const DashboardPage = {
         .fd-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
         .fd-title{font-size:15px;font-weight:800;color:var(--text-primary);}
         .fd-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-muted);}
+        .fd-yango{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;margin:2px 0 16px;padding:10px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;}
+        .fd-yango-lbl{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);}
+        .fd-yango-lbl iconify-icon{font-size:15px;color:#F5512E;}
+        .fd-yg{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text-secondary);}
+        .fd-yg b{font-weight:800;color:var(--text-primary);font-variant-numeric:tabular-nums;}
+        .fd-yg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+        .fd-yg-muted{opacity:.7;}
+        .fd-yango-err{opacity:.5;}
         .fd-dot-live{width:8px;height:8px;border-radius:50%;background:#ef4444;animation:fdPulse 1.8s infinite;}
         @keyframes fdPulse{0%{box-shadow:0 0 0 0 rgba(250,62,62,.5)}70%{box-shadow:0 0 0 7px rgba(250,62,62,0)}100%{box-shadow:0 0 0 0 rgba(250,62,62,0)}}
         .fd-spin{animation:fdSpin 1s linear infinite;display:inline-flex;}
@@ -1799,6 +1809,32 @@ const DashboardPage = {
   },
 
   // ============ Recette en direct (courbe CA par heure, intégrée au hero blanc) ============
+  // Statut temps réel Yango (disponible / en course / occupé / hors ligne).
+  // Appel live throttlé (60 s) — reflète l'app chauffeur, pas nos données CA.
+  async _loadYangoLive() {
+    const el = document.getElementById('fd-yango');
+    if (!el || !this._isToday()) return;
+    const now = Date.now();
+    if (this._yangoLiveTs && (now - this._yangoLiveTs) < 60000 && this._yangoLiveData) {
+      return this._fillYangoLive(this._yangoLiveData);
+    }
+    if (typeof Store === 'undefined' || !Store.getFleetStatus) return;
+    try {
+      const r = await Store.getFleetStatus();
+      if (!r || r.error) { el.classList.add('fd-yango-err'); return; }
+      this._yangoLiveTs = now; this._yangoLiveData = r;
+      this._fillYangoLive(r);
+    } catch (e) { /* silencieux */ }
+  },
+  _fillYangoLive(r) {
+    const set = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
+    set('fd-yg-dispo', r.disponible != null ? r.disponible : (r.counts && r.counts.free) || 0);
+    set('fd-yg-course', r.commandeActive != null ? r.commandeActive : (r.counts && r.counts.in_order) || 0);
+    set('fd-yg-occ', r.occupe != null ? r.occupe : (r.counts && r.counts.busy) || 0);
+    set('fd-yg-off', r.horsLigne != null ? r.horsLigne : (r.counts && r.counts.offline) || 0);
+    const el = document.getElementById('fd-yango'); if (el) el.classList.remove('fd-yango-err');
+  },
+
   async _loadRecetteLive() {
     if (!document.getElementById('rtl-spark')) return;
     const period = this._rtlPeriodSel || 'jour';
@@ -2347,6 +2383,13 @@ const DashboardPage = {
     const live = this._isToday() ? "Aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt));
     return `<div class="d-card fd-card">
       <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span></div>
+      <div class="fd-yango" id="fd-yango" title="Statut temps réel des chauffeurs sur l'application Yango">
+        <span class="fd-yango-lbl"><iconify-icon icon="arcticons:yango"></iconify-icon> Yango temps réel</span>
+        <span class="fd-yg"><span class="fd-yg-dot" style="background:#13DEB9;"></span><b id="fd-yg-dispo">·</b> disponibles</span>
+        <span class="fd-yg"><span class="fd-yg-dot" style="background:#F5512E;"></span><b id="fd-yg-course">·</b> en course</span>
+        <span class="fd-yg"><span class="fd-yg-dot" style="background:#FFAE1F;"></span><b id="fd-yg-occ">·</b> occupés</span>
+        <span class="fd-yg fd-yg-muted"><span class="fd-yg-dot" style="background:#C7D0DD;"></span><b id="fd-yg-off">·</b> hors ligne</span>
+      </div>
       <div class="fd-top">
         <div class="fd-donut-col">
           <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, ringSegments, total)}</div>
