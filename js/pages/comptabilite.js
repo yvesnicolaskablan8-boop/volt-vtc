@@ -289,37 +289,41 @@ const ComptabilitePage = {
     });
 
     return `
-      <!-- KPIs financiers -->
-      <div class="d-grid d-g4" style="margin-bottom:24px;">
-        <div class="kpi-card green">
-          <div class="kpi-icon"><iconify-icon icon="solar:arrow-down-bold"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(totalRecettes)}</div>
-          <div class="kpi-label">Encaissements du mois</div>
-          <div class="kpi-trend ${trendRecettes >= 0 ? 'green' : 'red'}">
-            <iconify-icon icon="solar:arrow-${trendRecettes >= 0 ? 'up' : 'down'}-bold"></iconify-icon> ${Math.abs(trendRecettes).toFixed(1)}%
-          </div>
+      <style>
+        .cmp-band{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:26px;padding:26px 30px 26px 40px;margin-bottom:24px;box-shadow:0 1px 2px rgba(0,0,0,.03);}
+        @media(max-width:860px){.cmp-band{grid-template-columns:repeat(2,1fr);row-gap:22px;}}
+        .cmp-band-bar{position:absolute;left:18px;top:24px;bottom:24px;width:5px;border-radius:99px;background:var(--pilote-blue);}
+        .cmp-band-item{min-width:0;}
+        .cmp-band-lbl{font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .cmp-band-val{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:clamp(18px,1.9vw,28px);font-weight:800;color:var(--text-primary);letter-spacing:-1px;line-height:1.05;}
+        .cmp-band-trend{display:inline-flex;align-items:center;font-size:12px;font-weight:800;}
+        .cmp-band-trend.good{color:#0a9d78;}
+        .cmp-band-trend.bad{color:#e0603a;}
+        .cmp-tri{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;margin-right:5px;display:inline-block;}
+        .cmp-tri.up{border-bottom:8px solid currentColor;}
+        .cmp-tri.down{border-top:8px solid currentColor;}
+        .cmp-band-badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:0;}
+        .cmp-band-badge.good{color:#0a9d78;background:rgba(19,222,185,.16);}
+        .cmp-band-badge.bad{color:#e0603a;background:rgba(250,137,107,.16);}
+      </style>
+      <!-- KPIs financiers (bande style Boostboard) -->
+      <div class="cmp-band">
+        <span class="cmp-band-bar"></span>
+        <div class="cmp-band-item">
+          <div class="cmp-band-lbl">Encaissements du mois</div>
+          <div class="cmp-band-val">${Utils.formatCurrency(totalRecettes)}<span class="cmp-band-trend ${trendRecettes >= 0 ? 'good' : 'bad'}"><span class="cmp-tri ${trendRecettes >= 0 ? 'up' : 'down'}"></span>${Math.abs(trendRecettes).toFixed(1)}%</span></div>
         </div>
-        <div class="kpi-card red">
-          <div class="kpi-icon"><iconify-icon icon="solar:arrow-up-bold"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(totalDepenses)}</div>
-          <div class="kpi-label">Décaissements du mois</div>
-          <div class="kpi-trend ${trendDepenses <= 0 ? 'green' : 'red'}">
-            <iconify-icon icon="solar:arrow-${trendDepenses <= 0 ? 'down' : 'up'}-bold"></iconify-icon> ${Math.abs(trendDepenses).toFixed(1)}%
-          </div>
+        <div class="cmp-band-item">
+          <div class="cmp-band-lbl">Décaissements du mois</div>
+          <div class="cmp-band-val">${Utils.formatCurrency(totalDepenses)}<span class="cmp-band-trend ${trendDepenses <= 0 ? 'good' : 'bad'}"><span class="cmp-tri ${trendDepenses >= 0 ? 'up' : 'down'}"></span>${Math.abs(trendDepenses).toFixed(1)}%</span></div>
         </div>
-        <div class="kpi-card ${resultat >= 0 ? 'green' : 'red'}">
-          <div class="kpi-icon"><iconify-icon icon="solar:scale-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(resultat)}</div>
-          <div class="kpi-label">${resultat >= 0 ? 'Bénéfice du mois' : 'Perte du mois'}</div>
-          <div class="kpi-trend ${resultat >= 0 ? 'green' : 'red'}">
-            <iconify-icon icon="solar:${resultat >= 0 ? 'emoji-funny-circle-bold-duotone' : 'sad-circle-bold-duotone'}"></iconify-icon> ${resultat >= 0 ? 'Positif' : 'Négatif'}
-          </div>
+        <div class="cmp-band-item">
+          <div class="cmp-band-lbl">${resultat >= 0 ? 'Bénéfice du mois' : 'Perte du mois'}</div>
+          <div class="cmp-band-val">${Utils.formatCurrency(resultat)}<span class="cmp-band-badge ${resultat >= 0 ? 'good' : 'bad'}">${resultat >= 0 ? 'Positif' : 'Négatif'}</span></div>
         </div>
-        <div class="kpi-card blue">
-          <div class="kpi-icon"><iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${Utils.formatCurrency(soldeTotal)}</div>
-          <div class="kpi-label">Solde de trésorerie</div>
-          ${totalImpaye > 0 ? '<div class="kpi-trend red"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> ' + Utils.formatCurrency(totalImpaye) + ' impayé</div>' : '<div class="kpi-trend green"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> À jour</div>'}
+        <div class="cmp-band-item">
+          <div class="cmp-band-lbl">Solde de trésorerie</div>
+          <div class="cmp-band-val">${Utils.formatCurrency(soldeTotal)}${totalImpaye > 0 ? `<span class="cmp-band-badge bad">${Utils.formatCurrency(totalImpaye)} impayé</span>` : '<span class="cmp-band-badge good">À jour</span>'}</div>
         </div>
       </div>
 

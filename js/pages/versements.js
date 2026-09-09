@@ -533,6 +533,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
             <button onclick="VersementsPage._exportPDF();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:document-bold-duotone" style="font-size:16px;color:#ef4444;"></iconify-icon> Exporter en PDF</button>
             <div style="height:1px;background:var(--vx-bd);"></div>
             <button onclick="VersementsPage._exportCSV();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#13deb9;"></iconify-icon> Exporter en CSV</button>
+            <div style="height:1px;background:var(--vx-bd);"></div>
+            <button onclick="VersementsPage._exportDettes();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:16px;color:#e8930c;"></iconify-icon> Exporter les dettes</button>
           </div>
         </div>
         <button class="wl-btn wl-btn-sec wl-act-ic" title="Nettoyer les versements fantômes" onclick="VersementsPage._cleanupGhosts()"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
@@ -1752,6 +1754,37 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     a.click();
     URL.revokeObjectURL(url);
     Toast.success('CSV exporté');
+  },
+
+  // Export CSV des dettes (recettes + contraventions), une ligne par jour dû.
+  _exportDettes() {
+    const d = this._getDetteData();
+    const rows = [];
+    (d.detteList || []).forEach(drv => {
+      (drv.items || []).forEach(it => {
+        const type = it.source === 'contravention' ? 'Contravention' : 'Recette';
+        const ds = it.detailSalarie;
+        const caYango = ds ? Math.round(ds.caBrut || 0) : '';
+        const detail = it.source === 'contravention'
+          ? (it.commentaire || 'Contravention')
+          : (ds ? `CA net ${Math.round(ds.caNet || 0)}${ds.charge > 0 ? ' − charges ' + Math.round(ds.charge) : ''}${ds.verse > 0 ? ' − versé ' + Math.round(ds.verse) : ''}` : '');
+        rows.push([drv.nom || it.chauffeurId, it.date || '', type, Math.round(it.manquant || 0), caYango, detail]);
+      });
+    });
+    if (!rows.length) { Toast.info('Aucune dette à exporter'); return; }
+    rows.sort((a, b) => String(b[1]).localeCompare(String(a[1])) || String(a[0]).localeCompare(String(b[0])));
+    const headers = ['Chauffeur', 'Date de service', 'Type', 'Montant dû (FCFA)', 'CA Yango (FCFA)', 'Détail'];
+    if (typeof Utils !== 'undefined' && Utils.exportCSV) {
+      Utils.exportCSV(headers, rows, `pilote-dettes-${new Date().toISOString().split('T')[0]}.csv`);
+    } else {
+      // Repli : génération CSV manuelle
+      const esc = v => `"${String(v).replace(/"/g, '""')}"`;
+      const csv = headers.map(esc).join(',') + '\n' + rows.map(r => r.map(esc).join(',')).join('\n');
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      const u = URL.createObjectURL(blob); const a = document.createElement('a');
+      a.href = u; a.download = `pilote-dettes-${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(u);
+    }
+    Toast.success(`${rows.length} dette${rows.length > 1 ? 's' : ''} exportée${rows.length > 1 ? 's' : ''}`);
   },
 
   // =================== RECETTES / VERSEMENTS RÉCURRENTS ===================
