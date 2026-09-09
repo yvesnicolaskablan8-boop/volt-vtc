@@ -640,86 +640,102 @@ async function handleFleetStatus(req, res) {
   try {
     const { parkId } = await assertYangoCreds();
 
-    const data = await yangoFetch('/v1/parks/driver-profiles/list', {
-      fields: {
-        driver_profile: ['id', 'first_name', 'last_name'],
-        current_status: ['status']
-      },
-      limit: 300,
-      offset: 0,
-      // On filtre sur work_status:'working' comme le handler stats (le seul qui
-      // remonte des statuts temps réel corrects). Sans ce filtre, Yango renvoie
-      // les 300 profils (dont licenciés/inactifs) avec current_status vide → tout
-      // « offline ».
-      query: { park: { id: parkId, driver_profile: { work_status: ['working'] } } }
-    });
-
-    const profiles = data.driver_profiles || [];
-    const counts = { free: 0, busy: 0, in_order: 0, offline: 0 };
-    const drivers = [];
-
-    for (const p of profiles) {
-      const dp = p.driver_profile || {};
-      const cs = p.current_status || {};
-      const status = cs.status || 'offline';
-      // Horodatage du dernier changement de statut (ISO ou epoch selon Yango).
-      // Permet au front de mesurer depuis combien de temps un chauffeur est « free »
-      // (en ligne sans course) → règle des 10 min « à surveiller ».
-      const statusTs = cs.status_updated_ts || null;
-
-      if (counts[status] !== undefined) counts[status]++;
-      else counts.offline++;
-
-      // Only include non-offline drivers in the list
-      if (status !== 'offline') {
-        drivers.push({
-          id: dp.id,
-          nom: [dp.first_name, dp.last_name].filter(Boolean).join(' '),
-          status,
-          statusTs
-        });
-      }
+    // Lecture EXACTE de drivers-all (tout le parc, sans filtre serveur, 300/page
+    // × 10) : seule requête prouvée ramener les chauffeurs Pilote dans ce parc
+    // très grand (le filtre work_status côté Yango + un plafond les laissaient
+    // hors de portée → « 0 chauffeur »). working / isPilote sont appliqués ici.
+    const PAGE = 300, MAX_PAGES = 10;
+    let profiles = [];
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const data = await yangoFetch('/v1/parks/driver-profiles/list', {
+        fields: {
+          driver_profile: ['id', 'first_name', 'last_name', 'work_status'],
+          current_status: ['status']
+        },
+        limit: PAGE,
+        offset: page * PAGE,
+        query: { park: { id: parkId } }
+      });
+      const batch = data.driver_profiles || [];
+      profiles = profiles.concat(batch);
+      if (batch.length < PAGE) break;
     }
 
-    // « Commandes en cours » FIABLE via l'API commandes (le champ current_status
-    // renvoie « offline » pour tous les profils sur ce parc — non exploitable).
-    // Une course active = statut en cours (driving/transporting/waiting).
-    let enCourse = 0;
-    let enCourseDrivers = 0;
-    let debug = { nbOrders: 0, statusCounts: {} };
+    // Chauffeurs Pilote liés à Yango (jeton de l'appelant : RLS admin).
+    const token = getToken(req);
+    let piloteDrivers = [];
     try {
-      // L'API commandes EXIGE query.order.booked_at (from/to). On regarde les
-      // commandes des dernières heures pour attraper celles en cours.
+      piloteDrivers = await supabaseQuery(
+        'fleet_chauffeurs',
+        'yango_driver_id=not.is.null&yango_driver_id=neq.&select=id,prenom,nom,yango_driver_id,statut',
+        token
+      );
+    } catch (e) {
+      console.warn('[fleet-status] Supabase chauffeurs error:', e.message);
+    }
+    const piloteByYango = {};
+    for (const c of piloteDrivers) {
+      piloteByYango[c.yango_driver_id] = {
+        chauffeurId: c.id,
+        nom: `${c.prenom || ''} ${c.nom || ''}`.trim(),
+        statutPilote: c.statut || ''
+      };
+    }
+
+    // « En commande » FIABLE via l'API commandes (booked_at obligatoire) : course
+    // active = statut non terminal. On retient l'ID du chauffeur pour marquer
+    // chaque fiche individuellement.
+    const enCommandeIds = new Set();
+    try {
       const nowTs = new Date();
       const fromTs = new Date(nowTs.getTime() - 8 * 3600 * 1000);
       const ord = await yangoFetch('/v1/parks/orders/list', {
         limit: 500,
         query: { park: { id: parkId, order: { booked_at: { from: fromTs.toISOString(), to: nowTs.toISOString() } } } }
       });
-      const all = ord.orders || [];
-      const statusCounts = {};
-      for (const o of all) { const st = o.status || '?'; statusCounts[st] = (statusCounts[st] || 0) + 1; }
-      debug = { nbOrders: all.length, statusCounts };
-      // Statut actif = tout ce qui n'est pas terminal (course réellement en cours).
       const TERMINAL = new Set(['complete', 'finished', 'cancelled', 'canceled', 'failed', 'expired', 'rejected', 'none']);
-      const actifs = all.filter(o => o.status && !TERMINAL.has(o.status));
-      enCourse = actifs.length;
-      enCourseDrivers = new Set(actifs.map(o => (o.performer && o.performer.driver_profile_id) || o.driver_profile_id).filter(Boolean)).size;
-    } catch (e) { console.warn('[fleet-status] orders error:', e.message); debug.error = e.message; }
+      for (const o of (ord.orders || [])) {
+        if (!o.status || TERMINAL.has(o.status)) continue;
+        const did = (o.performer && o.performer.driver_profile_id) || o.driver_profile_id;
+        if (did) enCommandeIds.add(did);
+      }
+    } catch (e) { console.warn('[fleet-status] orders error:', e.message); }
 
-    const enLigne = counts.free + counts.busy + Math.max(counts.in_order, enCourse);
+    // Uniquement les chauffeurs Pilote « working », TOUS statuts inclus : le
+    // dashboard doit aussi savoir qui est hors ligne.
+    const counts = { free: 0, busy: 0, in_order: 0, offline: 0 };
+    const drivers = [];
+    for (const p of profiles) {
+      const dp = p.driver_profile || {};
+      if (dp.work_status !== 'working') continue;
+      const pilote = piloteByYango[dp.id];
+      if (!pilote) continue;
+      const cs = p.current_status || {};
+      let status = cs.status || 'offline';
+      if (counts[status] === undefined) status = 'offline';
+      const enCommande = enCommandeIds.has(dp.id);
+      // Une course active prime : en commande même si Yango dit encore « busy ».
+      if (enCommande && status !== 'in_order') status = 'in_order';
+      counts[status]++;
+      drivers.push({
+        chauffeurId: pilote.chauffeurId,
+        yangoId: dp.id,
+        nom: pilote.nom,
+        statutPilote: pilote.statutPilote,
+        status,
+        enCommande,
+        statusTs: cs.status_updated_ts || null
+      });
+    }
 
     res.json({
+      total: drivers.length,
       counts,
       disponible: counts.free,
-      commandeActive: Math.max(counts.in_order, enCourse), // fiable via commandes
-      enCourseDrivers,
       occupe: counts.busy,
+      commandeActive: counts.in_order,
       horsLigne: counts.offline,
-      statusFiable: (counts.free + counts.busy + counts.in_order) > 0, // current_status exploitable ?
-      total: profiles.length,
-      enLigne,
-      debug, // diagnostic temporaire : statuts réels renvoyés par l'API commandes
+      enLigne: counts.free + counts.busy + counts.in_order,
       drivers
     });
 
