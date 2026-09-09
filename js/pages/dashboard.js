@@ -103,7 +103,7 @@ const DashboardPage = {
   _renderPeriodPicker() {
     const today = new Date().toISOString().split('T')[0];
     return `<div style="display:flex;align-items:center;gap:0;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:12px;padding:3px;">
-      <input type="date" id="dashboard-period" value="${this._selectedPeriod || today}" max="${today}" style="font-size:12px;padding:6px 10px;border-radius:9px;background:transparent;border:none;color:var(--text-primary);font-weight:600;outline:none;">
+      <input type="date" id="dashboard-period" value="${this._selectedPeriod || this._todayOp()}" max="${today}" style="font-size:12px;padding:6px 10px;border-radius:9px;background:transparent;border:none;color:var(--text-primary);font-weight:600;outline:none;">
       <button onclick="DashboardPage._toggleMonthView()" style="font-size:12px;padding:6px 14px;border-radius:9px;background:${this._monthView ? 'var(--pilote-blue)' : 'transparent'};color:${this._monthView ? '#fff' : 'var(--text-secondary)'};border:none;font-weight:700;cursor:pointer;">${this._monthView ? 'Mois' : 'Jour'}</button>
       ${this._selectedPeriod || this._monthView ? `<button onclick="DashboardPage._resetToToday()" title="Aujourd'hui" style="font-size:13px;padding:6px 8px;border-radius:9px;background:transparent;border:none;cursor:pointer;color:var(--text-muted);"><iconify-icon icon="solar:restart-bold"></iconify-icon></button>` : ''}
     </div>`;
@@ -145,7 +145,7 @@ const DashboardPage = {
   // ouvrir l'ajout de créneau pré-rempli pour ce chauffeur, ce jour-là.
   _ajouterAuPlanning(chauffeurId) {
     const ov = document.getElementById('activite-detail-overlay'); if (ov) ov.remove();
-    const jour = this._selectedPeriod || new Date().toISOString().split('T')[0];
+    const jour = this._selectedPeriod || this._todayOp();
     try { sessionStorage.setItem('pilote_planning_add', JSON.stringify({ chauffeurId, date: jour, returnTo: 'dashboard' })); } catch (_) {}
     if (typeof Router !== 'undefined' && Router.navigate) Router.navigate('/planning');
     else window.location.hash = '#/planning';
@@ -156,7 +156,7 @@ const DashboardPage = {
   // Le contenu dynamique (noms) est échappé via Utils.escHtml.
   _showActiviteDetail() {
     // Suit le sélecteur de date du tableau de bord (aujourd'hui par défaut).
-    const jour = this._selectedPeriod || new Date().toISOString().split('T')[0];
+    const jour = this._selectedPeriod || this._todayOp();
     const estAujourdhui = jour === new Date().toISOString().split('T')[0];
     const chauffeurs = Store.get('chauffeurs') || [];
     const chById = new Map(chauffeurs.map(c => [c.id, c]));
@@ -353,7 +353,17 @@ const DashboardPage = {
   _isToday() {
     if (this._monthView) return false;
     if (!this._selectedPeriod) return true;
-    return this._selectedPeriod === new Date().toISOString().split('T')[0];
+    return this._selectedPeriod === this._todayOp();
+  },
+
+  // « Aujourd'hui » au sens de la JOURNÉE D'EXPLOITATION (05h→05h, Abidjan = UTC) :
+  // avant 05h, l'activité en cours appartient encore à la journée de la veille.
+  // Les chauffeurs roulent de ~6h jusqu'après minuit (jusqu'à ~4h).
+  _todayOp() {
+    const now = new Date();
+    const d = new Date(now);
+    if (now.getUTCHours() < 5) d.setUTCDate(d.getUTCDate() - 1);
+    return d.toISOString().split('T')[0];
   },
 
   _bindPeriodSelector() {
@@ -364,8 +374,7 @@ const DashboardPage = {
   },
 
   _onPeriodChange(value) {
-    const today = new Date().toISOString().split('T')[0];
-    this._selectedPeriod = (value === today) ? null : value;
+    this._selectedPeriod = (value === this._todayOp()) ? null : value;
     this.destroy();
     this.render();
   },
@@ -413,7 +422,7 @@ const DashboardPage = {
     const versements = Store.get('versements');
     const courses = Store.get('courses');
     const now = new Date();
-    const selectedDay = this._selectedPeriod || now.toISOString().split('T')[0];
+    const selectedDay = this._selectedPeriod || this._todayOp();
     const sel = new Date(selectedDay);
     const thisMonth = sel.getMonth();
     const thisYear = sel.getFullYear();
@@ -865,7 +874,7 @@ const DashboardPage = {
     // La journée affichée suit le sélecteur de date : aujourd'hui par défaut,
     // ou la date choisie pour consulter une journée passée (planning + CA de ce jour).
     const jourAtt = selectedDay;
-    const estAujourdhui = jourAtt === now.toISOString().split('T')[0];
+    const estAujourdhui = jourAtt === this._todayOp();
     const _plan = Store.get('planning') || [];
     const _caj = Store.get('caJour') || [];
     const _chg = Store.get('charges') || [];
@@ -2416,7 +2425,7 @@ const DashboardPage = {
   // journée par défaut), puis rafraîchit la flotte et la liste ouverte.
   _planifierNonpl(id) {
     const d = this._lastData; if (!d || !id) return;
-    const date = this._selectedPeriod || new Date().toISOString().split('T')[0];
+    const date = this._selectedPeriod || this._todayOp();
     const planning = (typeof Store !== 'undefined' && Store.get) ? (Store.get('planning') || []) : [];
     const already = planning.some(p => p.chauffeurId === id && p.date === date);
     if (!already) {
