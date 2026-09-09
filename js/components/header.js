@@ -16,7 +16,7 @@ const Header = {
     this._initHDock();
   },
 
-  // Navigation stable, avec infobulles au survol et au clavier.
+  // Navigation avec grossissement progressif au survol et infobulles au clavier.
   _initHDock() {
     const nav = document.getElementById('hdock');
     if (!nav) return;
@@ -54,10 +54,26 @@ const Header = {
       this._on('dockFocus' + index, item, 'focus', () => showTip(item));
       this._on('dockBlur' + index, item, 'blur', hideTip);
     });
-    this._on('dockLeave', nav, 'mouseleave', hideTip);
-    this._on('dockScroll', nav, 'scroll', hideTip);
+    // Grossissement autour du pointeur, sans déplacer les liens voisins.
+    const resetMagnify = () => {
+      items.forEach(item => item.style.removeProperty('--dock-scale'));
+      hideTip();
+    };
+    this._on('dockMagnify', nav, 'mousemove', e => {
+      if (!window.matchMedia('(hover: hover) and (prefers-reduced-motion: no-preference)').matches) return;
+      items.forEach(item => {
+        const center = nav.getBoundingClientRect().left + item.offsetLeft - nav.scrollLeft + item.offsetWidth / 2;
+        const distance = Math.abs(e.clientX - center);
+        const scale = 1 + 0.28 * Math.max(0, 1 - distance / 110);
+        item.style.setProperty('--dock-scale', scale.toFixed(3));
+      });
+      const hovered = e.target.closest('.mdock-item');
+      if (hovered) showTip(hovered);
+    });
+    this._on('dockLeave', nav, 'mouseleave', resetMagnify);
+    this._on('dockScroll', nav, 'scroll', resetMagnify);
     this._on('dockEscape', nav, 'keydown', e => { if (e.key === 'Escape') hideTip(); });
-    this._on('dockResize', window, 'resize', hideTip);
+    this._on('dockResize', window, 'resize', resetMagnify);
     this._on('dockHash', window, 'hashchange', setActive);
     setActive();
   },

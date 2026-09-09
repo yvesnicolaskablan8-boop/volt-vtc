@@ -317,7 +317,7 @@
 .header-logo { display: inline-flex; align-items: center; flex-shrink: 0; }
 .header-logo img { width: 48px; height: 40px; object-fit: contain; display: block; }
 .mdock {
-  display: flex; align-items: center; gap: 4px; flex: 1 1 auto;
+  position: relative; display: flex; align-items: center; gap: 4px; flex: 1 1 auto;
   min-width: 0; padding: 5px; border-radius: 16px;
   background: var(--bg-secondary); border: 1px solid var(--border-color);
   overflow-x: auto; scrollbar-width: thin;
@@ -329,7 +329,10 @@
   border-radius: 11px; color: var(--text-secondary); text-decoration: none;
   font-size: 21px; transition: background .18s ease, color .18s ease;
 }
-.mdock-item iconify-icon, .mdock-item svg { flex-shrink: 0; }
+.mdock-item iconify-icon, .mdock-item svg {
+  flex-shrink: 0; transform: scale(var(--dock-scale, 1));
+  transition: transform .16s ease-out;
+}
 .mdock-item svg { width: 25px; height: 25px; }
 .mdock-label { display: none; font-size: 12px; font-weight: 650; white-space: nowrap; }
 .mdock-group-start { margin-left: 10px; }
@@ -370,7 +373,7 @@
 @media (max-width: 1100px) { .mdock-item.is-active .mdock-label { display: none; } .mdock-group-start { margin-left: 5px; } .mdock-group-start::before { left: -5px; } }
 @media (max-width: 768px) { .mdock { display: none; } }
 body.pilote-mobile .mdock, body.pilote-native-app .mdock { display: none; }
-@media (prefers-reduced-motion: reduce) { .mdock-item, .mdock-tip { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .mdock-item, .mdock-tip, .mdock-item iconify-icon, .mdock-item svg { transition: none; } .mdock-item iconify-icon, .mdock-item svg { transform: none; } }
 
 /* ========== HEADER SEARCH ========== */
 .header-search {
