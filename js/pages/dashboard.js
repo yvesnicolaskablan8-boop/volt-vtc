@@ -60,7 +60,6 @@ const DashboardPage = {
       this._bindPeriodSelector();
       this._renderFleetDonutInto(data);
       this._loadRecetteLive();
-      this._loadYangoLive();
       if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
       this._autoGenerateVersements();
@@ -411,7 +410,6 @@ const DashboardPage = {
       this._bindPeriodSelector();
       this._renderFleetDonutInto(data);
       this._loadRecetteLive();
-      this._loadYangoLive();
       this._startAutoRefresh();
     } catch (err) {
       console.error('DashboardPage._silentRefresh() error:', err);
@@ -2403,10 +2401,6 @@ const DashboardPage = {
     const live = this._isToday() ? "Aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt));
     return `<div class="d-card fd-card">
       <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span></div>
-      <div class="fd-yango" id="fd-yango" title="Statut temps réel des chauffeurs sur l'application Yango">
-        <span class="fd-yango-lbl"><iconify-icon icon="arcticons:yango"></iconify-icon> Yango temps réel</span>
-        <span class="fd-yango-body" id="fd-yango-body">chargement…</span>
-      </div>
       <div class="fd-top">
         <div class="fd-donut-col">
           <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, ringSegments, total)}</div>
