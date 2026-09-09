@@ -534,7 +534,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
             <div style="height:1px;background:var(--vx-bd);"></div>
             <button onclick="VersementsPage._exportCSV();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#13deb9;"></iconify-icon> Exporter en CSV</button>
             <div style="height:1px;background:var(--vx-bd);"></div>
-            <button onclick="VersementsPage._exportDettes();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:16px;color:#e8930c;"></iconify-icon> Exporter les dettes</button>
+            <button onclick="VersementsPage._exportDettes();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:16px;color:#e8930c;"></iconify-icon> Dettes en CSV</button>
+            <button onclick="VersementsPage._exportDettesPDF();document.getElementById('export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);"><iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size:16px;color:#e8930c;"></iconify-icon> Dettes en PDF</button>
           </div>
         </div>
         <button class="wl-btn wl-btn-sec wl-act-ic" title="Nettoyer les versements fantômes" onclick="VersementsPage._cleanupGhosts()"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
@@ -1785,6 +1786,44 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       a.href = u; a.download = `pilote-dettes-${new Date().toISOString().split('T')[0]}.csv`; a.click(); URL.revokeObjectURL(u);
     }
     Toast.success(`${rows.length} dette${rows.length > 1 ? 's' : ''} exportée${rows.length > 1 ? 's' : ''}`);
+  },
+
+  // Export PDF des dettes (même contenu que le CSV, mis en tableau).
+  async _exportDettesPDF() {
+    try {
+      await LazyLibs.jspdf();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const d = this._getDetteData();
+      const rows = [];
+      (d.detteList || []).forEach(drv => {
+        (drv.items || []).forEach(it => {
+          const ds = it.detailSalarie;
+          const type = it.source === 'contravention' ? 'Contravention' : 'Recette';
+          const detail = it.source === 'contravention'
+            ? (it.commentaire || 'Contravention')
+            : (ds ? `CA net ${Utils.formatCurrency(ds.caNet || 0)}${ds.charge > 0 ? ' − ch. ' + Utils.formatCurrency(ds.charge) : ''}` : '');
+          rows.push([drv.nom || it.chauffeurId, Utils.formatDate(it.date), type, Utils.formatCurrency(it.manquant || 0), ds ? Utils.formatCurrency(ds.caBrut || 0) : '—', detail]);
+        });
+      });
+      if (!rows.length) { Toast.info('Aucune dette à exporter'); return; }
+      rows.sort((a, b) => String(b[1]).localeCompare(String(a[1])) || String(a[0]).localeCompare(String(b[0])));
+      doc.setFontSize(18); doc.text('Rapport des dettes', 14, 22);
+      doc.setFontSize(10);
+      doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+      doc.text(`Total dû : ${Utils.formatCurrency(d.totalDettes || 0)} · ${d.nbDetteDrivers || 0} chauffeur(s)`, 14, 36);
+      doc.autoTable({
+        head: [['Chauffeur', 'Date', 'Type', 'Montant dû', 'CA Yango', 'Détail']],
+        body: rows,
+        startY: 42,
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [245, 81, 46] }
+      });
+      doc.save(`pilote-dettes-${new Date().toISOString().split('T')[0]}.pdf`);
+      Toast.success('PDF des dettes exporté');
+    } catch (e) {
+      Toast.error('Erreur export PDF : ' + e.message);
+    }
   },
 
   // =================== RECETTES / VERSEMENTS RÉCURRENTS ===================

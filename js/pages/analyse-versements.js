@@ -130,8 +130,10 @@ const AnalyseVersementsPage = {
           <h1><iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon> Analyse des versements</h1>
         </div>
         <div class="page-actions">
-          <label class="av-datepick" title="Choisir un jour précis">
+          <label class="av-datebtn" title="Choisir un jour précis">
             <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
+            <span class="av-datebtn-lbl">${this._anchor ? Utils.escHtml(Utils.formatDate(this._anchor)) : "Aujourd'hui"}</span>
+            <iconify-icon icon="solar:alt-arrow-down-linear" class="av-datebtn-chev"></iconify-icon>
             <input type="date" value="${this._anchor || ''}" max="${new Date().toISOString().split('T')[0]}" onchange="AnalyseVersementsPage._setDate(this.value)">
           </label>
           <div class="av-gran">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>
@@ -369,10 +371,13 @@ const AnalyseVersementsPage = {
       .av-blg-lbl { font-weight:600; color:var(--text-secondary); }
       .av-blg-val { margin-left:auto; font-weight:800; color:var(--text-primary); }
 
-      .av-datepick { display:inline-flex; align-items:center; gap:7px; padding:7px 13px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:20px; cursor:pointer; color:var(--text-primary); font-weight:700; font-size:12px; transition:border-color .15s, box-shadow .15s; }
-      .av-datepick:hover { border-color:var(--pilote-blue); box-shadow:0 2px 10px -4px rgba(245,81,46,.4); }
-      .av-datepick iconify-icon { color:var(--pilote-blue); font-size:16px; }
-      .av-datepick input { border:none; background:transparent; color:var(--text-primary); font-weight:700; font-size:12px; font-family:inherit; outline:none; cursor:pointer; padding:0; }
+      .av-datebtn { position:relative; display:inline-flex; align-items:center; gap:8px; padding:8px 14px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:20px; cursor:pointer; color:var(--text-primary); font-weight:700; font-size:13px; transition:border-color .15s, box-shadow .15s; }
+      .av-datebtn:hover { border-color:var(--pilote-blue); box-shadow:0 2px 10px -4px rgba(245,81,46,.4); }
+      .av-datebtn > iconify-icon:first-child { color:var(--pilote-blue); font-size:17px; }
+      .av-datebtn-lbl { white-space:nowrap; }
+      .av-datebtn-chev { color:var(--text-muted); font-size:14px; }
+      .av-datebtn input[type=date] { position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0; border:none; opacity:0; cursor:pointer; }
+      .av-datebtn input[type=date]::-webkit-calendar-picker-indicator { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
       .av-gran { display:inline-flex; gap:4px; padding:4px; background:var(--bg-tertiary); border-radius:20px; border:1px solid var(--border-color); }
       .av-gran-btn { border:none; background:transparent; color:var(--text-secondary); font-size:12px; font-weight:700; padding:6px 14px; border-radius:16px; cursor:pointer; transition:color .15s, background .15s, box-shadow .15s; }
       .av-gran-btn:hover { color:var(--text-primary); }
