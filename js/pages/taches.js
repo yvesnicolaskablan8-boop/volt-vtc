@@ -293,6 +293,28 @@ const TachesPage = {
     const bslots = [{ l: 4, t: 12 }, { l: 47, t: 4 }, { l: 42, t: 50 }, { l: 4, t: 54 }];
     const bubbles = ranked.map((d, i) => { const sz = 54 + Math.round(d.n / distMax * 66); const p = bslots[i] || { l: 24, t: 30 }; return `<div class="tk-bub" style="width:${sz}px;height:${sz}px;left:${p.l}%;top:${p.t}%;background:${d.color};" title="${Utils.escHtml(d.label)} : ${d.n}">${Math.round(d.n / distTotal * 100)}%</div>`; }).join('');
 
+    // Carte d'accent (style « Vulnerability » de Resq.io) : met en avant l'urgence du moment.
+    let coTone = 'ok', coNum = 0, coLbl = 'Tout est sous contrôle', coIcon = 'solar:check-circle-bold', coCta = '';
+    if (enRetard.length > 0) { coTone = 'danger'; coNum = enRetard.length; coLbl = enRetard.length > 1 ? 'tâches en retard' : 'tâche en retard'; coIcon = 'solar:danger-triangle-bold'; coCta = "TachesPage._kpiNav('liste','a_faire')"; }
+    else if (aFaireAujourdhui.length > 0) { coTone = 'warn'; coNum = aFaireAujourdhui.length; coLbl = "à faire aujourd'hui"; coIcon = 'solar:calendar-bold'; coCta = "TachesPage._kpiNav('liste','a_faire')"; }
+    else if (upcoming.length > 0) { coTone = 'info'; coNum = upcoming.length; coLbl = upcoming.length > 1 ? 'échéances sous 7 jours' : 'échéance sous 7 jours'; coIcon = 'solar:calendar-bold'; }
+    const callout = `<div class="tk-callout tk-callout-${coTone}"${coCta ? ` onclick="${coCta}" style="cursor:pointer;"` : ''}>
+        <div class="tk-callout-ic"><iconify-icon icon="${coIcon}"></iconify-icon></div>
+        <div class="tk-callout-num">${coNum}</div>
+        <div class="tk-callout-lbl">${coLbl}</div>
+        ${coCta ? '<div class="tk-callout-cta">Traiter <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></div>' : ''}
+      </div>`;
+    // Liste des tâches actives (style « Active incidents »).
+    const activeCards = active.slice(0, 5).map(t => {
+      const sc2 = this._statutConfig[t.statut] || this._statutConfig.a_faire;
+      const pc2 = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
+      return `<div class="tk-act" onclick="TachesPage._viewTask('${t.id}')">
+        <span class="tk-act-badge" style="background:${sc2.bg};color:${sc2.color};">${sc2.label}</span>
+        <div class="tk-act-title">${Utils.escHtml(t.titre || 'Tâche')}</div>
+        <div class="tk-act-meta"><span class="tk-act-prio" style="color:${pc2.color};">● ${pc2.label}</span>${t.assigneANom ? ' · ' + Utils.escHtml(t.assigneANom) : ''}</div>
+      </div>`;
+    }).join('');
+
     return `
       <div class="dash-section">
         <div class="dash-kpi-row">
@@ -305,17 +327,45 @@ const TachesPage = {
         </div>
       </div>
 
-      <div class="dash-grid-2col">
+      <div class="dash-grid-freq">
         <div class="dash-card">
-          <div class="dash-card-header"><iconify-icon icon="solar:pie-chart-2-bold-duotone" style="color:#635bff;"></iconify-icon> Répartition par statut</div>
+          <div class="dash-card-header"><iconify-icon icon="solar:pie-chart-2-bold-duotone" style="color:#635bff;"></iconify-icon> Résumé</div>
           <div class="dash-card-body">
             ${distTotal ? `<div class="tk-sum">${sumRows}</div>` : '<div class="tk-empty">Aucune tâche</div>'}
           </div>
         </div>
         <div class="dash-card">
-          <div class="dash-card-header"><iconify-icon icon="solar:chart-square-bold-duotone" style="color:#F5512E;"></iconify-icon> Statistiques</div>
+          <div class="dash-card-header"><iconify-icon icon="solar:graph-up-bold-duotone" style="color:#F5512E;"></iconify-icon> Fréquence des tâches <span class="tk-freq-sub">14 derniers jours</span></div>
+          <div class="dash-card-body">
+            ${this._freqChart(taches)}
+            <div class="tk-legend"><span class="tk-lg"><span class="tk-ldot" style="background:#F5512E;"></span>Créées</span><span class="tk-lg"><span class="tk-ldot" style="background:#13DEB9;"></span>Terminées</span></div>
+          </div>
+        </div>
+        ${callout}
+      </div>
+
+      <div class="dash-grid-3">
+        <div class="dash-card">
+          <div class="dash-card-header"><iconify-icon icon="solar:playlist-bold-duotone" style="color:#F5512E;"></iconify-icon> Tâches actives</div>
+          <div class="dash-card-body">
+            ${activeCards || '<div class="tk-empty">Aucune tâche active</div>'}
+          </div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-header"><iconify-icon icon="solar:chart-square-bold-duotone" style="color:#635bff;"></iconify-icon> Statistiques</div>
           <div class="dash-card-body">
             ${distTotal ? `<div class="tk-bubbles">${bubbles}</div>` : '<div class="tk-empty">Aucune donnée</div>'}
+          </div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-header"><iconify-icon icon="solar:bolt-bold-duotone" style="color:#13deb9;"></iconify-icon> Actions rapides</div>
+          <div class="dash-card-body">
+            <div class="tk-qa">
+              <button class="tk-qa-btn" onclick="TachesPage._openTaskForm('a_faire')"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Nouvelle tâche</button>
+              <button class="tk-qa-btn" onclick="TachesPage._switchTab('tableau')"><iconify-icon icon="solar:widget-bold-duotone"></iconify-icon> Tableau</button>
+              <button class="tk-qa-btn" onclick="TachesPage._switchTab('priorites')"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon> Priorités</button>
+              <button class="tk-qa-btn" onclick="TachesPage._switchTab('reunions')"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon> Réunions</button>
+            </div>
           </div>
         </div>
       </div>
@@ -395,6 +445,44 @@ const TachesPage = {
         </div>
       </div>
     `;
+  },
+
+  // Graphe à double courbe lissée (style « Incident frequency » de Resq.io) :
+  // tâches créées (orange) vs terminées (teal) sur 14 jours.
+  _freqChart(taches) {
+    const days = [];
+    for (let i = 13; i >= 0; i--) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i); days.push(d); }
+    const key = d => d.toISOString().slice(0, 10);
+    const cMap = {}, tMap = {};
+    (taches || []).forEach(t => {
+      if (t.dateCreation) { const k = String(t.dateCreation).slice(0, 10); cMap[k] = (cMap[k] || 0) + 1; }
+      if (t.dateTerminaison) { const k = String(t.dateTerminaison).slice(0, 10); tMap[k] = (tMap[k] || 0) + 1; }
+    });
+    const sc = days.map(d => cMap[key(d)] || 0);
+    const st = days.map(d => tMap[key(d)] || 0);
+    const W = 680, H = 200, padX = 10, padTop = 16, padBot = 26;
+    const n = days.length, max = Math.max(1, ...sc, ...st);
+    const innerW = W - padX * 2, innerH = H - padTop - padBot;
+    const xs = i => padX + (n === 1 ? innerW / 2 : i / (n - 1) * innerW);
+    const ys = v => padTop + innerH - (v / max) * innerH;
+    const smooth = (vals) => {
+      const pts = vals.map((v, i) => [+xs(i).toFixed(1), +ys(v).toFixed(1)]);
+      let dd = pts.length ? `M ${pts[0][0]} ${pts[0][1]}` : '';
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+        const c1x = (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1), c1y = (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1);
+        const c2x = (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1), c2y = (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1);
+        dd += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]}`;
+      }
+      return dd;
+    };
+    const labels = days.map((d, i) => (i % 3 === 0 || i === n - 1) ? `<text x="${xs(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="tk-xlbl">${d.getDate()}/${d.getMonth() + 1}</text>` : '').join('');
+    return `<svg viewBox="0 0 ${W} ${H}" class="tk-freq" preserveAspectRatio="none" role="img" aria-label="Tâches créées vs terminées">
+      <line x1="${padX}" y1="${padTop + innerH}" x2="${W - padX}" y2="${padTop + innerH}" class="tk-freq-axis"></line>
+      <path d="${smooth(sc)}" fill="none" stroke="#F5512E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="${smooth(st)}" fill="none" stroke="#13DEB9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+      ${labels}
+    </svg>`;
   },
 
   _kpiCard(icon, color, label, value, onclick) {
@@ -2064,6 +2152,39 @@ const TachesPage = {
       .tk-sum-val { font-size:14px; font-weight:800; color:var(--text-primary); min-width:24px; text-align:right; font-variant-numeric:tabular-nums; }
       .tk-bubbles { position:relative; height:170px; }
       .tk-bub { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:16px; box-shadow:0 10px 22px -8px rgba(0,0,0,.3); }
+      /* Layout Resq.io (clair) */
+      .dash-grid-freq { display:grid; grid-template-columns:1fr 1.7fr 1fr; gap:16px; margin-bottom:16px; }
+      .dash-grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:16px; }
+      @media(max-width:980px){ .dash-grid-freq, .dash-grid-3 { grid-template-columns:1fr; } }
+      .tk-freq-sub { margin-left:auto; font-size:11px; font-weight:600; color:var(--text-muted); text-transform:none; letter-spacing:0; }
+      .tk-freq { width:100%; height:200px; display:block; overflow:visible; }
+      .tk-freq-axis { stroke:var(--border-color); stroke-width:1; }
+      .tk-xlbl { fill:var(--text-muted); font-size:11px; font-weight:600; }
+      .tk-legend { display:flex; gap:16px; margin-top:8px; padding-top:12px; border-top:1px solid var(--border-color); }
+      .tk-lg { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--text-secondary); }
+      .tk-ldot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+      /* Carte d'accent */
+      .tk-callout { border-radius:18px; padding:22px; display:flex; flex-direction:column; gap:4px; color:#fff; min-height:150px; box-shadow:0 14px 30px -16px rgba(0,0,0,.35); position:relative; overflow:hidden; }
+      .tk-callout-danger { background:linear-gradient(150deg,#ef4444,#b91c1c); }
+      .tk-callout-warn { background:linear-gradient(150deg,#F5A623,#E8930C); }
+      .tk-callout-info { background:linear-gradient(150deg,#635BFF,#4a43c2); }
+      .tk-callout-ok { background:linear-gradient(150deg,#13DEB9,#02b3a9); }
+      .tk-callout-ic { width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:6px; }
+      .tk-callout-num { font-size:44px; font-weight:800; line-height:1; letter-spacing:-2px; }
+      .tk-callout-lbl { font-size:14px; font-weight:600; opacity:.95; }
+      .tk-callout-cta { margin-top:auto; display:inline-flex; align-items:center; gap:5px; font-size:13px; font-weight:800; }
+      /* Tâches actives */
+      .tk-act { padding:12px 14px; border:1px solid var(--border-color); border-radius:14px; margin-bottom:9px; cursor:pointer; transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s; }
+      .tk-act:hover { transform:translateY(-2px); box-shadow:0 10px 20px -10px rgba(30,32,34,.25); }
+      .tk-act-badge { display:inline-flex; font-size:10.5px; font-weight:800; padding:2px 9px; border-radius:20px; margin-bottom:6px; }
+      .tk-act-title { font-size:13.5px; font-weight:700; color:var(--text-primary); line-height:1.3; }
+      .tk-act-meta { font-size:11.5px; color:var(--text-muted); margin-top:3px; }
+      .tk-act-prio { font-weight:700; }
+      /* Actions rapides */
+      .tk-qa { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+      .tk-qa-btn { display:flex; align-items:center; gap:8px; padding:14px 12px; border:1px solid var(--border-color); border-radius:14px; background:var(--bg-tertiary); color:var(--text-primary); font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s, border-color .15s; }
+      .tk-qa-btn:hover { transform:translateY(-2px); box-shadow:0 10px 20px -10px rgba(245,81,46,.35); border-color:rgba(245,81,46,.35); color:#F5512E; }
+      .tk-qa-btn iconify-icon { font-size:1.2rem; }
 
       /* Bars */
       .dash-bar-row { display:flex; align-items:center; gap:10px; padding:6px 0; }
