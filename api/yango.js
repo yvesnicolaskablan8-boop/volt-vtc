@@ -686,16 +686,22 @@ async function handleFleetStatus(req, res) {
     // Une course active = statut en cours (driving/transporting/waiting).
     let enCourse = 0;
     let enCourseDrivers = 0;
+    let debug = { nbOrders: 0, statusCounts: {} };
     try {
       const ord = await yangoFetch('/v1/parks/orders/list', {
         limit: 500,
         query: { park: { id: parkId, order: {} } }
       });
-      const ACTIVE = new Set(['driving', 'transporting', 'waiting']);
-      const actifs = (ord.orders || []).filter(o => ACTIVE.has(o.status));
+      const all = ord.orders || [];
+      const statusCounts = {};
+      for (const o of all) { const st = o.status || '?'; statusCounts[st] = (statusCounts[st] || 0) + 1; }
+      debug = { nbOrders: all.length, statusCounts };
+      // Statut actif = tout ce qui n'est pas terminal (course réellement en cours).
+      const TERMINAL = new Set(['complete', 'finished', 'cancelled', 'canceled', 'failed', 'expired', 'rejected', 'none']);
+      const actifs = all.filter(o => o.status && !TERMINAL.has(o.status));
       enCourse = actifs.length;
       enCourseDrivers = new Set(actifs.map(o => (o.performer && o.performer.driver_profile_id) || o.driver_profile_id).filter(Boolean)).size;
-    } catch (e) { console.warn('[fleet-status] orders error:', e.message); }
+    } catch (e) { console.warn('[fleet-status] orders error:', e.message); debug.error = e.message; }
 
     const enLigne = counts.free + counts.busy + Math.max(counts.in_order, enCourse);
 
@@ -709,6 +715,7 @@ async function handleFleetStatus(req, res) {
       statusFiable: (counts.free + counts.busy + counts.in_order) > 0, // current_status exploitable ?
       total: profiles.length,
       enLigne,
+      debug, // diagnostic temporaire : statuts réels renvoyés par l'API commandes
       drivers
     });
 

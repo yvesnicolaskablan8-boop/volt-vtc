@@ -1844,6 +1844,12 @@ const DashboardPage = {
       html = chip('#F5512E', enCourse, enCourse > 1 ? 'courses en cours' : 'course en cours')
         + `<span class="fd-yg fd-yg-muted" title="L'API Yango n'expose pas les statuts en ligne/occupé détaillés">statuts détaillés non fournis par l'API</span>`;
     }
+    // Diagnostic temporaire : statuts réels renvoyés par l'API commandes.
+    if (r.debug) {
+      const sc = r.debug.statusCounts || {};
+      const parts = Object.keys(sc).sort((a, b) => sc[b] - sc[a]).slice(0, 8).map(k => `${k}:${sc[k]}`).join(', ');
+      html += `<span class="fd-yg fd-yg-muted" style="width:100%;font-size:10.5px;opacity:.7;">diag · ${r.debug.nbOrders} commandes${parts ? ' · ' + parts : ''}${r.debug.error ? ' · ERR ' + r.debug.error : ''}</span>`;
+    }
     body.replaceChildren();
     body.insertAdjacentHTML('beforeend', html);
     const el = document.getElementById('fd-yango'); if (el) el.classList.remove('fd-yango-err');
