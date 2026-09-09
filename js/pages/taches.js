@@ -283,6 +283,16 @@ const TachesPage = {
       .sort((a, b) => (b.dateModification || '').localeCompare(a.dateModification || ''))
       .slice(0, 10);
 
+    // Répartition par statut (structure Resq.io : résumé à pastilles + bulles) — palette claire.
+    const _st = this._statutConfig;
+    const dist = ['a_faire', 'en_cours', 'terminee', 'annulee'].map(k => ({ k, label: (_st[k] || {}).label || k, color: (_st[k] || {}).color || '#94a3b8', n: taches.filter(t => t.statut === k).length }));
+    const distTotal = dist.reduce((s, d) => s + d.n, 0);
+    const distMax = Math.max(1, ...dist.map(d => d.n));
+    const sumRows = dist.map(d => `<div class="tk-sum-row"><span class="tk-sum-dot" style="background:${d.color};"></span><span class="tk-sum-lbl">${Utils.escHtml(d.label)}</span><span class="tk-sum-track"><span class="tk-sum-fill" style="width:${Math.round(d.n / distMax * 100)}%;background:${d.color};"></span></span><span class="tk-sum-val">${d.n}</span></div>`).join('');
+    const ranked = dist.filter(d => d.n > 0).sort((a, b) => b.n - a.n);
+    const bslots = [{ l: 4, t: 12 }, { l: 47, t: 4 }, { l: 42, t: 50 }, { l: 4, t: 54 }];
+    const bubbles = ranked.map((d, i) => { const sz = 54 + Math.round(d.n / distMax * 66); const p = bslots[i] || { l: 24, t: 30 }; return `<div class="tk-bub" style="width:${sz}px;height:${sz}px;left:${p.l}%;top:${p.t}%;background:${d.color};" title="${Utils.escHtml(d.label)} : ${d.n}">${Math.round(d.n / distTotal * 100)}%</div>`; }).join('');
+
     return `
       <div class="dash-section">
         <div class="dash-kpi-row">
@@ -292,6 +302,21 @@ const TachesPage = {
           ${this._kpiCard('solar:play-bold-duotone', '#635bff', 'En cours', enCours.length, "TachesPage._kpiNav('liste','en_cours')")}
           ${this._kpiCard('solar:check-circle-bold-duotone', '#13deb9', 'Terminées (semaine)', termineesSemaine.length, "TachesPage._kpiNav('liste','terminee')")}
           ${this._kpiCard('solar:chart-bold-duotone', '#635bff', 'Taux complétion', tauxCompletion + '%', "TachesPage._kpiNav('kanban')")}
+        </div>
+      </div>
+
+      <div class="dash-grid-2col">
+        <div class="dash-card">
+          <div class="dash-card-header"><iconify-icon icon="solar:pie-chart-2-bold-duotone" style="color:#635bff;"></iconify-icon> Répartition par statut</div>
+          <div class="dash-card-body">
+            ${distTotal ? `<div class="tk-sum">${sumRows}</div>` : '<div class="tk-empty">Aucune tâche</div>'}
+          </div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-header"><iconify-icon icon="solar:chart-square-bold-duotone" style="color:#F5512E;"></iconify-icon> Statistiques</div>
+          <div class="dash-card-body">
+            ${distTotal ? `<div class="tk-bubbles">${bubbles}</div>` : '<div class="tk-empty">Aucune donnée</div>'}
+          </div>
         </div>
       </div>
 
@@ -2028,6 +2053,17 @@ const TachesPage = {
       }
       .dash-card-header iconify-icon { font-size:1.15rem; }
       .dash-card-body { padding:6px 18px 16px; }
+      /* Répartition par statut (résumé + bulles) — structure Resq.io, palette claire */
+      .tk-empty { color:var(--text-muted); text-align:center; padding:26px 10px; font-size:13px; }
+      .tk-sum { display:flex; flex-direction:column; gap:12px; padding:6px 0; }
+      .tk-sum-row { display:flex; align-items:center; gap:10px; }
+      .tk-sum-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+      .tk-sum-lbl { font-size:13px; font-weight:600; color:var(--text-primary); min-width:90px; }
+      .tk-sum-track { flex:1; height:8px; border-radius:99px; background:var(--bg-tertiary); overflow:hidden; }
+      .tk-sum-fill { display:block; height:100%; border-radius:99px; transition:width .5s cubic-bezier(.25,1,.5,1); }
+      .tk-sum-val { font-size:14px; font-weight:800; color:var(--text-primary); min-width:24px; text-align:right; font-variant-numeric:tabular-nums; }
+      .tk-bubbles { position:relative; height:170px; }
+      .tk-bub { position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:16px; box-shadow:0 10px 22px -8px rgba(0,0,0,.3); }
 
       /* Bars */
       .dash-bar-row { display:flex; align-items:center; gap:10px; padding:6px 0; }
