@@ -6,11 +6,14 @@ const VehiculesPage = {
   _charts: [],
   _carburantChart: null,
   _activeListTab: 'flotte',
+  _view: 'cards',
+  _filters: { search: '', status: '', energy: '', acquisition: '' },
 
   render() {
     const container = document.getElementById('page-content');
     const vehicules = Store.get('vehicules');
-    container.innerHTML = this._listTemplate(vehicules);
+    this._activeListTab = 'flotte';
+    container.innerHTML = `<div class="drivers-workspace vehicles-workspace">${this._listTemplate(vehicules)}</div>`;
     this._bindListEvents(vehicules);
     this._bindListTabEvents();
   },
@@ -22,7 +25,7 @@ const VehiculesPage = {
       container.innerHTML = '<div class="empty-state"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon><h3>Véhicule non trouvé</h3></div>';
       return;
     }
-    container.innerHTML = this._detailTemplate(vehicule);
+    container.innerHTML = `<div class="drivers-workspace drivers-detail vehicles-workspace">${this._detailTemplate(vehicule)}</div>`;
     this._loadDetailCharts(vehicule);
     this._bindDetailEvents(vehicule);
   },
@@ -57,6 +60,8 @@ const VehiculesPage = {
     const content = document.getElementById('vehicules-list-tab-content');
     const actions = document.getElementById('vehicules-page-actions');
     if (!content) return;
+    this._activeListTab = tab;
+    document.querySelectorAll('[data-ltab]').forEach(el=>{el.classList.toggle('active',el.dataset.ltab===tab);el.setAttribute('aria-current',el.dataset.ltab===tab?'page':'false');});
 
     // Cleanup garage charts before switching
     if (typeof GaragePage !== 'undefined') GaragePage.destroy();
@@ -124,31 +129,16 @@ const VehiculesPage = {
     };
 
     return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Véhicules & Garage</h1>
-        <div class="page-actions" id="vehicules-page-actions">
-          <button class="btn btn-warning" onclick="VehiculesPage._renderListTab('maintenance')" style="display:flex;align-items:center;gap:6px;"><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Garage</button>
-          <button class="btn btn-outline" onclick="VehiculesPage._renderListTab('incidents')" style="display:flex;align-items:center;gap:6px;color:#f5512e;border-color:#f5512e;"><iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon> Incidents</button>
-          <button class="btn btn-primary" id="btn-add-vehicule"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter</button>
-        </div>
-      </div>
+      <header class="drivers-heading"><div><span class="drivers-eyebrow">PILOTE / PARC AUTOMOBILE</span><h1>Votre flotte.<br><em>Prête à prendre la route.</em></h1><p>Véhicules, entretien et incidents : tout pour garder le contrôle de votre parc.</p></div><div class="page-actions" id="vehicules-page-actions"><button class="btn btn-primary" id="btn-add-vehicule"><iconify-icon icon="solar:add-circle-linear"></iconify-icon> Ajouter un véhicule</button></div></header>
+      <nav class="vehicles-navigation" aria-label="Véhicules et garage">${[['flotte','La flotte','wheel'],['maintenance','Entretien','tuning-2'],['reparations','Réparations','tuning-2'],['ct','Contrôles techniques','clipboard-check'],['assurances','Assurances','shield-check'],['tco','Coût de possession','chart-square'],['incidents','Incidents','danger-triangle']].map(([id,label,icon])=>`<button class="garage-tab ${id==='flotte'?'active':''}" data-ltab="${id}"><iconify-icon icon="solar:${icon}-linear"></iconify-icon>${label}</button>`).join('')}</nav>
 
       <div id="vehicules-list-tab-content">
-        <div class="grid-4" style="margin-bottom:var(--space-lg);">
-          <div class="kpi-card"><div class="kpi-icon"><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon></div><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total flotte</div></div>
-          <div class="kpi-card green"><div class="kpi-icon"><iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon></div><div class="kpi-value">${stats.enService}</div><div class="kpi-label">En service</div></div>
-          <div class="kpi-card yellow"><div class="kpi-icon"><iconify-icon icon="solar:wrench-bold-duotone"></iconify-icon></div><div class="kpi-value">${stats.enMaintenance}</div><div class="kpi-label">En maintenance</div></div>
-          <div class="kpi-card cyan">
-            <div class="kpi-icon"><iconify-icon icon="solar:bolt-bold-duotone"></iconify-icon></div>
-            <div class="kpi-value">
-              <span style="color:var(--pilote-yellow)">${stats.electriques} <iconify-icon icon="solar:bolt-bold-duotone" style="font-size:16px"></iconify-icon></span>
-              <span style="color:var(--text-muted);font-size:14px;margin:0 4px;">/</span>
-              <span>${stats.thermiques} <iconify-icon icon="solar:gas-station-bold-duotone" style="font-size:14px"></iconify-icon></span>
-            </div>
-            <div class="kpi-label">Électrique / Thermique</div>
-          </div>
-        </div>
-
+        <div class="vehicle-stats">
+        ${[['','Toute la flotte',stats.total,'wheel'],['en_service','En service',stats.enService,'check-circle'],['en_maintenance','En maintenance',stats.enMaintenance,'tuning-2']].map(([value,label,count,icon])=>`<button class="drivers-stat" data-vehicle-status="${value}"><iconify-icon icon="solar:${icon}-linear"></iconify-icon><span>${label}</span><strong>${count}</strong><small>Voir les véhicules <span>↗</span></small></button>`).join('')}
+        <div class="drivers-stat vehicle-energy-stat"><iconify-icon icon="solar:bolt-linear"></iconify-icon><span>Énergie de la flotte</span><strong>${stats.electriques}<small> électriques</small></strong><small>${stats.thermiques} thermiques</small></div></div>
+        <div class="drivers-directory-title"><div><h2>Votre parc automobile</h2><p id="vehicle-count" aria-live="polite"></p></div><div class="drivers-view-switch"><button data-vehicle-view="cards" aria-label="Afficher les cartes"><iconify-icon icon="solar:widget-linear"></iconify-icon> Cartes</button><button data-vehicle-view="table" aria-label="Afficher le tableau"><iconify-icon icon="solar:list-linear"></iconify-icon> Tableau</button></div></div>
+        <div class="vehicle-filters"><label>Rechercher<input id="vehicle-search" type="search" class="form-control" placeholder="Plaque, marque ou modèle"></label><label>Statut<select id="vehicle-status" class="form-control"><option value="">Tous les statuts</option><option value="en_service">En service</option><option value="en_maintenance">En maintenance</option><option value="hors_service">Hors service</option></select></label><label>Énergie<select id="vehicle-energy" class="form-control"><option value="">Toutes les énergies</option><option value="electrique">Électrique</option><option value="thermique">Thermique</option></select></label><label>Acquisition<select id="vehicle-acquisition" class="form-control"><option value="">Tous les modes</option><option value="cash">Cash</option><option value="leasing">Leasing</option></select></label><button id="vehicle-reset" class="btn btn-secondary">Réinitialiser</button></div>
+        <div id="vehicles-cards" class="vehicles-cards"></div>
         <div id="vehicules-table"></div>
       </div>
     `;
@@ -157,7 +147,7 @@ const VehiculesPage = {
   _bindListEvents(vehicules) {
     const chauffeurs = Store.get('chauffeurs');
 
-    Table.create({
+    this._table = Table.create({
       containerId: 'vehicules-table',
       columns: [
         {
@@ -167,7 +157,7 @@ const VehiculesPage = {
             const energyIcon = isEV
               ? '<iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--pilote-yellow);font-size:10px;margin-left:4px" title="Électrique"></iconify-icon>'
               : '<iconify-icon icon="solar:gas-station-bold-duotone" style="color:var(--text-muted);font-size:9px;margin-left:4px" title="Thermique"></iconify-icon>';
-            return `<div><div style="font-weight:500">${v.marque} ${v.modele} ${energyIcon}</div><div style="font-size:11px;color:var(--text-muted)">${v.immatriculation} &bull; ${v.annee}</div></div>`;
+            return `<div><div style="font-weight:500">${Utils.escHtml(v.marque || '')} ${Utils.escHtml(v.modele || '')} ${energyIcon}</div><div style="font-size:11px;color:var(--text-muted)">${Utils.escHtml(v.immatriculation || 'Sans immatriculation')} &bull; ${Utils.escHtml(String(v.annee || 'Année non renseignée'))}</div></div>`;
           },
           value: (v) => `${v.marque} ${v.modele}`
         },
@@ -219,7 +209,44 @@ const VehiculesPage = {
     });
 
     document.getElementById('btn-add-vehicule').addEventListener('click', () => this._add());
+    [['search','input'],['status','change'],['energy','change'],['acquisition','change']].forEach(([key,event])=>{const el=document.getElementById('vehicle-'+key);el.value=this._filters[key];el.addEventListener(event,()=>{this._filters[key]=el.value;this._refreshVehicles();});});
+    document.querySelectorAll('[data-vehicle-status]').forEach(el=>el.addEventListener('click',()=>{this._filters.status=el.dataset.vehicleStatus;document.getElementById('vehicle-status').value=this._filters.status;this._refreshVehicles();}));
+    document.querySelectorAll('[data-vehicle-view]').forEach(el=>el.addEventListener('click',()=>{this._view=el.dataset.vehicleView;this._refreshVehicles();}));
+    document.getElementById('vehicle-reset').onclick=()=>{Object.keys(this._filters).forEach(key=>{this._filters[key]='';document.getElementById('vehicle-'+key).value='';});this._refreshVehicles();};
+    this._refreshVehicles();
   },
+
+  _filteredVehicles() {
+    const f=this._filters;
+    const query=f.search.trim().toLocaleLowerCase('fr');
+    return (Store.get('vehicules') || []).filter(v=>(!query||[v.immatriculation,v.marque,v.modele].filter(Boolean).join(' ').toLocaleLowerCase('fr').includes(query))&&(!f.status||v.statut===f.status)&&(!f.energy||(v.typeEnergie==='electrique'?'electrique':'thermique')===f.energy)&&(!f.acquisition||(v.typeAcquisition==='leasing'?'leasing':'cash')===f.acquisition));
+  },
+
+  _refreshVehicles() {
+    const list=this._filteredVehicles();
+    this._table?.refresh(list);
+    const zone=document.getElementById('vehicles-cards');
+    if(!zone)return;
+    zone.hidden=this._view!=='cards';document.getElementById('vehicules-table').hidden=this._view==='cards';
+    document.querySelectorAll('[data-vehicle-view]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.vehicleView===this._view)));
+    document.querySelectorAll('[data-vehicle-status]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.vehicleStatus===this._filters.status)));
+    document.getElementById('vehicle-count').textContent=`${list.length} véhicule${list.length>1?'s':''} sur ${(Store.get('vehicules')||[]).length}`;
+    zone.replaceChildren();
+    if(this._view!=='cards')return;
+    if(!list.length){zone.insertAdjacentHTML('beforeend',`<div class="drivers-empty"><iconify-icon icon="solar:wheel-linear"></iconify-icon><h3>Aucun véhicule trouvé</h3><p>Modifiez vos filtres ou ajoutez un véhicule à la flotte.</p><button class="btn btn-secondary" onclick="document.getElementById('vehicle-reset').click()">Réinitialiser les filtres</button></div>`);return;}
+    const drivers=Store.get('chauffeurs')||[];
+    zone.insertAdjacentHTML('beforeend',list.map(v=>{
+      const ev=v.typeEnergie==='electrique';
+      const driver=drivers.find(c=>c.id===v.chauffeurAssigne)||drivers.find(c=>c.vehiculeAssigne===v.id);
+      const battery=v.niveauBatterie==null?null:Number(v.niveauBatterie);
+      const range=battery!==null&&v.autonomieKm?Math.round(battery/100*v.autonomieKm):null;
+      const name=Utils.escHtml([v.marque,v.modele].filter(Boolean).join(' ')||'Véhicule');
+      return `<article class="vehicle-profile ${ev?'is-electric':''}"><div class="vehicle-visual"><div class="vehicle-visual-top"><span>${ev?'ÉLECTRIQUE':'THERMIQUE'}</span>${Utils.statusBadge(v.statut)}</div><svg class="vehicle-silhouette" viewBox="0 0 180 80" fill="none" aria-hidden="true"><path d="M20 52V40q0-7 9-10l22-7 14-17h54l21 20 18 5q7 2 7 10v15H20Z" fill="currentColor" fill-opacity=".09" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="m56 24 12-13h23v15H54m43-15h19l16 16-35-1V11Z" fill="white" fill-opacity=".8" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M75 35h9m29 0h9M22 39h15m114 1h11M64 54h59" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="47" cy="55" r="13" fill="white" stroke="currentColor" stroke-width="3"/><circle cx="47" cy="55" r="6" fill="currentColor" fill-opacity=".25" stroke="currentColor" stroke-width="2"/><circle cx="140" cy="55" r="13" fill="white" stroke="currentColor" stroke-width="3"/><circle cx="140" cy="55" r="6" fill="currentColor" fill-opacity=".25" stroke="currentColor" stroke-width="2"/></svg><strong class="vehicle-plate">${Utils.escHtml(v.immatriculation||'Non renseignée')}</strong></div><div class="vehicle-profile-body"><a class="driver-profile-name" href="#/vehicules/${encodeURIComponent(v.id)}">${name}</a><p class="vehicle-meta">${v.annee?Utils.escHtml(String(v.annee)):'Année non renseignée'} · ${v.typeAcquisition==='leasing'?'Leasing':'Achat cash'}</p><div class="vehicle-reading"><div><small>Kilométrage</small><strong>${v.kilometrage==null?'—':Utils.formatNumber(v.kilometrage)} <span>km</span></strong></div><div><small>${ev?'Batterie renseignée':'Motorisation'}</small><strong>${ev?(battery===null?'—':Utils.escHtml(String(battery))+' %'):'Thermique'}</strong></div></div>${ev?`<div class="vehicle-battery-track"><i style="width:${Math.max(0,Math.min(100,battery||0))}%"></i></div><div class="vehicle-range">${range===null?'Autonomie non renseignée':'Autonomie estimée · ~'+range+' km'}</div>`:''}<div class="vehicle-assignee"><iconify-icon icon="solar:user-circle-linear"></iconify-icon><span>${driver?Utils.escHtml([driver.prenom,driver.nom].filter(Boolean).join(' ')):'Chauffeur non assigné'}</span></div><footer><a href="#/vehicules/${encodeURIComponent(v.id)}">Voir le véhicule <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></a><button class="btn btn-secondary" data-vehicle-edit="${Utils.escHtml(v.id)}" aria-label="Modifier ${name}"><iconify-icon icon="solar:pen-linear"></iconify-icon></button></footer></div></article>`;
+    }).join(''));
+    zone.querySelectorAll('[data-vehicle-edit]').forEach(el=>el.onclick=()=>this._edit(el.dataset.vehicleEdit));
+  },
+
+  _openVehicleForm(...args) { Modal.form(...args);document.getElementById('modal-container')?.classList.add('driver-form-dialog'); },
 
   _detailTemplate(v) {
     let chauffeur = v.chauffeurAssigne ? Store.findById('chauffeurs', v.chauffeurAssigne) : null;
@@ -740,7 +767,7 @@ const VehiculesPage = {
 
   _add() {
     const fields = this._getFormFields();
-    Modal.form('<iconify-icon icon="solar:wheel-bold-duotone" class="text-blue"></iconify-icon> Nouveau véhicule', FormBuilder.build(fields), () => {
+    this._openVehicleForm('<iconify-icon icon="solar:wheel-bold-duotone" class="text-blue"></iconify-icon> Nouveau véhicule', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -785,7 +812,7 @@ const VehiculesPage = {
     const vehicule = Store.findById('vehicules', id);
     if (!vehicule) return;
     const fields = this._getFormFields();
-    Modal.form('<iconify-icon icon="solar:wheel-bold-duotone" class="text-blue"></iconify-icon> Modifier véhicule', FormBuilder.build(fields, vehicule), () => {
+    this._openVehicleForm('<iconify-icon icon="solar:wheel-bold-duotone" class="text-blue"></iconify-icon> Modifier véhicule', FormBuilder.build(fields, vehicule), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       Store.update('vehicules', id, FormBuilder.getValues(body));
@@ -836,7 +863,7 @@ const VehiculesPage = {
       { type: 'row-end' }
     ];
 
-    Modal.form('<iconify-icon icon="solar:tuning-2-bold-duotone" class="text-warning"></iconify-icon> Nouvelle maintenance', FormBuilder.build(fields), () => {
+    this._openVehicleForm('<iconify-icon icon="solar:tuning-2-bold-duotone" class="text-warning"></iconify-icon> Nouvelle maintenance', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -996,7 +1023,7 @@ const VehiculesPage = {
       { name: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Commentaires ou instructions...' }
     ];
 
-    Modal.form('<iconify-icon icon="solar:calendar-mark-bold-duotone" class="text-blue"></iconify-icon> Planifier une maintenance', FormBuilder.build(fields), () => {
+    this._openVehicleForm('<iconify-icon icon="solar:calendar-mark-bold-duotone" class="text-blue"></iconify-icon> Planifier une maintenance', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
 
@@ -1100,7 +1127,7 @@ const VehiculesPage = {
       { name: 'notes', label: 'Notes', type: 'textarea' }
     ];
 
-    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier maintenance planifiée', FormBuilder.build(fields, m), () => {
+    this._openVehicleForm('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier maintenance planifiée', FormBuilder.build(fields, m), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
 
@@ -1174,7 +1201,7 @@ const VehiculesPage = {
       { name: 'description', label: 'Description', type: 'text', required: true, value: m.label || this._getTypeLabel(m.type) }
     ];
 
-    Modal.form('<iconify-icon icon="solar:check-circle-bold-duotone" class="text-success"></iconify-icon> Compléter la maintenance', FormBuilder.build(fields), () => {
+    this._openVehicleForm('<iconify-icon icon="solar:check-circle-bold-duotone" class="text-success"></iconify-icon> Compléter la maintenance', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
 
@@ -1379,7 +1406,7 @@ const VehiculesPage = {
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form(`<iconify-icon icon="solar:gas-station-bold-duotone" class="text-blue"></iconify-icon> ${isEV ? 'Nouvelle recharge' : 'Nouveau plein'}`, FormBuilder.build(fields), () => {
+    this._openVehicleForm(`<iconify-icon icon="solar:gas-station-bold-duotone" class="text-blue"></iconify-icon> ${isEV ? 'Nouvelle recharge' : 'Nouveau plein'}`, FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
