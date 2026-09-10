@@ -4,6 +4,7 @@
  */
 const YangoPage = {
   _data: null,
+  _loadGeneration: 0,
   _workRules: [],
   _selectedWorkRules: [],
   _refreshInterval: null,
@@ -14,8 +15,10 @@ const YangoPage = {
   _planningDate: null, // null = today
 
   render() {
+    this.destroy();
     const container = document.getElementById('page-content');
     container.innerHTML = this._template();
+    this._organizeViews();
     this._loadData();
     // Auto-sync au chargement de la page
     this._autoSync();
@@ -24,12 +27,41 @@ const YangoPage = {
   },
 
   destroy() {
+    this._loadGeneration++;
     if (this._refreshInterval) {
       clearInterval(this._refreshInterval);
       this._refreshInterval = null;
     }
     this._charts.forEach(c => c.destroy());
     this._charts = [];
+  },
+
+  _organizeViews() {
+    const root = document.querySelector('.yango-inner');
+    const sections = [['overview','Vue d’ensemble','widget','Vos indicateurs Yango et les encaissements enregistrés dans Pilote.'],['drivers','Chauffeurs','users-group-rounded','Comparez le planning à l’activité de vos chauffeurs.'],['performance','Performance','chart-square','Analysez le revenu par jour travaillé sur la période de votre choix.'],['sync','Synchronisation','refresh','Importez les données Yango dans Pilote et consultez leur statut.']];
+    const nav = document.createElement('nav'); nav.className = 'yango-view-nav'; nav.setAttribute('aria-label','Rubriques Yango Fleet');
+    nav.insertAdjacentHTML('beforeend', sections.map(([id,label,icon]) => `<button data-view="${id}" onclick="YangoPage._setView('${id}')"><iconify-icon icon="solar:${icon}-linear"></iconify-icon>${label}</button>`).join(''));
+    root.querySelector('header').after(nav);
+    nav.insertAdjacentHTML('afterend','<div id="yp-page-status" role="alert" hidden><span></span><button class="btn btn-secondary" onclick="YangoPage._loadData()">Réessayer</button></div>');
+    const cards = {drivers:document.getElementById('yp-pilote-activity').closest('.d-card'),performance:document.getElementById('yp-ca-result').closest('.d-card'),sync:document.getElementById('yp-sync-result').closest('.d-card')};
+    const overview = Array.from(root.children).filter(el => !['HEADER','NAV'].includes(el.tagName) && el.id !== 'yp-page-status' && !Object.values(cards).includes(el));
+    sections.forEach(([id,label,icon,description]) => {
+      const panel = document.createElement('section'); panel.id = 'yp-panel-' + id; panel.className = 'yango-panel';
+      panel.insertAdjacentHTML('beforeend', `<div class="fin-section-heading"><div><h2>${label}</h2><p>${description}</p></div></div>`);
+      (id === 'overview' ? overview : [cards[id]]).forEach(el => panel.append(el)); root.append(panel);
+    });
+    document.querySelectorAll('.yango-panel .grid-4')[1]?.classList.add('yango-secondary-kpis');
+    [['yp-planning-date','Date du planning'],['yp-ca-jours','Période analysée'],['yp-ca-seuil','Seuil journalier · FCFA'],['yp-ca-heures','Durée de travail'],['yp-sync-date','Date à importer']].forEach(([id,label]) => { const input=document.getElementById(id); const wrapper=document.createElement('label'); wrapper.className='fin-field'; wrapper.textContent=label; input.before(wrapper); wrapper.append(input); });
+    const category = document.getElementById('yp-work-rule-select');
+    category.setAttribute('aria-label', 'Catégorie Yango des indicateurs');
+    document.querySelector('#yp-panel-overview .fin-section-heading').append(category.parentElement);
+    this._setView(this._currentView || 'overview');
+  },
+
+  _setView(view) {
+    this._currentView = view;
+    document.querySelectorAll('.yango-panel').forEach(el => { el.hidden = el.id !== 'yp-panel-' + view; });
+    document.querySelectorAll('.yango-view-nav button').forEach(el => { el.classList.toggle('active',el.dataset.view === view); el.setAttribute('aria-current',el.dataset.view === view ? 'page' : 'false'); });
   },
 
   // Carte « Activité » : graphe d'aire du CA encaissé sur 6 mois (style shadcn),
@@ -52,7 +84,7 @@ const YangoPage = {
     return `<div class="d-card" style="margin-top:16px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px;">
         <div>
-          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.16em;color:var(--text-muted);">CA encaissé · 6 mois</div>
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.16em;color:var(--text-muted);">Encaissements Pilote · 6 mois</div>
           <div style="font-size:16px;font-weight:800;color:var(--text-primary);margin-top:3px;">Activité mensuelle</div>
         </div>
         <div style="text-align:right;">
@@ -102,27 +134,26 @@ const YangoPage = {
         .fleet-btn.dimmed { background:#3a3f47 !important;color:rgba(255,255,255,0.4);border-color:transparent; }
       </style>
 
-      <div class="d-wrap"><div class="d-bg">
+      <div class="yango-workspace modern-workspace"><div class="yango-inner">
 
       <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
+      <header class="fin-header">
         <div>
-          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Fleet Management</div>
-          <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:bus-bold-duotone" style="color:#FC4C02;"></iconify-icon> Yango Fleet
-          </div>
+          <span class="fin-eyebrow">PILOTE / YANGO FLEET</span>
+          <h1>Votre flotte.<br><em>Tout son potentiel.</em></h1><p>L’activité, les revenus et vos chauffeurs au même endroit.</p>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <div class="yango-filter-group">
             <select id="yp-work-rule-select" class="yango-filter-select" onchange="YangoPage._onWorkRuleChange()" title="Filtrer par categorie">
-              <option value="">Toutes categories</option>
+              <option value="">Toutes les catégories</option>
             </select>
           </div>
           <button class="btn btn-secondary" onclick="YangoPage._loadData()" id="yp-refresh-btn">
             <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Actualiser
           </button>
         </div>
-      </div>
+      </header>
+
 
       <!-- Date Picker Bar -->
       <div class="d-card" style="padding:12px 16px;margin-bottom:16px;">
@@ -141,12 +172,12 @@ const YangoPage = {
               <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Mois
             </button>
             <button class="yango-date-preset" data-preset="custom" onclick="YangoPage._toggleCustomDates()" style="padding:6px 14px;border-radius:11px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text-secondary, #6b7280);transition:all .2s;display:flex;align-items:center;gap:5px;">
-              <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Personnalise
+              <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Personnalisé
             </button>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span id="yp-live-badge" style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#FC4C02;background:rgba(252,76,2,.08);padding:5px 14px;border-radius:20px;font-weight:700;">
-              <span style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>EN DIRECT
+              <span style="width:6px;height:6px;border-radius:50%;background:#FC4C02;animation:pulse-dot 2s infinite;"></span>Actualisation · 2 min
             </span>
             <span class="d-sub" id="yp-last-update"></span>
           </div>
@@ -161,14 +192,14 @@ const YangoPage = {
           </div>
         </div>
         <div id="yp-date-label" style="display:none;"><span id="yp-date-label-text">Aujourd'hui</span></div>
-        <span id="yp-period-label" style="display:none;">Donnees en temps reel</span>
+        <span id="yp-period-label" style="display:none;">Données du jour</span>
       </div>
 
       <!-- KPIs Row 1: Main metrics -->
       <div class="grid-4" style="margin-bottom:var(--space-md);">
         <div class="kpi-card green">
           <div class="kpi-icon"><iconify-icon icon="solar:user-check-bold-duotone"></iconify-icon></div>
-          <div class="kpi-label">Chauffeurs en service</div>
+          <div class="kpi-label">Chauffeurs de la flotte</div>
           <div class="kpi-value" id="yp-drivers-total"><div class="yango-skeleton"></div></div>
           <div class="d-sub" id="yp-drivers-detail" style="margin-top:6px;"><div class="yango-skeleton-sm"></div></div>
         </div>
@@ -211,7 +242,7 @@ const YangoPage = {
         </div>
         <div class="kpi-card yellow">
           <div class="kpi-icon"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div>
-          <div class="kpi-label">Temps d'activite moyen</div>
+          <div class="kpi-label">Temps d’activité moyen</div>
           <div class="kpi-value" id="yp-activity-time"><div class="yango-skeleton"></div></div>
         </div>
       </div>
@@ -246,7 +277,7 @@ const YangoPage = {
         </div>
       </div>
 
-      <!-- Rapport CA reel par chauffeur -->
+      <!-- Rapport CA réel par chauffeur -->
       <div class="d-card" style="margin-top:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
           <div style="display:flex;align-items:center;gap:10px;">
@@ -254,7 +285,7 @@ const YangoPage = {
               <iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon>
             </div>
             <div>
-              <div style="font-size:14px;font-weight:700;color:var(--text-primary);">CA reel par chauffeur</div>
+              <div style="font-size:14px;font-weight:700;color:var(--text-primary);">CA réel par chauffeur</div>
               <div class="d-sub">Ce que chaque voiture produit vraiment, par jour travaille</div>
             </div>
           </div>
@@ -293,14 +324,14 @@ const YangoPage = {
           <span class="d-tag purple" id="yp-sync-status-badge">--</span>
         </div>
         <div class="d-sub" style="margin-bottom:14px;">
-          Recupere automatiquement les courses et l'activite de chaque chauffeur depuis Yango, puis met a jour les scores de conduite et le temps d'activite dans Pilote. La sync automatique s'execute chaque nuit a 2h.
+          Importez les courses et l’activité des chauffeurs depuis Yango pour actualiser leurs scores de conduite et leur temps d’activité dans Pilote. Le statut de la synchronisation automatique est indiqué ci-dessus.
         </div>
         <div style="display:flex;gap:var(--space-sm);align-items:center;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="YangoPage._triggerSync()" id="yp-sync-btn">
-            <iconify-icon icon="solar:play-bold"></iconify-icon> Lancer la sync maintenant
+            <iconify-icon icon="solar:play-bold"></iconify-icon> Importer aujourd’hui
           </button>
           <button class="btn btn-secondary" onclick="YangoPage._triggerSync('yesterday')" id="yp-sync-btn-hier">
-            <iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Sync hier
+            <iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon> Importer hier
           </button>
           <div style="display:flex;align-items:center;gap:6px;">
             <label style="font-size:var(--font-size-xs);color:var(--text-muted);">Date :</label>
@@ -485,6 +516,8 @@ const YangoPage = {
   },
 
   async _loadData() {
+    const generation = ++this._loadGeneration;
+    const isCurrent = () => generation === this._loadGeneration;
     const refreshBtn = document.getElementById('yp-refresh-btn');
     if (refreshBtn) { refreshBtn.classList.add('spinning'); refreshBtn.disabled = true; }
 
@@ -494,16 +527,21 @@ const YangoPage = {
         await this._loadWorkRules();
       }
 
+      if (!isCurrent()) return;
+
       // Build date range from current selection
       const dateRange = this._getDateRange();
 
       const stats = await Store.getYangoStats(this._selectedWorkRules, dateRange);
 
+      if (!isCurrent()) return;
       if (!stats || stats.error) {
         this._showError(stats?.details || stats?.error || 'Erreur de connexion');
         return;
       }
 
+      const status = document.getElementById('yp-page-status');
+      if (status) status.hidden = true;
       this._data = stats;
       this._updatePeriodLabels();
       this._renderKPIs(stats);
@@ -512,13 +550,14 @@ const YangoPage = {
       // Update sync status badge
       try {
         const syncStatus = await Store.getYangoSyncStatus();
+        if (!isCurrent()) return;
         const badge = document.getElementById('yp-sync-status-badge');
         if (badge && syncStatus) {
           if (syncStatus.running && syncStatus.enabled) {
-            badge.textContent = 'CRON actif';
+            badge.textContent = 'Synchronisation automatique active';
             badge.className = 'badge badge-success';
           } else {
-            badge.textContent = 'CRON inactif';
+            badge.textContent = 'Synchronisation automatique inactive';
             badge.className = 'badge badge-warning';
           }
           if (syncStatus.lastSyncDate) {
@@ -531,13 +570,14 @@ const YangoPage = {
       const updateEl = document.getElementById('yp-last-update');
       if (updateEl) {
         const now = new Date();
-        updateEl.textContent = `Derniere mise a jour: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        updateEl.textContent = `Mis à jour à ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       }
     } catch (err) {
+      if (!isCurrent()) return;
       console.error('YangoPage load error:', err);
       this._showError('Impossible de charger les donnees Yango');
     } finally {
-      if (refreshBtn) { refreshBtn.classList.remove('spinning'); refreshBtn.disabled = false; }
+      if (isCurrent() && refreshBtn) { refreshBtn.classList.remove('spinning'); refreshBtn.disabled = false; }
     }
   },
 
@@ -657,7 +697,7 @@ const YangoPage = {
           const to = new Date(this._dateTo).toLocaleDateString('fr-FR', opts);
           return from === to ? from : `${from} — ${to}`;
         }
-        return 'Personnalise';
+        return 'Personnalisé';
       }
       default: return "Aujourd'hui";
     }
@@ -682,7 +722,7 @@ const YangoPage = {
     // Update period label
     const periodLabel = document.getElementById('yp-period-label');
     if (periodLabel) {
-      periodLabel.textContent = isToday ? 'Donnees en temps reel' : `Donnees du ${label}`;
+      periodLabel.textContent = isToday ? 'Données du jour' : `Donnees du ${label}`;
     }
 
     // Update KPI labels
@@ -722,7 +762,7 @@ const YangoPage = {
     const select = document.getElementById('yp-work-rule-select');
     if (!select) return;
 
-    select.innerHTML = '<option value="">Toutes categories</option>';
+    select.innerHTML = '<option value="">Toutes les catégories</option>';
     this._workRules.forEach(rule => {
       const option = document.createElement('option');
       option.value = rule.id;
@@ -790,9 +830,9 @@ const YangoPage = {
     // CA with cash/card breakdown
     setVal('yp-ca-today', Utils.formatCurrency(caToday));
     setHtml('yp-ca-detail', `
-      <iconify-icon icon="solar:money-bag-bold-duotone" style="color:#13deb9;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cashToday)}
+      <iconify-icon icon="solar:money-bag-bold-duotone" style="color:#13deb9;font-size:9px"></iconify-icon> Espèces ${Utils.formatCurrency(cashToday)}
       <span style="margin:0 3px">&bull;</span>
-      <iconify-icon icon="solar:card-bold-duotone" style="color:#635bff;font-size:9px"></iconify-icon> ${Utils.formatCurrency(cardToday)}
+      <iconify-icon icon="solar:card-bold-duotone" style="color:#635bff;font-size:9px"></iconify-icon> Carte ${Utils.formatCurrency(cardToday)}
     `);
 
     setVal('yp-courses-today', coursesToday);
@@ -883,7 +923,7 @@ const YangoPage = {
     const result = await Store.triggerYangoSync(syncDate);
     this._renderSyncResult(result);
 
-    if (syncBtn) { syncBtn.disabled = false; syncBtn.innerHTML = '<iconify-icon icon="solar:play-bold"></iconify-icon> Lancer la sync maintenant'; }
+    if (syncBtn) { syncBtn.disabled = false; syncBtn.innerHTML = '<iconify-icon icon="solar:play-bold"></iconify-icon> Importer aujourd’hui'; }
   },
 
   async _triggerSyncDate() {
@@ -1269,17 +1309,7 @@ const YangoPage = {
       if (el) el.innerHTML = '';
     });
 
-    const driversContainer = document.getElementById('yp-drivers-table');
-    if (driversContainer) {
-      driversContainer.innerHTML = `
-        <div class="yango-error">
-          <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
-          <span>${message}</span>
-          <button class="btn btn-sm btn-secondary" onclick="YangoPage._loadData()" style="margin-top:8px;">
-            <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Reessayer
-          </button>
-        </div>
-      `;
-    }
+    const status = document.getElementById('yp-page-status');
+    if (status) { status.hidden = false; status.querySelector('span').textContent = 'Données Yango indisponibles. ' + message; }
   }
 };

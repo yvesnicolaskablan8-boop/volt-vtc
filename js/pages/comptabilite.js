@@ -34,49 +34,18 @@ const ComptabilitePage = {
   },
 
   _template() {
-    return `
-      <div class="d-wrap"><div class="d-bg">
+    const tabs = [['overview','Vue d’ensemble','home'],['journal','Journal','book'],['resultat','Résultat','graph-up'],['tresorerie','Trésorerie','wallet'],['factures','Factures','file-text'],['depenses','Dépenses','wallet-2'],['budget','Budget','target'],['categories','Catégories','tag']];
+    return `<div class="finance-workspace modern-workspace">
+      <header class="fin-header"><div><span class="fin-eyebrow">PILOTE / FINANCE</span><h1>Votre comptabilité,<br><em>en toute clarté.</em></h1><p>Suivez vos flux, maîtrisez vos dépenses et préparez la suite.</p></div>
+      <div class="fin-actions"><button class="btn btn-success" id="btn-add-recette"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Encaissement</button><button class="btn btn-secondary" id="btn-add-depense"><iconify-icon icon="solar:minus-circle-linear"></iconify-icon> Décaissement</button>
+      <details class="fin-export" id="compta-export-wrap"><summary>Exporter <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon></summary><div id="compta-export-menu"><button onclick="ComptabilitePage._exportPDF();this.closest('details').open=false">Document PDF</button><button onclick="ComptabilitePage._exportCSV();this.closest('details').open=false">Tableur CSV</button><button onclick="ComptabilitePage._exportComptable();this.closest('details').open=false">Export comptable</button></div></details></div></header>
+      <div class="fin-layout"><nav id="compta-tabs" aria-label="Rubriques comptables"><span class="fin-nav-label">ESPACE FINANCE</span>${tabs.map(([id,label,icon])=>`<button class="tab" data-tab="${id}"><iconify-icon icon="solar:${icon}-linear"></iconify-icon>${label}</button>`).join('')}<div class="fin-nav-note"><iconify-icon icon="solar:shield-check-linear"></iconify-icon><span>Une vision claire de chaque mouvement.</span></div></nav>
+      <main class="fin-main"><div class="fin-section-heading"><div><h2 id="fin-section-title"></h2><p id="fin-section-description"></p></div><span class="fin-currency">FCFA</span></div><div id="compta-content"></div></main></div></div>`;
+  },
 
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px;">
-        <div>
-          <div style="font-size:14px;color:#9ca3af;font-weight:500;">Finance</div>
-          <div style="font-size:28px;font-weight:800;color:var(--text-primary);letter-spacing:-.6px;margin-top:2px;display:flex;align-items:center;gap:12px;">
-            <iconify-icon icon="solar:calculator-bold-duotone" style="color:#F5512E;"></iconify-icon> Comptabilité
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <div style="position:relative;display:inline-block;" id="compta-export-wrap">
-            <button class="btn btn-secondary" onclick="document.getElementById('compta-export-menu').style.display=document.getElementById('compta-export-menu').style.display==='block'?'none':'block'"><iconify-icon icon="solar:export-bold-duotone"></iconify-icon> Exporter</button>
-            <div id="compta-export-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;min-width:170px;overflow:hidden;">
-              <button onclick="ComptabilitePage._exportPDF();document.getElementById('compta-export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:document-bold-duotone" style="font-size:16px;color:#ef4444;"></iconify-icon> Exporter en PDF</button>
-              <div style="height:1px;background:var(--border-color);margin:0 10px;"></div>
-              <button onclick="ComptabilitePage._exportCSV();document.getElementById('compta-export-menu').style.display='none'" style="display:flex;align-items:center;gap:8px;padding:10px 14px;width:100%;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-primary);" onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'"><iconify-icon icon="solar:file-bold-duotone" style="font-size:16px;color:#13deb9;"></iconify-icon> Exporter en CSV</button>
-            </div>
-          </div>
-          <button class="btn btn-secondary" onclick="ComptabilitePage._exportComptable()"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Export comptable</button>
-          <button class="btn btn-success" id="btn-add-recette"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Encaissement</button>
-          <button class="btn btn-danger" id="btn-add-depense"><iconify-icon icon="solar:minus-circle-bold-duotone"></iconify-icon> Décaissement</button>
-        </div>
-      </div>
-
-      <!-- Navigation onglets -->
-      <div class="tabs" id="compta-tabs">
-        <div class="tab active" data-tab="overview"><iconify-icon icon="solar:home-bold-duotone"></iconify-icon> Vue d'ensemble</div>
-        <div class="tab" data-tab="journal"><iconify-icon icon="solar:book-bold-duotone"></iconify-icon> Journal</div>
-        <div class="tab" data-tab="resultat"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon> Résultat</div>
-        <div class="tab" data-tab="tresorerie"><iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon> Trésorerie</div>
-        <div class="tab" data-tab="factures"><iconify-icon icon="solar:file-text-bold-duotone"></iconify-icon> Factures</div>
-        <div class="tab" data-tab="depenses"><iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon> Dépenses</div>
-        <div class="tab" data-tab="budget"><iconify-icon icon="solar:target-bold-duotone"></iconify-icon> Budget</div>
-        <div class="tab" data-tab="categories"><iconify-icon icon="solar:tag-bold-duotone"></iconify-icon> Catégories</div>
-      </div>
-
-      <!-- Contenu dynamique -->
-      <div id="compta-content"></div>
-
-      </div></div>
-    `;
+  _openForm(...args) {
+    Modal.form(...args);
+    document.querySelector('.modal')?.classList.add('finance-dialog');
   },
 
   _bindEvents() {
@@ -97,6 +66,11 @@ const ComptabilitePage = {
     this._charts.forEach(c => c.destroy());
     this._charts = [];
 
+    this._currentTab = tab;
+    const descriptions = {overview:['Vue d’ensemble','L’essentiel du mois et vos mouvements récents.'],journal:['Journal des opérations','Retrouvez et filtrez chaque entrée et sortie d’argent.'],resultat:['Compte de résultat','Comparez vos revenus et vos charges.'],tresorerie:['Trésorerie','Suivez votre solde et son évolution.'],factures:['Factures','Gardez le cap sur les paiements et les échéances.'],depenses:['Dépenses','Consultez et organisez les dépenses de votre activité.'],budget:['Budget','Comparez vos objectifs aux dépenses du mois.'],categories:['Catégories','Une organisation simple pour vos opérations.']};
+    document.querySelectorAll('#compta-tabs .tab').forEach(el => { el.classList.toggle('active', el.dataset.tab === tab); el.setAttribute('aria-current', el.dataset.tab === tab ? 'page' : 'false'); });
+    document.getElementById('fin-section-title').textContent = descriptions[tab][0];
+    document.getElementById('fin-section-description').textContent = descriptions[tab][1];
     const ct = document.getElementById('compta-content');
     switch (tab) {
       case 'overview': ct.innerHTML = this._renderOverview(); this._loadOverviewCharts(); break;
@@ -257,13 +231,13 @@ const ComptabilitePage = {
   // Bande KPI réutilisable (style Boostboard) partagée par tous les onglets.
   // items: [{ lbl, val, trend?:{pct,dir:'up'|'down',good}, badge?:{text,tone:'good'|'bad'|'neutral'}, onclick?, id?, attrs?, clickable? }]
   _band(items) {
-    const cell = (it) => {
+    const cell = (it, index) => {
       let x = '';
       if (it.trend) x = `<span class="cmp-band-trend ${it.trend.good ? 'good' : 'bad'}"><span class="cmp-tri ${it.trend.dir}"></span>${it.trend.pct}</span>`;
       else if (it.badge) x = `<span class="cmp-band-badge ${it.badge.tone || 'neutral'}">${it.badge.text}</span>`;
       const clickable = it.onclick || it.clickable;
-      return `<div class="cmp-band-item${clickable ? ' clickable' : ''}"${it.id ? ` id="${it.id}"` : ''}${it.attrs ? ' ' + it.attrs : ''}${it.onclick ? ` onclick="${it.onclick}"` : ''}>
-          <div class="cmp-band-lbl">${it.lbl}</div>
+      return `<div class="cmp-band-item${clickable ? ' clickable' : ''}"${clickable ? ' role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click()}"' : ''}${it.id ? ` id="${it.id}"` : ''}${it.attrs ? ' ' + it.attrs : ''}${it.onclick ? ` onclick="${it.onclick}"` : ''}>
+          <span class="fin-metric-icon"><iconify-icon icon="solar:${['wallet-money','chart-square','graph-up','safe-circle'][index % 4]}-linear"></iconify-icon></span><div class="cmp-band-lbl">${it.lbl}</div>
           <div class="cmp-band-val">${it.val}${x}</div>
         </div>`;
     };
@@ -312,6 +286,7 @@ const ComptabilitePage = {
         { lbl: 'Solde de trésorerie', val: Utils.formatCurrency(soldeTotal), badge: totalImpaye > 0 ? { text: Utils.formatCurrency(totalImpaye) + ' impayé', tone: 'bad' } : { text: 'À jour', tone: 'good' } }
       ])}
 
+      ${this._cptSynthese()}
       <!-- Commission Partenaire Yango -->
       <div class="d-card" id="compta-yango-section" style="margin-bottom:24px;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
@@ -321,10 +296,10 @@ const ComptabilitePage = {
             <span class="d-tag green" style="font-size:10px;">REVENU</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
-            <input type="date" id="cy-date-from" style="padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.5);color:inherit;font-size:12px;backdrop-filter:blur(8px);" />
+            <input type="date" id="cy-date-from" aria-label="Début de la période des commissions" style="padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.5);color:inherit;font-size:12px;backdrop-filter:blur(8px);" />
             <span style="color:#9ca3af;font-size:12px;">au</span>
-            <input type="date" id="cy-date-to" style="padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.5);color:inherit;font-size:12px;backdrop-filter:blur(8px);" />
-            <button class="btn btn-sm" onclick="ComptabilitePage._loadYangoCommission()" id="compta-yango-refresh" style="border-radius:12px;background:rgba(252,76,2,.1);color:#FC4C02;border:none;">
+            <input type="date" id="cy-date-to" aria-label="Fin de la période des commissions" style="padding:4px 8px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.5);color:inherit;font-size:12px;backdrop-filter:blur(8px);" />
+            <button class="btn btn-sm" onclick="ComptabilitePage._loadYangoCommission()" id="compta-yango-refresh" aria-label="Actualiser les commissions" style="border-radius:12px;background:rgba(252,76,2,.1);color:#FC4C02;border:none;">
               <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon>
             </button>
           </div>
@@ -347,23 +322,7 @@ const ComptabilitePage = {
         </div>
       </div>
 
-      <!-- Guide rapide pour non-comptable -->
-      <div class="d-card" style="margin-bottom:24px;">
-        <div style="display:flex;align-items:center;gap:16px;">
-          <div class="d-icon" style="background:rgba(245,81,46,.12);color:#F5512E;width:48px;height:48px;font-size:20px;"><iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon></div>
-          <div style="flex:1;">
-            <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;">Comment ça marche ?</h3>
-            <p style="font-size:13px;line-height:1.6;color:var(--text-secondary);">
-              <strong style="color:#13deb9;">Encaissement</strong> = argent qui rentre (versements chauffeurs, paiements clients, <strong>commission Yango</strong>)<br>
-              <strong style="color:#ef4444;">Décaissement</strong> = argent qui sort (carburant, maintenance, salaires, loyers, assurance)<br>
-              <strong style="color:#F5512E;">Bénéfice</strong> = Encaissements − Décaissements. Si positif, vous gagnez de l'argent !
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Synthèse analytique (style advanced stats) -->
-      ${this._cptSynthese()}
+      <details class="fin-guide"><summary>Comprendre mes indicateurs <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon></summary><p><strong>Encaissements :</strong> les sommes reçues. <strong>Décaissements :</strong> les sommes payées. Le résultat correspond à la différence entre les deux. La trésorerie cumule l’ensemble des mouvements enregistrés.</p></details>
 
       <!-- Dernières opérations -->
       <div class="d-card">
@@ -1110,7 +1069,7 @@ const ComptabilitePage = {
             const isOver = spent > budgetVal && budgetVal > 0;
 
             return `
-              <div style="display:grid;grid-template-columns:160px 160px 1fr 120px;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-color);">
+              <div class="fin-budget-row" style="display:grid;grid-template-columns:160px 160px 1fr 120px;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-color);">
                 <span style="font-size:var(--font-size-sm);font-weight:500;">${catLabels[cat]}</span>
                 <div>
                   <input type="number" class="form-control budget-input" data-cat="${cat}" value="${budgetVal}" placeholder="Budget" style="font-size:var(--font-size-sm);">
@@ -1432,7 +1391,7 @@ const ComptabilitePage = {
       ? '<iconify-icon icon="solar:add-circle-bold-duotone" class="text-success"></iconify-icon> Nouvel encaissement'
       : '<iconify-icon icon="solar:minus-circle-bold-duotone" class="text-danger"></iconify-icon> Nouveau décaissement';
 
-    Modal.form(title, FormBuilder.build(fields), () => {
+    this._openForm(title, FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -1473,7 +1432,7 @@ const ComptabilitePage = {
       { name: 'notes', label: 'Notes', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier opération', FormBuilder.build(fields, op), () => {
+    this._openForm('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier opération', FormBuilder.build(fields, op), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       Store.update('comptabilite', id, FormBuilder.getValues(body));
@@ -1512,7 +1471,7 @@ const ComptabilitePage = {
       { name: 'statut', label: 'Statut', type: 'select', options: [{ value: 'impayee', label: 'En attente' }, { value: 'payee', label: 'Payée' }, { value: 'en_retard', label: 'En retard' }] }
     ];
 
-    Modal.form('<iconify-icon icon="solar:file-text-bold-duotone" class="text-blue"></iconify-icon> Nouvelle facture', FormBuilder.build(fields), () => {
+    this._openForm('<iconify-icon icon="solar:file-text-bold-duotone" class="text-blue"></iconify-icon> Nouvelle facture', FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -1537,7 +1496,7 @@ const ComptabilitePage = {
       { name: 'statut', label: 'Statut', type: 'select', options: [{ value: 'impayee', label: 'En attente' }, { value: 'payee', label: 'Payée' }, { value: 'en_retard', label: 'En retard' }] },
       { type: 'row-end' }
     ];
-    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier facture', FormBuilder.build(fields, f), () => {
+    this._openForm('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier facture', FormBuilder.build(fields, f), () => {
       const body = document.getElementById('modal-body');
       Store.update('factures', id, FormBuilder.getValues(body));
       Modal.close();
@@ -1938,7 +1897,7 @@ const ComptabilitePage = {
   _addDep() {
     const vehicules = Store.get('vehicules') || [];
     const chauffeurs = Store.get('chauffeurs') || [];
-    Modal.form(
+    this._openForm(
       '<iconify-icon icon="solar:wallet-2-bold-duotone" style="color:#ffae1f;"></iconify-icon> Nouvelle dépense',
       `<form id="form-dep" class="modal-form">
         <div class="form-group"><label>Véhicule *</label>
@@ -1994,7 +1953,7 @@ const ComptabilitePage = {
     if (!d) return;
     const vehicules = Store.get('vehicules') || [];
     const chauffeurs = Store.get('chauffeurs') || [];
-    Modal.form(
+    this._openForm(
       '<iconify-icon icon="solar:pen-bold-duotone" style="color:#635bff;"></iconify-icon> Modifier dépense',
       `<form id="form-dep-edit" class="modal-form">
         <div class="form-group"><label>Véhicule</label>
