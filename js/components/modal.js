@@ -29,6 +29,8 @@ const Modal = {
 
     const modal = document.getElementById('modal-container');
     modal.className = `modal ${size}`;
+    // Chaque formulaire commence au premier champ.
+    document.getElementById('modal-body').scrollTop = 0;
 
     this._onConfirm = onConfirm;
     this._onCancel = onCancel;

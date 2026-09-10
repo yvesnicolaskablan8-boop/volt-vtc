@@ -2883,3 +2883,23 @@ textarea.form-control {
 .cmp-band-badge.bad { color:#e0603a; background:rgba(250,137,107,.16); }
 .cmp-band-badge.neutral { color:var(--text-secondary); background:var(--bg-tertiary); }
 @media (max-width:640px) { .cmp-band { padding:20px 20px 20px 34px; gap:16px 20px; } }
+
+/* Les longs formulaires défilent entre un titre et des actions toujours accessibles. */
+#modal-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+#modal-container > .modal-header,
+#modal-container > .modal-footer {
+  flex: 0 0 auto;
+}
+#modal-container > .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
