@@ -154,11 +154,7 @@ const VehiculesPage = {
         {
           label: 'Véhicule', key: 'marque', primary: true,
           render: (v) => {
-            const isEV = v.typeEnergie === 'electrique';
-            const energyIcon = isEV
-              ? '<iconify-icon icon="solar:bolt-bold-duotone" style="color:var(--pilote-yellow);font-size:10px;margin-left:4px" title="Électrique"></iconify-icon>'
-              : '<iconify-icon icon="solar:gas-station-bold-duotone" style="color:var(--text-muted);font-size:9px;margin-left:4px" title="Thermique"></iconify-icon>';
-            return `<div><div style="font-weight:500">${Utils.escHtml(v.marque || '')} ${Utils.escHtml(v.modele || '')} ${energyIcon}</div><div style="font-size:11px;color:var(--text-muted)">${Utils.escHtml(v.immatriculation || 'Sans immatriculation')} &bull; ${Utils.escHtml(String(v.annee || 'Année non renseignée'))}</div></div>`;
+            return `<div class="vehicle-table-identity"><strong>${Utils.escHtml(v.immatriculation || 'Sans immatriculation')}</strong><span>${Utils.escHtml([v.marque, v.modele].filter(Boolean).join(' '))} · ${Utils.escHtml(String(v.annee || 'Année non renseignée'))}</span></div>`;
           },
           value: (v) => `${v.marque} ${v.modele}`
         },
@@ -177,7 +173,7 @@ const VehiculesPage = {
           render: (v) => {
             if (v.typeEnergie === 'electrique') {
               const autonomieRestante = Math.round((v.niveauBatterie || 0) / 100 * (v.autonomieKm || 0));
-              return `${Utils.formatNumber(v.kilometrage)} km<br><span style="font-size:10px;color:var(--pilote-yellow)"><iconify-icon icon="solar:battery-full-bold-duotone"></iconify-icon> ${v.niveauBatterie}% &bull; ~${autonomieRestante} km</span>`;
+              return `${Utils.formatNumber(v.kilometrage)} km<br><span class="vehicle-table-range"><iconify-icon icon="solar:battery-full-bold-duotone"></iconify-icon> ${v.niveauBatterie}% &bull; ~${autonomieRestante} km</span>`;
             }
             return `${Utils.formatNumber(v.kilometrage)} km`;
           }
@@ -188,10 +184,10 @@ const VehiculesPage = {
             // Chercher via chauffeurAssigne du vehicule OU via vehiculeAssigne du chauffeur (reverse lookup)
             let c = v.chauffeurAssigne ? chauffeurs.find(x => x.id === v.chauffeurAssigne) : null;
             if (!c) c = chauffeurs.find(x => x.vehiculeAssigne === v.id);
-            if (!c) return '<span class="text-muted">-</span>';
+            if (!c) return '<span class="vehicle-table-muted">Non assigné</span>';
             return `<div style="display:flex;align-items:center;gap:6px;">
-              <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#F5512E,#8AA8FF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;">${c.prenom[0]}${c.nom[0]}</div>
-              <span style="font-weight:600;font-size:12px;">${c.prenom} ${c.nom}</span>
+              <div class="vehicle-table-avatar">${Utils.escHtml((c.prenom || '').charAt(0) + (c.nom || '').charAt(0))}</div>
+              <span class="vehicle-table-driver">${Utils.escHtml([c.prenom, c.nom].filter(Boolean).join(' '))}</span>
             </div>`;
           }
         },

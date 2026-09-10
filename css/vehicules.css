@@ -35,3 +35,34 @@ svg.vehicle-silhouette{width:180px;height:85px;max-width:80%}
 .vehicle-profile footer .btn{min-height:34px;padding:7px 10px;border-radius:8px}
 .vehicle-filters{border-radius:12px;padding:16px;margin-bottom:20px}
 @media(max-width:650px){.vehicle-visual,.vehicle-profile.is-electric .vehicle-visual{padding:18px 18px 0}.vehicle-profile-body{padding:14px 18px 16px}.vehicle-plate{font-size:23px}}
+
+/* Tableau : hiérarchie typographique et statuts à fort contraste. */
+.vehicles-workspace{--vehicle-ink:#17232f;--vehicle-muted:#526171;--vehicle-surface:#fff;--vehicle-line:#dfe5eb}
+#vehicules-table .table-container{border:1px solid var(--vehicle-line);border-radius:14px;box-shadow:none;overflow-x:auto}
+#vehicules-table table{width:100%;border-collapse:collapse}
+#vehicules-table th{background:#f3f5f7;color:#445363;font-size:11px;letter-spacing:.025em;padding:15px 18px;border-bottom:1px solid var(--vehicle-line);font-weight:700}
+#vehicules-table td{padding:18px;color:var(--vehicle-ink);font-size:13px;border-bottom:1px solid var(--vehicle-line);vertical-align:middle;background:var(--vehicle-surface);font-variant-numeric:tabular-nums}
+#vehicules-table tr:hover td{background:#f8fafb}
+.vehicle-table-identity{display:flex;flex-direction:column;gap:6px;min-width:180px}
+.vehicle-table-identity strong{font-size:14px;letter-spacing:.015em;color:var(--vehicle-ink);font-weight:750}
+.vehicle-table-identity span,.vehicle-table-muted{font-size:11px;color:var(--vehicle-muted);line-height:1.5}
+.vehicle-table-range{display:inline-block;margin-top:6px;font-size:11px;color:var(--vehicle-muted);white-space:nowrap}
+.vehicle-table-range iconify-icon{display:none}
+.vehicle-table-avatar{width:28px;height:28px;flex-shrink:0;border-radius:50%;background:#edf1f5;color:#405264;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.vehicle-table-driver{font-size:12px;font-weight:600;color:var(--vehicle-ink)}
+.vehicles-workspace .badge{font-size:11px;font-weight:650;border-radius:6px;padding:5px 9px;line-height:1.4;white-space:nowrap}
+.vehicles-workspace .badge-success{background:#e5f3ec;color:#14613f}
+.vehicles-workspace .badge-warning{background:#fff1d6;color:#825307}
+.vehicles-workspace .badge-info{background:#eaf0ff;color:#3658a0}
+.vehicles-workspace .badge-neutral{background:#edf0f3;color:#4c5a69}
+.vehicles-workspace .badge-danger{background:#ffebeb;color:#a82c35}
+#vehicules-table .badge iconify-icon{display:none}
+#vehicules-table .btn{min-height:34px;min-width:34px;border-radius:8px;padding:7px;box-shadow:none}
+#vehicules-table .btn-danger{color:#a82c35;border-color:#eed5d8;background:#fff7f7}
+#vehicules-table .btn-danger:hover{background:#ffebeb}
+.vehicles-workspace .vehicle-filters label{color:var(--vehicle-muted);font-size:11px}
+.vehicles-workspace .vehicle-filters .form-control{color:var(--vehicle-ink);font-size:12px;border-color:var(--vehicle-line)}
+.vehicles-workspace .vehicle-filters input::placeholder{color:#657383;opacity:1}
+:root[data-theme="dark"] .vehicles-workspace{--vehicle-ink:#edf2f7;--vehicle-muted:#b6c2cf;--vehicle-surface:#222e3a;--vehicle-line:#405060}
+:root[data-theme="dark"] #vehicules-table th{background:#2c3b4a;color:#d5dfe9}
+:root[data-theme="dark"] #vehicules-table tr:hover td{background:#2c3b4a}
