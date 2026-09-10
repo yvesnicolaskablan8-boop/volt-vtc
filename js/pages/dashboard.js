@@ -2492,6 +2492,27 @@ const DashboardPage = {
       const dot = `<span style="width:6px;height:6px;border-radius:50%;background:${c};${live ? 'box-shadow:0 0 0 3px ' + bg + ';' : ''}"></span>`;
       return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${bg};color:${c};">${dot}${lbl}</span>`;
     };
+    // État LIVE Yango par chauffeur (fleet-status, cf. _loadFleetLive) — la vraie
+    // réponse à « qui est en commande / occupé / hors ligne ? » au clic sur la carte.
+    const liveMap = (this._fleetLive && this._fleetLive.byId) ? this._fleetLive.byId : null;
+    const LIVE = {
+      in_order: ['En commande', '#0a9d78', 'rgba(19,222,185,.16)', true],
+      free:     ['Disponible', '#02b3a9', 'rgba(19,222,185,.12)', false],
+      busy:     ['Occupé',     '#e8930c', 'rgba(255,174,31,.16)', false],
+      offline:  ['Hors ligne', '#9aa3b2', 'var(--bg-tertiary)',   false],
+    };
+    const liveState = (it) => {
+      if (!liveMap) return null;
+      const dv = liveMap.get(it.id); if (!dv) return null;
+      return (dv.enCommande || dv.status === 'in_order') ? 'in_order' : (LIVE[dv.status] ? dv.status : 'offline');
+    };
+    const livePill = (it) => {
+      if (!showStatus) return '';
+      const st = liveState(it); if (!st) return '';
+      const [lbl, c, bg, pulse] = LIVE[st];
+      const dot = `<span style="width:6px;height:6px;border-radius:50%;background:${c};${pulse ? 'box-shadow:0 0 0 3px ' + bg + ';' : ''}"></span>`;
+      return `<span title="Statut Yango en direct" style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:20px;background:${bg};color:${c};">${dot}${lbl}</span>`;
+    };
     const RSN = {
       ca_faible: ['CA anormalement bas', '#FA896B', 'rgba(250,137,107,.14)'],
       ca_modere: ['CA sous la moyenne', '#FFAE1F', 'rgba(255,174,31,.16)'],
@@ -2507,7 +2528,14 @@ const DashboardPage = {
       const url = `https://fleet.yango.com/contractors/${encodeURIComponent(ch.yangoDriverId)}/details?park_id=${encodeURIComponent(parkId)}`;
       return `<a href="${url}" target="_blank" rel="noopener" title="Ouvrir la page Yango (surveillance)" style="height:34px;padding:0 13px;border-radius:9px;background:#f5512e;color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;font-weight:800;font-style:italic;font-size:12px;letter-spacing:.02em;">YANGO</a>`;
     };
-    const rows = seg.drivers.length ? seg.drivers.map(it => {
+    // Tri par état live (en commande → disponible → occupé → hors ligne → inconnu)
+    // pour que « qui fait quoi » se lise de haut en bas ; à état égal, par CA.
+    const RANK = { in_order: 0, free: 1, busy: 2, offline: 3 };
+    const ordered = seg.drivers.slice().sort((a, b) => {
+      const ra = RANK[liveState(a)] ?? 4, rb = RANK[liveState(b)] ?? 4;
+      return ra - rb || (b.ca || 0) - (a.ca || 0);
+    });
+    const rows = ordered.length ? ordered.map(it => {
       const initial = (it.prenom || it.nom || '?').charAt(0).toUpperCase();
       const badges = (it.reasons || []).map(r => { const m = RSN[r]; return m ? `<span style="display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${m[2]};color:${m[1]};">${m[0]}</span>` : ''; }).join('');
       const caTxt = (it.ca != null && it.ca > 0) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
@@ -2518,7 +2546,7 @@ const DashboardPage = {
         <div style="width:36px;height:36px;border-radius:50%;background:${seg.color};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${Utils.escHtml(initial)}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Utils.escHtml(((it.prenom || '') + ' ' + (it.nom || '')).trim() || 'Chauffeur')}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">${statusPill(it)}${badges}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">${livePill(it)}${statusPill(it)}${badges}</div>
         </div>
         ${caTxt}
         ${planif}
