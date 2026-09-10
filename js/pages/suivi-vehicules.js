@@ -7,6 +7,9 @@
  */
 const SuiviVehiculesPage = {
   _map: null,
+  _map3d: null,
+  _markers3d: {},
+  _is3d: false,
   _marqueurs: {},
   _minuteur: null,
 
@@ -37,17 +40,20 @@ const SuiviVehiculesPage = {
       event.currentTarget.setAttribute('aria-pressed', String(expanded));
       event.currentTarget.setAttribute('aria-label', expanded ? 'Réduire la carte' : 'Agrandir la carte');
       this._map?.invalidateSize();
+      this._map3d?.resize();
       this._cadre = false;
       this._placerMarqueurs(this._visibles());
     });
     document.getElementById('sv-expand').addEventListener('keydown', event => {
       if (event.key === 'Escape' && event.currentTarget.getAttribute('aria-pressed') === 'true') event.currentTarget.click();
     });
+    document.getElementById('sv-mode-3d').addEventListener('click', () => this._toggle3d());
     document.getElementById('sv-fit').addEventListener('click', () => { this._cadre = false; this._placerMarqueurs(this._visibles()); });
   },
 
   destroy() {
     this._generation++;
+    this._map3d?.remove(); this._map3d = null; this._markers3d = {}; this._is3d = false;
     if (this._minuteur) { clearInterval(this._minuteur); this._minuteur = null; }
     if (this._map) { this._map.remove(); this._map = null; }
     this._marqueurs = {}; this._cadre = false;
@@ -71,8 +77,8 @@ const SuiviVehiculesPage = {
           <div class="fleet-filters" aria-label="Filtrer les véhicules"><button data-sv-filter="all">Tous</button><button data-sv-filter="moving">En route</button><button data-sv-filter="stopped">À l’arrêt</button><button data-sv-filter="offline">Sans signal récent</button><button data-sv-filter="battery">À recharger</button></div>
           <div id="sv-liste" class="fleet-vehicle-list"></div>
         </aside>
-        <section class="fleet-map-panel" aria-label="Carte des véhicules"><div class="fleet-map-heading"><div><span class="fleet-map-emblem"><iconify-icon icon="solar:map-point-wave-linear"></iconify-icon></span><div><small class="fleet-map-eyebrow">EXPLORER LA FLOTTE</small><strong>Vos véhicules, en un regard</strong></div></div><button id="sv-fit"><iconify-icon icon="solar:map-point-rotate-linear"></iconify-icon> Recentrer</button><button id="sv-expand" aria-label="Agrandir la carte" aria-pressed="false"><iconify-icon icon="solar:maximize-linear"></iconify-icon></button></div>
-          <div class="fleet-map-area"><div id="sv-map"></div><div class="fleet-map-compass" aria-hidden="true"><span>N</span><iconify-icon icon="solar:compass-linear"></iconify-icon></div><div id="sv-map-status" class="fleet-map-status" role="status">Chargement de la carte…</div></div>
+        <section class="fleet-map-panel" aria-label="Carte des véhicules"><div class="fleet-map-heading"><div><span class="fleet-map-emblem"><iconify-icon icon="solar:map-point-wave-linear"></iconify-icon></span><div><small class="fleet-map-eyebrow">EXPLORER LA FLOTTE</small><strong>Vos véhicules, en un regard</strong></div></div><button id="sv-mode-3d" aria-pressed="false" title="Incliner et faire pivoter la carte"><iconify-icon icon="solar:layers-linear"></iconify-icon> Vue 3D</button><button id="sv-fit"><iconify-icon icon="solar:map-point-rotate-linear"></iconify-icon> Recentrer</button><button id="sv-expand" aria-label="Agrandir la carte" aria-pressed="false"><iconify-icon icon="solar:maximize-linear"></iconify-icon></button></div>
+          <div class="fleet-map-area"><div id="sv-map"></div><div id="sv-map-3d" hidden></div><div class="fleet-3d-hint" hidden>Vue en perspective · Faites glisser avec le clic droit pour tourner</div><div class="fleet-map-compass" aria-hidden="true"><span>N</span><iconify-icon icon="solar:compass-linear"></iconify-icon></div><div id="sv-map-status" class="fleet-map-status" role="status">Chargement de la carte…</div></div>
           <div class="fleet-map-footer"><span><i class="moving"></i> En route</span><span><i class="stopped"></i> À l’arrêt</span><span><i class="offline"></i> Signal ancien</span><small>Position du boîtier · affichage actualisé chaque minute</small></div>
         </section>
       </div>
@@ -102,6 +108,80 @@ const SuiviVehiculesPage = {
       const status = document.getElementById('sv-map-status');
       if (status) { status.textContent = 'La carte n’a pas pu être chargée. '; const retry = document.createElement('button'); retry.textContent = 'Réessayer'; retry.addEventListener('click', () => this._initCarte()); status.appendChild(retry); }
     }
+  },
+
+  async _load3dLibrary() {
+    if (window.maplibregl) return;
+    if (!this._library3d) this._library3d = Promise.all([
+      new Promise((resolve,reject) => { const link=document.createElement('link');link.rel='stylesheet';link.href='https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css';link.onload=resolve;link.onerror=()=>{link.remove();reject(new Error('Styles 3D indisponibles'));};document.head.append(link); }),
+      new Promise((resolve,reject) => { const script=document.createElement('script');script.src='https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js';script.onload=resolve;script.onerror=()=>{script.remove();reject(new Error('Moteur 3D indisponible'));};document.head.append(script); })
+    ]).catch(error=>{this._library3d=null;throw error;});
+    await this._library3d;
+  },
+
+  async _toggle3d() {
+    const button=document.getElementById('sv-mode-3d');
+    if(button.disabled)return;
+    const generation=this._generation;
+    const target=!this._is3d;
+    button.disabled=true;
+    try {
+      if(target) {
+        await this._load3dLibrary();
+        if(generation!==this._generation)return;
+        const host=document.getElementById('sv-map-3d');host.hidden=false;
+        if(!this._map3d) {
+          const center=this._map?.getCenter()||{lng:-4.0083,lat:5.36};
+          this._map3d=new maplibregl.Map({container:host,center:[center.lng,center.lat],zoom:this._map?.getZoom()||12,pitch:55,bearing:-18,maxPitch:70,maxZoom:19,style:{version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}},layers:[{id:'osm',type:'raster',source:'osm',paint:{'raster-saturation':-.3}}]}});
+          this._map3d.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
+          this._map3d.on('rotate',()=>this._orient3dMarkers());
+          this._map3d.on('error',()=>{if(this._is3d){const status=document.getElementById('sv-map-status');if(status){status.hidden=false;status.textContent='Le fond 3D rencontre un problème. Vous pouvez revenir à la vue 2D.';}}});
+        } else {
+          const center=this._map?.getCenter();
+          if(center)this._map3d.jumpTo({center:[center.lng,center.lat],zoom:this._map.getZoom()});
+        }
+        this._is3d=true;this._map3d.resize();this._sync3d(this._visibles(),true);
+      } else {
+        const center=this._map3d?.getCenter();
+        this._is3d=false;
+        if(center)this._map?.setView([center.lat,center.lng],this._map3d.getZoom(),{animate:false});
+      }
+      document.getElementById('sv-map').hidden=this._is3d;
+      document.getElementById('sv-map-3d').hidden=!this._is3d;
+      document.querySelector('.fleet-3d-hint').hidden=!this._is3d;
+      document.querySelector('.fleet-map-compass').hidden=this._is3d;
+      button.setAttribute('aria-pressed',String(this._is3d));
+      button.innerHTML=`<iconify-icon icon="solar:layers-linear"></iconify-icon> ${this._is3d?'Vue 2D':'Vue 3D'}`;
+      document.getElementById('sv-map-status').hidden=true;
+      if(!this._is3d)this._map?.invalidateSize();
+    } catch(error) {
+      if(generation!==this._generation)return;
+      this._is3d=false;this._map3d?.remove();this._map3d=null;this._markers3d={};
+      document.getElementById('sv-map-3d').hidden=true;
+      document.getElementById('sv-map').hidden=false;
+      Toast.info('La vue 3D n’est pas disponible sur cet appareil. La carte 2D reste accessible.');
+    } finally { if(generation===this._generation)button.disabled=false; }
+  },
+
+  _sync3d(vehicles,fit=false) {
+    if(!this._map3d)return;
+    const valid=vehicles.filter(v=>this._positionValide(v));const ids=new Set(valid.map(v=>v.id));
+    Object.keys(this._markers3d).forEach(id=>{if(!ids.has(id)){this._markers3d[id].remove();delete this._markers3d[id];}});
+    valid.forEach(v=>{
+      const p=v.gpsPosition,e=this._etat(v);
+      let marker=this._markers3d[v.id];
+      if(!marker){const element=document.createElement('button');element.type='button';element.className='fleet-3d-marker';element.setAttribute('aria-label',v.immatriculation||'Véhicule');marker=new maplibregl.Marker({element,anchor:'center',offset:[0,12]}).setLngLat([p.lng,p.lat]).addTo(this._map3d);element.addEventListener('click',()=>{this._selection=v.id;this._rendreListe(this._visibles());});this._markers3d[v.id]=marker;}
+      marker.setLngLat([p.lng,p.lat]);marker.getElement().dataset.heading=String(Number(p.direction)||0);marker.getElement().innerHTML=this._iconeVoiture(v,e,p);
+      const popup=document.createElement('div');popup.className='fleet-map-popup';const title=document.createElement('strong');title.textContent=v.immatriculation||'Véhicule';const status=document.createElement('span');status.textContent=e.libelle+' · '+this._depuis(p.vuLe);popup.append(title,status);
+      if(marker.getPopup())marker.getPopup().setDOMContent(popup);else marker.setPopup(new maplibregl.Popup({offset:25}).setDOMContent(popup));
+    });
+    this._orient3dMarkers();
+    if(fit&&valid.length){const bounds=new maplibregl.LngLatBounds();valid.forEach(v=>bounds.extend([v.gpsPosition.lng,v.gpsPosition.lat]));this._map3d.fitBounds(bounds,{padding:70,maxZoom:16,pitch:55,bearing:this._map3d.getBearing(),duration:0});}
+  },
+
+  _orient3dMarkers() {
+    if(!this._map3d)return;
+    Object.values(this._markers3d).forEach(marker=>{const el=marker.getElement();const arrow=el.querySelector('svg');if(arrow)arrow.style.transform=`rotate(${Number(el.dataset.heading)-this._map3d.getBearing()}deg)`;});
   },
 
   async _forcer(btn) {
@@ -326,6 +406,7 @@ const SuiviVehiculesPage = {
   },
 
   _placerMarqueurs(equipes) {
+    if (this._is3d) this._sync3d(equipes, !this._cadre);
     if (!this._map || typeof L === 'undefined') return;
     const visibleIds = new Set(equipes.filter(v => this._positionValide(v)).map(v => v.id));
     Object.keys(this._marqueurs).forEach(id => { if (!visibleIds.has(id)) { this._map.removeLayer(this._marqueurs[id]); delete this._marqueurs[id]; } });
@@ -367,6 +448,7 @@ const SuiviVehiculesPage = {
     this._rendreListe(this._visibles());
     if (!this._positionValide(v)) { Toast.info('Aucune position disponible pour ce véhicule.'); return; }
     if (!this._map) { Toast.info('La carte est en cours de chargement.'); return; }
+    if (this._is3d && this._map3d) { this._map3d.easeTo({ center: [v.gpsPosition.lng, v.gpsPosition.lat], zoom: 16, duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 600 }); const marker = this._markers3d[id]; if (marker && !marker.getPopup().isOpen()) marker.togglePopup(); }
     this._map.setView([v.gpsPosition.lat, v.gpsPosition.lng], 16);
     if (this._marqueurs[id]) this._marqueurs[id].openPopup();
     if (window.innerWidth <= 900) document.querySelector('.fleet-map-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
