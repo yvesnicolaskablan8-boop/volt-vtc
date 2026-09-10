@@ -25,43 +25,9 @@ const VersementsPage = {
     const data = this._getData();
     this._kpiData = data;
     container.innerHTML = this._template(data);
-    this._organizeCash();
     this._bindEvents(data);
     this._bindPeriodSelector();
   },
-
-  _organizeCash() {
-    const card=document.getElementById('wl-card');
-    if(!card)return;
-    const actions=card.querySelector('.wl-actions');
-    document.querySelector('.wl-title').append(actions);
-    const nav=document.createElement('nav');nav.className='cash-tabs';nav.setAttribute('aria-label','Rubriques de la caisse');
-    const right=card.querySelector('.wl-right');right.prepend(nav);
-    const sections=[...right.querySelectorAll('.wl-acc')];
-    sections.forEach((section,index)=>{
-      const title=section.querySelector('.wl-nav-title').textContent;
-      const button=document.createElement('button');button.type='button';button.textContent=title;button.dataset.cashSection=String(index);button.onclick=()=>this._showCashSection(index);nav.append(button);
-      const row=section.querySelector('.wl-nav-row');row.removeAttribute('onclick');row.style.cursor='default';
-      section.querySelector('.wl-chevron')?.remove();
-    });
-    const defaultIndex=sections.findIndex(el=>el.querySelector('#versements-total'));
-    const saved=sections.findIndex(el=>el.querySelector('.wl-nav-title').textContent===this._cashSection);
-    this._showCashSection(saved>=0?saved:Math.max(0,defaultIndex));
-    const eye=card.querySelector('.wl-eye');
-    if(eye){eye.setAttribute('role','button');eye.tabIndex=0;eye.setAttribute('aria-label','Masquer ou afficher les montants');eye.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();eye.click();}};}
-  },
-
-  _showCashSection(index) {
-    const root=document.querySelector('.cash-workspace');
-    root.querySelectorAll('.wl-right .wl-acc').forEach((section,i)=>{
-      section.hidden=i!==index;section.classList.toggle('open',i===index);
-      const body=section.querySelector('.wl-acc-body');if(body)body.hidden=i!==index;
-      if(i===index){this._cashSection=section.querySelector('.wl-nav-title').textContent;if(typeof PiloteMotion!=='undefined')PiloteMotion.enter(body||section);}
-    });
-    root.querySelectorAll('[data-cash-section]').forEach(el=>{const active=Number(el.dataset.cashSection)===index;el.setAttribute('aria-current',active?'page':'false');});
-  },
-
-  _openCashForm(...args) { Modal.form(...args);document.getElementById('modal-container')?.classList.add('cash-dialog'); },
 
   destroy() {
   },
@@ -591,7 +557,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       </div>
 
       <div class="wl-actions">
-        <button class="wl-btn wl-btn-primary wl-act-1" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Enregistrer un versement</button>
+        <button class="wl-btn wl-btn-primary wl-act-1" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Nouveau</button>
         <div class="wl-export wl-act-1" id="export-dropdown-wrap">
           <button class="wl-btn wl-btn-sec" onclick="document.getElementById('export-menu').style.display=document.getElementById('export-menu').style.display==='block'?'none':'block'"><iconify-icon icon="solar:export-bold-duotone"></iconify-icon> Exporter</button>
           <div id="export-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:14px;box-shadow:0 12px 30px rgba(17,24,39,.12);z-index:100;overflow:hidden;">
@@ -737,13 +703,13 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const ag = VersementsPage._kpiGrad('neutral');          // dégradé neutre de l'« attendu »
     return `
       ${VersementsPage._vxStyles()}
-      <div class="cash-workspace"><div class="vx-page">
+      <div class="d-wrap"><div class="d-bg vx-page">
 
       <!-- Titre -->
       <div class="wl-title">
-        <div class="wl-title-k">PILOTE / ENCAISSEMENTS</div>
+        <div class="wl-title-k">Suivi financier</div>
         <div class="wl-title-h">
-          <div><h1>Votre caisse.<br><em>Chaque mouvement compte.</em></h1><p class="cash-subtitle">Encaissez, vérifiez et régularisez depuis un espace unique.</p></div>
+          <span style="display:flex;align-items:center;gap:12px;"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#F5512E;"></iconify-icon> Caisse</span>
           <button class="wl-date" onclick="VersementsPage._openDateWheel()">
             <iconify-icon icon="solar:calendar-bold-duotone" style="color:#F5512E;font-size:17px;"></iconify-icon>
             ${this._selectedPeriod ? Utils.escHtml(Utils.formatDate(this._selectedPeriod)) : "Aujourd'hui"}
@@ -1060,7 +1026,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
-    this._openCashForm('<iconify-icon icon="solar:transfer-horizontal-bold-duotone" class="text-blue"></iconify-icon> Nouveau versement', FormBuilder.build(fields), async () => {
+    Modal.form('<iconify-icon icon="solar:transfer-horizontal-bold-duotone" class="text-blue"></iconify-icon> Nouveau versement', FormBuilder.build(fields), async () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -1282,7 +1248,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
-    this._openCashForm('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier versement', FormBuilder.build(fields, editVersement), () => {
+    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier versement', FormBuilder.build(fields, editVersement), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
       values.dateService = values.date;
@@ -1493,7 +1459,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       ? `<div style="padding:8px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:var(--font-size-xs);margin-bottom:10px;line-height:1.5;">CA Yango <strong>${Utils.formatCurrency(caBrut)}</strong> \u2212 charges <strong>${Utils.formatCurrency(charges)}</strong> \u21d2 <strong style="color:#ffae1f;">${Utils.formatCurrency(du)}</strong> attendu.<br>D\u00e9clar\u00e9 par le chauffeur : <strong style="color:#13deb9;">${Utils.formatCurrency(v.montantVerse || 0)}</strong></div>`
       : '';
     const fields = [{ name: 'motif', label: 'Motif de la contestation', type: 'textarea', required: true, placeholder: 'ex. montant inf\u00e9rieur au CA Yango, charges non justifi\u00e9es\u2026' }];
-    this._openCashForm('<iconify-icon icon="solar:shield-warning-bold-duotone" style="color:#ef4444;"></iconify-icon> Contester \u2014 ' + nom, infoYango + FormBuilder.build(fields), () => {
+    Modal.form('<iconify-icon icon="solar:shield-warning-bold-duotone" style="color:#ef4444;"></iconify-icon> Contester \u2014 ' + nom, infoYango + FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const motif = (FormBuilder.getValues(body).motif || '').trim();
@@ -2000,7 +1966,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
   _addRecVersement() {
     const chauffeurs = Store.get('chauffeurs') || [];
-    this._openCashForm(
+    Modal.form(
       '<iconify-icon icon="solar:add-circle-bold" style="color:#13deb9;"></iconify-icon> Nouveau modèle de versement',
       `<form id="form-rec-versement" class="modal-form">
         <div class="form-group"><label>Nom du modèle *</label><input type="text" name="nom" required placeholder="Ex: Recette journalière"></div>
@@ -2075,7 +2041,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const chauffeurs = Store.get('chauffeurs') || [];
     const joursSemaine = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-    this._openCashForm(
+    Modal.form(
       '<iconify-icon icon="solar:pen-bold" style="color:var(--primary);"></iconify-icon> Modifier le modèle',
       `<form id="form-rec-versement-edit" class="modal-form">
         <div class="form-group"><label>Nom du modèle *</label><input type="text" name="nom" required value="${m.nom || ''}"></div>
@@ -2565,7 +2531,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
     const existingValues = existing ? { justification: existing.justification || '' } : {};
 
-    this._openCashForm(
+    Modal.form(
       '<iconify-icon icon="solar:document-add-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Justifier l\'impay\u00e9',
       FormBuilder.build(fields, existingValues),
       () => {
@@ -2632,7 +2598,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       commentaire: existing.commentaire || ''
     } : {};
 
-    this._openCashForm(
+    Modal.form(
       '<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#13deb9;"></iconify-icon> Encaisser la recette',
       FormBuilder.build(fields, existingValues),
       () => {
@@ -3782,7 +3748,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2, placeholder: 'Notes...' }
     ];
 
-    this._openCashForm(
+    Modal.form(
       '<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#13deb9;"></iconify-icon> Encaisser la dette',
       FormBuilder.build(fields),
       () => {
