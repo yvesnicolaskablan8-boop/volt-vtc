@@ -51,7 +51,6 @@ const Header = {
       button.onkeydown=event=>{if(event.key==='ArrowDown'){event.preventDefault();open();panel.querySelector('a')?.focus();}};
       nav.append(button);
     });
-    addDirect('/parametres');
     const setActive=()=>{const route=location.hash.replace(/^#/,'');nav.querySelectorAll('.mdock-item').forEach(el=>{const active=(el.dataset.routes?.split(' ')||[el.dataset.route]).some(r=>r&&(route===r||route.startsWith(r+'/')));el.classList.toggle('is-active',active);if(active&&el.tagName==='A')el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});close();};
     this._on('dockGroupOutside',document,'click',event=>{if(!nav.contains(event.target)&&!panel.contains(event.target))close();});
     this._on('dockGroupKeys',document,'keydown',event=>{if(!opened)return;if(event.key==='Escape'){event.preventDefault();close(true);}else if(panel.contains(event.target)&&['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();const items=[...panel.querySelectorAll('a')];const index=items.indexOf(document.activeElement);const next=event.key==='Home'?0:event.key==='End'?items.length-1:(index+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[next]?.focus();}});

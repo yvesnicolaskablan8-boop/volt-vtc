@@ -431,7 +431,7 @@ const AlertesPage = {
 
       // Chauffeur actif en LOCATION sans redevance quotidienne.
       // Les salariés (payés au mois) ne doivent aucune recette : pas d'alerte pour eux.
-      if (ch.statut === 'actif' && (ch.typeContrat || 'location') !== 'salarie' && (!ch.redevanceQuotidienne || ch.redevanceQuotidienne <= 0)) {
+      if (ch.statut === 'actif' && (ch.typeContrat || 'location') !== 'salarie' && (!ch.redevanceQuotidienne || ch.redevanceQuotidienne <= 0) && !(Utils.locationParams().base > 0)) {
         alerts.push({
           id: `NOREDEV-${ch.id}`,
           categorie: 'versements',

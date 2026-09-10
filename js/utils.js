@@ -653,6 +653,38 @@ const Utils = {
       .sort((a, b) => b.montant - a.montant);
   },
 
+  // ===== LOCATION : montant dû par jour planifié = base + taux Yango × CA brut =====
+  // Règle du 10/09/2026 : 35 000 F + 23 % du CA Yango brut du jour (le locataire
+  // supporte la commission Yango en plus du loyer). Base et taux sont des réglages
+  // de flotte (Paramètres › Préférences : locationRedevance, locationTauxYango en %) ;
+  // l'override du planning puis la redevance du chauffeur remplacent la base.
+  // Tant que le CA du jour n'est pas synchronisé, la part Yango vaut 0 et se
+  // corrige d'elle-même à la synchro. Un salarié n'est JAMAIS concerné (CA net).
+  locationParams(settings) {
+    let s = settings;
+    if (!s && typeof Store !== 'undefined' && Store.get) { try { s = Store.get('settings'); } catch (e) { s = null; } }
+    const p = (s && s.preferences) || {};
+    const base = Number(p.locationRedevance);
+    const tauxPct = Number(p.locationTauxYango);
+    return {
+      base: (isFinite(base) && base > 0) ? base : 35000,
+      taux: (isFinite(tauxPct) && tauxPct >= 0) ? tauxPct / 100 : 0.23
+    };
+  },
+
+  // ch = chauffeur, p = entrée de planning (peut être null), caBrut = CA Yango brut
+  // du jour (null = non synchronisé). Renvoie { du, base, taux, caBrut, partYango, caSync }.
+  montantDuLocation(ch, p, caBrut, settings) {
+    const { base, taux } = this.locationParams(settings);
+    const override = (p && p.redevanceOverride != null && Number(p.redevanceOverride) > 0) ? Number(p.redevanceOverride) : 0;
+    const perso = (ch && Number(ch.redevanceQuotidienne) > 0) ? Number(ch.redevanceQuotidienne) : 0;
+    const baseEff = override || perso || base;
+    const caSync = caBrut != null && !isNaN(Number(caBrut));
+    const ca = caSync ? Math.max(0, Number(caBrut)) : 0;
+    const partYango = Math.round(ca * taux);
+    return { du: Math.round(baseEff + partYango), base: baseEff, taux, caBrut: ca, partYango, caSync };
+  },
+
   computeDebts({ versements, chauffeurs, planning, absences, contraventions, caJour = [], charges = [] }) {
     const todayStr = this.todayISO();
     const thirtyDaysAgo = new Date();
@@ -747,13 +779,18 @@ const Utils = {
       if (!ch || ch.statut === 'inactif') return;
       // Un chauffeur salarié ne doit aucune recette : ne jamais lui créer de dette.
       if (ch.typeContrat === 'salarie') return;
-      const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
-      if (redevance <= 0) return;
-      if (paymentIndex.has(`${p.chauffeurId}|${p.date}`)) return;
-      if (explicitDebtIndex.has(`${p.chauffeurId}|${p.date}`)) return;
+      // Location : base (override planning ▸ redevance du chauffeur ▸ réglage de
+      // flotte 35 000) + taux Yango (23 %) × CA brut du jour (caIndex = synchro
+      // Yango). detailLocation sert à l'affichage (« Base + % × CA »).
+      const caKey = `${p.chauffeurId}|${p.date}`;
+      const loc = this.montantDuLocation(ch, p, caIndex.has(caKey) ? caIndex.get(caKey) : null);
+      if (loc.du <= 0) return;
+      if (paymentIndex.has(caKey)) return;
+      if (explicitDebtIndex.has(caKey)) return;
       implicitDettes.push({
         id: `implicit_${p.chauffeurId}_${p.date}`, chauffeurId: p.chauffeurId, date: p.date,
-        manquant: redevance, traitementManquant: 'dette', implicit: true, source: 'recette'
+        manquant: loc.du, traitementManquant: 'dette', implicit: true, source: 'recette',
+        detailLocation: loc
       });
     });
 

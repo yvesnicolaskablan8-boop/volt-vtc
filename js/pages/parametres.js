@@ -1754,6 +1754,26 @@ const ParametresPage = {
 
           <div class="card">
             <div class="card-header">
+              <span class="card-title"><iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon> Chauffeurs en location</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Recette due pour chaque jour planifié = base journalière + part du CA Yango brut du jour. Une recette personnalisée sur la fiche chauffeur ou sur le planning remplace la base. Les salariés ne sont pas concernés.</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-md);">
+                <div class="form-group">
+                  <label class="form-label">Base journalière (FCFA)</label>
+                  <input type="number" class="form-control" id="pref-loc-redevance" value="${prefs.locationRedevance || 35000}" min="0" step="500" style="max-width:200px;">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Part du CA Yango (%)</label>
+                  <input type="number" class="form-control" id="pref-loc-taux" value="${prefs.locationTauxYango != null ? prefs.locationTauxYango : 23}" min="0" max="100" step="0.5" style="max-width:200px;">
+                </div>
+              </div>
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);">Exemple : base 35 000 F + 23 % × CA 100 000 F = 58 000 F dus.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
               <span class="card-title"><iconify-icon icon="solar:lock-bold-duotone"></iconify-icon> Sécurité</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:var(--space-md);padding-top:var(--space-md);">
@@ -1808,7 +1828,10 @@ const ParametresPage = {
         formatDate: document.getElementById('pref-format-date').value,
         notifications: document.getElementById('pref-notifications').checked,
         alertesSonores: document.getElementById('pref-sons').checked,
-        sessionTimeout: parseInt(document.getElementById('pref-timeout').value) || 30
+        sessionTimeout: parseInt(document.getElementById('pref-timeout').value) || 30,
+        // Chauffeurs en location : base journalière + part du CA Yango (%)
+        locationRedevance: Math.max(0, parseInt(document.getElementById('pref-loc-redevance')?.value) || 35000),
+        locationTauxYango: (() => { const t = parseFloat(document.getElementById('pref-loc-taux')?.value); return isNaN(t) ? 23 : Math.max(0, t); })()
       };
 
       Store.set('settings', settings);

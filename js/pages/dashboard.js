@@ -628,8 +628,8 @@ const DashboardPage = {
       // Skip si chauffeur inactif
       const ch = chauffeurs.find(c => c.id === p.chauffeurId);
       if (!ch || ch.statut === 'inactif') return;
-      // Skip si chauffeur n'a pas de redevance définie
-      const redevance = ch.redevanceQuotidienne || 0;
+      // Location : base + % Yango × CA du jour. Salarié : hors recette.
+      const redevance = ch.typeContrat === 'salarie' ? 0 : Utils.montantDuLocation(ch, p, DashboardPage._caBrutDe(p.chauffeurId, p.date)).du;
       if (redevance <= 0) return;
       // Vérifier si versement valide ou supprimé existe (supprimé = admin a dismissé la recette)
       const hasValidOrDismissed = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte'));
@@ -690,7 +690,7 @@ const DashboardPage = {
       if (hasAbsence) return;
       const ch = chauffeurs.find(c => c.id === p.chauffeurId);
       if (!ch || ch.statut === 'inactif') return;
-      const redevance = (p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+      const redevance = ch.typeContrat === 'salarie' ? 0 : Utils.montantDuLocation(ch, p, DashboardPage._caBrutDe(p.chauffeurId, p.date)).du;
       if (redevance > 0) totalAttenduMonth += redevance;
     });
     const tauxRecouvrement = totalAttenduMonth > 0 ? Math.min(Math.round((totalVerseMonth / totalAttenduMonth) * 100), 100) : (totalVerseMonth > 0 ? 100 : 0);
@@ -894,7 +894,7 @@ const DashboardPage = {
       const ch = chById2.get(p.chauffeurId);
       if (!ch || ch.statut === 'inactif' || ch.typeContrat === 'salarie' || absentCe(ch.id)) return;
       if (dejaComptes.has(ch.id)) return; dejaComptes.add(ch.id);
-      const r = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+      const r = ch.typeContrat === 'salarie' ? 0 : Utils.montantDuLocation(ch, p, DashboardPage._caBrutDe(p.chauffeurId, p.date)).du;
       versementAttenduJour += r;
     });
     _caj.filter(e => String(e.date).slice(0, 10) === jourAtt).forEach(e => {
@@ -1095,7 +1095,7 @@ const DashboardPage = {
         if (hasAbsence) return;
         const ch = chauffeurs.find(c => c.id === p.chauffeurId);
         if (!ch || ch.statut === 'inactif') return;
-        const redevance = ch.redevanceQuotidienne || 0;
+        const redevance = ch.typeContrat === 'salarie' ? 0 : Utils.montantDuLocation(ch, null, null).du;
         if (redevance > 0) objectifMensuel += redevance;
       });
     }
@@ -2341,6 +2341,13 @@ const DashboardPage = {
   // de courses entre deux relevés (snapshot en localStorage). Un compteur qui
   // grimpe = le chauffeur roule encore. Fenêtre de 90 min depuis la dernière
   // hausse. Signal approché (le CA Yango n'est synchronisé qu'une fois par heure).
+  // CA brut Yango synchronisé pour un chauffeur à une date (null si aucune ligne fleet_ca_jour)
+  _caBrutDe(chauffeurId, date) {
+    const e = ((typeof Store !== 'undefined' && Store.get) ? (Store.get('caJour') || []) : [])
+      .find(x => x.chauffeurId === chauffeurId && x.date === date);
+    return e ? (Number(e.caBrut) || 0) : null;
+  },
+
   _recentActiveIds(activeList) {
     const WINDOW = 90 * 60 * 1000;
     const today = new Date().toISOString().slice(0, 10);

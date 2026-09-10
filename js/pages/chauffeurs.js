@@ -1401,7 +1401,7 @@ const ChauffeursPage = {
       { name: 'objectifCaJour', label: 'Objectif CA / jour (si salarié)', type: 'number', min: 0, step: 5000, placeholder: 'Ex: 70000', default: 0 },
       { type: 'row-end' },
       { type: 'row-start' },
-      { name: 'redevanceQuotidienne', label: 'Recette quotidienne (FCFA) — si location', type: 'number', min: 0, step: 500, placeholder: 'Montant journalier à verser', default: 0 },
+      { name: 'redevanceQuotidienne', label: 'Recette quotidienne (FCFA) — si location, vide = réglage de flotte (35 000) + 23 % Yango', type: 'number', min: 0, step: 500, placeholder: 'Vide = 35 000 F/jour par défaut', default: 0 },
       { name: 'objectifCA', label: 'Objectif CA Yango journalier (FCFA)', type: 'number', min: 0, step: 1000, placeholder: 'Ex: 30000', default: 0 },
       { type: 'row-end' },
       { type: 'row-start' },

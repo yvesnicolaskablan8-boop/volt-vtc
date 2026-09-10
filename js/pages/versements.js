@@ -25,9 +25,43 @@ const VersementsPage = {
     const data = this._getData();
     this._kpiData = data;
     container.innerHTML = this._template(data);
+    this._organizeCash();
     this._bindEvents(data);
     this._bindPeriodSelector();
   },
+
+  _organizeCash() {
+    const card=document.getElementById('wl-card');
+    if(!card)return;
+    const actions=card.querySelector('.wl-actions');
+    document.querySelector('.wl-title').append(actions);
+    const nav=document.createElement('nav');nav.className='cash-tabs';nav.setAttribute('aria-label','Rubriques de la caisse');
+    const right=card.querySelector('.wl-right');right.prepend(nav);
+    const sections=[...right.querySelectorAll('.wl-acc')];
+    sections.forEach((section,index)=>{
+      const title=section.querySelector('.wl-nav-title').textContent;
+      const button=document.createElement('button');button.type='button';button.textContent=title;button.dataset.cashSection=String(index);button.onclick=()=>this._showCashSection(index);nav.append(button);
+      const row=section.querySelector('.wl-nav-row');row.removeAttribute('onclick');row.style.cursor='default';
+      section.querySelector('.wl-chevron')?.remove();
+    });
+    const defaultIndex=sections.findIndex(el=>el.querySelector('#versements-total'));
+    const saved=sections.findIndex(el=>el.querySelector('.wl-nav-title').textContent===this._cashSection);
+    this._showCashSection(saved>=0?saved:Math.max(0,defaultIndex));
+    const eye=card.querySelector('.wl-eye');
+    if(eye){eye.setAttribute('role','button');eye.tabIndex=0;eye.setAttribute('aria-label','Masquer ou afficher les montants');eye.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();eye.click();}};}
+  },
+
+  _showCashSection(index) {
+    const root=document.querySelector('.cash-workspace');
+    root.querySelectorAll('.wl-right .wl-acc').forEach((section,i)=>{
+      section.hidden=i!==index;section.classList.toggle('open',i===index);
+      const body=section.querySelector('.wl-acc-body');if(body)body.hidden=i!==index;
+      if(i===index){this._cashSection=section.querySelector('.wl-nav-title').textContent;if(typeof PiloteMotion!=='undefined')PiloteMotion.enter(body||section);}
+    });
+    root.querySelectorAll('[data-cash-section]').forEach(el=>{const active=Number(el.dataset.cashSection)===index;el.setAttribute('aria-current',active?'page':'false');});
+  },
+
+  _openCashForm(...args) { Modal.form(...args);document.getElementById('modal-container')?.classList.add('cash-dialog'); },
 
   destroy() {
   },
@@ -108,6 +142,11 @@ const VersementsPage = {
 
     // Modèle salarié : ce qui doit être versé = CA brut Yango du jour − charges.
     const caJourAll = Store.get('caJour') || [];
+    // CA Yango brut par (chauffeur|jour) — part « 23 % Yango » du montant dû location.
+    // null = CA non synchronisé (la part vaut alors 0, corrigée à la synchro).
+    const caBrutIdx = {};
+    caJourAll.forEach(e => { caBrutIdx[`${e.chauffeurId}|${e.date}`] = Number(e.caBrut) || 0; });
+    const caBrutDe = (id, d) => (Object.prototype.hasOwnProperty.call(caBrutIdx, `${id}|${d}`) ? caBrutIdx[`${id}|${d}`] : null);
     const chargesAll = Store.get('charges') || [];
     const chargeJourIdx = {};
     chargesAll.forEach(e => { if (e.date === selectedDay) chargeJourIdx[e.chauffeurId] = (chargeJourIdx[e.chauffeurId] || 0) + (Number(e.montant) || 0); });
@@ -135,7 +174,8 @@ const VersementsPage = {
       if (hasAbsence) return;
       const ch = chauffeurs.find(c => c.id === p.chauffeurId);
       if (!ch || ch.statut === 'inactif') return;
-      const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+      // Location : base + % Yango × CA du jour (Utils.montantDuLocation). Salarié : CA net.
+      const redevance = ch.typeContrat === 'salarie' ? 0 : Utils.montantDuLocation(ch, p, caBrutDe(p.chauffeurId, p.date)).du;
       const montant = ch.typeContrat === 'salarie'
         ? (attenduSalarieParCh[p.chauffeurId] ? attenduSalarieParCh[p.chauffeurId].du : 0)
         : redevance;
@@ -180,7 +220,8 @@ const VersementsPage = {
         if (hasAbsence) return;
         const ch = chauffeurs.find(c => c.id === p.chauffeurId);
         if (!ch || ch.statut === 'inactif') return;
-        const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
+        // Location : base + % Yango × CA du jour. Salarié : hors recouvrement recette.
+        const redevance = ch.typeContrat === 'salarie' ? 0 : Utils.montantDuLocation(ch, p, caBrutDe(p.chauffeurId, p.date)).du;
         if (redevance <= 0) return;
         recoAttendu += redevance;
         const versePourJour = versements.filter(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'partiel'));
@@ -220,7 +261,8 @@ const VersementsPage = {
       if (hasAbsence) return;
       const ch2 = chauffeurs.find(c => c.id === p.chauffeurId);
       if (!ch2 || ch2.statut === 'inactif') return;
-      const redev = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch2.redevanceQuotidienne || 0);
+      // Location : base + % Yango × CA du jour. Salarié : pas de recette due.
+      const redev = ch2.typeContrat === 'salarie' ? 0 : Utils.montantDuLocation(ch2, p, caBrutDe(p.chauffeurId, p.date)).du;
       if (redev <= 0) return;
       const hasValidOrDismissed = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === p.date && (v.statut === 'valide' || v.statut === 'supprime'));
       if (!hasValidOrDismissed) {
@@ -293,8 +335,9 @@ const VersementsPage = {
       const ch = chauffeurs.find(c => c.id === p.chauffeurId);
       if (!ch || ch.statut === 'inactif' || ch.typeContrat === 'salarie') return;
       if (absences.some(ab => ab.chauffeurId === p.chauffeurId && p.date >= ab.dateDebut && p.date <= ab.dateFin)) return;
-      const redevance = (p.redevanceOverride != null && p.redevanceOverride > 0) ? p.redevanceOverride : (ch.redevanceQuotidienne || 0);
-      if (redevance > 0) return;
+      // Base effective : override planning > recette perso > réglage de flotte (35 000 par défaut)
+      const loc = Utils.montantDuLocation(ch, p, null);
+      if (loc.base > 0) return;
       const cur = noRedevMap.get(p.chauffeurId) || { chauffeurId: p.chauffeurId, nom: `${ch.prenom} ${ch.nom}`, count: 0, lastDate: '' };
       cur.count++; if (p.date > cur.lastDate) cur.lastDate = p.date;
       noRedevMap.set(p.chauffeurId, cur);
@@ -548,7 +591,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       </div>
 
       <div class="wl-actions">
-        <button class="wl-btn wl-btn-primary wl-act-1" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Nouveau</button>
+        <button class="wl-btn wl-btn-primary wl-act-1" id="btn-add-versement"><iconify-icon icon="solar:add-circle-bold"></iconify-icon> Enregistrer un versement</button>
         <div class="wl-export wl-act-1" id="export-dropdown-wrap">
           <button class="wl-btn wl-btn-sec" onclick="document.getElementById('export-menu').style.display=document.getElementById('export-menu').style.display==='block'?'none':'block'"><iconify-icon icon="solar:export-bold-duotone"></iconify-icon> Exporter</button>
           <div id="export-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--vx-card);border:1px solid var(--vx-bd);border-radius:14px;box-shadow:0 12px 30px rgba(17,24,39,.12);z-index:100;overflow:hidden;">
@@ -694,13 +737,13 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const ag = VersementsPage._kpiGrad('neutral');          // dégradé neutre de l'« attendu »
     return `
       ${VersementsPage._vxStyles()}
-      <div class="d-wrap"><div class="d-bg vx-page">
+      <div class="cash-workspace"><div class="vx-page">
 
       <!-- Titre -->
       <div class="wl-title">
-        <div class="wl-title-k">Suivi financier</div>
+        <div class="wl-title-k">PILOTE / ENCAISSEMENTS</div>
         <div class="wl-title-h">
-          <span style="display:flex;align-items:center;gap:12px;"><iconify-icon icon="solar:wallet-money-bold-duotone" style="color:#F5512E;"></iconify-icon> Caisse</span>
+          <div><h1>Votre caisse.<br><em>Chaque mouvement compte.</em></h1><p class="cash-subtitle">Encaissez, vérifiez et régularisez depuis un espace unique.</p></div>
           <button class="wl-date" onclick="VersementsPage._openDateWheel()">
             <iconify-icon icon="solar:calendar-bold-duotone" style="color:#F5512E;font-size:17px;"></iconify-icon>
             ${this._selectedPeriod ? Utils.escHtml(Utils.formatDate(this._selectedPeriod)) : "Aujourd'hui"}
@@ -1017,7 +1060,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form('<iconify-icon icon="solar:transfer-horizontal-bold-duotone" class="text-blue"></iconify-icon> Nouveau versement', FormBuilder.build(fields), async () => {
+    this._openCashForm('<iconify-icon icon="solar:transfer-horizontal-bold-duotone" class="text-blue"></iconify-icon> Nouveau versement', FormBuilder.build(fields), async () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
@@ -1239,7 +1282,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2 }
     ];
 
-    Modal.form('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier versement', FormBuilder.build(fields, editVersement), () => {
+    this._openCashForm('<iconify-icon icon="solar:pen-bold-duotone" class="text-blue"></iconify-icon> Modifier versement', FormBuilder.build(fields, editVersement), () => {
       const body = document.getElementById('modal-body');
       const values = FormBuilder.getValues(body);
       values.dateService = values.date;
@@ -1450,7 +1493,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       ? `<div style="padding:8px 10px;background:var(--bg-tertiary);border-radius:var(--radius-sm);font-size:var(--font-size-xs);margin-bottom:10px;line-height:1.5;">CA Yango <strong>${Utils.formatCurrency(caBrut)}</strong> \u2212 charges <strong>${Utils.formatCurrency(charges)}</strong> \u21d2 <strong style="color:#ffae1f;">${Utils.formatCurrency(du)}</strong> attendu.<br>D\u00e9clar\u00e9 par le chauffeur : <strong style="color:#13deb9;">${Utils.formatCurrency(v.montantVerse || 0)}</strong></div>`
       : '';
     const fields = [{ name: 'motif', label: 'Motif de la contestation', type: 'textarea', required: true, placeholder: 'ex. montant inf\u00e9rieur au CA Yango, charges non justifi\u00e9es\u2026' }];
-    Modal.form('<iconify-icon icon="solar:shield-warning-bold-duotone" style="color:#ef4444;"></iconify-icon> Contester \u2014 ' + nom, infoYango + FormBuilder.build(fields), () => {
+    this._openCashForm('<iconify-icon icon="solar:shield-warning-bold-duotone" style="color:#ef4444;"></iconify-icon> Contester \u2014 ' + nom, infoYango + FormBuilder.build(fields), () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const motif = (FormBuilder.getValues(body).motif || '').trim();
@@ -1800,10 +1843,13 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       (drv.items || []).forEach(it => {
         const type = it.source === 'contravention' ? 'Contravention' : 'Recette';
         const ds = it.detailSalarie;
-        const caYango = ds ? Math.round(ds.caBrut || 0) : '';
+        const dl = it.detailLocation;
+        const caYango = ds ? Math.round(ds.caBrut || 0) : (dl && dl.caSync ? Math.round(dl.caBrut || 0) : '');
         const detail = it.source === 'contravention'
           ? (it.commentaire || 'Contravention')
-          : (ds ? `CA net ${Math.round(ds.caNet || 0)}${ds.charge > 0 ? ' − charges ' + Math.round(ds.charge) : ''}${ds.verse > 0 ? ' − versé ' + Math.round(ds.verse) : ''}` : '');
+          : ds ? `CA net ${Math.round(ds.caNet || 0)}${ds.charge > 0 ? ' − charges ' + Math.round(ds.charge) : ''}${ds.verse > 0 ? ' − versé ' + Math.round(ds.verse) : ''}`
+          : dl ? `Base ${Math.round(dl.base)} + ${Math.round(dl.taux * 100)} % × CA ${Math.round(dl.caBrut)}${dl.caSync ? '' : ' (CA non synchronisé)'}`
+          : '';
         rows.push([drv.nom || it.chauffeurId, it.date || '', type, Math.round(it.manquant || 0), caYango, detail]);
       });
     });
@@ -1857,6 +1903,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
           const detail = ds.commission > 0 ? `CA net ${money(ds.caNet)} (comm. ${money(ds.commission)})` : '—';
           return [nom, money(ds.caBrut || 0), detail];
         }
+        const dl = it.detailLocation;
+        if (dl) return [nom, dl.caSync ? money(dl.caBrut) : '—', `Base ${money(dl.base)} + ${Math.round(dl.taux * 100)} % × CA${dl.caSync ? '' : ' (non synchronisé)'} = ${money(dl.du)}`];
         return [nom, '—', 'dette saisie manuellement'];
       };
 
@@ -1952,7 +2000,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
   _addRecVersement() {
     const chauffeurs = Store.get('chauffeurs') || [];
-    Modal.form(
+    this._openCashForm(
       '<iconify-icon icon="solar:add-circle-bold" style="color:#13deb9;"></iconify-icon> Nouveau modèle de versement',
       `<form id="form-rec-versement" class="modal-form">
         <div class="form-group"><label>Nom du modèle *</label><input type="text" name="nom" required placeholder="Ex: Recette journalière"></div>
@@ -2027,7 +2075,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const chauffeurs = Store.get('chauffeurs') || [];
     const joursSemaine = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-    Modal.form(
+    this._openCashForm(
       '<iconify-icon icon="solar:pen-bold" style="color:var(--primary);"></iconify-icon> Modifier le modèle',
       `<form id="form-rec-versement-edit" class="modal-form">
         <div class="form-group"><label>Nom du modèle *</label><input type="text" name="nom" required value="${m.nom || ''}"></div>
@@ -2517,7 +2565,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 
     const existingValues = existing ? { justification: existing.justification || '' } : {};
 
-    Modal.form(
+    this._openCashForm(
       '<iconify-icon icon="solar:document-add-bold-duotone" style="color:var(--pilote-blue);"></iconify-icon> Justifier l\'impay\u00e9',
       FormBuilder.build(fields, existingValues),
       () => {
@@ -2584,7 +2632,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       commentaire: existing.commentaire || ''
     } : {};
 
-    Modal.form(
+    this._openCashForm(
       '<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#13deb9;"></iconify-icon> Encaisser la recette',
       FormBuilder.build(fields, existingValues),
       () => {
@@ -2936,9 +2984,11 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
         .map(it => {
           const isImplicit = !!it.implicit;
           const ds = it.detailSalarie;   // présent uniquement pour un salarié
+          const dl = it.detailLocation;  // présent uniquement pour une location (base + % Yango)
           const note = it.source === 'contravention'
             ? (it.commentaire || 'Contravention')
             : ds ? `CA Yango ${Utils.formatCurrency(ds.caBrut)}${ds.commission > 0 ? ' − comm. ' + Utils.formatCurrency(ds.commission) : ''}${ds.charge > 0 ? ' − charges ' + Utils.formatCurrency(ds.charge) : ''}${ds.verse ? ' · versé ' + Utils.formatCurrency(ds.verse) : ''}`
+            : dl ? `Base ${Utils.formatCurrency(dl.base)} + ${Math.round(dl.taux * 100)} % × CA ${Utils.formatCurrency(dl.caBrut)}${dl.caSync ? '' : ' (CA non synchronisé)'}`
             : isImplicit ? 'Non versé (redevance due)'
             : ('Versé : ' + Utils.formatCurrency(it.montantVerse || 0));
           const chargesBtn = ds ? `<button class="vx-ib" onclick="event.stopPropagation();VersementsPage._gererCharges('${it._chauffeurId}','${it.date}')" title="Déduire / gérer les charges"><iconify-icon icon="solar:gas-station-bold-duotone"></iconify-icon></button>` : '';
@@ -3518,7 +3568,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     // Montant reel de la dette du jour (redevance pour un locataire, CA-charges
     // pour un salarie) : la redevance seule affichait « 0 F » aux salaries.
     const redevance = (montant != null && montant > 0)
-      ? montant : (ch ? (ch.redevanceQuotidienne || 0) : 0);
+      ? montant : (ch ? (ch.typeContrat === 'salarie' ? 0 : Utils.montantDuLocation(ch, null, null).du) : 0);
 
     Modal.open({
       title: '<iconify-icon icon="solar:close-circle-bold-duotone" style="color:#ef4444;"></iconify-icon> Annuler cette dette ?',
@@ -3732,7 +3782,7 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       { name: 'commentaire', label: 'Commentaire', type: 'textarea', rows: 2, placeholder: 'Notes...' }
     ];
 
-    Modal.form(
+    this._openCashForm(
       '<iconify-icon icon="solar:hand-money-bold-duotone" style="color:#13deb9;"></iconify-icon> Encaisser la dette',
       FormBuilder.build(fields),
       () => {

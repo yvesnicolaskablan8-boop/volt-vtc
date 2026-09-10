@@ -133,7 +133,7 @@ const NotificationManager = {
       const ch = chauffeurs.find(c => c.id === p.chauffeurId);
       if (!ch || ch.statut !== 'actif') return;
       const hasPayment = versements.some(v => v.chauffeurId === p.chauffeurId && v.date === today && v.statut === 'valide');
-      if (!hasPayment && (ch.redevanceQuotidienne || 0) > 0) {
+      if (!hasPayment && ch.typeContrat !== 'salarie' && Utils.montantDuLocation(ch, p, null).du > 0) {
         unpaidToday.push(ch);
       }
     });
@@ -195,7 +195,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 690;
+      const SW_VERSION = 692;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);

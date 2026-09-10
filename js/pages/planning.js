@@ -1897,9 +1897,9 @@ const PlanningPage = {
 
     const parRole = nouveaux.filter(c => c.role === 'doublure').length;
     const recettePotentielle = nouveaux.reduce((s, c) => {
-      if (c.redevanceOverride != null && c.redevanceOverride > 0) return s + c.redevanceOverride;
       const ch = chById[c.chauffeurId];
-      return s + (ch ? (ch.redevanceQuotidienne || 0) : 0);
+      if (ch && ch.typeContrat === 'salarie') return s;
+      return s + Utils.montantDuLocation(ch, c, null).du;
     }, 0);
     const nbNuit = nouveaux.filter(c => c.service === 'nuit').length;
 
