@@ -577,9 +577,12 @@ const TachesPage = {
       update.dateTerminaison = new Date().toISOString();
     }
 
+    const selector = '.kanban-card[data-task-id="' + CSS.escape(taskId) + '"]';
+    const before = PiloteMotion.capture(document.querySelector(selector));
     Store.update('taches', taskId, update);
     Toast.success('Tâche déplacée vers "' + (this._statutConfig[newStatut] ? this._statutConfig[newStatut].label : newStatut) + '"');
     this._renderActiveView();
+    PiloteMotion.move(document.querySelector(selector), before, newStatut === 'terminee');
   },
 
   // =====================================================================
@@ -1436,6 +1439,7 @@ const TachesPage = {
     Toast.success(this._selectedTasks.size + ' tâche(s) passée(s) en "' + label + '"');
     this._selectedTasks.clear();
     this._renderActiveView();
+    if (newStatut === 'terminee') PiloteMotion.pulse(document.getElementById('page-content'));
   },
 
   _bulkDelete() {
@@ -1913,6 +1917,7 @@ const TachesPage = {
     Toast.success('Statut mis à jour : ' + (this._statutConfig[newStatut] ? this._statutConfig[newStatut].label : newStatut));
     Modal.close();
     this._renderActiveView();
+    if (newStatut === 'terminee') PiloteMotion.pulse(document.getElementById('page-content'));
   },
 
   // (Ré)assigner une tâche à n'importe quel membre depuis la vue détail :

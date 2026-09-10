@@ -100,6 +100,7 @@ const ChauffeursPage = {
       return;
     }
     container.innerHTML = `<div class="drivers-workspace drivers-detail">${this._detailTemplate(chauffeur)}</div>`;
+    PiloteMotion.enter(container.querySelector('.detail-header'));
     this._loadDetailCharts(chauffeur);
     this._bindDetailEvents(chauffeur);
     setTimeout(() => {
@@ -322,7 +323,7 @@ const ChauffeursPage = {
 
     document.getElementById('btn-add-chauffeur').onclick = () => this._add();
     document.querySelectorAll('[data-driver-status]').forEach(el => { el.onclick=()=>{this._filtres.statut=el.dataset.driverStatus;document.getElementById('flt-statut').value=this._filtres.statut;this._redessinerTableau();}; });
-    document.querySelectorAll('[data-driver-view]').forEach(el => { el.onclick=()=>{this._view=el.dataset.driverView;this._renderCards();}; });
+    document.querySelectorAll('[data-driver-view]').forEach(el => { el.onclick=()=>{this._view=el.dataset.driverView;this._renderCards();PiloteMotion.enter(document.getElementById(this._view==='cards'?'chauffeurs-cards':'chauffeurs-table'));}; });
     this._renderCards();
   },
 

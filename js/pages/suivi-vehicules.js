@@ -48,7 +48,7 @@ const SuiviVehiculesPage = {
       if (event.key === 'Escape' && event.currentTarget.getAttribute('aria-pressed') === 'true') event.currentTarget.click();
     });
     document.getElementById('sv-mode-3d').addEventListener('click', () => this._toggle3d());
-    document.getElementById('sv-fit').addEventListener('click', () => { this._cadre = false; this._placerMarqueurs(this._visibles()); });
+    document.getElementById('sv-fit').addEventListener('click', () => { this._animateFit = PiloteMotion.enabled(); this._cadre = false; this._placerMarqueurs(this._visibles()); });
   },
 
   destroy() {
@@ -154,6 +154,8 @@ const SuiviVehiculesPage = {
       button.innerHTML=`<iconify-icon icon="solar:layers-linear"></iconify-icon> ${this._is3d?'Vue 2D':'Vue 3D'}`;
       document.getElementById('sv-map-status').hidden=true;
       if(!this._is3d)this._map?.invalidateSize();
+      PiloteMotion.enter(document.getElementById(this._is3d?'sv-map-3d':'sv-map'));
+      if(this._is3d && PiloteMotion.enabled()){this._map3d.jumpTo({pitch:0});this._map3d.easeTo({pitch:55,duration:650});}
     } catch(error) {
       if(generation!==this._generation)return;
       this._is3d=false;this._map3d?.remove();this._map3d=null;this._markers3d={};
@@ -170,13 +172,13 @@ const SuiviVehiculesPage = {
     valid.forEach(v=>{
       const p=v.gpsPosition,e=this._etat(v);
       let marker=this._markers3d[v.id];
-      if(!marker){const element=document.createElement('button');element.type='button';element.className='fleet-3d-marker';element.setAttribute('aria-label',v.immatriculation||'Véhicule');marker=new maplibregl.Marker({element,anchor:'center',offset:[0,12]}).setLngLat([p.lng,p.lat]).addTo(this._map3d);element.addEventListener('click',()=>{this._selection=v.id;this._rendreListe(this._visibles());});this._markers3d[v.id]=marker;}
+      if(!marker){const element=document.createElement('button');element.type='button';element.className='fleet-3d-marker';element.setAttribute('aria-label',v.immatriculation||'Véhicule');marker=new maplibregl.Marker({element,anchor:'center',offset:[0,12]}).setLngLat([p.lng,p.lat]).addTo(this._map3d);element.addEventListener('click',()=>{this._selection=v.id;this._highlightSelection();this._rendreListe(this._visibles());});this._markers3d[v.id]=marker;}
       marker.setLngLat([p.lng,p.lat]);marker.getElement().dataset.heading=String(Number(p.direction)||0);marker.getElement().innerHTML=this._iconeVoiture(v,e,p);
       const popup=document.createElement('div');popup.className='fleet-map-popup';const title=document.createElement('strong');title.textContent=v.immatriculation||'Véhicule';const status=document.createElement('span');status.textContent=e.libelle+' · '+this._depuis(p.vuLe);popup.append(title,status);
       if(marker.getPopup())marker.getPopup().setDOMContent(popup);else marker.setPopup(new maplibregl.Popup({offset:25}).setDOMContent(popup));
     });
     this._orient3dMarkers();
-    if(fit&&valid.length){const bounds=new maplibregl.LngLatBounds();valid.forEach(v=>bounds.extend([v.gpsPosition.lng,v.gpsPosition.lat]));this._map3d.fitBounds(bounds,{padding:70,maxZoom:16,pitch:55,bearing:this._map3d.getBearing(),duration:0});}
+    if(fit&&valid.length){const bounds=new maplibregl.LngLatBounds();valid.forEach(v=>bounds.extend([v.gpsPosition.lng,v.gpsPosition.lat]));this._map3d.fitBounds(bounds,{padding:70,maxZoom:16,pitch:55,bearing:this._map3d.getBearing(),duration:this._animateFit ? 600 : 0});}
   },
 
   _orient3dMarkers() {
@@ -402,7 +404,7 @@ const SuiviVehiculesPage = {
   _iconeVoiture(v, e, p) {
     const plaque = Utils.escHtml(v.immatriculation || '');
     const heading = Number.isFinite(Number(p.direction)) ? Number(p.direction) : 0;
-    return `<div class="fleet-map-marker" style="--marker-color:${e.couleur}"><div class="fleet-marker-halo"></div><div class="fleet-marker-pin"><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${heading}deg)"><path d="M12 3 20 20 12 16 4 20Z" fill="currentColor" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></svg></div><div class="fleet-marker-label"><i></i>${plaque}</div></div>`;
+    return `<div data-map-vehicle="${Utils.escHtml(v.id)}" class="fleet-map-marker${this._selection === v.id ? ' is-selected' : ''}" style="--marker-color:${e.couleur}"><div class="fleet-marker-halo"></div><div class="fleet-marker-pin"><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${heading}deg)"><path d="M12 3 20 20 12 16 4 20Z" fill="currentColor" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></svg></div><div class="fleet-marker-label"><i></i>${plaque}</div></div>`;
   },
 
   _placerMarqueurs(equipes) {
@@ -426,7 +428,7 @@ const SuiviVehiculesPage = {
         this._marqueurs[v.id].setLatLng([p.lat, p.lng]).setIcon(icone);
       } else {
         this._marqueurs[v.id] = L.marker([p.lat, p.lng], { icon: icone, title: v.immatriculation || 'Véhicule' }).addTo(this._map);
-        this._marqueurs[v.id].on('click', () => { this._selection = v.id; this._rendreListe(this._visibles()); const button = [...document.querySelectorAll('[data-center]')].find(b => b.dataset.center === v.id); button?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+        this._marqueurs[v.id].on('click', () => { this._selection = v.id; this._highlightSelection(); this._rendreListe(this._visibles()); const button = [...document.querySelectorAll('[data-center]')].find(b => b.dataset.center === v.id); button?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
       }
       this._marqueurs[v.id].bindPopup(
         `<div class="fleet-map-popup"><span class="fleet-popup-eyebrow">POSITION DU VÉHICULE</span><strong>${Utils.escHtml(v.immatriculation || '')}</strong><span class="fleet-popup-state" style="--marker-color:${e.couleur}">${e.libelle}</span><small>Dernier signal · ${this._depuis(p.vuLe)}</small></div>`);
@@ -437,14 +439,20 @@ const SuiviVehiculesPage = {
     if (points.length && !this._cadre) {
       this._cadre = true;
       if (points.length === 1) this._map.setView(points[0], 15);
-      else this._map.fitBounds(points, { padding: [40, 40] });
+      else this._map.fitBounds(points, { padding: [40, 40], animate: !!this._animateFit, duration: .6 });
+      this._animateFit = false;
     }
+  },
+
+  _highlightSelection() {
+    document.querySelectorAll('[data-map-vehicle]').forEach(el=>el.classList.toggle('is-selected',el.dataset.mapVehicle===this._selection));
   },
 
   _centrer(id) {
     const v = this._equipes().find(x => x.id === id);
     if (!v) return;
     this._selection = id;
+    this._highlightSelection();
     this._rendreListe(this._visibles());
     if (!this._positionValide(v)) { Toast.info('Aucune position disponible pour ce véhicule.'); return; }
     if (!this._map) { Toast.info('La carte est en cours de chargement.'); return; }

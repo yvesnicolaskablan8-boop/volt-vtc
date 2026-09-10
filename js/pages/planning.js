@@ -442,7 +442,7 @@ const PlanningPage = {
         const ch = chById[s.chauffeurId];
         if (!ch) return;
         if (!this._matchesShiftFilters(s)) return;
-        chips.push(`<div class="pcal-chip" draggable="true" ondragstart="event.stopPropagation();PlanningPage._onDragShift(event,'${s.id}')" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
+        chips.push(`<div class="pcal-chip" data-shift-id="${s.id}" draggable="true" ondragend="this.style.opacity=''" ondragstart="event.stopPropagation();PlanningPage._onDragShift(event,'${s.id}')" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
           <span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.${this._serviceDuCreneau(s) === 'nuit' ? ' <span style="font-size:8.5px;font-weight:800;color:#e0e7ff;background:#312e81;border-radius:4px;padding:0 3px">NUIT</span>' : ''}${s.role === 'doublure' ? ' <span style="font-size:8.5px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:4px;padding:0 3px">REMPL</span>' : ''} <span class="pcal-chip-time">${s.heureDebut || ''}${s.heureFin ? '–' + s.heureFin : ''}</span></span>
         </div>`);
       });
@@ -851,7 +851,7 @@ const PlanningPage = {
                 const timeShort = this._getShiftTimeShort(s);
                 const isPast = d.date < todayStr;
                 const hasVersement = isPast && versements.some(v => v.chauffeurId === ch.id && v.date === d.date && (v.statut === 'valide' || v.statut === 'supprime' || v.statut === 'perte'));
-                return `<div class="pg-cell ${typeClass}${rowClass}${todayCol}" draggable="true" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="${anim}" title="${this._getShiftTimeFull(s)} (${this._getShiftDuration(s)})${isPast && !hasVersement ? ' — Versement en retard' : ''}" onclick="PlanningPage._editShift('${s.id}')">
+                return `<div class="pg-cell ${typeClass}${rowClass}${todayCol}" data-shift-id="${s.id}" draggable="true" ondragend="this.style.opacity=''" ondragstart="PlanningPage._onDragStart(event, '${s.id}')" style="${anim}" title="${this._getShiftTimeFull(s)} (${this._getShiftDuration(s)})${isPast && !hasVersement ? ' — Versement en retard' : ''}" onclick="PlanningPage._editShift('${s.id}')">
                   <span class="pg-cell-text">${timeShort}</span>
                 </div>`;
               }
@@ -1010,7 +1010,7 @@ const PlanningPage = {
         const ch = chById[s.chauffeurId];
         if (!ch) return;
         if (!this._matchesShiftFilters(s)) return;
-        chips.push(`<div class="pcal-ev" draggable="true" ondragstart="event.stopPropagation();PlanningPage._onDragShift(event,'${s.id}')" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
+        chips.push(`<div class="pcal-ev" data-shift-id="${s.id}" draggable="true" ondragend="this.style.opacity=''" ondragstart="event.stopPropagation();PlanningPage._onDragShift(event,'${s.id}')" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
           <span class="pcal-ev-name">${Utils.escHtml(ch.prenom + ' ' + ch.nom)}</span>
           <span class="pcal-ev-time">${Utils.escHtml(this._getShiftTimeLabel(s))}</span>
         </div>`);
@@ -1078,9 +1078,18 @@ const PlanningPage = {
     if (!id || !date) return;
     const shift = this._getPlanning().find(s => s.id === id);
     if (!shift || shift.date === date) return;
+    const duplicate = this._getPlanning().some(other => other.id !== id && other.chauffeurId === shift.chauffeurId && other.date === date && other.heureDebut === shift.heureDebut && other.heureFin === shift.heureFin);
+    if (duplicate || this._getDriverAbsencesForDate(shift.chauffeurId, date).length) {
+      PiloteMotion.pulse(e.currentTarget, true);
+      Toast.error(duplicate ? 'Ce créneau existe déjà à cette date' : 'Ce chauffeur est absent ce jour-là');
+      return;
+    }
+    const selector = '[data-shift-id="' + CSS.escape(id) + '"]';
+    const before = PiloteMotion.capture(document.querySelector(selector));
     Store.update('planning', id, { date });
     if (typeof Toast !== 'undefined') Toast.success('Créneau déplacé au ' + Utils.formatDate(date));
     this._renderView();
+    PiloteMotion.move(document.querySelector(selector), before, true);
   },
 
   _filterByName(chauffeurs) {
@@ -2029,6 +2038,7 @@ const PlanningPage = {
     );
 
     if (exists) {
+      PiloteMotion.pulse(event.currentTarget, true);
       Toast.error('Ce créneau existe déjà à cette date');
       this._draggedShiftId = null;
       return;
@@ -2037,12 +2047,15 @@ const PlanningPage = {
     // Vérifier absence à la destination
     const absences = this._getDriverAbsencesForDate(targetChauffeurId, targetDate);
     if (absences.length > 0) {
+      PiloteMotion.pulse(event.currentTarget, true);
       Toast.error('Ce chauffeur est absent ce jour-là');
       this._draggedShiftId = null;
       return;
     }
 
     // Mettre à jour le créneau
+    const selector = '[data-shift-id="' + CSS.escape(shiftId) + '"]';
+    const before = PiloteMotion.capture(document.querySelector(selector));
     Store.update('planning', shiftId, {
       chauffeurId: targetChauffeurId,
       date: targetDate
@@ -2051,6 +2064,7 @@ const PlanningPage = {
     this._draggedShiftId = null;
     Toast.success('Créneau déplacé');
     this._renderView();
+    PiloteMotion.move(document.querySelector(selector), before, true);
   },
 
   _editShift(id) {

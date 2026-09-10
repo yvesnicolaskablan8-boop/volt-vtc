@@ -91,6 +91,7 @@ const DashboardPage = {
   },
 
   destroy() {
+    PiloteMotion._metrics = null;
     this._charts.forEach(c => c.destroy());
     this._charts = [];
     if (this._rtlChart) { this._rtlChart.destroy(); this._rtlChart = null; }
@@ -2523,6 +2524,7 @@ const DashboardPage = {
     if (circle) { circle.replaceChildren(); circle.insertAdjacentHTML('beforeend', this._fleetCircleInner(d, ringSegments, total)); }
     const cards = document.getElementById('fleet-donut-cards');
     if (cards) { cards.replaceChildren(); cards.insertAdjacentHTML('beforeend', this._fleetCardsInner(segments)); }
+    PiloteMotion.dashboard(document.getElementById('page-content'));
   },
 
   _fdHot(i, on) {

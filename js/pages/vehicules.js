@@ -26,6 +26,7 @@ const VehiculesPage = {
       return;
     }
     container.innerHTML = `<div class="drivers-workspace drivers-detail vehicles-workspace">${this._detailTemplate(vehicule)}</div>`;
+    PiloteMotion.enter(container.querySelector('.detail-header'));
     this._loadDetailCharts(vehicule);
     this._bindDetailEvents(vehicule);
   },
@@ -211,7 +212,7 @@ const VehiculesPage = {
     document.getElementById('btn-add-vehicule').addEventListener('click', () => this._add());
     [['search','input'],['status','change'],['energy','change'],['acquisition','change']].forEach(([key,event])=>{const el=document.getElementById('vehicle-'+key);el.value=this._filters[key];el.addEventListener(event,()=>{this._filters[key]=el.value;this._refreshVehicles();});});
     document.querySelectorAll('[data-vehicle-status]').forEach(el=>el.addEventListener('click',()=>{this._filters.status=el.dataset.vehicleStatus;document.getElementById('vehicle-status').value=this._filters.status;this._refreshVehicles();}));
-    document.querySelectorAll('[data-vehicle-view]').forEach(el=>el.addEventListener('click',()=>{this._view=el.dataset.vehicleView;this._refreshVehicles();}));
+    document.querySelectorAll('[data-vehicle-view]').forEach(el=>el.addEventListener('click',()=>{this._view=el.dataset.vehicleView;this._refreshVehicles();PiloteMotion.enter(document.getElementById(this._view==='cards'?'vehicles-cards':'vehicules-table'));}));
     document.getElementById('vehicle-reset').onclick=()=>{Object.keys(this._filters).forEach(key=>{this._filters[key]='';document.getElementById('vehicle-'+key).value='';});this._refreshVehicles();};
     this._refreshVehicles();
   },

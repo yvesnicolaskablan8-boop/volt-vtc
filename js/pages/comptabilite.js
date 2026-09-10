@@ -82,6 +82,7 @@ const ComptabilitePage = {
       case 'budget': ct.innerHTML = this._renderBudget(); this._loadBudgetCharts(); break;
       case 'categories': ct.innerHTML = this._renderCategories(); break;
     }
+    PiloteMotion.enter(ct);
   },
 
   // ========================= RECONCILIATION AUTO =========================
@@ -1406,6 +1407,7 @@ const ComptabilitePage = {
       Store.add('comptabilite', op);
       Modal.close();
       Toast.success(isRecette ? 'Encaissement enregistré' : 'Décaissement enregistré');
+      requestAnimationFrame(() => PiloteMotion.pulse(document.getElementById('compta-content')));
       this._renderTab(this._currentTab);
     });
   },
@@ -1438,6 +1440,7 @@ const ComptabilitePage = {
       Store.update('comptabilite', id, FormBuilder.getValues(body));
       Modal.close();
       Toast.success('Opération modifiée');
+      requestAnimationFrame(() => PiloteMotion.pulse(document.getElementById('compta-content')));
       this._renderTab(this._currentTab);
     });
   },
@@ -1478,6 +1481,7 @@ const ComptabilitePage = {
       Store.add('factures', { id: Utils.generateId('FAC'), ...values, dateCreation: new Date().toISOString() });
       Modal.close();
       Toast.success('Facture créée');
+      requestAnimationFrame(() => PiloteMotion.pulse(document.getElementById('compta-content')));
       this._renderTab('factures');
     });
   },
@@ -1501,6 +1505,7 @@ const ComptabilitePage = {
       Store.update('factures', id, FormBuilder.getValues(body));
       Modal.close();
       Toast.success('Facture modifiée');
+      requestAnimationFrame(() => PiloteMotion.pulse(document.getElementById('compta-content')));
       this._renderTab('factures');
     });
   },
@@ -1508,6 +1513,7 @@ const ComptabilitePage = {
   _markPaid(id) {
     Store.update('factures', id, { statut: 'payee' });
     Toast.success('Facture marquée comme payée');
+      requestAnimationFrame(() => PiloteMotion.pulse(document.getElementById('compta-content')));
     this._renderTab('factures');
   },
 
