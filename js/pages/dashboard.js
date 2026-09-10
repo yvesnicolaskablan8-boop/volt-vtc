@@ -1527,10 +1527,12 @@ const DashboardPage = {
         @keyframes fdUrgent{0%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}100%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
         /* Widgets d'état cliquables : retour visuel au survol. */
         .fd-c-live[role=button]{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;}
-        .fd-c-live[role=button]:hover{transform:translateY(-1px) scale(1.03);box-shadow:0 5px 14px -5px rgba(19,222,185,.6);filter:brightness(1.04);}
-        .fd-c-live-off[role=button]:hover{box-shadow:0 5px 14px -6px rgba(0,0,0,.22);filter:none;}
-        .fd-c-chip{display:inline-block;font-weight:700;white-space:nowrap;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;padding:1px 6px;border-radius:20px;transition:background .15s ease,transform .15s ease,text-decoration-color .15s ease;}
-        .fd-c-chip:hover{background:color-mix(in srgb,currentColor 14%,transparent);text-decoration-style:solid;transform:translateY(-1px);}
+        .fd-c-live[role=button]:hover{transform:translateY(-2px) scale(1.07);box-shadow:0 8px 20px -6px rgba(19,222,185,.75),0 0 0 3px rgba(19,222,185,.28);filter:brightness(1.06);}
+        .fd-c-live-off[role=button]:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 8px 18px -8px rgba(0,0,0,.3),0 0 0 3px rgba(0,0,0,.08);filter:none;}
+        /* Base avec bordure transparente : au survol la bordure prend la couleur du
+           compteur sans décaler la mise en page. */
+        .fd-c-chip{display:inline-block;font-weight:700;white-space:nowrap;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;padding:2px 9px;border-radius:20px;border:1.5px solid transparent;transition:background .15s ease,transform .15s ease,border-color .15s ease,box-shadow .15s ease;}
+        .fd-c-chip:hover{background:color-mix(in srgb,currentColor 22%,transparent);border-color:currentColor;text-decoration:none;transform:translateY(-2px) scale(1.06);box-shadow:0 6px 14px -8px currentColor;}
         @keyframes fdLivePulse{0%{box-shadow:0 0 0 0 rgba(19,222,185,.55);}70%{box-shadow:0 0 0 8px rgba(19,222,185,0);}100%{box-shadow:0 0 0 0 rgba(19,222,185,0);}}
         .fd-c-pct{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:6px;}
         .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}

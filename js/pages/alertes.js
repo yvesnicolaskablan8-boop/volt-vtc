@@ -965,13 +965,22 @@ const AlertesPage = {
     const yesterdayStr = yesterday.toISOString().split('T')[0];
     const dateLabel = yesterday.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
+    // Un objectif ne vaut que pour un jour PLANIFIÉ (et hors absence) : un
+    // chauffeur non programmé fait mécaniquement 0 FCFA — ce n'est pas une
+    // alerte. Filtré AVANT l'appel Yango (pas de requête inutile).
+    const planningAll = Store.get('planning') || [];
+    const absencesAll = Store.get('absences') || [];
+    const plannedSet = new Set(planningAll.filter(p => p.date === yesterdayStr).map(p => p.chauffeurId));
+    const absentSet = new Set(absencesAll.filter(a => a.dateDebut <= yesterdayStr && yesterdayStr <= a.dateFin).map(a => a.chauffeurId));
+    const aVerifier = chauffeurs.filter(c => plannedSet.has(c.id) && !absentSet.has(c.id));
+
     const yangoAlerts = [];
     const results = await Promise.allSettled(
-      chauffeurs.map(c => Store.getYangoDriverStats(c.yangoDriverId, yesterdayStr))
+      aVerifier.map(c => Store.getYangoDriverStats(c.yangoDriverId, yesterdayStr))
     );
 
     results.forEach((result, i) => {
-      const c = chauffeurs[i];
+      const c = aVerifier[i];
       if (result.status !== 'fulfilled' || !result.value || result.value.error) return;
 
       const stats = result.value;
