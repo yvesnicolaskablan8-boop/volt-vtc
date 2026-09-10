@@ -1522,6 +1522,9 @@ const DashboardPage = {
         .fd-c-live{display:inline-flex;align-items:center;gap:6px;background:rgba(19,222,185,.16);color:#0a9d78;font-weight:800;font-size:12px;padding:4px 11px;border-radius:20px;white-space:nowrap;}
         .fd-c-live-dot{width:8px;height:8px;border-radius:50%;background:#13DEB9;flex-shrink:0;box-shadow:0 0 0 0 rgba(19,222,185,.55);animation:fdLivePulse 1.8s ease-out infinite;}
         .fd-c-live-off{background:var(--bg-tertiary);color:var(--text-muted);}
+        .fd-c-urgent{border:1px solid rgba(239,68,68,.55);animation:fdUrgent 1.6s ease-out infinite;}
+        .fd-c-urg{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.08em;color:#fff;background:#EF4444;padding:2px 7px;border-radius:20px;}
+        @keyframes fdUrgent{0%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}100%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
         @keyframes fdLivePulse{0%{box-shadow:0 0 0 0 rgba(19,222,185,.55);}70%{box-shadow:0 0 0 8px rgba(19,222,185,0);}100%{box-shadow:0 0 0 0 rgba(19,222,185,0);}}
         .fd-c-pct{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:6px;}
         .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}
@@ -2243,7 +2246,7 @@ const DashboardPage = {
     return [
       { key: 'service', label: 'En service', color: '#13DEB9', desc: "Au planning aujourd'hui" },
       { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Roulent hors planning' },
-      { key: 'surveiller', label: 'À surveiller', color: '#F5512E', desc: 'Inactif ou CA anormalement bas' },
+      { key: 'surveiller', label: 'À surveiller', color: '#F5512E', desc: 'Inactif, CA bas, occupé ou hors ligne sur Yango' },
     ];
   },
 
@@ -2267,6 +2270,14 @@ const DashboardPage = {
       const reasons = [];
       if (state === 'faible') reasons.push('ca_faible'); else if (state === 'modere') reasons.push('ca_modere');
       if (actif && !programme) reasons.push('hors_planning');
+      // Chauffeur AU PLANNING qui s'est mis « occupé » sur Yango (busy : il ne
+      // prend plus de courses, ≠ en commande) → à surveiller. Statut live de
+      // fleet-status ; absent tant que le live n'est pas chargé.
+      const lv = (this._fleetLive && this._fleetLive.byId) ? this._fleetLive.byId.get(ch.id) : null;
+      if (programme && lv && lv.status === 'busy' && !lv.enCommande) reasons.push('occupe_yango');
+      // Idem pour un chauffeur AU PLANNING passé HORS LIGNE sur Yango (il ne
+      // roule plus) — cas distinct de « CA nul » : il a pu rouler le matin.
+      if (programme && lv && lv.status === 'offline' && !lv.enCommande) reasons.push('hors_ligne_yango');
       const courses = info ? (info.courses || 0) : 0;
       const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, courses, programme, reasons };
       if (programme) B.service.push(entry);        // au planning = en service
@@ -2274,8 +2285,9 @@ const DashboardPage = {
       else B.repos.push(entry);
     });
 
-    // « À surveiller » : chauffeurs EN SERVICE inactifs (CA nul) ou au CA anormalement bas.
-    B.surveiller = B.service.filter(e => !(e.ca > 0) || e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere'));
+    // « À surveiller » : chauffeurs EN SERVICE inactifs (CA nul), au CA anormalement
+    // bas, ou qui se sont mis « occupé » sur Yango (ne prennent plus de courses).
+    B.surveiller = B.service.filter(e => !(e.ca > 0) || e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere') || e.reasons.includes('occupe_yango') || e.reasons.includes('hors_ligne_yango'));
     const segments = this._fleetSegDef().map(s => ({ ...s, count: (B[s.key] || []).length, drivers: B[s.key] || [] }));
     const svc = segments.find(s => s.key === 'service');
     // Sous-compteur « actif à l'instant » (courses en hausse récente) parmi les en service.
@@ -2391,20 +2403,25 @@ const DashboardPage = {
         const L = s.live;
         const t = a => a.length ? Utils.escHtml(a.join(', ')) : '—';
         const nEC = L.enCommande.length;
+        // Chaque compteur est un WIDGET cliquable : il ouvre la liste filtrée sur
+        // cet état (stopPropagation pour ne pas ouvrir aussi la liste complète).
+        const go = (st) => `role="button" onclick="event.stopPropagation();DashboardPage._fleetCardClick('service','${st}')"`;
         liveChip = nEC
-          ? `<span class="fd-c-live" title="En commande : ${t(L.enCommande)}"><span class="fd-c-live-dot"></span>${nEC} en commande</span>`
-          : `<span class="fd-c-live fd-c-live-off" title="Aucune course en cours">0 en commande</span>`;
-        const chip = (n, lbl, names, col) => `<span title="${lbl} : ${t(names)}" style="color:${col};font-weight:700;white-space:nowrap;">${n} ${lbl}</span>`;
+          ? `<span class="fd-c-live" ${go('in_order')} style="cursor:pointer;" title="Voir les chauffeurs en commande : ${t(L.enCommande)}"><span class="fd-c-live-dot"></span>${nEC} en commande</span>`
+          : `<span class="fd-c-live fd-c-live-off" ${go('in_order')} style="cursor:pointer;" title="Aucune course en cours">0 en commande</span>`;
+        const chip = (n, lbl, names, col, st) => `<span ${go(st)} title="Voir : ${lbl} — ${t(names)}" style="color:${col};font-weight:700;white-space:nowrap;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;">${n} ${lbl}</span>`;
         liveNotes = [
-          chip(L.dispo.length, 'dispo', L.dispo, '#0a9d78'),
-          chip(L.occupe.length, L.occupe.length > 1 ? 'occupés' : 'occupé', L.occupe, '#e8930c'),
-          chip(L.horsLigne.length, 'hors ligne', L.horsLigne, '#9aa3b2')
+          chip(L.dispo.length, 'dispo', L.dispo, '#0a9d78', 'free'),
+          chip(L.occupe.length, L.occupe.length > 1 ? 'occupés' : 'occupé', L.occupe, '#e8930c', 'busy'),
+          chip(L.horsLigne.length, 'hors ligne', L.horsLigne, '#9aa3b2', 'offline')
         ].join(' · ');
       } else if (s.recentCount) {
         liveChip = `<span class="fd-c-live" title="Chauffeurs dont le compteur de courses a augmenté récemment"><span class="fd-c-live-dot"></span>${s.recentCount} actif${s.recentCount > 1 ? 's' : ''} à l'instant</span>`;
       }
-      return `<div class="fd-c${clickable ? '' : ' fd-c-off'}" data-i="${i}" ${handlers}>
-        <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}</div>
+      // « À surveiller » non vide = URGENT : anneau rouge pulsant + étiquette.
+      const urgent = s.key === 'surveiller' && s.count > 0;
+      return `<div class="fd-c${clickable ? '' : ' fd-c-off'}${urgent ? ' fd-c-urgent' : ''}" data-i="${i}" ${handlers}>
+        <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}${urgent ? '<span class="fd-c-urg" title="Alerte urgente : chauffeurs planifiés à surveiller">URGENT</span>' : ''}</div>
         <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span>${liveChip}</div>
         <div class="fd-c-desc">${s.desc}${notes.length ? ' · ' + notes.join(' · ') : ''}${liveNotes ? `<div style="margin-top:6px;">${liveNotes}</div>` : ''}</div>
       </div>`;
@@ -2458,8 +2475,41 @@ const DashboardPage = {
     </div>`;
   },
 
+  // « À surveiller » = ALERTE URGENTE. Publie la liste courante (lue par la page
+  // Alertes et le badge du header, niveau « urgent ») et déclenche un signal
+  // IMMÉDIAT (toast + notification navigateur) quand un chauffeur ENTRE dans
+  // cet état — dédoublonné par chauffeur, motif et jour pour ne pas re-notifier
+  // à chaque rafraîchissement (30 s).
+  _signalSurveiller(seg) {
+    const list = (seg && seg.drivers) ? seg.drivers : [];
+    this._surveillerNow = list.map(e => ({ id: e.id, nom: `${e.prenom || ''} ${e.nom || ''}`.trim(), reasons: e.reasons || [], ca: e.ca || 0 }));
+    if (!this._isToday()) return;
+    const LBL = { occupe_yango: 'occupé sur Yango', hors_ligne_yango: 'hors ligne sur Yango', ca_faible: 'CA anormalement bas', ca_modere: 'CA sous la moyenne', hors_planning: 'hors planning' };
+    const day = new Date().toISOString().slice(0, 10);
+    let seen = {};
+    try { const raw = localStorage.getItem('pilote_surv_notif'); if (raw) seen = JSON.parse(raw) || {}; } catch (e) { seen = {}; }
+    if (seen.day !== day || !seen.keys) seen = { day, keys: {} };
+    const nouveaux = [];
+    this._surveillerNow.forEach(e => {
+      const motifs = e.reasons.filter(r => LBL[r]).map(r => LBL[r]);
+      if (!motifs.length && !(e.ca > 0)) motifs.push("pas d'activité");
+      const key = `${e.id}|${motifs.join(',')}`;
+      if (seen.keys[key]) return;
+      seen.keys[key] = Date.now();
+      nouveaux.push(`${e.nom} — ${motifs.join(', ') || 'à surveiller'}`);
+    });
+    try { localStorage.setItem('pilote_surv_notif', JSON.stringify(seen)); } catch (e) { /* stockage indispo */ }
+    if (!nouveaux.length) return;
+    const txt = nouveaux.join(' · ');
+    const titre = `⚠️ À surveiller (${nouveaux.length})`;
+    if (typeof Toast !== 'undefined' && Toast.show) Toast.show(txt, 'warning', titre, 9000);
+    if (typeof NotificationManager !== 'undefined' && NotificationManager.send) NotificationManager.send(`Pilote — ${nouveaux.length} chauffeur${nouveaux.length > 1 ? 's' : ''} à surveiller`, txt, { tag: 'pilote-surveiller' });
+    if (typeof Header !== 'undefined' && Header._refreshWidgets) { try { Header._refreshWidgets(); } catch (e) { /* badge indisponible */ } }
+  },
+
   _renderFleetDonutInto(d) {
     const { segments, ringSegments, total } = this._fleetBuckets(d);
+    try { this._signalSurveiller(segments.find(s => s.key === 'surveiller')); } catch (e) { /* jamais bloquant */ }
     const circle = document.getElementById('fleet-donut-circle');
     if (circle) { circle.replaceChildren(); circle.insertAdjacentHTML('beforeend', this._fleetCircleInner(d, ringSegments, total)); }
     const cards = document.getElementById('fleet-donut-cards');
@@ -2475,7 +2525,10 @@ const DashboardPage = {
     document.querySelectorAll('.fd-c').forEach(c => c.classList.toggle('hot', on && +c.getAttribute('data-i') === i));
   },
 
-  _fleetCardClick(key) {
+  // key = segment (service / nonpl / surveiller) ; stateFilter (optionnel) = état
+  // live Yango (in_order / free / busy / offline) quand on clique un widget
+  // « N en commande », « N occupés »… → la même liste, restreinte à cet état.
+  _fleetCardClick(key, stateFilter = null) {
     const d = this._lastData; if (!d) return;
     const { segments } = this._fleetBuckets(d);
     const seg = segments.find(s => s.key === key); if (!seg) return;
@@ -2517,6 +2570,8 @@ const DashboardPage = {
       ca_faible: ['CA anormalement bas', '#FA896B', 'rgba(250,137,107,.14)'],
       ca_modere: ['CA sous la moyenne', '#FFAE1F', 'rgba(255,174,31,.16)'],
       hors_planning: ['Hors planning', '#635BFF', 'rgba(99,91,255,.13)'],
+      occupe_yango: ['Occupé sur Yango', '#E8930C', 'rgba(255,174,31,.16)'],
+      hors_ligne_yango: ['Hors ligne sur Yango', '#9AA3B2', 'var(--bg-tertiary)'],
     };
     // Lien vers la page Yango du chauffeur (surveillance) : contractor = yangoDriverId,
     // park_id issu des réglages d'intégration Yango.
@@ -2535,7 +2590,9 @@ const DashboardPage = {
       const ra = RANK[liveState(a)] ?? 4, rb = RANK[liveState(b)] ?? 4;
       return ra - rb || (b.ca || 0) - (a.ca || 0);
     });
-    const rows = ordered.length ? ordered.map(it => {
+    // Filtre optionnel par état live (clic sur un widget « N en commande », « N occupés »…).
+    const shown = stateFilter ? ordered.filter(it => liveState(it) === stateFilter) : ordered;
+    const rows = shown.length ? shown.map(it => {
       const initial = (it.prenom || it.nom || '?').charAt(0).toUpperCase();
       const badges = (it.reasons || []).map(r => { const m = RSN[r]; return m ? `<span style="display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${m[2]};color:${m[1]};">${m[0]}</span>` : ''; }).join('');
       const caTxt = (it.ca != null && it.ca > 0) ? `<div style="font-size:12px;font-weight:800;color:var(--text-primary);white-space:nowrap;">${Utils.formatCurrency(it.ca)}</div>` : '';
@@ -2555,7 +2612,11 @@ const DashboardPage = {
       </div>`;
     }).join('') : `<div style="padding:22px 4px;color:var(--text-muted);font-size:13px;">Aucun chauffeur dans cet état.</div>`;
     const body = `<div style="max-height:60vh;overflow-y:auto;">${rows}</div>`;
-    Modal.open({ title: `${seg.label} · ${seg.drivers.length}`, body, size: 'md' });
+    const TITLES = { in_order: 'En commande', free: 'Disponibles', busy: 'Occupés', offline: 'Hors ligne' };
+    const title = stateFilter
+      ? `${seg.label} · ${TITLES[stateFilter] || stateFilter} · ${shown.length}`
+      : `${seg.label} · ${seg.drivers.length}`;
+    Modal.open({ title, body, size: 'md' });
   },
 
   // Inscrit un chauffeur « non planifié » au planning du jour affiché (créneau

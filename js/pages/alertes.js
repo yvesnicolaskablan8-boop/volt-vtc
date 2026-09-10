@@ -329,6 +329,32 @@ const AlertesPage = {
   _generateAllAlerts() {
     const alerts = [];
     const now = new Date();
+
+    // 0. Chauffeurs À SURVEILLER (dashboard « Flotte en direct ») = ALERTE URGENTE.
+    // Liste publiée par DashboardPage._signalSurveiller : planifiés du jour qui
+    // sont occupés / hors ligne sur Yango, sans activité ou au CA anormalement bas.
+    // En tête de liste : l'urgent se lit d'abord. Vide tant que le dashboard n'a
+    // pas été affiché dans la session (page d'accueil : quasi toujours le cas).
+    try {
+      const surv = (typeof DashboardPage !== 'undefined' && Array.isArray(DashboardPage._surveillerNow)) ? DashboardPage._surveillerNow : [];
+      const LBL = { occupe_yango: 'occupé sur Yango', hors_ligne_yango: 'hors ligne sur Yango', ca_faible: 'CA anormalement bas', ca_modere: 'CA sous la moyenne', hors_planning: 'hors planning' };
+      surv.forEach(e => {
+        const motifs = (e.reasons || []).filter(r => LBL[r]).map(r => LBL[r]);
+        if (!motifs.length && !(e.ca > 0)) motifs.push("pas d'activité");
+        alerts.push({
+          id: `SURV-${e.id}`,
+          categorie: 'flotte',
+          niveau: 'urgent',
+          titre: 'Chauffeur planifié à surveiller',
+          description: `${e.nom} — ${motifs.join(', ') || 'à surveiller'}`,
+          chauffeurId: e.id,
+          action: 'Voir la flotte en direct',
+          actionRoute: '#/dashboard',
+          icon: 'solar:eye-scan-bold',
+          date: now.toISOString()
+        });
+      });
+    } catch (e) { /* jamais bloquant */ }
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     // Versements (chargés ici pour les alertes dette dans la boucle chauffeurs)
