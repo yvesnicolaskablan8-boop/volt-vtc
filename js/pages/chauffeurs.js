@@ -7,11 +7,12 @@ const ChauffeursPage = {
   _table: null,
   _currentPage: 1,
   _detailChart: null,
+  _view: 'cards',
 
   render() {
     const container = document.getElementById('page-content');
     const chauffeurs = Store.get('chauffeurs');
-    container.innerHTML = this._listTemplate(chauffeurs);
+    container.innerHTML = `<div class="drivers-workspace">${this._listTemplate(chauffeurs)}</div>`;
     this._bindListEvents();
   },
 
@@ -65,7 +66,7 @@ const ChauffeursPage = {
         </div>
       </div>`;
 
-    Modal.form(
+    this._openDriverForm(
       `<iconify-icon icon="solar:key-bold-duotone" class="text-blue"></iconify-icon> ${existe ? 'Changer le code PIN' : 'Créer le compte chauffeur'}`,
       corps,
       async () => {
@@ -98,7 +99,7 @@ const ChauffeursPage = {
       container.innerHTML = '<div class="empty-state"><iconify-icon icon="solar:user-cross-bold-duotone"></iconify-icon><h3>Chauffeur non trouvé</h3></div>';
       return;
     }
-    container.innerHTML = this._detailTemplate(chauffeur);
+    container.innerHTML = `<div class="drivers-workspace drivers-detail">${this._detailTemplate(chauffeur)}</div>`;
     this._loadDetailCharts(chauffeur);
     this._bindDetailEvents(chauffeur);
     setTimeout(() => {
@@ -129,27 +130,19 @@ const ChauffeursPage = {
     };
 
     return `
-      <div class="page-header">
-        <h1><iconify-icon icon="solar:user-id-bold-duotone"></iconify-icon> Chauffeurs</h1>
-        <div class="page-actions">
-          <button class="btn btn-primary" id="btn-add-chauffeur"><iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Ajouter</button>
-        </div>
+      <header class="drivers-heading"><div><span class="drivers-eyebrow">PILOTE / ÉQUIPE</span><h1>Vos chauffeurs.<br><em>Le cœur de votre flotte.</em></h1><p>Retrouvez les profils, les affectations et les performances de votre équipe.</p></div><button class="btn btn-primary" id="btn-add-chauffeur"><iconify-icon icon="solar:user-plus-linear"></iconify-icon> Ajouter un chauffeur</button></header>
+      <div class="drivers-stats" aria-label="Filtrer les chauffeurs par statut">
+        ${[['','Toute l’équipe',stats.total,'users-group-rounded'],['actif','Actifs',stats.actifs,'user-check'],['repos','Au repos',stats.repos,'moon-sleep'],['suspendu','Suspendus',stats.suspendus,'shield-warning'],['inactif','Inactifs',stats.inactifs,'user-cross']].map(([value,label,count,icon])=>`<button class="drivers-stat" data-driver-status="${value}"><iconify-icon icon="solar:${icon}-linear"></iconify-icon><span>${label}</span><strong>${count}</strong><small>Voir les profils <span>↗</span></small></button>`).join('')}
       </div>
+      <div class="drivers-directory-title"><div><h2>Annuaire des chauffeurs</h2><p>Une fiche complète pour chaque membre de l’équipe.</p></div><div class="drivers-view-switch" aria-label="Affichage de l’annuaire"><button data-driver-view="cards" aria-label="Afficher les cartes"><iconify-icon icon="solar:widget-linear"></iconify-icon> Cartes</button><button data-driver-view="table" aria-label="Afficher le tableau"><iconify-icon icon="solar:list-linear"></iconify-icon> Tableau</button></div></div>
 
-      <div class="grid-4" style="margin-bottom: var(--space-lg);">
-        <div class="kpi-card"><div class="kpi-value">${stats.total}</div><div class="kpi-label">Total</div></div>
-        <div class="kpi-card green"><div class="kpi-value">${stats.actifs}</div><div class="kpi-label">Actifs</div></div>
-        <div class="kpi-card blue"><div class="kpi-value">${stats.repos}</div><div class="kpi-label">Repos</div></div>
-        <div class="kpi-card yellow"><div class="kpi-value">${stats.suspendus}</div><div class="kpi-label">Suspendus</div></div>
-      </div>
-
-      <div class="card" style="padding:12px 14px;margin-bottom:var(--space-md);display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
+      <div class="card drivers-filterbar" style="padding:12px 14px;margin-bottom:var(--space-md);display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
         <div style="flex:1;min-width:190px;">
-          <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Rechercher</label>
+          <label for="flt-nom" style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Rechercher</label>
           <input type="search" id="flt-nom" class="form-control" placeholder="Nom, prénom ou téléphone" value="${Utils.escHtml(this._filtres.texte || '')}">
         </div>
         <div style="min-width:150px;">
-          <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Statut</label>
+          <label for="flt-statut" style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Statut</label>
           <select id="flt-statut" class="form-control">
             <option value="">Tous</option>
             <option value="actif">Actif</option>
@@ -159,7 +152,7 @@ const ChauffeursPage = {
           </select>
         </div>
         <div style="min-width:160px;">
-          <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Contrat</label>
+          <label for="flt-contrat" style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Contrat</label>
           <select id="flt-contrat" class="form-control">
             <option value="">Tous</option>
             <option value="salarie">Salarié</option>
@@ -167,7 +160,7 @@ const ChauffeursPage = {
           </select>
         </div>
         <div style="min-width:150px;">
-          <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Rôle</label>
+          <label for="flt-role" style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Rôle</label>
           <select id="flt-role" class="form-control">
             <option value="">Tous</option>
             <option value="titulaire">Titulaire</option>
@@ -175,7 +168,7 @@ const ChauffeursPage = {
           </select>
         </div>
         <div style="min-width:170px;">
-          <label style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Trier par</label>
+          <label for="flt-tri" style="font-size:var(--font-size-xs);font-weight:700;display:block;margin-bottom:4px;">Trier par</label>
           <select id="flt-tri" class="form-control">
             <option value="nom">Nom (A → Z)</option>
             <option value="nom-desc">Nom (Z → A)</option>
@@ -187,7 +180,7 @@ const ChauffeursPage = {
         <div id="flt-compte" style="width:100%;font-size:var(--font-size-xs);color:var(--text-muted);"></div>
       </div>
 
-      <div id="chauffeurs-table"></div>
+      <div id="chauffeurs-cards" class="drivers-cards"></div><div id="chauffeurs-table"></div>
     `;
   },
 
@@ -229,10 +222,12 @@ const ChauffeursPage = {
     // Table.create expose refresh(), pas update()
     if (this._table && typeof this._table.refresh === 'function') this._table.refresh(filtres);
     else this._bindListEvents();
+    this._renderCards();
     this._majCompteFiltre();
   },
 
   _majCompteFiltre() {
+    document.querySelectorAll('[data-driver-status]').forEach(el=>{el.setAttribute('aria-pressed',String(el.dataset.driverStatus===this._filtres.statut));});
     const zone = document.getElementById('flt-compte');
     if (!zone) return;
     const tous = (Store.get('chauffeurs') || []).length;
@@ -282,7 +277,7 @@ const ChauffeursPage = {
           render: (c) => {
             return `<div class="flex items-center gap-sm">
               ${Utils.getAvatarHtml(c, 'avatar-sm')}
-              <div><div style="font-weight:500">${c.prenom} ${c.nom}</div><div style="font-size:11px;color:var(--text-muted)">${c.email}</div></div>
+              <div><div style="font-weight:500">${Utils.escHtml(c.prenom || '')} ${Utils.escHtml(c.nom || '')}</div><div style="font-size:11px;color:var(--text-muted)">${Utils.escHtml(c.email || 'E-mail non renseigné')}</div></div>
             </div>`;
           },
           value: (c) => `${c.nom} ${c.prenom}`
@@ -325,7 +320,35 @@ const ChauffeursPage = {
       `
     });
 
-    document.getElementById('btn-add-chauffeur').addEventListener('click', () => this._add());
+    document.getElementById('btn-add-chauffeur').onclick = () => this._add();
+    document.querySelectorAll('[data-driver-status]').forEach(el => { el.onclick=()=>{this._filtres.statut=el.dataset.driverStatus;document.getElementById('flt-statut').value=this._filtres.statut;this._redessinerTableau();}; });
+    document.querySelectorAll('[data-driver-view]').forEach(el => { el.onclick=()=>{this._view=el.dataset.driverView;this._renderCards();}; });
+    this._renderCards();
+  },
+
+  _renderCards() {
+    const zone = document.getElementById('chauffeurs-cards');
+    if (!zone) return;
+    const cards = this._view === 'cards';
+    zone.hidden = !cards;
+    document.getElementById('chauffeurs-table').hidden = cards;
+    document.querySelectorAll('[data-driver-view]').forEach(el => el.setAttribute('aria-pressed',String(el.dataset.driverView===this._view)));
+    const chauffeurs = this._appliquerFiltres(Store.get('chauffeurs') || []);
+    zone.replaceChildren();
+    if (!cards) return;
+    if (!chauffeurs.length) { zone.insertAdjacentHTML('beforeend', '<div class="drivers-empty"><iconify-icon icon="solar:user-search-linear"></iconify-icon><h3>Aucun chauffeur trouvé</h3><p>Modifiez vos filtres ou ajoutez le premier membre de votre équipe.</p><button class="btn btn-secondary" onclick="document.getElementById(&quot;flt-reset&quot;).click()">Réinitialiser les filtres</button></div>'); return; }
+    zone.insertAdjacentHTML('beforeend', chauffeurs.map(c => {
+      const vehicle = (Store.get('vehicules') || []).find(v=>v.id===c.vehiculeAssigne);
+      const score = c.scoreConduite == null ? null : Number(c.scoreConduite);
+      const name = Utils.escHtml([c.prenom,c.nom].filter(Boolean).join(' '));
+      return `<article class="driver-profile"><div class="driver-profile-top">${Utils.getAvatarHtml(c,'avatar-lg')}${Utils.statusBadge(c.statut)}</div><a class="driver-profile-name" href="#/chauffeurs/${encodeURIComponent(c.id)}">${name}</a><div class="driver-profile-contract">${c.typeContrat==='salarie'?'Salarié':'Location'} <span>·</span> ${c.roleFlotte==='titulaire'?'Titulaire':c.roleFlotte==='doublure'?'Doublure':'Rôle non défini'}</div><div class="driver-profile-facts"><div><iconify-icon icon="solar:phone-linear"></iconify-icon><span>${Utils.escHtml(c.telephone || 'Non renseigné')}</span></div><div><iconify-icon icon="solar:wheel-linear"></iconify-icon><span>${Utils.escHtml(vehicle?.immatriculation || 'Véhicule non assigné')}</span></div></div><div class="driver-profile-score"><span>Score de conduite</span><strong class="${score===null?'':Utils.scoreClass(score)}">${score===null?'—':Utils.escHtml(String(score))}<small>${score===null?'':' / 100'}</small></strong></div><footer><a href="#/chauffeurs/${encodeURIComponent(c.id)}">Voir la fiche <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></a><button class="btn btn-secondary" data-driver-edit="${Utils.escHtml(c.id)}" aria-label="Modifier ${name}"><iconify-icon icon="solar:pen-linear"></iconify-icon></button></footer></article>`;
+    }).join(''));
+    zone.querySelectorAll('[data-driver-edit]').forEach(el=>el.addEventListener('click',()=>this._edit(el.dataset.driverEdit)));
+  },
+
+  _openDriverForm(...args) {
+    Modal.form(...args);
+    document.getElementById('modal-container')?.classList.add('driver-form-dialog');
   },
 
   _detailTemplate(c) {
@@ -393,7 +416,7 @@ const ChauffeursPage = {
             const colors = { en_service: '#13deb9', pause: '#ffae1f', termine: '#94a3b8' };
             return ` <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600;background:${colors[ptg.statut]}20;color:${colors[ptg.statut]};margin-left:6px">${labels[ptg.statut]}</span>`;
           })()}</h2>
-          <p>${c.email} &bull; ${c.telephone}</p>
+          <p>${Utils.escHtml(c.email || 'E-mail non renseigné')} &bull; ${Utils.escHtml(c.telephone || 'Téléphone non renseigné')}</p>
           <div class="detail-stats">
             <div class="detail-stat">
               <div class="detail-stat-value" data-header-ca>--</div>
@@ -1402,7 +1425,7 @@ const ChauffeursPage = {
     const formHtml = FormBuilder.build(fields);
 
     this._currentEditId = null; // Mode creation
-    Modal.form('<iconify-icon icon="solar:user-plus-bold-duotone" class="text-blue"></iconify-icon> Nouveau chauffeur', formHtml, () => {
+    this._openDriverForm('<iconify-icon icon="solar:user-plus-bold-duotone" class="text-blue"></iconify-icon> Nouveau chauffeur', formHtml, () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
 
@@ -1438,7 +1461,7 @@ const ChauffeursPage = {
     const formHtml = FormBuilder.build(fields, chauffeur);
 
     this._currentEditId = id; // Mode edition
-    Modal.form('<iconify-icon icon="solar:user-pen-bold-duotone" class="text-blue"></iconify-icon> Modifier chauffeur', formHtml, () => {
+    this._openDriverForm('<iconify-icon icon="solar:user-pen-bold-duotone" class="text-blue"></iconify-icon> Modifier chauffeur', formHtml, () => {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
 
@@ -1751,7 +1774,7 @@ const ChauffeursPage = {
     Modal.close();
 
     setTimeout(() => {
-      Modal.form('<iconify-icon icon="solar:wheel-bold-duotone" class="text-blue"></iconify-icon> Création rapide véhicule', quickFormHtml, () => {
+      this._openDriverForm('<iconify-icon icon="solar:wheel-bold-duotone" class="text-blue"></iconify-icon> Création rapide véhicule', quickFormHtml, () => {
         const body = document.getElementById('modal-body');
         if (!FormBuilder.validate(body, quickFields)) return;
 
@@ -1816,7 +1839,7 @@ const ChauffeursPage = {
       : '<iconify-icon icon="solar:user-plus-bold-duotone" class="text-blue"></iconify-icon> Nouveau chauffeur';
 
     setTimeout(() => {
-      Modal.form(title, formHtml, () => {
+      this._openDriverForm(title, formHtml, () => {
         const body = document.getElementById('modal-body');
         if (!FormBuilder.validate(body, fields)) return;
 
@@ -1992,7 +2015,7 @@ const ChauffeursPage = {
       { name: 'description', label: 'Description (optionnel)', type: 'text', placeholder: 'Raison de la recharge...' }
     ];
 
-    Modal.form(
+    this._openDriverForm(
       '<iconify-icon icon="solar:card-transfer-bold-duotone" style="color:#FC4C02;"></iconify-icon> Recharger compte Yango',
       FormBuilder.build(fields),
       async () => {
