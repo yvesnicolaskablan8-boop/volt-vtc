@@ -31,6 +31,18 @@ const SuiviVehiculesPage = {
     document.querySelectorAll('[data-sv-filter]').forEach(button => button.addEventListener('click', () => {
       this._filtre = button.dataset.svFilter; this._cadre = false; this._rafraichir();
     }));
+    document.getElementById('sv-expand').addEventListener('click', (event) => {
+      const panel = document.querySelector('.fleet-map-panel');
+      const expanded = panel.classList.toggle('is-expanded');
+      event.currentTarget.setAttribute('aria-pressed', String(expanded));
+      event.currentTarget.setAttribute('aria-label', expanded ? 'Réduire la carte' : 'Agrandir la carte');
+      this._map?.invalidateSize();
+      this._cadre = false;
+      this._placerMarqueurs(this._visibles());
+    });
+    document.getElementById('sv-expand').addEventListener('keydown', event => {
+      if (event.key === 'Escape' && event.currentTarget.getAttribute('aria-pressed') === 'true') event.currentTarget.click();
+    });
     document.getElementById('sv-fit').addEventListener('click', () => { this._cadre = false; this._placerMarqueurs(this._visibles()); });
   },
 
@@ -59,8 +71,8 @@ const SuiviVehiculesPage = {
           <div class="fleet-filters" aria-label="Filtrer les véhicules"><button data-sv-filter="all">Tous</button><button data-sv-filter="moving">En route</button><button data-sv-filter="stopped">À l’arrêt</button><button data-sv-filter="offline">Sans signal récent</button><button data-sv-filter="battery">À recharger</button></div>
           <div id="sv-liste" class="fleet-vehicle-list"></div>
         </aside>
-        <section class="fleet-map-panel" aria-label="Carte des véhicules"><div class="fleet-map-heading"><div><span class="fleet-map-dot"></span><strong>La flotte sur la carte</strong></div><button id="sv-fit"><iconify-icon icon="solar:map-point-rotate-linear"></iconify-icon> Tout voir</button></div>
-          <div class="fleet-map-area"><div id="sv-map"></div><div id="sv-map-status" class="fleet-map-status" role="status">Chargement de la carte…</div></div>
+        <section class="fleet-map-panel" aria-label="Carte des véhicules"><div class="fleet-map-heading"><div><span class="fleet-map-emblem"><iconify-icon icon="solar:map-point-wave-linear"></iconify-icon></span><div><small class="fleet-map-eyebrow">EXPLORER LA FLOTTE</small><strong>Vos véhicules, en un regard</strong></div></div><button id="sv-fit"><iconify-icon icon="solar:map-point-rotate-linear"></iconify-icon> Recentrer</button><button id="sv-expand" aria-label="Agrandir la carte" aria-pressed="false"><iconify-icon icon="solar:maximize-linear"></iconify-icon></button></div>
+          <div class="fleet-map-area"><div id="sv-map"></div><div class="fleet-map-compass" aria-hidden="true"><span>N</span><iconify-icon icon="solar:compass-linear"></iconify-icon></div><div id="sv-map-status" class="fleet-map-status" role="status">Chargement de la carte…</div></div>
           <div class="fleet-map-footer"><span><i class="moving"></i> En route</span><span><i class="stopped"></i> À l’arrêt</span><span><i class="offline"></i> Signal ancien</span><small>Position du boîtier · affichage actualisé chaque minute</small></div>
         </section>
       </div>
@@ -302,32 +314,15 @@ const SuiviVehiculesPage = {
   },
 
   /**
-   * Voiture vue de dessus, colorée selon l'état et orientée selon la
+   * Repère directionnel, coloré selon l’état et orienté selon la
    * direction transmise par le boîtier (0° = nord). L'immatriculation reste
    * en étiquette sous la voiture : sur une carte, la plaque est le seul
    * moyen de savoir de quel véhicule il s'agit.
    */
   _iconeVoiture(v, e, p) {
-    const rot = Number(p && p.direction) || 0;
     const plaque = Utils.escHtml(v.immatriculation || '');
-    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-      <div style="transform:rotate(${rot}deg);transition:transform .5s ease;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));">
-        <svg width="26" height="40" viewBox="0 0 24 40" xmlns="http://www.w3.org/2000/svg">
-          <!-- roues -->
-          <rect x="1.2" y="6.5"  width="4" height="7" rx="2" fill="#1e293b"/>
-          <rect x="18.8" y="6.5" width="4" height="7" rx="2" fill="#1e293b"/>
-          <rect x="1.2" y="26.5" width="4" height="7" rx="2" fill="#1e293b"/>
-          <rect x="18.8" y="26.5" width="4" height="7" rx="2" fill="#1e293b"/>
-          <!-- carrosserie -->
-          <path d="M5 7 C5 2.8 8.2 1 12 1 C15.8 1 19 2.8 19 7 L19 33 C19 37.2 15.8 39 12 39 C8.2 39 5 37.2 5 33 Z"
-                fill="${e.couleur}" stroke="#ffffff" stroke-width="1.6"/>
-          <!-- pare-brise et lunette -->
-          <path d="M7 10.5 L17 10.5 L15.8 16 L8.2 16 Z" fill="rgba(255,255,255,.85)"/>
-          <path d="M8.2 28 L15.8 28 L16.6 32.5 L7.4 32.5 Z" fill="rgba(255,255,255,.6)"/>
-        </svg>
-      </div>
-      <div style="background:${e.couleur};color:#fff;border-radius:7px;padding:1px 6px;font-size:10px;font-weight:800;white-space:nowrap;border:1.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);">${plaque}</div>
-    </div>`;
+    const heading = Number.isFinite(Number(p.direction)) ? Number(p.direction) : 0;
+    return `<div class="fleet-map-marker" style="--marker-color:${e.couleur}"><div class="fleet-marker-halo"></div><div class="fleet-marker-pin"><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(${heading}deg)"><path d="M12 3 20 20 12 16 4 20Z" fill="currentColor" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></svg></div><div class="fleet-marker-label"><i></i>${plaque}</div></div>`;
   },
 
   _placerMarqueurs(equipes) {
@@ -342,8 +337,8 @@ const SuiviVehiculesPage = {
       const icone = L.divIcon({
         className: '',
         html: this._iconeVoiture(v, e, p),
-        iconSize: [64, 62],
-        iconAnchor: [32, 21],     // la pointe du reticule = le centre de la voiture
+        iconSize: [120, 72],
+        iconAnchor: [60, 24],     // la pointe du reticule = le centre de la voiture
         popupAnchor: [0, -16]
       });
       if (this._marqueurs[v.id]) {
@@ -353,7 +348,7 @@ const SuiviVehiculesPage = {
         this._marqueurs[v.id].on('click', () => { this._selection = v.id; this._rendreListe(this._visibles()); const button = [...document.querySelectorAll('[data-center]')].find(b => b.dataset.center === v.id); button?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
       }
       this._marqueurs[v.id].bindPopup(
-        `<strong>${Utils.escHtml(v.immatriculation || '')}</strong><br>${e.libelle}<br>Vu ${this._depuis(p.vuLe)}`);
+        `<div class="fleet-map-popup"><span class="fleet-popup-eyebrow">POSITION DU VÉHICULE</span><strong>${Utils.escHtml(v.immatriculation || '')}</strong><span class="fleet-popup-state" style="--marker-color:${e.couleur}">${e.libelle}</span><small>Dernier signal · ${this._depuis(p.vuLe)}</small></div>`);
       points.push([p.lat, p.lng]);
     });
     // On ne recadre qu'au premier affichage, pour ne pas deplacer la carte
