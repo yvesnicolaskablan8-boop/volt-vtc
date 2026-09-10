@@ -7,3 +7,39 @@
 
 /* Répartition sur toute la largeur, sans colonne fixe héritée. */
 .cash-workspace .wl-card{align-items:stretch}.cash-workspace .wl-left,.cash-workspace .wl-right{width:100%;max-width:none;position:static}.cash-workspace .wl-title-h{flex-basis:100%}.cash-workspace .wl-actions{margin-left:auto}.cash-workspace .wl-btn{white-space:nowrap}.cash-workspace .wl-acc.open .wl-nav-row{background:transparent}
+
+/* Caisse : lecture nette des montants et actions de recouvrement. */
+.cash-workspace{--cash-ink:#17232f;--cash-secondary:#526171;--cash-surface:#fff;--cash-line:#dfe5eb;background:none}
+.cash-workspace .wl-right{background:var(--cash-surface);border-color:var(--cash-line);border-radius:16px}
+.cash-workspace .wl-acc.open,.cash-workspace .wl-acc.open .wl-nav-row,.cash-workspace .wl-acc-body{background:var(--cash-surface)}
+.cash-workspace .wl-nav-title{color:var(--cash-ink);font-size:19px;font-weight:700}
+.cash-workspace .wl-nav-sub,.cash-workspace .vx-note{color:var(--cash-secondary);font-size:12px;line-height:1.5}
+.cash-workspace .wl-nav-val{color:var(--cash-ink)!important;font-size:25px;font-variant-numeric:tabular-nums}
+.cash-workspace .vx-list{max-height:none;overflow:visible;padding:0}
+.cash-workspace .vx-date{position:static;background:#f4f6f8;padding:12px 16px;margin:18px 0 0;border-radius:8px}
+.cash-workspace .vx-date-l{color:var(--cash-secondary);font-size:12px;letter-spacing:0;text-transform:none}
+.cash-workspace .vx-date-l::before{display:none}
+.cash-workspace .vx-date-v{color:var(--cash-ink)!important;font-size:13px;background:transparent;padding:0;font-variant-numeric:tabular-nums}
+.cash-workspace .dette-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;padding:17px 12px;border:0;border-bottom:1px solid var(--cash-line);border-radius:0;background:var(--cash-surface)}
+.cash-workspace .dette-row:hover{background:#f8fafb}
+.cash-workspace .dette-row .vx-av{width:36px;height:36px;font-size:12px;border-radius:50%;background:#edf1f5!important;color:#405264!important}
+.cash-workspace .vx-name{font-size:14px;color:var(--cash-ink);font-weight:650}
+.cash-workspace .dette-row .vx-note{white-space:normal;overflow:visible;margin-top:4px}
+.cash-workspace .dette-row .vx-right{flex-direction:row;align-items:center;gap:24px}
+.cash-workspace .dette-row .vx-amt{color:var(--cash-ink)!important;font-size:17px;font-weight:750;min-width:135px;text-align:right;font-variant-numeric:tabular-nums}
+.cash-workspace .dette-row .vx-pill{background:#08765a!important;color:#fff;box-shadow:none;border-radius:8px;font-size:12px;height:36px;padding:0 13px}
+.cash-workspace .dette-row .vx-pill:hover{background:#065b46!important}
+.cash-workspace .vx-gbtn{border-radius:8px;min-height:38px;color:var(--cash-ink);background:var(--cash-surface);border:1px solid var(--cash-line);box-shadow:none}
+.cash-workspace .vx-gbtn.is-accent{background:#253442!important;color:#fff;border-color:#253442}
+.cash-workspace .vx-ib{border-radius:8px;background:var(--cash-surface);color:var(--cash-secondary);border-color:var(--cash-line)}
+.cash-workspace .vx-tools{background:#f4f6f8;border-radius:9px;padding:10px}
+.cash-workspace .vx-input{font-size:12px;color:var(--cash-ink);border-color:var(--cash-line)}
+.cash-workspace .vx-input::placeholder{color:#657383;opacity:1}
+.cash-workspace .cash-tabs{background:#f4f6f8}
+.cash-workspace .cash-tabs button{color:var(--cash-secondary);font-size:12px}
+.cash-workspace .cash-tabs button[aria-current="page"]{background:#253442;color:#fff;box-shadow:none}
+@media(max-width:1000px){.cash-workspace .dette-row .vx-right{flex-direction:column;gap:9px;align-items:flex-end}}
+@media(max-width:600px){.cash-workspace .dette-row{grid-template-columns:36px minmax(0,1fr);padding:16px 4px}.cash-workspace .dette-row .vx-right{grid-column:2;align-items:flex-start}.cash-workspace .dette-row .vx-amt{text-align:left;min-width:0}.cash-workspace .wl-nav-val{font-size:23px}}
+:root[data-theme="dark"] .cash-workspace{--cash-ink:#edf2f7;--cash-secondary:#b6c2cf;--cash-surface:#222e3a;--cash-line:#405060}
+:root[data-theme="dark"] .cash-workspace :is(.vx-date,.vx-tools,.cash-tabs){background:#2c3b4a}
+:root[data-theme="dark"] .cash-workspace .dette-row:hover{background:#2c3b4a}
