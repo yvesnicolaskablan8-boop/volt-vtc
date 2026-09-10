@@ -309,3 +309,98 @@
 :root:not([data-theme="light"]) .taches-module .eisen-card { background: var(--task-wash); }
 :root:not([data-theme="light"]) .taches-module .taches-tab.active { color: #b0aaff; }
 :root:not([data-theme="light"]) .task-scopes button.is-selected { background: #625be030; color: #c5c1ff; border-color: #625be065; }
+/* Direction visuelle « studio » : surfaces satinées et accents lumineux. */
+.taches-module{--task-ink:#292b36;--task-muted:#737780;--task-line:#e1e3e7;--task-paper:#fafafa;--task-wash:#eceef1;--task-accent:#7950f2;--task-green:#079e79;padding:26px 24px 40px;border:1px solid #ffffffd9;border-radius:28px;background:linear-gradient(145deg,#e9ebee,#f3f4f5);box-shadow:inset 0 1px 0 #fff,0 15px 40px #3440510b}
+
+.taches-module .taches-topbar{padding:8px 5px 20px;margin-bottom:12px}
+.taches-module .taches-topbar h1{font-weight:650;letter-spacing:-1.4px;font-size:34px}
+.taches-module .task-title-dot{color:#7e4df5}
+.taches-module .task-primary{border:1px solid #bca4ff;border-radius:15px;background:linear-gradient(170deg,#aa7bff,#7540ef);box-shadow:inset 0 2px 3px #ffffff65,0 6px 14px #8852ed2b;font-size:12px;font-weight:650}
+.taches-module .task-primary:hover{background:linear-gradient(170deg,#b590ff,#8050ee);box-shadow:inset 0 2px 3px #ffffff65,0 8px 20px #8852ed38}
+.taches-module .taches-tabs{gap:6px;border:1px solid #ffffffdb;background:#f5f5f6;border-radius:18px;padding:7px;box-shadow:0 4px 12px #27334408,inset 0 1px 0 #fff;margin-bottom:18px}
+.taches-module .taches-tab{padding:12px 15px;border:0;border-radius:12px;font-size:12px;font-weight:600}
+.taches-module .taches-tab.active{color:#fff;background:linear-gradient(160deg,#8ebeff,#347dee);box-shadow:inset 0 2px 3px #ffffff70,0 3px 9px #397ee830;border:1px solid #a4c5ff}
+.taches-module .taches-tab.active iconify-icon{color:#fff}
+.taches-module .task-toolbar{gap:12px;margin-bottom:23px;padding:0 4px}
+.taches-module .task-scopes{gap:6px}
+.taches-module .task-scopes button{border-radius:11px;font-size:11px}
+.taches-module .task-scopes button.is-selected{background:linear-gradient(#fff,#ededf0);border:1px solid white;box-shadow:0 4px 8px #35425710;color:#473d6e}
+.taches-module .task-search{background:#fafafa;border-color:#fff;box-shadow:inset 0 1px 3px #28374b0c;border-radius:13px}
+.taches-module .task-view-heading h2{font-size:23px;font-weight:600;letter-spacing:-.7px}
+.taches-module .task-view-heading p{font-size:11px}
+.taches-module .task-metrics{gap:14px}
+.taches-module .task-metric{border:1px solid #bca3ff;background:linear-gradient(155deg,#be9aff,#8546f4);border-radius:19px;box-shadow:inset 0 2px 3px #ffffff80,0 6px 12px #47315d12;padding:20px;color:#fff}
+.taches-module .task-metric:nth-child(2){background:linear-gradient(155deg,#ffe98a,#ffce28);border-color:#fff0a8;color:#655017}
+.taches-module .task-metric:nth-child(3){background:linear-gradient(155deg,#ffc9d9,#ff769d);border-color:#ffd8e3;color:#7c2445}
+.taches-module .task-metric:nth-child(4){background:linear-gradient(155deg,#90eaca,#00bd87);border-color:#b2f4db;color:#07583f}
+.taches-module .task-metric>strong,.taches-module .task-metric>span,.taches-module .task-metric>small,.taches-module .task-metric iconify-icon{color:inherit!important}
+.taches-module .task-metric>strong{font-size:34px;font-weight:650}
+.taches-module .task-metric>small{opacity:.85}
+.taches-module .task-panel,.taches-module .task-progress-panel,.taches-module .task-empty,.taches-module .task-onboarding{border:1px solid #fff;border-radius:23px;background:linear-gradient(145deg,#fafafa,#f3f3f4);box-shadow:inset 0 1px 0 #fff,0 8px 18px #35435709}
+.taches-module .task-panel-heading h3{font-weight:650}
+.taches-module .task-plan-art{background:linear-gradient(145deg,#fff,#eceaf7);box-shadow:inset 0 2px 0 #fff,8px 10px 0 #ddd8ec65;transform:rotate(-2deg);border:1px solid white;border-radius:20px}
+.taches-module .task-onboarding{background:radial-gradient(ellipse at 90% 80%,#d8e8ff,transparent 50%),linear-gradient(135deg,#fafafa,#f0eef6)}
+.taches-module .task-onboarding h2{font-weight:600;letter-spacing:-1.3px}
+.taches-module .task-focus-row{background:#ffffffa0;border:1px solid #fff;border-radius:13px;margin-bottom:7px;padding:12px}
+.taches-module .task-team>div{background:#ffffff8c;border-radius:13px}
+.taches-module .task-text-button{color:#7047d0}
+.taches-module .kanban-board{gap:16px}
+.taches-module .kanban-column{border:1px solid #fff;border-radius:22px;background:#e7e9ed;padding:8px;box-shadow:inset 0 1px 2px #aab0bd18}
+.taches-module .kanban-column-header{border:0;background:transparent;padding:13px 10px}
+.taches-module .kanban-col-body{background:transparent;border-radius:15px}
+.taches-module .kanban-card{border:1px solid #fff;border-radius:16px;background:linear-gradient(150deg,#fff,#f7f7f8);box-shadow:0 5px 10px #303c5210;padding:17px;margin-bottom:11px}
+.taches-module .kanban-card:hover{box-shadow:0 9px 18px #4b3b741b;transform:translateY(-3px)}
+.taches-module .kanban-card-title{font-size:13px;font-weight:650}
+.taches-module .eisen-quadrant{border-radius:22px;box-shadow:inset 0 1px 0 #fff,0 5px 12px #3941580b;border-color:#fff}
+.taches-module .eisen-card{background:#ffffffd9;border:1px solid #fff;border-radius:14px;box-shadow:0 4px 8px #2e3d4910}
+.taches-module .table-container{border-radius:20px;border:1px solid white;box-shadow:0 6px 14px #35435709}
+.taches-module th{background:#eeeff2;font-size:10px}
+.taches-module td{background:#ffffffa0}
+.taches-module .reunion-card{border-radius:20px;border:1px solid #fff;background:linear-gradient(145deg,#fff,#f1f1f3);box-shadow:0 6px 12px #3543570c}
+.taches-module .gt-card{border:1px solid white;border-radius:24px;background:#f4f5f6;padding:8px;box-shadow:0 8px 20px #35435710}
+.taches-module .gt-titlebar{font-size:23px;font-weight:550;border:0;padding:17px 14px}
+.taches-module .gt-row{height:66px;border:0;padding-bottom:6px}
+.taches-module .gt-day{background:linear-gradient(#fafafa,#fff);border:3px solid #f4f5f6;border-radius:13px;box-shadow:inset 0 1px 0 white}
+.taches-module .gt-day.today{background:linear-gradient(#9ec9ff,#2d81ef);color:white}
+.taches-module .gt-day.today span{color:white}
+.taches-module .gt-tcell{border:3px solid #f4f5f6;border-radius:12px;background:linear-gradient(135deg,#fafafa,#ffffff90)}
+.taches-module .gt-tcell.we{background:repeating-linear-gradient(135deg,#d9dde3 0px,#d9dde3 3px,#eceef1 3px,#eceef1 6px)}
+.taches-module .gt-day.we{background:#d8dce2}
+.taches-module .gt-tcellname{border:3px solid #f4f5f6;border-radius:14px;background:#fafafa}
+.taches-module .gt-corner{background:#f4f5f6;border:0}
+.taches-module .gt-seg{top:7px;height:46px;border:1px solid #ffffff80;border-radius:13px;box-shadow:inset 0 3px 5px #ffffff7a,0 5px 9px #35435722;background-image:linear-gradient(170deg,#ffffff55,transparent)!important;font-weight:600}
+.taches-module .gt-now{border-left:2px dashed #3986f5!important;background:transparent;width:0}
+.taches-module .gt-ava{border-radius:50%;box-shadow:inset 0 2px 2px #ffffff70}
+.taches-module .gt-tt{font-weight:600}
+.taches-module .gt-legend{border:0}
+.task-dialog{background:#f7f7f9;border:1px solid white;border-radius:24px!important;box-shadow:0 22px 70px #28364e28}
+.task-dialog .modal-header{background:linear-gradient(145deg,#fafafa,#edeaf5);border-bottom:1px solid white}
+.task-dialog .task-form-section{background:#fff;border:1px solid white;border-radius:17px;box-shadow:0 4px 10px #25374a08}
+.task-dialog .form-control{border-radius:12px;background:#f7f7fa}
+.task-dialog .btn-primary{background:linear-gradient(155deg,#ad80ff,#7845ee);border:1px solid #bc9eff;box-shadow:inset 0 2px 3px #ffffff55}
+.taches-module :is(button,a,[role="button"]):focus-visible{outline:3px solid #8054dc;outline-offset:3px}
+
+@media(max-width:700px){.taches-module{padding:18px 12px;border-radius:21px}
+.taches-module .taches-topbar h1{font-size:29px}
+.taches-module .taches-tabs{gap:4px}
+.taches-module .taches-tab{padding:10px 12px;font-size:11px}
+.taches-module .task-metric{padding:15px;border-radius:17px}
+.taches-module .task-metric>strong{font-size:29px}
+.taches-module .task-toolbar{padding:0}
+.taches-module .gt-tcellname,.taches-module .gt-corner{width:180px;min-width:180px}
+.taches-module .gt-titlebar{font-size:20px}
+}
+
+:root[data-theme="dark"] .taches-module{--task-ink:#f0f1f5;--task-muted:#abb4c3;--task-paper:#27313d;--task-wash:#202a36;--task-line:#3b4555;background:linear-gradient(145deg,#26303c,#1e2732);border-color:#3b4555}
+:root[data-theme="dark"] .taches-module :is(.task-panel,.task-progress-panel,.task-empty,.task-onboarding,.kanban-card,.cr-card,.gt-card,.gt-day,.gt-tcellname,.task-focus-row,.taches-tabs){background:#2c3542;border-color:#424c5c}
+:root[data-theme="dark"] .taches-module :is(.kanban-col,.gt-corner){background:#222c37;border-color:#424c5c}
+:root[data-theme="dark"] .taches-module .gt-tcell{border-color:#2c3542;background:#323d4a}
+:root[data-theme="dark"] .taches-module .gt-tcell.we{background:repeating-linear-gradient(135deg,#394553 0 3px,#2e3946 3px 6px)}
+:root[data-theme="dark"] .taches-module .gt-day.today{background:linear-gradient(#699cd9,#2463bb)}
+:root[data-theme="dark"] .task-dialog{background:#27313d;border-color:#424c5c}
+:root[data-theme="dark"] .task-dialog :is(.modal-header,.task-form-section){background:#303a49;border-color:#424c5c}
+
+
+.taches-module .task-metric[data-metric="active"]{background:linear-gradient(155deg,#a77af5,#713bdf);border-color:#bca3ff;color:#fff}
+.taches-module .task-progress-panel{background:linear-gradient(145deg,#9870ee,#6740c4);color:#fff;border-color:#bca3ff}
+.taches-module .task-progress-panel :is(h3,p,strong,span){color:inherit}
