@@ -16,65 +16,50 @@ const Header = {
     this._initHDock();
   },
 
-  // Navigation avec grossissement progressif au survol et infobulles au clavier.
+  // Navigation regroupée par usage, accessible au clic et au clavier.
   _initHDock() {
     const nav = document.getElementById('hdock');
     if (!nav) return;
-    const items = Array.from(nav.querySelectorAll('.mdock-item'));
-    let tip = document.getElementById('mdock-tip');
-    if (!tip) {
-      tip = document.createElement('div');
-      tip.id = 'mdock-tip';
-      tip.className = 'mdock-tip';
-      tip.setAttribute('role', 'tooltip');
-      document.body.appendChild(tip);
-    }
-    const hideTip = () => tip.classList.remove('show');
-    const setActive = () => {
-      const hash = (location.hash || '').replace(/^#/, '');
-      items.forEach(item => {
-        const route = item.getAttribute('data-route');
-        const active = !!(route && (hash === route || hash.startsWith(route + '/')));
-        item.classList.toggle('is-active', active);
-        if (active) item.setAttribute('aria-current', 'page');
-        else item.removeAttribute('aria-current');
-      });
-      hideTip();
-    };
-    const showTip = item => {
-      const rect = item.getBoundingClientRect();
-      tip.textContent = item.getAttribute('aria-label') || '';
-      tip.style.top = (rect.bottom + 10) + 'px';
-      const half = tip.offsetWidth / 2 + 8;
-      tip.style.left = Math.max(half, Math.min(window.innerWidth - half, rect.left + rect.width / 2)) + 'px';
-      tip.classList.add('show');
-    };
-    items.forEach((item, index) => {
-      this._on('dockEnter' + index, item, 'mouseenter', () => showTip(item));
-      this._on('dockFocus' + index, item, 'focus', () => showTip(item));
-      this._on('dockBlur' + index, item, 'blur', hideTip);
+    // Conserver les destinations originales lors d’une réinitialisation du header.
+    if (!this._dockLinks) this._dockLinks = Array.from(nav.querySelectorAll('a[data-route]')).map(el => el.cloneNode(true));
+    document.getElementById('header-group-panel')?.remove();
+    document.getElementById('mdock-tip')?.remove();
+    const groups = [
+      ['flotte','Flotte','wheel',['/suivi-vehicules','/chauffeurs','/vehicules']],
+      ['organisation','Organisation','calendar',['/planning','/taches']],
+      ['finance','Finance','wallet-money',['/versements','/comptabilite','/bonus','/simulateur']],
+      ['performance','Performance','chart-2',['/yango','/rapports','/classement']],
+      ['echanges','Échanges','chat-round-dots',['/messagerie','/activite']]
+    ];
+    const descriptions = {'/suivi-vehicules':'Positions et suivi de la flotte','/chauffeurs':'Profils, contrats et affectations','/vehicules':'Parc automobile et véhicules','/planning':'Organiser les rotations','/taches':'Suivre les actions de l’équipe','/versements':'Encaissements et versements','/comptabilite':'Comptes, factures et budgets','/bonus':'Primes et récompenses','/simulateur':'Estimer vos revenus et coûts','/yango':'Activité et revenus Yango','/rapports':'Analyser les résultats','/classement':'Comparer les performances','/messagerie':'Conversations de l’équipe','/activite':'Historique des événements'};
+    const allowed = route => typeof Auth === 'undefined' || !Auth.canAccessRoute || Auth.canAccessRoute(route);
+    const links = this._dockLinks.filter(el => allowed(el.dataset.route));
+    nav.replaceChildren(); nav.classList.add('mdock-grouped');
+    const panel = document.createElement('div'); panel.id='header-group-panel'; panel.className='header-group-panel'; panel.hidden=true; document.body.append(panel);
+    let opened=null;
+    const close = (focus=false) => { const trigger=opened; panel.hidden=true; opened=null; nav.querySelectorAll('[aria-expanded]').forEach(el=>el.setAttribute('aria-expanded','false')); if(focus)trigger?.focus(); };
+    const position = () => { if (!opened) return; const rect=opened.getBoundingClientRect();panel.style.top=(rect.bottom+12)+'px';panel.style.left=Math.max(12,Math.min(window.innerWidth-panel.offsetWidth-12,rect.left))+'px'; };
+    const addDirect = route => { const link=links.find(el=>el.dataset.route===route);if(link){const clone=link.cloneNode(true);clone.classList.remove('mdock-group-start');nav.append(clone);} };
+    addDirect('/dashboard');
+    groups.forEach(([id,label,icon,routes])=>{
+      const children=routes.map(route=>links.find(el=>el.dataset.route===route)).filter(Boolean);
+      if(!children.length)return;
+      const button=document.createElement('button');button.type='button';button.className='mdock-item mdock-group-trigger';button.dataset.routes=children.map(el=>el.dataset.route).join(' ');button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls',panel.id);
+      button.insertAdjacentHTML('beforeend',`<iconify-icon icon="solar:${icon}-linear"></iconify-icon><span class="mdock-label">${label}</span><iconify-icon class="mdock-chevron" icon="solar:alt-arrow-down-linear"></iconify-icon>`);
+      const open=()=>{close();opened=button;button.setAttribute('aria-expanded','true');panel.replaceChildren();const heading=document.createElement('div');heading.className='header-group-title';heading.textContent=label;panel.append(heading);children.forEach(link=>{const clone=link.cloneNode(true);clone.className='header-group-link';const description=document.createElement('small');description.textContent=descriptions[link.dataset.route];clone.append(description);const route=location.hash.replace(/^#/,'');if(route===link.dataset.route||route.startsWith(link.dataset.route+'/'))clone.setAttribute('aria-current','page');panel.append(clone);});panel.hidden=false;position();};
+      button.onclick=()=>{if(opened===button)close();else open();};
+      button.onkeydown=event=>{if(event.key==='ArrowDown'){event.preventDefault();open();panel.querySelector('a')?.focus();}};
+      nav.append(button);
     });
-    // Grossissement autour du pointeur, sans déplacer les liens voisins.
-    const resetMagnify = () => {
-      items.forEach(item => item.style.removeProperty('--dock-scale'));
-      hideTip();
-    };
-    this._on('dockMagnify', nav, 'mousemove', e => {
-      if (!window.matchMedia('(hover: hover) and (prefers-reduced-motion: no-preference)').matches) return;
-      items.forEach(item => {
-        const center = nav.getBoundingClientRect().left + item.offsetLeft - nav.scrollLeft + item.offsetWidth / 2;
-        const distance = Math.abs(e.clientX - center);
-        const scale = 1 + 0.28 * Math.max(0, 1 - distance / 110);
-        item.style.setProperty('--dock-scale', scale.toFixed(3));
-      });
-      const hovered = e.target.closest('.mdock-item');
-      if (hovered) showTip(hovered);
-    });
-    this._on('dockLeave', nav, 'mouseleave', resetMagnify);
-    this._on('dockScroll', nav, 'scroll', resetMagnify);
-    this._on('dockEscape', nav, 'keydown', e => { if (e.key === 'Escape') hideTip(); });
-    this._on('dockResize', window, 'resize', resetMagnify);
-    this._on('dockHash', window, 'hashchange', setActive);
+    addDirect('/parametres');
+    const setActive=()=>{const route=location.hash.replace(/^#/,'');nav.querySelectorAll('.mdock-item').forEach(el=>{const active=(el.dataset.routes?.split(' ')||[el.dataset.route]).some(r=>r&&(route===r||route.startsWith(r+'/')));el.classList.toggle('is-active',active);if(active&&el.tagName==='A')el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});close();};
+    this._on('dockGroupOutside',document,'click',event=>{if(!nav.contains(event.target)&&!panel.contains(event.target))close();});
+    this._on('dockGroupKeys',document,'keydown',event=>{if(!opened)return;if(event.key==='Escape'){event.preventDefault();close(true);}else if(panel.contains(event.target)&&['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();const items=[...panel.querySelectorAll('a')];const index=items.indexOf(document.activeElement);const next=event.key==='Home'?0:event.key==='End'?items.length-1:(index+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[next]?.focus();}});
+    this._on('dockGroupFocus',document,'focusin',event=>{if(opened&&!panel.contains(event.target)&&!nav.contains(event.target))close();});
+    this._on('dockGroupLink',panel,'click',event=>{if(event.target.closest('a'))close();});
+    this._on('dockResize',window,'resize',()=>close());
+    this._on('dockScroll',nav,'scroll',()=>close());
+    this._on('dockHash',window,'hashchange',setActive);
     setActive();
   },
 
