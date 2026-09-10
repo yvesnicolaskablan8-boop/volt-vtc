@@ -1525,6 +1525,12 @@ const DashboardPage = {
         .fd-c-urgent{border:1px solid rgba(239,68,68,.55);animation:fdUrgent 1.6s ease-out infinite;}
         .fd-c-urg{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.08em;color:#fff;background:#EF4444;padding:2px 7px;border-radius:20px;}
         @keyframes fdUrgent{0%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}100%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
+        /* Widgets d'état cliquables : retour visuel au survol. */
+        .fd-c-live[role=button]{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;}
+        .fd-c-live[role=button]:hover{transform:translateY(-1px) scale(1.03);box-shadow:0 5px 14px -5px rgba(19,222,185,.6);filter:brightness(1.04);}
+        .fd-c-live-off[role=button]:hover{box-shadow:0 5px 14px -6px rgba(0,0,0,.22);filter:none;}
+        .fd-c-chip{display:inline-block;font-weight:700;white-space:nowrap;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;padding:1px 6px;border-radius:20px;transition:background .15s ease,transform .15s ease,text-decoration-color .15s ease;}
+        .fd-c-chip:hover{background:color-mix(in srgb,currentColor 14%,transparent);text-decoration-style:solid;transform:translateY(-1px);}
         @keyframes fdLivePulse{0%{box-shadow:0 0 0 0 rgba(19,222,185,.55);}70%{box-shadow:0 0 0 8px rgba(19,222,185,0);}100%{box-shadow:0 0 0 0 rgba(19,222,185,0);}}
         .fd-c-pct{font-size:12px;font-weight:700;color:var(--text-muted);margin-left:6px;}
         .fd-c-desc{font-size:11px;color:var(--text-muted);margin-top:3px;}
@@ -2409,7 +2415,8 @@ const DashboardPage = {
         liveChip = nEC
           ? `<span class="fd-c-live" ${go('in_order')} style="cursor:pointer;" title="Voir les chauffeurs en commande : ${t(L.enCommande)}"><span class="fd-c-live-dot"></span>${nEC} en commande</span>`
           : `<span class="fd-c-live fd-c-live-off" ${go('in_order')} style="cursor:pointer;" title="Aucune course en cours">0 en commande</span>`;
-        const chip = (n, lbl, names, col, st) => `<span ${go(st)} title="Voir : ${lbl} — ${t(names)}" style="color:${col};font-weight:700;white-space:nowrap;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;">${n} ${lbl}</span>`;
+        // Classe dédiée : l'effet de survol (fond teinté, soulignement plein) est en CSS.
+        const chip = (n, lbl, names, col, st) => `<span class="fd-c-chip" ${go(st)} title="Voir : ${lbl} — ${t(names)}" style="color:${col};">${n} ${lbl}</span>`;
         liveNotes = [
           chip(L.dispo.length, 'dispo', L.dispo, '#0a9d78', 'free'),
           chip(L.occupe.length, L.occupe.length > 1 ? 'occupés' : 'occupé', L.occupe, '#e8930c', 'busy'),
