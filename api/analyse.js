@@ -201,7 +201,7 @@ async function demanderClaude(apiKey, snapshot, consigne, modele = MODEL) {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
-      model: modele, max_tokens: 1800, temperature: 0.2, system: SYSTEME,
+      model: modele, max_tokens: 1800, system: SYSTEME,
       messages: [{ role: 'user', content: `Données de la période (JSON) :\n${JSON.stringify(snapshot)}\n\n${consigne}` }],
     }),
   });
