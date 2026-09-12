@@ -172,6 +172,9 @@ const AnalysePage = {
         .an-btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;background:#0071e3;color:#fff;font:inherit;font-weight:800;font-size:13.5px;padding:10px 16px;cursor:pointer;box-shadow:0 8px 20px -8px rgba(0,113,227,.8);transition:.2s;}
         .an-btn:hover{transform:translateY(-1px);} .an-btn:disabled{opacity:.6;cursor:default;transform:none;}
         .an-btn.round{width:44px;height:44px;padding:0;justify-content:center;flex:none;}
+        .an-ghost{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);font:inherit;font-weight:700;font-size:12.5px;padding:7px 12px;border-radius:999px;cursor:pointer;transition:.2s;}
+        .an-ghost:hover{border-color:#0071e3;color:#0071e3;background:rgba(0,113,227,.06);transform:translateY(-1px);}
+        .an-ghost:disabled{opacity:.5;cursor:default;transform:none;}
         /* --- analyse en sections --- */
         .an-cap{font-size:12px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
         .an-cap iconify-icon{color:#0071e3;font-size:15px;}
@@ -261,7 +264,10 @@ const AnalysePage = {
           <div class="an-panel">
             <div class="an-panel-top">
               <span class="an-badge"><iconify-icon icon="solar:magic-stick-3-bold"></iconify-icon> Analyse IA</span>
-              <span id="an-model" class="an-model"></span>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span id="an-model" class="an-model"></span>
+                <button type="button" id="an-pdf" class="an-ghost" title="Exporter le rapport en PDF"><iconify-icon icon="solar:file-download-bold" style="font-size:16px"></iconify-icon><span>PDF</span></button>
+              </div>
             </div>
             <div id="an-texte"></div>
             <div id="an-etat" class="an-etat"></div>
@@ -310,6 +316,8 @@ const AnalysePage = {
       if (q) q.value = b.getAttribute('data-q');
       this._poserQuestion();
     }));
+    const pdf = document.getElementById('an-pdf');
+    if (pdf) pdf.addEventListener('click', () => this._exporterPDF());
     const tri = document.getElementById('an-tri');
     if (tri) tri.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
       this._tri = b.getAttribute('data-tri');
@@ -485,6 +493,172 @@ const AnalysePage = {
       <div class="qq">${this._esc(e.question)}</div>
       <div class="rrw"><span class="av"><iconify-icon icon="solar:magic-stick-3-bold"></iconify-icon></span><div class="rr an-md">${e.reponse ? this._md(e.reponse) : '<span class="an-think" style="margin:0"><span class="dots"><i></i><i></i><i></i></span> L’IA réfléchit…</span>'}</div></div>`).join(''));
     el.scrollIntoView({ behavior: this._reduit() ? 'auto' : 'smooth', block: 'nearest' });
+  },
+
+  // ---------- export PDF ----------
+  // jsPDF n'embarque que des polices latines de base : on remplace les signes typographiques.
+  _txt(s) {
+    return String(s == null ? '' : s)
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/[’‘]/g, "'").replace(/[“”]/g, '"')
+      .replace(/→/g, '->').replace(/−/g, '-').replace(/[–—]/g, '-')
+      .replace(/[   ]/g, ' ').replace(/…/g, '...').replace(/•/g, '-');
+  },
+
+  async _exporterPDF() {
+    const d = this._donnees;
+    if (!d) { Toast.warning('Les indicateurs ne sont pas encore chargés'); return; }
+    const btn = document.getElementById('an-pdf');
+    if (btn) btn.disabled = true;
+    try {
+      await LazyLibs.jspdf();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('portrait', 'mm', 'a4');
+      const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+      const M = 14, LW = W - 2 * M;
+      const k = d.kpis, f = (v) => this._txt(this._f(v));
+      const auj = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+      let y = 0;
+
+      const pagesEntete = new Set();
+      const entete = () => {
+        pagesEntete.add(doc.internal.getCurrentPageInfo().pageNumber);
+        doc.setFillColor(11, 18, 32); doc.rect(0, 0, W, 30, 'F');
+        doc.setFillColor(0, 113, 227); doc.circle(W - 22, 15, 9, 'F');
+        doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.text('PILOTE', M, 13);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(143, 208, 255);
+        doc.text(this._txt(`Analyse IA de l'activité · ${d.periode.libelle} (${d.periode.du} -> ${d.periode.au})`), M, 20);
+        doc.setTextColor(180, 190, 205); doc.setFontSize(8.5); doc.text(this._txt(`Généré le ${auj} · ${d.modele || ''}`), M, 26);
+        y = 40;
+      };
+      const pied = () => {
+        const n = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= n; i++) {
+          doc.setPage(i); doc.setFontSize(8); doc.setTextColor(150, 158, 170);
+          doc.text(this._txt('Pilote · gestion.pilote.tech · document confidentiel'), M, H - 8);
+          doc.text(`${i} / ${n}`, W - M, H - 8, { align: 'right' });
+        }
+      };
+      const saut = (h) => { if (y + h > H - 16) { doc.addPage(); entete(); } };
+      const titre = (t, rgb) => {
+        saut(14);
+        doc.setFillColor(...rgb); doc.roundedRect(M, y - 1, 3, 7, 1.5, 1.5, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); doc.setTextColor(23, 24, 26);
+        doc.text(this._txt(t), M + 6, y + 4.5); y += 11;
+      };
+      const para = (t, opt = {}) => {
+        doc.setFont('helvetica', opt.gras ? 'bold' : 'normal'); doc.setFontSize(opt.taille || 9.5); doc.setTextColor(...(opt.rgb || [70, 75, 85]));
+        const lignes = doc.splitTextToSize(this._txt(t), LW - (opt.retrait || 0));
+        const h = lignes.length * (opt.interligne || 4.6);
+        saut(h + 2);
+        if (opt.puce) { doc.setFillColor(...(opt.puceRgb || [0, 113, 227])); doc.circle(M + 2.2, y - 1.2, 1.1, 'F'); }
+        doc.text(lignes, M + (opt.retrait || 0), y); y += h + (opt.apres == null ? 2.5 : opt.apres);
+      };
+
+      entete();
+
+      // --- indicateurs clés ---
+      titre('Indicateurs clés', [0, 113, 227]);
+      const cartes = [
+        ['CA net Yango', f(k.caNet), `${k.joursChauffeur} jours-chauffeur · ${k.courses} courses`],
+        ['Encaissé', f(k.verse), k.tauxEncaissement == null ? 'aucun CA' : `${k.tauxEncaissement} % du CA net`],
+        ['Non versé estimé', f(k.nonVerseEstime), `${k.joursNonVerses} jour(s) sans versement`],
+        ['Résultat sur encaissé', f(k.resultatSurEncaisse), `coûts estimés ${f(k.couts.total)}`],
+        ['CA net / jour-chauffeur', f(k.caNetParJourChauffeur), `${k.chauffeursActifs} chauffeurs actifs`],
+        ['Utilisation des voitures', k.joursChauffeurParVoitureJour == null ? '-' : String(k.joursChauffeurParVoitureJour).replace('.', ','), `${k.vehiculesPlanifies} voiture(s) planifiée(s) sur ${k.vehiculesFlotte} · objectif 2`],
+      ];
+      const cw = (LW - 8) / 3, ch = 22;
+      saut(ch * 2 + 6);
+      cartes.forEach((c, i) => {
+        const x = M + (i % 3) * (cw + 4), yy = y + Math.floor(i / 3) * (ch + 4);
+        const navy = i === 0;
+        doc.setFillColor(...(navy ? [11, 18, 32] : [243, 245, 243])); doc.roundedRect(x, yy, cw, ch, 3, 3, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...(navy ? [160, 175, 195] : [120, 128, 136])); doc.text(this._txt(c[0].toUpperCase()), x + 4, yy + 6);
+        const rouge = (i === 2 && k.nonVerseEstime > 0) || (i === 3 && k.resultatSurEncaisse < 0);
+        doc.setFontSize(13); doc.setTextColor(...(navy ? [255, 255, 255] : rouge ? [220, 38, 38] : [23, 24, 26])); doc.text(this._txt(c[1]), x + 4, yy + 13.5);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.2); doc.setTextColor(...(navy ? [170, 185, 205] : [120, 128, 136])); doc.text(this._txt(c[2]), x + 4, yy + 18.8);
+      });
+      y += ch * 2 + 10;
+      para(`CA brut ${f(k.caBrut)} · commission Yango ${f(k.commission)} · charges déclarées ${f(k.charges)}` + (k.contraventionsImpayees ? ` · ${k.contraventionsImpayees} amende(s) impayée(s) (${f(k.contraventionsMontant)})` : '') + ` · si tout était encaissé : ${f(k.resultatSiToutEncaisse)}`, { taille: 8.5, rgb: [120, 128, 136], apres: 6 });
+
+      // --- analyse IA ---
+      const texte = this._analyses[this._periode];
+      if (texte) {
+        const couleurs = [[0, 113, 227], [26, 158, 63], [201, 111, 0], [124, 58, 237], [100, 116, 139]];
+        const themes = [/diagnostic/i, /va bien|positif|points? forts?/i, /attention|risque|alerte|faible/i, /recommand|action|priorit/i, /vérifier|verifier|donn/i];
+        const lignes = String(texte).split(/\r?\n/);
+        let premier = true, couleur = couleurs[0];
+        for (const l of lignes) {
+          const t = l.trim(); if (!t) continue;
+          const h = t.match(/^#{1,3}\s+(.*)$/);
+          if (h) {
+            if (premier && /^#\s/.test(t)) { para(h[1], { taille: 9, rgb: [120, 128, 136], apres: 4 }); premier = false; continue; }
+            premier = false;
+            const idx = themes.findIndex(re => re.test(h[1]));
+            couleur = couleurs[idx >= 0 ? idx : 0];
+            y += 2; titre(h[1], couleur);
+            continue;
+          }
+          premier = false;
+          const li = t.match(/^[-*•]\s+(.*)$/) || t.match(/^\d+[.)]\s+(.*)$/);
+          if (li) para(li[1], { puce: true, retrait: 7, apres: 1.8, puceRgb: couleur }); else para(t);
+        }
+        y += 4;
+      } else {
+        para("Aucune analyse IA n'a été lancée pour cette période : le rapport contient les indicateurs et le détail par chauffeur.", { taille: 9, rgb: [120, 128, 136], apres: 6 });
+      }
+
+      // --- par chauffeur ---
+      const rows = (d.chauffeurs || []).filter(c => c.joursCA > 0 || c.joursPlanifies > 0)
+        .sort((a, b) => (b.nonVerseEstime - a.nonVerseEstime) || ((a.taux || 0) - (b.taux || 0)));
+      if (rows.length) {
+        titre('Par chauffeur', [201, 111, 0]);
+        doc.autoTable({
+          startY: y,
+          margin: { left: M, right: M, top: 38, bottom: 16 },
+          head: [['Chauffeur', 'Jours', 'Courses', 'CA net', 'Versé', 'Taux', 'Non versé']],
+          body: rows.map(c => [this._txt(c.nom), c.joursCA, c.courses || 0, f(c.caNet), f(c.verse), c.taux == null ? '-' : `${c.taux} %`, c.nonVerseEstime > 0 ? f(c.nonVerseEstime) : '-']),
+          theme: 'plain',
+          styles: { fontSize: 8.5, cellPadding: 2.4, textColor: [40, 44, 50], lineColor: [231, 234, 232], lineWidth: 0.2 },
+          headStyles: { fillColor: [243, 245, 243], textColor: [100, 108, 116], fontStyle: 'bold', fontSize: 7.5 },
+          columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right', fontStyle: 'bold' }, 6: { halign: 'right', textColor: [220, 38, 38], fontStyle: 'bold' } },
+          didParseCell: (data) => {
+            if (data.section === 'body' && data.column.index === 6 && data.cell.raw === '-') { data.cell.styles.textColor = [160, 168, 176]; data.cell.styles.fontStyle = 'normal'; }
+            if (data.section === 'body' && data.column.index === 5) {
+              const t = rows[data.row.index].taux;
+              data.cell.styles.textColor = t == null ? [120, 128, 136] : t >= 90 ? [26, 158, 63] : t >= 70 ? [201, 111, 0] : [220, 38, 38];
+            }
+          },
+          didDrawPage: () => { if (!pagesEntete.has(doc.internal.getCurrentPageInfo().pageNumber)) { const yy = y; entete(); y = yy; } },
+        });
+        y = doc.lastAutoTable.finalY + 6;
+        para('Taux = versé / CA net Yango sur la période. Non versé = jours planifiés sans versement, valorisés au CA net du jour.', { taille: 7.8, rgb: [140, 148, 156], apres: 6 });
+      }
+
+      // --- questions / réponses ---
+      const ech = this._echanges.filter(e => e.reponse);
+      if (ech.length) {
+        titre('Questions posées', [124, 58, 237]);
+        ech.forEach(e => {
+          para(e.question, { gras: true, rgb: [23, 24, 26], apres: 1.5 });
+          String(e.reponse).split(/\r?\n/).forEach(l => {
+            const t = l.trim(); if (!t) return;
+            const li = t.match(/^[-*•]\s+(.*)$/) || t.match(/^\d+[.)]\s+(.*)$/);
+            if (li) para(li[1], { puce: true, retrait: 7, apres: 1.5, puceRgb: [124, 58, 237] }); else para(t.replace(/^#+\s*/, ''));
+          });
+          y += 3;
+        });
+      }
+
+      pied();
+      doc.save(`pilote-analyse-${d.periode.du}_${d.periode.au}.pdf`);
+      Toast.success('Rapport PDF exporté');
+    } catch (e) {
+      console.error('analyse: export PDF', e);
+      Toast.error('Export PDF impossible : ' + (e.message || e));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   },
 
   // Découpe l'analyse (titres ##) en sections illustrées ; le premier titre (# …) devient la légende.
