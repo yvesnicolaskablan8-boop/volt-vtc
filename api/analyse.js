@@ -218,7 +218,14 @@ async function demanderClaude(apiKey, snapshot, consigne, modele = MODEL) {
     if (r.status === 429 || r.status === 402 || type === 'rate_limit_error' || /credit|billing/i.test(detail)) throw new Error('Compte Anthropic : ' + detail);
     throw new Error(`Service d’analyse (${modele}) : ${detail}`);
   }
-  return (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+  const texte = (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+  if (!texte) {
+    const blocs = (data.content || []).map(c => c.type).join(',') || 'aucun';
+    console.error('analyse: réponse vide', modele, JSON.stringify(data).slice(0, 400));
+    if (modele !== MODEL_REPLI) return demanderClaude(apiKey, snapshot, consigne, MODEL_REPLI);
+    throw new Error(`Réponse vide du modèle ${modele} (arrêt : ${data.stop_reason || '?'}, blocs : ${blocs})`);
+  }
+  return texte;
 }
 
 function lireBody(req) {
