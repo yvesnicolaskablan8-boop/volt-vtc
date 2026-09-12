@@ -27,7 +27,7 @@ const DriverStore = {
       supabase.from('fleet_versements').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('date', { ascending: false }),
       supabase.from('fleet_courses').select('*').eq('chauffeur_id', id).gte('date_heure', monthStart + 'T00:00:00'),
       supabase.from('fleet_signalements').select('*').eq('chauffeur_id', id).in('statut', ['ouvert', 'en_cours']),
-      supabase.from('fleet_chauffeurs').select('prenom, nom, score_conduite, redevance_quotidienne, objectif_ca, objectif_ca_jour, salaire_mensuel, type_contrat, role_flotte, jour_repos, jour_repos2, vehicule_assigne').eq('id', id).single(),
+      supabase.from('fleet_chauffeurs').select('prenom, nom, score_conduite, redevance_quotidienne, objectif_ca, objectif_ca_jour, salaire_mensuel, type_contrat, role_flotte, jour_repos, jour_repos2, vehicule_assigne, date_debut_contrat').eq('id', id).single(),
       supabase.from('fleet_ca_jour').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('date', { ascending: false }),
       supabase.from('fleet_charges').select('*').eq('chauffeur_id', id).gte('date', monthStart).order('created_at', { ascending: false })
     ]);
@@ -75,21 +75,6 @@ const DriverStore = {
     };
   },
 
-  /**
-   * Le chauffeur marque SON vehicule comme recharge. Passe par un RPC :
-   * les regles RLS lui interdisent d'ecrire dans fleet_vehicules, et le
-   * serveur ne l'autorise que sur le vehicule qui lui est assigne.
-   */
-  async marquerVehiculeCharge() {
-    try {
-      const { data, error } = await supabase.rpc('fleet_marquer_charge');
-      if (error) return { success: false, error: error.message };
-      return objToCamel(data || {});
-    } catch (e) {
-      return { success: false, error: e.message };
-    }
-  },
-
   /** Le chauffeur ajoute une charge du jour (recharge, lavage, autre). */
   async ajouterCharge({ type, montant, libelle, date }) {
     const id = this._chauffeurId();
@@ -108,6 +93,27 @@ const DriverStore = {
     const { error } = await supabase.from('fleet_charges').insert(ligne);
     if (error) return { success: false, error: error.message };
     return { success: true };
+  },
+
+  /**
+   * Lit un ticket photographié (recharge, lavage, autre) via /api/charge-ocr.
+   * Renvoie { success, lisible, type, montant, libelle, date, confiance } ou { success:false, error }.
+   */
+  async lireTicketCharge(imageDataUrl, typeAttendu) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return { success: false, error: 'Session expirée, reconnectez-vous' };
+      const r = await fetch('/api/charge-ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ image: imageDataUrl, type: typeAttendu || null }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return { success: false, error: j.error || `Erreur ${r.status}` };
+      return { success: true, ...j };
+    } catch (e) {
+      return { success: false, error: 'Réseau indisponible' };
+    }
   },
 
   async supprimerCharge(chargeId) {

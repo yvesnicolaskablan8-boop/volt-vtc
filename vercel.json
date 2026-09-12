@@ -92,6 +92,9 @@
     },
     "api/yango.js": {
       "maxDuration": 60
+    },
+    "api/charge-ocr.js": {
+      "maxDuration": 30
     }
   }
 }

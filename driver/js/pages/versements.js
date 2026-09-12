@@ -25,10 +25,14 @@ const VersementsPage = {
     // Stats du mois en cours
     const now = new Date();
     const monthStr = now.toISOString().slice(0, 7);
-    const versMois = versements.filter(v => v.date && v.date.startsWith(monthStr));
-    const totalBrut = versMois.reduce((s, v) => s + (v.montantBrut || 0), 0);
+    // Montant réellement versé : modèle salarié = montant_verse (brut/net restent à 0) ;
+    // anciens versements = montant_net. Les lignes « supprime » (annulées) sont ignorées.
+    const verseDe = v => Number(v.montantVerse) || Number(v.montantNet) || Number(v.montantBrut) || 0;
+    const visibles = versements.filter(v => v.statut !== 'supprime');
+    const versMois = visibles.filter(v => v.date && v.date.startsWith(monthStr));
+    const totalBrut = versMois.reduce((s, v) => s + (Number(v.montantBrut) || verseDe(v)), 0);
     const totalCommission = versMois.reduce((s, v) => s + (v.commission || 0), 0);
-    const totalNet = versMois.reduce((s, v) => s + (v.montantNet || 0), 0);
+    const totalNet = versMois.reduce((s, v) => s + verseDe(v), 0);
     const totalPenalites = versMois.reduce((s, v) => s + (v.penaliteMontant || 0), 0);
 
     const monthNames = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
@@ -106,7 +110,7 @@ const VersementsPage = {
         <div style="font-size:2rem;font-weight:900;margin-bottom:1rem">${this._formatCurrency(totalNet)}</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem">
-            <span style="opacity:0.8">Total brut</span>
+            <span style="opacity:0.8">Total versé ce mois</span>
             <span style="font-weight:700">${this._formatCurrency(totalBrut)}</span>
           </div>
           ${totalCommission > 0 ? `
@@ -135,12 +139,12 @@ const VersementsPage = {
       <!-- Historique -->
       <div class="section-label" style="margin-bottom:1rem">Historique</div>
       <div id="versements-list" style="display:flex;flex-direction:column;gap:10px">
-        ${versements.length === 0
+        ${visibles.length === 0
           ? `<div style="text-align:center;padding:3rem 0">
                <iconify-icon icon="solar:wallet-broken" style="font-size:3rem;color:#cbd5e1;display:block;margin-bottom:12px"></iconify-icon>
                <div style="font-size:0.9rem;color:#94a3b8;font-weight:500">Aucun versement</div>
              </div>`
-          : versements.map(v => this._renderVersement(v)).join('')
+          : visibles.map(v => this._renderVersement(v)).join('')
         }
       </div>
     `;
@@ -195,6 +199,8 @@ const VersementsPage = {
       partiel: { bg: 'rgba(59,130,246,0.08)', color: '#3b82f6' }
     };
     const sc = statusColors[v.statut] || statusColors.en_attente;
+    const verse = Number(v.montantVerse) || Number(v.montantNet) || Number(v.montantBrut) || 0;
+    const attendu = Number(v.montantAttendu) || 0;
     const dateService = v.dateService || v.date;
     const date = dateService ? new Date(dateService).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '--';
     const iconName = v.moyenPaiement === 'wave'
@@ -217,8 +223,8 @@ const VersementsPage = {
         </div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
-            <span style="font-size:0.9rem;font-weight:800;color:var(--text-primary)">${this._formatCurrency(v.montantBrut || 0)}</span>
-            <span style="font-size:0.85rem;font-weight:800;color:#22c55e">${this._formatCurrency(v.montantNet || 0)}</span>
+            <span style="font-size:0.9rem;font-weight:800;color:var(--text-primary)">${this._formatCurrency(verse)}</span>
+            ${attendu > 0 ? `<span style="font-size:0.72rem;font-weight:700;color:${verse >= attendu ? '#22c55e' : '#f59e0b'}">Attendu ${this._formatCurrency(attendu)}</span>` : ''}
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between">
             <span style="font-size:0.72rem;color:#94a3b8;font-weight:500">${date} ${v.periode ? ' · ' + v.periode : ''}${v.nombreCourses ? ' · ' + v.nombreCourses + ' courses' : ''}</span>

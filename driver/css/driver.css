@@ -2501,3 +2501,60 @@ body {
     margin: 0 auto;
   }
 }
+
+/* ========== LANGAGE VISUEL PILOTE (aligné sur pilote.tech, 09/2026) ========== */
+:root {
+  --pilote-blue: #0071e3;
+  --pilote-sky: #5ac8fa;
+  --pilote-navy: #0b1220;
+  --pilote-green: #30d158;
+  --pilote-orange: #ff9f0a;
+  --gradient-primary: linear-gradient(135deg, #0071e3 0%, #5ac8fa 100%);
+}
+.btn-primary { background: var(--pilote-blue); box-shadow: 0 6px 18px rgba(0, 113, 227, 0.3); }
+.btn-login { background: var(--pilote-blue); box-shadow: 0 8px 30px rgba(0, 113, 227, 0.35); }
+.nav-item.active { color: var(--pilote-blue); }
+.nav-item.active::before { background: var(--pilote-blue); }
+
+/* Écran de connexion : le visuel du site (chauffeur Pilote et véhicule) */
+.login-screen {
+  background:
+    linear-gradient(to top, rgba(11, 16, 22, 0.96) 0%, rgba(11, 16, 22, 0.78) 45%, rgba(11, 16, 22, 0.3) 100%),
+    url('/driver/img/hero-pilote.jpg') center 18% / cover no-repeat #0b1016;
+}
+.login-screen::before, .login-screen::after { display: none; }
+.login-accroche {
+  font-size: 1.95rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: #fff;
+  text-align: center;
+  margin: 12px 0 8px;
+}
+.login-accroche span { color: var(--pilote-sky); }
+
+/* Cartes « bento » et badges, comme sur le site */
+.pc-card { border-radius: 1.75rem; border: 1px solid var(--border-color); box-shadow: var(--shadow-card); }
+.pc-card-navy {
+  background: radial-gradient(circle at 85% 0%, rgba(0, 113, 227, 0.5), transparent 55%), #0b1220;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.pc-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 999px; padding: 4px 10px;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  color: #0071e3; background: rgba(0, 113, 227, 0.14);
+}
+.pc-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pc-badge.orange { color: #ffb340; background: rgba(255, 159, 10, 0.18); }
+.pc-badge.vert { color: #1a9e3f; background: rgba(48, 209, 88, 0.16); }
+.pc-badge.ciel { color: #5ac8fa; background: rgba(90, 200, 250, 0.16); }
+.pc-jauge { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.pc-jauge-fill {
+  height: 100%; width: var(--pct, 0%); border-radius: 999px;
+  background: linear-gradient(90deg, #ff9f0a, #ffd60a);
+  animation: pc-jauge 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes pc-jauge { from { width: 2%; } }
+@media (prefers-reduced-motion: reduce) { .pc-jauge-fill { animation: none; } }

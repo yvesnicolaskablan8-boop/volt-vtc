@@ -2,40 +2,15 @@
  * AccueilPage — Tableau de bord chauffeur (enhanced)
  */
 const AccueilPage = {
-  _marquerCharge() {
-    DriverModal.show(
-      'Recharge effectuée ?',
-      `<div style="text-align:center;padding:0.5rem 0">
-        <iconify-icon icon="solar:bolt-circle-bold-duotone" style="font-size:3rem;color:#16a34a;display:block;margin-bottom:12px"></iconify-icon>
-        <p style="font-size:0.92rem;color:var(--text-secondary);line-height:1.6">
-          Confirmez que vous venez de <strong>recharger le véhicule</strong>.<br>
-          Le suivi de batterie repartira de 100&nbsp;%.
-        </p>
-      </div>`,
-      [
-        { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
-        { label: 'Oui, rechargé', class: 'btn btn-primary', onclick: 'AccueilPage._confirmerCharge()' }
-      ]
-    );
-  },
-
-  async _confirmerCharge() {
-    DriverModal.close();
-    const r = await DriverStore.marquerVehiculeCharge();
-    if (r && r.success) {
-      DriverToast.show(`${r.vehicule || 'Véhicule'} marqué rechargé — batterie 100 %`, 'success');
-    } else {
-      DriverToast.show((r && r.error) || 'Impossible d\'enregistrer la recharge', 'error');
-    }
-  },
-
   // ===== CHARGES DU JOUR (salarie : deduites de ce qu'il verse) =====
+  // Recharge du véhicule : photo du ticket obligatoire, lue par le serveur (/api/charge-ocr),
+  // montant pré-rempli puis vérifié par le chauffeur. Lavage et autre : saisie manuelle.
   _ajouterCharge() {
     DriverModal.show(
       'Ajouter une charge',
       `<div style="padding:0.25rem 0">
         <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;line-height:1.5">
-          Ce que vous avez dépensé aujourd'hui (recharge, lavage…). Ce montant sera déduit de ce que vous devez verser.
+          Ce que vous avez dépensé aujourd'hui. Ce montant sera déduit de ce que vous devez verser.
         </div>
         <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Type</label>
         <select id="chg-type" class="form-control" style="margin-bottom:12px;font-size:1rem">
@@ -43,20 +18,126 @@ const AccueilPage = {
           <option value="lavage">Lavage</option>
           <option value="autre">Autre</option>
         </select>
-        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Montant (FCFA)</label>
-        <input id="chg-montant" type="number" inputmode="numeric" min="0" step="500" class="form-control" placeholder="Ex : 5000" style="font-size:1.3rem;text-align:center;margin-bottom:12px">
-        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Détail (facultatif)</label>
-        <input id="chg-libelle" type="text" class="form-control" placeholder="Ex : station Cocody" style="font-size:0.95rem">
+        <div id="chg-bloc-photo">
+          <input type="file" id="chg-photo-input" accept="image/*" capture="environment" style="display:none">
+          <button type="button" id="chg-photo-btn" class="tap-scale" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;margin-bottom:8px;border:2px dashed rgba(59,130,246,0.6);border-radius:1rem;background:rgba(59,130,246,0.08);color:var(--text-primary);font-weight:700;font-size:0.95rem;font-family:inherit;cursor:pointer">
+            <iconify-icon icon="solar:camera-bold-duotone" style="font-size:1.3rem;color:#3b82f6"></iconify-icon> Photographier le ticket de recharge
+          </button>
+          <div id="chg-photo-zone" style="display:none;align-items:center;gap:10px;margin-bottom:12px">
+            <img id="chg-photo-preview" alt="Ticket" style="width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid rgba(148,163,184,0.4);flex-shrink:0">
+            <div id="chg-photo-statut" style="font-size:0.85rem;line-height:1.4;flex:1;color:var(--text-secondary)"></div>
+          </div>
+        </div>
+        <div id="chg-champs" style="display:none">
+          <div id="chg-champs-aide" style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px"></div>
+          <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Montant (FCFA)</label>
+          <input id="chg-montant" type="number" inputmode="numeric" min="0" step="500" class="form-control" placeholder="Ex : 5000" style="font-size:1.3rem;text-align:center;margin-bottom:12px">
+          <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Détail (facultatif)</label>
+          <input id="chg-libelle" type="text" class="form-control" placeholder="Ex : station Cocody" style="font-size:0.95rem">
+        </div>
       </div>`,
       [
         { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
         { label: 'Enregistrer', class: 'btn btn-primary', onclick: 'AccueilPage._validerCharge()' }
       ]
     );
+    this._activerPhotoTicket();
+  },
+
+  // Branche la capture photo et l'affichage selon le type : recharge → photo
+  // obligatoire (champs après lecture) ; lavage / autre → saisie manuelle directe.
+  _activerPhotoTicket() {
+    this._ticketLu = false;
+    const input = document.getElementById('chg-photo-input');
+    const btn = document.getElementById('chg-photo-btn');
+    const type = document.getElementById('chg-type');
+    if (!input || !btn || !type) return;
+    btn.addEventListener('click', () => input.click());
+    input.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) this._lireTicketPhoto(file);
+      input.value = '';
+    });
+    const appliquerType = () => {
+      const recharge = type.value === 'recharge';
+      const blocPhoto = document.getElementById('chg-bloc-photo');
+      const champs = document.getElementById('chg-champs');
+      const aide = document.getElementById('chg-champs-aide');
+      if (blocPhoto) blocPhoto.style.display = recharge ? 'block' : 'none';
+      if (champs) champs.style.display = (recharge && !this._ticketLu) ? 'none' : 'block';
+      if (aide) aide.textContent = recharge ? 'Vérifiez ce qui a été lu sur le ticket, corrigez si besoin :' : '';
+    };
+    type.addEventListener('change', appliquerType);
+    this._appliquerTypeCharge = appliquerType;
+    appliquerType();
+  },
+
+  // Le chauffeur photographie son ticket de recharge : la photo est réduite (1280 px, JPEG)
+  // puis lue par /api/charge-ocr qui renvoie le montant et le lieu. Les champs sont
+  // pré-remplis ; le chauffeur vérifie puis enregistre.
+  _lireTicketPhoto(file) {
+    const zone = document.getElementById('chg-photo-zone');
+    const apercu = document.getElementById('chg-photo-preview');
+    const statut = document.getElementById('chg-photo-statut');
+    const setStatut = (texte, couleur) => {
+      if (!statut) return;
+      statut.textContent = texte;
+      statut.style.color = couleur || 'var(--text-secondary)';
+    };
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = async () => {
+        const MAX = 1280;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) { const k = MAX / Math.max(w, h); w = Math.round(w * k); h = Math.round(h * k); }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        if (apercu) apercu.src = dataUrl;
+        if (zone) zone.style.display = 'flex';
+        setStatut('Lecture du ticket en cours…');
+        const r = await DriverStore.lireTicketCharge(dataUrl, 'recharge');
+        if (!r || !r.success) {
+          const message = (r && r.error) || '';
+          if (/non configur|pas répondu|impossible pour le moment|Réseau|Erreur 5/i.test(message)) {
+            // Service de lecture indisponible : on laisse le chauffeur saisir le montant du ticket photographié.
+            this._ticketLu = true;
+            if (this._appliquerTypeCharge) this._appliquerTypeCharge();
+            setStatut('Lecture automatique indisponible. Saisissez le montant inscrit sur le ticket.', '#fbbf24');
+            return;
+          }
+          setStatut(message || 'Lecture impossible pour le moment. Réessayez dans un instant.', '#f87171');
+          return;
+        }
+        if (!r.lisible || !(r.montant > 0)) {
+          setStatut('Ticket illisible. Reprenez la photo de plus près, bien à plat et sans reflet.', '#fbbf24');
+          return;
+        }
+        this._ticketLu = true;
+        const champType = document.getElementById('chg-type');
+        const champMontant = document.getElementById('chg-montant');
+        const champLibelle = document.getElementById('chg-libelle');
+        if (champType) champType.value = 'recharge';
+        if (champMontant) champMontant.value = r.montant;
+        if (champLibelle && r.libelle && !champLibelle.value) champLibelle.value = r.libelle;
+        if (this._appliquerTypeCharge) this._appliquerTypeCharge();
+        const fcfa = Number(r.montant).toLocaleString('fr-FR') + ' F';
+        if (r.confiance < 0.6) {
+          setStatut(`Lecture incertaine : ${fcfa}. Vérifiez bien le montant avant d'enregistrer.`, '#fbbf24');
+        } else {
+          setStatut(`Lu sur le ticket : ${fcfa}${r.libelle ? ' · ' + r.libelle : ''}. Vérifiez, puis enregistrez.`, '#34d399');
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   },
 
   async _validerCharge() {
     const type = (document.getElementById('chg-type') || {}).value || 'autre';
+    if (type === 'recharge' && !this._ticketLu) { DriverToast.show('Photographiez d\'abord le ticket de recharge', 'error'); return; }
     const montant = parseInt((document.getElementById('chg-montant') || {}).value, 10);
     const libelle = ((document.getElementById('chg-libelle') || {}).value || '').trim();
     if (!(montant > 0)) { DriverToast.show('Entrez un montant valide', 'error'); return; }
@@ -268,10 +349,12 @@ const AccueilPage = {
         const reste = Math.max(0, du - totalVerseJour);
         const regle = caJour > 0 && reste <= 0;
         const caPasSync = (!data.stats || !data.stats.caSynchronise) && caJour === 0;
-        const fond = regle ? 'linear-gradient(150deg,#14532d,#166534)' : 'linear-gradient(150deg,#172554,#1e3a8a)';
+        const fond = regle
+          ? 'radial-gradient(circle at 85% 0%, rgba(48,209,88,0.45), transparent 55%), #0f2e1f'
+          : 'radial-gradient(circle at 85% 0%, rgba(0,113,227,0.55), transparent 55%), #0b1220';
         const lig = (label, val, signe, opt) => `<div style="display:flex;justify-content:space-between;font-size:0.9rem;${opt||''}"><span style="opacity:.85">${label}</span><span style="font-weight:800">${signe||''}${Number(val).toLocaleString('fr-FR')}</span></div>`;
         carteArgentHTML = `
-        <div style="border-radius:1.5rem;background:${fond};padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(30,58,138,0.32)">
+        <div class="pc-card" style="background:${fond};padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;border-color:rgba(255,255,255,0.06);box-shadow:0 12px 32px -12px rgba(0,113,227,0.45)">
           <div style="text-align:center">
             <div style="font-size:1.05rem;font-weight:800;opacity:0.95;display:flex;align-items:center;justify-content:center;gap:8px">
               <iconify-icon icon="solar:${regle ? 'check-circle-bold' : 'wallet-money-bold-duotone'}" style="font-size:1.5rem"></iconify-icon>
@@ -292,7 +375,7 @@ const AccueilPage = {
             <button onclick="AccueilPage._ajouterCharge()" class="tap-scale" style="flex:1;min-height:52px;border-radius:1rem;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
               <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:1.3rem"></iconify-icon> Charge
             </button>
-            ${!regle ? `<button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="flex:2;min-height:52px;border-radius:1rem;border:none;background:#15803d;color:white;font-size:1.05rem;font-weight:900;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+            ${!regle ? `<button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="flex:2;min-height:52px;border-radius:1rem;border:none;background:#0071e3;color:white;font-size:1.05rem;font-weight:900;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
               <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:1.5rem"></iconify-icon> VERSER
             </button>` : ''}
           </div>
@@ -336,6 +419,44 @@ const AccueilPage = {
       </div>`;
     }
 
+    // === Salaire fixe (rappel du modèle salarié) ===
+    const salaire = Number(chauffeur.salaireMensuel || 0);
+    const salaireHTML = (estSalarie && salaire > 0) ? `
+      <div class="pc-card" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:1rem;background:var(--bg-secondary)">
+        <span style="width:44px;height:44px;border-radius:14px;background:rgba(0,113,227,0.1);color:#0071e3;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <iconify-icon icon="solar:banknote-2-bold-duotone" style="font-size:1.4rem"></iconify-icon>
+        </span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Salaire fixe</div>
+          <div style="font-size:1.05rem;font-weight:800;color:var(--text-primary)">${salaire.toLocaleString('fr-FR')} F chaque mois</div>
+        </div>
+        <span class="pc-badge vert">Garanti</span>
+      </div>` : '';
+
+    // === Programme propriétaire : mois de service sur 36 (salariés avec date de début) ===
+    let proprietaireHTML = '';
+    if (estSalarie && chauffeur.dateDebutContrat) {
+      const debut = new Date(String(chauffeur.dateDebutContrat).slice(0, 10) + 'T00:00:00');
+      if (!isNaN(debut.getTime())) {
+        let mois = (today.getFullYear() - debut.getFullYear()) * 12 + (today.getMonth() - debut.getMonth());
+        if (today.getDate() < debut.getDate()) mois -= 1;
+        const moisAff = Math.max(0, Math.min(36, mois));
+        const pct = Math.round(moisAff / 36 * 100);
+        const restant = 36 - moisAff;
+        proprietaireHTML = `
+      <div class="pc-card pc-card-navy" style="padding:1.25rem;margin-bottom:1rem;color:white">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span class="pc-badge orange">Programme propriétaire</span>
+          <span style="font-size:0.8rem;font-weight:700;opacity:0.7">${moisAff} / 36 mois</span>
+        </div>
+        <div style="font-size:1.2rem;font-weight:900;letter-spacing:-0.02em;margin:12px 0 4px;line-height:1.15">${restant > 0 ? `Encore ${restant} mois, et cette voiture peut devenir la vôtre.` : 'Vous avez atteint les 36 mois de service.'}</div>
+        <div style="font-size:0.8rem;opacity:0.7;line-height:1.45">Conditions : service continu, versements à jour, rachat à la valeur résiduelle prévue à votre contrat.</div>
+        <div class="pc-jauge" style="margin-top:14px"><div class="pc-jauge-fill" style="--pct:${Math.max(2, pct)}%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.68rem;opacity:0.6;margin-top:6px;text-transform:uppercase;letter-spacing:0.08em"><span>Mois 1</span><span>Mois 36</span></div>
+      </div>`;
+      }
+    }
+
     // Tuile : carte blanche sobre, icône dans une pastille discrète (palette professionnelle)
     const tuile = (route, icon, label, chipBg, iconColor, badge = 0) => `
       <button onclick="DriverRouter.navigate('${route}')" class="tap-scale" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:118px;padding:1rem 0.5rem;border-radius:1.25rem;border:1px solid var(--glass-border);background:var(--bg-card, #fff);color:var(--text-primary);cursor:pointer;font-family:inherit;box-shadow:0 2px 10px rgba(15,23,42,0.06)">
@@ -352,6 +473,8 @@ const AccueilPage = {
 
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
+      ${salaireHTML}
+      ${proprietaireHTML}
 
       <!-- 2. Mon créneau du jour / prochain créneau
            (le pointage a été retiré : la prise de fonction est suivie
@@ -359,12 +482,6 @@ const AccueilPage = {
       ${todayShiftHTML}
       ${nextShiftHTML}
 
-      <!-- Recharge du vehicule : c'est le chauffeur qui branche, c'est lui qui sait.
-           Sans vehicule assigne, le bouton n'a pas de sens et n'apparait pas. -->
-      ${chauffeur.vehiculeAssigne ? `
-      <button onclick="AccueilPage._marquerCharge()" class="tap-scale" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;border-radius:1.25rem;border:2px solid rgba(22,163,74,.35);background:rgba(22,163,74,.08);color:#15803d;font-size:1.02rem;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:12px">
-        <iconify-icon icon="solar:bolt-circle-bold-duotone" style="font-size:1.6rem"></iconify-icon> J'ai rechargé le véhicule
-      </button>` : ''}
 
       <!-- 3. QUATRE GRANDES TUILES, un mot chacune -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
