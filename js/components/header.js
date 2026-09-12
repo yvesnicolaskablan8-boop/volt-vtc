@@ -31,7 +31,7 @@ const Header = {
       ['performance','Performance','chart-2',['/yango','/rapports','/classement']],
       ['echanges','Échanges','chat-round-dots',['/messagerie','/activite']]
     ];
-    const descriptions = {'/suivi-vehicules':'Positions et suivi de la flotte','/chauffeurs':'Profils, contrats et affectations','/vehicules':'Parc automobile et véhicules','/planning':'Organiser les rotations','/taches':'Suivre les actions de l’équipe','/versements':'Encaissements et versements','/comptabilite':'Comptes, factures et budgets','/bonus':'Primes et récompenses','/simulateur':'Estimer vos revenus et coûts','/yango':'Activité et revenus Yango','/rapports':'Analyser les résultats','/classement':'Comparer les performances','/messagerie':'Conversations de l’équipe','/activite':'Historique des événements'};
+    const descriptions = {'/suivi-vehicules':'Positions et suivi de la flotte','/chauffeurs':'Profils, contrats et affectations','/vehicules':'Parc automobile et vÃ©hicules','/planning':'Organiser les rotations','/taches':'Suivre les actions de lâÃ©quipe','/versements':'Encaissements et versements','/comptabilite':'Comptes, factures et budgets','/bonus':'Primes et rÃ©compenses','/simulateur':'Analyse IA de l’activitÃ©','/yango':'ActivitÃ© et revenus Yango','/rapports':'Analyser les rÃ©sultats','/classement':'Comparer les performances','/messagerie':'Conversations de lâÃ©quipe','/activite':'Historique des Ã©vÃ©nements'};
     const allowed = route => typeof Auth === 'undefined' || !Auth.canAccessRoute || Auth.canAccessRoute(route);
     const links = this._dockLinks.filter(el => allowed(el.dataset.route));
     nav.replaceChildren(); nav.classList.add('mdock-grouped');

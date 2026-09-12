@@ -29,7 +29,8 @@ const Router = {
     add('/analyse-versements', () => AnalyseVersementsPage, 'Analyse des versements');
     add('/analyse-rentabilite', () => AnalyseRentabilitePage, 'Analyse de la rentabilité');
     add('/bonus', () => BonusPage, 'Bonus');
-    add('/simulateur', () => SimulateurPage, 'Simulateur');
+    add('/simulateur', () => AnalysePage, 'Analyse IA');
+    add('/analyse', () => AnalysePage, 'Analyse IA');
     add('/rentabilite', () => RentabilitePage, 'Rentabilité');
     add('/suivi-vehicules', () => SuiviVehiculesPage, 'Suivi des véhicules');
     // Le suivi par telephone est supprime : cette adresse mene desormais
