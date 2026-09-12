@@ -81,7 +81,9 @@ module.exports = async function handler(req, res) {
   const img = parseImage(body.image);
   const indice = body.type === 'recharge'
     ? ' Il s\'agit d\'un ticket de recharge électrique du véhicule (borne ou station) : le type est "recharge".'
-    : '';
+    : body.type === 'imprevu'
+      ? ' Il s\'agit d\'une dépense imprévue du chauffeur pendant son service (réparation, pièce, péage, parking, dépannage…) : le type est "autre" et le libellé décrit la nature de la dépense.'
+      : '';
   if (!img) return res.status(400).json({ error: 'Image attendue en JPEG, PNG ou WebP (data URL base64)' });
   if (img.tooBig) return res.status(413).json({ error: 'Photo trop lourde (3 Mo max)' });
 

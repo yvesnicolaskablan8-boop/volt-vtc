@@ -2,88 +2,67 @@
  * AccueilPage — Tableau de bord chauffeur (enhanced)
  */
 const AccueilPage = {
-  // ===== CHARGES DU JOUR (salarie : deduites de ce qu'il verse) =====
-  // Recharge du véhicule : photo du ticket obligatoire, lue par le serveur (/api/charge-ocr),
-  // montant pré-rempli puis vérifié par le chauffeur. Lavage et autre : saisie manuelle.
-  _ajouterCharge() {
+  // ===== DÉPENSE IMPRÉVUE (salarié : déduite de ce qu'il verse) =====
+  // Le chauffeur photographie le reçu ; le serveur (/api/charge-ocr) lit le montant
+  // et le libellé, le chauffeur vérifie puis enregistre. La dépense est stockée
+  // comme charge de type « autre ». Si la lecture est indisponible, il saisit le montant.
+  _ajouterDepense() {
     DriverModal.show(
-      'Ajouter une charge',
+      'Dépense imprévue',
       `<div style="padding:0.25rem 0">
-        <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;line-height:1.5">
-          Ce que vous avez dépensé aujourd'hui. Ce montant sera déduit de ce que vous devez verser.
+        <span class="pc-badge ciel" style="margin-bottom:12px">Déduite de votre versement du jour</span>
+        <input type="file" id="dep-photo-input" accept="image/*" capture="environment" style="display:none">
+        <button type="button" id="dep-photo-btn" class="dep-tuile tap-scale">
+          <span class="dep-tuile-icone"><iconify-icon icon="solar:camera-bold-duotone"></iconify-icon></span>
+          <span class="dep-tuile-titre">Photographier le reçu</span>
+          <span class="dep-tuile-sous">Le montant est lu automatiquement</span>
+        </button>
+        <div class="dep-chips">
+          <span><iconify-icon icon="solar:wrench-bold-duotone"></iconify-icon> Réparation</span>
+          <span><iconify-icon icon="solar:routing-2-bold-duotone"></iconify-icon> Péage</span>
+          <span><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Parking</span>
+          <span><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Pneu</span>
         </div>
-        <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Type</label>
-        <select id="chg-type" class="form-control" style="margin-bottom:12px;font-size:1rem">
-          <option value="recharge">Recharge du véhicule</option>
-          <option value="lavage">Lavage</option>
-          <option value="autre">Autre</option>
-        </select>
-        <div id="chg-bloc-photo">
-          <input type="file" id="chg-photo-input" accept="image/*" capture="environment" style="display:none">
-          <button type="button" id="chg-photo-btn" class="tap-scale" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;margin-bottom:8px;border:2px dashed rgba(59,130,246,0.6);border-radius:1rem;background:rgba(59,130,246,0.08);color:var(--text-primary);font-weight:700;font-size:0.95rem;font-family:inherit;cursor:pointer">
-            <iconify-icon icon="solar:camera-bold-duotone" style="font-size:1.3rem;color:#3b82f6"></iconify-icon> Photographier le ticket de recharge
-          </button>
-          <div id="chg-photo-zone" style="display:none;align-items:center;gap:10px;margin-bottom:12px">
-            <img id="chg-photo-preview" alt="Ticket" style="width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid rgba(148,163,184,0.4);flex-shrink:0">
-            <div id="chg-photo-statut" style="font-size:0.85rem;line-height:1.4;flex:1;color:var(--text-secondary)"></div>
-          </div>
+        <div id="dep-photo-zone" class="dep-apercu" style="display:none">
+          <img id="dep-photo-preview" alt="Reçu">
+          <div id="dep-photo-statut"></div>
         </div>
-        <div id="chg-champs" style="display:none">
-          <div id="chg-champs-aide" style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px"></div>
-          <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Montant (FCFA)</label>
-          <input id="chg-montant" type="number" inputmode="numeric" min="0" step="500" class="form-control" placeholder="Ex : 5000" style="font-size:1.3rem;text-align:center;margin-bottom:12px">
-          <label style="font-size:0.85rem;font-weight:700;display:block;margin-bottom:5px">Détail (facultatif)</label>
-          <input id="chg-libelle" type="text" class="form-control" placeholder="Ex : station Cocody" style="font-size:0.95rem">
+        <div id="dep-champs" class="dep-verif" style="display:none">
+          <div class="dep-verif-titre">Vérifiez ce qui a été lu</div>
+          <label for="dep-montant">Montant (FCFA)</label>
+          <input id="dep-montant" type="number" inputmode="numeric" min="0" step="100" class="dep-montant" placeholder="0">
+          <label for="dep-libelle">Nature de la dépense</label>
+          <input id="dep-libelle" type="text" class="form-control" placeholder="Ex : réparation pneu, péage…" style="font-size:0.95rem">
         </div>
       </div>`,
       [
         { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
-        { label: 'Enregistrer', class: 'btn btn-primary', onclick: 'AccueilPage._validerCharge()' }
+        { label: 'Enregistrer', class: 'btn btn-primary', onclick: 'AccueilPage._validerDepense()' }
       ]
     );
-    this._activerPhotoTicket();
-  },
-
-  // Branche la capture photo et l'affichage selon le type : recharge → photo
-  // obligatoire (champs après lecture) ; lavage / autre → saisie manuelle directe.
-  _activerPhotoTicket() {
-    this._ticketLu = false;
-    const input = document.getElementById('chg-photo-input');
-    const btn = document.getElementById('chg-photo-btn');
-    const type = document.getElementById('chg-type');
-    if (!input || !btn || !type) return;
+    this._recuLu = false;
+    const input = document.getElementById('dep-photo-input');
+    const btn = document.getElementById('dep-photo-btn');
+    if (!input || !btn) return;
     btn.addEventListener('click', () => input.click());
     input.addEventListener('change', (e) => {
       const file = e.target.files && e.target.files[0];
-      if (file) this._lireTicketPhoto(file);
+      if (file) this._lireRecuDepense(file);
       input.value = '';
     });
-    const appliquerType = () => {
-      const recharge = type.value === 'recharge';
-      const blocPhoto = document.getElementById('chg-bloc-photo');
-      const champs = document.getElementById('chg-champs');
-      const aide = document.getElementById('chg-champs-aide');
-      if (blocPhoto) blocPhoto.style.display = recharge ? 'block' : 'none';
-      if (champs) champs.style.display = (recharge && !this._ticketLu) ? 'none' : 'block';
-      if (aide) aide.textContent = recharge ? 'Vérifiez ce qui a été lu sur le ticket, corrigez si besoin :' : '';
-    };
-    type.addEventListener('change', appliquerType);
-    this._appliquerTypeCharge = appliquerType;
-    appliquerType();
   },
 
-  // Le chauffeur photographie son ticket de recharge : la photo est réduite (1280 px, JPEG)
-  // puis lue par /api/charge-ocr qui renvoie le montant et le lieu. Les champs sont
-  // pré-remplis ; le chauffeur vérifie puis enregistre.
-  _lireTicketPhoto(file) {
-    const zone = document.getElementById('chg-photo-zone');
-    const apercu = document.getElementById('chg-photo-preview');
-    const statut = document.getElementById('chg-photo-statut');
+  _lireRecuDepense(file) {
+    const zone = document.getElementById('dep-photo-zone');
+    const apercu = document.getElementById('dep-photo-preview');
+    const statut = document.getElementById('dep-photo-statut');
+    const champs = document.getElementById('dep-champs');
     const setStatut = (texte, couleur) => {
       if (!statut) return;
       statut.textContent = texte;
       statut.style.color = couleur || 'var(--text-secondary)';
     };
+    const montrerChamps = () => { if (champs) champs.style.display = 'block'; };
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
@@ -97,37 +76,34 @@ const AccueilPage = {
         const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
         if (apercu) apercu.src = dataUrl;
         if (zone) zone.style.display = 'flex';
-        setStatut('Lecture du ticket en cours…');
-        const r = await DriverStore.lireTicketCharge(dataUrl, 'recharge');
+        setStatut('Lecture du reçu en cours…');
+        const r = await DriverStore.lireTicketCharge(dataUrl, 'imprevu');
+        const champMontant = document.getElementById('dep-montant');
+        const champLibelle = document.getElementById('dep-libelle');
         if (!r || !r.success) {
           const message = (r && r.error) || '';
           if (/non configur|pas répondu|impossible pour le moment|Réseau|Erreur 5/i.test(message)) {
-            // Service de lecture indisponible : on laisse le chauffeur saisir le montant du ticket photographié.
-            this._ticketLu = true;
-            if (this._appliquerTypeCharge) this._appliquerTypeCharge();
-            setStatut('Lecture automatique indisponible. Saisissez le montant inscrit sur le ticket.', '#fbbf24');
+            this._recuLu = true;
+            montrerChamps();
+            setStatut('Lecture automatique indisponible. Saisissez le montant inscrit sur le reçu.', '#fbbf24');
             return;
           }
           setStatut(message || 'Lecture impossible pour le moment. Réessayez dans un instant.', '#f87171');
           return;
         }
         if (!r.lisible || !(r.montant > 0)) {
-          setStatut('Ticket illisible. Reprenez la photo de plus près, bien à plat et sans reflet.', '#fbbf24');
+          setStatut('Reçu illisible. Reprenez la photo de plus près, bien à plat et sans reflet.', '#fbbf24');
           return;
         }
-        this._ticketLu = true;
-        const champType = document.getElementById('chg-type');
-        const champMontant = document.getElementById('chg-montant');
-        const champLibelle = document.getElementById('chg-libelle');
-        if (champType) champType.value = 'recharge';
+        this._recuLu = true;
+        montrerChamps();
         if (champMontant) champMontant.value = r.montant;
         if (champLibelle && r.libelle && !champLibelle.value) champLibelle.value = r.libelle;
-        if (this._appliquerTypeCharge) this._appliquerTypeCharge();
         const fcfa = Number(r.montant).toLocaleString('fr-FR') + ' F';
         if (r.confiance < 0.6) {
           setStatut(`Lecture incertaine : ${fcfa}. Vérifiez bien le montant avant d'enregistrer.`, '#fbbf24');
         } else {
-          setStatut(`Lu sur le ticket : ${fcfa}${r.libelle ? ' · ' + r.libelle : ''}. Vérifiez, puis enregistrez.`, '#34d399');
+          setStatut(`Lu sur le reçu : ${fcfa}${r.libelle ? ' · ' + r.libelle : ''}. Vérifiez, puis enregistrez.`, '#34d399');
         }
       };
       img.src = e.target.result;
@@ -135,19 +111,18 @@ const AccueilPage = {
     reader.readAsDataURL(file);
   },
 
-  async _validerCharge() {
-    const type = (document.getElementById('chg-type') || {}).value || 'autre';
-    if (type === 'recharge' && !this._ticketLu) { DriverToast.show('Photographiez d\'abord le ticket de recharge', 'error'); return; }
-    const montant = parseInt((document.getElementById('chg-montant') || {}).value, 10);
-    const libelle = ((document.getElementById('chg-libelle') || {}).value || '').trim();
+  async _validerDepense() {
+    if (!this._recuLu) { DriverToast.show('Photographiez d\'abord le reçu', 'error'); return; }
+    const montant = parseInt((document.getElementById('dep-montant') || {}).value, 10);
+    const libelle = ((document.getElementById('dep-libelle') || {}).value || '').trim() || 'Dépense imprévue';
     if (!(montant > 0)) { DriverToast.show('Entrez un montant valide', 'error'); return; }
     DriverModal.close();
-    const r = await DriverStore.ajouterCharge({ type, montant, libelle });
+    const r = await DriverStore.ajouterCharge({ type: 'autre', montant, libelle });
     if (r && r.success) {
-      DriverToast.show('Charge enregistrée', 'success');
+      DriverToast.show('Dépense enregistrée', 'success');
       this.render(document.getElementById('app-content'));
     } else {
-      DriverToast.show((r && r.error) || 'Impossible d\'enregistrer la charge', 'error');
+      DriverToast.show((r && r.error) || 'Impossible d\'enregistrer la dépense', 'error');
     }
   },
 
@@ -366,14 +341,14 @@ const AccueilPage = {
           ${caPasSync ? `<div style="background:rgba(255,255,255,0.18);border-radius:12px;padding:10px;font-size:0.82rem;font-weight:600;line-height:1.45">Vos courses du jour ne sont pas encore remontées. Le montant sera mis à jour dès que la liaison Yango fonctionne.</div>`
           : `<div style="background:rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:5px">
               ${lig('Gagné sur Yango', caJour, '')}
-              ${lig('Mes charges', chargesJour, '− ', 'color:#fcd34d')}
+              ${lig('Mes dépenses', chargesJour, '− ', 'color:#fcd34d')}
               <div style="height:1px;background:rgba(255,255,255,.2);margin:3px 0"></div>
               ${lig('À verser', du, '', 'font-size:1rem')}
               ${totalVerseJour > 0 ? lig('Déjà versé', totalVerseJour, '− ', 'color:#86efac') : ''}
             </div>`}
           <div style="display:flex;gap:8px;margin-top:12px">
-            <button onclick="AccueilPage._ajouterCharge()" class="tap-scale" style="flex:1;min-height:52px;border-radius:1rem;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
-              <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size:1.3rem"></iconify-icon> Charge
+            <button onclick="AccueilPage._ajouterDepense()" class="tap-scale" style="flex:1;min-height:52px;border-radius:1rem;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
+              <iconify-icon icon="solar:camera-bold-duotone" style="font-size:1.3rem"></iconify-icon> Dépense
             </button>
             ${!regle ? `<button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="flex:2;min-height:52px;border-radius:1rem;border:none;background:#0071e3;color:white;font-size:1.05rem;font-weight:900;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
               <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:1.5rem"></iconify-icon> VERSER
