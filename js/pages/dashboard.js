@@ -1524,6 +1524,7 @@ const DashboardPage = {
         .fd-c-live-dot{width:8px;height:8px;border-radius:50%;background:#13DEB9;flex-shrink:0;box-shadow:0 0 0 0 rgba(19,222,185,.55);animation:fdLivePulse 1.8s ease-out infinite;}
         .fd-c-live-off{background:var(--bg-tertiary);color:var(--text-muted);}
         .fd-c-urgent{border:1px solid rgba(239,68,68,.55);animation:fdUrgent 1.6s ease-out infinite;}
+        .fd-c-urgent:hover,.fd-c-urgent.hot{animation:none;border-color:#EF4444;background:rgba(239,68,68,.07);box-shadow:0 10px 24px -6px rgba(239,68,68,.45),0 0 0 3px rgba(239,68,68,.35);}
         .fd-c-urg{margin-left:auto;font-size:10px;font-weight:900;letter-spacing:.08em;color:#fff;background:#EF4444;padding:2px 7px;border-radius:20px;}
         @keyframes fdUrgent{0%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}100%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
         /* Widgets d'état cliquables : retour visuel au survol. */
@@ -2377,7 +2378,7 @@ const DashboardPage = {
     return segments.map((s, i) => {
       if (!s.count) return '';
       const frac = s.count / total, len = frac * C, dash = Math.max(0.5, len - GAP);
-      const el = `<circle data-seg="${i}" cx="100" cy="100" r="${R}" fill="none" stroke="${s.color}" stroke-width="${SW}" stroke-linecap="round" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${(-cum).toFixed(2)}" class="fd-seg" onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"></circle>`;
+      const el = `<circle data-seg="${i}" data-key="${s.key}" cx="100" cy="100" r="${R}" fill="none" stroke="${s.color}" stroke-width="${SW}" stroke-linecap="round" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${(-cum).toFixed(2)}" class="fd-seg" onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"></circle>`;
       cum += len;
       return el;
     }).join('');
@@ -2406,7 +2407,7 @@ const DashboardPage = {
   _fleetCardsInner(segments) {
     return segments.map((s, i) => {
       const clickable = s.count > 0;
-      const handlers = clickable ? `onmouseenter="DashboardPage._fdHot(${i},true)" onmouseleave="DashboardPage._fdHot(${i},false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
+      const handlers = clickable ? `onmouseenter="DashboardPage._fdHot('${s.key}',true)" onmouseleave="DashboardPage._fdHot('${s.key}',false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
       const notes = [];
       if (s.inactifCount) notes.push(`<span style="color:#E8930C;font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#E8930C;margin-right:4px;vertical-align:middle;"></span>${s.inactifCount} pas actif${s.inactifCount > 1 ? 's' : ''}</span>`);
       if (s.note) notes.push(`<button type="button" class="fd-surv-chip" onclick="event.stopPropagation();DashboardPage._scrollToWatchlist()" title="Voir les chauffeurs à surveiller"><iconify-icon icon="solar:eye-scan-bold" style="font-size:12px;"></iconify-icon>${s.note}</button>`);
@@ -2437,7 +2438,7 @@ const DashboardPage = {
       }
       // « À surveiller » non vide = URGENT : anneau rouge pulsant + étiquette.
       const urgent = s.key === 'surveiller' && s.count > 0;
-      return `<div class="fd-c${clickable ? '' : ' fd-c-off'}${urgent ? ' fd-c-urgent' : ''}" data-i="${i}" ${handlers}>
+      return `<div class="fd-c${clickable ? '' : ' fd-c-off'}${urgent ? ' fd-c-urgent' : ''}" data-i="${i}" data-key="${s.key}" ${handlers}>
         <div class="fd-c-top"><span class="fd-c-dot" style="background:${s.color};"></span>${s.label}${urgent ? '<span class="fd-c-urg" title="Alerte urgente : chauffeurs planifiés à surveiller">URGENT</span>' : ''}</div>
         <div class="fd-c-mid"><span class="fd-c-val" style="color:${s.color};">${s.count}</span>${liveChip}</div>
         <div class="fd-c-desc">${s.desc}${notes.length ? ' · ' + notes.join(' · ') : ''}${liveNotes ? `<div style="margin-top:6px;">${liveNotes}</div>` : ''}</div>
@@ -2534,13 +2535,15 @@ const DashboardPage = {
     PiloteMotion.dashboard(document.getElementById('page-content'));
   },
 
-  _fdHot(i, on) {
+  // Survol d'une carte : l'arc de la jauge qui porte la MÊME clé s'épaissit, les
+  // autres s'estompent. (Les cartes et les arcs n'ont pas le même ordre : la
+  // jauge scinde « en service » en ok / à surveiller, d'où le lien par clé.)
+  _fdHot(key, on) {
     document.querySelectorAll('.fd-seg').forEach(el => {
-      const j = +el.getAttribute('data-seg');
-      if (j === i) { el.style.strokeWidth = on ? '24' : '18'; el.style.opacity = '1'; }
+      if (el.getAttribute('data-key') === key) { el.style.strokeWidth = on ? '24' : '18'; el.style.opacity = '1'; }
       else el.style.opacity = on ? '0.35' : '1';
     });
-    document.querySelectorAll('.fd-c').forEach(c => c.classList.toggle('hot', on && +c.getAttribute('data-i') === i));
+    document.querySelectorAll('.fd-c').forEach(c => c.classList.toggle('hot', on && c.getAttribute('data-key') === key));
   },
 
   // key = segment (service / nonpl / surveiller) ; stateFilter (optionnel) = état
