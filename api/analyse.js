@@ -39,18 +39,30 @@ const n = (v) => { const x = Number(v); return isFinite(x) ? x : 0; };
 const r0 = (v) => Math.round(v);
 const pct = (a, b) => (b > 0 ? Math.round((100 * a) / b) : null);
 
+// Supabase renvoie parfois un 5xx passager (Gateway Timeout) : on retente avant d'abandonner.
+async function lire(table, params, token, essais = 3) {
+  for (let i = 1; ; i++) {
+    try { return await supabaseQuery(table, params, token); }
+    catch (e) {
+      const passager = /Supabase 5\d\d|fetch failed|ECONNRESET|ETIMEDOUT/i.test(e.message || '');
+      if (!passager || i >= essais) throw e;
+      await new Promise(r => setTimeout(r, 400 * i));
+    }
+  }
+}
+
 // ---------- lecture + calculs ----------
 async function construireSnapshot(token, periode) {
   const b = bornes(periode);
   const [chauffeurs, vehicules, caJour, versements, charges, planning, absences, contraventions] = await Promise.all([
-    supabaseQuery('fleet_chauffeurs', 'select=id,prenom,nom,statut,type_contrat,salaire_mensuel,date_debut_contrat,vehicule_assigne,jour_repos,jour_repos2', token),
-    supabaseQuery('fleet_vehicules', 'select=id,immatriculation,marque,modele,statut,type_acquisition,mensualite_leasing,consommation,cout_energie,kilometrage_mensuel', token),
-    supabaseQuery('fleet_ca_jour', `select=chauffeur_id,date,ca_brut,ca_net,commission_yango,nb_courses&date=gte.${b.du}&date=lte.${b.au}`, token),
-    supabaseQuery('fleet_versements', `select=chauffeur_id,date,date_service,statut,montant_verse,traitement_manquant,manquant&date=gte.${b.du}&date=lte.${b.au}`, token),
-    supabaseQuery('fleet_charges', `select=chauffeur_id,date,type,montant&date=gte.${b.du}&date=lte.${b.au}`, token),
-    supabaseQuery('fleet_planning', `select=chauffeur_id,date,vehicule_id,type_creneaux&date=gte.${b.du}&date=lte.${b.aVenirJusqu}`, token),
-    supabaseQuery('fleet_absences', 'select=chauffeur_id,date_debut,date_fin', token),
-    supabaseQuery('fleet_contraventions', 'select=chauffeur_id,montant,statut&statut=eq.impayee', token),
+    lire('fleet_chauffeurs', 'select=id,prenom,nom,statut,type_contrat,salaire_mensuel,date_debut_contrat,vehicule_assigne,jour_repos,jour_repos2', token),
+    lire('fleet_vehicules', 'select=id,immatriculation,marque,modele,statut,type_acquisition,mensualite_leasing,consommation,cout_energie,kilometrage_mensuel', token),
+    lire('fleet_ca_jour', `select=chauffeur_id,date,ca_brut,ca_net,commission_yango,nb_courses&date=gte.${b.du}&date=lte.${b.au}`, token),
+    lire('fleet_versements', `select=chauffeur_id,date,date_service,statut,montant_verse,traitement_manquant,manquant&date=gte.${b.du}&date=lte.${b.au}`, token),
+    lire('fleet_charges', `select=chauffeur_id,date,type,montant&date=gte.${b.du}&date=lte.${b.au}`, token),
+    lire('fleet_planning', `select=chauffeur_id,date,vehicule_id,type_creneaux&date=gte.${b.du}&date=lte.${b.aVenirJusqu}`, token),
+    lire('fleet_absences', 'select=chauffeur_id,date_debut,date_fin', token),
+    lire('fleet_contraventions', 'select=chauffeur_id,montant,statut&statut=eq.impayee', token),
   ]);
 
   const actifs = chauffeurs.filter(c => c.statut !== 'inactif' && !TEST_IDS.test(c.id));
