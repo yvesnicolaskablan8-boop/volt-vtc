@@ -6,7 +6,7 @@ const DriverApp = {
 
   init() {
     // Restore saved theme
-    const savedTheme = localStorage.getItem('pilote_theme');
+    const savedTheme = localStorage.getItem('pilote_theme') || 'dark'; // sombre par défaut, comme la maquette du site
     if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
 
     // Register service worker

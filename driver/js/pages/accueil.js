@@ -329,31 +329,25 @@ const AccueilPage = {
           : 'radial-gradient(circle at 85% 0%, rgba(0,113,227,0.55), transparent 55%), #0b1220';
         const lig = (label, val, signe, opt) => `<div style="display:flex;justify-content:space-between;font-size:0.9rem;${opt||''}"><span style="opacity:.85">${label}</span><span style="font-weight:800">${signe||''}${Number(val).toLocaleString('fr-FR')}</span></div>`;
         carteArgentHTML = `
-        <div class="pc-card" style="background:${fond};padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;border-color:rgba(255,255,255,0.06);box-shadow:0 12px 32px -12px rgba(0,113,227,0.45)">
-          <div style="text-align:center">
-            <div style="font-size:1.05rem;font-weight:800;opacity:0.95;display:flex;align-items:center;justify-content:center;gap:8px">
-              <iconify-icon icon="solar:${regle ? 'check-circle-bold' : 'wallet-money-bold-duotone'}" style="font-size:1.5rem"></iconify-icon>
-              ${regle ? 'TOUT EST VERSÉ' : "À VERSER AUJOURD'HUI"}
-            </div>
-            <div style="font-size:3rem;font-weight:900;letter-spacing:-0.02em;margin:8px 0 2px;line-height:1">${(regle ? 0 : reste).toLocaleString('fr-FR')}</div>
-            <div style="font-size:1.05rem;font-weight:800;opacity:0.9;margin-bottom:14px">FCFA</div>
+        <div class="mk-card${regle ? ' mk-card-ok' : ''}" style="margin-bottom:1rem">
+          <div class="mk-label">${regle ? 'Tout est versé' : "À verser aujourd’hui"}</div>
+          <div class="mk-amount">${(regle ? 0 : reste).toLocaleString('fr-FR')} <span>FCFA</span></div>
+          <div class="mk-lines">
+            ${caPasSync
+              ? `<div class="mk-note">Vos courses du jour ne sont pas encore remontées. Le montant sera mis à jour dès que la liaison Yango fonctionne.</div>`
+              : `<div class="mk-line"><span>Recette Yango du jour</span><span>${caJour.toLocaleString('fr-FR')}</span></div>
+                 ${chargesJour > 0 ? `<div class="mk-line mk-line-warn"><span>Mes dépenses</span><span>− ${chargesJour.toLocaleString('fr-FR')}</span></div>` : ''}
+                 <div class="mk-line"><span>Déjà versé</span><span>${totalVerseJour.toLocaleString('fr-FR')}</span></div>`}
           </div>
-          ${caPasSync ? `<div style="background:rgba(255,255,255,0.18);border-radius:12px;padding:10px;font-size:0.82rem;font-weight:600;line-height:1.45">Vos courses du jour ne sont pas encore remontées. Le montant sera mis à jour dès que la liaison Yango fonctionne.</div>`
-          : `<div style="background:rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:5px">
-              ${lig('Gagné sur Yango', caJour, '')}
-              ${lig('Mes dépenses', chargesJour, '− ', 'color:#fcd34d')}
-              <div style="height:1px;background:rgba(255,255,255,.2);margin:3px 0"></div>
-              ${lig('À verser', du, '', 'font-size:1rem')}
-              ${totalVerseJour > 0 ? lig('Déjà versé', totalVerseJour, '− ', 'color:#86efac') : ''}
-            </div>`}
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <button onclick="AccueilPage._ajouterDepense()" class="tap-scale" style="flex:1;min-height:52px;border-radius:1rem;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">
-              <iconify-icon icon="solar:camera-bold-duotone" style="font-size:1.3rem"></iconify-icon> Dépense
-            </button>
-            ${!regle ? `<button onclick="DriverRouter.navigate('versements')" class="tap-scale" style="flex:2;min-height:52px;border-radius:1rem;border:none;background:#0071e3;color:white;font-size:1.05rem;font-weight:900;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
-              <iconify-icon icon="solar:hand-money-bold-duotone" style="font-size:1.5rem"></iconify-icon> VERSER
-            </button>` : ''}
+          <div class="mk-actions">
+            <button onclick="DriverRouter.navigate('planning')" class="mk-btn mk-btn-outline tap-scale">Planning</button>
+            ${!regle
+              ? `<button onclick="DriverRouter.navigate('versements')" class="mk-btn mk-btn-primary tap-scale">Verser</button>`
+              : `<button onclick="DriverRouter.navigate('versements')" class="mk-btn mk-btn-outline tap-scale">Mes versements</button>`}
           </div>
+          <button onclick="AccueilPage._ajouterDepense()" class="mk-depense tap-scale">
+            <iconify-icon icon="solar:camera-bold-duotone" style="font-size:1.1rem"></iconify-icon> Déclarer une dépense imprévue
+          </button>
           ${listeCharges.length ? `<div style="margin-top:10px;display:flex;flex-direction:column;gap:5px">
             ${listeCharges.map(c => `<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);border-radius:10px;padding:7px 11px;font-size:0.85rem">
               <iconify-icon icon="${c.type === 'recharge' ? 'solar:bolt-circle-bold-duotone' : c.type === 'lavage' ? 'solar:waterdrops-bold-duotone' : 'solar:tag-bold-duotone'}" style="font-size:1.1rem;flex:none"></iconify-icon>
@@ -393,6 +387,22 @@ const AccueilPage = {
         <div style="font-size:0.95rem;font-weight:600;opacity:0.85;margin-top:6px">${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</div>
       </div>`;
     }
+
+    // === Liste « Planning » (aujourd'hui + 3 jours), comme la maquette du site ===
+    const libelleService = (p) => {
+      if (!p) return null;
+      const t = p.typeCreneaux || p.type;
+      const base = t === 'nuit' ? 'Service de nuit' : (t === 'matin' || t === 'apres_midi' || t === 'journee') ? 'Service de jour' : 'Service';
+      const h = (p.heureDebut && p.heureFin) ? ` · ${String(p.heureDebut).slice(0, 5).replace(':', 'h')} – ${String(p.heureFin).slice(0, 5).replace(':', 'h')}` : '';
+      return base + h;
+    };
+    const jourCourt = (d, i) => i === 0 ? 'Aujourd’hui' : i === 1 ? 'Demain' : d.toLocaleDateString('fr-FR', { weekday: 'long' }).replace(/^./, c => c.toUpperCase());
+    const lignesPlanning = [{ date: today, planning: planningJour }, ...upcomingDays.slice(0, 3)].map((j, i) => {
+      const service = libelleService(j.planning);
+      const repos = !service && joursRepos.includes(j.date.getDay());
+      return `<div class="mk-row${i === 0 ? ' actif' : ''}"><strong>${jourCourt(j.date, i)}</strong><span${service ? '' : ' class="mk-muted"'}>${service || (repos ? 'Repos' : 'Non planifié')}</span></div>`;
+    }).join('');
+    const planningListeHTML = `<div class="mk-section">Planning</div>${lignesPlanning}`;
 
     // === Salaire fixe (rappel du modèle salarié) ===
     const salaire = Number(chauffeur.salaireMensuel || 0);
@@ -434,7 +444,7 @@ const AccueilPage = {
 
     // Tuile : carte blanche sobre, icône dans une pastille discrète (palette professionnelle)
     const tuile = (route, icon, label, chipBg, iconColor, badge = 0) => `
-      <button onclick="DriverRouter.navigate('${route}')" class="tap-scale" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:118px;padding:1rem 0.5rem;border-radius:1.25rem;border:1px solid var(--glass-border);background:var(--bg-card, #fff);color:var(--text-primary);cursor:pointer;font-family:inherit;box-shadow:0 2px 10px rgba(15,23,42,0.06)">
+      <button onclick="DriverRouter.navigate('${route}')" class="tap-scale" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:118px;padding:1rem 0.5rem;border-radius:1.25rem;border:1px solid var(--glass-border);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-family:inherit;box-shadow:0 2px 10px rgba(15,23,42,0.06)">
         ${badge > 0 ? `<span style="position:absolute;top:10px;right:10px;min-width:26px;height:26px;border-radius:13px;background:#b91c1c;color:#fff;font-size:0.85rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 6px">${badge}</span>` : ''}
         <span style="width:58px;height:58px;border-radius:16px;background:${chipBg};display:flex;align-items:center;justify-content:center">
           <iconify-icon icon="${icon}" style="font-size:2rem;color:${iconColor}"></iconify-icon>
@@ -443,8 +453,8 @@ const AccueilPage = {
       </button>`;
 
     container.innerHTML = `
-      <!-- Salutation (simple, grosse) -->
-      ${(estSalarie && !estJourRepos) || redevanceJour > 0 || aPaye ? `<div style="font-size:1.15rem;font-weight:800;color:var(--text-primary);margin:2px 0 10px">${greeting} ${prenomSafe} 👋</div>` : ''}
+      <!-- Salutation, comme la maquette : « Bonjour » puis le nom -->
+      ${(estSalarie && !estJourRepos) || redevanceJour > 0 || aPaye ? `<div class="mk-hello"><span>${greeting}</span><strong>${prenomSafe} ${esc(chauffeur.nom || '')}</strong></div>` : ''}
 
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
@@ -454,8 +464,7 @@ const AccueilPage = {
       <!-- 2. Mon créneau du jour / prochain créneau
            (le pointage a été retiré : la prise de fonction est suivie
            par l'administration via le planning) -->
-      ${todayShiftHTML}
-      ${nextShiftHTML}
+      ${planningListeHTML}
 
 
       <!-- 3. QUATRE GRANDES TUILES, un mot chacune -->
