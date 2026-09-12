@@ -15,6 +15,7 @@
 const { isAdmin, getToken, supabaseQuery, setCors, handleOptions } = require('./_lib/helpers');
 
 const MODEL = process.env.ANALYSE_MODEL || 'claude-sonnet-5';
+const MODEL_REPLI = 'claude-haiku-4-5-20251001'; // utilisé si le modèle principal est refusé par l'API
 const TEST_IDS = /^CHF-TEST/i;
 
 // ---------- dates ----------
@@ -183,19 +184,27 @@ Trois à cinq actions concrètes, ordonnées par impact, chacune en une ou deux 
 ## Données à vérifier
 Une à trois puces sur ce qui semble incomplet ou incohérent dans les données (synchronisation, planning, fiches).`;
 
-async function demanderClaude(apiKey, snapshot, consigne) {
+async function demanderClaude(apiKey, snapshot, consigne, modele = MODEL) {
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
-      model: MODEL, max_tokens: 1800, temperature: 0.2, system: SYSTEME,
+      model: modele, max_tokens: 1800, temperature: 0.2, system: SYSTEME,
       messages: [{ role: 'user', content: `Données de la période (JSON) :\n${JSON.stringify(snapshot)}\n\n${consigne}` }],
     }),
   });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) {
-    console.error('analyse: réponse Anthropic', r.status, JSON.stringify(data).slice(0, 300));
-    throw new Error('Le service d\'analyse n\'a pas répondu');
+    const type = data && data.error && data.error.type || '';
+    const detail = data && data.error && data.error.message || `HTTP ${r.status}`;
+    console.error('analyse: réponse Anthropic', r.status, modele, JSON.stringify(data).slice(0, 300));
+    // Modèle inconnu ou non accessible pour cette clé : on retente avec le modèle de repli.
+    if (modele !== MODEL_REPLI && (r.status === 404 || type === 'not_found_error')) {
+      return demanderClaude(apiKey, snapshot, consigne, MODEL_REPLI);
+    }
+    if (r.status === 401 || type === 'authentication_error') throw new Error('Clé Anthropic refusée (ANTHROPIC_API_KEY invalide ou révoquée) : ' + detail);
+    if (r.status === 429 || r.status === 402 || type === 'rate_limit_error' || /credit|billing/i.test(detail)) throw new Error('Compte Anthropic : ' + detail);
+    throw new Error(`Service d’analyse (${modele}) : ${detail}`);
   }
   return (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
 }

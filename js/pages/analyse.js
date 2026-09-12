@@ -32,7 +32,7 @@ const AnalysePage = {
       body: JSON.stringify(body),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
+    if (!res.ok) throw new Error(json.erreur || json.error || `Erreur ${res.status}`);
     return json;
   },
 
