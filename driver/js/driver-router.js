@@ -19,6 +19,8 @@ const DriverRouter = {
   },
 
   _onHashChange() {
+    // Une feuille ou fenêtre ouverte ne doit pas survivre au changement de page.
+    if (typeof DriverModal !== 'undefined' && DriverModal._overlay && DriverModal._overlay.style.display !== 'none') DriverModal.close();
     const hash = window.location.hash || '#/accueil';
     const route = hash.replace('#/', '') || 'accueil';
 
