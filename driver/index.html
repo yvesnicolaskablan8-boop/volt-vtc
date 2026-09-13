@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#3b82f6">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Pilote Chauffeur">
+  <meta name="apple-mobile-web-app-title" content="Pilote">
 
-  <title>Pilote Chauffeur</title>
+  <title>Pilote</title>
 
   <link rel="manifest" href="/driver/manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="/driver/icons/icon-192.png">
@@ -25,7 +25,7 @@
   <!-- Force SW + cache update -->
   <script>
   (function(){
-    var APP_VERSION = 49;
+    var APP_VERSION = 50;
     var stored = parseInt(localStorage.getItem('pilote_driver_version') || '0');
     if (stored < APP_VERSION && 'serviceWorker' in navigator) {
       localStorage.setItem('pilote_driver_version', APP_VERSION);
@@ -59,15 +59,14 @@
   <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="/driver/css/driver.css?v=68">
+  <link rel="stylesheet" href="/driver/css/driver.css?v=69">
 </head>
 <body>
   <!-- Login Screen -->
   <div id="login-screen" class="login-screen">
     <div class="login-container">
       <div class="login-logo">
-        <img src="/driver/icons/logo-pilote.png" alt="Pilote Chauffeur" class="login-brand-img">
-        <div class="login-app-label">Chauffeur</div>
+        <img src="/driver/icons/logo-pilote.png" alt="Pilote" class="login-brand-img">
         <div class="login-accroche">Salarié aujourd’hui.<br><span>Propriétaire demain.</span></div>
         <p class="login-subtitle">Connectez-vous avec votre numéro et votre code PIN</p>
       </div>
@@ -163,32 +162,32 @@
   <script src="/js/supabase-config.js"></script>
 
   <!-- Scripts -->
-  <script src="/driver/js/driver-store.js?v=68"></script>
-  <script src="/driver/js/driver-behavior.js?v=68"></script>
-  <script src="/driver/js/components/driver-toast.js?v=68"></script>
-  <script src="/driver/js/components/driver-modal.js?v=68"></script>
-  <script src="/driver/js/components/driver-nav.js?v=68"></script>
-  <script src="/driver/js/components/driver-countdown.js?v=68"></script>
-  <script src="/driver/js/pages/accueil.js?v=68"></script>
-  <script src="/driver/js/pages/planning.js?v=68"></script>
-  <script src="/driver/js/pages/versements.js?v=68"></script>
-  <script src="/driver/js/pages/dettes.js?v=68"></script>
-  <script src="/driver/js/pages/signalements.js?v=68"></script>
-  <script src="/driver/js/pages/profil.js?v=68"></script>
-  <script src="/driver/js/pages/notifications.js?v=68"></script>
-  <script src="/driver/js/pages/messagerie.js?v=68"></script>
-  <script src="/driver/js/pages/maintenance.js?v=68"></script>
-  <script src="/driver/js/pages/etat-lieux.js?v=68"></script>
-  <script src="/driver/js/pages/documents.js?v=68"></script>
-  <script src="/driver/js/pages/support.js?v=68"></script>
-  <script src="/driver/js/pages/plus.js?v=68"></script>
-  <script src="/driver/js/pages/trajets.js?v=68"></script>
-  <script src="/driver/js/pages/checklist.js?v=68"></script>
-  <script src="/driver/js/pages/classement.js?v=68"></script>
-  <script src="/driver/js/pages/contraventions.js?v=68"></script>
-  <script src="/driver/js/pages/contrat.js?v=68"></script>
-  <script src="/driver/js/driver-auth.js?v=68"></script>
-  <script src="/driver/js/driver-router.js?v=68"></script>
-  <script src="/driver/js/driver-app.js?v=68"></script>
+  <script src="/driver/js/driver-store.js?v=69"></script>
+  <script src="/driver/js/driver-behavior.js?v=69"></script>
+  <script src="/driver/js/components/driver-toast.js?v=69"></script>
+  <script src="/driver/js/components/driver-modal.js?v=69"></script>
+  <script src="/driver/js/components/driver-nav.js?v=69"></script>
+  <script src="/driver/js/components/driver-countdown.js?v=69"></script>
+  <script src="/driver/js/pages/accueil.js?v=69"></script>
+  <script src="/driver/js/pages/planning.js?v=69"></script>
+  <script src="/driver/js/pages/versements.js?v=69"></script>
+  <script src="/driver/js/pages/dettes.js?v=69"></script>
+  <script src="/driver/js/pages/signalements.js?v=69"></script>
+  <script src="/driver/js/pages/profil.js?v=69"></script>
+  <script src="/driver/js/pages/notifications.js?v=69"></script>
+  <script src="/driver/js/pages/messagerie.js?v=69"></script>
+  <script src="/driver/js/pages/maintenance.js?v=69"></script>
+  <script src="/driver/js/pages/etat-lieux.js?v=69"></script>
+  <script src="/driver/js/pages/documents.js?v=69"></script>
+  <script src="/driver/js/pages/support.js?v=69"></script>
+  <script src="/driver/js/pages/plus.js?v=69"></script>
+  <script src="/driver/js/pages/trajets.js?v=69"></script>
+  <script src="/driver/js/pages/checklist.js?v=69"></script>
+  <script src="/driver/js/pages/classement.js?v=69"></script>
+  <script src="/driver/js/pages/contraventions.js?v=69"></script>
+  <script src="/driver/js/pages/contrat.js?v=69"></script>
+  <script src="/driver/js/driver-auth.js?v=69"></script>
+  <script src="/driver/js/driver-router.js?v=69"></script>
+  <script src="/driver/js/driver-app.js?v=69"></script>
 </body>
 </html>

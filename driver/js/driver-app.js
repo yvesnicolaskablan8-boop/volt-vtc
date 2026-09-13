@@ -56,7 +56,7 @@ const DriverApp = {
     window.addEventListener('appinstalled', () => {
       this._deferredPrompt = null;
       this._hideInstallButton();
-      if (typeof DriverToast !== 'undefined') DriverToast.show('Pilote Chauffeur installé !', 'success');
+      if (typeof DriverToast !== 'undefined') DriverToast.show('Pilote installé !', 'success');
     });
 
     // Setup install button

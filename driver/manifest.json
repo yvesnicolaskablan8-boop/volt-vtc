@@ -1,7 +1,7 @@
 {
-  "name": "Volt Chauffeur",
-  "short_name": "Volt Chauffeur",
-  "description": "Application chauffeur Volt VTC — Planning, versements, dettes, contraventions et signalements.",
+  "name": "Pilote",
+  "short_name": "Pilote",
+  "description": "Pilote — Planning, versements, dettes, contraventions et signalements.",
   "start_url": "/driver/",
   "scope": "/driver/",
   "id": "/driver/",
@@ -18,7 +18,7 @@
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Dashboard chauffeur"
+      "label": "Accueil Pilote"
     }
   ],
   "icons": [

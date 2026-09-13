@@ -43,7 +43,7 @@ const DriverRouter = {
       contrat: 'Mon Contrat'
     };
     const titleEl = document.getElementById('page-title');
-    if (titleEl) titleEl.textContent = titles[route] || 'Pilote Chauffeur';
+    if (titleEl) titleEl.textContent = titles[route] || 'Pilote';
 
     // Show/hide back button (hidden on main tab pages)
     const mainTabs = ['accueil', 'versements', 'classement', 'profil'];
