@@ -29,7 +29,7 @@ const PlusPage = {
       <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);margin:18px 0 10px">Ma voiture</div>
       ${ligne('etat-lieux', 'solar:clipboard-check-bold-duotone', '#e2e8f0', '#1e293b', 'État de la voiture', 'Photos avant de commencer')}
       ${ligne('checklist', 'solar:checklist-minimalistic-bold-duotone', '#e2e8f0', '#1e293b', 'Vérifier la voiture', 'Contrôle rapide du jour')}
-      ${ligne('maintenance', 'solar:wrench-bold-duotone', '#e2e8f0', '#1e293b', 'Entretien', 'Révisions et réparations')}
+      ${ligne('maintenance', 'solar:toolbox-bold-duotone', '#e2e8f0', '#1e293b', 'Entretien', 'Révisions et réparations')}
       ${ligne('trajets', 'solar:route-bold-duotone', '#e2e8f0', '#1e293b', 'Mes trajets', 'Où j’ai roulé')}
 
       <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);margin:18px 0 10px">Moi</div>

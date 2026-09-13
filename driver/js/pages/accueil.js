@@ -1346,7 +1346,7 @@ const AccueilPage = {
                 <div style="font-size:0.55rem;opacity:0.7">Virages</div>
               </div>
               <div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:6px;padding:6px 2px">
-                <iconify-icon icon="solar:speed-bold-duotone" style="font-size:0.8rem;opacity:0.9"></iconify-icon>
+                <iconify-icon icon="solar:speedometer-low-bold-duotone" style="font-size:0.8rem;opacity:0.9"></iconify-icon>
                 <div id="behavior-count-vitesse" style="font-size:0.85rem;font-weight:800">${counters.excesVitesse}</div>
                 <div style="font-size:0.55rem;opacity:0.7">Vitesse</div>
               </div>
@@ -1741,7 +1741,7 @@ const AccueilPage = {
     // Sous-scores from latest GPS record
     const latest = gpsScores && gpsScores.length > 0 ? gpsScores[0] : null;
     const subScores = latest ? [
-      { label: 'Vitesse', value: latest.scoreVitesse || 0, icon: 'solar:speedometer-bold-duotone' },
+      { label: 'Vitesse', value: latest.scoreVitesse || 0, icon: 'solar:speedometer-low-bold-duotone' },
       { label: 'Freinage', value: latest.scoreFreinage || 0, icon: 'solar:stop-bold-duotone' },
       { label: 'Accel.', value: latest.scoreAcceleration || 0, icon: 'solar:rocket-bold-duotone' },
       { label: 'Virages', value: latest.scoreVirage || 0, icon: 'solar:round-transfer-horizontal-bold-duotone' }

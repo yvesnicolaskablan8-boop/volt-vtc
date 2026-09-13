@@ -141,7 +141,7 @@ const PlanningPage = {
 
     gridHTML += '</div>';
     if (creneauxSemaine === 0) {
-      gridHTML += '<div class="planning-vide"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon><div><strong>Aucun créneau planifié cette semaine</strong><span>Votre gestionnaire n’a pas encore rempli votre planning. Vous serez prévenu dès qu’il sera publié.</span></div></div>';
+      gridHTML = '<div class="planning-vide"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon><div><strong>Aucun créneau planifié cette semaine</strong><span>Votre gestionnaire n’a pas encore rempli votre planning. Vous serez prévenu dès qu’il sera publié.</span></div></div>' + gridHTML;
     }
 
     document.getElementById('planning-grid').innerHTML = gridHTML;

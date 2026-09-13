@@ -2419,7 +2419,7 @@ body {
 }
 .planning-vide {
   display: flex; align-items: center; gap: 12px;
-  margin: 12px 0 4px; padding: 14px 16px; border-radius: 16px;
+  margin: 0 0 12px; padding: 14px 16px; border-radius: 16px;
   border: 1px dashed var(--border-color); background: var(--bg-card, rgba(255,255,255,0.04));
 }
 .planning-vide iconify-icon { font-size: 1.9rem; color: #3b82f6; flex-shrink: 0; }
