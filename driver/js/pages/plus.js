@@ -27,15 +27,15 @@ const PlusPage = {
       ${ligne('contraventions', 'solar:document-text-bold-duotone', '#fee2e2', '#b91c1c', 'Mes amendes', 'Contraventions et contestations')}
 
       <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);margin:18px 0 10px">Ma voiture</div>
-      ${ligne('etat-lieux', 'solar:clipboard-check-bold-duotone', '#f1f5f9', '#334155', 'État de la voiture', 'Photos avant de commencer')}
-      ${ligne('checklist', 'solar:checklist-minimalistic-bold-duotone', '#f1f5f9', '#334155', 'Vérifier la voiture', 'Contrôle rapide du jour')}
-      ${ligne('maintenance', 'solar:wrench-bold-duotone', '#f1f5f9', '#334155', 'Entretien', 'Révisions et réparations')}
-      ${ligne('trajets', 'solar:route-bold-duotone', '#f1f5f9', '#334155', 'Mes trajets', 'Où j’ai roulé')}
+      ${ligne('etat-lieux', 'solar:clipboard-check-bold-duotone', '#e2e8f0', '#1e293b', 'État de la voiture', 'Photos avant de commencer')}
+      ${ligne('checklist', 'solar:checklist-minimalistic-bold-duotone', '#e2e8f0', '#1e293b', 'Vérifier la voiture', 'Contrôle rapide du jour')}
+      ${ligne('maintenance', 'solar:wrench-bold-duotone', '#e2e8f0', '#1e293b', 'Entretien', 'Révisions et réparations')}
+      ${ligne('trajets', 'solar:route-bold-duotone', '#e2e8f0', '#1e293b', 'Mes trajets', 'Où j’ai roulé')}
 
       <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);margin:18px 0 10px">Moi</div>
       ${ligne('classement', 'solar:cup-star-bold-duotone', '#eff6ff', '#1e40af', 'Mon classement', 'Ma place parmi les chauffeurs')}
       ${ligne('documents', 'solar:folder-with-files-bold-duotone', '#eff6ff', '#1e40af', 'Mes documents', 'Permis, carte, assurance…')}
-      ${ligne('contrat', 'solar:document-add-bold-duotone', '#f1f5f9', '#334155', 'Mon contrat', '')}
+      ${ligne('contrat', 'solar:document-add-bold-duotone', '#e2e8f0', '#1e293b', 'Mon contrat', '')}
       ${ligne('notifications', 'solar:bell-bold-duotone', '#eff6ff', '#1e40af', 'Notifications', '')}
       ${ligne('profil', 'solar:user-circle-bold-duotone', '#eff6ff', '#1e40af', 'Mon profil', 'Mes informations et mon code')}
 

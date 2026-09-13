@@ -564,7 +564,8 @@ const VersementsPage = {
   },
 
   _formatCurrency(amount) {
-    return amount.toLocaleString('fr-FR') + ' FCFA';
+    // Espace de milliers classique : l'espace fine de fr-FR disparaît visuellement en gros caractères.
+    return (Number(amount) || 0).toLocaleString('fr-FR').replace(/[  ]/g, ' ') + ' FCFA';
   },
 
   destroy() {

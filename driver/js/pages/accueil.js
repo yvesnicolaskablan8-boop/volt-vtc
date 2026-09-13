@@ -18,7 +18,7 @@ const AccueilPage = {
           <span class="dep-tuile-sous">Le montant est lu automatiquement</span>
         </button>
         <div class="dep-chips">
-          <span><iconify-icon icon="solar:wrench-bold-duotone"></iconify-icon> Réparation</span>
+          <span><iconify-icon icon="solar:toolbox-bold-duotone"></iconify-icon> Réparation</span>
           <span><iconify-icon icon="solar:routing-2-bold-duotone"></iconify-icon> Péage</span>
           <span><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Parking</span>
           <span><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Pneu</span>
