@@ -340,7 +340,6 @@ const AccueilPage = {
                  <div class="mk-line"><span>Déjà versé</span><span>${totalVerseJour.toLocaleString('fr-FR')}</span></div>`}
           </div>
           <div class="mk-actions">
-            <button onclick="DriverRouter.navigate('planning')" class="mk-btn mk-btn-outline tap-scale">Planning</button>
             ${!regle
               ? `<button onclick="DriverRouter.navigate('versements')" class="mk-btn mk-btn-primary tap-scale">Verser</button>`
               : `<button onclick="DriverRouter.navigate('versements')" class="mk-btn mk-btn-outline tap-scale">Mes versements</button>`}
@@ -404,42 +403,37 @@ const AccueilPage = {
     }).join('');
     const planningListeHTML = `<div class="mk-section">Planning</div>${lignesPlanning}`;
 
-    // === Salaire fixe (rappel du modèle salarié) ===
-    const salaire = Number(chauffeur.salaireMensuel || 0);
-    const salaireHTML = (estSalarie && salaire > 0) ? `
-      <div class="pc-card" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:1rem;background:var(--bg-secondary)">
-        <span style="width:44px;height:44px;border-radius:14px;background:rgba(0,113,227,0.1);color:#0071e3;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <iconify-icon icon="solar:banknote-2-bold-duotone" style="font-size:1.4rem"></iconify-icon>
-        </span>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">Salaire fixe</div>
-          <div style="font-size:1.05rem;font-weight:800;color:var(--text-primary)">${salaire.toLocaleString('fr-FR')} F chaque mois</div>
-        </div>
-        <span class="pc-badge vert">Garanti</span>
-      </div>` : '';
-
-    // === Programme propriétaire : mois de service sur 36 (salariés avec date de début) ===
+    // === Programme propriétaire : progression vers la voiture (mois de service sur 36) ===
+    // Remplace l'ancien rappel « salaire fixe » : le chauffeur voit où il en est.
     let proprietaireHTML = '';
-    if (estSalarie && chauffeur.dateDebutContrat) {
-      const debut = new Date(String(chauffeur.dateDebutContrat).slice(0, 10) + 'T00:00:00');
-      if (!isNaN(debut.getTime())) {
-        let mois = (today.getFullYear() - debut.getFullYear()) * 12 + (today.getMonth() - debut.getMonth());
-        if (today.getDate() < debut.getDate()) mois -= 1;
-        const moisAff = Math.max(0, Math.min(36, mois));
-        const pct = Math.round(moisAff / 36 * 100);
-        const restant = 36 - moisAff;
-        proprietaireHTML = `
-      <div class="pc-card pc-card-navy" style="padding:1.25rem;margin-bottom:1rem;color:white">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <span class="pc-badge orange">Programme propriétaire</span>
-          <span style="font-size:0.8rem;font-weight:700;opacity:0.7">${moisAff} / 36 mois</span>
-        </div>
-        <div style="font-size:1.2rem;font-weight:900;letter-spacing:-0.02em;margin:12px 0 4px;line-height:1.15">${restant > 0 ? `Encore ${restant} mois, et cette voiture peut devenir la vôtre.` : 'Vous avez atteint les 36 mois de service.'}</div>
-        <div style="font-size:0.8rem;opacity:0.7;line-height:1.45">Conditions : service continu, versements à jour, rachat à la valeur résiduelle prévue à votre contrat.</div>
-        <div class="pc-jauge" style="margin-top:14px"><div class="pc-jauge-fill" style="--pct:${Math.max(2, pct)}%"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:0.68rem;opacity:0.6;margin-top:6px;text-transform:uppercase;letter-spacing:0.08em"><span>Mois 1</span><span>Mois 36</span></div>
-      </div>`;
+    if (estSalarie) {
+      let mois = 0;
+      if (chauffeur.dateDebutContrat) {
+        const debut = new Date(String(chauffeur.dateDebutContrat).slice(0, 10) + 'T00:00:00');
+        if (!isNaN(debut.getTime())) {
+          mois = (today.getFullYear() - debut.getFullYear()) * 12 + (today.getMonth() - debut.getMonth());
+          if (today.getDate() < debut.getDate()) mois -= 1;
+        }
       }
+      const moisAff = Math.max(0, Math.min(36, mois));
+      const pct = Math.round(moisAff / 36 * 100);
+      const restant = 36 - moisAff;
+      const etape = moisAff >= 36 ? 'Objectif atteint' : moisAff >= 24 ? 'Dernière ligne droite' : moisAff >= 12 ? 'À mi-parcours bientôt' : 'Premiers mois';
+      proprietaireHTML = `
+      <div class="pc-card pc-card-navy pp-card">
+        <div class="pp-head">
+          <span class="pc-badge orange">Programme propriétaire</span>
+          <span class="pp-pct">${pct} %</span>
+        </div>
+        <div class="pp-titre">${restant > 0 ? `${moisAff} mois sur 36 <span>· encore ${restant}</span>` : '36 mois sur 36'}</div>
+        <div class="pp-sous">${restant > 0 ? 'Chaque mois de service vous rapproche de votre voiture.' : 'Vous avez atteint les 36 mois : parlez-en à votre gestionnaire.'}</div>
+        <div class="pp-jauge">
+          <div class="pc-jauge"><div class="pc-jauge-fill" style="--pct:${Math.max(2, pct)}%"></div></div>
+          <i style="left:33.33%"></i><i style="left:66.66%"></i>
+        </div>
+        <div class="pp-jalons"><span class="${moisAff >= 0 ? 'on' : ''}">Départ</span><span class="${moisAff >= 12 ? 'on' : ''}">12 mois</span><span class="${moisAff >= 24 ? 'on' : ''}">24 mois</span><span class="${moisAff >= 36 ? 'on' : ''}">Propriétaire</span></div>
+        <div class="pp-etape"><iconify-icon icon="solar:flag-bold-duotone"></iconify-icon> ${etape} · service continu, versements à jour, rachat à la valeur résiduelle.</div>
+      </div>`;
     }
 
     // Tuile : carte blanche sobre, icône dans une pastille discrète (palette professionnelle)
@@ -458,7 +452,6 @@ const AccueilPage = {
 
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
-      ${salaireHTML}
       ${proprietaireHTML}
 
       <!-- 2. Mon créneau du jour / prochain créneau

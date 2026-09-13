@@ -2626,7 +2626,24 @@ body {
 .mk-line { display: flex; justify-content: space-between; font-size: 0.95rem; color: rgba(255, 255, 255, 0.9); }
 .mk-line-warn { color: #fcd34d; }
 .mk-note { font-size: 0.82rem; line-height: 1.45; color: #fff; background: rgba(255, 255, 255, 0.16); border-radius: 12px; padding: 10px 12px; }
-.mk-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.mk-actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 18px; }
+.mk-actions .mk-btn { min-height: 56px; font-size: 1.1rem; }
+/* Progression vers la propriété */
+.pp-card { padding: 1.25rem; margin-bottom: 1rem; color: #fff; }
+.pp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pp-pct { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em; color: #ffd60a; }
+.pp-titre { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em; margin: 12px 0 2px; line-height: 1.15; }
+.pp-titre span { font-size: 0.95rem; font-weight: 700; opacity: 0.7; }
+.pp-sous { font-size: 0.82rem; opacity: 0.75; line-height: 1.4; }
+.pp-jauge { position: relative; margin-top: 14px; }
+.pp-jauge .pc-jauge { height: 14px; }
+.pp-jauge i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: rgba(255, 255, 255, 0.35); border-radius: 2px; }
+.pp-jalons { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 8px; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55; }
+.pp-jalons span:nth-child(2), .pp-jalons span:nth-child(3) { text-align: center; }
+.pp-jalons span:last-child { text-align: right; }
+.pp-jalons span.on { opacity: 1; color: #ffd60a; font-weight: 800; }
+.pp-etape { display: flex; align-items: flex-start; gap: 6px; margin-top: 12px; font-size: 0.78rem; line-height: 1.4; opacity: 0.85; }
+.pp-etape iconify-icon { font-size: 1rem; color: #ffb340; flex-shrink: 0; margin-top: 1px; }
 .mk-btn { min-height: 52px; border-radius: 999px; font-size: 1rem; font-weight: 800; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .mk-btn-outline { background: rgba(255, 255, 255, 0.14); border: 1.5px solid rgba(255, 255, 255, 0.45); color: #fff; }
 .mk-btn-primary { background: rgba(255, 255, 255, 0.28); border: 1.5px solid rgba(255, 255, 255, 0.55); color: #fff; box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.35); backdrop-filter: blur(8px); }
