@@ -51,6 +51,10 @@ const DriverAuth = {
       });
 
       if (authError) {
+        // Panne réseau (hors ligne, DNS, requête bloquée) : ne pas accuser le PIN.
+        const reseau = authError.name === 'AuthRetryableFetchError' || /fetch|network|failed/i.test(authError.message || '') || authError.status === 0;
+        if (reseau) return { success: false, error: 'Connexion impossible : vérifiez votre réseau et réessayez' };
+        if (authError.status === 429) return { success: false, error: 'Trop de tentatives, patientez une minute' };
         // Message générique : ne révèle pas quels numéros existent, et la
         // lecture anonyme de fleet_chauffeurs n'est plus permise (RLS).
         return { success: false, error: 'Numéro ou PIN incorrect' };
