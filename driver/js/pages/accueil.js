@@ -9,7 +9,7 @@ const AccueilPage = {
   // Demi-jauge segmentée : 24 barreaux arrondis sur 180°, les barreaux atteints
   // sont colorés (les premiers plus soutenus), les autres restent en filigrane.
   _demiJauge(pct, valeur, unite, couleur) {
-    const N = 24, cx = 100, cy = 100, rIn = 66, rOut = 96;
+    const N = 20, cx = 100, cy = 100, rIn = 68, rOut = 96;
     const lit = Math.round(Math.max(0, Math.min(100, pct)) / 100 * N);
     let barres = '';
     for (let i = 0; i < N; i++) {
@@ -18,7 +18,7 @@ const AccueilPage = {
       const x2 = cx + rOut * Math.cos(a), y2 = cy - rOut * Math.sin(a);
       const on = i < lit;
       const op = on ? (1 - (i / N) * 0.55).toFixed(2) : '0.16';
-      barres += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${couleur}" stroke-opacity="${op}" stroke-width="9" stroke-linecap="round"/>`;
+      barres += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${couleur}" stroke-opacity="${op}" stroke-width="6" stroke-linecap="round"/>`;
     }
     return `<svg class="cp-gauge" viewBox="0 0 200 108" aria-hidden="true">${barres}
       <text x="100" y="94" text-anchor="middle" class="cp-gauge-val">${valeur}<tspan class="cp-gauge-unit">${unite}</tspan></text></svg>`;
