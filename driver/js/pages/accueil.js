@@ -394,6 +394,11 @@ const AccueilPage = {
 
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
+
+      <!-- 2. Le planning des jours qui viennent, comme la maquette -->
+      ${planningListeHTML}
+
+      <!-- 3. Prime du mois et programme propriétaire -->
       ${primeHTML || proprietaireHTML ? `<div class="cp-duo">${primeHTML}${proprietaireHTML}</div>` : ""}
 
       <!-- Alertes vehicule urgentes uniquement -->
