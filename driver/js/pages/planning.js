@@ -188,6 +188,12 @@ const PlanningPage = {
       } else if (type === 'nuit') {
         // Night: 20h-6h (show 20h-0h as active)
         if (slot.from >= 20) slots[i] = 'active';
+      } else if (type === 'vague1') {
+        // Vague 1 : 05h-16h (la grille commence à 6h)
+        if (slot.from >= 6 && slot.to <= 16) slots[i] = 'active';
+      } else if (type === 'vague2') {
+        // Vague 2 : 17h-03h (affiché 16h-0h sur la grille)
+        if (slot.from >= 16) slots[i] = 'active';
       } else if (type === 'custom' && heureDebut !== null && heureFin !== null) {
         // Custom hours
         if (slot.from >= heureDebut && slot.to <= heureFin) slots[i] = 'active';

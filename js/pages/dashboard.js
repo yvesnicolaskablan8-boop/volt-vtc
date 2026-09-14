@@ -940,9 +940,13 @@ const DashboardPage = {
     // (et non plus par rapport à la médiane flotte) : un CA bas est signalé même si
     // TOUTE la flotte est basse. Journée d'exploitation 05h→05h (Abidjan = UTC) ; le
     // CA attendu à un instant = 4000 × heures écoulées depuis 05h.
-    const TARGET_FH = 4000;                 // CA cible par heure travaillée
+    // Cible horaire dérivée de l'objectif par chauffeur et par vague (Paramètres ›
+    // Versements) : 60 000 F sur une vague de 11 h ≈ 5 500 F/h. Repli : 4 000 F/h.
+    const _objFlotte = (typeof Store !== 'undefined' && Store.get && (Store.get('settings') || {}).objectifs) || {};
+    const _objChauffeur = Number(_objFlotte.caJourChauffeur) || 0;
+    const TARGET_FH = _objChauffeur > 0 ? Math.round(_objChauffeur / 11 / 100) * 100 : 4000;
     const HEURE_BASCULE = 5;                // début de journée d'exploitation
-    const CAP_HEURES = 15;                  // journée pleine plafonnée (05h→20h)
+    const CAP_HEURES = 11;                  // une vague pleine (5h→16h ou 17h→3h)
     const _heureDec = now.getUTCHours() + now.getUTCMinutes() / 60;
     const _heuresEcoulees = (() => {
       if (!estAujourdhui) return CAP_HEURES;                 // jour échu : journée complète
@@ -2490,7 +2494,7 @@ const DashboardPage = {
     const paceBg = d.paceState === 'faible' ? 'rgba(250,137,107,.15)' : d.paceState === 'bon' ? 'rgba(19,222,185,.15)' : d.paceState === 'modere' ? 'rgba(255,174,31,.16)' : 'var(--bg-tertiary)';
     const paceColor = d.paceState === 'faible' ? 'var(--danger-dim)' : d.paceState === 'bon' ? 'var(--success-dim)' : d.paceState === 'modere' ? 'var(--warning-dim)' : 'var(--text-secondary)';
     const paceIcon = d.paceState === 'faible' ? 'solar:danger-triangle-bold' : d.paceState === 'bon' ? 'solar:check-circle-bold' : d.paceState === 'modere' ? 'solar:info-circle-bold' : 'solar:clock-circle-bold';
-    const pace = `<div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${paceBg};color:${paceColor};align-self:flex-start;"><iconify-icon icon="${paceIcon}"></iconify-icon>${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% du rythme cible (4000 F/h)` : ''}</div>`;
+    const pace = `<div style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${paceBg};color:${paceColor};align-self:flex-start;"><iconify-icon icon="${paceIcon}"></iconify-icon>${d.paceLabel}${d.nbActifsJour > 0 && d.objectifJourActifs > 0 ? ` · ${Math.round(d.pctJourType * 100)}% du rythme cible (${Utils.formatNumber(d.targetFH || 4000)} F/h)` : ''}</div>`;
     const gran = this._recetteGran || 'semaine';
     const series = gran === 'jour' ? (d.dailyPayments || []) : gran === 'mois' ? (d.monthlyPayments || []) : (d.weeklyPayments || []);
     const periods = series.slice(-8);

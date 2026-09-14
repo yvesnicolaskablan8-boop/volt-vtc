@@ -326,7 +326,7 @@ const PlanningPage = {
   },
 
   _shiftTypeLabel(type) {
-    const labels = { matin: 'Matin (6h-14h)', apres_midi: 'Après-midi (14h-22h)', journee: 'Journée (6h - minuit)', nuit: 'Nuit (22h-6h)' };
+    const labels = { vague1: 'Vague 1 (5h-16h)', vague2: 'Vague 2 (17h-3h)', matin: 'Matin (6h-14h)', apres_midi: 'Après-midi (14h-22h)', journee: 'Journée (6h - minuit)', nuit: 'Nuit (22h-6h)' };
     return labels[type] || type;
   },
 
@@ -364,6 +364,8 @@ const PlanningPage = {
 
   // Mapping presets pour auto-remplir les heures
   _shiftPresets: {
+    vague1: ['05:00', '16:00'],
+    vague2: ['17:00', '03:00'],
     matin: ['06:00', '14:00'],
     apres_midi: ['14:00', '22:00'],
     journee: ['06:00', '00:00'],
@@ -638,7 +640,7 @@ const PlanningPage = {
     if (shift.heureDebut && shift.heureFin) {
       return `${shift.heureDebut} - ${shift.heureFin}`;
     }
-    const presets = { matin: '06:00 - 14:00', apres_midi: '14:00 - 22:00', journee: '06:00 - 00:00', nuit: '22:00 - 06:00' };
+    const presets = { vague1: '05:00 - 16:00', vague2: '17:00 - 03:00', matin: '06:00 - 14:00', apres_midi: '14:00 - 22:00', journee: '06:00 - 00:00', nuit: '22:00 - 06:00' };
     return presets[shift.typeCreneaux] || '';
   },
 
@@ -1539,7 +1541,8 @@ const PlanningPage = {
   /** Service d'un créneau : colonne `service`, sinon déduit de l'horaire. */
   _serviceDuCreneau(p) {
     if (p.service) return p.service;
-    if (p.typeCreneaux === 'nuit') return 'nuit';
+    if (p.typeCreneaux === 'nuit' || p.typeCreneaux === 'vague2') return 'nuit';
+    if (p.typeCreneaux === 'vague1') return 'jour';
     const h = parseInt(String(p.heureDebut || '').slice(0, 2), 10);
     return (!isNaN(h) && (h >= 21 || h < 5)) ? 'nuit' : 'jour';
   },
@@ -1943,6 +1946,8 @@ const PlanningPage = {
       { name: 'vehiculeId', label: 'Véhicule', type: 'select', placeholder: 'Voiture habituelle du chauffeur', options: (Store.get('vehicules') || []).filter(v => v.statut !== 'inactif' && v.statut !== 'vendu').map(v => ({ value: v.id, label: v.immatriculation || `${v.marque} ${v.modele}` })), default: (preselectedChId && (this._getChauffeurs().find(c => c.id === preselectedChId) || {}).vehiculeAssigne) || '' },
       { name: 'typeCreneaux', label: 'Créneau type', type: 'select', required: false, options: [
         { value: 'custom', label: 'Personnalisé' },
+        { value: 'vague1', label: 'Vague 1 (5h - 16h)' },
+        { value: 'vague2', label: 'Vague 2 (17h - 3h)' },
         { value: 'matin', label: 'Matin (6h - 14h)' },
         { value: 'apres_midi', label: 'Après-midi (14h - 22h)' },
         { value: 'journee', label: 'Journée complète (6h - minuit)' },
@@ -2091,6 +2096,8 @@ const PlanningPage = {
       { type: 'row-end' },
       { name: 'typeCreneaux', label: 'Créneau type', type: 'select', required: false, options: [
         { value: 'custom', label: 'Personnalisé' },
+        { value: 'vague1', label: 'Vague 1 (5h - 16h)' },
+        { value: 'vague2', label: 'Vague 2 (17h - 3h)' },
         { value: 'matin', label: 'Matin (6h - 14h)' },
         { value: 'apres_midi', label: 'Après-midi (14h - 22h)' },
         { value: 'journee', label: 'Journée complète (6h - minuit)' },

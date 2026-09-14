@@ -2172,6 +2172,17 @@ const ParametresPage = {
               </div>
               <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:4px;">Dur\u00e9e minimum en statut "en ligne" par jour. Alerte si le chauffeur termine en dessous.</div>
             </div>
+
+            <div class="form-group" style="border-top:1px solid var(--border-color);padding-top:var(--space-md);margin-top:var(--space-sm);">
+              <label class="form-label">Objectifs et prime (chauffeurs salariés, deux vagues par voiture)</label>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:6px;">
+                <div><div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">Objectif CA par voiture et par jour</div><input type="number" class="form-control" id="vs-obj-voiture" min="0" step="1000" value="${settings.objectifs?.caJourVoiture ?? 120000}"></div>
+                <div><div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">Objectif CA par chauffeur et par vague</div><input type="number" class="form-control" id="vs-obj-chauffeur" min="0" step="1000" value="${settings.objectifs?.caJourChauffeur ?? 60000}"></div>
+                <div><div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:4px;">Prime mensuelle par chauffeur (objectif atteint)</div><input type="number" class="form-control" id="vs-prime" min="0" step="5000" value="${settings.objectifs?.primeMensuelle ?? 100000}"></div>
+                <div style="display:flex;align-items:flex-end;"><label style="display:flex;align-items:center;gap:8px;font-size:var(--font-size-sm);cursor:pointer;"><input type="checkbox" id="vs-prime-active" ${settings.objectifs?.primeActive === false ? '' : 'checked'} style="width:16px;height:16px;accent-color:var(--primary);"> Prime active</label></div>
+              </div>
+              <div style="font-size:var(--font-size-xs);color:var(--text-muted);margin-top:6px;">Vagues : 05h–16h et 17h–03h (créneaux « Vague 1 » et « Vague 2 » du planning). L’app chauffeur affiche le taux d’atteinte de la prime : CA brut du mois ÷ (objectif par vague × jours planifiés du mois). Le rythme cible du tableau de bord en découle (objectif ÷ 11 h).</div>
+            </div>
           </div>
         </div>
 
@@ -2431,8 +2442,13 @@ const ParametresPage = {
         alerteRetard
       };
       settings.objectifs = {
+        ...(settings.objectifs || {}),
         tempsEnLigneMin,
-        alerteTempsEnLigne: true
+        alerteTempsEnLigne: true,
+        caJourVoiture: parseInt(document.getElementById('vs-obj-voiture')?.value, 10) || 120000,
+        caJourChauffeur: parseInt(document.getElementById('vs-obj-chauffeur')?.value, 10) || 60000,
+        primeMensuelle: parseInt(document.getElementById('vs-prime')?.value, 10) || 100000,
+        primeActive: !!document.getElementById('vs-prime-active')?.checked
       };
       settings.bonus = {
         bonusActif,

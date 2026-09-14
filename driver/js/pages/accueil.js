@@ -161,10 +161,15 @@ const AccueilPage = {
     endDate.setDate(endDate.getDate() + 5);
     const endStr = endDate.toISOString().split('T')[0];
 
-    const [data, planningData, contraventionsData] = await Promise.all([
+    // Mois en cours (pour la prime) : jours planifiés et objectifs de la flotte.
+    const moisDebut = todayStr.slice(0, 7) + '-01';
+    const moisFin = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+    const [data, planningData, contraventionsData, planningMois, objectifsFlotte] = await Promise.all([
       DriverStore.getDashboard(),
       DriverStore.getPlanning(todayStr, endStr),
-      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null)
+      typeof DriverStore.getContraventions === 'function' ? DriverStore.getContraventions() : Promise.resolve(null),
+      DriverStore.getPlanning(moisDebut, moisFin).catch(() => []),
+      supabase.rpc('fleet_settings_objectifs').then(r => (r && r.data) || {}).catch(() => ({}))
     ]);
 
     if (!data) {
@@ -404,7 +409,7 @@ const AccueilPage = {
     const libelleService = (p) => {
       if (!p) return null;
       const t = p.typeCreneaux || p.type;
-      const base = t === 'nuit' ? 'Service de nuit' : (t === 'matin' || t === 'apres_midi' || t === 'journee') ? 'Service de jour' : 'Service';
+      const base = t === 'vague1' ? 'Vague 1' : t === 'vague2' ? 'Vague 2' : t === 'nuit' ? 'Service de nuit' : (t === 'matin' || t === 'apres_midi' || t === 'journee') ? 'Service de jour' : 'Service';
       const h = (p.heureDebut && p.heureFin) ? ` · ${String(p.heureDebut).slice(0, 5).replace(':', 'h')} – ${String(p.heureFin).slice(0, 5).replace(':', 'h')}` : '';
       return base + h;
     };
@@ -464,6 +469,46 @@ const AccueilPage = {
       </div>`;
     }
 
+    // === Prime du mois : taux d'atteinte visible pour motiver (objectif par jour
+    // planifié × jours planifiés du mois ; prime versée si 100 % en fin de mois).
+    let primeHTML = '';
+    if (estSalarie) {
+      const obj = objectifsFlotte || {};
+      const prime = Number(obj.primeMensuelle || 100000);
+      const objectifJourPrime = Number(chauffeur.objectifCaJour || obj.caJourChauffeur || 60000);
+      const joursPlan = [...new Set((planningMois || []).map(p => String(p.date).slice(0, 10)))];
+      const joursTotal = joursPlan.length || 26;
+      const joursEcoules = joursPlan.length ? joursPlan.filter(d => d <= todayStr).length : Math.min(26, today.getDate());
+      const caMois = (data.caParJour || []).reduce((s, l) => s + (Number(l.caBrut) || 0), 0);
+      const objectifMois = objectifJourPrime * joursTotal;
+      const taux = objectifMois > 0 ? Math.min(999, Math.round(caMois / objectifMois * 100)) : 0;
+      const attenduADate = objectifJourPrime * Math.max(1, joursEcoules);
+      const rythme = caMois / attenduADate;
+      const restant = Math.max(0, objectifMois - caMois);
+      const joursRestants = Math.max(0, joursTotal - joursEcoules);
+      const parJour = joursRestants > 0 ? Math.ceil(restant / joursRestants / 500) * 500 : restant;
+      const decrochee = caMois >= objectifMois && objectifMois > 0;
+      const etat = decrochee ? 'ok' : rythme >= 0.95 ? 'ok' : rythme >= 0.75 ? 'mid' : 'ko';
+      const phrase = decrochee ? `Prime décrochée, bravo patron ! 🎉`
+        : joursRestants === 0 ? `Le mois est terminé : ${taux} % de l’objectif.`
+        : `Encore ${restant.toLocaleString('fr-FR')} F sur ${joursRestants} jour${joursRestants > 1 ? 's' : ''} · ${parJour.toLocaleString('fr-FR')} F par jour et la prime est à vous !`;
+      const chip = decrochee ? 'Objectif atteint' : rythme >= 0.95 ? 'Dans le rythme' : rythme >= 0.75 ? 'Un peu en retard' : 'Il faut accélérer';
+      primeHTML = (obj.primeActive === false) ? '' : `
+      <div class="pc-card pr-card">
+        <div class="pr-head">
+          <span class="pr-etiquette">Prime du mois · ${prime.toLocaleString('fr-FR')} F</span>
+          <span class="pr-chip ${etat}">${chip}</span>
+        </div>
+        <div class="pr-pct"><span>${Math.min(100, taux)}</span>%<small>de l’objectif</small></div>
+        <div class="pr-jauge"><div class="pr-jauge-fill ${etat}" style="width:${Math.min(100, taux)}%"></div><i style="left:${Math.min(100, Math.round(joursEcoules / joursTotal * 100))}%" title="Aujourd’hui"></i></div>
+        <div class="pr-lignes">
+          <span>CA du mois <b>${caMois.toLocaleString('fr-FR')} F</b></span>
+          <span>Objectif <b>${objectifMois.toLocaleString('fr-FR')} F</b> · ${objectifJourPrime.toLocaleString('fr-FR')} F × ${joursTotal} j</span>
+        </div>
+        <div class="pr-message">${phrase}</div>
+      </div>`;
+    }
+
     // Tuile : carte blanche sobre, icône dans une pastille discrète (palette professionnelle)
     const tuile = (route, icon, label, chipBg, iconColor, badge = 0) => `
       <button onclick="DriverRouter.navigate('${route}')" class="tap-scale" style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:118px;padding:1rem 0.5rem;border-radius:1.25rem;border:1px solid var(--glass-border);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-family:inherit;box-shadow:0 2px 10px rgba(15,23,42,0.06)">
@@ -480,6 +525,7 @@ const AccueilPage = {
 
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
+      ${primeHTML}
       ${proprietaireHTML}
 
       <!-- 2. Le calendrier du chauffeur (semaine en cours, navigable), à la place des tuiles :

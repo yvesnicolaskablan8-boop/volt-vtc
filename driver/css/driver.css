@@ -2645,6 +2645,21 @@ body {
 .pp-drapeau { position: absolute; right: -4px; bottom: 2px; font-size: 1.05rem; }
 .pp-message { margin-top: 12px; font-size: 1.02rem; font-weight: 900; letter-spacing: 0.01em; text-transform: uppercase; color: #fff; }
 @media (prefers-reduced-motion: reduce) { .pp-voiture { animation: none; } }
+/* Prime du mois */
+.pr-card { padding: 1.25rem; margin-bottom: 1rem; color: #fff; background: radial-gradient(circle at 90% 10%, rgba(255, 214, 10, 0.25), transparent 55%), #1f1a0b; border-color: rgba(255, 214, 10, 0.3); }
+.pr-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pr-etiquette { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255, 255, 255, 0.75); }
+.pr-chip { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 9px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); color: #fff; white-space: nowrap; }
+.pr-chip.ok { background: rgba(48, 209, 88, 0.22); color: #4ade80; } .pr-chip.mid { background: rgba(255, 159, 10, 0.22); color: #ffb340; } .pr-chip.ko { background: rgba(239, 68, 68, 0.22); color: #f87171; }
+.pr-pct { font-size: 3.2rem; font-weight: 300; letter-spacing: -0.04em; line-height: 1; color: #ffd60a; margin-top: 8px; display: flex; align-items: baseline; gap: 4px; }
+.pr-pct span { font-weight: 800; } .pr-pct small { font-size: 0.8rem; font-weight: 700; color: rgba(255, 255, 255, 0.6); margin-left: 8px; letter-spacing: 0; }
+.pr-jauge { position: relative; height: 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); margin-top: 14px; overflow: visible; }
+.pr-jauge-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #ff9f0a, #ffd60a); transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.pr-jauge-fill.ko { background: linear-gradient(90deg, #dc2626, #ff6b6b); } .pr-jauge-fill.mid { background: linear-gradient(90deg, #ff9f0a, #ffd60a); } .pr-jauge-fill.ok { background: linear-gradient(90deg, #0a9d78, #30d158); }
+.pr-jauge i { position: absolute; top: -4px; bottom: -4px; width: 2px; background: rgba(255, 255, 255, 0.7); border-radius: 2px; }
+.pr-lignes { display: flex; flex-direction: column; gap: 3px; margin-top: 12px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.7); }
+.pr-lignes b { color: #fff; font-weight: 800; }
+.pr-message { margin-top: 12px; font-size: 0.98rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.01em; color: #fff; line-height: 1.3; }
 .mk-btn { min-height: 52px; border-radius: 999px; font-size: 1rem; font-weight: 800; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .mk-btn-outline { background: rgba(255, 255, 255, 0.14); border: 1.5px solid rgba(255, 255, 255, 0.45); color: #fff; }
 .mk-btn-primary { background: rgba(255, 255, 255, 0.28); border: 1.5px solid rgba(255, 255, 255, 0.55); color: #fff; box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.35); backdrop-filter: blur(8px); }
