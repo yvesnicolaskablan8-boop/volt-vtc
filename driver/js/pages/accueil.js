@@ -24,20 +24,16 @@ const AccueilPage = {
       <text x="100" y="94" text-anchor="middle" class="cp-gauge-val">${valeur}<tspan class="cp-gauge-unit">${unite}</tspan></text></svg>`;
   },
 
-  // Anneau plein (façon « CircularProgressCard ») : piste épaisse, progression
-  // animée depuis le haut, pourcentage et « réalisé / objectif » au centre.
-  _anneauPrime(pct, courant, objectif, couleur) {
-    const r = 80, circ = 2 * Math.PI * r;
+  // Barre de progression « liquide » : remplissage animé au chargement, halo qui
+  // respire, pourcentage et « réalisé / objectif » au-dessus.
+  _barrePrime(pct, courant, objectif, couleur) {
     const p = Math.max(0, Math.min(100, pct));
     const k = (n) => `${Math.round(n / 1000).toLocaleString('fr-FR')} k`;
-    return `<div class="cp-ring2">
-      <svg viewBox="0 0 200 200" role="img" aria-label="Progression : ${p} %">
-        <g transform="rotate(-90 100 100)">
-          <circle cx="100" cy="100" r="${r}" fill="transparent" class="cp-ring2-bg" stroke-width="16"/>
-          <circle cx="100" cy="100" r="${r}" fill="transparent" stroke="${couleur}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${circ.toFixed(1)}" style="--circ:${circ.toFixed(1)};--off:${(circ * (1 - p / 100)).toFixed(1)}" class="cp-ring2-fg"/>
-        </g>
-      </svg>
-      <div class="cp-ring2-txt"><b>${p}%</b><small>${k(courant)} / ${k(objectif)}</small></div>
+    return `<div class="pb-wrap">
+      <div class="pb-top"><b style="color:${couleur}">${p}%</b><small>${k(courant)} / ${k(objectif)} F</small></div>
+      <div class="pb-track" role="img" aria-label="Progression : ${p} %">
+        <div class="pb-fill" style="--pct:${p}%;--c:${couleur}"><span class="pb-glow"></span></div>
+      </div>
     </div>`;
   },
 
@@ -515,10 +511,9 @@ const AccueilPage = {
         : `Encore ${restant.toLocaleString('fr-FR')} F sur ${joursRestants} jour${joursRestants > 1 ? 's' : ''} · ${parJour.toLocaleString('fr-FR')} F par jour et la prime est à vous !`;
       const chip = decrochee ? 'Objectif atteint' : rythme >= 0.95 ? 'Dans le rythme' : rythme >= 0.75 ? 'Un peu en retard' : 'Il faut accélérer';
       primeHTML = (obj.primeActive === false) ? '' : `
-      <div class="cp-card">
-        <div class="cp-title">Prime ${prime.toLocaleString('fr-FR')} F</div>
-        ${this._anneauPrime(Math.min(100, taux), caMois, objectifMois, etat === 'ok' ? '#30d158' : etat === 'mid' ? '#ffb340' : '#ff6b6b')}
-        <div class="cp-desc">${decrochee ? "Prime décrochée, bravo patron ! 🎉" : joursRestants === 0 ? "Le mois est fini, on repart de plus belle !" : "Fonce, la prime est à toi ! 💪"}</div>
+      <div class="pb-card">
+        <div class="pb-head"><span class="pb-titre">Prime ${prime.toLocaleString('fr-FR')} F</span><span class="pb-msg">${decrochee ? "Décrochée, bravo patron ! 🎉" : joursRestants === 0 ? "Le mois est fini !" : "Fonce, elle est à toi ! 💪"}</span></div>
+        ${this._barrePrime(Math.min(100, taux), caMois, objectifMois, etat === 'ok' ? '#30d158' : etat === 'mid' ? '#ffb340' : '#ff6b6b')}
       </div>`;
     }
 
@@ -538,7 +533,7 @@ const AccueilPage = {
 
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
-      ${primeHTML || proprietaireHTML ? `<div class="cp-duo">${primeHTML}${proprietaireHTML}</div>` : ""}
+      ${primeHTML}${proprietaireHTML ? `<div class="cp-duo cp-solo">${proprietaireHTML}</div>` : ""}
 
       <!-- 2. Le calendrier du chauffeur (semaine en cours, navigable), à la place des tuiles :
            Messages, Amendes et le reste sont accessibles par la barre du bas (Messages, Autres). -->
