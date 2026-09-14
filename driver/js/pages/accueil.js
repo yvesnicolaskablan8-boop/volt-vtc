@@ -435,7 +435,7 @@ const AccueilPage = {
     } else {
       carteArgentHTML = `
       <div style="border-radius:1.5rem;background:linear-gradient(150deg,#172554,#1e3a8a);padding:1.5rem 1.25rem;color:white;margin-bottom:1rem;box-shadow:0 8px 28px rgba(30,58,138,0.3);text-align:center">
-        <div style="font-size:1.4rem;font-weight:900">${greeting} ${prenomSafe} 👋</div>
+        <div style="font-size:1.4rem;font-weight:900">${greeting} boss ${prenomSafe} 👋</div>
         <div style="font-size:0.95rem;font-weight:600;opacity:0.85;margin-top:6px">${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</div>
       </div>`;
     }
@@ -534,7 +534,7 @@ const AccueilPage = {
 
     container.innerHTML = `
       <!-- Salutation, comme la maquette : « Bonjour » puis le nom -->
-      ${(estSalarie && !estJourRepos) || redevanceJour > 0 || aPaye ? `<div class="mk-hello"><span>${greeting}</span><strong>${prenomSafe} ${esc(chauffeur.nom || '')}</strong></div>` : ''}
+      ${(estSalarie && !estJourRepos) || redevanceJour > 0 || aPaye ? `<div class="mk-hello"><span>${greeting} boss</span><strong>${prenomSafe} ${esc(chauffeur.nom || '')}</strong></div>` : ''}
 
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
