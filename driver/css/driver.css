@@ -2639,9 +2639,9 @@ body {
 .pp-mois { font-size: 0.85rem; font-weight: 700; color: rgba(255, 255, 255, 0.7); margin-top: 4px; }
 .pp-route { position: relative; height: 34px; margin-top: 22px; border-bottom: 2px solid rgba(255, 255, 255, 0.18); }
 .pp-route-fait { position: absolute; left: 0; bottom: -2px; height: 2px; background: #30d158; box-shadow: 0 0 10px rgba(48, 209, 88, 0.8); transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.pp-voiture { position: absolute; bottom: 0; width: 64px; height: 28px; margin-left: 64px; transform: translateX(-100%); animation: pp-roule 2.4s ease-in-out infinite; }
+.pp-voiture { position: absolute; bottom: 0; width: 64px; height: 28px; animation: pp-roule 2.4s ease-in-out infinite; }
 .pp-voiture svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 6px rgba(48, 209, 88, 0.6)); }
-@keyframes pp-roule { 0%, 100% { transform: translateX(-100%) translateY(0); } 50% { transform: translateX(-100%) translateY(-1.5px); } }
+@keyframes pp-roule { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
 .pp-drapeau { position: absolute; right: -4px; bottom: 2px; font-size: 1.05rem; }
 .pp-message { margin-top: 12px; font-size: 1.02rem; font-weight: 900; letter-spacing: 0.01em; text-transform: uppercase; color: #fff; }
 @media (prefers-reduced-motion: reduce) { .pp-voiture { animation: none; } }

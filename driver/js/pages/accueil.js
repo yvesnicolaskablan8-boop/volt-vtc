@@ -449,7 +449,7 @@ const AccueilPage = {
         <div class="pp-mois">${moisAff} mois sur 36${restant > 0 ? ` · encore ${restant}` : ''}</div>
         <div class="pp-route">
           <div class="pp-route-fait" style="width:${pct}%"></div>
-          <div class="pp-voiture" style="left:${pct}%">
+          <div class="pp-voiture" style="left:calc(${pct}% - ${Math.round(pct * 0.64)}px)">
             <svg viewBox="0 0 64 28" fill="none" stroke="#30d158" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M6 20h-2a2 2 0 0 1-2-2v-4l5-2 6-7h20l8 7h13a5 5 0 0 1 5 5v3h-4"/>
               <path d="M20 20h20"/><circle cx="13" cy="21" r="4.2"/><circle cx="47" cy="21" r="4.2"/><path d="M14 12h10V6"/>
