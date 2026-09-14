@@ -1,6 +1,6 @@
 // ==========================================================================
 // TACHES — Module de gestion de tâches avancé
-// Dashboard Manager | Kanban | Gantt | Réunions | Liste
+// Dashboard Manager | Gantt | Réunions | Liste
 // ==========================================================================
 
 const TachesPage = {
@@ -195,7 +195,6 @@ const TachesPage = {
   _buildTabButtons(container) {
     const tabs = [
       { id: 'dashboard', icon: 'solar:chart-square-bold-duotone', label: 'Vue d’ensemble' },
-      { id: 'kanban', icon: 'solar:widget-4-bold-duotone', label: 'Tableau' },
       { id: 'gantt', icon: 'solar:chart-2-bold-duotone', label: 'Calendrier · Gantt' },
       { id: 'reunions', icon: 'solar:users-group-rounded-bold-duotone', label: 'Réunions' },
       { id: 'liste', icon: 'solar:list-bold-duotone', label: 'Liste' }
@@ -225,7 +224,6 @@ const TachesPage = {
     ct.replaceChildren();
     switch (this._activeView) {
       case 'dashboard': ct.insertAdjacentHTML('beforeend', this._renderDashboard()); this._bindDashboardClicks(ct); break;
-      case 'kanban': ct.insertAdjacentHTML('beforeend', this._renderKanban()); this._bindKanbanDragDrop(); break;
       case 'gantt':
         // Nouvelle frise Gantt (widget dédié) : début→échéance, couleur par statut,
         // retards en rouge. Remplace l'ancien rendu interne.
@@ -235,7 +233,7 @@ const TachesPage = {
       case 'reunions': ct.insertAdjacentHTML('beforeend', this._renderReunions()); break;
       case 'liste': ct.insertAdjacentHTML('beforeend', this._renderListe()); this._bindListeEvents(); break;
     }
-    ct.querySelectorAll('.kanban-card, .eisen-card, .reunion-card, .liste-title-cell').forEach(card => {
+    ct.querySelectorAll('.reunion-card, .reunion-card, .liste-title-cell').forEach(card => {
       card.setAttribute('role', 'button');
       card.tabIndex = 0;
       card.addEventListener('keydown', e => {
@@ -268,7 +266,6 @@ const TachesPage = {
   _syncToolbar() {
     const descriptions = {
       dashboard: ['Vue d’ensemble', 'L’essentiel pour organiser votre journée.'],
-      kanban: ['Le travail, étape par étape', 'Déplacez les cartes pour faire avancer les tâches.'],
       gantt: ['Gardez une longueur d’avance', 'Visualisez les échéances. Cliquez sur une barre pour ouvrir la tâche.'],
       reunions: ['Les décisions deviennent des actions', 'Préparez vos réunions et suivez les engagements de l’équipe.'],
       liste: ['Toutes les tâches, en détail', 'Filtrez, sélectionnez et mettez à jour plusieurs tâches à la fois.']
@@ -327,7 +324,7 @@ const TachesPage = {
     const metrics = `<div class="task-metrics">${stats.map(([scope, label, count, icon]) => `<button class="task-metric ${scope === 'late' && count ? 'needs-attention' : ''}" data-metric="${scope}"><span>${label}<iconify-icon icon="${icon}"></iconify-icon></span><strong>${count}</strong><small>${scope === 'done' ? 'Du lundi au dimanche' : scope === 'late' ? 'Échéance dépassée' : scope === 'today' ? 'À faire ou en cours' : 'À faire et en cours'}<iconify-icon icon="solar:arrow-right-linear"></iconify-icon></small></button>`).join('')}</div>`;
     if (!tasks.length) {
       const filtered = this._getTaches().length > 0;
-      return `${metrics}<div class="task-onboarding"><div><span class="task-eyebrow">${filtered ? 'VOTRE SÉLECTION' : 'UN NOUVEAU DÉPART'}</span><h2>${filtered ? 'Un peu de place pour souffler.' : 'Les bonnes journées commencent avec un plan.'}</h2><p>${filtered ? 'Aucune tâche ne correspond à ces filtres. Explorez les autres vues ou effacez votre sélection.' : 'Une maintenance à prévoir, un document à renouveler, une idée à concrétiser… Donnez à chaque action un responsable et une échéance.'}</p><button class="task-primary" onclick="${filtered ? "document.getElementById('task-reset').click()" : 'TachesPage._openTaskForm()'}"><iconify-icon icon="solar:add-circle-linear"></iconify-icon>${filtered ? 'Voir toutes les tâches' : 'Créer ma première tâche'}</button></div><div class="task-plan-art" aria-hidden="true"><span class="task-art-label">VOTRE PROCHAIN OBJECTIF</span><div><i>✓</i><span>Définir une action</span></div><div><i>✓</i><span>Choisir un responsable</span></div><div><i>3</i><span>Fixer une échéance</span></div><span class="task-art-line"></span><small>Chaque étape compte.</small></div></div><div class="task-start-grid"><button onclick="TachesPage._switchTab('kanban')"><iconify-icon icon="solar:widget-4-linear"></iconify-icon><strong>Organisez visuellement</strong><span>Un tableau pour suivre chaque étape.</span></button><button onclick="TachesPage._switchTab('gantt')"><iconify-icon icon="solar:calendar-linear"></iconify-icon><strong>Anticipez les échéances</strong><span>Votre planning sur 7, 14 ou 30 jours.</span></button><button onclick="TachesPage._switchTab('reunions')"><iconify-icon icon="solar:users-group-rounded-linear"></iconify-icon><strong>Avancez ensemble</strong><span>Transformez vos réunions en actions.</span></button></div>`;
+      return `${metrics}<div class="task-onboarding"><div><span class="task-eyebrow">${filtered ? 'VOTRE SÉLECTION' : 'UN NOUVEAU DÉPART'}</span><h2>${filtered ? 'Un peu de place pour souffler.' : 'Les bonnes journées commencent avec un plan.'}</h2><p>${filtered ? 'Aucune tâche ne correspond à ces filtres. Explorez les autres vues ou effacez votre sélection.' : 'Une maintenance à prévoir, un document à renouveler, une idée à concrétiser… Donnez à chaque action un responsable et une échéance.'}</p><button class="task-primary" onclick="${filtered ? "document.getElementById('task-reset').click()" : 'TachesPage._openTaskForm()'}"><iconify-icon icon="solar:add-circle-linear"></iconify-icon>${filtered ? 'Voir toutes les tâches' : 'Créer ma première tâche'}</button></div><div class="task-plan-art" aria-hidden="true"><span class="task-art-label">VOTRE PROCHAIN OBJECTIF</span><div><i>✓</i><span>Définir une action</span></div><div><i>✓</i><span>Choisir un responsable</span></div><div><i>3</i><span>Fixer une échéance</span></div><span class="task-art-line"></span><small>Chaque étape compte.</small></div></div><div class="task-start-grid"><button onclick="TachesPage._switchTab('gantt')"><iconify-icon icon="solar:calendar-linear"></iconify-icon><strong>Anticipez les échéances</strong><span>Votre planning sur 7, 14 ou 30 jours.</span></button><button onclick="TachesPage._switchTab('reunions')"><iconify-icon icon="solar:users-group-rounded-linear"></iconify-icon><strong>Avancez ensemble</strong><span>Transformez vos réunions en actions.</span></button></div>`;
     }
     const loads = new Map();
     active.forEach(t => { const id = t.assigneA || ''; const entry = loads.get(id) || { name: t.assigneANom || this._getUserName(id) || 'Non assignées', count: 0 }; entry.count++; loads.set(id, entry); });
@@ -338,7 +335,7 @@ const TachesPage = {
     return `${metrics}
       <div class="task-overview-grid">
         <section class="task-panel task-focus-panel"><div class="task-panel-heading"><div><span class="task-eyebrow">VOTRE FEUILLE DE ROUTE</span><h3>À traiter en priorité</h3></div><button class="task-text-button" onclick="TachesPage._setScope('active','liste')">Voir tout <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button></div>${focus.length ? focus.map(t => this._taskRow(t)).join('') : this._emptyState('Tout est à jour', 'Aucune tâche active dans cette sélection.', 'none')}</section>
-        <aside class="task-progress-panel"><span class="task-eyebrow">UNE ÉTAPE APRÈS L’AUTRE</span><h3>Votre progression</h3><div class="task-progress-ring" style="--progress:${progress}%"><div><strong>${progress}<small>%</small></strong><span>terminées</span></div></div><p><strong>${done.length}</strong> tâche${done.length > 1 ? 's' : ''} terminée${done.length > 1 ? 's' : ''} sur ${counted.length}</p><span class="task-progress-caption">Hors tâches annulées</span><button onclick="TachesPage._switchTab('kanban')">Ouvrir le tableau <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button></aside>
+        <aside class="task-progress-panel"><span class="task-eyebrow">UNE ÉTAPE APRÈS L’AUTRE</span><h3>Votre progression</h3><div class="task-progress-ring" style="--progress:${progress}%"><div><strong>${progress}<small>%</small></strong><span>terminées</span></div></div><p><strong>${done.length}</strong> tâche${done.length > 1 ? 's' : ''} terminée${done.length > 1 ? 's' : ''} sur ${counted.length}</p><span class="task-progress-caption">Hors tâches annulées</span><button onclick="TachesPage._switchTab('liste')">Ouvrir la liste <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button></aside>
         <section class="task-panel"><div class="task-panel-heading"><h3>La semaine en vue</h3><span class="task-muted">7 prochains jours</span></div>${upcoming.length ? upcoming.map(t => this._taskRow(t)).join('') : this._emptyState('L’horizon est dégagé', 'Aucune échéance prévue dans les 7 prochains jours.', 'none')}</section>
         <section class="task-panel"><div class="task-panel-heading"><h3>La charge de l’équipe</h3><iconify-icon icon="solar:users-group-rounded-linear"></iconify-icon></div><div class="task-team">${team.length ? team.slice(0, 5).map(([id, member]) => `<button data-team-member="${Utils.escHtml(id)}">${this._avatarBubble(member.name)}<span><strong>${Utils.escHtml(member.name)}</strong><i><em style="width:${member.count / maxLoad * 100}%"></em></i></span><b>${member.count}</b></button>`).join('') : '<p class="task-muted">Aucune tâche active à répartir.</p>'}</div></section>
       </div>
@@ -425,161 +422,6 @@ const TachesPage = {
     const hash = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
     const col = colors[hash % colors.length];
     return '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:' + col + '22;color:' + col + ';font-size:11px;font-weight:700;flex-shrink:0;">' + Utils.escHtml(initials) + '</span>';
-  },
-
-  // =====================================================================
-  //  KANBAN
-  // =====================================================================
-
-  _renderKanban() {
-    const taches = this._getVisibleTaches();
-    const columns = [
-      { id: 'a_faire', label: 'À faire', color: '#f5512e', icon: 'solar:clipboard-list-bold-duotone' },
-      { id: 'en_cours', label: 'En cours', color: '#6964ed', icon: 'solar:play-bold-duotone' },
-      { id: 'terminee', label: 'Terminée', color: '#119d80', icon: 'solar:check-circle-bold-duotone' },
-      { id: 'annulee', label: 'Annulée', color: '#ec4899', icon: 'solar:close-circle-bold-duotone' }
-    ];
-
-    return '<div class="kanban-board" id="kanban-board">'
-      + columns.map(col => {
-          const colTasks = taches
-            .filter(t => t.statut === col.id)
-            .sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
-          return '<div class="kanban-column" data-statut="' + col.id + '">'
-            + '<div class="kanban-col-header" style="border-top:3px solid ' + col.color + ';">'
-            + '<div class="kanban-col-title">'
-            + '<iconify-icon icon="' + col.icon + '" style="color:' + col.color + ';"></iconify-icon>'
-            + '<span>' + col.label + '</span>'
-            + '<span class="kanban-col-count" style="background:' + col.color + '22;color:' + col.color + ';">' + colTasks.length + '</span>'
-            + '</div></div>'
-            + '<div class="kanban-col-body" data-statut="' + col.id + '"'
-            + ' ondragover="TachesPage._kanbanDragOver(event)"'
-            + ' ondrop="TachesPage._kanbanDrop(event, \'' + col.id + '\')"'
-            + ' ondragleave="TachesPage._kanbanDragLeave(event)">'
-            + colTasks.map(t => this._kanbanCard(t)).join('')
-            + (colTasks.length === 0 ? '<div class="kanban-empty"><iconify-icon icon="solar:inbox-line-duotone"></iconify-icon>Aucune tâche</div>' : '')
-            + '</div>'
-            + '<button class="kanban-add-btn" onclick="TachesPage._openTaskForm(\'' + col.id + '\')">'
-            + '<iconify-icon icon="solar:add-circle-line-duotone"></iconify-icon> Ajouter'
-            + '</button>'
-            + '</div>';
-        }).join('')
-      + '</div>';
-  },
-
-  _kanbanCard(t) {
-    const pCfg = this._prioriteConfig[t.priorite] || this._prioriteConfig.normale;
-    const today = this._today();
-    const isLate = (t.statut === 'a_faire' || t.statut === 'en_cours') && t.dateEcheance && t.dateEcheance < today;
-
-    const subTotal = (t.sousTaches || []).length;
-    const subDone = (t.sousTaches || []).filter(s => s.fait).length;
-    const subPct = subTotal > 0 ? Math.round((subDone / subTotal) * 100) : 0;
-
-    const tags = (t.etiquettes || []).slice(0, 3);
-
-    let html = '<div class="kanban-card" draggable="true" data-task-id="' + t.id + '"'
-      + ' ondragstart="TachesPage._kanbanDragStart(event, \'' + t.id + '\')"'
-      + ' ondragend="TachesPage._kanbanDragEnd(event)"'
-      + ' onclick="TachesPage._viewTask(\'' + t.id + '\')">'
-      + '<div class="kanban-card-top">'
-      + '<span class="kanban-prio-badge" style="background:' + pCfg.bg + ';color:' + pCfg.color + ';">'
-      + '<iconify-icon icon="' + pCfg.icon + '" style="font-size:12px;"></iconify-icon> ' + pCfg.label
-      + '</span>';
-
-    if (isLate) {
-      html += '<span class="kanban-late-badge"><iconify-icon icon="solar:alarm-bold-duotone" style="font-size:12px;"></iconify-icon> Retard</span>';
-    }
-    if (t.delegation && t.delegation.statut === 'transferee') {
-      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(139,92,246,.12);color:#6964ed;"><iconify-icon icon="solar:hand-shake-bold-duotone" style="font-size:12px;"></iconify-icon> Déléguée par ' + Utils.escHtml(t.delegation.delegueParNom || '') + '</span>';
-    }
-    if (t.delegation && t.delegation.statut === 'annulee_admin') {
-      html += '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(239,68,68,.12);color:#ef4444;"><iconify-icon icon="solar:close-circle-bold-duotone" style="font-size:12px;"></iconify-icon> Délég. annulée</span>';
-    }
-
-    html += '</div>'
-      + '<div class="kanban-card-title">' + Utils.escHtml(t.titre) + '</div>';
-
-    if (subTotal > 0) {
-      html += '<div class="kanban-subtask-bar">'
-        + '<div class="kanban-subtask-track"><div class="kanban-subtask-fill" style="width:' + subPct + '%;"></div></div>'
-        + '<span class="kanban-subtask-label">' + subDone + '/' + subTotal + '</span>'
-        + '</div>';
-    }
-
-    if (tags.length > 0) {
-      html += '<div class="kanban-tags">' + tags.map(tag => '<span class="kanban-tag">' + Utils.escHtml(tag) + '</span>').join('') + '</div>';
-    }
-
-    html += '<div class="kanban-card-footer">'
-      + '<div class="kanban-card-assignee">'
-      + (t.assigneANom ? this._avatarBubble(t.assigneANom) : '<span style="color:var(--text-muted);font-size:11px;">Non assigné</span>')
-      + '</div>';
-
-    if (t.dateEcheance) {
-      html += '<span class="kanban-card-date" style="color:' + (isLate ? '#ef4444' : 'var(--text-muted)') + ';">'
-        + '<iconify-icon icon="solar:calendar-line-duotone" style="font-size:13px;"></iconify-icon> '
-        + Utils.formatDate(t.dateEcheance)
-        + '</span>';
-    }
-
-    html += '</div></div>';
-    return html;
-  },
-
-  _bindKanbanDragDrop() {
-    // Drag drop is bound via inline event attributes for simplicity
-  },
-
-  _kanbanDragStart(e, taskId) {
-    this._draggedTaskId = taskId;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', taskId);
-    setTimeout(() => {
-      if (e.target) e.target.style.opacity = '0.4';
-    }, 0);
-  },
-
-  _kanbanDragEnd(e) {
-    e.target.style.opacity = '1';
-    document.querySelectorAll('.kanban-col-body.drag-over').forEach(el => el.classList.remove('drag-over'));
-    this._draggedTaskId = null;
-  },
-
-  _kanbanDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    e.currentTarget.classList.add('drag-over');
-  },
-
-  _kanbanDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over');
-  },
-
-  _kanbanDrop(e, newStatut) {
-    e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
-    const taskId = this._draggedTaskId || e.dataTransfer.getData('text/plain');
-    if (!taskId) return;
-
-    const taches = this._getTaches();
-    const task = taches.find(t => t.id === taskId);
-    if (!task || task.statut === newStatut) return;
-
-    const update = {
-      statut: newStatut,
-      dateModification: new Date().toISOString()
-    };
-    if (newStatut === 'terminee') {
-      update.dateTerminaison = new Date().toISOString();
-    }
-
-    const selector = '.kanban-card[data-task-id="' + CSS.escape(taskId) + '"]';
-    const before = PiloteMotion.capture(document.querySelector(selector));
-    Store.update('taches', taskId, update);
-    Toast.success('Tâche déplacée vers "' + (this._statutConfig[newStatut] ? this._statutConfig[newStatut].label : newStatut) + '"');
-    this._renderActiveView();
-    PiloteMotion.move(document.querySelector(selector), before, newStatut === 'terminee');
   },
 
   _ganttViewMode: 'month', // 'week' or 'month'
@@ -2012,74 +1854,6 @@ const TachesPage = {
       .dash-activity-info { flex:1; }
       .dash-activity-title { font-size:13px; color:var(--text-primary); font-weight:500; }
       .dash-activity-meta { font-size:11px; color:var(--text-muted); }
-
-      /* ── Kanban ── */
-      .kanban-board {
-        display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; min-height:500px;
-      }
-      @media(max-width:900px) { .kanban-board { grid-template-columns:repeat(2, 1fr); } }
-      @media(max-width:600px) { .kanban-board { grid-template-columns:1fr; } }
-
-      .kanban-column {
-        background:var(--bg-tertiary); border:1px solid var(--border-color);
-        border-radius:18px; display:flex; flex-direction:column; min-height:300px;
-        box-shadow:0 1px 2px rgba(0,0,0,.03); overflow:hidden;
-      }
-      .kanban-col-header {
-        padding:15px 16px 11px; background:transparent;
-      }
-      .kanban-col-title {
-        display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; color:var(--text-primary); letter-spacing:-.01em;
-      }
-      .kanban-col-title iconify-icon { font-size:1.15rem; }
-      .kanban-col-count {
-        padding:2px 9px; border-radius:20px; font-size:11px; font-weight:800; margin-left:auto;
-      }
-      .kanban-col-body {
-        flex:1; padding:6px 10px 10px; overflow-y:auto; min-height:60px;
-        transition:background .15s ease;
-      }
-      .kanban-col-body.drag-over { background:rgba(245,81,46,.08); }
-      .kanban-empty { display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; color:var(--text-muted); font-size:12px; padding:32px 12px; opacity:.75; }
-      .kanban-empty iconify-icon { font-size:1.8rem; opacity:.5; }
-      .kanban-add-btn {
-        display:flex; align-items:center; justify-content:center; gap:5px; margin:2px 10px 10px; padding:9px; border-radius:11px;
-        border:1px dashed var(--border-color); background:transparent; color:var(--text-muted); cursor:pointer;
-        font-size:12px; font-weight:600; transition:color .15s ease, background .15s ease, border-color .15s ease;
-      }
-      .kanban-add-btn:hover { color:#F5512E; background:rgba(245,81,46,.06); border-color:rgba(245,81,46,.35); }
-
-      /* Kanban cards */
-      .kanban-card {
-        background:var(--bg-secondary); border:1px solid var(--border-color);
-        border-radius:14px; padding:12px 14px; margin-bottom:9px; cursor:pointer;
-        transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease, border-color .18s ease; position:relative;
-        box-shadow:0 2px 6px -3px rgba(30,32,34,.15);
-      }
-      .kanban-card:hover { transform:translateY(-3px); box-shadow:0 12px 22px -10px rgba(30,32,34,.28); border-color:rgba(245,81,46,.25); }
-      .kanban-card:active { transform:scale(0.98); }
-      .kanban-card-top { display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
-      .kanban-prio-badge {
-        display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:6px;
-        font-size:10px; font-weight:600;
-      }
-      .kanban-late-badge {
-        display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:6px;
-        font-size:10px; font-weight:700; background:rgba(239,68,68,.12); color:#ef4444;
-      }
-      .kanban-card-title { font-size:13px; font-weight:500; color:var(--text-primary); line-height:1.3; margin-bottom:6px; }
-      .kanban-subtask-bar { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
-      .kanban-subtask-track { flex:1; height:4px; border-radius:2px; background:var(--bg-tertiary); overflow:hidden; }
-      .kanban-subtask-fill { height:100%; border-radius:2px; background:#119d80; }
-      .kanban-subtask-label { font-size:10px; color:var(--text-muted); }
-      .kanban-tags { display:flex; flex-wrap:wrap; gap:3px; margin-bottom:6px; }
-      .kanban-tag {
-        background:rgba(245,81,46,.1); color:var(--pilote-blue); padding:1px 7px; border-radius:8px;
-        font-size:10px; font-weight:500;
-      }
-      .kanban-card-footer { display:flex; align-items:center; justify-content:space-between; }
-      .kanban-card-assignee { display:flex; align-items:center; }
-      .kanban-card-date { display:flex; align-items:center; gap:3px; font-size:11px; }
 
       /* ── Gantt ── */
       .gantt-toolbar {
