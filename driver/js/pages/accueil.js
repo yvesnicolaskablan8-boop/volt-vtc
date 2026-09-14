@@ -450,7 +450,7 @@ const AccueilPage = {
       proprietaireHTML = `
       <div class="cp-card" onclick="AccueilPage._infoProprietaire()" role="button" title="Conditions du programme propriétaire">
         <div class="cp-ring">
-          <svg viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="34"/><circle class="fg" cx="40" cy="40" r="34" stroke="#30d158" style="--pct:${Math.max(1, pct)}"/></svg>
+          <svg viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="34"/><circle class="fg ok" cx="40" cy="40" r="34" style="--pct:${Math.max(1, pct)}"/></svg>
           <div class="cp-ring-txt"><b>${moisAff}</b><small>/ 36</small></div>
         </div>
         <div class="cp-title">Ma voiture</div>
