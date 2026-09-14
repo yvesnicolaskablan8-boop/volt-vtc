@@ -2275,7 +2275,7 @@ const DashboardPage = {
     return [
       { key: 'service', label: 'En service', color: '#13DEB9', desc: "Au planning aujourd'hui" },
       { key: 'nonpl', label: 'Non planifiés', color: '#635BFF', desc: 'Roulent hors planning' },
-      { key: 'surveiller', label: 'À surveiller', color: '#F5512E', desc: 'Inactif, CA bas, occupé ou hors ligne sur Yango' },
+      { key: 'surveiller', label: 'À surveiller', color: '#F5512E', desc: 'Inactif, CA bas, occupé, hors ligne ou course trop longue' },
     ];
   },
 
@@ -2307,8 +2307,12 @@ const DashboardPage = {
       // Idem pour un chauffeur AU PLANNING passé HORS LIGNE sur Yango (il ne
       // roule plus) — cas distinct de « CA nul » : il a pu rouler le matin.
       if (programme && lv && lv.status === 'offline' && !lv.enCommande) reasons.push('hors_ligne_yango');
+      // Course en cours depuis trop longtemps (compteur détourné, détour, oubli
+      // de clôture) : au-delà du seuil, à surveiller et alarme.
+      const courseMin = (lv && lv.enCommande && lv.commandeDepuisMin != null) ? Number(lv.commandeDepuisMin) : 0;
+      if (programme && courseMin >= this._SEUIL_COURSE_LONGUE_MIN) reasons.push('course_longue');
       const courses = info ? (info.courses || 0) : 0;
-      const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, courses, programme, reasons };
+      const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, courses, programme, reasons, courseMin };
       if (programme) B.service.push(entry);        // au planning = en service
       else if (actif) B.nonpl.push(entry);         // pas au planning mais roule → à régulariser
       else B.repos.push(entry);
@@ -2316,7 +2320,7 @@ const DashboardPage = {
 
     // « À surveiller » : chauffeurs EN SERVICE inactifs (CA nul), au CA anormalement
     // bas, ou qui se sont mis « occupé » sur Yango (ne prennent plus de courses).
-    B.surveiller = B.service.filter(e => !(e.ca > 0) || e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere') || e.reasons.includes('occupe_yango') || e.reasons.includes('hors_ligne_yango'));
+    B.surveiller = B.service.filter(e => !(e.ca > 0) || e.reasons.includes('ca_faible') || e.reasons.includes('ca_modere') || e.reasons.includes('occupe_yango') || e.reasons.includes('hors_ligne_yango') || e.reasons.includes('course_longue'));
     const segments = this._fleetSegDef().map(s => ({ ...s, count: (B[s.key] || []).length, drivers: B[s.key] || [] }));
     const svc = segments.find(s => s.key === 'service');
     // Sous-compteur « actif à l'instant » (courses en hausse récente) parmi les en service.
@@ -2527,9 +2531,9 @@ const DashboardPage = {
   // (retour du même chauffeur, même motif) re-déclenche.
   _signalSurveiller(seg) {
     const list = (seg && seg.drivers) ? seg.drivers : [];
-    this._surveillerNow = list.map(e => ({ id: e.id, nom: `${e.prenom || ''} ${e.nom || ''}`.trim(), reasons: e.reasons || [], ca: e.ca || 0 }));
+    this._surveillerNow = list.map(e => ({ id: e.id, nom: `${e.prenom || ''} ${e.nom || ''}`.trim(), reasons: e.reasons || [], ca: e.ca || 0, courseMin: e.courseMin || 0 }));
     if (!this._isToday()) return;
-    const LBL = { occupe_yango: 'occupé sur Yango', hors_ligne_yango: 'hors ligne sur Yango', ca_faible: 'CA anormalement bas', ca_modere: 'CA sous la moyenne', hors_planning: 'hors planning' };
+    const LBL = { occupe_yango: 'occupé sur Yango', hors_ligne_yango: 'hors ligne sur Yango', ca_faible: 'CA anormalement bas', ca_modere: 'CA sous la moyenne', hors_planning: 'hors planning', course_longue: 'course anormalement longue' };
     const day = new Date().toISOString().slice(0, 10);
     let seen = {};
     try { const raw = localStorage.getItem('pilote_surv_notif'); if (raw) seen = JSON.parse(raw) || {}; } catch (e) { seen = {}; }
@@ -2542,7 +2546,8 @@ const DashboardPage = {
       clesActuelles.add(key);
       if (seen.keys[key]) return;
       seen.keys[key] = Date.now();
-      nouveaux.push(`${e.nom} — ${motifs.join(', ') || 'à surveiller'}`);
+      const motifsTxt = motifs.map(m => (m === LBL.course_longue && e.courseMin) ? `${m} (${e.courseMin} min)` : m);
+      nouveaux.push(`${e.nom} — ${motifsTxt.join(', ') || 'à surveiller'}`);
       nouvellesCles.push(key);
     });
     // Un chauffeur sorti de « À surveiller » est oublié : s'il y revient, même
@@ -2609,6 +2614,8 @@ const DashboardPage = {
   // qui l'ont déclenchée est encore « à surveiller », ou jusqu'au clic sur
   // « Arrêter l'alarme ». Aucune autre issue, ni délai, ni acquittement implicite.
   _alarmeKeys: null,
+  // Au-delà de cette durée, une course Yango en cours est « anormalement longue ».
+  _SEUIL_COURSE_LONGUE_MIN: 60,
 
   _demarrerAlarme(keys) {
     if (!this._sonActif()) return;
@@ -2769,6 +2776,7 @@ const DashboardPage = {
       hors_planning: ['Hors planning', '#635BFF', 'rgba(99,91,255,.13)'],
       occupe_yango: ['Occupé sur Yango', '#E8930C', 'rgba(255,174,31,.16)'],
       hors_ligne_yango: ['Hors ligne sur Yango', '#9AA3B2', 'var(--bg-tertiary)'],
+      course_longue: ['Course anormalement longue', '#DC2626', 'rgba(220,38,38,.12)'],
     };
     // Lien vers la page Yango du chauffeur (surveillance) : contractor = yangoDriverId,
     // park_id issu des réglages d'intégration Yango.

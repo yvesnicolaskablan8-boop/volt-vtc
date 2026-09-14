@@ -698,6 +698,8 @@ async function handleFleetStatus(req, res) {
     // active = statut non terminal. On retient l'ID du chauffeur pour marquer
     // chaque fiche individuellement.
     const enCommandeIds = new Set();
+    const enCommandeDepuis = new Map();   // yangoId -> minutes depuis le début de la course en cours
+    const enCommandeStatut = new Map();
     try {
       const nowTs = new Date();
       const fromTs = new Date(nowTs.getTime() - 8 * 3600 * 1000);
@@ -713,7 +715,16 @@ async function handleFleetStatus(req, res) {
         // L'ancien chemin deviné ne correspondait jamais → « en commande »
         // ne s'allumait pas.
         const did = orderDriverId(o);
-        if (did) enCommandeIds.add(did);
+        if (did) {
+          enCommandeIds.add(did);
+          // Début réel de la course (prise en charge) sinon réservation.
+          const debut = o.driving_at || o.transporting_at || o.booked_at || o.created_at;
+          const min = debut ? Math.max(0, Math.round((nowTs - new Date(debut)) / 60000)) : null;
+          if (min != null && (!enCommandeDepuis.has(did) || min > enCommandeDepuis.get(did))) {
+            enCommandeDepuis.set(did, min);
+            enCommandeStatut.set(did, o.status);
+          }
+        }
       }
     } catch (e) { console.warn('[fleet-status] orders error:', e.message); }
 
@@ -741,6 +752,8 @@ async function handleFleetStatus(req, res) {
         status,
         rawStatus,
         enCommande,
+        commandeDepuisMin: enCommande ? (enCommandeDepuis.get(dp.id) ?? null) : null,
+        commandeStatut: enCommande ? (enCommandeStatut.get(dp.id) || null) : null,
         statusTs: cs.status_updated_ts || null
       });
     }
