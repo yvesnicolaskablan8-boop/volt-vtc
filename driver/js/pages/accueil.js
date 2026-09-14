@@ -480,11 +480,9 @@ const AccueilPage = {
         : 'Félicitations patron, elle est à vous ! 🎉';
       proprietaireHTML = `
       <div class="cp-card" onclick="AccueilPage._infoProprietaire()" role="button" title="Conditions du programme propriétaire">
+        <div class="cp-title">Ma voiture</div>
         ${this._demiJauge(pct, moisAff, ' / 36', '#30d158')}
-        <div class="cp-bloc">
-          <div class="cp-title">Ma voiture</div>
-          <div class="cp-desc">${restant > 0 ? `Encore ${restant} mois, courage patron !` : 'Elle est à vous 🎉'}</div>
-        </div>
+        <div class="cp-desc">${restant > 0 ? `Encore ${restant} mois, courage patron !` : 'Elle est à vous 🎉'}</div>
       </div>`;
     }
 
@@ -513,9 +511,10 @@ const AccueilPage = {
         : `Encore ${restant.toLocaleString('fr-FR')} F sur ${joursRestants} jour${joursRestants > 1 ? 's' : ''} · ${parJour.toLocaleString('fr-FR')} F par jour et la prime est à vous !`;
       const chip = decrochee ? 'Objectif atteint' : rythme >= 0.95 ? 'Dans le rythme' : rythme >= 0.75 ? 'Un peu en retard' : 'Il faut accélérer';
       primeHTML = (obj.primeActive === false) ? '' : `
-      <div class="pb-card">
-        <div class="pb-head"><span class="pb-titre">Prime ${prime.toLocaleString('fr-FR')} F</span><span class="pb-msg">${decrochee ? "Décrochée, bravo patron ! 🎉" : joursRestants === 0 ? "Le mois est fini !" : "Fonce, elle est à toi ! 💪"}</span></div>
+      <div class="cp-card">
+        <div class="cp-title">Prime ${prime.toLocaleString('fr-FR')} F</div>
         ${this._barrePrime(Math.min(100, taux), caMois, objectifMois, etat === 'ok' ? '#30d158' : etat === 'mid' ? '#ffb340' : '#ff6b6b')}
+        <div class="cp-desc">${decrochee ? "Décrochée, bravo patron ! 🎉" : joursRestants === 0 ? "Le mois est fini !" : "Fonce, elle est à toi ! 💪"}</div>
       </div>`;
     }
 
@@ -535,7 +534,7 @@ const AccueilPage = {
 
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
-      ${primeHTML}${proprietaireHTML ? `<div class="cp-duo cp-solo">${proprietaireHTML}</div>` : ""}
+      ${primeHTML || proprietaireHTML ? `<div class="cp-duo">${primeHTML}${proprietaireHTML}</div>` : ""}
 
       <!-- 2. Le calendrier du chauffeur (semaine en cours, navigable), à la place des tuiles :
            Messages, Amendes et le reste sont accessibles par la barre du bas (Messages, Autres). -->
