@@ -561,6 +561,62 @@ const Utils = {
    * @param {object} caParChauffeur  { chauffeurId: caSemaine } — requis pour les salariés
    * @param {object} dettesParChauffeur { chauffeurId: montantDette }
    */
+  /**
+   * Prime mensuelle des chauffeurs salariés (modèle deux vagues, 14/09/2026).
+   * Objectif du mois = objectif par vague × jours planifiés du mois.
+   * La prime est acquise si le CA brut Yango du mois atteint cet objectif.
+   * Fonction pure : toutes les données sont passées en paramètres.
+   *
+   * @param {string} mois   'YYYY-MM'
+   */
+  computePrimeMois({ mois, chauffeurs, planning, caJour = [], objectifs = {}, dettesParChauffeur = {} }) {
+    const objParVague = Number(objectifs.caJourChauffeur) > 0 ? Number(objectifs.caJourChauffeur) : 60000;
+    const montantPrime = Number(objectifs.primeMensuelle) > 0 ? Number(objectifs.primeMensuelle) : 100000;
+    const primeActive = objectifs.primeActive !== false;
+    const dansLeMois = (d) => String(d || '').slice(0, 7) === mois;
+
+    // CA brut Yango du mois, par chauffeur
+    const caParChauffeur = {};
+    (caJour || []).forEach(e => {
+      if (!dansLeMois(e.date)) return;
+      const id = e.chauffeurId || e.chauffeur_id;
+      if (!id) return;
+      caParChauffeur[id] = (caParChauffeur[id] || 0) + (Number(e.caBrut ?? e.ca_brut) || 0);
+    });
+
+    // Jours distincts planifiés dans le mois, par chauffeur
+    const joursParChauffeur = {};
+    (planning || []).forEach(p => {
+      if (!dansLeMois(p.date) || !p.chauffeurId) return;
+      (joursParChauffeur[p.chauffeurId] = joursParChauffeur[p.chauffeurId] || new Set()).add(String(p.date).slice(0, 10));
+    });
+
+    return (chauffeurs || [])
+      .filter(c => c.statut !== 'inactif' && c.typeContrat === 'salarie')
+      .map(ch => {
+        const joursPlanifies = (joursParChauffeur[ch.id] || new Set()).size;
+        const caMois = Math.round(caParChauffeur[ch.id] || 0);
+        const objectifMois = objParVague * joursPlanifies;
+        const taux = objectifMois > 0 ? Math.round((caMois / objectifMois) * 100) : 0;
+        const dette = dettesParChauffeur[ch.id] || 0;
+        let montant = 0, bloque = false, raison = '';
+        if (!primeActive) { bloque = true; raison = 'Prime désactivée dans les réglages'; }
+        else if (joursPlanifies === 0) { raison = 'Aucun jour planifié ce mois'; }
+        else if (caMois >= objectifMois) {
+          if (dette > 0) { bloque = true; raison = `Objectif atteint mais ${this.formatCurrency(dette)} de dette en cours`; }
+          else montant = montantPrime;
+        } else {
+          raison = `Il manque ${this.formatCurrency(objectifMois - caMois)}`;
+        }
+        return {
+          chauffeurId: ch.id, nom: `${ch.prenom} ${ch.nom}`.trim(), mois,
+          joursPlanifies, caMois, objectifMois, objParVague, taux, dette,
+          montant, acquise: caMois >= objectifMois && joursPlanifies > 0, bloque, raison
+        };
+      })
+      .sort((a, b) => b.taux - a.taux);
+  },
+
   computeBonusSemaine({ lundi, chauffeurs, planning, versements, caParChauffeur = {}, dettesParChauffeur = {}, regles }) {
     const R = regles || this.bonusReglesParDefaut();
     const jours = [];
