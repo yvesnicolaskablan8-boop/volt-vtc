@@ -2701,3 +2701,18 @@ body {
 .cp-ring2-txt small { font-size: 0.6rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
 .cp-card .cp-title + .cp-ring2 + .cp-desc { margin-top: 2px; }
 @media (prefers-reduced-motion: reduce) { .cp-ring2-fg { animation: none; } }
+
+/* Calendrier embarqué sur l'accueil : version compacte (la page Planning garde
+   sa taille normale) pour que tout l'accueil tienne sur un écran. */
+.accueil-planning .week-nav { margin-bottom: 8px; }
+.accueil-planning .week-nav button { width: 30px; height: 30px; }
+.accueil-planning .week-label { font-size: 0.85rem; }
+.accueil-planning .planning-col-header { padding: 2px 0 3px; }
+.accueil-planning .planning-day-abbr { font-size: 0.6rem; }
+.accueil-planning .planning-day-num { font-size: 1.05rem; }
+.accueil-planning .planning-slots { gap: 3px; }
+.accueil-planning .planning-slot { height: 16px; border-radius: 6px; }
+.accueil-planning .planning-slot .slot-check,
+.accueil-planning .planning-slot .slot-icon { font-size: 0.55rem; }
+.accueil-planning .planning-legend { margin-top: 8px; gap: 10px; font-size: 0.68rem; }
+.accueil-planning .planning-legend-dot { width: 7px; height: 7px; }
