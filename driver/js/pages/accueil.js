@@ -513,10 +513,7 @@ const AccueilPage = {
 
       <!-- 2. Le calendrier du chauffeur (semaine en cours, navigable), à la place des tuiles :
            Messages, Amendes et le reste sont accessibles par la barre du bas (Messages, Autres). -->
-      <div class="mk-section mk-section-row">
-        <span>Mon planning</span>
-        <button type="button" class="mk-lien tap-scale" onclick="DriverRouter.navigate('planning')">Demander une absence <iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>
-      </div>
+      <div class="mk-section">Mon planning</div>
       <div id="accueil-planning" class="accueil-planning"></div>
 
       <!-- Alertes vehicule urgentes uniquement -->
