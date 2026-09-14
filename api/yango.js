@@ -716,6 +716,25 @@ async function handleFleetStatus(req, res) {
     const enCommandeIds = new Set();
     const enCommandeDepuis = new Map();   // yangoId -> minutes depuis le début de la course en cours
     const enCommandeStatut = new Map();
+    const enCommandeAttendu = new Map();  // yangoId -> { km, min } durée attendue estimée sur la distance
+    // Yango ne donne pas d'estimation de durée : on l'estime depuis les
+    // coordonnées (départ -> dernier point de route), distance routière ≈ vol
+    // d'oiseau × 1,3, vitesse urbaine moyenne 22 km/h, + 5 min de prise en charge.
+    const haversineKm = (a, b) => {
+      const R = 6371, r = Math.PI / 180;
+      const dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r;
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    };
+    const attenduPour = (o) => {
+      const dep = o.address_from, pts = Array.isArray(o.route_points) ? o.route_points : [];
+      const arr = pts.length ? pts[pts.length - 1] : null;
+      if (!dep || !arr || dep.lat == null || arr.lat == null) return null;
+      let km = 0, prev = dep;
+      for (const p of pts) { if (p && p.lat != null) { km += haversineKm(prev, p); prev = p; } }
+      km = Math.round(km * 1.3 * 10) / 10;
+      return { km, min: Math.round(km / 22 * 60 + 5) };
+    };
     try {
       const nowTs = new Date();
       const fromTs = new Date(nowTs.getTime() - 8 * 3600 * 1000);
@@ -739,6 +758,8 @@ async function handleFleetStatus(req, res) {
           if (min != null && (!enCommandeDepuis.has(did) || min > enCommandeDepuis.get(did))) {
             enCommandeDepuis.set(did, min);
             enCommandeStatut.set(did, o.status);
+            const att = attenduPour(o);
+            if (att) enCommandeAttendu.set(did, att); else enCommandeAttendu.delete(did);
           }
         }
       }
@@ -770,6 +791,8 @@ async function handleFleetStatus(req, res) {
         enCommande,
         commandeDepuisMin: enCommande ? (enCommandeDepuis.get(dp.id) ?? null) : null,
         commandeStatut: enCommande ? (enCommandeStatut.get(dp.id) || null) : null,
+        commandeAttendueMin: enCommande && enCommandeAttendu.has(dp.id) ? enCommandeAttendu.get(dp.id).min : null,
+        commandeDistanceKm: enCommande && enCommandeAttendu.has(dp.id) ? enCommandeAttendu.get(dp.id).km : null,
         statusTs: cs.status_updated_ts || null
       });
     }

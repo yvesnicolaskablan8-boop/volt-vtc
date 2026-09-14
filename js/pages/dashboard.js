@@ -2310,9 +2310,13 @@ const DashboardPage = {
       // Course en cours depuis trop longtemps (compteur détourné, détour, oubli
       // de clôture) : au-delà du seuil, à surveiller et alarme.
       const courseMin = (lv && lv.enCommande && lv.commandeDepuisMin != null) ? Number(lv.commandeDepuisMin) : 0;
-      if (programme && courseMin >= this._SEUIL_COURSE_LONGUE_MIN) reasons.push('course_longue');
+      const courseAttendue = (lv && lv.enCommande && lv.commandeAttendueMin != null) ? Number(lv.commandeAttendueMin) : 0;
+      // Anormale si elle dépasse la durée attendue de 50 % ET d'au moins 20 min
+      // (jamais avant 25 min) ; sans coordonnées, seuil fixe de repli.
+      const limite = courseAttendue > 0 ? Math.max(25, courseAttendue * 1.5, courseAttendue + 20) : this._SEUIL_COURSE_LONGUE_MIN;
+      if (programme && courseMin > 0 && courseMin >= limite) reasons.push('course_longue');
       const courses = info ? (info.courses || 0) : 0;
-      const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, courses, programme, reasons, courseMin };
+      const entry = { id: ch.id, prenom: ch.prenom, nom: ch.nom, tel: ch.telephone || '', ca, courses, programme, reasons, courseMin, courseAttendue, courseKm: lv && lv.commandeDistanceKm != null ? lv.commandeDistanceKm : 0 };
       if (programme) B.service.push(entry);        // au planning = en service
       else if (actif) B.nonpl.push(entry);         // pas au planning mais roule → à régulariser
       else B.repos.push(entry);
@@ -2531,7 +2535,7 @@ const DashboardPage = {
   // (retour du même chauffeur, même motif) re-déclenche.
   _signalSurveiller(seg) {
     const list = (seg && seg.drivers) ? seg.drivers : [];
-    this._surveillerNow = list.map(e => ({ id: e.id, nom: `${e.prenom || ''} ${e.nom || ''}`.trim(), reasons: e.reasons || [], ca: e.ca || 0, courseMin: e.courseMin || 0 }));
+    this._surveillerNow = list.map(e => ({ id: e.id, nom: `${e.prenom || ''} ${e.nom || ''}`.trim(), reasons: e.reasons || [], ca: e.ca || 0, courseMin: e.courseMin || 0, courseAttendue: e.courseAttendue || 0, courseKm: e.courseKm || 0 }));
     if (!this._isToday()) return;
     const LBL = { occupe_yango: 'occupé sur Yango', hors_ligne_yango: 'hors ligne sur Yango', ca_faible: 'CA anormalement bas', ca_modere: 'CA sous la moyenne', hors_planning: 'hors planning', course_longue: 'course anormalement longue' };
     const day = new Date().toISOString().slice(0, 10);
@@ -2546,7 +2550,7 @@ const DashboardPage = {
       clesActuelles.add(key);
       if (seen.keys[key]) return;
       seen.keys[key] = Date.now();
-      const motifsTxt = motifs.map(m => (m === LBL.course_longue && e.courseMin) ? `${m} (${e.courseMin} min)` : m);
+      const motifsTxt = motifs.map(m => (m === LBL.course_longue && e.courseMin) ? `${m} (${e.courseMin} min${e.courseAttendue ? `, attendu ~${e.courseAttendue} min pour ${e.courseKm} km` : ''})` : m);
       nouveaux.push(`${e.nom} — ${motifsTxt.join(', ') || 'à surveiller'}`);
       nouvellesCles.push(key);
     });
