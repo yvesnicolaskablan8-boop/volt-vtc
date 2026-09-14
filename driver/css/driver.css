@@ -2714,5 +2714,4 @@ body {
 .accueil-planning .planning-slot { height: 12px; border-radius: 5px; }
 .accueil-planning .planning-slot .slot-check,
 .accueil-planning .planning-slot .slot-icon { font-size: 0.55rem; }
-.accueil-planning .planning-legend { margin-top: 6px; gap: 9px; font-size: 0.64rem; }
-.accueil-planning .planning-legend-dot { width: 7px; height: 7px; }
+.accueil-planning .planning-legend { display: none; }
