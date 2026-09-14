@@ -2522,8 +2522,9 @@ const DashboardPage = {
   // « À surveiller » = ALERTE URGENTE. Publie la liste courante (lue par la page
   // Alertes et le badge du header, niveau « urgent ») et déclenche un signal
   // IMMÉDIAT (toast + notification navigateur) quand un chauffeur ENTRE dans
-  // cet état — dédoublonné par chauffeur, motif et jour pour ne pas re-notifier
-  // à chaque rafraîchissement (30 s).
+  // cet état — dédoublonné par chauffeur et motif tant qu'il y reste, pour ne
+  // pas re-notifier à chaque rafraîchissement (30 s) ; toute nouvelle entrée
+  // (retour du même chauffeur, même motif) re-déclenche.
   _signalSurveiller(seg) {
     const list = (seg && seg.drivers) ? seg.drivers : [];
     this._surveillerNow = list.map(e => ({ id: e.id, nom: `${e.prenom || ''} ${e.nom || ''}`.trim(), reasons: e.reasons || [], ca: e.ca || 0 }));
@@ -2544,6 +2545,10 @@ const DashboardPage = {
       nouveaux.push(`${e.nom} — ${motifs.join(', ') || 'à surveiller'}`);
       nouvellesCles.push(key);
     });
+    // Un chauffeur sorti de « À surveiller » est oublié : s'il y revient, même
+    // motif, l'alarme se redéclenche. Le dédoublonnage ne couvre que la
+    // présence continue (pas de re-sonnerie à chaque rafraîchissement).
+    Object.keys(seen.keys).forEach(k => { if (!clesActuelles.has(k)) delete seen.keys[k]; });
     try { localStorage.setItem('pilote_surv_notif', JSON.stringify(seen)); } catch (e) { /* stockage indispo */ }
     this._verifierAlarme(clesActuelles);
     if (!nouveaux.length) return;
