@@ -95,7 +95,6 @@ const PlanningPage = {
     const dayAbbrs = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'];
 
     let gridHTML = '<div class="planning-grid">';
-    let creneauxSemaine = 0;
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
@@ -123,7 +122,6 @@ const PlanningPage = {
         let slotStatus = activeSlots[s];
         if (estRepos) slotStatus = 'repos';
         if (slotStatus === 'active') {
-          creneauxSemaine++;
           gridHTML += estRemplacement
             ? '<div class="planning-slot active" style="background:#fef3c7;border-color:#f59e0b"><span class="slot-check" style="color:#b45309"><i class="fas fa-user-clock"></i></span></div>'
             : '<div class="planning-slot active"><span class="slot-check"><i class="fas fa-check"></i></span></div>';
@@ -140,9 +138,6 @@ const PlanningPage = {
     }
 
     gridHTML += '</div>';
-    if (creneauxSemaine === 0) {
-      gridHTML = '<div class="planning-vide"><iconify-icon icon="solar:calendar-minimalistic-bold-duotone"></iconify-icon><div><strong>Aucun créneau planifié cette semaine</strong><span>Votre gestionnaire n’a pas encore rempli votre planning. Vous serez prévenu dès qu’il sera publié.</span></div></div>' + gridHTML;
-    }
 
     document.getElementById('planning-grid').innerHTML = gridHTML;
 
