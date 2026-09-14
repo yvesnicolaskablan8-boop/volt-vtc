@@ -2426,7 +2426,7 @@ const DashboardPage = {
   _fleetCardsInner(segments) {
     return segments.map((s, i) => {
       const clickable = s.count > 0;
-      const handlers = clickable ? `onmouseenter="DashboardPage._fdHot('${s.key}',true)" onmouseleave="DashboardPage._fdHot('${s.key}',false)" onclick="DashboardPage._arreterAlarme(true);DashboardPage._fleetCardClick('${s.key}')"` : '';
+      const handlers = clickable ? `onmouseenter="DashboardPage._fdHot('${s.key}',true)" onmouseleave="DashboardPage._fdHot('${s.key}',false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
       const notes = [];
       if (s.inactifCount) notes.push(`<span style="color:#E8930C;font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#E8930C;margin-right:4px;vertical-align:middle;"></span>${s.inactifCount} pas actif${s.inactifCount > 1 ? 's' : ''}</span>`);
       if (s.note) notes.push(`<button type="button" class="fd-surv-chip" onclick="event.stopPropagation();DashboardPage._scrollToWatchlist()" title="Voir les chauffeurs à surveiller"><iconify-icon icon="solar:eye-scan-bold" style="font-size:12px;"></iconify-icon>${s.note}</button>`);
@@ -2533,20 +2533,23 @@ const DashboardPage = {
     let seen = {};
     try { const raw = localStorage.getItem('pilote_surv_notif'); if (raw) seen = JSON.parse(raw) || {}; } catch (e) { seen = {}; }
     if (seen.day !== day || !seen.keys) seen = { day, keys: {} };
-    const nouveaux = [];
+    const nouveaux = [], nouvellesCles = [], clesActuelles = new Set();
     this._surveillerNow.forEach(e => {
       const motifs = e.reasons.filter(r => LBL[r]).map(r => LBL[r]);
       if (!motifs.length && !(e.ca > 0)) motifs.push("pas d'activité");
       const key = `${e.id}|${motifs.join(',')}`;
+      clesActuelles.add(key);
       if (seen.keys[key]) return;
       seen.keys[key] = Date.now();
       nouveaux.push(`${e.nom} — ${motifs.join(', ') || 'à surveiller'}`);
+      nouvellesCles.push(key);
     });
     try { localStorage.setItem('pilote_surv_notif', JSON.stringify(seen)); } catch (e) { /* stockage indispo */ }
+    this._verifierAlarme(clesActuelles);
     if (!nouveaux.length) return;
     const txt = nouveaux.join(' · ');
     const titre = `⚠️ À surveiller (${nouveaux.length})`;
-    this._demarrerAlarme();
+    this._demarrerAlarme(nouvellesCles);
     if (typeof Toast !== 'undefined' && Toast.show) Toast.show(txt, 'warning', titre, 9000);
     if (typeof NotificationManager !== 'undefined' && NotificationManager.send) NotificationManager.send(`Pilote — ${nouveaux.length} chauffeur${nouveaux.length > 1 ? 's' : ''} à surveiller`, txt, { tag: 'pilote-surveiller' });
     if (typeof Header !== 'undefined' && Header._refreshWidgets) { try { Header._refreshWidgets(); } catch (e) { /* badge indisponible */ } }
@@ -2580,11 +2583,7 @@ const DashboardPage = {
     menu.insertAdjacentHTML('beforeend', Object.keys(this._SONS).map(k => `
       <button type="button" class="${k === courant ? 'on' : ''}" data-son="${k}" onclick="DashboardPage._choisirSon('${k}', event)">
         <iconify-icon icon="solar:play-circle-bold" style="font-size:16px;color:var(--text-muted)"></iconify-icon>${this._SONS[k].label}<small>${this._SONS[k].desc}</small><iconify-icon class="chk" icon="solar:check-circle-bold"></iconify-icon>
-      </button>`).join('') + `
-      <div class="fd-son-sep"></div>
-      <button type="button" class="fd-son-rep${this._sonRepete() ? ' on' : ''}" onclick="DashboardPage._basculerRepetition(event)">
-        <iconify-icon icon="${this._sonRepete() ? 'solar:check-square-bold' : 'solar:stop-bold'}" style="font-size:16px"></iconify-icon>Répéter jusqu’à mon arrêt<small>toutes les 8 s, 5 min max</small>
-      </button>`);
+      </button>`).join(''));
     menu.hidden = false;
     const fermer = (e) => { if (!menu.contains(e.target)) { menu.hidden = true; document.removeEventListener('click', fermer); } };
     setTimeout(() => document.addEventListener('click', fermer), 0);
@@ -2601,36 +2600,36 @@ const DashboardPage = {
     this._jouerSonAlerte(true, type);
   },
 
-  _sonRepete() {
-    try { return localStorage.getItem('pilote_son_alertes_repeter') === 'on'; } catch (e) { return false; }
-  },
+  // Alarme continue : le son rejoue toutes les 8 s tant que l'un des chauffeurs
+  // qui l'ont déclenchée est encore « à surveiller », ou jusqu'au clic sur
+  // « Arrêter l'alarme ». Aucune autre issue, ni délai, ni acquittement implicite.
+  _alarmeKeys: null,
 
-  _basculerRepetition(ev) {
-    if (ev) ev.stopPropagation();
-    const on = !this._sonRepete();
-    try { localStorage.setItem('pilote_son_alertes_repeter', on ? 'on' : 'off'); } catch (e) { /* stockage indispo */ }
-    const b = document.querySelector('#fd-son-menu .fd-son-rep');
-    if (b) { b.classList.toggle('on', on); const ic = b.querySelector('iconify-icon'); if (ic) ic.setAttribute('icon', on ? 'solar:check-square-bold' : 'solar:stop-bold'); }
-    if (typeof Toast !== 'undefined') Toast.info(on ? 'L’alarme se répétera toutes les 8 s jusqu’à ce que vous cliquiez « Arrêter l’alarme ».' : 'L’alarme ne jouera qu’une fois.');
-  },
-
-  // Alarme insistante : rejoue le son toutes les 8 s jusqu'à acquittement
-  // (bouton « Arrêter l'alarme », clic sur la carte « À surveiller ») ou 5 min.
-  _demarrerAlarme() {
+  _demarrerAlarme(keys) {
+    if (!this._sonActif()) return;
+    if (!this._alarmeKeys) this._alarmeKeys = new Set();
+    (keys || []).forEach(k => this._alarmeKeys.add(k));
     this._jouerSonAlerte();
-    if (!this._sonRepete()) return;
-    this._arreterAlarme(true);
-    const debut = Date.now();
+    if (this._alarmeTimer) return; // déjà en cours : on a seulement ajouté des chauffeurs
     this._alarmeTimer = setInterval(() => {
-      if (Date.now() - debut > 5 * 60 * 1000 || !document.getElementById('fd-son')) { this._arreterAlarme(); return; }
+      if (!document.getElementById('fd-son')) { this._arreterAlarme(true); return; } // page quittée
       this._jouerSonAlerte();
     }, 8000);
     const b = document.getElementById('fd-son');
     if (b) { b.classList.add('alarme'); b.replaceChildren(); b.insertAdjacentHTML('beforeend', '<iconify-icon icon="solar:bell-off-bold"></iconify-icon><span>Arrêter l’alarme</span>'); b.title = 'Cliquez pour arrêter l’alarme'; }
   },
 
+  // Appelé à chaque rafraîchissement : si plus aucun chauffeur déclencheur
+  // n'est « à surveiller », la situation a changé et l'alarme s'arrête seule.
+  _verifierAlarme(clesActuelles) {
+    if (!this._alarmeTimer || !this._alarmeKeys) return;
+    const encore = [...this._alarmeKeys].some(k => clesActuelles.has(k));
+    if (!encore) { this._arreterAlarme(true); if (typeof Toast !== 'undefined') Toast.success('Alarme arrêtée : la situation est revenue à la normale.'); }
+  },
+
   _arreterAlarme(silencieux = false) {
     if (this._alarmeTimer) { clearInterval(this._alarmeTimer); this._alarmeTimer = null; }
+    this._alarmeKeys = null;
     const b = document.getElementById('fd-son');
     if (b && b.classList.contains('alarme')) {
       b.classList.remove('alarme');
