@@ -1,6 +1,6 @@
 // ==========================================================================
 // TACHES — Module de gestion de tâches avancé
-// Dashboard Manager | Kanban | Eisenhower | Réunions | Liste
+// Dashboard Manager | Kanban | Gantt | Réunions | Liste
 // ==========================================================================
 
 const TachesPage = {
@@ -196,7 +196,6 @@ const TachesPage = {
     const tabs = [
       { id: 'dashboard', icon: 'solar:chart-square-bold-duotone', label: 'Vue d’ensemble' },
       { id: 'kanban', icon: 'solar:widget-4-bold-duotone', label: 'Tableau' },
-      { id: 'eisenhower', icon: 'solar:target-bold-duotone', label: 'Priorités' },
       { id: 'gantt', icon: 'solar:chart-2-bold-duotone', label: 'Calendrier · Gantt' },
       { id: 'reunions', icon: 'solar:users-group-rounded-bold-duotone', label: 'Réunions' },
       { id: 'liste', icon: 'solar:list-bold-duotone', label: 'Liste' }
@@ -227,7 +226,6 @@ const TachesPage = {
     switch (this._activeView) {
       case 'dashboard': ct.insertAdjacentHTML('beforeend', this._renderDashboard()); this._bindDashboardClicks(ct); break;
       case 'kanban': ct.insertAdjacentHTML('beforeend', this._renderKanban()); this._bindKanbanDragDrop(); break;
-      case 'eisenhower': ct.insertAdjacentHTML('beforeend', this._renderEisenhower()); this._bindEisenhowerDragDrop(); break;
       case 'gantt':
         // Nouvelle frise Gantt (widget dédié) : début→échéance, couleur par statut,
         // retards en rouge. Remplace l'ancien rendu interne.
@@ -271,7 +269,6 @@ const TachesPage = {
     const descriptions = {
       dashboard: ['Vue d’ensemble', 'L’essentiel pour organiser votre journée.'],
       kanban: ['Le travail, étape par étape', 'Déplacez les cartes pour faire avancer les tâches.'],
-      eisenhower: ['Concentrez-vous sur l’essentiel', 'Classez les tâches selon leur urgence et leur importance.'],
       gantt: ['Gardez une longueur d’avance', 'Visualisez les échéances. Cliquez sur une barre pour ouvrir la tâche.'],
       reunions: ['Les décisions deviennent des actions', 'Préparez vos réunions et suivez les engagements de l’équipe.'],
       liste: ['Toutes les tâches, en détail', 'Filtrez, sélectionnez et mettez à jour plusieurs tâches à la fois.']
@@ -584,101 +581,6 @@ const TachesPage = {
     this._renderActiveView();
     PiloteMotion.move(document.querySelector(selector), before, newStatut === 'terminee');
   },
-
-  // =====================================================================
-  //  EISENHOWER
-  // =====================================================================
-
-  _renderEisenhower() {
-    const taches = this._getVisibleTaches().filter(t => t.statut === 'a_faire' || t.statut === 'en_cours');
-
-    const quadrants = [
-      { id: 'q1', urgent: true,  important: true,  label: 'Faire immédiatement', color: '#ef4444', bg: 'rgba(239,68,68,.14)', icon: 'solar:fire-bold-duotone', emptyMsg: "Rien d'urgent et important. Bien joué !" },
-      { id: 'q2', urgent: false, important: true,  label: 'Planifier', color: '#6964ed', bg: 'rgba(99,91,255,.14)', icon: 'solar:calendar-bold-duotone', emptyMsg: 'Planifiez vos objectifs importants ici.' },
-      { id: 'q3', urgent: true,  important: false, label: 'Déléguer', color: '#e8930c', bg: 'rgba(255,174,31,.16)', icon: 'solar:users-group-rounded-bold-duotone', emptyMsg: 'Les tâches urgentes mais non importantes vont ici.' },
-      { id: 'q4', urgent: false, important: false, label: 'Éliminer', color: '#0891b2', bg: 'rgba(8,145,178,.13)', icon: 'solar:trash-bin-minimalistic-bold-duotone', emptyMsg: 'Pensez à supprimer ces distractions.' }
-    ];
-
-    return '<div class="eisen-matrix" id="eisen-matrix">'
-      + '<div class="eisen-axis-y"><span class="eisen-axis-label">IMPORTANT</span></div>'
-      + '<div class="eisen-axis-x"><span class="eisen-axis-label">URGENT &rarr;</span></div>'
-      + '<div class="eisen-grid">'
-      + quadrants.map(q => {
-          const qTasks = taches.filter(t => !!t.urgent === q.urgent && !!t.important === q.important);
-          return '<div class="eisen-quadrant" data-quadrant="' + q.id + '"'
-            + ' data-urgent="' + q.urgent + '" data-important="' + q.important + '"'
-            + ' style="background:' + q.bg + ';border:1px solid ' + q.color + '4d;border-top:3px solid ' + q.color + ';"'
-            + ' ondragover="TachesPage._eisenDragOver(event)"'
-            + ' ondrop="TachesPage._eisenDrop(event, ' + q.urgent + ', ' + q.important + ')"'
-            + ' ondragleave="TachesPage._eisenDragLeave(event)">'
-            + '<div class="eisen-q-header" style="color:' + q.color + ';">'
-            + '<iconify-icon icon="' + q.icon + '" style="font-size:1.1rem;"></iconify-icon>'
-            + '<span>' + q.label + '</span>'
-            + '<span class="eisen-q-count" style="background:' + q.color + '22;color:' + q.color + ';">' + qTasks.length + '</span>'
-            + '</div>'
-            + '<div class="eisen-q-body">'
-            + (qTasks.length === 0
-                ? '<div class="eisen-empty">' + Utils.escHtml(q.emptyMsg) + '</div>'
-                : qTasks.map(t => '<div class="eisen-card" draggable="true" data-task-id="' + t.id + '"'
-                    + ' ondragstart="TachesPage._eisenDragStart(event, \'' + t.id + '\')"'
-                    + ' ondragend="TachesPage._eisenDragEnd(event)"'
-                    + ' onclick="TachesPage._viewTask(\'' + t.id + '\')">'
-                    + '<div class="eisen-card-title">' + Utils.escHtml(t.titre) + '</div>'
-                    + '<div class="eisen-card-meta">'
-                    + (t.assigneANom ? this._avatarBubble(t.assigneANom) : '')
-                    + (t.dateEcheance ? '<span style="font-size:11px;color:var(--text-muted);">' + Utils.formatDate(t.dateEcheance) + '</span>' : '')
-                    + '</div></div>').join('')
-              )
-            + '</div></div>';
-        }).join('')
-      + '</div></div>';
-  },
-
-  _bindEisenhowerDragDrop() {
-    // Bound via inline event attributes
-  },
-
-  _eisenDragStart(e, taskId) {
-    this._draggedTaskId = taskId;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', taskId);
-    setTimeout(() => { if (e.target) e.target.style.opacity = '0.4'; }, 0);
-  },
-
-  _eisenDragEnd(e) {
-    e.target.style.opacity = '1';
-    document.querySelectorAll('.eisen-quadrant.drag-over').forEach(el => el.classList.remove('drag-over'));
-    this._draggedTaskId = null;
-  },
-
-  _eisenDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    e.currentTarget.classList.add('drag-over');
-  },
-
-  _eisenDragLeave(e) {
-    e.currentTarget.classList.remove('drag-over');
-  },
-
-  _eisenDrop(e, urgent, important) {
-    e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
-    const taskId = this._draggedTaskId || e.dataTransfer.getData('text/plain');
-    if (!taskId) return;
-
-    Store.update('taches', taskId, {
-      urgent: urgent,
-      important: important,
-      dateModification: new Date().toISOString()
-    });
-    Toast.success('Classification Eisenhower mise à jour');
-    this._renderActiveView();
-  },
-
-  // =====================================================================
-  //  GANTT
-  // =====================================================================
 
   _ganttViewMode: 'month', // 'week' or 'month'
 
@@ -2178,47 +2080,6 @@ const TachesPage = {
       .kanban-card-footer { display:flex; align-items:center; justify-content:space-between; }
       .kanban-card-assignee { display:flex; align-items:center; }
       .kanban-card-date { display:flex; align-items:center; gap:3px; font-size:11px; }
-
-      /* ── Eisenhower ── */
-      .eisen-matrix { position:relative; }
-      .eisen-axis-y {
-        position:absolute; left:-30px; top:50%; transform:rotate(-90deg) translateX(-50%);
-        transform-origin:left center;
-      }
-      .eisen-axis-x {
-        position:absolute; bottom:-24px; left:50%; transform:translateX(-50%);
-      }
-      .eisen-axis-label { font-size:11px; font-weight:700; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; }
-      .eisen-grid {
-        display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:12px;
-        min-height:500px; margin-left:12px; margin-bottom:12px;
-      }
-      @media(max-width:600px) { .eisen-grid { grid-template-columns:1fr; } .eisen-axis-y { display:none; } }
-      .eisen-quadrant {
-        border-radius:12px; padding:14px; display:flex; flex-direction:column;
-        min-height:200px; transition:background .15s;
-      }
-      .eisen-quadrant.drag-over { outline:2px dashed rgba(245,81,46,.4); }
-      .eisen-q-header {
-        display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600;
-        margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border-color);
-      }
-      .eisen-q-count {
-        padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; margin-left:auto;
-      }
-      .eisen-q-body { flex:1; overflow-y:auto; }
-      .eisen-empty {
-        text-align:center; padding:20px 10px; color:var(--text-muted); font-size:12px;
-        font-style:italic;
-      }
-      .eisen-card {
-        background:var(--bg-secondary); border:1px solid var(--border-color);
-        border-radius:8px; padding:8px 10px; margin-bottom:6px; cursor:pointer;
-        transition:transform .12s, box-shadow .12s;
-      }
-      .eisen-card:hover { transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.07); }
-      .eisen-card-title { font-size:12px; font-weight:500; color:var(--text-primary); margin-bottom:4px; }
-      .eisen-card-meta { display:flex; align-items:center; gap:6px; }
 
       /* ── Gantt ── */
       .gantt-toolbar {
