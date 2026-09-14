@@ -1484,6 +1484,12 @@ const DashboardPage = {
         .fd-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
         .fd-title{font-size:15px;font-weight:800;color:var(--text-primary);}
         .fd-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-muted);}
+        .fd-son{margin-left:auto;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-muted);font:inherit;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;cursor:pointer;transition:.2s;}
+        .fd-son iconify-icon{font-size:14px;}
+        .fd-son.on{color:#0a9d78;border-color:rgba(10,157,120,.45);background:rgba(48,209,88,.1);}
+        .fd-son:hover{transform:translateY(-1px);}
+        .fd-son.ding{animation:fdDing .6s ease;}
+        @keyframes fdDing{0%,100%{transform:none}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(4deg)}}
         .fd-yango{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;margin:2px 0 16px;padding:10px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;}
         .fd-yango-lbl{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);}
         .fd-yango-lbl iconify-icon{font-size:15px;color:#F5512E;}
@@ -2481,7 +2487,10 @@ const DashboardPage = {
     const { segments, ringSegments, total } = this._fleetBuckets(d);
     const live = this._isToday() ? "Aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt));
     return `<div class="d-card fd-card">
-      <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span></div>
+      <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span>
+        <button type="button" class="fd-son${this._sonActif() ? ' on' : ''}" id="fd-son" onclick="DashboardPage._basculerSon()" title="${this._sonActif() ? 'Alerte sonore activée : cliquez pour couper' : 'Alerte sonore coupée : cliquez pour activer'}">
+          <iconify-icon icon="${this._sonActif() ? 'solar:volume-loud-bold' : 'solar:volume-cross-bold'}"></iconify-icon><span>${this._sonActif() ? 'Son activé' : 'Son coupé'}</span>
+        </button></div>
       <div class="fd-top">
         <div class="fd-donut-col">
           <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, ringSegments, total)}</div>
@@ -2520,9 +2529,58 @@ const DashboardPage = {
     if (!nouveaux.length) return;
     const txt = nouveaux.join(' · ');
     const titre = `⚠️ À surveiller (${nouveaux.length})`;
+    this._jouerSonAlerte();
     if (typeof Toast !== 'undefined' && Toast.show) Toast.show(txt, 'warning', titre, 9000);
     if (typeof NotificationManager !== 'undefined' && NotificationManager.send) NotificationManager.send(`Pilote — ${nouveaux.length} chauffeur${nouveaux.length > 1 ? 's' : ''} à surveiller`, txt, { tag: 'pilote-surveiller' });
     if (typeof Header !== 'undefined' && Header._refreshWidgets) { try { Header._refreshWidgets(); } catch (e) { /* badge indisponible */ } }
+  },
+
+  // ---- Alerte sonore (double carillon) quand un chauffeur planifié passe
+  // « occupé », hors ligne, ou affiche un CA anormalement bas. Réglable par
+  // l'interrupteur de l'en-tête « Flotte en direct » (mémorisé sur l'appareil).
+  _sonActif() {
+    try { return localStorage.getItem('pilote_son_alertes') !== 'off'; } catch (e) { return true; }
+  },
+
+  _basculerSon() {
+    const actif = !this._sonActif();
+    try { localStorage.setItem('pilote_son_alertes', actif ? 'on' : 'off'); } catch (e) { /* stockage indispo */ }
+    const b = document.getElementById('fd-son');
+    if (b) {
+      b.classList.toggle('on', actif);
+      b.title = actif ? 'Alerte sonore activée : cliquez pour couper' : 'Alerte sonore coupée : cliquez pour activer';
+      b.replaceChildren();
+      b.insertAdjacentHTML('beforeend', `<iconify-icon icon="${actif ? 'solar:volume-loud-bold' : 'solar:volume-cross-bold'}"></iconify-icon><span>${actif ? 'Son activé' : 'Son coupé'}</span>`);
+    }
+    // Le clic débloque l'audio du navigateur et sert de test.
+    if (actif) this._jouerSonAlerte(true);
+    if (typeof Toast !== 'undefined') Toast.info(actif ? 'Alerte sonore activée : un carillon retentira dès qu’un chauffeur passe « à surveiller ».' : 'Alerte sonore coupée.');
+  },
+
+  _jouerSonAlerte(force = false) {
+    if (!force && !this._sonActif()) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!this._audioCtx) this._audioCtx = new AC();
+      const ctx = this._audioCtx;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const note = (freq, t0, duree) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + duree);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t0); o.stop(t0 + duree + 0.05);
+      };
+      const t = ctx.currentTime + 0.02;
+      // Deux carillons ascendants, répétés une fois : distinct des notifications système.
+      note(880, t, 0.28); note(1318, t + 0.22, 0.4);
+      note(880, t + 0.9, 0.28); note(1318, t + 1.12, 0.4);
+      const b = document.getElementById('fd-son');
+      if (b) { b.classList.remove('ding'); void b.offsetWidth; b.classList.add('ding'); }
+    } catch (e) { /* audio indisponible : l'alerte visuelle reste */ }
   },
 
   _renderFleetDonutInto(d) {
