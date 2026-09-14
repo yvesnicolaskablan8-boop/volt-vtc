@@ -24,6 +24,23 @@ const AccueilPage = {
       <text x="100" y="94" text-anchor="middle" class="cp-gauge-val">${valeur}<tspan class="cp-gauge-unit">${unite}</tspan></text></svg>`;
   },
 
+  // Anneau plein (façon « CircularProgressCard ») : piste épaisse, progression
+  // animée depuis le haut, pourcentage et « réalisé / objectif » au centre.
+  _anneauPrime(pct, courant, objectif, couleur) {
+    const r = 80, circ = 2 * Math.PI * r;
+    const p = Math.max(0, Math.min(100, pct));
+    const k = (n) => `${Math.round(n / 1000).toLocaleString('fr-FR')} k`;
+    return `<div class="cp-ring2">
+      <svg viewBox="0 0 200 200" role="img" aria-label="Progression : ${p} %">
+        <g transform="rotate(-90 100 100)">
+          <circle cx="100" cy="100" r="${r}" fill="transparent" class="cp-ring2-bg" stroke-width="16"/>
+          <circle cx="100" cy="100" r="${r}" fill="transparent" stroke="${couleur}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${circ.toFixed(1)}" style="--circ:${circ.toFixed(1)};--off:${(circ * (1 - p / 100)).toFixed(1)}" class="cp-ring2-fg"/>
+        </g>
+      </svg>
+      <div class="cp-ring2-txt"><b>${p}%</b><small>${k(courant)} / ${k(objectif)} F</small></div>
+    </div>`;
+  },
+
   _infoProprietaire() {
     DriverModal.show('Programme propriétaire', `
       <div style="font-size:0.95rem;line-height:1.55;color:var(--text-primary)">
@@ -499,8 +516,8 @@ const AccueilPage = {
       const chip = decrochee ? 'Objectif atteint' : rythme >= 0.95 ? 'Dans le rythme' : rythme >= 0.75 ? 'Un peu en retard' : 'Il faut accélérer';
       primeHTML = (obj.primeActive === false) ? '' : `
       <div class="cp-card">
-        ${this._demiJauge(Math.min(100, taux), Math.min(100, taux), ' %', etat === 'ok' ? '#30d158' : etat === 'mid' ? '#ffb340' : '#ff6b6b')}
         <div class="cp-title">Prime ${prime.toLocaleString('fr-FR')} F</div>
+        ${this._anneauPrime(Math.min(100, taux), caMois, objectifMois, etat === 'ok' ? '#30d158' : etat === 'mid' ? '#ffb340' : '#ff6b6b')}
         <div class="cp-desc">${decrochee ? "Prime décrochée, bravo patron ! 🎉" : joursRestants === 0 ? "Le mois est fini, on repart de plus belle !" : "Fonce, la prime est à toi ! 💪"}</div>
       </div>`;
     }
