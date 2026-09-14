@@ -355,122 +355,225 @@ const ParametresPage = {
   },
 
   // ========================= ONGLET UTILISATEURS =========================
+  // Vue « Équipe & accès » : bureau et chauffeurs séparés, dernière connexion
+  // réelle (RPC fleet_dernieres_connexions, réservée aux administrateurs).
+
+  _usersVue: 'tous',
+  _connexions: null,
+
+  _estChauffeur(u) { return String(u.role || '').toLowerCase() === 'chauffeur'; },
 
   _renderUsers() {
-    const users = Store.get('users') || [];
-    const actifs = users.filter(u => u.statut === 'actif').length;
-    const inactifs = users.filter(u => u.statut === 'inactif').length;
-    const roles = [...new Set(users.map(u => u.role))];
-
     return `
-      <div class="grid-4" style="margin-bottom:var(--space-lg);">
-        <div class="kpi-card cyan">
-          <div class="kpi-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${users.length}</div>
-          <div class="kpi-label">Total utilisateurs</div>
-        </div>
-        <div class="kpi-card green">
-          <div class="kpi-icon"><iconify-icon icon="solar:user-check-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${actifs}</div>
-          <div class="kpi-label">Actifs</div>
-        </div>
-        <div class="kpi-card red">
-          <div class="kpi-icon"><iconify-icon icon="solar:user-cross-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${inactifs}</div>
-          <div class="kpi-label">Inactifs</div>
-        </div>
-        <div class="kpi-card yellow">
-          <div class="kpi-icon"><iconify-icon icon="solar:shield-bold-duotone"></iconify-icon></div>
-          <div class="kpi-value">${roles.length}</div>
-          <div class="kpi-label">Rôles distincts</div>
-        </div>
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);flex-wrap:wrap;gap:8px;">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <div style="position:relative;">
-            <iconify-icon icon="solar:magnifer-bold" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-muted);pointer-events:none;"></iconify-icon>
-            <input type="text" id="users-filter-name" class="form-control" placeholder="Filtrer par nom..." style="padding-left:32px;font-size:var(--font-size-xs);width:200px;" oninput="ParametresPage._filterUsers()">
+      <style>
+        .us-wrap{display:flex;flex-direction:column;gap:16px;}
+        .us-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;}
+        .us-k{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--pilote-blue);margin-bottom:6px;}
+        .us-h{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:0;color:var(--text-primary);}
+        .us-sub{color:var(--text-muted);font-size:13.5px;margin-top:6px;max-width:620px;}
+        .us-cta{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;background:var(--pilote-blue);color:#fff;font:inherit;font-weight:800;font-size:13.5px;padding:11px 18px;cursor:pointer;box-shadow:0 10px 24px -12px var(--pilote-blue);transition:.2s;}
+        .us-cta:hover{transform:translateY(-1px);filter:brightness(1.05);}
+        .us-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;}
+        .us-stat{position:relative;overflow:hidden;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:18px;padding:14px 16px;animation:usUp .45s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*60ms);}
+        @keyframes usUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+        .us-stat .l{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);display:flex;align-items:center;justify-content:space-between;}
+        .us-stat .l iconify-icon{font-size:17px;color:var(--c,var(--pilote-blue));}
+        .us-stat .v{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-top:8px;color:var(--text-primary);font-variant-numeric:tabular-nums;}
+        .us-stat .s{font-size:12px;color:var(--text-muted);margin-top:2px;}
+        .us-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+        .us-seg{display:inline-flex;gap:3px;background:var(--bg-tertiary);padding:4px;border-radius:999px;}
+        .us-seg button{border:0;background:transparent;color:var(--text-secondary);font:inherit;font-weight:700;font-size:12.5px;padding:7px 13px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s;}
+        .us-seg button b{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:999px;background:rgba(0,0,0,.08);color:inherit;}
+        .us-seg button.is-on{background:var(--bg-secondary);color:var(--text-primary);box-shadow:0 2px 8px rgba(0,0,0,.08);}
+        .us-search{position:relative;flex:1;min-width:200px;max-width:340px;}
+        .us-search iconify-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:15px;pointer-events:none;}
+        .us-search input{width:100%;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);border-radius:999px;padding:9px 14px 9px 34px;font:inherit;font-size:13px;outline:none;transition:.15s;}
+        .us-search input:focus{border-color:var(--pilote-blue);box-shadow:0 0 0 4px color-mix(in srgb,var(--pilote-blue) 15%,transparent);}
+        .us-sel{border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);border-radius:999px;padding:9px 32px 9px 14px;font:inherit;font-size:13px;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+        .us-group{margin-top:4px;}
+        .us-group-h{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin:14px 4px 8px;}
+        .us-group-h b{font-weight:800;color:var(--text-secondary);background:var(--bg-tertiary);padding:1px 8px;border-radius:999px;font-size:10.5px;}
+        .us-group-h::after{content:"";flex:1;height:1px;background:var(--border-color);}
+        .us-list{display:flex;flex-direction:column;gap:8px;}
+        .us-row{display:grid;grid-template-columns:44px minmax(200px,1.5fr) 120px minmax(140px,1fr) 150px auto;gap:14px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--bg-secondary);border:1px solid var(--border-color);transition:transform .2s,box-shadow .2s,border-color .2s;animation:usUp .4s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*35ms);}
+        .us-row:hover{transform:translateY(-2px);box-shadow:0 16px 34px -22px rgba(0,0,0,.4);border-color:color-mix(in srgb,var(--pilote-blue) 40%,transparent);}
+        .us-row.inactif{opacity:.6;}
+        .us-av{position:relative;width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;letter-spacing:.02em;}
+        .us-av i{position:absolute;right:-3px;bottom:-3px;width:12px;height:12px;border-radius:50%;border:2px solid var(--bg-secondary);background:#94a3b8;}
+        .us-av i.actif{background:#22c55e;}
+        .us-nom{font-weight:700;font-size:14px;color:var(--text-primary);display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .us-nom .moi{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--pilote-blue);background:color-mix(in srgb,var(--pilote-blue) 12%,transparent);padding:2px 7px;border-radius:999px;}
+        .us-mail{font-size:12px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .us-role{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:5px 10px;border-radius:999px;width:fit-content;}
+        .us-role::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+        .us-role.admin{color:#7c3aed;background:rgba(124,58,237,.12);} .us-role.manager{color:#0369a1;background:rgba(14,165,233,.14);} .us-role.operateur{color:#0f766e;background:rgba(20,184,166,.14);} .us-role.chauffeur{color:#c2410c;background:rgba(249,115,22,.14);} .us-role.autre{color:var(--text-secondary);background:var(--bg-tertiary);}
+        .us-acces{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+        .us-chip{font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--bg-tertiary);color:var(--text-secondary);white-space:nowrap;}
+        .us-chip.ok{background:rgba(34,197,94,.14);color:#15803d;} .us-chip.mid{background:rgba(245,158,11,.16);color:#b45309;} .us-chip.ko{background:rgba(239,68,68,.12);color:#b91c1c;} .us-chip.app{background:rgba(59,130,246,.14);color:#1d4ed8;}
+        .us-conn{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-secondary);font-variant-numeric:tabular-nums;}
+        .us-conn i{width:8px;height:8px;border-radius:50%;background:#cbd5e1;flex:none;} .us-conn i.ok{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.18);} .us-conn i.mid{background:#f59e0b;} .us-conn i.ko{background:#94a3b8;}
+        .us-conn small{display:block;font-size:11px;color:var(--text-muted);}
+        .us-actions{display:flex;gap:6px;justify-content:flex-end;}
+        .us-actions button{width:34px;height:34px;border-radius:10px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-secondary);display:inline-flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:.15s;}
+        .us-actions button:hover{color:var(--pilote-blue);border-color:var(--pilote-blue);background:color-mix(in srgb,var(--pilote-blue) 8%,transparent);}
+        .us-actions button.danger:hover{color:#dc2626;border-color:#dc2626;background:rgba(220,38,38,.08);}
+        .us-empty{padding:28px;text-align:center;color:var(--text-muted);border:1px dashed var(--border-color);border-radius:18px;font-size:13.5px;}
+        @media(max-width:980px){.us-row{grid-template-columns:44px 1fr auto;grid-template-areas:"av id act" "av role act" "av acces act" "av conn act";row-gap:6px;} .us-row>.us-av{grid-area:av;} .us-row>.us-id{grid-area:id;} .us-row>.us-role{grid-area:role;} .us-row>.us-acces{grid-area:acces;} .us-row>.us-conn{grid-area:conn;} .us-row>.us-actions{grid-area:act;flex-direction:column;}}
+      </style>
+      <div class="us-wrap">
+        <div class="us-head">
+          <div>
+            <div class="us-k">Paramètres / Utilisateurs</div>
+            <h2 class="us-h">Équipe &amp; accès</h2>
+            <div class="us-sub">Qui peut entrer dans l’espace de gestion, avec quels modules, et qui s’est connecté récemment. Les chauffeurs utilisent l’application Pilote avec leur numéro et leur code PIN.</div>
           </div>
-          <select id="users-filter-role" class="form-control" style="font-size:var(--font-size-xs);width:150px;" onchange="ParametresPage._filterUsers()">
-            <option value="">Tous les roles</option>
-            ${roles.map(r => `<option value="${r}">${r}</option>`).join('')}
-          </select>
-          <select id="users-filter-statut" class="form-control" style="font-size:var(--font-size-xs);width:130px;" onchange="ParametresPage._filterUsers()">
-            <option value="">Tous statuts</option>
-            <option value="actif">Actif</option>
-            <option value="inactif">Inactif</option>
-          </select>
+          <button type="button" class="us-cta" id="btn-add-user"><iconify-icon icon="solar:user-plus-bold" style="font-size:17px"></iconify-icon> Nouvel utilisateur</button>
         </div>
-        <button class="btn btn-primary" id="btn-add-user"><iconify-icon icon="solar:user-plus-bold-duotone"></iconify-icon> Nouvel utilisateur</button>
-      </div>
-
-      <div id="users-table"></div>
-    `;
-  },
-
-  _usersTable: null,
-
-  _filterUsers() {
-    if (!this._usersTable) return;
-    const nameVal = (document.getElementById('users-filter-name')?.value || '').toLowerCase().trim();
-    const roleVal = document.getElementById('users-filter-role')?.value || '';
-    const statutVal = document.getElementById('users-filter-statut')?.value || '';
-
-    this._usersTable.filter(u => {
-      if (nameVal && !`${u.prenom} ${u.nom}`.toLowerCase().includes(nameVal) && !(u.email || '').toLowerCase().includes(nameVal)) return false;
-      if (roleVal && u.role !== roleVal) return false;
-      if (statutVal && u.statut !== statutVal) return false;
-      return true;
-    });
+        <div class="us-stats" id="us-stats"></div>
+        <div class="us-bar">
+          <div class="us-seg" id="us-seg">
+            <button type="button" data-vue="tous" class="is-on">Tous <b id="us-n-tous">0</b></button>
+            <button type="button" data-vue="equipe">Équipe bureau <b id="us-n-equipe">0</b></button>
+            <button type="button" data-vue="chauffeurs">Chauffeurs <b id="us-n-chauffeurs">0</b></button>
+          </div>
+          <div class="us-search"><iconify-icon icon="solar:magnifer-linear"></iconify-icon><input type="text" id="users-filter-name" placeholder="Nom, e-mail, téléphone…" autocomplete="off"></div>
+          <select id="users-filter-statut" class="us-sel"><option value="">Tous statuts</option><option value="actif">Actifs</option><option value="inactif">Inactifs</option></select>
+        </div>
+        <div id="us-liste"></div>
+      </div>`;
   },
 
   _bindUsersEvents() {
-    const users = Store.get('users') || [];
+    this._usersVue = 'tous';
+    document.getElementById('btn-add-user')?.addEventListener('click', () => this._addUser());
+    document.getElementById('users-filter-name')?.addEventListener('input', () => this._peindreUsers());
+    document.getElementById('users-filter-statut')?.addEventListener('change', () => this._peindreUsers());
+    document.querySelectorAll('#us-seg button').forEach(b => b.addEventListener('click', () => {
+      this._usersVue = b.getAttribute('data-vue');
+      document.querySelectorAll('#us-seg button').forEach(x => x.classList.toggle('is-on', x === b));
+      this._peindreUsers();
+    }));
+    this._peindreUsers();
+    this._chargerConnexions();
+  },
 
-    this._usersTable = Table.create({
-      containerId: 'users-table',
-      columns: [
-        {
-          label: 'Utilisateur', primary: true,
-          render: (u) => `
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="width:36px;height:36px;border-radius:50%;background:${Utils.getAvatarColor(u.id)};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;">${Utils.getInitials(u.prenom, u.nom)}</div>
-              <div>
-                <div style="font-weight:600;font-size:var(--font-size-sm);">${u.prenom} ${u.nom}</div>
-                <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${u.email}</div>
-              </div>
-            </div>`,
-          value: (u) => `${u.prenom} ${u.nom}`
-        },
-        { label: 'Rôle', render: (u) => `<span class="badge badge-info">${u.role}</span>`, value: (u) => u.role },
-        { label: 'Statut', render: (u) => u.statut === 'actif' ? '<span class="badge badge-success"><iconify-icon icon="solar:record-circle-bold-duotone" style="font-size:6px;margin-right:4px;"></iconify-icon>Actif</span>' : '<span class="badge badge-danger"><iconify-icon icon="solar:record-circle-bold-duotone" style="font-size:6px;margin-right:4px;"></iconify-icon>Inactif</span>', value: (u) => u.statut },
-        {
-          label: 'Accès',
-          render: (u) => {
-            const granted = this._modules.filter(m => u.permissions && u.permissions[m.key]);
-            if (granted.length === this._modules.length) return '<span class="badge badge-success">Tous</span>';
-            if (granted.length === 0) return '<span class="badge badge-danger">Aucun</span>';
-            return `<span class="badge badge-warning">${granted.length}/${this._modules.length} modules</span>`;
-          },
-          value: (u) => Object.values(u.permissions || {}).filter(Boolean).length
-        },
-        {
-          label: 'Dernière connexion',
-          render: (u) => u.dernierConnexion ? `<span style="font-size:var(--font-size-xs);color:var(--text-muted);">${Utils.timeAgo(u.dernierConnexion)}</span>` : '-',
-          value: (u) => u.dernierConnexion || ''
-        }
-      ],
-      data: users,
-      pageSize: 15,
-      actions: (u) => `
-        <button class="btn btn-sm btn-secondary" onclick="ParametresPage._editUser('${u.id}')" title="Modifier"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
-        <button class="btn btn-sm btn-secondary" onclick="ParametresPage._resetUserPassword('${u.id}')" title="Mot de passe"><iconify-icon icon="solar:key-bold-duotone"></iconify-icon></button>
-        <button class="btn btn-sm btn-danger" onclick="ParametresPage._deleteUser('${u.id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
-      `
-    });
+  async _chargerConnexions() {
+    try {
+      const { data, error } = await supabase.rpc('fleet_dernieres_connexions');
+      if (error) throw error;
+      const map = {};
+      (data || []).forEach(r => { map[r.auth_id] = r.last_sign_in_at; });
+      this._connexions = map;
+      this._peindreUsers();
+    } catch (e) {
+      console.warn('Paramètres: dernières connexions indisponibles', e.message || e);
+      this._connexions = {};
+    }
+  },
 
-    document.getElementById('btn-add-user').addEventListener('click', () => this._addUser());
+  _derniereConnexion(u) {
+    if (this._connexions && u.authId && this._connexions[u.authId]) return this._connexions[u.authId];
+    return u.dernierConnexion || null;
+  },
+
+  _roleCls(u) {
+    const r = String(u.role || '').toLowerCase();
+    if (r === 'admin' || r === 'administrateur') return 'admin';
+    if (r === 'manager' || r === 'gestionnaire') return 'manager';
+    if (r.startsWith('op')) return 'operateur';
+    if (r === 'chauffeur') return 'chauffeur';
+    return 'autre';
+  },
+
+  _peindreUsers() {
+    const liste = document.getElementById('us-liste');
+    if (!liste) return;
+    const esc = (s) => Utils.escHtml(String(s == null ? '' : s));
+    const tous = Store.get('users') || [];
+    const equipe = tous.filter(u => !this._estChauffeur(u));
+    const chauffeurs = tous.filter(u => this._estChauffeur(u));
+    const now = Date.now();
+    const jours = (d) => d ? Math.floor((now - new Date(d).getTime()) / 86400000) : null;
+    const connexionsOk = this._connexions !== null;
+    const actifs7 = connexionsOk ? tous.filter(u => { const j = jours(this._derniereConnexion(u)); return j !== null && j <= 7; }).length : null;
+    const sans30 = connexionsOk ? tous.filter(u => { const j = jours(this._derniereConnexion(u)); return j === null || j > 30; }).length : null;
+    const inactifs = tous.filter(u => u.statut === 'inactif').length;
+
+    const stats = document.getElementById('us-stats');
+    if (stats) {
+      const carte = (i, o) => `<div class="us-stat" style="--i:${i};--c:${o.c}"><div class="l">${o.l}<iconify-icon icon="${o.ic}"></iconify-icon></div><div class="v">${o.v}</div><div class="s">${o.s}</div></div>`;
+      stats.replaceChildren();
+      stats.insertAdjacentHTML('beforeend', [
+        carte(0, { l: 'Utilisateurs', ic: 'solar:users-group-rounded-bold', c: 'var(--pilote-blue)', v: tous.length, s: `${inactifs ? inactifs + ' inactif(s)' : 'tous actifs'}` }),
+        carte(1, { l: 'Équipe bureau', ic: 'solar:shield-user-bold', c: '#7c3aed', v: equipe.length, s: [...new Set(equipe.map(u => u.role))].join(' · ') || '—' }),
+        carte(2, { l: 'Chauffeurs', ic: 'solar:steering-wheel-bold', c: '#ea580c', v: chauffeurs.length, s: 'accès application Pilote' }),
+        carte(3, { l: 'Connectés · 7 jours', ic: 'solar:pulse-bold', c: '#16a34a', v: actifs7 == null ? '…' : actifs7, s: connexionsOk ? 'au moins une connexion' : 'chargement…' }),
+        carte(4, { l: 'Silencieux · 30 jours', ic: 'solar:moon-sleep-bold', c: '#64748b', v: sans30 == null ? '…' : sans30, s: 'aucune connexion depuis un mois' }),
+      ].join(''));
+    }
+    const setN = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+    setN('us-n-tous', tous.length); setN('us-n-equipe', equipe.length); setN('us-n-chauffeurs', chauffeurs.length);
+
+    const q = (document.getElementById('users-filter-name')?.value || '').toLowerCase().trim();
+    const statut = document.getElementById('users-filter-statut')?.value || '';
+    const garde = (u) => {
+      if (statut && u.statut !== statut) return false;
+      if (!q) return true;
+      const tel = String(u.telephone || '') + ' ' + String(u.email || '').replace(/^driver_/, '').replace(/@.*$/, '');
+      return `${u.prenom || ''} ${u.nom || ''} ${u.email || ''} ${tel}`.toLowerCase().includes(q);
+    };
+    let moiId = null;
+    try { moiId = (Auth.getSession && Auth.getSession() || {}).userId || null; } catch (e) { moiId = null; }
+
+    const ligne = (u, i) => {
+      const chauffeur = this._estChauffeur(u);
+      const dc = this._derniereConnexion(u);
+      const j = jours(dc);
+      const cCls = j === null ? '' : j <= 7 ? 'ok' : j <= 30 ? 'mid' : 'ko';
+      const cTxt = j === null ? (connexionsOk ? 'Jamais connecté' : '…') : Utils.timeAgo(dc);
+      const cDate = dc ? new Date(dc).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+      let acces;
+      if (chauffeur) acces = '<span class="us-chip app">App Pilote</span>';
+      else {
+        const ok = this._modules.filter(m => u.permissions && u.permissions[m.key]);
+        acces = ok.length === this._modules.length ? '<span class="us-chip ok">Tous les modules</span>'
+          : ok.length === 0 ? '<span class="us-chip ko">Aucun module</span>'
+          : `<span class="us-chip mid" title="${esc(ok.map(m => m.label).join(', '))}">${ok.length} / ${this._modules.length} modules</span>`;
+      }
+      const sousTitre = chauffeur
+        ? (u.telephone ? esc(u.telephone) : esc(String(u.email || '').replace(/^driver_(\d+)@.*$/, '$1')))
+        : esc(u.email || '');
+      const id = esc(u.id);
+      return `<div class="us-row${u.statut === 'inactif' ? ' inactif' : ''}" style="--i:${i}">
+        <div class="us-av" style="background:${Utils.getAvatarColor(u.id)}">${esc(Utils.getInitials(u.prenom, u.nom))}<i class="${u.statut === 'actif' ? 'actif' : ''}" title="${u.statut === 'actif' ? 'Actif' : 'Inactif'}"></i></div>
+        <div class="us-id"><div class="us-nom">${esc(u.prenom)} ${esc(u.nom)}${u.authId && u.authId === moiId ? '<span class="moi">vous</span>' : ''}</div><div class="us-mail">${sousTitre}</div></div>
+        <span class="us-role ${this._roleCls(u)}">${esc(u.role || '—')}</span>
+        <div class="us-acces">${acces}</div>
+        <div class="us-conn"><i class="${cCls}"></i><div>${cTxt}${cDate ? `<small>${cDate}</small>` : ''}</div></div>
+        <div class="us-actions">
+          <button type="button" onclick="ParametresPage._editUser('${id}')" title="Modifier"><iconify-icon icon="solar:pen-bold"></iconify-icon></button>
+          <button type="button" onclick="ParametresPage._resetUserPassword('${id}')" title="${chauffeur ? 'Code PIN' : 'Mot de passe'}"><iconify-icon icon="solar:key-bold"></iconify-icon></button>
+          <button type="button" class="danger" onclick="ParametresPage._deleteUser('${id}')" title="Supprimer"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>
+        </div>
+      </div>`;
+    };
+    const tri = (a, b) => {
+      const da = this._derniereConnexion(a), db = this._derniereConnexion(b);
+      if (da && db) return new Date(db) - new Date(da);
+      if (da) return -1; if (db) return 1;
+      return `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`);
+    };
+    const groupe = (titre, arr) => {
+      const rows = arr.filter(garde).sort(tri);
+      if (!rows.length) return '';
+      return `<div class="us-group"><div class="us-group-h">${titre} <b>${rows.length}</b></div><div class="us-list">${rows.map(ligne).join('')}</div></div>`;
+    };
+    let html = '';
+    if (this._usersVue === 'equipe') html = groupe('Équipe bureau', equipe);
+    else if (this._usersVue === 'chauffeurs') html = groupe('Chauffeurs', chauffeurs);
+    else html = groupe('Équipe bureau', equipe) + groupe('Chauffeurs', chauffeurs);
+    liste.replaceChildren();
+    liste.insertAdjacentHTML('beforeend', html || '<div class="us-empty">Aucun utilisateur ne correspond à cette recherche.</div>');
   },
 
   _getPermissionsHTML(perms = {}) {
