@@ -1489,16 +1489,6 @@ const DashboardPage = {
         .fd-son.on{color:#0a9d78;border-color:rgba(10,157,120,.45);background:rgba(48,209,88,.1);}
         .fd-son:hover{transform:translateY(-1px);}
         .fd-son.ding{animation:fdDing .6s ease;}
-        .fd-son-wrap{position:relative;display:inline-flex;}
-        .fd-son-choix{margin-left:6px;}
-        .fd-son-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:40;min-width:220px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:14px;padding:6px;box-shadow:0 18px 40px -18px rgba(0,0,0,.45);}
-        .fd-son-menu button{width:100%;display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--text-primary);font:inherit;font-size:13px;font-weight:600;padding:9px 10px;border-radius:10px;cursor:pointer;text-align:left;}
-        .fd-son-menu button:hover{background:var(--bg-tertiary);}
-        .fd-son-menu button.on{color:#0a9d78;background:rgba(48,209,88,.1);}
-        .fd-son-menu button small{margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:600;white-space:nowrap;padding-left:12px;}
-        .fd-son-menu{min-width:300px;}
-        .fd-son-sep{height:1px;background:var(--border-color);margin:6px 4px;}
-        .fd-son-rep.on{color:#0a9d78;}
         .fd-son.alarme{color:#fff;background:#EF4444;border-color:#EF4444;animation:fdAlarme 1s ease-in-out infinite;}
         .fd-pop{position:fixed;right:22px;bottom:22px;z-index:9000;width:min(400px,calc(100vw - 32px));background:var(--bg-secondary);border:1px solid rgba(239,68,68,.45);border-radius:20px;box-shadow:0 30px 60px -20px rgba(0,0,0,.5),0 0 0 4px rgba(239,68,68,.12);overflow:hidden;animation:fdPopIn .35s cubic-bezier(.2,.8,.2,1) both;font-family:inherit;}
         @keyframes fdPopIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
@@ -1523,7 +1513,6 @@ const DashboardPage = {
         .fd-pop.mini .fd-pop-l,.fd-pop.mini .fd-pop-f,.fd-pop.mini small{display:none;}
         .fd-pop.mini .fd-pop-h{padding:8px 12px 8px 8px;cursor:pointer;border-radius:999px;}
         @keyframes fdAlarme{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
-        .fd-son-menu button iconify-icon.chk{font-size:16px;color:#0a9d78;visibility:hidden;} .fd-son-menu button.on iconify-icon.chk{visibility:visible;}
         @keyframes fdDing{0%,100%{transform:none}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(4deg)}}
         .fd-yango{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;margin:2px 0 16px;padding:10px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;}
         .fd-yango-lbl{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);}
@@ -2535,10 +2524,7 @@ const DashboardPage = {
         <button type="button" class="fd-son${this._sonActif() ? ' on' : ''}" id="fd-son" onclick="DashboardPage._basculerSon()" title="${this._sonActif() ? 'Alerte sonore activée : cliquez pour couper' : 'Alerte sonore coupée : cliquez pour activer'}">
           <iconify-icon icon="${this._sonActif() ? 'solar:volume-loud-bold' : 'solar:volume-cross-bold'}"></iconify-icon><span>${this._sonActif() ? 'Son activé' : 'Son coupé'}</span>
         </button>
-        <span class="fd-son-wrap">
-          <button type="button" class="fd-son fd-son-choix" id="fd-son-choix" onclick="DashboardPage._ouvrirChoixSon(event)" title="Choisir la sonnerie"><iconify-icon icon="solar:music-note-2-bold"></iconify-icon><span>${this._SONS[this._sonType()] ? this._SONS[this._sonType()].label : 'Sonnerie'}</span><iconify-icon icon="solar:alt-arrow-down-linear" style="font-size:12px"></iconify-icon></button>
-          <div class="fd-son-menu" id="fd-son-menu" hidden></div>
-        </span></div>
+        </div>
       <div class="fd-top">
         <div class="fd-donut-col">
           <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, ringSegments, total)}</div>
@@ -2596,136 +2582,8 @@ const DashboardPage = {
   // ---- Alerte sonore (double carillon) quand un chauffeur planifié passe
   // « occupé », hors ligne, ou affiche un CA anormalement bas. Réglable par
   // l'interrupteur de l'en-tête « Flotte en direct » (mémorisé sur l'appareil).
-  // Sonneries disponibles (synthétisées : rien à télécharger). Chaque entrée
-  // liste des notes [fréquence Hz, départ s, durée s] ; 'glisse' fait une sirène.
-  _SONS: {
-    carillon:  { label: 'Carillon',   desc: 'deux notes, répétées', notes: [[880, 0, .28], [1318, .22, .4], [880, .9, .28], [1318, 1.12, .4]] },
-    sonnette:  { label: 'Sonnette',   desc: 'ding-dong',            notes: [[1046, 0, .35], [784, .3, .55], [1046, 1.0, .35], [784, 1.3, .55]] },
-    xylo:      { label: 'Xylophone',  desc: 'gamme montante',       notes: [[523, 0, .18], [659, .15, .18], [784, .3, .18], [1046, .45, .5]] },
-    bips:      { label: 'Bips',       desc: 'trois bips courts',    notes: [[1500, 0, .1], [1500, .2, .1], [1500, .4, .1], [1500, .8, .1], [1500, 1.0, .1], [1500, 1.2, .1]], type: 'square' },
-    sirene:    { label: 'Sirène',     desc: 'montée-descente douce', glisse: true },
-    cloche:    { label: 'Cloche',     desc: 'une note longue',      notes: [[1760, 0, 1.4], [2637, 0, .6]] },
-  },
-
-  _sonType() {
-    try { const t = localStorage.getItem('pilote_son_alertes_type'); return this._SONS[t] ? t : 'carillon'; } catch (e) { return 'carillon'; }
-  },
-
-  _ouvrirChoixSon(ev) {
-    if (ev) ev.stopPropagation();
-    const menu = document.getElementById('fd-son-menu');
-    if (!menu) return;
-    if (!menu.hidden) { menu.hidden = true; return; }
-    const courant = this._sonType();
-    menu.replaceChildren();
-    menu.insertAdjacentHTML('beforeend', Object.keys(this._SONS).map(k => `
-      <button type="button" class="${k === courant ? 'on' : ''}" data-son="${k}" onclick="DashboardPage._choisirSon('${k}', event)">
-        <iconify-icon icon="solar:play-circle-bold" style="font-size:16px;color:var(--text-muted)"></iconify-icon>${this._SONS[k].label}<small>${this._SONS[k].desc}</small><iconify-icon class="chk" icon="solar:check-circle-bold"></iconify-icon>
-      </button>`).join(''));
-    menu.hidden = false;
-    const fermer = (e) => { if (!menu.contains(e.target)) { menu.hidden = true; document.removeEventListener('click', fermer); } };
-    setTimeout(() => document.addEventListener('click', fermer), 0);
-  },
-
-  _choisirSon(type, ev) {
-    if (ev) ev.stopPropagation();
-    if (!this._SONS[type]) return;
-    if (type === this._sonType()) { const m = document.getElementById('fd-son-menu'); if (m) m.hidden = true; return; }
-    try { localStorage.setItem('pilote_son_alertes_type', type); } catch (e) { /* stockage indispo */ }
-    document.querySelectorAll('#fd-son-menu button').forEach(b => b.classList.toggle('on', b.getAttribute('data-son') === type));
-    const lbl = document.querySelector('#fd-son-choix span');
-    if (lbl) lbl.textContent = this._SONS[type].label;
-    this._jouerSonAlerte(true, type);
-  },
-
-  // Alarme continue : le son rejoue toutes les 8 s tant que l'un des chauffeurs
-  // qui l'ont déclenchée est encore « à surveiller », ou jusqu'au clic sur
-  // « Arrêter l'alarme ». Aucune autre issue, ni délai, ni acquittement implicite.
-  _alarmeKeys: null,
-  // Au-delà de cette durée, une course Yango en cours est « anormalement longue ».
-  _SEUIL_COURSE_LONGUE_MIN: 60,
-
-  _demarrerAlarme(keys) {
-    if (!this._sonActif()) return;
-    if (!this._alarmeKeys) this._alarmeKeys = new Set();
-    (keys || []).forEach(k => this._alarmeKeys.add(k));
-    this._jouerSonAlerte();
-    if (this._alarmeTimer) return; // déjà en cours : on a seulement ajouté des chauffeurs
-    this._alarmeTimer = setInterval(() => {
-      if (!document.getElementById('fd-son')) { this._arreterAlarme(true); return; } // page quittée
-      this._jouerSonAlerte();
-    }, 8000);
-    const b = document.getElementById('fd-son');
-    if (b) { b.classList.add('alarme'); b.replaceChildren(); b.insertAdjacentHTML('beforeend', '<iconify-icon icon="solar:bell-off-bold"></iconify-icon><span>Arrêter l’alarme</span>'); b.title = 'Cliquez pour arrêter l’alarme'; }
-    this._alarmeMini = false;
-    this._peindrePopupAlarme();
-  },
-
-  // Fenêtre d'alarme flottante : qui, pourquoi, depuis quand ; réductible en
-  // pastille ; « Couper l'alarme » = arrêt manuel. Disparaît au retour à la normale.
-  _alarmeMini: false,
-
-  _peindrePopupAlarme() {
-    if (!this._alarmeTimer) { const old = document.getElementById('fd-alarme-pop'); if (old) old.remove(); return; }
-    const LBL = { occupe_yango: 'occupé sur Yango', hors_ligne_yango: 'hors ligne sur Yango', ca_faible: 'CA anormalement bas', ca_modere: 'CA sous la moyenne', hors_planning: 'hors planning', course_longue: 'course anormalement longue' };
-    const esc = (s) => Utils.escHtml(String(s == null ? '' : s));
-    const liste = (this._surveillerNow || []).filter(e => {
-      const motifs = e.reasons.filter(r => LBL[r]).map(r => LBL[r]);
-      if (!motifs.length && !(e.ca > 0)) motifs.push("pas d'activité");
-      return this._alarmeKeys && this._alarmeKeys.has(`${e.id}|${motifs.join(',')}`);
-    });
-    const rows = (liste.length ? liste : (this._surveillerNow || [])).map(e => {
-      const motifs = e.reasons.filter(r => LBL[r]).map(r => (r === 'course_longue' && e.courseMin) ? `${LBL[r]} (${e.courseMin} min${e.courseAttendue ? `, attendu ~${e.courseAttendue} min` : ''})` : LBL[r]);
-      if (!motifs.length && !(e.ca > 0)) motifs.push("pas d'activité aujourd'hui");
-      const parts = e.nom.split(/\s+/).filter(Boolean);
-      const ini = (parts[0] ? parts[0][0] : '') + (parts[1] ? parts[1][0] : '');
-      return `<div class="fd-pop-r"><span class="av" style="background:${Utils.getAvatarColor(e.id)}">${esc(ini.toUpperCase())}</span><div><div class="nm">${esc(e.nom)}</div><div class="mt">${esc(motifs.join(' · '))}</div></div><span class="ca">${e.ca > 0 ? Utils.formatCurrency(e.ca) : '0 F'}</span></div>`;
-    }).join('');
-    const n = (liste.length ? liste : (this._surveillerNow || [])).length;
-    let pop = document.getElementById('fd-alarme-pop');
-    if (!pop) { pop = document.createElement('div'); pop.id = 'fd-alarme-pop'; pop.className = 'fd-pop'; document.body.appendChild(pop); }
-    pop.classList.toggle('mini', !!this._alarmeMini);
-    pop.replaceChildren();
-    pop.insertAdjacentHTML('beforeend', `
-      <div class="fd-pop-h" onclick="if(DashboardPage._alarmeMini){DashboardPage._reduireAlarme(false)}">
-        <span class="ic"><iconify-icon icon="solar:bell-bing-bold"></iconify-icon></span>
-        <b>Alerte flotte · ${n} chauffeur${n > 1 ? 's' : ''}</b>
-        <small>alarme en cours</small>
-        <button type="button" title="${this._alarmeMini ? 'Agrandir' : 'Réduire'}" onclick="event.stopPropagation();DashboardPage._reduireAlarme(${this._alarmeMini ? 'false' : 'true'})"><iconify-icon icon="${this._alarmeMini ? 'solar:maximize-square-minimalistic-bold' : 'solar:minimize-square-minimalistic-bold'}"></iconify-icon></button>
-      </div>
-      <div class="fd-pop-l">${rows || '<div class="fd-pop-r"><div class="nm">Situation en cours de mise à jour…</div></div>'}</div>
-      <div class="fd-pop-f">
-        <button type="button" class="voir" onclick="DashboardPage._fleetCardClick('surveiller')"><iconify-icon icon="solar:eye-bold"></iconify-icon> Voir le détail</button>
-        <button type="button" class="stop" onclick="DashboardPage._arreterAlarme()"><iconify-icon icon="solar:bell-off-bold"></iconify-icon> Couper l’alarme</button>
-      </div>`);
-  },
-
-  _reduireAlarme(mini) {
-    this._alarmeMini = !!mini;
-    this._peindrePopupAlarme();
-  },
-
-  // Appelé à chaque rafraîchissement : si plus aucun chauffeur déclencheur
-  // n'est « à surveiller », la situation a changé et l'alarme s'arrête seule.
-  _verifierAlarme(clesActuelles) {
-    if (!this._alarmeTimer || !this._alarmeKeys) return;
-    const encore = [...this._alarmeKeys].some(k => clesActuelles.has(k));
-    if (!encore) { this._arreterAlarme(true); if (typeof Toast !== 'undefined') Toast.success('Alarme arrêtée : la situation est revenue à la normale.'); }
-  },
-
-  _arreterAlarme(silencieux = false) {
-    if (this._alarmeTimer) { clearInterval(this._alarmeTimer); this._alarmeTimer = null; }
-    this._alarmeKeys = null;
-    this._peindrePopupAlarme();
-    const b = document.getElementById('fd-son');
-    if (b && b.classList.contains('alarme')) {
-      b.classList.remove('alarme');
-      b.replaceChildren();
-      b.insertAdjacentHTML('beforeend', `<iconify-icon icon="${this._sonActif() ? 'solar:volume-loud-bold' : 'solar:volume-cross-bold'}"></iconify-icon><span>${this._sonActif() ? 'Son activé' : 'Son coupé'}</span>`);
-      b.title = this._sonActif() ? 'Alerte sonore activée : cliquez pour couper' : 'Alerte sonore coupée : cliquez pour activer';
-      if (!silencieux && typeof Toast !== 'undefined') Toast.info('Alarme arrêtée.');
-    }
-  },
+  // Sonnerie unique : ding-dong (deux notes descendantes, répété une fois).
+  _SON: { notes: [[1046, 0, .35], [784, .3, .55], [1046, 1.0, .35], [784, 1.3, .55]] },
 
   _sonActif() {
     try { return localStorage.getItem('pilote_son_alertes') !== 'off'; } catch (e) { return true; }
@@ -2747,7 +2605,7 @@ const DashboardPage = {
     if (typeof Toast !== 'undefined') Toast.info(actif ? 'Alerte sonore activée : un carillon retentira dès qu’un chauffeur passe « à surveiller ».' : 'Alerte sonore coupée.');
   },
 
-  _jouerSonAlerte(force = false, type = null) {
+  _jouerSonAlerte(force = false) {
     if (!force && !this._sonActif()) return;
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -2755,8 +2613,8 @@ const DashboardPage = {
       if (!this._audioCtx) this._audioCtx = new AC();
       const ctx = this._audioCtx;
       if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-      const son = this._SONS[type || this._sonType()] || this._SONS.carillon;
-      const forme = son.type || 'sine';
+      const son = this._SON;
+      const forme = "sine";
       const note = (freq, t0, duree) => {
         const o = ctx.createOscillator(), g = ctx.createGain();
         o.type = forme; o.frequency.value = freq;
@@ -2767,17 +2625,7 @@ const DashboardPage = {
         o.start(t0); o.stop(t0 + duree + 0.05);
       };
       const t = ctx.currentTime + 0.02;
-      if (son.glisse) {
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'sine'; o.frequency.setValueAtTime(600, t);
-        o.frequency.linearRampToValueAtTime(1200, t + 0.6); o.frequency.linearRampToValueAtTime(600, t + 1.2);
-        o.frequency.linearRampToValueAtTime(1200, t + 1.8); o.frequency.linearRampToValueAtTime(600, t + 2.4);
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.05);
-        g.gain.setValueAtTime(0.3, t + 2.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.5);
-        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 2.6);
-      } else {
-        son.notes.forEach(([f, d, l]) => note(f, t + d, l));
-      }
+      son.notes.forEach(([f, d, l]) => note(f, t + d, l));
       const b = document.getElementById('fd-son');
       if (b) { b.classList.remove('ding'); void b.offsetWidth; b.classList.add('ding'); }
     } catch (e) { /* audio indisponible : l'alerte visuelle reste */ }
