@@ -1495,7 +1495,12 @@ const DashboardPage = {
         .fd-son-menu button{width:100%;display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--text-primary);font:inherit;font-size:13px;font-weight:600;padding:9px 10px;border-radius:10px;cursor:pointer;text-align:left;}
         .fd-son-menu button:hover{background:var(--bg-tertiary);}
         .fd-son-menu button.on{color:#0a9d78;background:rgba(48,209,88,.1);}
-        .fd-son-menu button small{margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:600;}
+        .fd-son-menu button small{margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:600;white-space:nowrap;padding-left:12px;}
+        .fd-son-menu{min-width:300px;}
+        .fd-son-sep{height:1px;background:var(--border-color);margin:6px 4px;}
+        .fd-son-rep.on{color:#0a9d78;}
+        .fd-son.alarme{color:#fff;background:#EF4444;border-color:#EF4444;animation:fdAlarme 1s ease-in-out infinite;}
+        @keyframes fdAlarme{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
         .fd-son-menu button iconify-icon.chk{font-size:16px;color:#0a9d78;visibility:hidden;} .fd-son-menu button.on iconify-icon.chk{visibility:visible;}
         @keyframes fdDing{0%,100%{transform:none}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(4deg)}}
         .fd-yango{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;margin:2px 0 16px;padding:10px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;}
@@ -2421,7 +2426,7 @@ const DashboardPage = {
   _fleetCardsInner(segments) {
     return segments.map((s, i) => {
       const clickable = s.count > 0;
-      const handlers = clickable ? `onmouseenter="DashboardPage._fdHot('${s.key}',true)" onmouseleave="DashboardPage._fdHot('${s.key}',false)" onclick="DashboardPage._fleetCardClick('${s.key}')"` : '';
+      const handlers = clickable ? `onmouseenter="DashboardPage._fdHot('${s.key}',true)" onmouseleave="DashboardPage._fdHot('${s.key}',false)" onclick="DashboardPage._arreterAlarme(true);DashboardPage._fleetCardClick('${s.key}')"` : '';
       const notes = [];
       if (s.inactifCount) notes.push(`<span style="color:#E8930C;font-weight:700;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#E8930C;margin-right:4px;vertical-align:middle;"></span>${s.inactifCount} pas actif${s.inactifCount > 1 ? 's' : ''}</span>`);
       if (s.note) notes.push(`<button type="button" class="fd-surv-chip" onclick="event.stopPropagation();DashboardPage._scrollToWatchlist()" title="Voir les chauffeurs à surveiller"><iconify-icon icon="solar:eye-scan-bold" style="font-size:12px;"></iconify-icon>${s.note}</button>`);
@@ -2541,7 +2546,7 @@ const DashboardPage = {
     if (!nouveaux.length) return;
     const txt = nouveaux.join(' · ');
     const titre = `⚠️ À surveiller (${nouveaux.length})`;
-    this._jouerSonAlerte();
+    this._demarrerAlarme();
     if (typeof Toast !== 'undefined' && Toast.show) Toast.show(txt, 'warning', titre, 9000);
     if (typeof NotificationManager !== 'undefined' && NotificationManager.send) NotificationManager.send(`Pilote — ${nouveaux.length} chauffeur${nouveaux.length > 1 ? 's' : ''} à surveiller`, txt, { tag: 'pilote-surveiller' });
     if (typeof Header !== 'undefined' && Header._refreshWidgets) { try { Header._refreshWidgets(); } catch (e) { /* badge indisponible */ } }
@@ -2575,7 +2580,11 @@ const DashboardPage = {
     menu.insertAdjacentHTML('beforeend', Object.keys(this._SONS).map(k => `
       <button type="button" class="${k === courant ? 'on' : ''}" data-son="${k}" onclick="DashboardPage._choisirSon('${k}', event)">
         <iconify-icon icon="solar:play-circle-bold" style="font-size:16px;color:var(--text-muted)"></iconify-icon>${this._SONS[k].label}<small>${this._SONS[k].desc}</small><iconify-icon class="chk" icon="solar:check-circle-bold"></iconify-icon>
-      </button>`).join(''));
+      </button>`).join('') + `
+      <div class="fd-son-sep"></div>
+      <button type="button" class="fd-son-rep${this._sonRepete() ? ' on' : ''}" onclick="DashboardPage._basculerRepetition(event)">
+        <iconify-icon icon="${this._sonRepete() ? 'solar:check-square-bold' : 'solar:stop-bold'}" style="font-size:16px"></iconify-icon>Répéter jusqu’à mon arrêt<small>toutes les 8 s, 5 min max</small>
+      </button>`);
     menu.hidden = false;
     const fermer = (e) => { if (!menu.contains(e.target)) { menu.hidden = true; document.removeEventListener('click', fermer); } };
     setTimeout(() => document.addEventListener('click', fermer), 0);
@@ -2584,6 +2593,7 @@ const DashboardPage = {
   _choisirSon(type, ev) {
     if (ev) ev.stopPropagation();
     if (!this._SONS[type]) return;
+    if (type === this._sonType()) { const m = document.getElementById('fd-son-menu'); if (m) m.hidden = true; return; }
     try { localStorage.setItem('pilote_son_alertes_type', type); } catch (e) { /* stockage indispo */ }
     document.querySelectorAll('#fd-son-menu button').forEach(b => b.classList.toggle('on', b.getAttribute('data-son') === type));
     const lbl = document.querySelector('#fd-son-choix span');
@@ -2591,11 +2601,52 @@ const DashboardPage = {
     this._jouerSonAlerte(true, type);
   },
 
+  _sonRepete() {
+    try { return localStorage.getItem('pilote_son_alertes_repeter') === 'on'; } catch (e) { return false; }
+  },
+
+  _basculerRepetition(ev) {
+    if (ev) ev.stopPropagation();
+    const on = !this._sonRepete();
+    try { localStorage.setItem('pilote_son_alertes_repeter', on ? 'on' : 'off'); } catch (e) { /* stockage indispo */ }
+    const b = document.querySelector('#fd-son-menu .fd-son-rep');
+    if (b) { b.classList.toggle('on', on); const ic = b.querySelector('iconify-icon'); if (ic) ic.setAttribute('icon', on ? 'solar:check-square-bold' : 'solar:stop-bold'); }
+    if (typeof Toast !== 'undefined') Toast.info(on ? 'L’alarme se répétera toutes les 8 s jusqu’à ce que vous cliquiez « Arrêter l’alarme ».' : 'L’alarme ne jouera qu’une fois.');
+  },
+
+  // Alarme insistante : rejoue le son toutes les 8 s jusqu'à acquittement
+  // (bouton « Arrêter l'alarme », clic sur la carte « À surveiller ») ou 5 min.
+  _demarrerAlarme() {
+    this._jouerSonAlerte();
+    if (!this._sonRepete()) return;
+    this._arreterAlarme(true);
+    const debut = Date.now();
+    this._alarmeTimer = setInterval(() => {
+      if (Date.now() - debut > 5 * 60 * 1000 || !document.getElementById('fd-son')) { this._arreterAlarme(); return; }
+      this._jouerSonAlerte();
+    }, 8000);
+    const b = document.getElementById('fd-son');
+    if (b) { b.classList.add('alarme'); b.replaceChildren(); b.insertAdjacentHTML('beforeend', '<iconify-icon icon="solar:bell-off-bold"></iconify-icon><span>Arrêter l’alarme</span>'); b.title = 'Cliquez pour arrêter l’alarme'; }
+  },
+
+  _arreterAlarme(silencieux = false) {
+    if (this._alarmeTimer) { clearInterval(this._alarmeTimer); this._alarmeTimer = null; }
+    const b = document.getElementById('fd-son');
+    if (b && b.classList.contains('alarme')) {
+      b.classList.remove('alarme');
+      b.replaceChildren();
+      b.insertAdjacentHTML('beforeend', `<iconify-icon icon="${this._sonActif() ? 'solar:volume-loud-bold' : 'solar:volume-cross-bold'}"></iconify-icon><span>${this._sonActif() ? 'Son activé' : 'Son coupé'}</span>`);
+      b.title = this._sonActif() ? 'Alerte sonore activée : cliquez pour couper' : 'Alerte sonore coupée : cliquez pour activer';
+      if (!silencieux && typeof Toast !== 'undefined') Toast.info('Alarme arrêtée.');
+    }
+  },
+
   _sonActif() {
     try { return localStorage.getItem('pilote_son_alertes') !== 'off'; } catch (e) { return true; }
   },
 
   _basculerSon() {
+    if (this._alarmeTimer) { this._arreterAlarme(); return; }
     const actif = !this._sonActif();
     try { localStorage.setItem('pilote_son_alertes', actif ? 'on' : 'off'); } catch (e) { /* stockage indispo */ }
     const b = document.getElementById('fd-son');
