@@ -2589,6 +2589,104 @@ const DashboardPage = {
   // Sonnerie unique : ding-dong (deux notes descendantes, répété une fois).
   _SON: { notes: [[1046, 0, .35], [784, .3, .55], [1046, 1.0, .35], [784, 1.3, .55]] },
 
+  // ---- Moteur d'alarme ----------------------------------------------------
+  // Sonne en continu tant qu'un chauffeur déclencheur est « à surveiller », et
+  // ne s'arrête que de deux façons : retour à la normale, ou clic sur
+  // « Arrêter l'alarme ». Aucun délai, aucune autre issue.
+  _alarmeKeys: null,
+  _alarmeMini: false,
+
+  _demarrerAlarme(keys) {
+    if (!this._sonActif()) return;
+    if (!this._alarmeKeys) this._alarmeKeys = new Set();
+    (keys || []).forEach(k => this._alarmeKeys.add(k));
+    this._jouerSonAlerte();
+    if (!this._alarmeTimer) {
+      this._alarmeTimer = setInterval(() => {
+        if (!document.getElementById('fd-son')) { this._arreterAlarme(true); return; } // page quittée
+        this._jouerSonAlerte();
+      }, 8000);
+      const b = document.getElementById('fd-son');
+      if (b) {
+        b.classList.add('alarme');
+        b.replaceChildren();
+        b.insertAdjacentHTML('beforeend', '<iconify-icon icon="solar:bell-off-bold"></iconify-icon><span>Arrêter l’alarme</span>');
+        b.title = 'Cliquez pour arrêter l’alarme';
+      }
+      this._alarmeMini = false;
+    }
+    this._peindrePopupAlarme();
+  },
+
+  // À chaque rafraîchissement : si plus aucun chauffeur déclencheur n'est « à
+  // surveiller », la situation a changé et l'alarme s'arrête d'elle-même.
+  _verifierAlarme(clesActuelles) {
+    if (!this._alarmeTimer || !this._alarmeKeys) return;
+    const encore = [...this._alarmeKeys].some(k => clesActuelles.has(k));
+    if (!encore) {
+      this._arreterAlarme(true);
+      if (typeof Toast !== 'undefined') Toast.success('Alarme arrêtée : la situation est revenue à la normale.');
+    }
+  },
+
+  _arreterAlarme(silencieux = false) {
+    if (this._alarmeTimer) { clearInterval(this._alarmeTimer); this._alarmeTimer = null; }
+    this._alarmeKeys = null;
+    const b = document.getElementById('fd-son');
+    if (b && b.classList.contains('alarme')) {
+      b.classList.remove('alarme');
+      b.replaceChildren();
+      b.insertAdjacentHTML('beforeend', `<iconify-icon icon="${this._sonActif() ? 'solar:volume-loud-bold' : 'solar:volume-cross-bold'}"></iconify-icon><span>${this._sonActif() ? 'Son activé' : 'Son coupé'}</span>`);
+      b.title = this._sonActif() ? 'Alerte sonore activée : cliquez pour couper' : 'Alerte sonore coupée : cliquez pour activer';
+      if (!silencieux && typeof Toast !== 'undefined') Toast.info('Alarme arrêtée.');
+    }
+    this._peindrePopupAlarme();
+  },
+
+  // Fenêtre flottante : qui, pourquoi ; réductible en pastille ; bouton d'arrêt.
+  _peindrePopupAlarme() {
+    const existante = document.getElementById('fd-alarme-pop');
+    if (!this._alarmeTimer) { if (existante) existante.remove(); return; }
+    const LBL = { occupe_yango: 'occupé sur Yango', hors_ligne_yango: 'hors ligne sur Yango', ca_faible: 'CA anormalement bas', ca_modere: 'CA sous la moyenne', hors_planning: 'hors planning', course_longue: 'course anormalement longue' };
+    const esc = (s) => Utils.escHtml(String(s == null ? '' : s));
+    const tous = this._surveillerNow || [];
+    const cible = tous.filter(e => {
+      const motifs = e.reasons.filter(r => LBL[r]).map(r => LBL[r]);
+      if (!motifs.length && !(e.ca > 0)) motifs.push("pas d'activité");
+      return this._alarmeKeys && this._alarmeKeys.has(`${e.id}|${motifs.join(',')}`);
+    });
+    const liste = cible.length ? cible : tous;
+    const rows = liste.map(e => {
+      const motifs = e.reasons.filter(r => LBL[r]).map(r => (r === 'course_longue' && e.courseMin) ? `${LBL[r]} (${e.courseMin} min)` : LBL[r]);
+      if (!motifs.length && !(e.ca > 0)) motifs.push("pas d'activité aujourd'hui");
+      const parts = String(e.nom || '').split(/\s+/).filter(Boolean);
+      const ini = ((parts[0] || '')[0] || '') + ((parts[1] || '')[0] || '');
+      return `<div class="fd-pop-r"><span class="av" style="background:${Utils.getAvatarColor(e.id)}">${esc(ini.toUpperCase())}</span><div><div class="nm">${esc(e.nom)}</div><div class="mt">${esc(motifs.join(' · '))}</div></div><span class="ca">${e.ca > 0 ? Utils.formatCurrency(e.ca) : '0 F'}</span></div>`;
+    }).join('');
+    const n = liste.length;
+    const pop = existante || document.createElement('div');
+    if (!existante) { pop.id = 'fd-alarme-pop'; document.body.appendChild(pop); }
+    pop.className = 'fd-pop' + (this._alarmeMini ? ' mini' : '');
+    pop.replaceChildren();
+    pop.insertAdjacentHTML('beforeend', `
+      <div class="fd-pop-h" onclick="if(DashboardPage._alarmeMini){DashboardPage._reduireAlarme(false)}">
+        <span class="ic"><iconify-icon icon="solar:bell-bing-bold"></iconify-icon></span>
+        <b>Alerte flotte · ${n} chauffeur${n > 1 ? 's' : ''}</b>
+        <small>alarme en cours</small>
+        <button type="button" title="${this._alarmeMini ? 'Agrandir' : 'Réduire'}" onclick="event.stopPropagation();DashboardPage._reduireAlarme(${this._alarmeMini ? 'false' : 'true'})"><iconify-icon icon="${this._alarmeMini ? 'solar:maximize-square-minimalistic-bold' : 'solar:minimize-square-minimalistic-bold'}"></iconify-icon></button>
+      </div>
+      <div class="fd-pop-l">${rows || '<div class="fd-pop-r"><div class="nm">Situation en cours de mise à jour…</div></div>'}</div>
+      <div class="fd-pop-f">
+        <button type="button" class="voir" onclick="DashboardPage._fleetCardClick('surveiller')"><iconify-icon icon="solar:eye-bold"></iconify-icon> Voir le détail</button>
+        <button type="button" class="stop" onclick="DashboardPage._arreterAlarme()"><iconify-icon icon="solar:bell-off-bold"></iconify-icon> Couper l’alarme</button>
+      </div>`);
+  },
+
+  _reduireAlarme(mini) {
+    this._alarmeMini = !!mini;
+    this._peindrePopupAlarme();
+  },
+
   _sonActif() {
     try { return localStorage.getItem('pilote_son_alertes') !== 'off'; } catch (e) { return true; }
   },
@@ -2637,7 +2735,7 @@ const DashboardPage = {
 
   _renderFleetDonutInto(d) {
     const { segments, ringSegments, total } = this._fleetBuckets(d);
-    try { this._signalSurveiller(segments.find(s => s.key === 'surveiller')); } catch (e) { /* jamais bloquant */ }
+    try { this._signalSurveiller(segments.find(s => s.key === 'surveiller')); } catch (e) { console.error('dashboard: alerte « à surveiller »', e); }
     const circle = document.getElementById('fleet-donut-circle');
     if (circle) { circle.replaceChildren(); circle.insertAdjacentHTML('beforeend', this._fleetCircleInner(d, ringSegments, total)); }
     const cards = document.getElementById('fleet-donut-cards');
