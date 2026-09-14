@@ -37,7 +37,7 @@ const AccueilPage = {
           <circle cx="100" cy="100" r="${r}" fill="transparent" stroke="${couleur}" stroke-width="16" stroke-linecap="round" stroke-dasharray="${circ.toFixed(1)}" style="--circ:${circ.toFixed(1)};--off:${(circ * (1 - p / 100)).toFixed(1)}" class="cp-ring2-fg"/>
         </g>
       </svg>
-      <div class="cp-ring2-txt"><b>${p}%</b><small>${k(courant)} / ${k(objectif)} F</small></div>
+      <div class="cp-ring2-txt"><b>${p}%</b><small>${k(courant)} / ${k(objectif)}</small></div>
     </div>`;
   },
 
