@@ -396,18 +396,9 @@ const AccueilPage = {
       ${carteArgentHTML}
       ${primeHTML || proprietaireHTML ? `<div class="cp-duo">${primeHTML}${proprietaireHTML}</div>` : ""}
 
-      <!-- 2. Le calendrier du chauffeur (semaine en cours, navigable), à la place des tuiles :
-           Messages, Amendes et le reste sont accessibles par la barre du bas (Messages, Autres). -->
-      <div class="mk-section">Mon planning</div>
-      <div id="accueil-planning" class="accueil-planning"></div>
-
       <!-- Alertes vehicule urgentes uniquement -->
       <div id="maintenance-alerts"></div>
     `;
-
-    // Calendrier hebdomadaire : même rendu que la page Planning, embarqué ici.
-    const zonePlanning = document.getElementById('accueil-planning');
-    if (zonePlanning && typeof PlanningPage !== 'undefined') PlanningPage.render(zonePlanning);
 
     // Alertes maintenance vehicule (urgentes)
     this._loadMaintenanceAlerts();
