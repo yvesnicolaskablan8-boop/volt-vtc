@@ -432,13 +432,16 @@ const AccueilPage = {
       const pct = Math.round(moisAff / 36 * 100);
       const restant = 36 - moisAff;
       // Ton volontairement chaleureux : le chauffeur doit avoir envie de regarder cette carte.
-      const [titre, message] = moisAff >= 36 ? ['Elle est à vous !', 'Félicitations patron, vous l’avez fait ! 🎉']
-        : moisAff >= 30 ? ['La ligne d’arrivée est en vue', `Plus que ${restant} mois, tenez bon champion ! 🏁`]
-        : moisAff >= 24 ? ['Dernière ligne droite', `Encore ${restant} mois et le volant est à vous 🔥`]
-        : moisAff >= 12 ? ['Un tiers du chemin, bravo !', 'Vous tenez la route, continuez comme ça 💪']
-        : moisAff >= 6 ? ['Ça roule !', 'Chaque mois compte, patron 🚗']
-        : moisAff >= 1 ? ['Bien parti !', 'Le compteur tourne, courage patron ! 💪']
-        : ['Début de l’aventure', 'Courage patron ! 💪'];
+      const titre = moisAff >= 36 ? 'Elle est à vous !'
+        : moisAff >= 30 ? 'La ligne d’arrivée est en vue'
+        : moisAff >= 24 ? 'Dernière ligne droite'
+        : moisAff >= 12 ? 'Un tiers du chemin, bravo !'
+        : moisAff >= 6 ? 'Ça roule !'
+        : moisAff >= 1 ? 'Bien parti !'
+        : 'Début de l’aventure';
+      const message = restant > 0
+        ? `Courage patron, il reste encore ${restant} mois ! 💪`
+        : 'Félicitations patron, elle est à vous ! 🎉';
       proprietaireHTML = `
       <div class="pc-card pc-card-navy pp-card">
         <div class="pp-head">
