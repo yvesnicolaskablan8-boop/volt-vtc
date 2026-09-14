@@ -484,8 +484,8 @@ const AccueilPage = {
         : 'Félicitations patron, elle est à vous ! 🎉';
       proprietaireHTML = `
       <div class="cp-card" onclick="AccueilPage._infoProprietaire()" role="button" title="Conditions du programme propriétaire">
-        ${this._demiJauge(pct, moisAff, ' / 36', '#30d158')}
         <div class="cp-title">Ma voiture</div>
+        ${this._demiJauge(pct, moisAff, ' / 36', '#30d158')}
         <div class="cp-desc">${restant > 0 ? `Encore ${restant} mois, courage patron !` : 'Elle est à vous 🎉'}</div>
       </div>`;
     }
