@@ -1312,7 +1312,7 @@ const DashboardPage = {
         .mini-gran-btn.is-active { background:var(--pilote-blue); color:#fff; }
         .mini-bars { display:flex; align-items:flex-end; gap:8px; height:100px; }
         .mini-col { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
-        .mini-bar { width:100%; border-radius:99px; background:#13DEB9; opacity:.32; transform-origin:bottom; transition:all .3s ease-out; cursor:pointer; }
+        .mini-bar { width:100%; border-radius:99px; background:#13DEB9; opacity:.32; transform-origin:bottom; transition:all .3s ease-out; }
         .mini-chart:hover .mini-bar { opacity:.42; }
         .mini-bar.is-hover { opacity:1 !important; transform:scaleX(1.12) scaleY(1.02); }
         .mini-bar.is-neighbor { opacity:.35 !important; transform:scaleX(1.05); }
@@ -2492,7 +2492,7 @@ const DashboardPage = {
       const fmt = n => Utils.formatNumber(Math.round(n || 0)) + ' F';
       const cols = periods.map((w, i) => {
         const h = Math.max(4, (w.verse || 0) / maxV * 82);
-        return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})" onclick="event.stopPropagation();DashboardPage._openAnalyseVersements(${i})" title="Analyser cette période"><div class="mini-tip">${fmt(w.verse || 0)}</div><div class="mini-bar" data-fmt="${fmt(w.verse || 0)}" style="height:${h.toFixed(1)}px;"></div><div class="mini-lbl">${Utils.escHtml(w.label || '')}</div></div>`;
+        return `<div class="mini-col" onmouseenter="DashboardPage._miniHover(${i})"><div class="mini-tip">${fmt(w.verse || 0)}</div><div class="mini-bar" data-fmt="${fmt(w.verse || 0)}" style="height:${h.toFixed(1)}px;"></div><div class="mini-lbl">${Utils.escHtml(w.label || '')}</div></div>`;
       }).join('');
       const gBtn = (key, label) => `<button type="button" class="mini-gran-btn${gran === key ? ' is-active' : ''}" onclick="event.stopPropagation();DashboardPage._setRecetteGran('${key}')">${label}</button>`;
       const granBar = `<div class="mini-gran">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>`;
