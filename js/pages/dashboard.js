@@ -1489,6 +1489,14 @@ const DashboardPage = {
         .fd-son.on{color:#0a9d78;border-color:rgba(10,157,120,.45);background:rgba(48,209,88,.1);}
         .fd-son:hover{transform:translateY(-1px);}
         .fd-son.ding{animation:fdDing .6s ease;}
+        .fd-son-wrap{position:relative;display:inline-flex;}
+        .fd-son-choix{margin-left:6px;}
+        .fd-son-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:40;min-width:220px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:14px;padding:6px;box-shadow:0 18px 40px -18px rgba(0,0,0,.45);}
+        .fd-son-menu button{width:100%;display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--text-primary);font:inherit;font-size:13px;font-weight:600;padding:9px 10px;border-radius:10px;cursor:pointer;text-align:left;}
+        .fd-son-menu button:hover{background:var(--bg-tertiary);}
+        .fd-son-menu button.on{color:#0a9d78;background:rgba(48,209,88,.1);}
+        .fd-son-menu button small{margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:600;}
+        .fd-son-menu button iconify-icon.chk{font-size:16px;color:#0a9d78;visibility:hidden;} .fd-son-menu button.on iconify-icon.chk{visibility:visible;}
         @keyframes fdDing{0%,100%{transform:none}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(4deg)}}
         .fd-yango{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;margin:2px 0 16px;padding:10px 14px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;}
         .fd-yango-lbl{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);}
@@ -2490,7 +2498,11 @@ const DashboardPage = {
       <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span>
         <button type="button" class="fd-son${this._sonActif() ? ' on' : ''}" id="fd-son" onclick="DashboardPage._basculerSon()" title="${this._sonActif() ? 'Alerte sonore activée : cliquez pour couper' : 'Alerte sonore coupée : cliquez pour activer'}">
           <iconify-icon icon="${this._sonActif() ? 'solar:volume-loud-bold' : 'solar:volume-cross-bold'}"></iconify-icon><span>${this._sonActif() ? 'Son activé' : 'Son coupé'}</span>
-        </button></div>
+        </button>
+        <span class="fd-son-wrap">
+          <button type="button" class="fd-son fd-son-choix" id="fd-son-choix" onclick="DashboardPage._ouvrirChoixSon(event)" title="Choisir la sonnerie"><iconify-icon icon="solar:music-note-2-bold"></iconify-icon><span>${this._SONS[this._sonType()] ? this._SONS[this._sonType()].label : 'Sonnerie'}</span><iconify-icon icon="solar:alt-arrow-down-linear" style="font-size:12px"></iconify-icon></button>
+          <div class="fd-son-menu" id="fd-son-menu" hidden></div>
+        </span></div>
       <div class="fd-top">
         <div class="fd-donut-col">
           <div class="fd-donut-wrap" id="fleet-donut-circle">${this._fleetCircleInner(d, ringSegments, total)}</div>
@@ -2538,6 +2550,47 @@ const DashboardPage = {
   // ---- Alerte sonore (double carillon) quand un chauffeur planifié passe
   // « occupé », hors ligne, ou affiche un CA anormalement bas. Réglable par
   // l'interrupteur de l'en-tête « Flotte en direct » (mémorisé sur l'appareil).
+  // Sonneries disponibles (synthétisées : rien à télécharger). Chaque entrée
+  // liste des notes [fréquence Hz, départ s, durée s] ; 'glisse' fait une sirène.
+  _SONS: {
+    carillon:  { label: 'Carillon',   desc: 'deux notes, répétées', notes: [[880, 0, .28], [1318, .22, .4], [880, .9, .28], [1318, 1.12, .4]] },
+    sonnette:  { label: 'Sonnette',   desc: 'ding-dong',            notes: [[1046, 0, .35], [784, .3, .55], [1046, 1.0, .35], [784, 1.3, .55]] },
+    xylo:      { label: 'Xylophone',  desc: 'gamme montante',       notes: [[523, 0, .18], [659, .15, .18], [784, .3, .18], [1046, .45, .5]] },
+    bips:      { label: 'Bips',       desc: 'trois bips courts',    notes: [[1500, 0, .1], [1500, .2, .1], [1500, .4, .1], [1500, .8, .1], [1500, 1.0, .1], [1500, 1.2, .1]], type: 'square' },
+    sirene:    { label: 'Sirène',     desc: 'montée-descente douce', glisse: true },
+    cloche:    { label: 'Cloche',     desc: 'une note longue',      notes: [[1760, 0, 1.4], [2637, 0, .6]] },
+  },
+
+  _sonType() {
+    try { const t = localStorage.getItem('pilote_son_alertes_type'); return this._SONS[t] ? t : 'carillon'; } catch (e) { return 'carillon'; }
+  },
+
+  _ouvrirChoixSon(ev) {
+    if (ev) ev.stopPropagation();
+    const menu = document.getElementById('fd-son-menu');
+    if (!menu) return;
+    if (!menu.hidden) { menu.hidden = true; return; }
+    const courant = this._sonType();
+    menu.replaceChildren();
+    menu.insertAdjacentHTML('beforeend', Object.keys(this._SONS).map(k => `
+      <button type="button" class="${k === courant ? 'on' : ''}" data-son="${k}" onclick="DashboardPage._choisirSon('${k}', event)">
+        <iconify-icon icon="solar:play-circle-bold" style="font-size:16px;color:var(--text-muted)"></iconify-icon>${this._SONS[k].label}<small>${this._SONS[k].desc}</small><iconify-icon class="chk" icon="solar:check-circle-bold"></iconify-icon>
+      </button>`).join(''));
+    menu.hidden = false;
+    const fermer = (e) => { if (!menu.contains(e.target)) { menu.hidden = true; document.removeEventListener('click', fermer); } };
+    setTimeout(() => document.addEventListener('click', fermer), 0);
+  },
+
+  _choisirSon(type, ev) {
+    if (ev) ev.stopPropagation();
+    if (!this._SONS[type]) return;
+    try { localStorage.setItem('pilote_son_alertes_type', type); } catch (e) { /* stockage indispo */ }
+    document.querySelectorAll('#fd-son-menu button').forEach(b => b.classList.toggle('on', b.getAttribute('data-son') === type));
+    const lbl = document.querySelector('#fd-son-choix span');
+    if (lbl) lbl.textContent = this._SONS[type].label;
+    this._jouerSonAlerte(true, type);
+  },
+
   _sonActif() {
     try { return localStorage.getItem('pilote_son_alertes') !== 'off'; } catch (e) { return true; }
   },
@@ -2557,7 +2610,7 @@ const DashboardPage = {
     if (typeof Toast !== 'undefined') Toast.info(actif ? 'Alerte sonore activée : un carillon retentira dès qu’un chauffeur passe « à surveiller ».' : 'Alerte sonore coupée.');
   },
 
-  _jouerSonAlerte(force = false) {
+  _jouerSonAlerte(force = false, type = null) {
     if (!force && !this._sonActif()) return;
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -2565,19 +2618,29 @@ const DashboardPage = {
       if (!this._audioCtx) this._audioCtx = new AC();
       const ctx = this._audioCtx;
       if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const son = this._SONS[type || this._sonType()] || this._SONS.carillon;
+      const forme = son.type || 'sine';
       const note = (freq, t0, duree) => {
         const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'sine'; o.frequency.value = freq;
+        o.type = forme; o.frequency.value = freq;
         g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(forme === 'square' ? 0.12 : 0.35, t0 + 0.02);
         g.gain.exponentialRampToValueAtTime(0.0001, t0 + duree);
         o.connect(g); g.connect(ctx.destination);
         o.start(t0); o.stop(t0 + duree + 0.05);
       };
       const t = ctx.currentTime + 0.02;
-      // Deux carillons ascendants, répétés une fois : distinct des notifications système.
-      note(880, t, 0.28); note(1318, t + 0.22, 0.4);
-      note(880, t + 0.9, 0.28); note(1318, t + 1.12, 0.4);
+      if (son.glisse) {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(600, t);
+        o.frequency.linearRampToValueAtTime(1200, t + 0.6); o.frequency.linearRampToValueAtTime(600, t + 1.2);
+        o.frequency.linearRampToValueAtTime(1200, t + 1.8); o.frequency.linearRampToValueAtTime(600, t + 2.4);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.05);
+        g.gain.setValueAtTime(0.3, t + 2.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.5);
+        o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 2.6);
+      } else {
+        son.notes.forEach(([f, d, l]) => note(f, t + d, l));
+      }
       const b = document.getElementById('fd-son');
       if (b) { b.classList.remove('ding'); void b.offsetWidth; b.classList.add('ding'); }
     } catch (e) { /* audio indisponible : l'alerte visuelle reste */ }
