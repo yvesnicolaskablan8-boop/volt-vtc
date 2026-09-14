@@ -797,6 +797,27 @@ async function handleFleetStatus(req, res) {
       });
     }
 
+    // « Depuis quand » : Yango ne date pas le statut et ne liste pas les courses
+    // en cours. On mémorise nous-mêmes chaque changement de statut observé
+    // (fleet_yango_etats) et on en déduit la durée en commande / occupé.
+    try {
+      const token = getToken(req);
+      const ids = drivers.map(d => d.chauffeurId);
+      const etats = ids.length ? await supabaseQuery('fleet_yango_etats', `select=chauffeur_id,statut,depuis&chauffeur_id=in.(${ids.map(encodeURIComponent).join(',')})`, token) : [];
+      const parId = new Map((etats || []).map(e => [e.chauffeur_id, e]));
+      const nowIso = new Date().toISOString();
+      const aEcrire = [];
+      for (const d of drivers) {
+        const prev = parId.get(d.chauffeurId);
+        const depuis = (prev && prev.statut === d.status) ? prev.depuis : nowIso;
+        if (!prev || prev.statut !== d.status) aEcrire.push({ chauffeur_id: d.chauffeurId, statut: d.status, depuis: nowIso, maj_le: nowIso });
+        const min = Math.max(0, Math.round((Date.now() - new Date(depuis).getTime()) / 60000));
+        d.statutDepuisMin = min;
+        if (d.status === 'in_order' && d.commandeDepuisMin == null) d.commandeDepuisMin = min;
+      }
+      if (aEcrire.length) await supabaseUpsert('fleet_yango_etats', aEcrire, token, 'chauffeur_id');
+    } catch (e) { console.warn('[fleet-status] états:', e.message); }
+
     res.json({
       total: drivers.length,
       counts,

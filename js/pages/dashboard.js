@@ -2309,8 +2309,9 @@ const DashboardPage = {
       if (programme && lv && lv.status === 'offline' && !lv.enCommande) reasons.push('hors_ligne_yango');
       // Course en cours depuis trop longtemps (compteur détourné, détour, oubli
       // de clôture) : au-delà du seuil, à surveiller et alarme.
-      const courseMin = (lv && lv.enCommande && lv.commandeDepuisMin != null) ? Number(lv.commandeDepuisMin) : 0;
-      const courseAttendue = (lv && lv.enCommande && lv.commandeAttendueMin != null) ? Number(lv.commandeAttendueMin) : 0;
+      const enCourse = !!(lv && (lv.enCommande || lv.status === 'in_order'));
+      const courseMin = (enCourse && lv.commandeDepuisMin != null) ? Number(lv.commandeDepuisMin) : 0;
+      const courseAttendue = (enCourse && lv.commandeAttendueMin != null) ? Number(lv.commandeAttendueMin) : 0;
       // Anormale si elle dépasse la durée attendue de 50 % ET d'au moins 20 min
       // (jamais avant 25 min) ; sans coordonnées, seuil fixe de repli.
       const limite = courseAttendue > 0 ? Math.max(25, courseAttendue * 1.5, courseAttendue + 20) : this._SEUIL_COURSE_LONGUE_MIN;
