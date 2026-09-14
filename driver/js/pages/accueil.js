@@ -501,7 +501,7 @@ const AccueilPage = {
       <div class="cp-card">
         ${this._demiJauge(Math.min(100, taux), Math.min(100, taux), ' %', etat === 'ok' ? '#30d158' : etat === 'mid' ? '#ffb340' : '#ff6b6b')}
         <div class="cp-title">Prime ${prime.toLocaleString('fr-FR')} F</div>
-        <div class="cp-desc">${decrochee ? "Prime décrochée, bravo patron ! 🎉" : joursRestants === 0 ? "Le mois est fini, on repart de plus belle !" : (rythme >= 0.95 ? "Fonce, la prime est à toi ! 💪" : rythme >= 0.75 ? "Fonce patron, tu vas gagner la prime !" : "Accélère patron, la prime est encore jouable !")}</div>
+        <div class="cp-desc">${decrochee ? "Prime décrochée, bravo patron ! 🎉" : joursRestants === 0 ? "Le mois est fini, on repart de plus belle !" : "Fonce, la prime est à toi ! 💪"}</div>
       </div>`;
     }
 
