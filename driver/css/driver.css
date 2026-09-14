@@ -2630,20 +2630,21 @@ body {
 .mk-actions .mk-btn { min-height: 56px; font-size: 1.1rem; }
 /* Progression vers la propriété */
 .pp-card { padding: 1.25rem; margin-bottom: 1rem; color: #fff; }
+.pp-card { background: radial-gradient(circle at 90% 10%, rgba(48, 209, 88, 0.22), transparent 55%), #16213a; border-color: rgba(48, 209, 88, 0.25); }
 .pp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.pp-pct { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em; color: #ffd60a; }
-.pp-titre { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em; margin: 12px 0 2px; line-height: 1.15; }
-.pp-titre span { font-size: 0.95rem; font-weight: 700; opacity: 0.7; }
-.pp-sous { font-size: 0.82rem; opacity: 0.75; line-height: 1.4; }
-.pp-jauge { position: relative; margin-top: 14px; }
-.pp-jauge .pc-jauge { height: 14px; }
-.pp-jauge i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: rgba(255, 255, 255, 0.35); border-radius: 2px; }
-.pp-jalons { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 8px; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55; }
-.pp-jalons span:nth-child(2), .pp-jalons span:nth-child(3) { text-align: center; }
-.pp-jalons span:last-child { text-align: right; }
-.pp-jalons span.on { opacity: 1; color: #ffd60a; font-weight: 800; }
-.pp-etape { display: flex; align-items: flex-start; gap: 6px; margin-top: 12px; font-size: 0.78rem; line-height: 1.4; opacity: 0.85; }
-.pp-etape iconify-icon { font-size: 1rem; color: #ffb340; flex-shrink: 0; margin-top: 1px; }
+.pp-etiquette { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255, 255, 255, 0.7); }
+.pp-info { width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.85); display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; cursor: pointer; flex-shrink: 0; }
+.pp-pct { font-size: 3.4rem; font-weight: 300; letter-spacing: -0.04em; line-height: 1; color: #30d158; margin-top: 6px; }
+.pp-pct span { font-weight: 800; }
+.pp-mois { font-size: 0.85rem; font-weight: 700; color: rgba(255, 255, 255, 0.7); margin-top: 4px; }
+.pp-route { position: relative; height: 34px; margin-top: 22px; border-bottom: 2px solid rgba(255, 255, 255, 0.18); }
+.pp-route-fait { position: absolute; left: 0; bottom: -2px; height: 2px; background: #30d158; box-shadow: 0 0 10px rgba(48, 209, 88, 0.8); transition: width 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.pp-voiture { position: absolute; bottom: 0; width: 64px; height: 28px; margin-left: 64px; transform: translateX(-100%); animation: pp-roule 2.4s ease-in-out infinite; }
+.pp-voiture svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 6px rgba(48, 209, 88, 0.6)); }
+@keyframes pp-roule { 0%, 100% { transform: translateX(-100%) translateY(0); } 50% { transform: translateX(-100%) translateY(-1.5px); } }
+.pp-drapeau { position: absolute; right: -4px; bottom: 2px; font-size: 1.05rem; }
+.pp-message { margin-top: 12px; font-size: 1.02rem; font-weight: 900; letter-spacing: 0.01em; text-transform: uppercase; color: #fff; }
+@media (prefers-reduced-motion: reduce) { .pp-voiture { animation: none; } }
 .mk-btn { min-height: 52px; border-radius: 999px; font-size: 1rem; font-weight: 800; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .mk-btn-outline { background: rgba(255, 255, 255, 0.14); border: 1.5px solid rgba(255, 255, 255, 0.45); color: #fff; }
 .mk-btn-primary { background: rgba(255, 255, 255, 0.28); border: 1.5px solid rgba(255, 255, 255, 0.55); color: #fff; box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.35); backdrop-filter: blur(8px); }

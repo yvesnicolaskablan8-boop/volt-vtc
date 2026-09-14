@@ -6,6 +6,19 @@ const AccueilPage = {
   // Le chauffeur photographie le reçu ; le serveur (/api/charge-ocr) lit le montant
   // et le libellé, le chauffeur vérifie puis enregistre. La dépense est stockée
   // comme charge de type « autre ». Si la lecture est indisponible, il saisit le montant.
+  _infoProprietaire() {
+    DriverModal.show('Programme propriétaire', `
+      <div style="font-size:0.95rem;line-height:1.55;color:var(--text-primary)">
+        <p style="margin:0 0 10px"><strong>Après 36 mois de service</strong>, la voiture que vous conduisez peut devenir la vôtre.</p>
+        <p style="margin:0 0 6px;font-weight:700">Les conditions :</p>
+        <ul style="margin:0;padding-left:18px">
+          <li>service continu chez Pilote ;</li>
+          <li>versements à jour ;</li>
+          <li>rachat à la valeur résiduelle prévue à votre contrat.</li>
+        </ul>
+      </div>`, [{ label: 'Compris', class: 'btn btn-primary', onclick: 'DriverModal.close()' }]);
+  },
+
   _ajouterDepense() {
     DriverModal.show(
       'Dépense imprévue',
@@ -418,21 +431,33 @@ const AccueilPage = {
       const moisAff = Math.max(0, Math.min(36, mois));
       const pct = Math.round(moisAff / 36 * 100);
       const restant = 36 - moisAff;
-      const etape = moisAff >= 36 ? 'Objectif atteint' : moisAff >= 24 ? 'Dernière ligne droite' : moisAff >= 12 ? 'À mi-parcours bientôt' : 'Premiers mois';
+      // Ton volontairement chaleureux : le chauffeur doit avoir envie de regarder cette carte.
+      const [titre, message] = moisAff >= 36 ? ['Elle est à vous !', 'Félicitations patron, vous l’avez fait ! 🎉']
+        : moisAff >= 30 ? ['La ligne d’arrivée est en vue', `Plus que ${restant} mois, tenez bon champion ! 🏁`]
+        : moisAff >= 24 ? ['Dernière ligne droite', `Encore ${restant} mois et le volant est à vous 🔥`]
+        : moisAff >= 12 ? ['Un tiers du chemin, bravo !', 'Vous tenez la route, continuez comme ça 💪']
+        : moisAff >= 6 ? ['Ça roule !', 'Chaque mois compte, patron 🚗']
+        : moisAff >= 1 ? ['Bien parti !', 'Le compteur tourne, courage patron ! 💪']
+        : ['Début de l’aventure', 'Courage patron ! 💪'];
       proprietaireHTML = `
       <div class="pc-card pc-card-navy pp-card">
         <div class="pp-head">
-          <span class="pc-badge orange">Programme propriétaire</span>
-          <span class="pp-pct">${pct} %</span>
+          <span class="pp-etiquette">${titre}</span>
+          <button type="button" class="pp-info tap-scale" onclick="AccueilPage._infoProprietaire()" aria-label="Conditions du programme propriétaire"><iconify-icon icon="solar:info-circle-bold"></iconify-icon></button>
         </div>
-        <div class="pp-titre">${restant > 0 ? `${moisAff} mois sur 36 <span>· encore ${restant}</span>` : '36 mois sur 36'}</div>
-        <div class="pp-sous">${restant > 0 ? 'Chaque mois de service vous rapproche de votre voiture.' : 'Vous avez atteint les 36 mois : parlez-en à votre gestionnaire.'}</div>
-        <div class="pp-jauge">
-          <div class="pc-jauge"><div class="pc-jauge-fill" style="--pct:${Math.max(2, pct)}%"></div></div>
-          <i style="left:33.33%"></i><i style="left:66.66%"></i>
+        <div class="pp-pct"><span>${pct}</span>%</div>
+        <div class="pp-mois">${moisAff} mois sur 36${restant > 0 ? ` · encore ${restant}` : ''}</div>
+        <div class="pp-route">
+          <div class="pp-route-fait" style="width:${pct}%"></div>
+          <div class="pp-voiture" style="left:${pct}%">
+            <svg viewBox="0 0 64 28" fill="none" stroke="#30d158" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 20h-2a2 2 0 0 1-2-2v-4l5-2 6-7h20l8 7h13a5 5 0 0 1 5 5v3h-4"/>
+              <path d="M20 20h20"/><circle cx="13" cy="21" r="4.2"/><circle cx="47" cy="21" r="4.2"/><path d="M14 12h10V6"/>
+            </svg>
+          </div>
+          <span class="pp-drapeau">🏁</span>
         </div>
-        <div class="pp-jalons"><span class="${moisAff >= 0 ? 'on' : ''}">Départ</span><span class="${moisAff >= 12 ? 'on' : ''}">12 mois</span><span class="${moisAff >= 24 ? 'on' : ''}">24 mois</span><span class="${moisAff >= 36 ? 'on' : ''}">Propriétaire</span></div>
-        <div class="pp-etape"><iconify-icon icon="solar:flag-bold-duotone"></iconify-icon> ${etape} · service continu, versements à jour, rachat à la valeur résiduelle.</div>
+        <div class="pp-message">${message}</div>
       </div>`;
     }
 
