@@ -2555,12 +2555,19 @@ const DashboardPage = {
     let seen = {};
     try { const raw = localStorage.getItem('pilote_surv_notif'); if (raw) seen = JSON.parse(raw) || {}; } catch (e) { seen = {}; }
     if (seen.day !== day || !seen.keys) seen = { day, keys: {} };
+    let sil = {};
+    try { const raw = localStorage.getItem('pilote_surv_silence'); if (raw) sil = JSON.parse(raw) || {}; } catch (e) { sil = {}; }
+    if (sil.day !== day || !sil.ids) sil = { day, ids: {} };
+    const idsActuels = new Set(this._surveillerNow.map(e => e.id));
+    // La sourdine tombe dès que le chauffeur n'est plus « à surveiller ».
+    Object.keys(sil.ids).forEach(id => { if (!idsActuels.has(id)) delete sil.ids[id]; });
     const nouveaux = [], nouvellesCles = [], clesActuelles = new Set();
     this._surveillerNow.forEach(e => {
       const motifs = e.reasons.filter(r => LBL[r]).map(r => LBL[r]);
       if (!motifs.length && !(e.ca > 0)) motifs.push("pas d'activité");
       const key = `${e.id}|${motifs.join(',')}`;
       clesActuelles.add(key);
+      if (sil.ids[e.id]) { seen.keys[key] = Date.now(); return; }   // arrêté à la main
       if (seen.keys[key]) return;
       seen.keys[key] = Date.now();
       const motifsTxt = motifs.map(m => (m === LBL.course_longue && e.courseMin) ? `${m} (${e.courseMin} min${e.courseAttendue ? `, attendu ~${e.courseAttendue} min pour ${e.courseKm} km` : ''})` : m);
@@ -2572,6 +2579,7 @@ const DashboardPage = {
     // présence continue (pas de re-sonnerie à chaque rafraîchissement).
     Object.keys(seen.keys).forEach(k => { if (!clesActuelles.has(k)) delete seen.keys[k]; });
     try { localStorage.setItem('pilote_surv_notif', JSON.stringify(seen)); } catch (e) { /* stockage indispo */ }
+    try { localStorage.setItem('pilote_surv_silence', JSON.stringify(sil)); } catch (e) { /* stockage indispo */ }
     this._verifierAlarme(clesActuelles);
     if (this._alarmeTimer) this._peindrePopupAlarme();
     if (!nouveaux.length) return;
@@ -2629,7 +2637,20 @@ const DashboardPage = {
     }
   },
 
+  // Arrêt MANUEL : les chauffeurs concernés sont mis en sourdine jusqu'à ce
+  // qu'ils quittent « À surveiller ». Sans cela, la moindre variation de motif
+  // (« occupé » → « occupé, CA sous la moyenne ») relançait l'alarme 30 s plus tard.
+  _silencerSurveilles() {
+    const day = new Date().toISOString().slice(0, 10);
+    let sil = {};
+    try { const raw = localStorage.getItem('pilote_surv_silence'); if (raw) sil = JSON.parse(raw) || {}; } catch (e) { sil = {}; }
+    if (sil.day !== day || !sil.ids) sil = { day, ids: {} };
+    (this._surveillerNow || []).forEach(e => { sil.ids[e.id] = Date.now(); });
+    try { localStorage.setItem('pilote_surv_silence', JSON.stringify(sil)); } catch (e) { /* stockage indispo */ }
+  },
+
   _arreterAlarme(silencieux = false) {
+    if (!silencieux) this._silencerSurveilles();
     if (this._alarmeTimer) { clearInterval(this._alarmeTimer); this._alarmeTimer = null; }
     this._alarmeKeys = null;
     const b = document.getElementById('fd-son');
