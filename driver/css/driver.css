@@ -2650,6 +2650,12 @@ body {
 .mk-btn-primary { background: rgba(255, 255, 255, 0.28); border: 1.5px solid rgba(255, 255, 255, 0.55); color: #fff; box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.35); backdrop-filter: blur(8px); }
 .mk-depense { width: 100%; margin-top: 12px; background: none; border: 0; color: rgba(255, 255, 255, 0.85); font-size: 0.85rem; font-weight: 600; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: 6px; }
 .mk-section { font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin: 20px 0 10px; }
+.mk-section-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mk-lien { border: 0; background: transparent; color: #3b82f6; font: inherit; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; display: inline-flex; align-items: center; gap: 2px; padding: 4px 0; }
+/* Calendrier embarqué sur l'accueil : pas de bouton flottant (il est sur la page Planning) */
+.accueil-planning { margin-bottom: 1rem; }
+.accueil-planning .planning-fab { display: none; }
+.accueil-planning .week-nav { margin-top: 0; }
 .mk-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-radius: 1rem; padding: 15px 16px; margin-bottom: 8px; background: var(--bg-tertiary); color: var(--text-primary); }
 .mk-row strong { font-size: 0.95rem; font-weight: 700; }
 .mk-row span { font-size: 0.85rem; color: var(--text-secondary); text-align: right; }

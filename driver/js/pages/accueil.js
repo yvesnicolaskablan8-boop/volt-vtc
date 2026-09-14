@@ -482,30 +482,21 @@ const AccueilPage = {
       ${carteArgentHTML}
       ${proprietaireHTML}
 
-      <!-- 2. Mon créneau du jour / prochain créneau
-           (le pointage a été retiré : la prise de fonction est suivie
-           par l'administration via le planning) -->
-      ${planningListeHTML}
-
-
-      <!-- 3. QUATRE GRANDES TUILES, un mot chacune -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-        ${tuile('planning', 'solar:calendar-date-bold-duotone', 'Planning', '#eff6ff', '#1e40af')}
-        ${tuile('messagerie', 'solar:chat-round-dots-bold-duotone', 'Messages', '#eff6ff', '#1e40af')}
-        ${estSalarie
-          ? tuile('contraventions', 'solar:document-text-bold-duotone', 'Amendes', '#fef3c7', '#b45309', nbContraventionsImpayees)
-          : tuile('dettes', 'solar:hand-money-bold-duotone', 'Mes dettes', '#fef3c7', '#b45309', nbContraventionsImpayees)}
-        ${tuile('signalements', 'solar:danger-triangle-bold-duotone', 'Un problème ?', '#fee2e2', '#b91c1c')}
+      <!-- 2. Le calendrier du chauffeur (semaine en cours, navigable), à la place des tuiles :
+           Messages, Amendes et le reste sont accessibles par la barre du bas (Messages, Autres). -->
+      <div class="mk-section mk-section-row">
+        <span>Mon planning</span>
+        <button type="button" class="mk-lien tap-scale" onclick="DriverRouter.navigate('planning')">Demander une absence <iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>
       </div>
-
-      <!-- 5. Tout le reste, rangé ailleurs -->
-      <button onclick="DriverRouter.navigate('plus')" class="tap-scale" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;min-height:60px;border-radius:1.25rem;border:2px solid var(--glass-border);background:transparent;color:var(--text-primary);font-size:1.05rem;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:1rem">
-        <iconify-icon icon="solar:widget-4-bold-duotone" style="font-size:1.5rem"></iconify-icon> Autres services
-      </button>
+      <div id="accueil-planning" class="accueil-planning"></div>
 
       <!-- Alertes vehicule urgentes uniquement -->
       <div id="maintenance-alerts"></div>
     `;
+
+    // Calendrier hebdomadaire : même rendu que la page Planning, embarqué ici.
+    const zonePlanning = document.getElementById('accueil-planning');
+    if (zonePlanning && typeof PlanningPage !== 'undefined') PlanningPage.render(zonePlanning);
 
     // Alertes maintenance vehicule (urgentes)
     this._loadMaintenanceAlerts();
