@@ -448,24 +448,13 @@ const AccueilPage = {
         ? `Courage patron, il reste encore ${restant} mois ! 💪`
         : 'Félicitations patron, elle est à vous ! 🎉';
       proprietaireHTML = `
-      <div class="pc-card pc-card-navy pp-card">
-        <div class="pp-head">
-          <span class="pp-etiquette">${titre}</span>
-          <button type="button" class="pp-info tap-scale" onclick="AccueilPage._infoProprietaire()" aria-label="Conditions du programme propriétaire"><iconify-icon icon="solar:info-circle-bold"></iconify-icon></button>
+      <div class="cp-card" onclick="AccueilPage._infoProprietaire()" role="button" title="Conditions du programme propriétaire">
+        <div class="cp-ring">
+          <svg viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="34"/><circle class="fg" cx="40" cy="40" r="34" stroke="#30d158" style="--pct:${Math.max(1, pct)}"/></svg>
+          <div class="cp-ring-txt"><b>${moisAff}</b><small>/ 36</small></div>
         </div>
-        <div class="pp-pct"><span>${pct}</span>%</div>
-        <div class="pp-mois">${moisAff} mois sur 36${restant > 0 ? ` · encore ${restant}` : ''}</div>
-        <div class="pp-route">
-          <div class="pp-route-fait" style="width:${pct}%"></div>
-          <div class="pp-voiture" style="left:calc(${pct}% - ${Math.round(pct * 0.64)}px)">
-            <svg viewBox="0 0 64 28" fill="none" stroke="#30d158" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M6 20h-2a2 2 0 0 1-2-2v-4l5-2 6-7h20l8 7h13a5 5 0 0 1 5 5v3h-4"/>
-              <path d="M20 20h20"/><circle cx="13" cy="21" r="4.2"/><circle cx="47" cy="21" r="4.2"/><path d="M14 12h10V6"/>
-            </svg>
-          </div>
-          <span class="pp-drapeau">🏁</span>
-        </div>
-        <div class="pp-message">${message}</div>
+        <div class="cp-title">Ma voiture</div>
+        <div class="cp-desc">${restant > 0 ? `Encore ${restant} mois, courage patron !` : 'Elle est à vous 🎉'}</div>
       </div>`;
     }
 
@@ -494,18 +483,13 @@ const AccueilPage = {
         : `Encore ${restant.toLocaleString('fr-FR')} F sur ${joursRestants} jour${joursRestants > 1 ? 's' : ''} · ${parJour.toLocaleString('fr-FR')} F par jour et la prime est à vous !`;
       const chip = decrochee ? 'Objectif atteint' : rythme >= 0.95 ? 'Dans le rythme' : rythme >= 0.75 ? 'Un peu en retard' : 'Il faut accélérer';
       primeHTML = (obj.primeActive === false) ? '' : `
-      <div class="pc-card pr-card">
-        <div class="pr-head">
-          <span class="pr-etiquette">Prime du mois · ${prime.toLocaleString('fr-FR')} F</span>
-          <span class="pr-chip ${etat}">${chip}</span>
+      <div class="cp-card">
+        <div class="cp-ring">
+          <svg viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="34"/><circle class="fg ${etat}" cx="40" cy="40" r="34" style="--pct:${Math.max(1, Math.min(100, taux))}"/></svg>
+          <div class="cp-ring-txt"><b>${Math.min(100, taux)}</b><small>%</small></div>
         </div>
-        <div class="pr-pct"><span>${Math.min(100, taux)}</span>%<small>de l’objectif</small></div>
-        <div class="pr-jauge"><div class="pr-jauge-fill ${etat}" style="width:${Math.min(100, taux)}%"></div><i style="left:${Math.min(100, Math.round(joursEcoules / joursTotal * 100))}%" title="Aujourd’hui"></i></div>
-        <div class="pr-lignes">
-          <span>CA du mois <b>${caMois.toLocaleString('fr-FR')} F</b></span>
-          <span>Objectif <b>${objectifMois.toLocaleString('fr-FR')} F</b> · ${objectifJourPrime.toLocaleString('fr-FR')} F × ${joursTotal} j</span>
-        </div>
-        <div class="pr-message">${phrase}</div>
+        <div class="cp-title">Prime ${prime.toLocaleString('fr-FR')} F</div>
+        <div class="cp-desc">${decrochee ? 'Décrochée, bravo ! 🎉' : `${Math.round(caMois / 1000)} k sur ${Math.round(objectifMois / 1000)} k · ${joursRestants} j restants`}</div>
       </div>`;
     }
 
@@ -525,8 +509,7 @@ const AccueilPage = {
 
       <!-- 1. L'ARGENT : ai-je payé aujourd'hui ? -->
       ${carteArgentHTML}
-      ${primeHTML}
-      ${proprietaireHTML}
+      ${primeHTML || proprietaireHTML ? `<div class="cp-duo">${primeHTML}${proprietaireHTML}</div>` : ""}
 
       <!-- 2. Le calendrier du chauffeur (semaine en cours, navigable), à la place des tuiles :
            Messages, Amendes et le reste sont accessibles par la barre du bas (Messages, Autres). -->
