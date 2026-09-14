@@ -75,52 +75,8 @@ const DriverStore = {
     };
   },
 
-  /** Le chauffeur ajoute une charge du jour (recharge, lavage, autre). */
-  async ajouterCharge({ type, montant, libelle, date }) {
-    const id = this._chauffeurId();
-    if (!id) return { success: false, error: 'Chauffeur inconnu' };
-    const m = Math.round(Number(montant) || 0);
-    if (m <= 0) return { success: false, error: 'Montant invalide' };
-    const ligne = {
-      id: 'CHG-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      chauffeur_id: id,
-      date: date || new Date().toISOString().split('T')[0],
-      type: ['recharge', 'lavage', 'autre'].includes(type) ? type : 'autre',
-      montant: m,
-      libelle: libelle || null,
-      saisi_par: 'chauffeur',
-    };
-    const { error } = await supabase.from('fleet_charges').insert(ligne);
-    if (error) return { success: false, error: error.message };
-    return { success: true };
-  },
 
-  /**
-   * Lit un ticket photographié (recharge, lavage, autre) via /api/charge-ocr.
-   * Renvoie { success, lisible, type, montant, libelle, date, confiance } ou { success:false, error }.
-   */
-  async lireTicketCharge(imageDataUrl, typeAttendu) {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return { success: false, error: 'Session expirée, reconnectez-vous' };
-      const r = await fetch('/api/charge-ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify({ image: imageDataUrl, type: typeAttendu || null }),
-      });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) return { success: false, error: j.error || `Erreur ${r.status}` };
-      return { success: true, ...j };
-    } catch (e) {
-      return { success: false, error: 'Réseau indisponible' };
-    }
-  },
 
-  async supprimerCharge(chargeId) {
-    const { error } = await supabase.from('fleet_charges').delete().eq('id', chargeId);
-    if (error) return { success: false, error: error.message };
-    return { success: true };
-  },
 
   // ===== PLANNING =====
 

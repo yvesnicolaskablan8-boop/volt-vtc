@@ -2,12 +2,6 @@
  * AccueilPage — Tableau de bord chauffeur (enhanced)
  */
 const AccueilPage = {
-  // ===== DÉPENSE IMPRÉVUE (salarié : déduite de ce qu'il verse) =====
-  // Le chauffeur photographie le reçu ; le serveur (/api/charge-ocr) lit le montant
-  // et le libellé, le chauffeur vérifie puis enregistre. La dépense est stockée
-  // comme charge de type « autre ». Si la lecture est indisponible, il saisit le montant.
-  // Demi-jauge segmentée : 24 barreaux arrondis sur 180°, les barreaux atteints
-  // sont colorés (les premiers plus soutenus), les autres restent en filigrane.
   _demiJauge(pct, valeur, unite, couleur) {
     const N = 20, cx = 100, cy = 100, rIn = 68, rOut = 96;
     const lit = Math.round(Math.max(0, Math.min(100, pct)) / 100 * N);
@@ -48,136 +42,6 @@ const AccueilPage = {
           <li>rachat à la valeur résiduelle prévue à votre contrat.</li>
         </ul>
       </div>`, [{ label: 'Compris', class: 'btn btn-primary', onclick: 'DriverModal.close()' }]);
-  },
-
-  _ajouterDepense() {
-    DriverModal.show(
-      'Dépense imprévue',
-      `<div style="padding:0.25rem 0">
-        <span class="pc-badge ciel" style="margin-bottom:12px">Déduite de votre versement du jour</span>
-        <input type="file" id="dep-photo-input" accept="image/*" capture="environment" style="display:none">
-        <button type="button" id="dep-photo-btn" class="dep-tuile tap-scale">
-          <span class="dep-tuile-icone"><iconify-icon icon="solar:camera-bold-duotone"></iconify-icon></span>
-          <span class="dep-tuile-titre">Photographier le reçu</span>
-          <span class="dep-tuile-sous">Le montant est lu automatiquement</span>
-        </button>
-        <div class="dep-chips">
-          <span><iconify-icon icon="solar:toolbox-bold-duotone"></iconify-icon> Réparation</span>
-          <span><iconify-icon icon="solar:routing-2-bold-duotone"></iconify-icon> Péage</span>
-          <span><iconify-icon icon="solar:garage-bold-duotone"></iconify-icon> Parking</span>
-          <span><iconify-icon icon="solar:wheel-bold-duotone"></iconify-icon> Pneu</span>
-        </div>
-        <div id="dep-photo-zone" class="dep-apercu" style="display:none">
-          <img id="dep-photo-preview" alt="Reçu">
-          <div id="dep-photo-statut"></div>
-        </div>
-        <div id="dep-champs" class="dep-verif" style="display:none">
-          <div class="dep-verif-titre">Vérifiez ce qui a été lu</div>
-          <label for="dep-montant">Montant (FCFA)</label>
-          <input id="dep-montant" type="number" inputmode="numeric" min="0" step="100" class="dep-montant" placeholder="0">
-          <label for="dep-libelle">Nature de la dépense</label>
-          <input id="dep-libelle" type="text" class="form-control" placeholder="Ex : réparation pneu, péage…" style="font-size:0.95rem">
-        </div>
-      </div>`,
-      [
-        { label: 'Annuler', class: 'btn btn-outline', onclick: 'DriverModal.close()' },
-        { label: 'Enregistrer', class: 'btn btn-primary', onclick: 'AccueilPage._validerDepense()' }
-      ]
-    );
-    this._recuLu = false;
-    const input = document.getElementById('dep-photo-input');
-    const btn = document.getElementById('dep-photo-btn');
-    if (!input || !btn) return;
-    btn.addEventListener('click', () => input.click());
-    input.addEventListener('change', (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (file) this._lireRecuDepense(file);
-      input.value = '';
-    });
-  },
-
-  _lireRecuDepense(file) {
-    const zone = document.getElementById('dep-photo-zone');
-    const apercu = document.getElementById('dep-photo-preview');
-    const statut = document.getElementById('dep-photo-statut');
-    const champs = document.getElementById('dep-champs');
-    const setStatut = (texte, couleur) => {
-      if (!statut) return;
-      statut.textContent = texte;
-      statut.style.color = couleur || 'var(--text-secondary)';
-    };
-    const montrerChamps = () => { if (champs) champs.style.display = 'block'; };
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = async () => {
-        const MAX = 1280;
-        let w = img.width, h = img.height;
-        if (w > MAX || h > MAX) { const k = MAX / Math.max(w, h); w = Math.round(w * k); h = Math.round(h * k); }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-        if (apercu) apercu.src = dataUrl;
-        if (zone) zone.style.display = 'flex';
-        setStatut('Lecture du reçu en cours…');
-        const r = await DriverStore.lireTicketCharge(dataUrl, 'imprevu');
-        const champMontant = document.getElementById('dep-montant');
-        const champLibelle = document.getElementById('dep-libelle');
-        if (!r || !r.success) {
-          const message = (r && r.error) || '';
-          if (/non configur|pas répondu|impossible pour le moment|Réseau|Erreur 5/i.test(message)) {
-            this._recuLu = true;
-            montrerChamps();
-            setStatut('Lecture automatique indisponible. Saisissez le montant inscrit sur le reçu.', '#fbbf24');
-            return;
-          }
-          setStatut(message || 'Lecture impossible pour le moment. Réessayez dans un instant.', '#f87171');
-          return;
-        }
-        if (!r.lisible || !(r.montant > 0)) {
-          setStatut('Reçu illisible. Reprenez la photo de plus près, bien à plat et sans reflet.', '#fbbf24');
-          return;
-        }
-        this._recuLu = true;
-        montrerChamps();
-        if (champMontant) champMontant.value = r.montant;
-        if (champLibelle && r.libelle && !champLibelle.value) champLibelle.value = r.libelle;
-        const fcfa = Number(r.montant).toLocaleString('fr-FR') + ' F';
-        if (r.confiance < 0.6) {
-          setStatut(`Lecture incertaine : ${fcfa}. Vérifiez bien le montant avant d'enregistrer.`, '#fbbf24');
-        } else {
-          setStatut(`Lu sur le reçu : ${fcfa}${r.libelle ? ' · ' + r.libelle : ''}. Vérifiez, puis enregistrez.`, '#34d399');
-        }
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  },
-
-  async _validerDepense() {
-    if (!this._recuLu) { DriverToast.show('Photographiez d\'abord le reçu', 'error'); return; }
-    const montant = parseInt((document.getElementById('dep-montant') || {}).value, 10);
-    const libelle = ((document.getElementById('dep-libelle') || {}).value || '').trim() || 'Dépense imprévue';
-    if (!(montant > 0)) { DriverToast.show('Entrez un montant valide', 'error'); return; }
-    DriverModal.close();
-    const r = await DriverStore.ajouterCharge({ type: 'autre', montant, libelle });
-    if (r && r.success) {
-      DriverToast.show('Dépense enregistrée', 'success');
-      this.render(document.getElementById('app-content'));
-    } else {
-      DriverToast.show((r && r.error) || 'Impossible d\'enregistrer la dépense', 'error');
-    }
-  },
-
-  async _supprimerCharge(id) {
-    const r = await DriverStore.supprimerCharge(id);
-    if (r && r.success) {
-      DriverToast.show('Charge supprimée', 'success');
-      this.render(document.getElementById('app-content'));
-    } else {
-      DriverToast.show((r && r.error) || 'Suppression impossible', 'error');
-    }
   },
 
   async render(container) {
@@ -393,15 +257,11 @@ const AccueilPage = {
               ? `<button onclick="DriverRouter.navigate('versements')" class="mk-btn mk-btn-primary tap-scale">Verser</button>`
               : `<button onclick="DriverRouter.navigate('versements')" class="mk-btn mk-btn-outline tap-scale">Mes versements</button>`}
           </div>
-          <button onclick="AccueilPage._ajouterDepense()" class="mk-depense tap-scale">
-            <iconify-icon icon="solar:camera-bold-duotone" style="font-size:1.1rem"></iconify-icon> Déclarer une dépense imprévue
-          </button>
           ${listeCharges.length ? `<div style="margin-top:10px;display:flex;flex-direction:column;gap:5px">
             ${listeCharges.map(c => `<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);border-radius:10px;padding:7px 11px;font-size:0.85rem">
               <iconify-icon icon="${c.type === 'recharge' ? 'solar:bolt-circle-bold-duotone' : c.type === 'lavage' ? 'solar:waterdrops-bold-duotone' : 'solar:tag-bold-duotone'}" style="font-size:1.1rem;flex:none"></iconify-icon>
               <span style="flex:1;text-transform:capitalize">${esc(c.type)}${c.libelle ? ' · ' + esc(c.libelle) : ''}</span>
               <strong>${Number(c.montant).toLocaleString('fr-FR')}</strong>
-              <button onclick="AccueilPage._supprimerCharge('${esc(c.id)}')" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;padding:2px"><iconify-icon icon="solar:trash-bin-minimalistic-bold" style="font-size:1.1rem"></iconify-icon></button>
             </div>`).join('')}
           </div>` : ''}
         </div>`;
