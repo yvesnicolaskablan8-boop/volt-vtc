@@ -6,6 +6,24 @@ const AccueilPage = {
   // Le chauffeur photographie le reçu ; le serveur (/api/charge-ocr) lit le montant
   // et le libellé, le chauffeur vérifie puis enregistre. La dépense est stockée
   // comme charge de type « autre ». Si la lecture est indisponible, il saisit le montant.
+  // Demi-jauge segmentée : 24 barreaux arrondis sur 180°, les barreaux atteints
+  // sont colorés (les premiers plus soutenus), les autres restent en filigrane.
+  _demiJauge(pct, valeur, unite, couleur) {
+    const N = 24, cx = 100, cy = 100, rIn = 66, rOut = 96;
+    const lit = Math.round(Math.max(0, Math.min(100, pct)) / 100 * N);
+    let barres = '';
+    for (let i = 0; i < N; i++) {
+      const a = Math.PI - (i + 0.5) * (Math.PI / N);   // de gauche (180°) vers la droite (0°)
+      const x1 = cx + rIn * Math.cos(a), y1 = cy - rIn * Math.sin(a);
+      const x2 = cx + rOut * Math.cos(a), y2 = cy - rOut * Math.sin(a);
+      const on = i < lit;
+      const op = on ? (1 - (i / N) * 0.55).toFixed(2) : '0.16';
+      barres += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${couleur}" stroke-opacity="${op}" stroke-width="9" stroke-linecap="round"/>`;
+    }
+    return `<svg class="cp-gauge" viewBox="0 0 200 108" aria-hidden="true">${barres}
+      <text x="100" y="94" text-anchor="middle" class="cp-gauge-val">${valeur}<tspan class="cp-gauge-unit">${unite}</tspan></text></svg>`;
+  },
+
   _infoProprietaire() {
     DriverModal.show('Programme propriétaire', `
       <div style="font-size:0.95rem;line-height:1.55;color:var(--text-primary)">
@@ -449,10 +467,7 @@ const AccueilPage = {
         : 'Félicitations patron, elle est à vous ! 🎉';
       proprietaireHTML = `
       <div class="cp-card" onclick="AccueilPage._infoProprietaire()" role="button" title="Conditions du programme propriétaire">
-        <div class="cp-ring">
-          <svg viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="34"/><circle class="fg ok" cx="40" cy="40" r="34" style="--pct:${Math.max(1, pct)}"/></svg>
-          <div class="cp-ring-txt"><b>${moisAff}</b><small>/ 36</small></div>
-        </div>
+        ${this._demiJauge(pct, moisAff, ' / 36', '#30d158')}
         <div class="cp-title">Ma voiture</div>
         <div class="cp-desc">${restant > 0 ? `Encore ${restant} mois, courage patron !` : 'Elle est à vous 🎉'}</div>
       </div>`;
@@ -484,10 +499,7 @@ const AccueilPage = {
       const chip = decrochee ? 'Objectif atteint' : rythme >= 0.95 ? 'Dans le rythme' : rythme >= 0.75 ? 'Un peu en retard' : 'Il faut accélérer';
       primeHTML = (obj.primeActive === false) ? '' : `
       <div class="cp-card">
-        <div class="cp-ring">
-          <svg viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="34"/><circle class="fg ${etat}" cx="40" cy="40" r="34" style="--pct:${Math.max(1, Math.min(100, taux))}"/></svg>
-          <div class="cp-ring-txt"><b>${Math.min(100, taux)}</b><small>%</small></div>
-        </div>
+        ${this._demiJauge(Math.min(100, taux), Math.min(100, taux), ' %', etat === 'ok' ? '#30d158' : etat === 'mid' ? '#ffb340' : '#ff6b6b')}
         <div class="cp-title">Prime ${prime.toLocaleString('fr-FR')} F</div>
         <div class="cp-desc">${decrochee ? 'Décrochée, bravo ! 🎉' : `${Math.round(caMois / 1000)} k sur ${Math.round(objectifMois / 1000)} k · ${joursRestants} j restants`}</div>
       </div>`;
