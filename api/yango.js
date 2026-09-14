@@ -522,6 +522,22 @@ async function handleOrders(req, res) {
       }
     });
 
+    // Diagnostic (?champs=1) : structure brute d'une course, sans données
+    // personnelles (noms, téléphones et adresses masqués), pour savoir ce que
+    // Yango transmet réellement (durée estimée, distance, points de route…).
+    if (req.query.champs === '1') {
+      const masque = (v, prof = 0) => {
+        if (v === null || v === undefined) return v;
+        if (Array.isArray(v)) return v.slice(0, 3).map(x => masque(x, prof + 1));
+        if (typeof v === 'object') { const o2 = {}; for (const k of Object.keys(v)) o2[k] = masque(v[k], prof + 1); return o2; }
+        if (typeof v === 'string') return /^\d{4}-\d{2}-\d{2}T/.test(v) ? v : (v.length > 24 ? '«texte»' : (/^[\d.+-]+$/.test(v) ? v : '«texte»'));
+        return v;
+      };
+      const liste = data.orders || [];
+      const enCours = liste.find(o => !['complete', 'finished', 'cancelled', 'canceled', 'failed', 'expired', 'rejected', 'none'].includes(o.status));
+      return res.json({ total: liste.length, statuts: [...new Set(liste.map(o => o.status))], exemple_en_cours: enCours ? masque(enCours) : null, exemple_terminee: liste[0] ? masque(liste[0]) : null });
+    }
+
     const orders = (data.orders || []).map(o => {
       const dureeMinutes = Math.round(orderDurationMin(o));
 
