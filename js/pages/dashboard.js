@@ -1542,7 +1542,7 @@ const DashboardPage = {
         .fd-donut-col{display:flex;flex-direction:column;align-items:center;gap:14px;flex-shrink:0;}
         .fd-donut-wrap{position:relative;width:230px;height:230px;flex-shrink:0;}
         .fd-recette{flex:1;min-width:0;}
-        .fd-recette-inner{display:flex;flex-direction:column;gap:12px;cursor:pointer;border-left:1px solid var(--border-color);padding-left:24px;}
+        .fd-recette-inner{display:flex;flex-direction:column;gap:12px;cursor:default;border-left:1px solid var(--border-color);padding-left:24px;}
         .fd-voir{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;background:var(--pilote-blue);color:#fff;font-weight:700;font-size:13px;padding:9px 16px;border-radius:12px;box-shadow:0 8px 18px rgba(245,81,46,.32);border:none;cursor:pointer;font-family:inherit;transition:transform .15s ease,box-shadow .15s ease;}
         .fd-voir:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(245,81,46,.4);}
         .fd-voir-alt{align-self:center;background:var(--bg-tertiary);color:var(--text-primary);box-shadow:none;border:1px solid var(--border-color);}
@@ -2520,10 +2520,10 @@ const DashboardPage = {
       const granBar = `<div class="mini-gran">${gBtn('jour', 'Jour')}${gBtn('semaine', 'Semaine')}${gBtn('mois', 'Mois')}</div>`;
       return `<div id="hero-mini" class="mini-chart" data-total="${fmt(sumV)}" onmouseleave="DashboardPage._miniLeave()"><div class="mini-head"><div class="mini-title"><span class="mini-dot"></span>Recette encaissée · ${unitLabel}</div><div class="mini-val" id="mini-value">${fmt(sumV)}</div></div>${granBar}<div class="mini-bars">${cols}</div></div>`;
     })();
-    return `<div class="fd-recette-inner" onclick="DashboardPage._openAnalyseVersements(${lastIdx})">
+    return `<div class="fd-recette-inner">
       ${pace}
       ${bars}
-      <div class="fd-voir">Analyse des versements <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></div>
+      <button type="button" class="fd-voir" onclick="DashboardPage._openAnalyseVersements(${lastIdx})">Analyse des versements <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button>
     </div>`;
   },
 
