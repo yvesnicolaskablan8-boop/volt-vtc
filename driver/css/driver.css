@@ -2680,8 +2680,8 @@ body {
 .mk-muted { opacity: 0.55; }
 
 /* Vignettes compactes côte à côte : prime du mois + programme propriétaire (anneaux) */
-.cp-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
-.cp-card { border-radius: 1.25rem; padding: 14px 12px 12px; background: var(--bg-secondary); border: 1px solid var(--glass-border); text-align: center; cursor: default; }
+.cp-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 1rem; }
+.cp-card { padding: 6px 4px 4px; background: transparent; border: 0; text-align: center; cursor: default; }
 .cp-card[role="button"] { cursor: pointer; }
 .cp-ring { position: relative; width: 92px; height: 92px; margin: 0 auto 8px; }
 .cp-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
