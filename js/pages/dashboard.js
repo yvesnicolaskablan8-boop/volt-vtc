@@ -1500,6 +1500,28 @@ const DashboardPage = {
         .fd-son-sep{height:1px;background:var(--border-color);margin:6px 4px;}
         .fd-son-rep.on{color:#0a9d78;}
         .fd-son.alarme{color:#fff;background:#EF4444;border-color:#EF4444;animation:fdAlarme 1s ease-in-out infinite;}
+        .fd-pop{position:fixed;right:22px;bottom:22px;z-index:9000;width:min(400px,calc(100vw - 32px));background:var(--bg-secondary);border:1px solid rgba(239,68,68,.45);border-radius:20px;box-shadow:0 30px 60px -20px rgba(0,0,0,.5),0 0 0 4px rgba(239,68,68,.12);overflow:hidden;animation:fdPopIn .35s cubic-bezier(.2,.8,.2,1) both;font-family:inherit;}
+        @keyframes fdPopIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+        .fd-pop-h{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#EF4444;color:#fff;}
+        .fd-pop-h .ic{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);display:inline-flex;align-items:center;justify-content:center;font-size:17px;animation:fdBell 1.2s ease-in-out infinite;}
+        @keyframes fdBell{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-7deg)}80%{transform:rotate(4deg)}}
+        .fd-pop-h b{font-size:14px;font-weight:800;flex:1;}
+        .fd-pop-h small{font-size:11px;opacity:.85;font-weight:600;}
+        .fd-pop-h button{border:0;background:rgba(255,255,255,.18);color:#fff;width:28px;height:28px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;}
+        .fd-pop-h button:hover{background:rgba(255,255,255,.3);}
+        .fd-pop-l{max-height:260px;overflow:auto;padding:8px 10px;display:flex;flex-direction:column;gap:6px;}
+        .fd-pop-r{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;background:var(--bg-primary);border:1px solid var(--border-color);}
+        .fd-pop-r .av{width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex:none;}
+        .fd-pop-r .nm{font-size:13.5px;font-weight:800;color:var(--text-primary);}
+        .fd-pop-r .mt{font-size:12px;color:#B91C1C;font-weight:600;margin-top:1px;line-height:1.35;}
+        .fd-pop-r .ca{margin-left:auto;font-size:12px;font-weight:700;color:var(--text-muted);white-space:nowrap;}
+        .fd-pop-f{display:flex;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--border-color);}
+        .fd-pop-f button{flex:1;border:0;border-radius:12px;padding:11px 12px;font:inherit;font-size:13px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.15s;}
+        .fd-pop-f .stop{background:#EF4444;color:#fff;box-shadow:0 10px 22px -10px rgba(239,68,68,.9);} .fd-pop-f .stop:hover{filter:brightness(1.06);transform:translateY(-1px);}
+        .fd-pop-f .voir{background:var(--bg-tertiary);color:var(--text-primary);} .fd-pop-f .voir:hover{background:var(--border-color);}
+        .fd-pop.mini{width:auto;border-radius:999px;}
+        .fd-pop.mini .fd-pop-l,.fd-pop.mini .fd-pop-f,.fd-pop.mini small{display:none;}
+        .fd-pop.mini .fd-pop-h{padding:8px 12px 8px 8px;cursor:pointer;border-radius:999px;}
         @keyframes fdAlarme{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
         .fd-son-menu button iconify-icon.chk{font-size:16px;color:#0a9d78;visibility:hidden;} .fd-son-menu button.on iconify-icon.chk{visibility:visible;}
         @keyframes fdDing{0%,100%{transform:none}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(4deg)}}
@@ -2561,6 +2583,7 @@ const DashboardPage = {
     Object.keys(seen.keys).forEach(k => { if (!clesActuelles.has(k)) delete seen.keys[k]; });
     try { localStorage.setItem('pilote_surv_notif', JSON.stringify(seen)); } catch (e) { /* stockage indispo */ }
     this._verifierAlarme(clesActuelles);
+    if (this._alarmeTimer) this._peindrePopupAlarme();
     if (!nouveaux.length) return;
     const txt = nouveaux.join(' · ');
     const titre = `⚠️ À surveiller (${nouveaux.length})`;
@@ -2634,6 +2657,52 @@ const DashboardPage = {
     }, 8000);
     const b = document.getElementById('fd-son');
     if (b) { b.classList.add('alarme'); b.replaceChildren(); b.insertAdjacentHTML('beforeend', '<iconify-icon icon="solar:bell-off-bold"></iconify-icon><span>Arrêter l’alarme</span>'); b.title = 'Cliquez pour arrêter l’alarme'; }
+    this._alarmeMini = false;
+    this._peindrePopupAlarme();
+  },
+
+  // Fenêtre d'alarme flottante : qui, pourquoi, depuis quand ; réductible en
+  // pastille ; « Couper l'alarme » = arrêt manuel. Disparaît au retour à la normale.
+  _alarmeMini: false,
+
+  _peindrePopupAlarme() {
+    if (!this._alarmeTimer) { const old = document.getElementById('fd-alarme-pop'); if (old) old.remove(); return; }
+    const LBL = { occupe_yango: 'occupé sur Yango', hors_ligne_yango: 'hors ligne sur Yango', ca_faible: 'CA anormalement bas', ca_modere: 'CA sous la moyenne', hors_planning: 'hors planning', course_longue: 'course anormalement longue' };
+    const esc = (s) => Utils.escHtml(String(s == null ? '' : s));
+    const liste = (this._surveillerNow || []).filter(e => {
+      const motifs = e.reasons.filter(r => LBL[r]).map(r => LBL[r]);
+      if (!motifs.length && !(e.ca > 0)) motifs.push("pas d'activité");
+      return this._alarmeKeys && this._alarmeKeys.has(`${e.id}|${motifs.join(',')}`);
+    });
+    const rows = (liste.length ? liste : (this._surveillerNow || [])).map(e => {
+      const motifs = e.reasons.filter(r => LBL[r]).map(r => (r === 'course_longue' && e.courseMin) ? `${LBL[r]} (${e.courseMin} min${e.courseAttendue ? `, attendu ~${e.courseAttendue} min` : ''})` : LBL[r]);
+      if (!motifs.length && !(e.ca > 0)) motifs.push("pas d'activité aujourd'hui");
+      const parts = e.nom.split(/\s+/).filter(Boolean);
+      const ini = (parts[0] ? parts[0][0] : '') + (parts[1] ? parts[1][0] : '');
+      return `<div class="fd-pop-r"><span class="av" style="background:${Utils.getAvatarColor(e.id)}">${esc(ini.toUpperCase())}</span><div><div class="nm">${esc(e.nom)}</div><div class="mt">${esc(motifs.join(' · '))}</div></div><span class="ca">${e.ca > 0 ? Utils.formatCurrency(e.ca) : '0 F'}</span></div>`;
+    }).join('');
+    const n = (liste.length ? liste : (this._surveillerNow || [])).length;
+    let pop = document.getElementById('fd-alarme-pop');
+    if (!pop) { pop = document.createElement('div'); pop.id = 'fd-alarme-pop'; pop.className = 'fd-pop'; document.body.appendChild(pop); }
+    pop.classList.toggle('mini', !!this._alarmeMini);
+    pop.replaceChildren();
+    pop.insertAdjacentHTML('beforeend', `
+      <div class="fd-pop-h" onclick="if(DashboardPage._alarmeMini){DashboardPage._reduireAlarme(false)}">
+        <span class="ic"><iconify-icon icon="solar:bell-bing-bold"></iconify-icon></span>
+        <b>Alerte flotte · ${n} chauffeur${n > 1 ? 's' : ''}</b>
+        <small>alarme en cours</small>
+        <button type="button" title="${this._alarmeMini ? 'Agrandir' : 'Réduire'}" onclick="event.stopPropagation();DashboardPage._reduireAlarme(${this._alarmeMini ? 'false' : 'true'})"><iconify-icon icon="${this._alarmeMini ? 'solar:maximize-square-minimalistic-bold' : 'solar:minimize-square-minimalistic-bold'}"></iconify-icon></button>
+      </div>
+      <div class="fd-pop-l">${rows || '<div class="fd-pop-r"><div class="nm">Situation en cours de mise à jour…</div></div>'}</div>
+      <div class="fd-pop-f">
+        <button type="button" class="voir" onclick="DashboardPage._fleetCardClick('surveiller')"><iconify-icon icon="solar:eye-bold"></iconify-icon> Voir le détail</button>
+        <button type="button" class="stop" onclick="DashboardPage._arreterAlarme()"><iconify-icon icon="solar:bell-off-bold"></iconify-icon> Couper l’alarme</button>
+      </div>`);
+  },
+
+  _reduireAlarme(mini) {
+    this._alarmeMini = !!mini;
+    this._peindrePopupAlarme();
   },
 
   // Appelé à chaque rafraîchissement : si plus aucun chauffeur déclencheur
@@ -2647,6 +2716,7 @@ const DashboardPage = {
   _arreterAlarme(silencieux = false) {
     if (this._alarmeTimer) { clearInterval(this._alarmeTimer); this._alarmeTimer = null; }
     this._alarmeKeys = null;
+    this._peindrePopupAlarme();
     const b = document.getElementById('fd-son');
     if (b && b.classList.contains('alarme')) {
       b.classList.remove('alarme');
