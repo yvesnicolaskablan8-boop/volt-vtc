@@ -215,7 +215,8 @@ const AccueilPage = {
     const estSalarie = chauffeur.typeContrat === 'salarie';
     const objectifJour = Number(chauffeur.objectifCaJour || chauffeur.objectifCa || 0);
     const caJour = Number((data.stats && data.stats.caJour) || 0);
-    const joursRepos = [chauffeur.jourRepos, chauffeur.jourRepos2]
+    // Un jour de repos par semaine (l'ancien 2e jour n'est plus lu).
+    const joursRepos = [chauffeur.jourRepos]
       .filter(j => j === 0 || j).map(Number);
     const estJourRepos = joursRepos.includes(today.getDay());
 

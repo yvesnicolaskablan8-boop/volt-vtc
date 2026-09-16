@@ -399,6 +399,55 @@ const Utils = {
 
   // =================== SIMULATEUR DE PLANIFICATION ===================
 
+  /** Noms des jours, index = Date.getDay() (0 = dimanche). */
+  JOURS_SEMAINE: ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'],
+
+  /**
+   * Jour de repos hebdomadaire d'un chauffeur (0 = dimanche … 6 = samedi), ou
+   * null s'il n'est pas défini. Règle en vigueur depuis le 16/09/2026 : chaque
+   * chauffeur a UN jour de repos par semaine (l'ancien 2e jour des salariés
+   * n'est plus lu).
+   */
+  jourReposDe(ch) {
+    if (!ch) return null;
+    const j = ch.jourRepos;
+    if (j === null || j === undefined || j === '') return null;
+    const n = Number(j);
+    return Number.isInteger(n) && n >= 0 && n <= 6 ? n : null;
+  },
+
+  /**
+   * Vérifie qu'un créneau laisse au chauffeur au moins un jour libre dans la
+   * semaine (lundi → dimanche) qui contient `dateStr`.
+   *   planning   : créneaux existants (ceux du Store, éventuellement complétés
+   *                par des créneaux simulés) ;
+   *   ignorerId  : créneau à exclure du décompte (celui qu'on déplace ou modifie).
+   * Renvoie { ok, joursTravailles, estJourRepos, jourRepos, lundi }.
+   */
+  controleReposHebdo(chauffeur, dateStr, planning, ignorerId) {
+    const id = chauffeur && chauffeur.id;
+    const [y, m, d] = String(dateStr || '').split('-').map(Number);
+    if (!id || !y || !m || !d) return { ok: true, joursTravailles: 0, estJourRepos: false, jourRepos: null, lundi: null };
+    const jour = new Date(y, m - 1, d);
+    const dow = jour.getDay();
+    const lundi = new Date(y, m - 1, d - (dow === 0 ? 6 : dow - 1));
+    const iso = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+    const debut = iso(lundi);
+    const fin = iso(new Date(lundi.getFullYear(), lundi.getMonth(), lundi.getDate() + 6));
+    const jours = new Set([dateStr]);
+    (planning || []).forEach(p => {
+      if (!p || p.chauffeurId !== id || (ignorerId && p.id === ignorerId)) return;
+      if (p.date >= debut && p.date <= fin) jours.add(p.date);
+    });
+    const jourRepos = this.jourReposDe(chauffeur);
+    return { ok: jours.size < 7, joursTravailles: jours.size, estJourRepos: jourRepos === dow, jourRepos, lundi: debut };
+  },
+
+  /** Message affiché quand un créneau priverait un chauffeur de son jour de repos. */
+  messageReposHebdo(chauffeur) {
+    const nom = (chauffeur ? `${chauffeur.prenom || ''} ${chauffeur.nom || ''}`.trim() : '') || 'Ce chauffeur';
+    return `${nom} travaillerait 7 jours sur 7 cette semaine : un jour de repos par semaine est obligatoire.`;
+  },
   /**
    * Simule un mois de planification en binome titulaire/doublure.
    *
@@ -414,13 +463,10 @@ const Utils = {
    */
   simulerPlanningMois({ annee, mois, titulaires, doublures }) {
     const nbJours = new Date(annee, mois + 1, 0).getDate();
-    // `repos` accepte un jour unique ou une liste (salaries : 2 jours par semaine)
+    // `repos` : le jour de repos hebdomadaire (un seul par chauffeur).
     const joursRepos = (t) => {
-      if (Array.isArray(t.repos)) return t.repos.filter(x => x === 0 || x);
-      const l = [];
-      if (t.repos === 0 || t.repos) l.push(Number(t.repos));
-      if (t.repos2 === 0 || t.repos2) l.push(Number(t.repos2));
-      return l;
+      if (Array.isArray(t.repos)) return t.repos.filter(x => x === 0 || x).slice(0, 1);
+      return (t.repos === 0 || t.repos) ? [Number(t.repos)] : [];
     };
     const tit = (titulaires || []).map(t => ({ ...t, repos: joursRepos(t), jours: [] }));
     const doub = (doublures || []).map(d => ({ ...d, aRecruter: false, jours: [] }));

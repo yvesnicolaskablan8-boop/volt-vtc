@@ -89,7 +89,8 @@ const PlanningPage = {
     }
 
     const ch = (typeof DriverAuth !== 'undefined' && DriverAuth.getChauffeur) ? (DriverAuth.getChauffeur() || {}) : {};
-    const joursRepos = [ch.jourRepos, ch.jourRepos2].filter(j => j === 0 || j).map(Number);
+    // Un jour de repos par semaine (l'ancien 2e jour n'est plus lu).
+    const joursRepos = [ch.jourRepos].filter(j => j === 0 || j).map(Number);
 
     const todayStr = this._dateStr(new Date());
     const dayAbbrs = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'];

@@ -2878,6 +2878,11 @@ const DashboardPage = {
     const planning = (typeof Store !== 'undefined' && Store.get) ? (Store.get('planning') || []) : [];
     const already = planning.some(p => p.chauffeurId === id && p.date === date);
     if (!already) {
+      const ch = Store.findById('chauffeurs', id) || { id };
+      if (!Utils.controleReposHebdo(ch, date, planning).ok) {
+        if (typeof Toast !== 'undefined') Toast.error(Utils.messageReposHebdo(ch));
+        return;
+      }
       Store.add('planning', {
         id: Utils.generateId('PLN'),
         chauffeurId: id,
@@ -3293,6 +3298,11 @@ const DashboardPage = {
       const body = document.getElementById('modal-body');
       if (!FormBuilder.validate(body, fields)) return;
       const values = FormBuilder.getValues(body);
+      const ch = Store.findById('chauffeurs', values.chauffeurId) || { id: values.chauffeurId };
+      if (!Utils.controleReposHebdo(ch, values.date, Store.get('planning') || [], shiftId).ok) {
+        Toast.error(Utils.messageReposHebdo(ch));
+        return;
+      }
       Store.update('planning', shiftId, values);
       Toast.success('Créneau modifié');
       Modal.close();

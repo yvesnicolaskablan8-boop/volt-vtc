@@ -1404,16 +1404,11 @@ const ChauffeursPage = {
       { name: 'redevanceQuotidienne', label: 'Recette quotidienne (FCFA) — si location, vide = réglage de flotte (35 000) + 23 % Yango', type: 'number', min: 0, step: 500, placeholder: 'Vide = 35 000 F/jour par défaut', default: 0 },
       { name: 'objectifCA', label: 'Objectif CA Yango journalier (FCFA)', type: 'number', min: 0, step: 1000, placeholder: 'Ex: 30000', default: 0 },
       { type: 'row-end' },
-      { type: 'row-start' },
-      { name: 'jourRepos', label: '1er jour de repos hebdomadaire', type: 'select', placeholder: 'Aucun (roule 7j/7)', options: [
+      // Un jour de repos par semaine, obligatoire pour chaque chauffeur.
+      { name: 'jourRepos', label: 'Jour de repos hebdomadaire', type: 'select', required: true, placeholder: 'Choisir un jour', options: [
         { value: '1', label: 'Lundi' }, { value: '2', label: 'Mardi' }, { value: '3', label: 'Mercredi' },
         { value: '4', label: 'Jeudi' }, { value: '5', label: 'Vendredi' }, { value: '6', label: 'Samedi' }, { value: '0', label: 'Dimanche' }
       ] },
-      { name: 'jourRepos2', label: '2e jour de repos (salaries)', type: 'select', placeholder: 'Aucun', options: [
-        { value: '1', label: 'Lundi' }, { value: '2', label: 'Mardi' }, { value: '3', label: 'Mercredi' },
-        { value: '4', label: 'Jeudi' }, { value: '5', label: 'Vendredi' }, { value: '6', label: 'Samedi' }, { value: '0', label: 'Dimanche' }
-      ] },
-      { type: 'row-end' },
       { type: 'divider' },
       { type: 'heading', label: 'Liaison Yango' },
       { name: 'yangoDriverId', label: 'Lien Yango ou ID contractor', type: 'text', placeholder: 'Collez le lien fleet.yango.com du chauffeur (ou son ID) — l\'ID est extrait automatiquement' },
@@ -1468,6 +1463,7 @@ const ChauffeursPage = {
 
       const values = FormBuilder.getValues(body);
       if (values.yangoDriverId) values.yangoDriverId = this._extractYangoId(values.yangoDriverId);
+      values.jourRepos2 = null;
       Store.update('chauffeurs', id, values);
       Modal.close();
       Toast.success('Chauffeur modifié avec succès');
@@ -1848,6 +1844,7 @@ const ChauffeursPage = {
         delete values._editId;
 
         if (isEdit) {
+          values.jourRepos2 = null;
           Store.update('chauffeurs', isEdit, values);
           Modal.close();
           Toast.success('Chauffeur modifié avec succès');

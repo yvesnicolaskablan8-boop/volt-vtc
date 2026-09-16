@@ -110,6 +110,8 @@ const PlanningPage = {
           </div>
         </div>
 
+        <div id="planning-alerte-repos"></div>
+
         <!-- Contenu dynamique -->
         <div id="planning-content" style="max-width:100%;box-sizing:border-box;"></div>
       </div>
@@ -181,6 +183,7 @@ const PlanningPage = {
     const label = document.getElementById('planning-period-label');
     const ct = document.getElementById('planning-content');
     if (!label || !ct) return;
+    this._peindreAlerteRepos();
 
     try {
       switch (this._currentView) {
@@ -446,6 +449,14 @@ const PlanningPage = {
         if (!this._matchesShiftFilters(s)) return;
         chips.push(`<div class="pcal-chip" data-shift-id="${s.id}" draggable="true" ondragend="this.style.opacity=''" ondragstart="event.stopPropagation();PlanningPage._onDragShift(event,'${s.id}')" style="--c:${this._getShiftColor(s)};" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — ${this._getShiftTimeLabel(s)}" onclick="event.stopPropagation();PlanningPage._editShift('${s.id}')">
           <span class="pcal-chip-txt">${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}.${this._serviceDuCreneau(s) === 'nuit' ? ' <span style="font-size:8.5px;font-weight:800;color:#e0e7ff;background:#312e81;border-radius:4px;padding:0 3px">NUIT</span>' : ''}${s.role === 'doublure' ? ' <span style="font-size:8.5px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:4px;padding:0 3px">REMPL</span>' : ''} <span class="pcal-chip-time">${s.heureDebut || ''}${s.heureFin ? '–' + s.heureFin : ''}</span></span>
+        </div>`);
+      });
+      // Jour de repos hebdomadaire : visible tant que le chauffeur n'est pas planifié ce jour-là.
+      const dow = d.obj.getDay();
+      chauffeurs.forEach(ch => {
+        if (Utils.jourReposDe(ch) !== dow || dayShifts.some(s => s.chauffeurId === ch.id)) return;
+        chips.push(`<div class="pcal-chip pcal-chip-repos" style="--c:#94a3b8;" title="${Utils.escHtml(ch.prenom + ' ' + ch.nom)} — jour de repos" onclick="event.stopPropagation()">
+          <span class="pcal-chip-txt" style="color:var(--text-muted);"><iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:11px;vertical-align:-1px;"></iconify-icon> ${Utils.escHtml(ch.prenom.split(' ')[0])} ${Utils.escHtml(ch.nom.charAt(0))}. <em>repos</em></span>
         </div>`);
       });
       dayAbsences.forEach(a => {
@@ -1086,10 +1097,18 @@ const PlanningPage = {
       Toast.error(duplicate ? 'Ce créneau existe déjà à cette date' : 'Ce chauffeur est absent ce jour-là');
       return;
     }
+    const chShift = Store.findById('chauffeurs', shift.chauffeurId) || { id: shift.chauffeurId };
+    const repos = Utils.controleReposHebdo(chShift, date, Store.get('planning') || [], id);
+    if (!repos.ok) {
+      PiloteMotion.pulse(e.currentTarget, true);
+      Toast.error(Utils.messageReposHebdo(chShift));
+      return;
+    }
     const selector = '[data-shift-id="' + CSS.escape(id) + '"]';
     const before = PiloteMotion.capture(document.querySelector(selector));
     Store.update('planning', id, { date });
-    if (typeof Toast !== 'undefined') Toast.success('Créneau déplacé au ' + Utils.formatDate(date));
+    if (repos.estJourRepos) Toast.warning(this._avisJourRepos(chShift));
+    else if (typeof Toast !== 'undefined') Toast.success('Créneau déplacé au ' + Utils.formatDate(date));
     this._renderView();
     PiloteMotion.move(document.querySelector(selector), before, true);
   },
@@ -1593,13 +1612,86 @@ const PlanningPage = {
   },
 
   /** Nombre de jours consécutifs déjà travaillés par un chauffeur juste avant `dateStr`. */
-  /** Jours de repos hebdomadaires d'un chauffeur (1 ou 2 selon son contrat). */
+  /** Jour de repos hebdomadaire d'un chauffeur, sous forme de liste (vide s'il n'est pas défini). */
   _joursReposDe(ch) {
-    const l = [];
-    if (!ch) return l;
-    if (ch.jourRepos === 0 || ch.jourRepos) l.push(Number(ch.jourRepos));
-    if (ch.jourRepos2 === 0 || ch.jourRepos2) l.push(Number(ch.jourRepos2));
-    return l;
+    const j = Utils.jourReposDe(ch);
+    return j === null ? [] : [j];
+  },
+
+  /** Avertissement quand on planifie un chauffeur sur son jour de repos habituel. */
+  _avisJourRepos(ch) {
+    const nom = ch && ch.prenom ? `${ch.prenom} ${ch.nom || ''}`.trim() : 'Le chauffeur';
+    const j = Utils.jourReposDe(ch);
+    return `Créneau enregistré sur le jour de repos habituel de ${nom}${j !== null ? ` (${Utils.JOURS_SEMAINE[j]})` : ''} : il devra se reposer un autre jour cette semaine.`;
+  },
+
+  /** Chauffeurs actifs sans jour de repos défini. */
+  _chauffeursSansRepos() {
+    return (this._getChauffeurs() || []).filter(c => (c.statut === 'actif' || c.statut === 'repos') && Utils.jourReposDe(c) === null);
+  },
+
+  /** Bandeau au-dessus du planning tant qu'un chauffeur actif n'a pas de jour de repos. */
+  _peindreAlerteRepos() {
+    const zone = document.getElementById('planning-alerte-repos');
+    if (!zone) return;
+    zone.replaceChildren();
+    const manquants = this._chauffeursSansRepos();
+    if (!manquants.length) return;
+    const noms = manquants.slice(0, 4).map(c => Utils.escHtml(`${c.prenom} ${c.nom}`)).join(', ') + (manquants.length > 4 ? ` et ${manquants.length - 4} autre(s)` : '');
+    zone.insertAdjacentHTML('beforeend', `
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;margin-bottom:14px;border-radius:14px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.28);">
+        <iconify-icon icon="solar:moon-sleep-bold-duotone" style="font-size:22px;color:#d97706;flex-shrink:0;"></iconify-icon>
+        <div style="flex:1;min-width:200px;font-size:var(--font-size-sm);line-height:1.45;">
+          <strong>${manquants.length} chauffeur${manquants.length > 1 ? 's' : ''} sans jour de repos</strong> — un jour de repos par semaine est obligatoire.
+          <div style="font-size:var(--font-size-xs);color:var(--text-muted);">${noms}</div>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-definir-repos">Définir les jours de repos</button>
+      </div>`);
+    const b = document.getElementById('btn-definir-repos');
+    if (b) b.addEventListener('click', () => this._definirJoursRepos());
+  },
+
+  /** Fenêtre : un jour de repos par chauffeur actif, en une fois. */
+  _definirJoursRepos() {
+    const chauffeurs = (this._getChauffeurs() || [])
+      .filter(c => c.statut === 'actif' || c.statut === 'repos')
+      .sort((a, b) => (Utils.jourReposDe(a) === null ? 0 : 1) - (Utils.jourReposDe(b) === null ? 0 : 1) || `${a.prenom}`.localeCompare(`${b.prenom}`));
+    const ordre = [1, 2, 3, 4, 5, 6, 0];
+    const lignes = chauffeurs.map(c => {
+      const j = Utils.jourReposDe(c);
+      const opts = ordre.map(k => `<option value="${k}" ${j === k ? 'selected' : ''}>${Utils.JOURS_SEMAINE[k].charAt(0).toUpperCase() + Utils.JOURS_SEMAINE[k].slice(1)}</option>`).join('');
+      return `<div style="display:flex;align-items:center;gap:12px;padding:9px 2px;border-bottom:1px solid var(--border-color);">
+        <div style="flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${Utils.escHtml(`${c.prenom} ${c.nom}`)}</div>
+        <select class="form-control jr-select" data-ch="${Utils.escHtml(c.id)}" style="width:150px;${j === null ? 'border-color:rgba(245,158,11,.6);' : ''}">
+          <option value="">Choisir…</option>${opts}
+        </select>
+      </div>`;
+    }).join('');
+    Modal.open({
+      title: '<iconify-icon icon="solar:moon-sleep-bold-duotone" style="color:#d97706"></iconify-icon> Jours de repos',
+      body: `<p style="font-size:var(--font-size-sm);color:var(--text-muted);margin:0 0 8px;">Chaque chauffeur a un jour de repos par semaine. Ce jour-là, la doublure du véhicule prend le relais.</p>
+        <div style="max-height:55vh;overflow-y:auto;">${lignes}</div>`,
+      footer: `<button class="btn btn-primary" id="btn-enregistrer-repos">Enregistrer</button><button class="btn btn-secondary" onclick="Modal.close()">Annuler</button>`
+    });
+    setTimeout(() => {
+      const b = document.getElementById('btn-enregistrer-repos');
+      if (!b) return;
+      b.addEventListener('click', () => {
+        let n = 0;
+        document.querySelectorAll('.jr-select').forEach(sel => {
+          if (sel.value === '') return;
+          const ch = Store.findById('chauffeurs', sel.dataset.ch);
+          if (!ch || Utils.jourReposDe(ch) === Number(sel.value)) return;
+          Store.update('chauffeurs', ch.id, { jourRepos: Number(sel.value), jourRepos2: null });
+          n++;
+        });
+        Modal.close();
+        const restants = this._chauffeursSansRepos().length;
+        if (n) Toast.success(`${n} jour${n > 1 ? 's' : ''} de repos enregistré${n > 1 ? 's' : ''}`);
+        if (restants) Toast.warning(`${restants} chauffeur${restants > 1 ? 's' : ''} encore sans jour de repos`);
+        this._renderView();
+      });
+    }, 60);
   },
 
   _joursConsecutifsAvant(chauffeurId, dateStr, planning) {
@@ -1623,7 +1715,7 @@ const PlanningPage = {
   /**
    * Assistant de generation automatique du planning sur un mois complet.
    * Reutilise le moteur du simulateur (Utils.simulerPlanningMois) : rotation
-   * equitable des doublures, 6 jours consecutifs maximum, deux jours de repos.
+   * equitable des doublures, 6 jours consecutifs maximum, un jour de repos par semaine.
    * N'ecrase jamais un creneau existant.
    */
   _genererMois() {
@@ -1725,10 +1817,12 @@ const PlanningPage = {
     const titulaires = postes.map((po, i) => {
       const id = po._titulaire || (restants[k++] || null);
       const c = id ? chById[id] : null;
-      const repos = (c && (c.jourRepos === 0 || c.jourRepos)) ? Number(c.jourRepos) : i % 7;
-      const repos2 = (c && (c.jourRepos2 === 0 || c.jourRepos2)) ? Number(c.jourRepos2) : (repos + 3) % 7;
+      // Un jour de repos par semaine. Sans jour défini sur la fiche, un jour
+      // est proposé pour l'aperçu et le titulaire est signalé.
+      const defini = Utils.jourReposDe(c);
+      const repos = defini !== null ? defini : i % 7;
       return { id: id || ('VIDE-' + po.v.id + '-' + po.sv.cle), nom: c ? `${c.prenom} ${c.nom}` : 'Titulaire a assigner',
-               repos, repos2, reel: !!c, vehiculeId: po.v.id, service: po.sv.cle };
+               repos, reposPropose: !!c && defini === null, reel: !!c, vehiculeId: po.v.id, service: po.sv.cle };
     });
     const doublures = doubIds.map(id => ({ id, nom: `${chById[id].prenom} ${chById[id].nom}` }));
 
@@ -1743,7 +1837,7 @@ const PlanningPage = {
     const pris = new Set(planning.map(p => `${p.chauffeurId}|${p.date}`));
 
     const creneaux = [];
-    let sansTitulaire = 0, aRecruter = 0, dejaOccupe = 0, chauffeurPris = 0;
+    let sansTitulaire = 0, aRecruter = 0, dejaOccupe = 0, chauffeurPris = 0, reposHebdo = 0;
     postes.forEach((po, vi) => {
       const v = po.v, sv = po.sv;
       for (let j = 1; j <= sim.nbJours; j++) {
@@ -1754,6 +1848,7 @@ const PlanningPage = {
         const date = `${annee}-${String(mois + 1).padStart(2, '0')}-${String(j).padStart(2, '0')}`;
         if (occupe.has(`${v.id}|${date}|${sv.cle}`)) { dejaOccupe++; continue; }
         if (pris.has(`${cell.id}|${date}`)) { chauffeurPris++; continue; }
+        if (!Utils.controleReposHebdo(chById[cell.id] || { id: cell.id }, date, planning.concat(creneaux)).ok) { reposHebdo++; continue; }
         creneaux.push({
           id: Utils.generateId('PLN'),
           chauffeurId: cell.id,
@@ -1773,7 +1868,8 @@ const PlanningPage = {
       }
     });
     const nbNuit = postes.filter(po => po.sv.cle === 'nuit').length;
-    return { annee, mois, sim, creneaux, vehicules, postes, nbNuit, titulaires, sansTitulaire, aRecruter, dejaOccupe, chauffeurPris };
+    const sansRepos = titulaires.filter(t => t.reposPropose).map(t => `${t.nom} (${Utils.JOURS_SEMAINE[t.repos]})`);
+    return { annee, mois, sim, creneaux, vehicules, postes, nbNuit, titulaires, sansTitulaire, aRecruter, dejaOccupe, chauffeurPris, reposHebdo, sansRepos };
   },
 
   _apercuGenMois() {
@@ -1788,6 +1884,8 @@ const PlanningPage = {
     if (r.aRecruter > 0) notes.push(`<div style="color:#b91c1c;">${r.aRecruter} jour(s) de repos sans doublure disponible — ${r.sim.doublures.filter(d => d.aRecruter).length} doublure(s) a recruter.</div>`);
     if (r.dejaOccupe > 0) notes.push(`<div style="color:var(--text-muted);">${r.dejaOccupe} creneau(x) deja planifie(s) — conserves tels quels, rien n'est ecrase.</div>`);
     if (r.chauffeurPris > 0) notes.push(`<div style="color:var(--text-muted);">${r.chauffeurPris} jour(s) ou le chauffeur conduisait deja une autre voiture.</div>`);
+    if (r.reposHebdo > 0) notes.push(`<div style="color:#b45309;">${r.reposHebdo} jour(s) ecarte(s) : le chauffeur n'aurait plus de jour de repos dans la semaine.</div>`);
+    if (r.sansRepos.length) notes.push(`<div style="color:#b45309;">Jour de repos non defini, jour propose pour l'apercu : ${Utils.escHtml(r.sansRepos.join(', '))}. Renseignez-le sur la fiche pour le rendre definitif.</div>`);
 
     const tuile = (lbl, val, sous) => `<div style="flex:1;min-width:120px;"><div style="font-size:var(--font-size-xs);color:var(--text-muted);font-weight:700;">${lbl}</div><div style="font-size:1.3rem;font-weight:900;">${val}</div>${sous ? `<div style="font-size:11px;color:var(--text-muted);">${sous}</div>` : ''}</div>`;
     const nbTit = r.creneaux.filter(c => c.role === 'titulaire').length;
@@ -1839,6 +1937,7 @@ const PlanningPage = {
 
     const nouveaux = [];
     let sansDoublure = 0, sansTitulaire = 0, bloques = 0, dejaPris = 0;
+    const sansRepos = new Set();
 
     vehicules.forEach(v => {
       const services = this._servicesDuVehicule(v);
@@ -1846,20 +1945,21 @@ const PlanningPage = {
         const titulaire = sv.titulaireId ? chById[sv.titulaireId] : null;
         if (!titulaire) { sansTitulaire += days.length; return; }
         const doublure = sv.doublureId ? chById[sv.doublureId] : null;
-        // Un salarié peut avoir deux jours de repos par semaine
-        const joursRepos = [];
-        if (titulaire.jourRepos === 0 || titulaire.jourRepos) joursRepos.push(Number(titulaire.jourRepos));
-        if (titulaire.jourRepos2 === 0 || titulaire.jourRepos2) joursRepos.push(Number(titulaire.jourRepos2));
+        // Un jour de repos par semaine, obligatoire : sans jour défini sur sa
+        // fiche, le titulaire n'est pas planifié automatiquement.
+        const jourRepos = Utils.jourReposDe(titulaire);
+        if (jourRepos === null) { sansRepos.add(`${titulaire.prenom} ${titulaire.nom}`); return; }
 
         days.forEach(d => {
           if (occupe.has(`${v.id}|${d.date}|${sv.cle}`)) return;
-          const estRepos = joursRepos.includes(d.dow);
+          const estRepos = d.dow === jourRepos;
           const chauffeur = estRepos ? doublure : titulaire;
           if (!chauffeur) { sansDoublure++; return; }
           if (chauffeurPris.has(`${chauffeur.id}|${d.date}`)) { dejaPris++; return; }
 
           const simule = planning.concat(nouveaux);
           if (this._joursConsecutifsAvant(chauffeur.id, d.date, simule) >= 6) { bloques++; return; }
+          if (!Utils.controleReposHebdo(chauffeur, d.date, simule).ok) { bloques++; return; }
 
           const creneau = {
             id: Utils.generateId('PLN'),
@@ -1890,8 +1990,9 @@ const PlanningPage = {
           <p>Aucun créneau n'a pu être ajouté cette semaine.</p>
           ${sansTitulaire > 0 ? `<p>• ${sansTitulaire} jour(s)-voiture sans <strong>chauffeur titulaire</strong> assigné au véhicule.</p>` : ''}
           ${sansDoublure > 0 ? `<p>• ${sansDoublure} jour(s) de repos sans <strong>doublure attitrée</strong> — désignez-la sur la fiche du véhicule.</p>` : ''}
-          ${bloques > 0 ? `<p>• ${bloques} jour(s) bloqué(s) par la règle des <strong>6 jours consécutifs</strong>.</p>` : ''}
+          ${bloques > 0 ? `<p>• ${bloques} jour(s) bloqué(s) : <strong>un jour de repos par semaine</strong> et 6 jours consécutifs au plus.</p>` : ''}
           ${dejaPris > 0 ? `<p>• ${dejaPris} jour(s) où le chauffeur conduisait déjà une autre voiture.</p>` : ''}
+          ${sansRepos.size > 0 ? `<p>• ${sansRepos.size} titulaire(s) sans <strong>jour de repos</strong> défini (${Utils.escHtml([...sansRepos].join(', '))}) — renseignez-le pour les planifier.</p>` : ''}
         </div>`,
         size: 'small'
       });
@@ -1912,7 +2013,8 @@ const PlanningPage = {
         <p><strong>${nouveaux.length} créneau(x)</strong> vont être créés — dont <strong>${parRole}</strong> en remplacement par une doublure${nbNuit > 0 ? ` et <strong>${nbNuit}</strong> en service de nuit` : ''}.</p>
         <p style="padding:10px 12px;border-radius:8px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2)">Recette supplémentaire attendue : <strong style="color:#02b3a9">${Utils.formatCurrency(recettePotentielle)}</strong></p>
         ${sansDoublure > 0 ? `<p style="color:#b45309">⚠ ${sansDoublure} jour(s) de repos restent non couverts : aucune doublure n'est désignée sur ces véhicules.</p>` : ''}
-        ${bloques > 0 ? `<p style="color:#b45309">⚠ ${bloques} jour(s) écarté(s) : le chauffeur atteindrait 7 jours consécutifs.</p>` : ''}
+        ${bloques > 0 ? `<p style="color:#b45309">⚠ ${bloques} jour(s) écarté(s) : le chauffeur n'aurait plus de jour de repos dans la semaine.</p>` : ''}
+        ${sansRepos.size > 0 ? `<p style="color:#b45309">⚠ ${sansRepos.size} titulaire(s) non planifié(s), faute de jour de repos défini : ${Utils.escHtml([...sansRepos].join(', '))}.</p>` : ''}
         <p style="color:var(--text-muted);font-size:var(--font-size-xs)">Les créneaux déjà saisis ne sont pas modifiés.</p>
       </div>`,
       footer: `<button class="btn btn-primary" id="btn-confirm-gen">Créer les ${nouveaux.length} créneaux</button><button class="btn btn-secondary" onclick="Modal.close()">Annuler</button>`
@@ -1985,9 +2087,17 @@ const PlanningPage = {
         return;
       }
 
+      const chChoisi = Store.findById('chauffeurs', values.chauffeurId) || { id: values.chauffeurId };
+      const repos = Utils.controleReposHebdo(chChoisi, values.date, planning);
+      if (!repos.ok) {
+        Toast.error(Utils.messageReposHebdo(chChoisi));
+        return;
+      }
+
       Store.add('planning', { id: Utils.generateId('PLN'), ...values, dateCreation: new Date().toISOString() });
       Modal.close();
-      Toast.success('Créneau ajouté');
+      if (repos.estJourRepos) Toast.warning(this._avisJourRepos(chChoisi));
+      else Toast.success('Créneau ajouté');
       if (returnTo === 'dashboard') {
         if (typeof Router !== 'undefined' && Router.navigate) Router.navigate('/dashboard');
         else window.location.hash = '#/dashboard';
@@ -2058,6 +2168,16 @@ const PlanningPage = {
       return;
     }
 
+    // Un jour de repos par semaine
+    const chCible = Store.findById('chauffeurs', targetChauffeurId) || { id: targetChauffeurId };
+    const repos = Utils.controleReposHebdo(chCible, targetDate, planning, shiftId);
+    if (!repos.ok) {
+      PiloteMotion.pulse(event.currentTarget, true);
+      Toast.error(Utils.messageReposHebdo(chCible));
+      this._draggedShiftId = null;
+      return;
+    }
+
     // Mettre à jour le créneau
     const selector = '[data-shift-id="' + CSS.escape(shiftId) + '"]';
     const before = PiloteMotion.capture(document.querySelector(selector));
@@ -2067,7 +2187,8 @@ const PlanningPage = {
     });
 
     this._draggedShiftId = null;
-    Toast.success('Créneau déplacé');
+    if (repos.estJourRepos) Toast.warning(this._avisJourRepos(chCible));
+    else Toast.success('Créneau déplacé');
     this._renderView();
     PiloteMotion.move(document.querySelector(selector), before, true);
   },
@@ -2136,9 +2257,17 @@ const PlanningPage = {
         return;
       }
 
+      const chChoisi = Store.findById('chauffeurs', values.chauffeurId) || { id: values.chauffeurId };
+      const repos = Utils.controleReposHebdo(chChoisi, values.date, planning, id);
+      if (!repos.ok) {
+        Toast.error(Utils.messageReposHebdo(chChoisi));
+        return;
+      }
+
       Store.update('planning', id, values);
       Modal.close();
-      Toast.success('Créneau modifié');
+      if (repos.estJourRepos) Toast.warning(this._avisJourRepos(chChoisi));
+      else Toast.success('Créneau modifié');
       this._renderView();
     }, 'Sauvegarder', () => {
       // Delete button in footer
@@ -2358,7 +2487,8 @@ const PlanningPage = {
     Modal.confirm('Appliquer le modèle ?', `Voulez-vous appliquer le modèle <strong>${tpl.name}</strong> à la semaine actuelle ? Les créneaux existants ne seront pas supprimés, seuls les nouveaux seront ajoutés.`, () => {
       const weekStart = new Date(this._currentWeekStart);
       const planning = Store.get('planning') || [];
-      let added = 0;
+      const ajoutes = [];
+      let added = 0, sansRepos = 0;
 
       tpl.shifts.forEach(s => {
         const d = new Date(weekStart);
@@ -2374,7 +2504,9 @@ const PlanningPage = {
         );
 
         if (!exists) {
-          Store.add('planning', {
+          const ch = Store.findById('chauffeurs', s.chauffeurId) || { id: s.chauffeurId };
+          if (!Utils.controleReposHebdo(ch, dateStr, planning.concat(ajoutes)).ok) { sansRepos++; return; }
+          const creneau = {
             id: Utils.generateId('PLN'),
             chauffeurId: s.chauffeurId,
             date: dateStr,
@@ -2383,13 +2515,16 @@ const PlanningPage = {
             heureFin: s.heureFin,
             notes: s.notes,
             dateCreation: new Date().toISOString()
-          });
+          };
+          Store.add('planning', creneau);
+          ajoutes.push(creneau);
           added++;
         }
       });
 
       Modal.close();
       Toast.success(`${added} créneau${added > 1 ? 'x' : ''} ajouté${added > 1 ? 's' : ''}`);
+      if (sansRepos > 0) Toast.warning(`${sansRepos} créneau${sansRepos > 1 ? 'x' : ''} écarté${sansRepos > 1 ? 's' : ''} : un jour de repos par semaine est obligatoire.`);
       this._renderView();
     });
   },
