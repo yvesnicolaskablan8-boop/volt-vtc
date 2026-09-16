@@ -449,6 +449,43 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
 @media(max-width:820px){.vx-kpi-grid{grid-template-columns:repeat(2,1fr)!important;}}
 @media(max-width:480px){.vx-kpi-grid{grid-template-columns:1fr!important;}.vx-note{white-space:normal;}}
 @media(max-width:640px){.vx-note{white-space:normal;}}
+.td-card{position:relative;overflow:hidden;border-radius:24px;padding:20px 20px 14px;margin-bottom:12px;background:radial-gradient(120% 90% at 100% 0%,rgba(245,81,46,.13) 0%,rgba(245,81,46,0) 55%),linear-gradient(180deg,#fff9f6 0%,var(--vx-card) 70%);border:1px solid #fde3d9;}
+.td-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.td-head>div{min-width:0;}
+.td-kicker{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#DE3E1E;}
+.td-kicker i{width:7px;height:7px;border-radius:50%;background:#F5512E;box-shadow:0 0 0 4px rgba(245,81,46,.16);animation:tdPulse 2.2s ease-in-out infinite;}
+.td-title{font-size:19px;font-weight:800;letter-spacing:-.3px;color:var(--text-primary);margin-top:4px;}
+.td-link{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;height:34px;padding:0 13px;border-radius:999px;border:1px solid #fcd5c8;background:rgba(255,255,255,.7);color:#DE3E1E;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s;}
+.td-link:hover{background:#fff;border-color:#F5512E;}
+.td-sum{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:14px 0 12px;}
+.td-sum-val{font-size:30px;font-weight:800;letter-spacing:-.8px;color:#111827;line-height:1;}
+.td-sum-val small{font-size:14px;font-weight:700;color:var(--text-muted);margin-left:4px;letter-spacing:0;}
+.td-sum-sub{font-size:12.5px;font-weight:600;color:var(--text-muted);}
+.td-stack{display:flex;gap:3px;height:10px;border-radius:999px;overflow:hidden;background:#f1ece9;margin-bottom:12px;}
+.td-stack span{height:100%;transform-origin:left;animation:tdGrow .7s cubic-bezier(.16,1,.3,1) both;}
+.td-stack span:first-child{border-radius:999px 0 0 999px;}.td-stack span:last-child{border-radius:0 999px 999px 0;}
+.td-list{display:flex;flex-direction:column;gap:4px;}
+.td-row{display:flex;align-items:center;gap:12px;width:100%;padding:10px 8px;border:none;border-radius:16px;background:transparent;text-align:left;cursor:pointer;font:inherit;color:inherit;transition:background .15s,transform .15s;}
+.td-row:hover{background:rgba(255,255,255,.85);transform:translateX(2px);}
+.td-rank{width:18px;flex-shrink:0;text-align:center;font-size:12px;font-weight:800;color:#c4b5ae;}
+.td-row .vx-av{width:40px;height:40px;border-radius:13px;font-size:13px;}
+.td-main{flex:1;min-width:0;}
+.td-line{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;}
+.td-line+.td-line{margin-top:3px;}
+.td-name{font-size:14px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.td-meta{font-size:11.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.td-bar{height:5px;border-radius:999px;background:#f1ece9;margin-top:7px;overflow:hidden;}
+.td-bar b{display:block;height:100%;border-radius:999px;transform-origin:left;animation:tdGrow .8s cubic-bezier(.16,1,.3,1) both;}
+.td-amt{font-size:14.5px;font-weight:800;color:#111827;white-space:nowrap;flex-shrink:0;}
+.td-share{flex-shrink:0;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:800;}
+.td-empty{display:flex;align-items:center;gap:10px;padding:14px 4px 6px;font-size:13.5px;font-weight:600;color:#02b3a9;}
+.td-flash{animation:tdFlash 1.8s ease;}
+.wl-masked .td-sum-val,.wl-masked .td-amt{filter:blur(8px);user-select:none;}
+@keyframes tdGrow{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+@keyframes tdPulse{0%,100%{box-shadow:0 0 0 4px rgba(245,81,46,.16);}50%{box-shadow:0 0 0 7px rgba(245,81,46,.05);}}
+@keyframes tdFlash{0%,100%{background:transparent;}20%,60%{background:rgba(245,81,46,.14);}}
+@media(prefers-reduced-motion:reduce){.td-stack span,.td-bar b,.td-kicker i,.td-flash{animation:none;}.td-row:hover{transform:none;}}
+@media(max-width:480px){.td-card{padding:16px 14px 10px;border-radius:20px;}.td-sum-val{font-size:26px;}.td-rank,.td-row .vx-av{display:none;}.td-row{padding:10px 4px;}}
 </style>`;
   },
 
@@ -504,8 +541,8 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     const progRows = (d.detailProgrammes || []).map(p => `<div class="vx-row"><div class="vx-av" style="background:#eef2ff;color:#4a43c2;">${Utils.escHtml((p.prenom || '?').charAt(0).toUpperCase())}</div><div class="vx-main"><div class="vx-name">${Utils.escHtml(((p.prenom || '') + ' ' + (p.nom || '')).trim())}</div><div class="vx-note">${Utils.formatDate(p.date)}</div></div><div class="vx-right"><div class="vx-amt">${Utils.formatCurrency(p.redevance)}</div></div></div>`).join('');
 
     // Générateur d'accordéon (ligne « compte » repliable)
-    const acc = (icBg, icFg, icBd, icon, title, sub, val, valCol, bodyHtml, valId) =>
-      `<div class="wl-acc">
+    const acc = (icBg, icFg, icBd, icon, title, sub, val, valCol, bodyHtml, valId, cle) =>
+      `<div class="wl-acc"${cle ? ` data-acc="${cle}"` : ''}>
         <div class="wl-nav-row" onclick="VersementsPage._toggleAcc(this)">
           <div class="wl-nav-ic" style="background:${icBg};color:${icFg};border:1px solid ${icBd};"><iconify-icon icon="${icon}"></iconify-icon></div>
           <div class="wl-nav-main"><div class="wl-nav-title">${title}</div><div class="wl-nav-sub">${sub}</div></div>
@@ -519,11 +556,11 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
     rows.push(acc('#fef3c7', '#e8930c', '#fde68a', 'solar:wallet-money-bold-duotone', 'Dettes recettes',
       `${dr.nbDriversRecettes || 0} chauffeur${(dr.nbDriversRecettes || 0) > 1 ? 's' : ''} à régulariser`,
       fmt(dr.totalDettesRecettes), (dr.totalDettesRecettes || 0) > 0 ? '#e8930c' : 'var(--text-muted)',
-      `<div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap;"><button class="vx-gbtn" onclick="VersementsPage._resyncCaYango(this)"><iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon> Resync Yango</button><button class="vx-gbtn is-accent" style="background:#ffae1f;" onclick="VersementsPage._ajouterDette()"><iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter</button></div>${(dr.detteListRecettes || []).length > 3 ? detteFilterBar('dette-recettes-list') : ''}${(dr.detteListRecettes || []).length ? `<div id="dette-recettes-list" class="vx-list">${recetteRows}</div>` : empty('Aucune dette recette')}`));
+      `<div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap;"><button class="vx-gbtn" onclick="VersementsPage._resyncCaYango(this)"><iconify-icon icon="solar:refresh-bold" style="font-size:14px;"></iconify-icon> Resync Yango</button><button class="vx-gbtn is-accent" style="background:#ffae1f;" onclick="VersementsPage._ajouterDette()"><iconify-icon icon="solar:add-circle-bold" style="font-size:14px;"></iconify-icon> Ajouter</button></div>${(dr.detteListRecettes || []).length > 3 ? detteFilterBar('dette-recettes-list') : ''}${(dr.detteListRecettes || []).length ? `<div id="dette-recettes-list" class="vx-list">${recetteRows}</div>` : empty('Aucune dette recette')}`, '', 'dettes-recettes'));
     if ((dr.totalDettesContraventions || 0) > 0) rows.push(acc('#fee2e2', '#dc2626', '#fecaca', 'solar:shield-warning-bold-duotone', 'Dettes contraventions',
       `${dr.nbDriversContraventions || 0} chauffeur${(dr.nbDriversContraventions || 0) > 1 ? 's' : ''}`,
       fmt(dr.totalDettesContraventions), '#dc2626',
-      `${(dr.detteListContraventions || []).length > 3 ? detteFilterBar('dette-contra-list') : ''}<div id="dette-contra-list" class="vx-list">${contraRows}</div>`));
+      `${(dr.detteListContraventions || []).length > 3 ? detteFilterBar('dette-contra-list') : ''}<div id="dette-contra-list" class="vx-list">${contraRows}</div>`, '', 'dettes-contraventions'));
     rows.push(acc('#dcfce7', '#02b3a9', '#bbf7d0', 'solar:hand-money-bold-duotone', 'Versements',
       `<span id="versements-count">${versements.length}</span> versement${versements.length > 1 ? 's' : ''} · ${d.periodLabel}`,
       Utils.formatCurrency(verseTotal), '#02b3a9',
@@ -576,8 +613,89 @@ select.vx-input,input[type=date].vx-input{padding-left:14px;flex:0 0 auto;width:
       </div>
       </div>
 
-      <div class="wl-right"><div class="wl-nav">${rows.join('')}</div></div>
+      <div class="wl-right">${this._topDettesHtml(dr)}<div class="wl-nav">${rows.join('')}</div></div>
     </div>`;
+  },
+
+  /**
+   * Top 5 dettes : les chauffeurs qui doivent le plus, leur part du total
+   * (barre segmentée), le nombre d'impayés et la date du plus ancien. Un clic
+   * ouvre le détail de ses dettes dans l'accordéon correspondant.
+   */
+  _topDettesHtml(dr) {
+    const liste = (dr && dr.detteList) || [];
+    const total = (dr && dr.totalDettes) || 0;
+    const top = liste.slice(0, 5);
+    const teintes = ['#F5512E', '#FF7A45', '#FF9B62', '#FFB98A', '#FFD3B5'];
+    const court = (iso) => {
+      if (!iso) return '';
+      const [y, m, j] = iso.split('-').map(Number);
+      return new Date(y, m - 1, j).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    };
+    const entete = `<div class="td-head">
+        <div><div class="td-kicker"><i></i>À recouvrer</div><div class="td-title">Top 5 dettes</div></div>
+        ${top.length ? `<button type="button" class="td-link" onclick="VersementsPage._ouvrirAccordeon('dettes-recettes')">Tout voir <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button>` : ''}
+      </div>`;
+    if (!top.length) {
+      return `<section class="td-card">${entete}<div class="td-empty"><iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:22px;"></iconify-icon>Aucune dette en cours</div></section>`;
+    }
+
+    const nbImpayes = liste.reduce((n, x) => n + (x.count || 0), 0);
+    const autres = Math.max(0, total - top.reduce((n, x) => n + x.total, 0));
+    const segments = top.map((x, i) => `<span style="flex:${x.total} 1 0;background:${teintes[i]};animation-delay:${i * 60}ms;" title="${Utils.escHtml(x.nom)} — ${Utils.formatCurrency(x.total)}"></span>`).join('')
+      + (autres > 0 ? `<span style="flex:${autres} 1 0;background:#e5dcd7;" title="Autres chauffeurs — ${Utils.formatCurrency(autres)}"></span>` : '');
+
+    const lignes = top.map((x, i) => {
+      const part = total > 0 ? Math.round(x.total / total * 100) : 0;
+      const plusAncien = (x.items && x.items[0] && x.items[0].date) || '';
+      const meta = `${x.count} impayé${x.count > 1 ? 's' : ''}${plusAncien ? ` · depuis le ${court(plusAncien)}` : ''}`;
+      return `<button type="button" class="td-row" onclick="VersementsPage._voirDettesDe('${Utils.escHtml(x.chauffeurId)}')" title="Voir le détail des dettes">
+        <span class="td-rank">${i + 1}</span>
+        ${this._avatar(x.nom)}
+        <div class="td-main">
+          <div class="td-line"><span class="td-name">${Utils.escHtml(x.nom)}</span><span class="td-amt">${Utils.formatCurrency(x.total)}</span></div>
+          <div class="td-line"><span class="td-meta">${meta}</span><span class="td-share" style="background:${teintes[i]}1f;color:${i < 2 ? '#DE3E1E' : '#c2410c'};">${part} %</span></div>
+          <div class="td-bar"><b style="width:${Math.max(part, 3)}%;background:${teintes[i]};animation-delay:${120 + i * 70}ms;"></b></div>
+        </div>
+      </button>`;
+    }).join('');
+
+    const montant = Utils.formatCurrency(total).replace(/\s*F?CFA$/i, '');
+    return `<section class="td-card">
+      ${entete}
+      <div class="td-sum">
+        <div class="td-sum-val">${montant}<small>FCFA</small></div>
+        <div class="td-sum-sub">${liste.length} chauffeur${liste.length > 1 ? 's' : ''} · ${nbImpayes} impayé${nbImpayes > 1 ? 's' : ''}</div>
+      </div>
+      <div class="td-stack">${segments}</div>
+      <div class="td-list">${lignes}</div>
+    </section>`;
+  },
+
+  /** Ouvre un accordéon de la colonne de droite par sa clé et l'amène à l'écran. */
+  _ouvrirAccordeon(cle) {
+    const acc = document.querySelector(`.wl-acc[data-acc="${cle}"]`);
+    if (!acc) return null;
+    if (!acc.classList.contains('open')) this._toggleAcc(acc.querySelector('.wl-nav-row'));
+    acc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return acc;
+  },
+
+  /** Depuis le Top 5 : ouvre les dettes du chauffeur et fait clignoter ses lignes. */
+  _voirDettesDe(chauffeurId) {
+    const dr = (this._kpiData && this._kpiData.detteData) || {};
+    const ch = (dr.detteList || []).find(x => x.chauffeurId === chauffeurId);
+    if (!ch) return;
+    const aRecettes = (dr.detteListRecettes || []).some(x => x.chauffeurId === chauffeurId);
+    const acc = this._ouvrirAccordeon(aRecettes ? 'dettes-recettes' : 'dettes-contraventions');
+    if (!acc) return;
+    const nom = String(ch.nom || '').toLowerCase();
+    const lignes = [...acc.querySelectorAll('.dette-row')].filter(r => r.dataset.nom === nom);
+    if (!lignes.length) return;
+    setTimeout(() => {
+      lignes[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      lignes.forEach(r => { r.classList.remove('td-flash'); void r.offsetWidth; r.classList.add('td-flash'); });
+    }, 250);
   },
 
   // Ouvre/ferme un accordéon « compte » (un seul ouvert à la fois).

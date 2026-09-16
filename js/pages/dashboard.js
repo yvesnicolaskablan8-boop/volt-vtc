@@ -846,9 +846,6 @@ const DashboardPage = {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
-    // =================== TOP CHAUFFEURS PAR DETTES ===================
-    const topDriversDettes = debtData.detteList.slice(0, 5);
-
     // =================== DOCUMENTS EXPIRANT SOUS 30 JOURS ===================
     const docFields = [
       { field: 'dateExpirationPermis', label: 'Permis' },
@@ -1018,7 +1015,7 @@ const DashboardPage = {
       serviceEnCours, serviceEnPause, serviceTermine, servicePasCommence, programmesCount,
       heatmapWeekDays, heatmapDrivers,
       periodLabel, monthLabel, isMonthView,
-      topDriversRevenue, topDriversDettes, expiringDocs,
+      topDriversRevenue, expiringDocs,
       // === PRÉVISIONS CA ===
       ...this._computeForecasts(monthlyRevenue, versements, chauffeurs, planning, absences, thisMonth, thisYear, sel, isMonthView, totalVerseMonth)
     };
@@ -1649,7 +1646,7 @@ const DashboardPage = {
       </div>
 
       <!-- Row 3 : Répartition chauffeurs + Top chauffeurs -->
-      <div class="d-grid d-g3" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="d-grid d-g3" style="grid-template-columns:1fr 1fr;">
         <!-- Répartition chauffeurs (donut) -->
         <a href="#/chauffeurs" class="d-card" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
@@ -1695,7 +1692,6 @@ const DashboardPage = {
           })()}
         </a>
         ${this._renderTopDriversRevenue(d)}
-        ${this._renderTopDriversDettes(d)}
       </div>
 
       <!-- Row 4: Documents & Maintenance -->
@@ -3040,36 +3036,6 @@ const DashboardPage = {
           <div style="font-size:11px;color:#9ca3af;">Score global (${d.monthLabel})</div>
         </div>
         <a href="#/classement" style="font-size:11px;font-weight:600;color:#F5512E;text-decoration:none;">Voir tout &rarr;</a>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
-    </div>`;
-  },
-
-  _renderTopDriversDettes(d) {
-    const drivers = d.topDriversDettes || [];
-    const maxVal = drivers.length > 0 ? drivers[0].total : 1;
-    const rows = drivers.length > 0 ? drivers.map((dr, i) => {
-      const pct = maxVal > 0 ? Math.round((dr.total / maxVal) * 100) : 0;
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);cursor:pointer;" onclick="Router.navigate('/versements');setTimeout(()=>{var el=document.getElementById('dette-section-recettes');if(el)el.scrollIntoView({behavior:'smooth'})},500)">
-        <div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;background:rgba(239,68,68,.1);color:#ef4444;">${i + 1}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dr.nom}</div>
-          <div style="height:4px;border-radius:2px;background:rgba(0,0,0,.06);margin-top:4px;"><div style="height:100%;border-radius:2px;background:linear-gradient(90deg,#ef4444,#f87171);width:${pct}%;transition:width .6s ease;"></div></div>
-        </div>
-        <div style="font-size:12px;font-weight:700;color:#ef4444;white-space:nowrap;">${Utils.formatCurrency(dr.total)}</div>
-      </div>`;
-    }).join('') : '<div style="font-size:12px;color:#9ca3af;text-align:center;padding:20px 0;">Aucune dette en cours</div>';
-
-    return `<div class="d-card">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div class="d-icon" style="background:rgba(239,68,68,.08);color:#ef4444;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">
-          <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:700;color:var(--text-primary);">Top 5 dettes</div>
-          <div style="font-size:11px;color:#9ca3af;">${drivers.length} chauffeur${drivers.length !== 1 ? 's' : ''} &bull; Total ${Utils.formatCurrency(d.totalDettes)}</div>
-        </div>
-        <a href="#/versements" onclick="setTimeout(()=>{var el=document.getElementById('dette-section-recettes');if(el)el.scrollIntoView({behavior:'smooth'})},500)" style="font-size:11px;font-weight:600;color:#F5512E;text-decoration:none;">Voir tout &rarr;</a>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">${rows}</div>
     </div>`;
