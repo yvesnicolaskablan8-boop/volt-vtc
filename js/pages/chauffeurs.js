@@ -60,7 +60,7 @@ const ChauffeursPage = {
             <select id="cmp-role" class="form-control" style="font-size:var(--font-size-sm);">
               <option value="" ${!c.roleFlotte ? 'selected' : ''}>Non défini</option>
               <option value="titulaire" ${c.roleFlotte === 'titulaire' ? 'selected' : ''}>Titulaire — tient un véhicule</option>
-              <option value="doublure" ${c.roleFlotte === 'doublure' ? 'selected' : ''}>Doublure — remplace</option>
+              <option value="doublure" ${c.roleFlotte === 'doublure' ? 'selected' : ''}>Intérimaire — remplace</option>
             </select>
           </div>
         </div>
@@ -165,7 +165,7 @@ const ChauffeursPage = {
           <select id="flt-role" class="form-control">
             <option value="">Tous</option>
             <option value="titulaire">Titulaire</option>
-            <option value="doublure">Doublure</option>
+            <option value="doublure">Intérimaire</option>
           </select>
         </div>
         <div style="min-width:170px;">
@@ -1394,7 +1394,7 @@ const ChauffeursPage = {
       ], default: 'location' },
       { name: 'roleFlotte', label: 'Rôle dans la rotation', type: 'select', placeholder: 'Non défini', options: [
         { value: 'titulaire', label: 'Titulaire — tient un véhicule' },
-        { value: 'doublure', label: 'Doublure — remplace pendant les repos' }
+        { value: 'doublure', label: 'Intérimaire — remplace pendant les repos' }
       ] },
       { type: 'row-start' },
       { name: 'salaireMensuel', label: 'Salaire mensuel net (si salarié)', type: 'number', min: 0, step: 10000, placeholder: 'Ex: 200000', default: 0 },

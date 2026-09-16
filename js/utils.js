@@ -449,67 +449,155 @@ const Utils = {
     return `${nom} travaillerait 7 jours sur 7 cette semaine : un jour de repos par semaine est obligatoire.`;
   },
   /**
-   * Simule un mois de planification en binome titulaire/doublure.
-   *
-   * Regles appliquees (identiques au planning reel) :
-   *  - le titulaire conduit tous les jours sauf son jour de repos ;
-   *  - une doublure couvre ce jour de repos ;
-   *  - personne ne depasse 6 jours consecutifs ;
-   *  - un chauffeur ne peut pas conduire deux voitures le meme jour.
-   *
-   * Le parcours se fait JOUR par JOUR : voiture par voiture, le compteur de
-   * jours consecutifs repartirait en arriere a chaque changement de vehicule
-   * et la regle des 6 jours ne serait plus verifiee.
+   * Préférence d'attribution des jours de repos proposés : du lundi au jeudi
+   * d'abord, puis dimanche, vendredi et samedi (les jours les plus rentables
+   * restent travaillés par les titulaires).
    */
-  simulerPlanningMois({ annee, mois, titulaires, doublures }) {
-    const nbJours = new Date(annee, mois + 1, 0).getDate();
-    // `repos` : le jour de repos hebdomadaire (un seul par chauffeur).
-    const joursRepos = (t) => {
-      if (Array.isArray(t.repos)) return t.repos.filter(x => x === 0 || x).slice(0, 1);
-      return (t.repos === 0 || t.repos) ? [Number(t.repos)] : [];
+  ORDRE_JOURS_REPOS: [1, 2, 3, 4, 0, 5, 6],
+
+  /**
+   * Propose un jour de repos aux chauffeurs qui n'en ont pas, en étalant les
+   * repos des titulaires sur la semaine (moins de repos le même jour = moins
+   * d'intérimaires nécessaires). Les intérimaires se reposent de préférence le
+   * jour où le moins de titulaires sont au repos, puisqu'on a alors le moins
+   * besoin d'eux.
+   *   titulaires / interimaires : fiches chauffeurs (id, jourRepos)
+   * Renvoie { [chauffeurId]: jour } pour les seules fiches sans jour défini.
+   */
+  proposerJoursRepos(titulaires, interimaires) {
+    const charge = [0, 0, 0, 0, 0, 0, 0];
+    const propositions = {};
+    const moinsCharge = () => this.ORDRE_JOURS_REPOS.reduce((best, j) => (charge[j] < charge[best] ? j : best), this.ORDRE_JOURS_REPOS[0]);
+    (titulaires || []).forEach(c => { const j = this.jourReposDe(c); if (j !== null) charge[j]++; });
+    (titulaires || []).forEach(c => {
+      if (this.jourReposDe(c) !== null) return;
+      const j = moinsCharge();
+      propositions[c.id] = j;
+      charge[j]++;
+    });
+    // Intérimaires : on étale aussi leurs repos entre eux.
+    const chargeInterim = [0, 0, 0, 0, 0, 0, 0];
+    (interimaires || []).forEach(c => { const j = this.jourReposDe(c); if (j !== null) chargeInterim[j]++; });
+    (interimaires || []).forEach(c => {
+      if (this.jourReposDe(c) !== null) return;
+      const j = this.ORDRE_JOURS_REPOS.reduce((best, k) => {
+        const a = charge[k] + chargeInterim[k] * 10, b = charge[best] + chargeInterim[best] * 10;
+        return a < b ? k : best;
+      }, this.ORDRE_JOURS_REPOS[0]);
+      propositions[c.id] = j;
+      chargeInterim[j]++;
+    });
+    return propositions;
+  },
+
+  /**
+   * Emploi du temps automatique sur une période.
+   *
+   * Règles :
+   *  - chaque poste (voiture × vague) est tenu par son titulaire ;
+   *  - le jour de repos du titulaire (ou son absence), un intérimaire le remplace ;
+   *  - personne ne travaille le jour de son repos, ni deux postes le même jour,
+   *    ni plus de 6 jours dans une semaine du lundi au dimanche ;
+   *  - les intérimaires sont répartis équitablement (le moins chargé d'abord,
+   *    puis celui qui tenait déjà ce poste) ;
+   *  - un créneau déjà saisi n'est jamais modifié : le poste est considéré couvert
+   *    et son chauffeur occupé ce jour-là.
+   *
+   * params :
+   *   dates          ['YYYY-MM-DD', …] dans l'ordre
+   *   postes         [{ cle, vehiculeId, service, typeCreneaux, heureDebut, heureFin, titulaireId }]
+   *   chauffeurs     fiches (id, prenom, nom, jourRepos)
+   *   interimaireIds ids des intérimaires utilisables
+   *   reposProposes  { chauffeurId: jour } pour les fiches sans jour défini
+   *   existants      { postesCouverts: Set('vehiculeId|date|service'), creneaux: [{ chauffeurId, date }] }
+   *   absences       [{ chauffeurId, dateDebut, dateFin }]
+   * Renvoie { grille: { [cle]: { [date]: cellule } }, creneaux, stats }.
+   *   cellule.type : 'existant' | 'titulaire' | 'interimaire' | 'manque'
+   */
+  construireEmploiDuTemps({ dates, postes, chauffeurs, interimaireIds, reposProposes, existants, absences }) {
+    const chById = {};
+    (chauffeurs || []).forEach(c => { chById[c.id] = c; });
+    const repos = (id) => {
+      const j = this.jourReposDe(chById[id]);
+      if (j !== null) return j;
+      return reposProposes && reposProposes[id] !== undefined ? Number(reposProposes[id]) : null;
     };
-    const tit = (titulaires || []).map(t => ({ ...t, repos: joursRepos(t), jours: [] }));
-    const doub = (doublures || []).map(d => ({ ...d, aRecruter: false, jours: [] }));
-    const cleDe = (p) => p.id || p.nom;
+    const lundiDe = (date) => {
+      const [y, m, d] = date.split('-').map(Number);
+      const x = new Date(y, m - 1, d);
+      const dow = x.getDay();
+      const l = new Date(y, m - 1, d - (dow === 0 ? 6 : dow - 1));
+      return `${l.getFullYear()}-${String(l.getMonth() + 1).padStart(2, '0')}-${String(l.getDate()).padStart(2, '0')}`;
+    };
+    const dowDe = (date) => { const [y, m, d] = date.split('-').map(Number); return new Date(y, m - 1, d).getDay(); };
 
-    const prisParJour = {}, dernier = {};
-    const consec = (cle, j) => { const d = dernier[cle]; return (d && d.jour === j - 1) ? d.consec : 0; };
-    const marquer = (cle, j) => {
-      const n = consec(cle, j) + 1;
-      dernier[cle] = { jour: j, consec: n };
-      (prisParJour[j] = prisParJour[j] || new Set()).add(cle);
+    // Jours déjà occupés, par chauffeur et par semaine.
+    const occupe = {};          // `${id}|${date}` → true
+    const semaine = {};         // `${id}|${lundi}` → Set(dates)
+    const charge = {};          // id → nb de jours sur la période
+    const marquer = (id, date, compter) => {
+      occupe[`${id}|${date}`] = true;
+      const k = `${id}|${lundiDe(date)}`;
+      (semaine[k] = semaine[k] || new Set()).add(date);
+      if (compter) charge[id] = (charge[id] || 0) + 1;
+    };
+    const debutPeriode = dates[0], finPeriode = dates[dates.length - 1];
+    ((existants && existants.creneaux) || []).forEach(p => {
+      if (!p || !p.chauffeurId || !p.date) return;
+      marquer(p.chauffeurId, p.date, p.date >= debutPeriode && p.date <= finPeriode);
+    });
+    const couverts = (existants && existants.postesCouverts) || new Set();
+    const absent = (id, date) => (absences || []).some(a => a.chauffeurId === id && a.dateDebut <= date && a.dateFin >= date);
+    const disponible = (id, date) => {
+      if (!id || occupe[`${id}|${date}`]) return false;
+      if (repos(id) === dowDe(date)) return false;
+      if (absent(id, date)) return false;
+      const k = `${id}|${lundiDe(date)}`;
+      return !semaine[k] || semaine[k].size < 6;
     };
 
-    const grille = tit.map(() => []);
-    let arrets = 0;
+    const interims = (interimaireIds || []).filter(id => chById[id]);
+    const dernierSurPoste = {};   // cle → id de l'intérimaire qui l'a tenu en dernier
+    const grille = {};
+    const creneaux = [];
+    const stats = { titulaire: 0, interimaire: 0, existant: 0, manque: 0, manqueParJour: {}, parInterimaire: {} };
+    postes.forEach(po => { grille[po.cle] = {}; });
 
-    for (let j = 1; j <= nbJours; j++) {
-      const dow = new Date(annee, mois, j).getDay();
-      for (let v = 0; v < tit.length; v++) {
-        const T = tit[v];
-        if (!T.repos.includes(dow)) {
-          if (consec(cleDe(T), j) >= 6) { grille[v].push(null); arrets++; continue; }
-          marquer(cleDe(T), j); T.jours.push(j);
-          grille[v].push({ id: cleDe(T), nom: T.nom, role: 'titulaire' });
-        } else {
-          // Repartition equitable : parmi les doublures disponibles, celle qui a
-          // travaille le moins de jours jusqu'ici. Sans ce tri, la premiere de la
-          // liste absorbe presque tous les remplacements.
-          const dispo = doub.filter(x => !(prisParJour[j] && prisParJour[j].has(cleDe(x))) && consec(cleDe(x), j) < 6);
-          let d = dispo.sort((a, b) => a.jours.length - b.jours.length)[0];
-          if (!d) {
-            d = { id: 'AUTO-' + (doub.length + 1), nom: 'Doublure ' + (doub.length + 1), aRecruter: true, jours: [] };
-            doub.push(d);
-          }
-          marquer(cleDe(d), j); d.jours.push(j);
-          grille[v].push({ id: cleDe(d), nom: d.nom, role: 'doublure', aRecruter: !!d.aRecruter });
+    dates.forEach(date => {
+      postes.forEach(po => {
+        if (couverts.has(`${po.vehiculeId}|${date}|${po.service}`)) {
+          grille[po.cle][date] = { type: 'existant' };
+          stats.existant++;
+          return;
         }
-      }
-    }
-
-    const joursTitulaires = tit.reduce((s, t) => s + t.jours.length, 0);
-    const joursDoublures = doub.reduce((s, d) => s + d.jours.length, 0);
-    return { nbJours, grille, titulaires: tit, doublures: doub, arrets, joursTitulaires, joursDoublures };
+        const t = po.titulaireId;
+        if (t && disponible(t, date)) {
+          marquer(t, date, true);
+          grille[po.cle][date] = { type: 'titulaire', chauffeurId: t };
+          creneaux.push({ poste: po, date, chauffeurId: t, role: 'titulaire' });
+          stats.titulaire++;
+          return;
+        }
+        const motif = !t ? 'sans_titulaire' : (repos(t) === dowDe(date) ? 'repos' : (absent(t, date) ? 'absence' : 'occupe'));
+        const candidats = interims.filter(id => id !== t && disponible(id, date));
+        if (!candidats.length) {
+          grille[po.cle][date] = { type: 'manque', motif, remplaceId: t || null };
+          stats.manque++;
+          stats.manqueParJour[date] = (stats.manqueParJour[date] || 0) + 1;
+          return;
+        }
+        candidats.sort((a, b) => (charge[a] || 0) - (charge[b] || 0) || ((dernierSurPoste[po.cle] === b) - (dernierSurPoste[po.cle] === a)));
+        const i = candidats[0];
+        marquer(i, date, true);
+        dernierSurPoste[po.cle] = i;
+        grille[po.cle][date] = { type: 'interimaire', chauffeurId: i, motif, remplaceId: t || null };
+        creneaux.push({ poste: po, date, chauffeurId: i, role: 'doublure', motif, remplaceId: t || null });
+        stats.interimaire++;
+        stats.parInterimaire[i] = (stats.parInterimaire[i] || 0) + 1;
+      });
+    });
+    stats.interimairesManquants = Object.values(stats.manqueParJour).reduce((m, n) => Math.max(m, n), 0);
+    return { grille, creneaux, stats };
   },
 
   /** Plus longue serie de jours consecutifs travailles (liste non triee acceptee). */

@@ -185,6 +185,22 @@ const Store = {
     return item;
   },
 
+  /**
+   * Ajoute plusieurs éléments d'un coup : une seule notification et une écriture
+   * Supabase par paquets de 100 lignes, au lieu d'une requête par ligne (un
+   * emploi du temps d'un mois représente plusieurs centaines de créneaux).
+   */
+  addMany(collection, items) {
+    if (!Array.isArray(items) || !items.length) return [];
+    if (!this._cache) this._cache = this._emptyData();
+    if (!this._cache[collection]) this._cache[collection] = [];
+    this._cache[collection].push(...items);
+    this._backupToLocalStorage();
+    this._notify();
+    this._supabaseInsertMany(collection, items);
+    return items;
+  },
+
   update(collection, id, updates) {
     if (!this._cache) return null;
     const items = this._cache[collection] || [];
@@ -281,6 +297,26 @@ const Store = {
       }
     } catch (e) {
       console.warn(`Store: Supabase insert ${collection} failed (offline):`, e.message);
+    }
+  },
+
+  async _supabaseInsertMany(collection, items) {
+    const table = TABLE_MAP[collection];
+    if (!table) {
+      console.warn(`Store: No table mapping for collection "${collection}"`);
+      return;
+    }
+    for (let i = 0; i < items.length; i += 100) {
+      const rows = items.slice(i, i + 100).map(item => this._normaliserEcriture(objToSnake(item)));
+      try {
+        const { error } = await supabase.from(table).insert(rows);
+        if (error) {
+          console.error(`Store: Supabase insert groupé ${collection} failed:`, error.message);
+          this._showSyncError(error, 'insert');
+        }
+      } catch (e) {
+        console.warn(`Store: Supabase insert groupé ${collection} failed (offline):`, e.message);
+      }
     }
   },
 

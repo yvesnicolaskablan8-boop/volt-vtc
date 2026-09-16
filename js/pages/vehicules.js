@@ -732,16 +732,16 @@ const VehiculesPage = {
       { name: 'primeAnnuelle', label: 'Prime annuelle (FCFA)', type: 'number', min: 0 },
       { type: 'row-end' },
       { type: 'row-start' },
-      { name: 'chauffeurAssigne', label: 'Titulaire — service de JOUR', type: 'select', placeholder: 'Sélectionner...', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
-      { name: 'doublureId', label: 'Doublure — service de JOUR', type: 'select', placeholder: 'Aucune doublure', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
+      { name: 'chauffeurAssigne', label: 'Titulaire — Vague 1 (jour)', type: 'select', placeholder: 'Sélectionner...', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
+      { name: 'doublureId', label: 'Intérimaire attitré — Vague 1', type: 'select', placeholder: 'Aucun', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-end' },
       { name: 'modeExploitation', label: "Mode d'exploitation", type: 'select', options: [
-        { value: 'simple', label: 'Un seul service (jour)' },
-        { value: 'double', label: 'Deux services — 24h/24 (jour + nuit)' }
+        { value: 'simple', label: 'Une seule vague (jour)' },
+        { value: 'double', label: 'Deux vagues (Vague 1 + Vague 2)' }
       ], default: 'simple' },
       { type: 'row-start' },
-      { name: 'chauffeurNuitId', label: 'Titulaire — service de NUIT', type: 'select', placeholder: 'Aucun (si mode double)', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
-      { name: 'doublureNuitId', label: 'Doublure — service de NUIT', type: 'select', placeholder: 'Aucune', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
+      { name: 'chauffeurNuitId', label: 'Titulaire — Vague 2 (nuit)', type: 'select', placeholder: 'Aucun (si deux vagues)', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
+      { name: 'doublureNuitId', label: 'Intérimaire attitré — Vague 2', type: 'select', placeholder: 'Aucune', options: chauffeurs.filter(c => c.statut === 'actif').map(c => ({ value: c.id, label: `${c.prenom} ${c.nom}` })) },
       { type: 'row-end' },
       { type: 'row-start' },
       { name: 'recetteJour', label: 'Recette du service JOUR (FCFA)', type: 'number', min: 0, step: 1000, placeholder: 'Ex: 25000 — vide = recette du chauffeur' },
