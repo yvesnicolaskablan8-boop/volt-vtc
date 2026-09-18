@@ -521,6 +521,7 @@ const Store = {
       bonus: [],
       caJour: [],
       charges: [],
+      candidatures: [],
       conversations: [],
       notifications: [],
       settings: { entreprise: {}, preferences: {} }

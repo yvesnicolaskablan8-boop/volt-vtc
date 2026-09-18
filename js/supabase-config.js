@@ -43,7 +43,8 @@ const TABLE_MAP = {
   parcs: 'fleet_parcs',
   bonus: 'fleet_bonus',
   caJour: 'fleet_ca_jour',
-  charges: 'fleet_charges'
+  charges: 'fleet_charges',
+  candidatures: 'leads'            // candidatures déposées sur pilote.tech
 };
 
 // Field name conversion utilities (camelCase ↔ snake_case)

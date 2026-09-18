@@ -91,6 +91,7 @@ const Auth = {
       '/dashboard': 'dashboard',
       '/yango': 'dashboard',
       '/chauffeurs': 'chauffeurs',
+      '/candidatures': 'chauffeurs',
       '/motivation': 'chauffeurs',
       '/messagerie': 'chauffeurs',
       '/vehicules': 'vehicules',

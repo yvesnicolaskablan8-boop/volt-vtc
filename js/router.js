@@ -29,6 +29,7 @@ const Router = {
     add('/analyse-versements', () => AnalyseVersementsPage, 'Analyse des versements');
     add('/analyse-rentabilite', () => AnalyseRentabilitePage, 'Analyse de la rentabilité');
     add('/bonus', () => BonusPage, 'Prime mensuelle');
+    add('/candidatures', () => CandidaturesPage, 'Candidatures');
     add('/simulateur', () => AnalysePage, 'Analyse IA');
     add('/analyse', () => AnalysePage, 'Analyse IA');
     add('/rentabilite', () => RentabilitePage, 'Rentabilité');

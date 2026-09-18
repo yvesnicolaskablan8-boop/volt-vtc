@@ -14,6 +14,18 @@ const ChauffeursPage = {
     const chauffeurs = Store.get('chauffeurs');
     container.innerHTML = `<div class="drivers-workspace">${this._listTemplate(chauffeurs)}</div>`;
     this._bindListEvents();
+    this._maybeEmbaucher();
+  },
+
+  // Arrivée depuis la page Candidatures (« Embaucher ») : ouvrir la création pré-remplie.
+  _maybeEmbaucher() {
+    try {
+      const raw = sessionStorage.getItem('pilote_chauffeur_prefill');
+      if (!raw) return;
+      sessionStorage.removeItem('pilote_chauffeur_prefill');
+      const { candidatureId, prefill } = JSON.parse(raw);
+      setTimeout(() => this._add(prefill || {}, candidatureId || null), 60);
+    } catch (_) {}
   },
 
   /**
@@ -1416,9 +1428,9 @@ const ChauffeursPage = {
     ];
   },
 
-  _add() {
+  _add(prefill, candidatureId) {
     const fields = this._getFormFields();
-    const formHtml = FormBuilder.build(fields);
+    const formHtml = FormBuilder.build(fields, prefill || {});
 
     this._currentEditId = null; // Mode creation
     this._openDriverForm('<iconify-icon icon="solar:user-plus-bold-duotone" class="text-blue"></iconify-icon> Nouveau chauffeur', formHtml, () => {
@@ -1438,6 +1450,7 @@ const ChauffeursPage = {
       };
 
       Store.add('chauffeurs', chauffeur);
+      if (candidatureId && typeof CandidaturesPage !== 'undefined') CandidaturesPage.marquerEmbauche(candidatureId, chauffeur);
       Modal.close();
       Toast.success(`${chauffeur.prenom} ${chauffeur.nom} ajouté avec succès`);
       this.render();

@@ -391,6 +391,26 @@ const AlertesPage = {
         });
       });
     } catch (e) { /* jamais bloquant */ }
+    // 0 ter. Candidatures du site non rappelées : URGENT au-delà de 4 h, sinon à traiter.
+    // Au-delà de cinq, une seule alerte groupée pour ne pas noyer la liste.
+    try {
+      const attente = (typeof CandidaturesPage !== 'undefined') ? CandidaturesPage.aTraiter() : [];
+      const uneAlerte = (c) => {
+        const vieux = (Date.now() - new Date(c.dateCreation).getTime()) > 4 * 3600000;
+        return {
+          id: `CAND-${c.id}`, categorie: 'recrutement', niveau: vieux ? 'urgent' : 'attention',
+          titre: vieux ? 'Candidat à rappeler : plus de 4 h' : 'Nouvelle candidature',
+          description: `${`${c.prenom || ''} ${c.nom || ''}`.trim() || 'Candidat'}${c.ville ? ` (${c.ville})` : ''} — reçue ${CandidaturesPage._anciennete(c.dateCreation)}.`,
+          action: 'Voir la candidature', actionRoute: '#/candidatures', icon: 'solar:user-plus-bold-duotone', date: c.dateCreation || now.toISOString()
+        };
+      };
+      if (attente.length > 5) {
+        alerts.push({ id: 'CAND-GROUPE', categorie: 'recrutement', niveau: 'urgent', titre: `${attente.length} candidatures à rappeler`,
+          description: `La plus ancienne a été reçue ${CandidaturesPage._anciennete(attente[attente.length - 1].dateCreation)}.`,
+          action: 'Voir les candidatures', actionRoute: '#/candidatures', icon: 'solar:user-plus-bold-duotone', date: now.toISOString() });
+      } else attente.forEach(c => alerts.push(uneAlerte(c)));
+    } catch (e) { /* jamais bloquant */ }
+
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     // Versements (chargés ici pour les alertes dette dans la boucle chauffeurs)
@@ -1181,6 +1201,7 @@ const AlertesPage = {
         finance: { icon: 'solar:calculator-bold-duotone', label: 'Finance' },
         yango: { icon: 'solar:bus-bold-duotone', label: 'Yango' },
         planning: { icon: 'solar:calendar-bold-duotone', label: 'Planning' },
+        recrutement: { icon: 'solar:user-plus-bold-duotone', label: 'Recrutement' },
         flotte: { icon: 'solar:wheel-bold-duotone', label: 'Flotte' }
       };
       const catCfg = catConfig[alert.categorie] || { icon: 'solar:bell-bing-bold-duotone', label: alert.categorie };

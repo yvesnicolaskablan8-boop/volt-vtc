@@ -1644,6 +1644,8 @@ const DashboardPage = {
         .fd-couv-regl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:13px;padding-top:12px;border-top:1px dashed color-mix(in srgb,var(--cv) 30%,transparent);font-size:12px;}
         .fd-couv-regl-t{font-weight:800;color:var(--text-primary);margin-right:2px;} .fd-couv-regl-n{color:var(--text-muted);font-weight:600;}
         .fd-couv-r{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:99px;font-weight:700;color:#b45309;background:rgba(232,147,12,.12);} .fd-couv-r.ok{color:#047857;background:rgba(16,185,129,.12);} .fd-couv-r iconify-icon{font-size:14px;}
+        .fd-couv-cand{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 14px;border-radius:13px;text-decoration:none;color:var(--text-primary);font-size:13px;font-weight:600;background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.28);transition:transform .12s ease;}
+        .fd-couv-cand:hover{transform:translateY(-1px);} .fd-couv-cand iconify-icon{font-size:19px;color:#0a9d78;} .fd-couv-cand b{font-weight:900;color:#047857;} .fd-couv-cand em{margin-left:auto;font-style:normal;font-weight:800;color:#047857;}
         @media(max-width:720px){ .fd-couv-jours{grid-template-columns:repeat(4,minmax(0,1fr));} .fd-couv-cta{width:100%;justify-content:center;} }
       </style>
 
@@ -2593,6 +2595,9 @@ const DashboardPage = {
     const detail = `Vague 1 : ${auj.vague1} / ${c.nbVoitures} · Vague 2 : ${auj.vague2} / ${c.nbVoitures}${auj.chauffeurs > auj.vague1 + auj.vague2 ? ` · ${auj.chauffeurs - auj.vague1 - auj.vague2} créneau${auj.chauffeurs - auj.vague1 - auj.vague2 > 1 ? 'x' : ''} sans vague` : ''}`;
     const puce = (fait, total, libelle) => `<span class="fd-couv-r${fait >= total && total > 0 ? ' ok' : ''}"><iconify-icon icon="${fait >= total && total > 0 ? 'solar:check-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>${libelle} <b>${fait}/${total}</b></span>`;
     const reglages = reglagesFaits ? '' : `<div class="fd-couv-regl"><span class="fd-couv-regl-t">Mise en place des deux vagues</span>${puce(nRepos, equipe.length, 'jour de repos')}${puce(nRoles, equipe.length, 'titulaire / intérimaire')}${puce(nDouble, enService.length, 'voitures en deux vagues')}<span class="fd-couv-regl-n">Tout se règle en une fois dans l'emploi du temps automatique.</span></div>`;
+    // Des voitures à l'arrêt d'un côté, des candidats qui attendent de l'autre : on les rapproche.
+    const candidats = (typeof CandidaturesPage !== 'undefined') ? CandidaturesPage.aTraiter().length : 0;
+    const recrutement = candidats ? `<a href="#/candidatures" class="fd-couv-cand"><iconify-icon icon="solar:user-plus-bold"></iconify-icon><span><b>${candidats}</b> candidat${candidats > 1 ? 's' : ''} du site attend${candidats > 1 ? 'ent' : ''} un appel</span><em>Voir les candidatures</em></a>` : '';
     const cta = (joursPleins && reglagesFaits) ? '' : `<button type="button" class="fd-couv-cta" onclick="DashboardPage._ouvrirEmploiDuTemps()"><iconify-icon icon="solar:magic-stick-3-bold"></iconify-icon>Construire l'emploi du temps</button>`;
     return `<div class="fd-couv lvl-${niveau}">
       <div class="fd-couv-tete">
@@ -2602,6 +2607,7 @@ const DashboardPage = {
       </div>
       <div class="fd-couv-jours">${cases}</div>
       ${reglages}
+      ${recrutement}
     </div>`;
   },
 

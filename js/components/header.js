@@ -25,13 +25,13 @@ const Header = {
     document.getElementById('header-group-panel')?.remove();
     document.getElementById('mdock-tip')?.remove();
     const groups = [
-      ['flotte','Flotte','wheel',['/suivi-vehicules','/chauffeurs','/vehicules']],
+      ['flotte','Flotte','wheel',['/suivi-vehicules','/chauffeurs','/candidatures','/vehicules']],
       ['organisation','Organisation','calendar',['/planning','/taches']],
       ['finance','Finance','wallet-money',['/versements','/comptabilite','/bonus','/simulateur']],
       ['performance','Performance','chart-2',['/yango','/rapports','/classement']],
       ['echanges','Échanges','chat-round-dots',['/messagerie','/activite']]
     ];
-    const descriptions = {'/suivi-vehicules':'Positions et suivi de la flotte','/chauffeurs':'Profils, contrats et affectations','/vehicules':'Parc automobile et véhicules','/planning':'Organiser les rotations','/taches':'Suivre les actions de l’équipe','/versements':'Encaissements et versements','/comptabilite':'Comptes, factures et budgets','/bonus':'Prime mensuelle et objectifs','/simulateur':'Analyse IA de l’activité','/yango':'Activité et revenus Yango','/rapports':'Analyser les résultats','/classement':'Comparer les performances','/messagerie':'Conversations de l’équipe','/activite':'Historique des événements'};
+    const descriptions = {'/suivi-vehicules':'Positions et suivi de la flotte','/chauffeurs':'Profils, contrats et affectations','/candidatures':'Recrutement : les candidats du site','/vehicules':'Parc automobile et véhicules','/planning':'Organiser les rotations','/taches':'Suivre les actions de l’équipe','/versements':'Encaissements et versements','/comptabilite':'Comptes, factures et budgets','/bonus':'Prime mensuelle et objectifs','/simulateur':'Analyse IA de l’activité','/yango':'Activité et revenus Yango','/rapports':'Analyser les résultats','/classement':'Comparer les performances','/messagerie':'Conversations de l’équipe','/activite':'Historique des événements'};
     const allowed = route => typeof Auth === 'undefined' || !Auth.canAccessRoute || Auth.canAccessRoute(route);
     const links = this._dockLinks.filter(el => allowed(el.dataset.route));
     nav.replaceChildren(); nav.classList.add('mdock-grouped');
@@ -84,6 +84,31 @@ const Header = {
     const rd = document.getElementById('hw-rentab-dd');
     if (rd) { rd.replaceChildren(); rd.insertAdjacentHTML('beforeend', '<div class="hw-dd-title">Rentabilité</div><div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;line-height:1.5;">Analyse de rentabilité de la flotte (RSI, profit, récupération).</div><a href="#/rentabilite" class="hw-dd-link">Ouvrir la rentabilité →</a>'); }
     this._refreshWidgets();
+  },
+
+  // Nouvelles candidatures du site : la base est relue toutes les cinq minutes ;
+  // celles qu'on n'avait jamais vues sur cet appareil déclenchent un message et
+  // une notification du navigateur (un candidat rappelé vite est un candidat gagné).
+  _candidaturesTick: 0,
+  async _veillerCandidatures() {
+    try {
+      if (typeof CandidaturesPage === 'undefined' || typeof Store === 'undefined' || !Store.isInitialized || !Store.isInitialized()) return;
+      if (typeof Auth !== 'undefined' && Auth.canAccessRoute && !Auth.canAccessRoute('/candidatures')) return;
+      if ((this._candidaturesTick++ % 5) !== 0) return;                       // 1 tick = 60 s
+      await Store.rechargerCollection('candidatures');
+      const ids = CandidaturesPage.aTraiter().map(c => c.id);
+      let connues = null;
+      try { connues = JSON.parse(localStorage.getItem('pilote_candidatures_connues') || 'null'); } catch (_) { connues = null; }
+      try { localStorage.setItem('pilote_candidatures_connues', JSON.stringify(ids)); } catch (_) {}
+      this._loadNotifications();
+      if (!Array.isArray(connues)) return;                                     // premier passage : on mémorise sans déranger
+      const nouvelles = CandidaturesPage.aTraiter().filter(c => !connues.includes(c.id));
+      if (!nouvelles.length) return;
+      const noms = nouvelles.map(c => `${c.prenom || ''} ${c.nom || ''}`.trim()).filter(Boolean).join(', ');
+      const titre = `${nouvelles.length} nouvelle${nouvelles.length > 1 ? 's' : ''} candidature${nouvelles.length > 1 ? 's' : ''}`;
+      if (typeof Toast !== 'undefined' && Toast.show) Toast.show(`${noms} — à rappeler rapidement.`, 'success', titre, 12000);
+      if (typeof NotificationManager !== 'undefined' && NotificationManager.send) NotificationManager.send(`Pilote — ${titre}`, noms, { tag: 'pilote-candidature' });
+    } catch (e) { /* jamais bloquant */ }
   },
 
   _refreshWidgets() {
@@ -344,7 +369,9 @@ const Header = {
       this._notifInterval = setInterval(() => {
         this._loadNotifications();
         this._refreshWidgets();
+        this._veillerCandidatures();
       }, 60000);
+      setTimeout(() => this._veillerCandidatures(), 8000);
     }
   },
 
@@ -366,6 +393,20 @@ const Header = {
     });
 
     const notifications = [];
+
+    // Candidatures du site qui attendent un premier appel
+    try {
+      const enAttente = (typeof CandidaturesPage !== 'undefined') ? CandidaturesPage.aTraiter() : [];
+      if (enAttente.length > 0) {
+        notifications.push({
+          icon: 'solar:user-plus-bold-duotone',
+          iconBg: 'rgba(16, 185, 129, 0.15)',
+          iconColor: '#0a9d78',
+          text: `<strong>${enAttente.length} candidature${enAttente.length > 1 ? 's' : ''}</strong> à rappeler`,
+          time: CandidaturesPage._anciennete(enAttente[0].dateCreation)
+        });
+      }
+    } catch (e) { /* jamais bloquant */ }
 
     // Versements en retard
     const retardCount = versementsRetard.filter(v => v.statut === 'retard').length;
@@ -554,6 +595,7 @@ const Header = {
       const pages = [
         { label: 'Tableau de bord', route: '/dashboard', icon: 'solar:spedometer-max-bold-duotone' },
         { label: 'Chauffeurs', route: '/chauffeurs', icon: 'solar:users-group-rounded-bold-duotone' },
+        { label: 'Candidatures (recrutement)', route: '/candidatures', icon: 'solar:user-plus-bold-duotone' },
         { label: 'Véhicules', route: '/vehicules', icon: 'solar:wheel-bold-duotone' },
         { label: 'Versements', route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone' },
         { label: 'Planning', route: '/planning', icon: 'solar:calendar-bold-duotone' },
