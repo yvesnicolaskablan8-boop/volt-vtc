@@ -250,6 +250,25 @@ const Utils = {
     return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
   },
 
+  // Les n dernières semaines, la plus ancienne d'abord, du LUNDI au DIMANCHE.
+  // debut / fin = 'AAAA-MM-JJ' (fin = dimanche inclus) pour comparer les dates
+  // telles qu'elles sont stockées ; start / end = Date locales à minuit (end =
+  // lundi suivant, exclu) ; label = numéro de semaine ISO (« S38 »).
+  dernieresSemaines(n, ref) {
+    const lundi = new Date(ref || Date.now());
+    lundi.setHours(0, 0, 0, 0);
+    lundi.setDate(lundi.getDate() - ((lundi.getDay() + 6) % 7));
+    const cle = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const out = [];
+    for (let w = n - 1; w >= 0; w--) {
+      const start = new Date(lundi); start.setDate(start.getDate() - w * 7);
+      const end = new Date(start); end.setDate(end.getDate() + 7);
+      const dimanche = new Date(start); dimanche.setDate(dimanche.getDate() + 6);
+      out.push({ label: `S${this.getWeekNumber(start)}`, start, end, debut: cle(start), fin: cle(dimanche) });
+    }
+    return out;
+  },
+
   // Get month name in French
   getMonthName(monthIndex) {
     const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',

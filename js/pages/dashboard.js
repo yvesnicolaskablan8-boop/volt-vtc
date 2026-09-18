@@ -512,24 +512,21 @@ const DashboardPage = {
     }
 
     // Weekly payments (last 8 weeks)
-    const weeklyPayments = [];
-    for (let w = 7; w >= 0; w--) {
-      const weekStart = new Date(now);
-      weekStart.setDate(weekStart.getDate() - (w * 7 + now.getDay()));
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-
+    // Semaines du lundi au dimanche, comparées par date. L'ancien calcul partait
+    // du dimanche « à l'heure qu'il est » : tout versement daté d'un dimanche
+    // tombait entre deux semaines et disparaissait du total, et l'étiquette
+    // avait une semaine de retard (la semaine en cours s'appelait S-1).
+    const weeklyPayments = Utils.dernieresSemaines(8, now).map(sem => {
       const weekVers = versements.filter(v => {
-        const d = new Date(v.date);
-        return d >= weekStart && d <= weekEnd;
+        const j = String(v.date || '').slice(0, 10);
+        return j >= sem.debut && j <= sem.fin && v.statut !== 'supprime';
       });
-
-      weeklyPayments.push({
-        label: `S${Utils.getWeekNumber(weekStart)}`,
-        verse: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + (v.montantVerse || 0), 0),
-        attendu: weekVers.filter(v => v.statut !== 'supprime').reduce((s, v) => s + v.commission, 0)
-      });
-    }
+      return {
+        label: sem.label,
+        verse: weekVers.reduce((s, v) => s + (v.montantVerse || 0), 0),
+        attendu: weekVers.reduce((s, v) => s + (v.commission || 0), 0)
+      };
+    });
 
     // Recette encaissée par jour (8 derniers jours) et par mois (8 derniers mois)
     // — pour le filtre de granularité du widget « Recette encaissée ».

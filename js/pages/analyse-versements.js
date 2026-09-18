@@ -48,12 +48,8 @@ const AnalyseVersementsPage = {
         out.push({ label: Utils.getMonthShort(start.getMonth()), start, end });
       }
     } else {
-      for (let w = 7; w >= 0; w--) {
-        const start = new Date(now); start.setHours(0, 0, 0, 0);
-        start.setDate(start.getDate() - (w * 7 + now.getDay()));
-        const end = new Date(start); end.setDate(end.getDate() + 7);
-        out.push({ label: `S${Utils.getWeekNumber(start)}`, start, end });
-      }
+      // Lundi → dimanche (l'ancien découpage dimanche → samedi portait le numéro de la semaine précédente).
+      Utils.dernieresSemaines(8, now).forEach(sem => out.push({ label: sem.label, start: sem.start, end: sem.end }));
     }
     return out;
   },

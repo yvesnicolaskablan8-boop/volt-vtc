@@ -201,23 +201,15 @@ const VersementsPage = {
     const periodLabel = Utils.formatDate(selectedDay);
 
     // Weekly evolution (last 12 weeks)
-    const weeklyEvo = [];
-    for (let w = 11; w >= 0; w--) {
-      const weekStart = new Date(now);
-      weekStart.setDate(weekStart.getDate() - (w * 7 + now.getDay()));
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-
-      const weekVers = versements.filter(v => {
-        const d = new Date(v.date);
-        return d >= weekStart && d <= weekEnd;
-      });
-
-      weeklyEvo.push({
-        label: `S${Utils.getWeekNumber(weekStart)}`,
-        total: weekVers.filter(_isRealVersement).reduce((s, v) => s + (v.montantVerse || 0), 0)
-      });
-    }
+    // Semaines du lundi au dimanche, comparées par date (voir Utils.dernieresSemaines :
+    // l'ancien calcul perdait les versements datés d'un dimanche).
+    const weeklyEvo = Utils.dernieresSemaines(12, now).map(sem => ({
+      label: sem.label,
+      total: versements
+        .filter(v => { const j = String(v.date || '').slice(0, 10); return j >= sem.debut && j <= sem.fin; })
+        .filter(_isRealVersement)
+        .reduce((s, v) => s + (v.montantVerse || 0), 0)
+    }));
 
     // =================== RECETTES IMPAYÉES ===================
     const now2 = new Date();
