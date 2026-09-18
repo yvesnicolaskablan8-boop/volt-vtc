@@ -53,25 +53,90 @@ const {
  * Les transactions sont recuperees UNE fois puis agregees par chauffeur :
  * appeler driver-stats par chauffeur relirait tout le journal a chaque fois.
  */
+/**
+ * Battement de la synchronisation : une ligne par source (« app » quand un
+ * administrateur a le tableau de bord ouvert, « serveur » pour la tache
+ * planifiee). Le tableau de bord s'en sert pour dire de quand datent les
+ * chiffres et pour montrer une panne — sans lui, une synchro en echec etait
+ * invisible : l'ecran affichait simplement 0 F. Jamais bloquant.
+ */
+async function noterSynchro(source, token, ok, message, details) {
+  try {
+    await supabaseUpsert('fleet_sync_etat', [{
+      source, ok: !!ok, message: message ? String(message).slice(0, 300) : null,
+      details: details || null, maj_le: new Date().toISOString(),
+    }], token, 'source');
+  } catch (e) {
+    console.warn('[sync-ca] battement non ecrit :', e.message);
+  }
+}
+
 async function handleSyncCa(req, res) {
   const user = await verifyAuth(req);
   if (!user) return res.status(401).json({ error: 'Non autorise' });
 
-  try {
-    await assertYangoCreds();
-    const token = getToken(req);
+  const token = getToken(req);
+  // Jour de reference : la date demandee, ou aujourd'hui (Abidjan = UTC+0).
+  const jourRef = (req.query.date || new Date().toISOString().slice(0, 10)).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(jourRef)) {
+    return res.status(400).json({ error: 'Date attendue au format AAAA-MM-JJ' });
+  }
+  // Nombre de jours a resynchroniser en remontant depuis jourRef (defaut 1).
+  // INDISPENSABLE : une synchro « aujourd'hui » ne rattrape jamais les courses
+  // du soir d'un jour deja ecoule. Sans backfill, le CA d'un jour passe restait
+  // fige sur l'instantane partiel de la derniere synchro (ex. 41 000 a 14h52
+  // au lieu des 77 800 reels en fin de journee) et sous-estimait la dette.
+  const nbJours = Math.min(Math.max(parseInt(req.query.days || '1', 10) || 1, 1), 31);
 
-    // Jour de reference : la date demandee, ou aujourd'hui (Abidjan = UTC+0).
-    const jourRef = (req.query.date || new Date().toISOString().slice(0, 10)).slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(jourRef)) {
-      return res.status(400).json({ error: 'Date attendue au format AAAA-MM-JJ' });
-    }
-    // Nombre de jours a resynchroniser en remontant depuis jourRef (defaut 1).
-    // INDISPENSABLE : une synchro « aujourd'hui » ne rattrape jamais les courses
-    // du soir d'un jour deja ecoule. Sans backfill, le CA d'un jour passe restait
-    // fige sur l'instantane partiel de la derniere synchro (ex. 41 000 a 14h52
-    // au lieu des 77 800 reels en fin de journee) et sous-estimait la dette.
-    const nbJours = Math.min(Math.max(parseInt(req.query.days || '1', 10) || 1, 1), 31);
+  try {
+    const resultat = await synchroniserCa(token, jourRef, nbJours);
+    await noterSynchro('app', token, true, null, { jours: nbJours, caTotal: resultat.caTotal, chauffeurs: resultat.chauffeursMisAJour });
+    res.json(resultat);
+  } catch (e) {
+    console.error('[sync-ca]', e.message);
+    await noterSynchro('app', token, false, e.message, null);
+    res.status(500).json({ error: e.message });
+  }
+}
+
+/**
+ * Tache planifiee (Vercel Cron) : meme synchronisation, sans administrateur
+ * connecte. Deux garde-fous, tous deux poses par le proprietaire dans les
+ * variables d'environnement Vercel :
+ *   CRON_SECRET                — Vercel l'envoie en « Authorization: Bearer … »
+ *                                a chaque declenchement ; personne d'autre ne l'a.
+ *   SUPABASE_SERVICE_ROLE_KEY  — ecrit en base sans session (RLS reserve
+ *                                fleet_* aux utilisateurs connectes).
+ * Tant qu'elles manquent, la tache repond 503 et ne touche a rien.
+ * Deux jours resynchronises : la journee d'exploitation qui vient de finir
+ * (courses du soir comprises) et celle qui commence.
+ */
+async function handleCronSyncCa(req, res) {
+  const secret = process.env.CRON_SECRET;
+  const cleService = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret || !cleService) {
+    return res.status(503).json({ error: 'Tache planifiee non configuree', manquant: [!secret && 'CRON_SECRET', !cleService && 'SUPABASE_SERVICE_ROLE_KEY'].filter(Boolean) });
+  }
+  if ((req.headers.authorization || '') !== `Bearer ${secret}`) {
+    return res.status(401).json({ error: 'Non autorise' });
+  }
+  setRequestToken(cleService);
+  const jourRef = new Date().toISOString().slice(0, 10);
+  try {
+    const resultat = await synchroniserCa(cleService, jourRef, 2);
+    await noterSynchro('serveur', cleService, true, null, { jours: 2, caTotal: resultat.caTotal, chauffeurs: resultat.chauffeursMisAJour });
+    res.json({ success: true, source: 'serveur', date: jourRef, detailJours: resultat.detailJours, caTotal: resultat.caTotal });
+  } catch (e) {
+    console.error('[cron-sync-ca]', e.message);
+    await noterSynchro('serveur', cleService, false, e.message, null);
+    res.status(500).json({ error: e.message });
+  }
+}
+
+/** Coeur de la synchronisation du CA : lit Yango, ecrit fleet_ca_jour avec le jeton fourni. */
+async function synchroniserCa(token, jourRef, nbJours) {
+  {
+    await assertYangoCreds();
 
     // Correspondance chauffeur Yango -> chauffeur Pilote (une seule fois).
     const chauffeurs = await supabaseQuery(
@@ -125,7 +190,7 @@ async function handleSyncCa(req, res) {
       detailJours.push({ date: jour, chauffeurs: lignes.length, caTotal: lignes.reduce((s, l) => s + l.ca_brut, 0) });
     }
 
-    res.json({
+    return {
       success: true,
       date: jourRef,
       jours: nbJours,
@@ -134,10 +199,7 @@ async function handleSyncCa(req, res) {
       chauffeursLies: (chauffeurs || []).length,
       caTotal: detailJours.reduce((s, j) => s + j.caTotal, 0),
       transactionsLues: totalTransactions,
-    });
-  } catch (e) {
-    console.error('[sync-ca]', e.message);
-    res.status(500).json({ error: e.message });
+    };
   }
 }
 
@@ -1537,6 +1599,9 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  // Tache planifiee : authentifiee par CRON_SECRET, pas par une session.
+  if (action === 'cron-sync-ca') return handleCronSyncCa(req, res);
+
   // Toutes les fonctions Yango relevent de l'administration : donnees de la
   // flotte entiere, statistiques de revenus, et « recharge » qui engage de
   // l'argent. Un chauffeur authentifie ne doit atteindre aucune d'elles.
@@ -1554,3 +1619,6 @@ module.exports = async function handler(req, res) {
 
   return handlerFn(req, res);
 };
+
+// Exposé pour api/cron-sync-ca.js (chemin sans paramètre pour Vercel Cron).
+module.exports.handleCronSyncCa = handleCronSyncCa;

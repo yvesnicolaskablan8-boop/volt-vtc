@@ -523,6 +523,7 @@ const Store = {
       charges: [],
       candidatures: [],
       paie: [],
+      syncEtat: [],
       conversations: [],
       notifications: [],
       settings: { entreprise: {}, preferences: {} }

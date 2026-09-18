@@ -98,6 +98,19 @@
     },
     "api/analyse.js": {
       "maxDuration": 60
+    },
+    "api/cron-sync-ca.js": {
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron-sync-ca",
+      "schedule": "10 5 * * *"
+    },
+    {
+      "path": "/api/cron-sync-ca",
+      "schedule": "10 17 * * *"
+    }
+  ]
 }

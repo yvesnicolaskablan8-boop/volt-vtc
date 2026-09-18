@@ -136,12 +136,46 @@ const DashboardPage = {
     this._lastCaLiveSync = now;
     try {
       const r = await Store.synchroniserCaJour(null, 1); // aujourd'hui seulement (léger)
+      this._syncErreurLocale = (r && r.error) ? String(r.error) : null;
       if (!this._refreshInterval) return; // tableau de bord quitté pendant la synchro
       if (r && !r.error) {
         await Store.rechargerCollection('caJour');
         if (this._refreshInterval) this._silentRefresh(); // réaffiche avec le CA frais
       }
-    } catch (e) { /* silencieux : réessai au prochain tick */ }
+    } catch (e) { this._syncErreurLocale = e && e.message ? e.message : 'synchronisation impossible'; }
+    // Une panne ne doit plus être muette : la pastille dit de quand datent les chiffres.
+    try { await Store.rechargerCollection('syncEtat'); } catch (_) {}
+    this._peindreSync();
+  },
+
+  // ---- Fraîcheur des données Yango -------------------------------------------
+  // « 0 F » peut vouloir dire « personne ne roule » ou « la synchro est en
+  // panne » : la pastille tranche. Source : fleet_sync_etat (battement écrit par
+  // l'API à chaque passage, depuis l'app ou depuis la tâche planifiée du serveur).
+  _syncErreurLocale: null,
+  _syncHtml() {
+    const lignes = Store.get('syncEtat') || [];
+    const t = (x) => new Date(x.majLe || 0).getTime() || 0;
+    const ok = lignes.filter(x => x.ok).sort((a, b) => t(b) - t(a))[0] || null;
+    const ko = lignes.filter(x => !x.ok).sort((a, b) => t(b) - t(a))[0] || null;
+    const age = (ms) => { const m = Math.max(0, Math.round((Date.now() - ms) / 60000)); return m < 1 ? "à l'instant" : m < 60 ? `il y a ${m} min` : m < 1440 ? `il y a ${Math.round(m / 60)} h` : `il y a ${Math.round(m / 1440)} j`; };
+    let cls = 'neutre', txt = 'Yango : synchronisation en attente', titre = "Aucune synchronisation n'a encore été enregistrée.";
+    if (this._syncErreurLocale || (ko && (!ok || t(ko) > t(ok)))) {
+      cls = 'ko'; txt = `Synchro Yango en échec${ko ? ' · ' + age(t(ko)) : ''}`;
+      titre = `${this._syncErreurLocale || (ko && ko.message) || 'Erreur inconnue'}${ok ? ` — dernière réussite ${age(t(ok))}` : ''}`;
+    } else if (ok) {
+      const minutes = (Date.now() - t(ok)) / 60000;
+      cls = minutes <= 15 ? 'ok' : minutes <= 90 ? 'neutre' : 'vieux';
+      txt = cls === 'ok' ? `Yango à jour · ${age(t(ok))}` : cls === 'vieux' ? `Dernière synchro Yango ${age(t(ok))}` : `Yango synchronisé ${age(t(ok))}`;
+      titre = `Dernière synchronisation réussie ${age(t(ok))} (${ok.source === 'serveur' ? 'tâche planifiée du serveur' : 'tableau de bord ouvert'}).${cls === 'vieux' ? ' Les chiffres du jour peuvent être incomplets.' : ''}`;
+    }
+    return `<span class="fd-sync ${cls}" title="${Utils.escHtml(titre)}"><iconify-icon icon="${cls === 'ko' ? 'solar:danger-triangle-bold' : 'solar:refresh-circle-bold'}"></iconify-icon>${Utils.escHtml(txt)}</span>`;
+  },
+  _peindreSync() {
+    const el = document.getElementById('fd-sync');
+    if (!el) return;
+    el.replaceChildren();
+    el.insertAdjacentHTML('beforeend', this._syncHtml());
   },
 
   // Clic sur « À AJOUTER » (chauffeur hors planning) → aller au Planning et
@@ -1624,6 +1658,9 @@ const DashboardPage = {
         .alb-chip-off:hover{transform:none;filter:none;}
         .alb-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0;}
         @media(max-width:640px){ .alb-txt{font-size:13px;} .alb-chips{display:none;} }
+        /* Fraîcheur de la synchronisation Yango */
+        .fd-sync{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:99px;margin-left:8px;white-space:nowrap;color:var(--text-muted);background:var(--bg-tertiary);}
+        .fd-sync iconify-icon{font-size:14px;} .fd-sync.ok{color:#047857;background:rgba(16,185,129,.12);} .fd-sync.vieux{color:#b45309;background:rgba(232,147,12,.14);} .fd-sync.ko{color:#b91c1c;background:rgba(239,68,68,.13);}
         /* Couverture des voitures (dans « Flotte en direct ») */
         .fd-couv{--cv:#0a9d78;margin-top:16px;padding:16px 18px;border-radius:18px;border:1px solid color-mix(in srgb,var(--cv) 26%,transparent);background:color-mix(in srgb,var(--cv) 7%,transparent);}
         .fd-couv.lvl-warn{--cv:#E8930C;} .fd-couv.lvl-crit{--cv:#EF4444;}
@@ -2540,7 +2577,7 @@ const DashboardPage = {
     const { segments, ringSegments, total } = this._fleetBuckets(d);
     const live = this._isToday() ? "Aujourd'hui" : Utils.escHtml(Utils.formatDate(d.jourAtt));
     return `<div class="d-card fd-card">
-      <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span>
+      <div class="fd-head"><div class="fd-title">Flotte en direct</div><span class="fd-live"><span class="fd-dot-live"></span>${live}</span><span id="fd-sync">${this._syncHtml()}</span>
         <button type="button" class="fd-son${this._sonActif() ? ' on' : ''}" id="fd-son" onclick="DashboardPage._basculerSon()" title="${this._sonActif() ? 'Alerte sonore activée : cliquez pour couper' : 'Alerte sonore coupée : cliquez pour activer'}">
           <iconify-icon icon="${this._sonActif() ? 'solar:volume-loud-bold' : 'solar:volume-cross-bold'}"></iconify-icon><span>${this._sonActif() ? 'Son activé' : 'Son coupé'}</span>
         </button>

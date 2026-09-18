@@ -45,7 +45,8 @@ const TABLE_MAP = {
   caJour: 'fleet_ca_jour',
   charges: 'fleet_charges',
   candidatures: 'leads',           // candidatures déposées sur pilote.tech
-  paie: 'fleet_paie'               // état de paie mensuel
+  paie: 'fleet_paie',              // état de paie mensuel
+  syncEtat: 'fleet_sync_etat'      // dernier passage de la synchro Yango (app / serveur)
 };
 
 // Field name conversion utilities (camelCase ↔ snake_case)
