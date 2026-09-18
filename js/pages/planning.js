@@ -32,11 +32,25 @@ const PlanningPage = {
     this._currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     this._currentDay = new Date(now); this._currentDay.setHours(0, 0, 0, 0);
 
+    // Arrivée depuis une case « jour » du tableau de bord : se placer sur sa semaine.
+    try {
+      const jour = sessionStorage.getItem('pilote_planning_jour');
+      if (jour && /^\d{4}-\d{2}-\d{2}$/.test(jour)) {
+        sessionStorage.removeItem('pilote_planning_jour');
+        const d = new Date(jour + 'T00:00:00');
+        this._currentDay = new Date(d);
+        this._currentWeekStart = new Date(d);
+        this._currentWeekStart.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+        this._currentMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+      }
+    } catch (_) {}
+
     const container = document.getElementById('page-content');
     container.innerHTML = this._template();
     this._bindEvents();
     this._renderView();
     this._maybeOuvrirAjout();
+    this._maybeOuvrirEdt();
   },
 
   // Ouvre l'ajout de créneau pré-rempli si on arrive depuis « À AJOUTER » (dashboard)
@@ -47,6 +61,16 @@ const PlanningPage = {
       sessionStorage.removeItem('pilote_planning_add');
       const { chauffeurId, date, returnTo } = JSON.parse(raw);
       setTimeout(() => this._addShift(chauffeurId || '', date || '', returnTo || ''), 60);
+    } catch (_) {}
+  },
+
+  // Arrivée depuis « Voitures à l'arrêt » (tableau de bord) ou une alerte de
+  // couverture : ouvrir directement l'emploi du temps automatique.
+  _maybeOuvrirEdt() {
+    try {
+      if (sessionStorage.getItem('pilote_planning_edt') !== '1') return;
+      sessionStorage.removeItem('pilote_planning_edt');
+      setTimeout(() => this._emploiDuTempsAuto(), 80);
     } catch (_) {}
   },
 

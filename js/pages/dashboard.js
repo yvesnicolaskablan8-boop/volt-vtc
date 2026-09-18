@@ -1624,6 +1624,27 @@ const DashboardPage = {
         .alb-chip-off:hover{transform:none;filter:none;}
         .alb-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0;}
         @media(max-width:640px){ .alb-txt{font-size:13px;} .alb-chips{display:none;} }
+        /* Couverture des voitures (dans « Flotte en direct ») */
+        .fd-couv{--cv:#0a9d78;margin-top:16px;padding:16px 18px;border-radius:18px;border:1px solid color-mix(in srgb,var(--cv) 26%,transparent);background:color-mix(in srgb,var(--cv) 7%,transparent);}
+        .fd-couv.lvl-warn{--cv:#E8930C;} .fd-couv.lvl-crit{--cv:#EF4444;}
+        .fd-couv-tete{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+        .fd-couv-ic{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--cv);background:color-mix(in srgb,var(--cv) 16%,transparent);flex-shrink:0;}
+        .fd-couv-txt{flex:1;min-width:200px;}
+        .fd-couv-titre{font-size:16px;font-weight:700;color:var(--text-primary);line-height:1.25;} .fd-couv-titre b{font-size:22px;font-weight:900;color:var(--cv);margin-right:2px;}
+        .fd-couv-detail{font-size:12.5px;color:var(--text-muted);margin-top:3px;font-weight:600;}
+        .fd-couv-cta{display:inline-flex;align-items:center;gap:8px;border:none;border-radius:12px;padding:11px 16px;font-weight:800;font-size:13.5px;color:#fff;background:var(--pilote-blue,#2563eb);cursor:pointer;box-shadow:0 6px 16px rgba(37,99,235,.25);transition:transform .12s ease,filter .12s ease;}
+        .fd-couv-cta:hover{transform:translateY(-1px);filter:brightness(1.06);} .fd-couv-cta iconify-icon{font-size:17px;}
+        .fd-couv-jours{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:14px;}
+        .fd-couv-j{--jc:#0a9d78;border:1px solid var(--border-color,rgba(0,0,0,.08));background:var(--bg-primary,#fff);border-radius:13px;padding:9px 8px 8px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;cursor:pointer;min-width:0;text-align:left;transition:transform .12s ease,box-shadow .12s ease;}
+        .fd-couv-j:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(0,0,0,.08);}
+        .fd-couv-j.t-mid{--jc:#2563eb;} .fd-couv-j.t-warn{--jc:#E8930C;} .fd-couv-j.t-crit{--jc:#EF4444;}
+        .fd-couv-jn{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:capitalize;white-space:nowrap;}
+        .fd-couv-jv{font-size:18px;font-weight:900;color:var(--jc);line-height:1;} .fd-couv-jv small{font-size:11px;font-weight:700;color:var(--text-muted);}
+        .fd-couv-jb{width:100%;height:5px;border-radius:99px;background:var(--bg-tertiary,rgba(0,0,0,.07));overflow:hidden;margin-top:2px;} .fd-couv-jb i{display:block;height:100%;border-radius:99px;background:var(--jc);}
+        .fd-couv-regl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:13px;padding-top:12px;border-top:1px dashed color-mix(in srgb,var(--cv) 30%,transparent);font-size:12px;}
+        .fd-couv-regl-t{font-weight:800;color:var(--text-primary);margin-right:2px;} .fd-couv-regl-n{color:var(--text-muted);font-weight:600;}
+        .fd-couv-r{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:99px;font-weight:700;color:#b45309;background:rgba(232,147,12,.12);} .fd-couv-r.ok{color:#047857;background:rgba(16,185,129,.12);} .fd-couv-r iconify-icon{font-size:14px;}
+        @media(max-width:720px){ .fd-couv-jours{grid-template-columns:repeat(4,minmax(0,1fr));} .fd-couv-cta{width:100%;justify-content:center;} }
       </style>
 
       <!-- Barre d'alerte (tête de dashboard, visible d'emblée) -->
@@ -2530,7 +2551,70 @@ const DashboardPage = {
         <div class="fd-recette">${this._fleetRecettePanel(d)}</div>
       </div>
       <div class="fd-cards" id="fleet-donut-cards">${this._fleetCardsInner(segments)}</div>
+      <div id="fleet-couverture">${this._couvertureHtml()}</div>
     </div>`;
+  },
+
+  // ---- Couverture des voitures ------------------------------------------------
+  // Le reste du bloc décrit ce qui se passe ; celui-ci dit ce qui DEVRAIT se
+  // passer : chaque voiture en service doit avoir un chauffeur sur chaque vague.
+  // Sept jours glissants à partir de la journée d'exploitation en cours.
+  _datesCouverture(n = 7) {
+    const dates = [];
+    const d = new Date(this._todayOp() + 'T12:00:00Z');
+    for (let i = 0; i < n; i++) { dates.push(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() + 1); }
+    return dates;
+  },
+
+  _couvertureHtml() {
+    const chauffeurs = Store.get('chauffeurs') || [];
+    const vehicules = Store.get('vehicules') || [];
+    const c = Utils.couvertureFlotte({ vehicules, chauffeurs, planning: Store.get('planning') || [], absences: Store.get('absences') || [], dates: this._datesCouverture(7) });
+    if (!c.nbVoitures) return '';
+    const auj = c.jours[0];
+    const equipe = chauffeurs.filter(x => x.statut === 'actif' || x.statut === 'repos');
+    const nRepos = equipe.filter(x => Utils.jourReposDe(x) !== null).length;
+    const nRoles = equipe.filter(x => x.roleFlotte === 'titulaire' || x.roleFlotte === 'doublure').length;
+    const enService = vehicules.filter(v => v.statut === 'en_service');
+    const nDouble = enService.filter(v => v.modeExploitation === 'double').length;
+    const reglagesFaits = equipe.length > 0 && nRepos === equipe.length && nRoles === equipe.length && nDouble === enService.length;
+    const joursPleins = c.jours.every(j => j.arret === 0);
+    const niveau = auj.arret === 0 ? 'ok' : (auj.voitures === 0 ? 'crit' : 'warn');
+    const teinte = (j) => j.voitures === 0 ? 'crit' : (j.arret === 0 ? 'ok' : (j.voitures * 2 < c.nbVoitures ? 'warn' : 'mid'));
+    const nomJour = (date, i) => i === 0 ? 'Auj.' : new Date(date + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'short', timeZone: 'UTC' }).replace('.', '');
+    const cases = c.jours.map((j, i) => `<button type="button" class="fd-couv-j t-${teinte(j)}" onclick="DashboardPage._ouvrirPlanningJour('${j.date}')" title="${Utils.escHtml(Utils.formatDate(j.date))} — ${j.voitures} voiture${j.voitures > 1 ? 's' : ''} sur ${c.nbVoitures} avec un chauffeur (vague 1 : ${j.vague1}, vague 2 : ${j.vague2})">
+        <span class="fd-couv-jn">${Utils.escHtml(nomJour(j.date, i))} ${Number(j.date.slice(8, 10))}</span>
+        <span class="fd-couv-jv">${j.voitures}<small>/${c.nbVoitures}</small></span>
+        <span class="fd-couv-jb"><i style="width:${Math.round(j.voitures / c.nbVoitures * 100)}%"></i></span>
+      </button>`).join('');
+    const titre = auj.arret === 0
+      ? `<b>${c.nbVoitures}</b> voiture${c.nbVoitures > 1 ? 's' : ''} sur ${c.nbVoitures} roulent aujourd'hui`
+      : `<b>${auj.arret}</b> voiture${auj.arret > 1 ? 's' : ''} à l'arrêt sur ${c.nbVoitures} aujourd'hui`;
+    const detail = `Vague 1 : ${auj.vague1} / ${c.nbVoitures} · Vague 2 : ${auj.vague2} / ${c.nbVoitures}${auj.chauffeurs > auj.vague1 + auj.vague2 ? ` · ${auj.chauffeurs - auj.vague1 - auj.vague2} créneau${auj.chauffeurs - auj.vague1 - auj.vague2 > 1 ? 'x' : ''} sans vague` : ''}`;
+    const puce = (fait, total, libelle) => `<span class="fd-couv-r${fait >= total && total > 0 ? ' ok' : ''}"><iconify-icon icon="${fait >= total && total > 0 ? 'solar:check-circle-bold' : 'solar:clock-circle-bold'}"></iconify-icon>${libelle} <b>${fait}/${total}</b></span>`;
+    const reglages = reglagesFaits ? '' : `<div class="fd-couv-regl"><span class="fd-couv-regl-t">Mise en place des deux vagues</span>${puce(nRepos, equipe.length, 'jour de repos')}${puce(nRoles, equipe.length, 'titulaire / intérimaire')}${puce(nDouble, enService.length, 'voitures en deux vagues')}<span class="fd-couv-regl-n">Tout se règle en une fois dans l'emploi du temps automatique.</span></div>`;
+    const cta = (joursPleins && reglagesFaits) ? '' : `<button type="button" class="fd-couv-cta" onclick="DashboardPage._ouvrirEmploiDuTemps()"><iconify-icon icon="solar:magic-stick-3-bold"></iconify-icon>Construire l'emploi du temps</button>`;
+    return `<div class="fd-couv lvl-${niveau}">
+      <div class="fd-couv-tete">
+        <span class="fd-couv-ic"><iconify-icon icon="${niveau === 'ok' ? 'solar:check-circle-bold' : 'solar:wheel-angle-bold'}"></iconify-icon></span>
+        <div class="fd-couv-txt"><div class="fd-couv-titre">${titre}</div><div class="fd-couv-detail">${detail}</div></div>
+        ${cta}
+      </div>
+      <div class="fd-couv-jours">${cases}</div>
+      ${reglages}
+    </div>`;
+  },
+
+  _ouvrirEmploiDuTemps() {
+    try { sessionStorage.setItem('pilote_planning_edt', '1'); } catch (_) {}
+    if (typeof Router !== 'undefined' && Router.navigate) Router.navigate('/planning');
+    else window.location.hash = '#/planning';
+  },
+
+  _ouvrirPlanningJour(date) {
+    try { sessionStorage.setItem('pilote_planning_jour', date); } catch (_) {}
+    if (typeof Router !== 'undefined' && Router.navigate) Router.navigate('/planning');
+    else window.location.hash = '#/planning';
   },
 
   // « À surveiller » = ALERTE URGENTE. Publie la liste courante (lue par la page

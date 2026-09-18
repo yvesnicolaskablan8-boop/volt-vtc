@@ -269,6 +269,46 @@ const Utils = {
     return out;
   },
 
+  /**
+   * Couverture des voitures : pour chaque date, combien de voitures en service
+   * ont un chauffeur planifié, et combien de postes (voiture × vague) sont tenus.
+   * Une voiture à l'arrêt ne rapporte rien : c'est le premier chiffre à regarder.
+   *
+   *   dates      ['AAAA-MM-JJ', …]
+   *   renvoie    { nbVoitures, postesParJour, jours: [{ date, voitures, arret, postes, vague1, vague2, chauffeurs }] }
+   *
+   * Un créneau compte s'il concerne un chauffeur non inactif et non absent ce
+   * jour-là. Sa voiture = celle du créneau, sinon celle du chauffeur ; sa vague
+   * = typeCreneaux (« vague1 » / « vague2 ») ou service (« jour » / « nuit »).
+   */
+  couvertureFlotte({ vehicules, chauffeurs, planning, absences, dates }) {
+    const enService = (vehicules || []).filter(v => v.statut === 'en_service');
+    const idsVoitures = new Set(enService.map(v => v.id));
+    const chParId = new Map((chauffeurs || []).map(c => [c.id, c]));
+    const nb = enService.length;
+    const jours = (dates || []).map(date => {
+      const voitures = new Set(), postes = new Set(), chauffeursVus = new Set();
+      let vague1 = 0, vague2 = 0;
+      (planning || []).forEach(p => {
+        if (p.date !== date) return;
+        const ch = chParId.get(p.chauffeurId);
+        if (!ch || ch.statut === 'inactif' || chauffeursVus.has(p.chauffeurId)) return;
+        const absent = (absences || []).some(a => a.chauffeurId === p.chauffeurId && date >= a.dateDebut && date <= a.dateFin);
+        if (absent) return;
+        chauffeursVus.add(p.chauffeurId);
+        let voiture = p.vehiculeId || ch.vehiculeAssigne || '';
+        if (!idsVoitures.has(voiture)) voiture = 'sans-voiture-' + p.chauffeurId;
+        const vague = (p.typeCreneaux === 'vague2' || p.service === 'nuit') ? 2 : ((p.typeCreneaux === 'vague1' || p.service === 'jour') ? 1 : 0);
+        voitures.add(voiture);
+        postes.add(voiture + '|' + (vague || p.chauffeurId));
+        if (vague === 1) vague1++; else if (vague === 2) vague2++;
+      });
+      const nbVoitures = Math.min(nb, voitures.size);
+      return { date, voitures: nbVoitures, arret: Math.max(0, nb - nbVoitures), postes: Math.min(nb * 2, postes.size), vague1: Math.min(nb, vague1), vague2: Math.min(nb, vague2), chauffeurs: chauffeursVus.size };
+    });
+    return { nbVoitures: nb, postesParJour: nb * 2, jours };
+  },
+
   // Get month name in French
   getMonthName(monthIndex) {
     const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',

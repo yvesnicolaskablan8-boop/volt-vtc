@@ -215,6 +215,7 @@ const AlertesPage = {
           <button class="btn btn-sm btn-secondary alert-filter" data-filter="conduite"><iconify-icon icon="solar:spedometer-max-bold-duotone"></iconify-icon> Conduite</button>
           <button class="btn btn-sm btn-secondary alert-filter" data-filter="finance"><iconify-icon icon="solar:calculator-bold-duotone"></iconify-icon> Finance</button>
           <button class="btn btn-sm btn-secondary alert-filter" data-filter="yango"><iconify-icon icon="solar:bus-bold-duotone"></iconify-icon> Yango</button>
+          <button class="btn btn-sm btn-secondary alert-filter" data-filter="planning"><iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon> Planning</button>
         </div>
       </div>
 
@@ -351,6 +352,41 @@ const AlertesPage = {
           action: 'Voir la flotte en direct',
           actionRoute: '#/dashboard',
           icon: 'solar:eye-scan-bold',
+          date: now.toISOString()
+        });
+      });
+    } catch (e) { /* jamais bloquant */ }
+
+    // 0 bis. Couverture du planning : des voitures en service sans chauffeur.
+    // Une voiture à l'arrêt ne rapporte rien : aucune voiture planifiée = CRITIQUE,
+    // moins d'une voiture sur deux = URGENT. Aujourd'hui (journée d'exploitation,
+    // bascule à 05h) et demain, tant qu'il est encore temps d'agir.
+    try {
+      const base = new Date();
+      if (base.getUTCHours() < 5) base.setUTCDate(base.getUTCDate() - 1);
+      const jour0 = base.toISOString().slice(0, 10);
+      const lendemain = new Date(jour0 + 'T12:00:00Z'); lendemain.setUTCDate(lendemain.getUTCDate() + 1);
+      const couv = Utils.couvertureFlotte({
+        vehicules: Store.get('vehicules') || [], chauffeurs: Store.get('chauffeurs') || [],
+        planning: Store.get('planning') || [], absences: Store.get('absences') || [],
+        dates: [jour0, lendemain.toISOString().slice(0, 10)]
+      });
+      const n = couv.nbVoitures;
+      if (n > 0) couv.jours.forEach((j, i) => {
+        const quand = i === 0 ? "aujourd'hui" : 'demain';
+        if (j.voitures > 0 && j.voitures * 2 >= n) return;
+        alerts.push({
+          id: `COUV-${j.date}`,
+          categorie: 'planning',
+          niveau: j.voitures === 0 ? 'critique' : 'urgent',
+          titre: j.voitures === 0 ? `Aucune voiture planifiée ${quand}` : `${j.arret} voiture${j.arret > 1 ? 's' : ''} à l'arrêt ${quand}`,
+          description: j.voitures === 0
+            ? `${n} voiture${n > 1 ? 's' : ''} en service et aucun chauffeur au planning ${quand} (${Utils.formatDate(j.date)}). Chaque voiture à l'arrêt est une journée de recette perdue.`
+            : `${j.voitures} voiture${j.voitures > 1 ? 's' : ''} sur ${n} seulement ${j.voitures > 1 ? 'ont' : 'a'} un chauffeur ${quand} (${Utils.formatDate(j.date)}) — vague 1 : ${j.vague1}, vague 2 : ${j.vague2}.`,
+          action: "Construire l'emploi du temps",
+          actionRoute: '#/planning',
+          actionFlag: 'pilote_planning_edt',
+          icon: 'solar:wheel-angle-bold-duotone',
           date: now.toISOString()
         });
       });
@@ -1143,7 +1179,9 @@ const AlertesPage = {
         versements: { icon: 'solar:transfer-horizontal-bold-duotone', label: 'Versements' },
         conduite: { icon: 'solar:spedometer-max-bold-duotone', label: 'Conduite' },
         finance: { icon: 'solar:calculator-bold-duotone', label: 'Finance' },
-        yango: { icon: 'solar:bus-bold-duotone', label: 'Yango' }
+        yango: { icon: 'solar:bus-bold-duotone', label: 'Yango' },
+        planning: { icon: 'solar:calendar-bold-duotone', label: 'Planning' },
+        flotte: { icon: 'solar:wheel-bold-duotone', label: 'Flotte' }
       };
       const catCfg = catConfig[alert.categorie] || { icon: 'solar:bell-bing-bold-duotone', label: alert.categorie };
 
@@ -1164,7 +1202,7 @@ const AlertesPage = {
                 ${alert.action} <iconify-icon icon="solar:settings-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
               </button>
             ` : (alert.actionRoute ? `
-              <a href="${alert.actionRoute}" class="btn btn-sm btn-secondary" style="white-space:nowrap;">
+              <a href="${alert.actionRoute}" class="btn btn-sm btn-secondary" style="white-space:nowrap;"${alert.actionFlag ? ` onclick="try{sessionStorage.setItem('${alert.actionFlag}','1')}catch(e){}"` : ''}>
                 ${alert.action} <iconify-icon icon="solar:alt-arrow-right-bold" style="font-size:10px;margin-left:4px;"></iconify-icon>
               </a>
             ` : '')}
