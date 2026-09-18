@@ -270,6 +270,70 @@ const Utils = {
   },
 
   /**
+   * État de paie d'un mois pour les chauffeurs salariés (gestion interne).
+   *   salaire dû  = salaire mensuel × jours de contrat dans le mois / jours du mois
+   *   prime       = prime mensuelle acquise (voir computePrimeMois), sauf si elle a
+   *                 déjà été remise autrement qu'avec le salaire (espèces, Yango)
+   *   net à payer = salaire dû + prime + ajustement − retenue
+   * La retenue et l'ajustement sont des décisions de l'administrateur, lues dans
+   * les lignes déjà enregistrées (`enregistrements`). La dette en cours n'est
+   * JAMAIS retenue d'office : elle est seulement signalée.
+   * Fonction pure.
+   *
+   * @param {string} mois 'AAAA-MM'
+   */
+  computePaieMois({ mois, chauffeurs, primes = [], primesVersees = [], dettesParChauffeur = {}, enregistrements = [], salaireDefaut = 250000 }) {
+    const [an, mo] = String(mois).split('-').map(Number);
+    const joursMois = new Date(Date.UTC(an, mo, 0)).getUTCDate();
+    const debutMois = `${mois}-01`, finMois = `${mois}-${String(joursMois).padStart(2, '0')}`;
+    const jour = (iso) => Number(String(iso).slice(8, 10));
+    const primeDe = new Map((primes || []).map(r => [r.chauffeurId, r]));
+    const verseeDe = new Map((primesVersees || []).filter(b => b.semaine === mois && b.statut === 'verse').map(b => [b.chauffeurId, b]));
+    const enregDe = new Map((enregistrements || []).filter(e => e.mois === mois).map(e => [e.chauffeurId, e]));
+
+    return (chauffeurs || [])
+      .filter(c => c.typeContrat === 'salarie')
+      .map(ch => {
+        const debut = String(ch.dateDebutContrat || '').slice(0, 10) || debutMois;
+        const fin = String(ch.dateFinContrat || '').slice(0, 10) || finMois;
+        const de = debut > debutMois ? debut : debutMois;
+        const a = fin < finMois ? fin : finMois;
+        const joursContrat = de <= a ? (jour(a) - jour(de) + 1) : 0;
+        const enreg = enregDe.get(ch.id) || null;
+        // Hors contrat ce mois-ci, ou parti et jamais payé : pas de ligne.
+        if (!joursContrat || (ch.statut === 'inactif' && !ch.dateFinContrat && !enreg)) return null;
+
+        const salaireBase = Number(ch.salaireMensuel) > 0 ? Number(ch.salaireMensuel) : salaireDefaut;
+        const salaireDu = Math.round(salaireBase * joursContrat / joursMois);
+        const p = primeDe.get(ch.id) || null;
+        const versee = verseeDe.get(ch.id) || null;
+        const primeAcquise = p ? (Number(p.montant) || 0) : 0;
+        const primeHorsSalaire = !!(versee && versee.moyenVersement !== 'salaire');
+        const prime = primeHorsSalaire ? 0 : (versee ? (Number(versee.montant) || 0) : primeAcquise);
+        const retenue = enreg ? (Number(enreg.retenue) || 0) : 0;
+        const ajustement = enreg ? (Number(enreg.ajustement) || 0) : 0;
+        const paye = !!(enreg && enreg.statut === 'paye');
+        // Une ligne payée est figée : on relit ce qui a été payé, pas ce qu'on recalcule.
+        const fige = paye ? { salaireDu: Number(enreg.salaireDu) || 0, prime: Number(enreg.prime) || 0, net: Number(enreg.net) || 0 } : null;
+        return {
+          chauffeurId: ch.id, nom: `${ch.prenom || ''} ${ch.nom || ''}`.trim(), mois,
+          salaireBase, joursContrat, joursMois, complet: joursContrat === joursMois,
+          salaireDu: fige ? fige.salaireDu : salaireDu,
+          prime: fige ? fige.prime : prime,
+          primeInfo: primeHorsSalaire ? `Prime de ${this.formatCurrency(versee.montant || 0)} déjà remise (${versee.moyenVersement === 'yango' ? 'solde Yango' : 'espèces'})`
+            : (p && p.bloque ? p.raison : (p && !p.acquise && p.joursPlanifies > 0 ? `Objectif atteint à ${p.taux} %` : (p && p.joursPlanifies === 0 ? 'Aucun jour planifié' : ''))),
+          dette: Math.round(dettesParChauffeur[ch.id] || 0),
+          retenue, ajustement, motif: enreg ? (enreg.motif || '') : '',
+          net: fige ? fige.net : (salaireDu + prime + ajustement - retenue),
+          paye, payeLe: enreg ? enreg.payeLe : null, moyenPaiement: enreg ? enreg.moyenPaiement : null, referencePaiement: enreg ? enreg.referencePaiement : null,
+          enregistrementId: enreg ? enreg.id : null
+        };
+      })
+      .filter(Boolean)
+      .sort((x, y) => x.nom.localeCompare(y.nom));
+  },
+
+  /**
    * Couverture des voitures : pour chaque date, combien de voitures en service
    * ont un chauffeur planifié, et combien de postes (voiture × vague) sont tenus.
    * Une voiture à l'arrêt ne rapporte rien : c'est le premier chiffre à regarder.

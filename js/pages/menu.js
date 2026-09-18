@@ -13,6 +13,7 @@ const MenuPage = {
       { route: '/versements', icon: 'solar:wallet-money-bold-duotone', label: 'Caisse', color: '#13deb9' },
       { route: '/candidatures', icon: 'solar:user-plus-bold-duotone', label: 'Candidatures', color: '#0a9d78' },
       { route: '/bonus', icon: 'solar:gift-bold-duotone', label: 'Prime mensuelle', color: '#635bff' },
+      { route: '/paie', icon: 'solar:wallet-money-bold-duotone', label: 'État de paie', color: '#0a9d78' },
       { route: '/simulateur', icon: 'solar:calculator-minimalistic-bold-duotone', label: 'Simulateur', color: '#0891b2' },
       { route: '/rentabilite', icon: 'solar:pie-chart-2-bold-duotone', label: 'Rentabilité', color: '#635bff' },
       { route: '/comptabilite', icon: 'solar:calculator-bold-duotone', label: 'Comptabilité', color: '#635bff' },

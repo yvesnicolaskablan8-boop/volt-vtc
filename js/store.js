@@ -522,6 +522,7 @@ const Store = {
       caJour: [],
       charges: [],
       candidatures: [],
+      paie: [],
       conversations: [],
       notifications: [],
       settings: { entreprise: {}, preferences: {} }

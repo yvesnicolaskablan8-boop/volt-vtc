@@ -103,6 +103,7 @@ const Auth = {
       '/depenses': 'depenses',
       '/rentabilite': 'rentabilite',
       '/comptabilite': 'comptabilite',
+      '/paie': 'comptabilite',
       '/gps-conduite': 'gps_conduite',
       '/alertes': 'alertes',
       '/rapports': 'rapports',

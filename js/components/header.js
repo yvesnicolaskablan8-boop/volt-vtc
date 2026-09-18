@@ -27,11 +27,11 @@ const Header = {
     const groups = [
       ['flotte','Flotte','wheel',['/suivi-vehicules','/chauffeurs','/candidatures','/vehicules']],
       ['organisation','Organisation','calendar',['/planning','/taches']],
-      ['finance','Finance','wallet-money',['/versements','/comptabilite','/bonus','/simulateur']],
+      ['finance','Finance','wallet-money',['/versements','/comptabilite','/bonus','/paie','/simulateur']],
       ['performance','Performance','chart-2',['/yango','/rapports','/classement']],
       ['echanges','Échanges','chat-round-dots',['/messagerie','/activite']]
     ];
-    const descriptions = {'/suivi-vehicules':'Positions et suivi de la flotte','/chauffeurs':'Profils, contrats et affectations','/candidatures':'Recrutement : les candidats du site','/vehicules':'Parc automobile et véhicules','/planning':'Organiser les rotations','/taches':'Suivre les actions de l’équipe','/versements':'Encaissements et versements','/comptabilite':'Comptes, factures et budgets','/bonus':'Prime mensuelle et objectifs','/simulateur':'Analyse IA de l’activité','/yango':'Activité et revenus Yango','/rapports':'Analyser les résultats','/classement':'Comparer les performances','/messagerie':'Conversations de l’équipe','/activite':'Historique des événements'};
+    const descriptions = {'/suivi-vehicules':'Positions et suivi de la flotte','/chauffeurs':'Profils, contrats et affectations','/candidatures':'Recrutement : les candidats du site','/vehicules':'Parc automobile et véhicules','/planning':'Organiser les rotations','/taches':'Suivre les actions de l’équipe','/versements':'Encaissements et versements','/comptabilite':'Comptes, factures et budgets','/bonus':'Prime mensuelle et objectifs','/paie':'Salaires, primes et net à payer du mois','/simulateur':'Analyse IA de l’activité','/yango':'Activité et revenus Yango','/rapports':'Analyser les résultats','/classement':'Comparer les performances','/messagerie':'Conversations de l’équipe','/activite':'Historique des événements'};
     const allowed = route => typeof Auth === 'undefined' || !Auth.canAccessRoute || Auth.canAccessRoute(route);
     const links = this._dockLinks.filter(el => allowed(el.dataset.route));
     nav.replaceChildren(); nav.classList.add('mdock-grouped');
@@ -596,6 +596,8 @@ const Header = {
         { label: 'Tableau de bord', route: '/dashboard', icon: 'solar:spedometer-max-bold-duotone' },
         { label: 'Chauffeurs', route: '/chauffeurs', icon: 'solar:users-group-rounded-bold-duotone' },
         { label: 'Candidatures (recrutement)', route: '/candidatures', icon: 'solar:user-plus-bold-duotone' },
+        { label: 'État de paie (salaires)', route: '/paie', icon: 'solar:wallet-money-bold-duotone' },
+        { label: 'Prime mensuelle', route: '/bonus', icon: 'solar:gift-bold-duotone' },
         { label: 'Véhicules', route: '/vehicules', icon: 'solar:wheel-bold-duotone' },
         { label: 'Versements', route: '/versements', icon: 'solar:transfer-horizontal-bold-duotone' },
         { label: 'Planning', route: '/planning', icon: 'solar:calendar-bold-duotone' },

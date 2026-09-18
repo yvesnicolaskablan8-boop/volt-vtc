@@ -44,7 +44,8 @@ const TABLE_MAP = {
   bonus: 'fleet_bonus',
   caJour: 'fleet_ca_jour',
   charges: 'fleet_charges',
-  candidatures: 'leads'            // candidatures déposées sur pilote.tech
+  candidatures: 'leads',           // candidatures déposées sur pilote.tech
+  paie: 'fleet_paie'               // état de paie mensuel
 };
 
 // Field name conversion utilities (camelCase ↔ snake_case)
