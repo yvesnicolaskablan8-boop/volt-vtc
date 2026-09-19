@@ -282,7 +282,7 @@ const Utils = {
    *
    * @param {string} mois 'AAAA-MM'
    */
-  computePaieMois({ mois, chauffeurs, primes = [], primesVersees = [], dettesParChauffeur = {}, enregistrements = [], salaireDefaut = 250000 }) {
+  computePaieMois({ mois, chauffeurs, primes = [], primesVersees = [], dettesParChauffeur = {}, enregistrements = [], salaireDefaut = 250000, caJour = [], planning = [], aujourdhui = null }) {
     const [an, mo] = String(mois).split('-').map(Number);
     const joursMois = new Date(Date.UTC(an, mo, 0)).getUTCDate();
     const debutMois = `${mois}-01`, finMois = `${mois}-${String(joursMois).padStart(2, '0')}`;
@@ -290,6 +290,19 @@ const Utils = {
     const primeDe = new Map((primes || []).map(r => [r.chauffeurId, r]));
     const verseeDe = new Map((primesVersees || []).filter(b => b.semaine === mois && b.statut === 'verse').map(b => [b.chauffeurId, b]));
     const enregDe = new Map((enregistrements || []).filter(e => e.mois === mois).map(e => [e.chauffeurId, e]));
+
+    // Activité réelle : jours roulés (CA > 0) et planifiés dans le mois, dernier jour roulé toutes périodes confondues.
+    const roules = {}, planifies = {}, dernier = {};
+    (caJour || []).forEach(e => {
+      const id = e.chauffeurId || e.chauffeur_id, d = String(e.date || '').slice(0, 10);
+      if (!id || !d || !((Number(e.caBrut ?? e.ca_brut) || 0) > 0)) return;
+      if (!dernier[id] || d > dernier[id]) dernier[id] = d;
+      if (d.slice(0, 7) === mois) (roules[id] = roules[id] || new Set()).add(d);
+    });
+    (planning || []).forEach(p => { const d = String(p.date || '').slice(0, 10); if (p.chauffeurId && d.slice(0, 7) === mois) (planifies[p.chauffeurId] = planifies[p.chauffeurId] || new Set()).add(d); });
+    const ref = String(aujourdhui || new Date().toISOString().slice(0, 10)).slice(0, 10);
+    const moisEnCours = ref.slice(0, 7) === mois;
+    const ecartJours = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000);
 
     return (chauffeurs || [])
       .filter(c => c.typeContrat === 'salarie')
@@ -323,6 +336,14 @@ const Utils = {
           primeInfo: primeHorsSalaire ? `Prime de ${this.formatCurrency(versee.montant || 0)} déjà remise (${versee.moyenVersement === 'yango' ? 'solde Yango' : 'espèces'})`
             : (p && p.bloque ? p.raison : (p && !p.acquise && p.joursPlanifies > 0 ? `Objectif atteint à ${p.taux} %` : (p && p.joursPlanifies === 0 ? 'Aucun jour planifié' : ''))),
           dette: Math.round(dettesParChauffeur[ch.id] || 0),
+          joursRoules: (roules[ch.id] || new Set()).size, joursPlanifies: (planifies[ch.id] || new Set()).size,
+          dernierJourRoule: dernier[ch.id] || null,
+          // Sous contrat, réputé actif, mais sans aucune course depuis N jours (mois en cours seulement)
+          joursSansActivite: (moisEnCours && ch.statut !== 'inactif' && dernier[ch.id]) ? ecartJours(dernier[ch.id], ref) : null,
+          jamaisRoule: moisEnCours && ch.statut !== 'inactif' && !dernier[ch.id],
+          // vrai si le chauffeur, réputé actif, n'a aucune course depuis plus de 7 jours (ou jamais) — mois en cours seulement
+          sansActivite: moisEnCours && ch.statut !== 'inactif' && (!dernier[ch.id] || ecartJours(dernier[ch.id], ref) > 7),
+          primeFragile: !!(p && p.fragile && prime > 0),
           retenue, ajustement, motif: enreg ? (enreg.motif || '') : '',
           net: fige ? fige.net : (salaireDu + prime + ajustement - retenue),
           paye, payeLe: enreg ? enreg.payeLe : null, moyenPaiement: enreg ? enreg.moyenPaiement : null, referencePaiement: enreg ? enreg.referencePaiement : null,
@@ -841,6 +862,18 @@ const Utils = {
       caParChauffeur[id] = (caParChauffeur[id] || 0) + (Number(e.caBrut ?? e.ca_brut) || 0);
     });
 
+    // Jours réellement roulés (CA > 0) dans le mois, par chauffeur. La règle ne
+    // s'en sert pas — l'objectif reste calculé sur les jours PLANIFIÉS — mais on
+    // le montre : un chauffeur qui roule hors planning gonfle son CA sans que
+    // son objectif bouge, et décroche la prime plus facilement qu'il ne devrait.
+    const roulesParChauffeur = {};
+    (caJour || []).forEach(e => {
+      if (!dansLeMois(e.date) || !((Number(e.caBrut ?? e.ca_brut) || 0) > 0)) return;
+      const id = e.chauffeurId || e.chauffeur_id;
+      if (!id) return;
+      (roulesParChauffeur[id] = roulesParChauffeur[id] || new Set()).add(String(e.date).slice(0, 10));
+    });
+
     // Jours distincts planifiés dans le mois, par chauffeur
     const joursParChauffeur = {};
     (planning || []).forEach(p => {
@@ -854,6 +887,8 @@ const Utils = {
         const joursPlanifies = (joursParChauffeur[ch.id] || new Set()).size;
         const caMois = Math.round(caParChauffeur[ch.id] || 0);
         const objectifMois = objParVague * joursPlanifies;
+        const joursRoules = (roulesParChauffeur[ch.id] || new Set()).size;
+        const objectifSiRoules = objParVague * Math.max(joursPlanifies, joursRoules);
         const taux = objectifMois > 0 ? Math.round((caMois / objectifMois) * 100) : 0;
         const dette = dettesParChauffeur[ch.id] || 0;
         let montant = 0, bloque = false, raison = '';
@@ -867,7 +902,9 @@ const Utils = {
         }
         return {
           chauffeurId: ch.id, nom: `${ch.prenom} ${ch.nom}`.trim(), mois,
-          joursPlanifies, caMois, objectifMois, objParVague, taux, dette,
+          joursPlanifies, joursRoules, caMois, objectifMois, objectifSiRoules, objParVague, taux, dette,
+          // « fragile » : acquise seulement parce que le planning compte moins de jours que ceux réellement roulés
+          fragile: joursPlanifies > 0 && caMois >= objectifMois && caMois < objectifSiRoules,
           montant, acquise: caMois >= objectifMois && joursPlanifies > 0, bloque, raison
         };
       })

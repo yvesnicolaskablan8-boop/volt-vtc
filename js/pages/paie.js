@@ -98,7 +98,8 @@ const PaiePage = {
     const primes = Utils.computePrimeMois({ mois: this._mois, chauffeurs, planning, caJour: Store.get('caJour') || [], objectifs, dettesParChauffeur });
     const lignes = Utils.computePaieMois({
       mois: this._mois, chauffeurs, primes, primesVersees: Store.get('bonus') || [],
-      dettesParChauffeur, enregistrements: Store.get('paie') || []
+      dettesParChauffeur, enregistrements: Store.get('paie') || [],
+      caJour: Store.get('caJour') || [], planning
     });
     this._lignes = lignes;
 
@@ -108,7 +109,11 @@ const PaiePage = {
     const esc = (s) => Utils.escHtml(String(s == null ? '' : s));
 
     const rangs = lignes.map(l => `<tr>
-        <td><div class="pa-nom">${esc(l.nom)}</div>${l.primeInfo ? `<div class="pa-sous">${esc(l.primeInfo)}</div>` : ''}</td>
+        <td><div class="pa-nom">${esc(l.nom)}</div>
+          <div class="pa-sous">${l.joursRoules} jour${l.joursRoules > 1 ? 's' : ''} roulé${l.joursRoules > 1 ? 's' : ''} · ${l.joursPlanifies} planifié${l.joursPlanifies > 1 ? 's' : ''}</div>
+          ${(!l.paye && l.sansActivite) ? `<div class="pa-sous pa-dette">${l.jamaisRoule ? 'aucune course enregistrée' : `aucune course depuis ${l.joursSansActivite} jours`}</div>` : ''}
+          ${l.primeFragile ? '<div class="pa-sous" style="color:#b45309;font-weight:700;">prime acquise sur un planning incomplet</div>' : ''}
+          ${l.primeInfo ? `<div class="pa-sous">${esc(l.primeInfo)}</div>` : ''}</td>
         <td class="r">${F(l.salaireBase)}</td>
         <td class="c">${l.complet ? `${l.joursMois} j` : `<span class="pa-badge prorata">${l.joursContrat} / ${l.joursMois} j</span>`}</td>
         <td class="r">${F(l.salaireDu)}</td>
@@ -134,6 +139,16 @@ const PaiePage = {
         <div class="d-card"><div class="d-lbl">Primes</div><div class="d-val">${F(somme('prime'))}</div><div class="d-sub">${lignes.filter(l => l.prime > 0).length} acquise(s)</div></div>
         <div class="d-card"><div class="d-lbl">Masse du mois</div><div class="d-val">${F(somme('net'))}</div><div class="d-sub">net total</div></div>
       </div>
+      ${(() => {
+        const dormants = lignes.filter(l => !l.paye && l.sansActivite);
+        const fragiles = lignes.filter(l => !l.paye && l.primeFragile);
+        if (!dormants.length && !fragiles.length) return '';
+        return `<div class="card" style="margin-bottom:14px;padding:12px 16px;border-left:4px solid #EF4444;background:rgba(239,68,68,.06);font-size:13px;line-height:1.6;">
+          <b>À vérifier avant de payer.</b>
+          ${dormants.length ? `<div>• <b>${dormants.length} chauffeur(s)</b> sous contrat n'ont aucune course depuis plus de 7 jours (${dormants.map(l => esc(l.nom)).join(', ')}). Le salaire est calculé sur les jours de <b>contrat</b>, pas sur les jours travaillés : s'ils sont partis, renseignez la date de fin de contrat sur leur fiche ; sinon utilisez l'ajustement.</div>` : ''}
+          ${fragiles.length ? `<div>• <b>${fragiles.length} prime(s)</b> sont acquises grâce à un planning incomplet (plus de jours roulés que planifiés) — détail dans <a href="#/bonus" style="color:var(--pilote-blue);font-weight:700;">Prime mensuelle</a>.</div>` : ''}
+        </div>`;
+      })()}
       ${aPayer.length > 1 ? `<button class="btn btn-primary" data-pa-payer="tous" style="margin-bottom:14px;"><iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon> Payer les ${aPayer.length} chauffeurs (${F(somme('net', l => !l.paye))})</button>` : ''}
       <div class="card" style="padding:0;overflow-x:auto;">
         <table class="pa-tab">
@@ -307,6 +322,7 @@ const PaiePage = {
       doc.setTextColor(...(couleur || [15, 23, 42])); doc.setFont(undefined, gras ? 'bold' : 'normal'); doc.text(String(val), 136, y, { align: 'right' }); y += 7.5; };
     rang('Salaire mensuel', this._nb(l.salaireBase));
     rang(`Jours de contrat dans le mois`, `${l.joursContrat} / ${l.joursMois}`);
+    rang('Jours avec courses Yango', String(l.joursRoules));
     rang('Salaire dû (prorata)', this._nb(l.salaireDu), true);
     rang('Prime mensuelle', l.prime ? '+ ' + this._nb(l.prime) : '-', false, l.prime ? [10, 157, 120] : null);
     if (l.ajustement) rang('Ajustement', (l.ajustement > 0 ? '+ ' : '- ') + this._nb(Math.abs(l.ajustement)));

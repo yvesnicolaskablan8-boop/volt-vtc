@@ -145,11 +145,11 @@ const BonusPage = {
         : '<span class="pr-badge non">NON ACQUISE</span>';
       const c = cls(r.taux);
       return `<tr>
-        <td><div class="pr-nom">${Utils.escHtml(r.nom)}</div><div class="pr-sous">${r.joursPlanifies} jour(s) planifié(s)</div></td>
+        <td><div class="pr-nom">${Utils.escHtml(r.nom)}</div><div class="pr-sous">${r.joursPlanifies} jour(s) planifié(s) · ${r.joursRoules} roulé(s)</div></td>
         <td class="r">${Utils.formatCurrency(r.caMois)}</td>
         <td class="r">${Utils.formatCurrency(r.objectifMois)}</td>
         <td><div class="pr-taux ${c}">${r.taux} %</div><div class="pr-jauge"><i class="${c}" data-w="${Math.min(100, r.taux)}"></i></div></td>
-        <td style="font-size:var(--font-size-xs);color:var(--text-secondary);">${Utils.escHtml(r.raison || (r.acquise ? 'Objectif atteint' : '—'))}</td>
+        <td style="font-size:var(--font-size-xs);color:var(--text-secondary);">${Utils.escHtml(r.raison || (r.acquise ? 'Objectif atteint' : '—'))}${r.fragile ? `<div style="margin-top:4px;color:#b45309;font-weight:700;">⚠ ${r.joursRoules} jours roulés pour ${r.joursPlanifies} planifiés : sur les jours roulés, l'objectif serait de ${Utils.formatCurrency(r.objectifSiRoules)} et ne serait pas atteint.</div>` : ''}</td>
         <td class="r" style="font-weight:800;color:${r.montant > 0 && !r.bloque ? '#0a9d78' : 'var(--text-muted)'};">${r.montant > 0 ? Utils.formatCurrency(r.montant) : '—'}</td>
         <td class="c">${badge}</td>
       </tr>`;
@@ -164,6 +164,9 @@ const BonusPage = {
         <div class="d-card"><div class="d-lbl">Retenues (dette)</div><div class="d-val" style="color:#b91c1c;">${resultats.filter(r => r.bloque).length}</div><div class="d-sub">primes bloquées</div></div>
       </div>
 
+      ${resultats.some(r => r.fragile) ? `<div class="card" style="margin-bottom:14px;padding:12px 16px;border-left:4px solid #E8930C;background:rgba(232,147,12,.08);font-size:13px;line-height:1.55;">
+        <b>${resultats.filter(r => r.fragile).length} prime(s) acquise(s) grâce à un planning incomplet.</b> L'objectif du mois est calculé sur les jours <b>planifiés</b>, alors que tout le CA compte, y compris celui des jours roulés hors planning. Complétez le planning des jours réellement travaillés, ou décidez d'une règle (objectif sur les jours roulés, nombre minimal de jours) avant de verser.
+      </div>` : ''}
       ${aVerser.length > 0 ? `<button class="btn btn-primary" id="bn-verser" style="margin-bottom:14px;">
         <iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon> Verser les ${aVerser.length} prime(s) (${Utils.formatCurrency(total)})
       </button>` : ''}
