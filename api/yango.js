@@ -158,7 +158,7 @@ async function handleCronSyncCa(req, res) {
   if (recu !== `Bearer ${secret}`) {
     console.warn('[cron-sync-ca] refuse :', recu ? 'secret different' : 'aucun en-tete Authorization');
     if (recu) noterPassageCron('refuse : secret different', null);
-    return res.status(401).json({ error: 'Non autorise', enTeteRecu: !!recu, dernierPassage: _dernierPassageCron, cleService: formeCleService(cleService) });
+    return res.status(401).json({ error: 'Non autorise', enTeteRecu: !!recu, dernierPassage: _dernierPassageCron });
   }
   setRequestToken(cleService);
   const jourRef = new Date().toISOString().slice(0, 10);
@@ -168,7 +168,7 @@ async function handleCronSyncCa(req, res) {
     noterPassageCron('reussi', null);
     res.json({ success: true, source: 'serveur', date: jourRef, detailJours: resultat.detailJours, caTotal: resultat.caTotal });
   } catch (e) {
-    console.error('[cron-sync-ca]', e.message);
+    console.error('[cron-sync-ca]', e.message, '| cle de service :', JSON.stringify(formeCleService(cleService)));
     noterPassageCron('erreur', e.message);
     await noterSynchro('serveur', cleService, false, e.message, null);
     res.status(500).json({ error: e.message });
