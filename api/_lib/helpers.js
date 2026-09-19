@@ -63,12 +63,27 @@ function getToken(req) {
 
 // =================== SUPABASE REST ===================
 
+/**
+ * En-tetes d'un appel REST Supabase selon la nature du jeton :
+ *  - JWT (session d'un administrateur, ou ancienne cle « service_role ») :
+ *    cle publique dans « apikey », jeton dans « Authorization: Bearer ».
+ *  - nouvelle cle secrete « sb_secret_… » : elle va UNIQUEMENT dans « apikey »
+ *    (Supabase la refuse en Bearer). La tache planifiee accepte ainsi l'une ou
+ *    l'autre des cles de service que le tableau de bord Supabase propose.
+ */
+function entetesSupabase(token, extra = {}) {
+  const h = { 'Content-Type': 'application/json', ...extra };
+  if (token && /^sb_secret_/.test(token)) {
+    h['apikey'] = token;
+  } else {
+    h['apikey'] = SUPABASE_ANON_KEY;
+    if (token) h['Authorization'] = `Bearer ${token}`;
+  }
+  return h;
+}
+
 async function supabaseQuery(table, params = '', token = null) {
-  const headers = {
-    'apikey': SUPABASE_ANON_KEY,
-    'Content-Type': 'application/json',
-  };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const headers = entetesSupabase(token);
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, { headers });
   if (!res.ok) {
@@ -99,12 +114,7 @@ async function getYangoCreds() {
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/fleet_settings?select=integrations&order=created_at.desc`,
-      {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${_reqToken || SUPABASE_ANON_KEY}`,
-        },
-      }
+      { headers: entetesSupabase(_reqToken || SUPABASE_ANON_KEY) }
     );
     const rows = await res.json();
     for (const row of (Array.isArray(rows) ? rows : [])) {
@@ -369,12 +379,7 @@ function orderDurationMin(o) {
 
 /** Ecriture (upsert) dans Supabase avec le jeton de l'appelant. */
 async function supabaseUpsert(table, rows, token, conflictCols) {
-  const headers = {
-    'apikey': SUPABASE_ANON_KEY,
-    'Content-Type': 'application/json',
-    'Prefer': 'resolution=merge-duplicates,return=minimal',
-  };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const headers = entetesSupabase(token, { 'Prefer': 'resolution=merge-duplicates,return=minimal' });
   const q = conflictCols ? `?on_conflict=${encodeURIComponent(conflictCols)}` : '';
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${q}`, {
     method: 'POST', headers, body: JSON.stringify(rows),
