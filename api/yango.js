@@ -111,6 +111,22 @@ async function handleSyncCa(req, res) {
  * Deux jours resynchronises : la journee d'exploitation qui vient de finir
  * (courses du soir comprises) et celle qui commence.
  */
+// Issue du dernier passage, gardee en memoire de l'instance : permet de
+// diagnostiquer la tache sans ouvrir les journaux Vercel. Rien de sensible :
+// une date, un resultat et un motif pris dans une liste fermee.
+let _dernierPassageCron = null;
+function noterPassageCron(resultat, erreur) {
+  let motif = null;
+  if (erreur) {
+    const m = String(erreur);
+    motif = /Supabase (upsert )?(401|403)|Invalid API key|JWT|apikey/i.test(m) ? 'cle Supabase refusee'
+      : /yango|credentials/i.test(m) ? 'acces Yango'
+      : /fetch failed|network|ENOTFOUND|ETIMEDOUT/i.test(m) ? 'reseau'
+      : 'autre erreur';
+  }
+  _dernierPassageCron = { quand: new Date().toISOString(), resultat, motif };
+}
+
 async function handleCronSyncCa(req, res) {
   // Valeurs collees a la main dans Vercel : un espace ou un retour a la ligne en
   // trop (copie depuis le Terminal) ferait echouer la comparaison ou l'en-tete.
@@ -122,16 +138,19 @@ async function handleCronSyncCa(req, res) {
   const recu = String(req.headers.authorization || '').trim();
   if (recu !== `Bearer ${secret}`) {
     console.warn('[cron-sync-ca] refuse :', recu ? 'secret different' : 'aucun en-tete Authorization');
-    return res.status(401).json({ error: 'Non autorise', enTeteRecu: !!recu });
+    if (recu) noterPassageCron('refuse : secret different', null);
+    return res.status(401).json({ error: 'Non autorise', enTeteRecu: !!recu, dernierPassage: _dernierPassageCron });
   }
   setRequestToken(cleService);
   const jourRef = new Date().toISOString().slice(0, 10);
   try {
     const resultat = await synchroniserCa(cleService, jourRef, 2);
     await noterSynchro('serveur', cleService, true, null, { jours: 2, caTotal: resultat.caTotal, chauffeurs: resultat.chauffeursMisAJour });
+    noterPassageCron('reussi', null);
     res.json({ success: true, source: 'serveur', date: jourRef, detailJours: resultat.detailJours, caTotal: resultat.caTotal });
   } catch (e) {
     console.error('[cron-sync-ca]', e.message);
+    noterPassageCron('erreur', e.message);
     await noterSynchro('serveur', cleService, false, e.message, null);
     res.status(500).json({ error: e.message });
   }
