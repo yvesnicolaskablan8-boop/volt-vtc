@@ -64,6 +64,13 @@ const DashboardPage = {
       if (this._isToday()) { this._startAutoRefresh(); this._maybeRefreshCa(); } else this._stopAutoRefresh();
       // Fire-and-forget: auto-generate then re-render if new data
       this._autoGenerateVersements();
+      // Arrivée depuis l'alerte « chauffeurs sans activité » : ouvrir la fenêtre de mise à jour des statuts.
+      try {
+        if (sessionStorage.getItem('pilote_dash_sans_activite') === '1') {
+          sessionStorage.removeItem('pilote_dash_sans_activite');
+          setTimeout(() => this._ouvrirSansActivite(), 120);
+        }
+      } catch (_) {}
     } catch (err) {
       console.error('DashboardPage.render() error:', err);
       const errDiv = document.createElement('div');
@@ -1682,6 +1689,7 @@ const DashboardPage = {
         .fd-couv-regl-t{font-weight:800;color:var(--text-primary);margin-right:2px;} .fd-couv-regl-n{color:var(--text-muted);font-weight:600;}
         .fd-couv-r{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:99px;font-weight:700;color:#b45309;background:rgba(232,147,12,.12);} .fd-couv-r.ok{color:#047857;background:rgba(16,185,129,.12);} .fd-couv-r iconify-icon{font-size:14px;}
         .fd-couv-cand{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 14px;border-radius:13px;text-decoration:none;color:var(--text-primary);font-size:13px;font-weight:600;background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.28);transition:transform .12s ease;}
+        .fd-couv-dorm{width:100%;cursor:pointer;font-family:inherit;text-align:left;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.28);} .fd-couv-dorm iconify-icon{color:#dc2626;} .fd-couv-dorm b{color:#b91c1c;} .fd-couv-dorm em{color:#b91c1c;}
         .fd-couv-cand:hover{transform:translateY(-1px);} .fd-couv-cand iconify-icon{font-size:19px;color:#0a9d78;} .fd-couv-cand b{font-weight:900;color:#047857;} .fd-couv-cand em{margin-left:auto;font-style:normal;font-weight:800;color:#047857;}
         @media(max-width:720px){ .fd-couv-jours{grid-template-columns:repeat(4,minmax(0,1fr));} .fd-couv-cta{width:100%;justify-content:center;} }
       </style>
@@ -2635,6 +2643,9 @@ const DashboardPage = {
     // Des voitures à l'arrêt d'un côté, des candidats qui attendent de l'autre : on les rapproche.
     const candidats = (typeof CandidaturesPage !== 'undefined') ? CandidaturesPage.aTraiter().length : 0;
     const recrutement = candidats ? `<a href="#/candidatures" class="fd-couv-cand"><iconify-icon icon="solar:user-plus-bold"></iconify-icon><span><b>${candidats}</b> candidat${candidats > 1 ? 's' : ''} du site attend${candidats > 1 ? 'ent' : ''} un appel</span><em>Voir les candidatures</em></a>` : '';
+    // Chauffeurs « actifs » qui ne roulent plus : tant que leur statut est faux, tout le reste l'est aussi.
+    const dormants = this._sansActiviteListe();
+    const sansActivite = dormants.length ? `<button type="button" class="fd-couv-cand fd-couv-dorm" onclick="DashboardPage._ouvrirSansActivite()"><iconify-icon icon="solar:sleeping-circle-bold"></iconify-icon><span><b>${dormants.length}</b> chauffeur${dormants.length > 1 ? 's' : ''} « actif${dormants.length > 1 ? 's' : ''} » sans aucune course depuis plus de 7 jours</span><em>Mettre à jour</em></button>` : '';
     const cta = (joursPleins && reglagesFaits) ? '' : `<button type="button" class="fd-couv-cta" onclick="DashboardPage._ouvrirEmploiDuTemps()"><iconify-icon icon="solar:magic-stick-3-bold"></iconify-icon>Construire l'emploi du temps</button>`;
     return `<div class="fd-couv lvl-${niveau}">
       <div class="fd-couv-tete">
@@ -2644,8 +2655,95 @@ const DashboardPage = {
       </div>
       <div class="fd-couv-jours">${cases}</div>
       ${reglages}
+      ${sansActivite}
       ${recrutement}
     </div>`;
+  },
+
+  // ---- Chauffeurs « actifs » sans activité ---------------------------------------
+  _sansActiviteListe() {
+    let masques = {};
+    try { masques = JSON.parse(localStorage.getItem('pilote_dormants_masques') || '{}') || {}; } catch (_) { masques = {}; }
+    const maintenant = Date.now();
+    return Utils.chauffeursSansActivite({ chauffeurs: Store.get('chauffeurs') || [], caJour: Store.get('caJour') || [], absences: Store.get('absences') || [], aujourdhui: this._todayOp() })
+      .filter(x => !(masques[x.id] && masques[x.id] > maintenant));
+  },
+
+  _ouvrirSansActivite() {
+    Modal.open({
+      title: '<iconify-icon icon="solar:sleeping-circle-bold-duotone" style="color:#dc2626"></iconify-icon> Chauffeurs « actifs » sans activité',
+      size: 'modal-lg',
+      body: `<p style="margin:0 0 14px;font-size:var(--font-size-sm);color:var(--text-muted);line-height:1.55;">Ils sont marqués « actifs » mais n'ont aucune course Yango depuis plus de 7 jours. Tant que leur statut n'est pas à jour, l'emploi du temps automatique les planifie et l'état de paie leur calcule un salaire complet.</p><div id="dorm-liste"></div>`,
+      footer: '<button class="btn btn-secondary" onclick="Modal.close()">Fermer</button>'
+    });
+    setTimeout(() => {
+      const zone = document.getElementById('dorm-liste');
+      if (!zone) return;
+      zone.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-dorm]');
+        if (b) this._actionSansActivite(b.dataset.id, b.dataset.dorm);
+      });
+      this._peindreSansActivite();
+    }, 40);
+  },
+
+  _peindreSansActivite() {
+    const zone = document.getElementById('dorm-liste');
+    if (!zone) return;
+    const esc = (s) => Utils.escHtml(String(s == null ? '' : s));
+    const liste = this._sansActiviteListe();
+    zone.replaceChildren();
+    if (!liste.length) {
+      zone.insertAdjacentHTML('beforeend', '<div style="text-align:center;padding:26px;color:var(--text-muted);"><iconify-icon icon="solar:check-circle-bold-duotone" style="font-size:40px;color:#0a9d78;display:block;margin:0 auto 8px;"></iconify-icon>Tous les statuts sont à jour.</div>');
+      return;
+    }
+    const auj = this._todayOp();
+    zone.insertAdjacentHTML('beforeend', liste.map(x => {
+      const tel = String(x.telephone || ''), wa = Utils.numeroWhatsApp(tel);
+      const depuis = x.jours === null ? 'Aucune course enregistrée' : `Dernière course le ${esc(Utils.formatDate(x.dernierJour))} · il y a ${x.jours} jours`;
+      return `<div style="border:1px solid var(--border-color);border-radius:14px;padding:12px 14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;">
+          <div><a href="#/chauffeurs/${esc(x.id)}" onclick="Modal.close()" style="font-weight:800;color:var(--text-primary);text-decoration:none;">${esc(x.nom)}</a><div style="font-size:12px;color:#b91c1c;font-weight:700;margin-top:2px;">${depuis}</div></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${tel ? `<a class="btn btn-sm btn-secondary" href="tel:${esc(tel.replace(/[^\d+]/g, ''))}"><iconify-icon icon="solar:phone-bold"></iconify-icon> Appeler</a>` : ''}
+            ${wa ? `<a class="btn btn-sm btn-secondary" href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener"><iconify-icon icon="ic:baseline-whatsapp"></iconify-icon> WhatsApp</a>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border-color);">
+          <button type="button" class="btn btn-sm btn-secondary" data-dorm="pause" data-id="${esc(x.id)}" title="Statut « Repos » : il reste dans l'équipe mais n'est plus planifié d'office"><iconify-icon icon="solar:moon-sleep-bold"></iconify-icon> En pause</button>
+          <span style="display:inline-flex;gap:6px;align-items:center;">
+            <input type="date" class="form-control" id="dorm-date-${esc(x.id)}" value="${esc(x.dernierJour || auj)}" max="${esc(auj)}" style="padding:5px 8px;font-size:12px;width:150px;">
+            <button type="button" class="btn btn-sm btn-danger" data-dorm="parti" data-id="${esc(x.id)}" title="Statut « Inactif » + date de fin de contrat : la paie s'arrête à cette date"><iconify-icon icon="solar:logout-2-bold"></iconify-icon> A quitté la flotte</button>
+          </span>
+          <button type="button" class="btn btn-sm btn-secondary" data-dorm="masquer" data-id="${esc(x.id)}" title="Il roule toujours (autre compte, congé…) : ne plus le signaler pendant 7 jours" style="margin-left:auto;"><iconify-icon icon="solar:eye-closed-bold"></iconify-icon> Toujours actif</button>
+        </div>
+      </div>`;
+    }).join(''));
+  },
+
+  _actionSansActivite(id, action) {
+    const ch = Store.findById('chauffeurs', id);
+    if (!ch) return;
+    const nom = `${ch.prenom || ''} ${ch.nom || ''}`.trim();
+    if (action === 'pause') {
+      Store.update('chauffeurs', id, { statut: 'repos' });
+      Toast.success(`${nom} : en pause.`);
+    } else if (action === 'parti') {
+      const champ = document.getElementById('dorm-date-' + id);
+      const date = champ && /^\d{4}-\d{2}-\d{2}$/.test(champ.value) ? champ.value : this._todayOp();
+      Store.update('chauffeurs', id, { statut: 'inactif', dateFinContrat: date });
+      Toast.success(`${nom} : a quitté la flotte le ${Utils.formatDate(date)}.`);
+    } else if (action === 'masquer') {
+      let masques = {};
+      try { masques = JSON.parse(localStorage.getItem('pilote_dormants_masques') || '{}') || {}; } catch (_) { masques = {}; }
+      masques[id] = Date.now() + 7 * 86400000;
+      try { localStorage.setItem('pilote_dormants_masques', JSON.stringify(masques)); } catch (_) {}
+      Toast.info(`${nom} : plus signalé pendant 7 jours.`);
+    }
+    this._peindreSansActivite();
+    const couv = document.getElementById('fleet-couverture');
+    if (couv) { couv.replaceChildren(); couv.insertAdjacentHTML('beforeend', this._couvertureHtml()); }
+    try { if (typeof Header !== 'undefined' && Header._refreshWidgets) Header._refreshWidgets(); } catch (_) {}
   },
 
   _ouvrirEmploiDuTemps() {

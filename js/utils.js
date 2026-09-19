@@ -270,6 +270,43 @@ const Utils = {
   },
 
   /**
+   * Chauffeurs réputés « actifs » mais sans aucune course depuis plus de
+   * `seuilJours` jours. Tant que leur statut n'est pas remis d'aplomb, l'emploi
+   * du temps automatique planifie des absents et la paie calcule des salaires
+   * complets. Sont exclus : les absents déclarés ce jour-là et ceux dont le
+   * contrat a commencé il y a moins de `seuilJours` jours. Fonction pure.
+   */
+  chauffeursSansActivite({ chauffeurs, caJour, absences = [], seuilJours = 7, aujourdhui = null }) {
+    const ref = String(aujourdhui || new Date().toISOString().slice(0, 10)).slice(0, 10);
+    const ecart = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000);
+    const dernier = {};
+    (caJour || []).forEach(e => {
+      const id = e.chauffeurId || e.chauffeur_id, d = String(e.date || '').slice(0, 10);
+      if (!id || !d || !((Number(e.caBrut ?? e.ca_brut) || 0) > 0)) return;
+      if (!dernier[id] || d > dernier[id]) dernier[id] = d;
+    });
+    return (chauffeurs || [])
+      .filter(c => c.statut === 'actif' && !String(c.id || '').startsWith('CHF-TEST'))
+      .filter(c => !(absences || []).some(a => a.chauffeurId === c.id && ref >= a.dateDebut && ref <= a.dateFin))
+      .map(c => {
+        const d = dernier[c.id] || null;
+        const debut = String(c.dateDebutContrat || '').slice(0, 10);
+        return { id: c.id, nom: `${c.prenom || ''} ${c.nom || ''}`.trim(), telephone: c.telephone || '', dernierJour: d,
+          jours: d ? ecart(d, ref) : null, nouveau: !!debut && ecart(debut, ref) < seuilJours };
+      })
+      .filter(x => !x.nouveau && (x.jours === null || x.jours > seuilJours))
+      .sort((a, b) => (b.jours === null ? 1e9 : b.jours) - (a.jours === null ? 1e9 : a.jours));
+  },
+
+  /** Numéro pour un lien wa.me : chiffres seuls, indicatif 225 ajouté aux numéros locaux à 10 chiffres. */
+  numeroWhatsApp(tel) {
+    let n = String(tel || '').replace(/\D/g, '');
+    if (n.startsWith('00')) n = n.slice(2);
+    if (n.length === 10) n = '225' + n;
+    return n;
+  },
+
+  /**
    * État de paie d'un mois pour les chauffeurs salariés (gestion interne).
    *   salaire dû  = salaire mensuel × jours de contrat dans le mois / jours du mois
    *   prime       = prime mensuelle acquise (voir computePrimeMois), sauf si elle a

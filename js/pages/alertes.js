@@ -391,6 +391,19 @@ const AlertesPage = {
         });
       });
     } catch (e) { /* jamais bloquant */ }
+    // 0 quater. Chauffeurs « actifs » qui ne roulent plus : une alerte groupée (urgente à partir de trois).
+    try {
+      const base2 = new Date();
+      if (base2.getUTCHours() < 5) base2.setUTCDate(base2.getUTCDate() - 1);
+      const dormants = Utils.chauffeursSansActivite({ chauffeurs: Store.get('chauffeurs') || [], caJour: Store.get('caJour') || [], absences: Store.get('absences') || [], aujourdhui: base2.toISOString().slice(0, 10) });
+      if (dormants.length) alerts.push({
+        id: 'SANS-ACTIVITE', categorie: 'flotte', niveau: dormants.length >= 3 ? 'urgent' : 'attention',
+        titre: `${dormants.length} chauffeur${dormants.length > 1 ? 's' : ''} « actif${dormants.length > 1 ? 's' : ''} » sans aucune course depuis plus de 7 jours`,
+        description: `${dormants.slice(0, 5).map(x => x.nom).join(', ')}${dormants.length > 5 ? '…' : ''} — mettez leur statut à jour (en pause, parti) : sinon ils sont planifiés et payés comme s'ils roulaient.`,
+        action: 'Mettre à jour les statuts', actionRoute: '#/dashboard', actionFlag: 'pilote_dash_sans_activite', icon: 'solar:sleeping-circle-bold-duotone', date: now.toISOString()
+      });
+    } catch (e) { /* jamais bloquant */ }
+
     // 0 ter. Candidatures du site non rappelées : URGENT au-delà de 4 h, sinon à traiter.
     // Au-delà de cinq, une seule alerte groupée pour ne pas noyer la liste.
     try {
