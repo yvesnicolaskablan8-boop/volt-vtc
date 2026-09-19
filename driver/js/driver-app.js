@@ -119,6 +119,7 @@ const DriverApp = {
     if (typeof ClassementPage !== 'undefined') DriverRouter.register('classement', ClassementPage);
     if (typeof ContraventionsDriverPage !== 'undefined') DriverRouter.register('contraventions', ContraventionsDriverPage);
     if (typeof ContratPage !== 'undefined') DriverRouter.register('contrat', ContratPage);
+    if (typeof PaiePage !== 'undefined') DriverRouter.register('paie', PaiePage);
 
     // Ecouter les evenements online/offline
     this._setupOfflineDetection();

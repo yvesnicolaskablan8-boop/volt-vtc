@@ -22,6 +22,7 @@ const PlusPage = {
       <div style="font-size:1.35rem;font-weight:900;color:var(--text-primary);margin:4px 0 16px">Autres services</div>
 
       <div style="font-size:0.8rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);margin:4px 0 10px">Mon argent</div>
+      ${ligne('paie', 'solar:wallet-money-bold-duotone', '#ecfdf5', '#047857', 'Ma paie', 'Mon salaire et ma prime du mois')}
       ${ligne('versements', 'solar:history-bold-duotone', '#eff6ff', '#1e40af', 'Mes paiements', 'Payer et voir l’historique')}
       ${ligne('dettes', 'solar:hand-money-bold-duotone', '#fef3c7', '#b45309', 'Mes dettes', 'Ce qu’il reste à payer')}
       ${ligne('contraventions', 'solar:document-text-bold-duotone', '#fee2e2', '#b91c1c', 'Mes amendes', 'Contraventions et contestations')}

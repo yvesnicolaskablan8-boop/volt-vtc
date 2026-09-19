@@ -224,6 +224,71 @@ const DriverStore = {
   },
 
   /**
+   * Ma paie : ce que le chauffeur salarie va toucher ce mois-ci, et ce qui lui a
+   * deja ete paye. Meme regle que l'etat de paie du bureau :
+   *   salaire du = salaire mensuel x jours de contrat dans le mois / jours du mois
+   *   prime      = acquise si le CA du mois atteint l'objectif (objectif par jour x jours planifies)
+   * Des qu'une ligne existe cote bureau (fleet_paie), c'est ELLE qui fait foi :
+   * retenue, ajustement, net, paiement. Lecture seule ; la base ne renvoie au
+   * chauffeur que ses propres lignes.
+   */
+  async getPaie() {
+    const id = this._chauffeurId();
+    if (!id) return null;
+    const now = new Date();
+    if (now.getUTCHours() < 5) now.setUTCDate(now.getUTCDate() - 1);
+    const auj = now.toISOString().slice(0, 10);
+    const mois = auj.slice(0, 7);
+    const [an, mo] = mois.split('-').map(Number);
+    const joursMois = new Date(Date.UTC(an, mo, 0)).getUTCDate();
+    const debutMois = `${mois}-01`, finMois = `${mois}-${String(joursMois).padStart(2, '0')}`;
+
+    const [chRes, caRes, plRes, paieRes, bonusRes, objRes] = await Promise.all([
+      supabase.from('fleet_chauffeurs').select('prenom, nom, salaire_mensuel, type_contrat, date_debut_contrat, date_fin_contrat, objectif_ca_jour').eq('id', id).single(),
+      supabase.from('fleet_ca_jour').select('date, ca_brut').eq('chauffeur_id', id).gte('date', debutMois).lte('date', finMois),
+      supabase.from('fleet_planning').select('date').eq('chauffeur_id', id).gte('date', debutMois).lte('date', finMois),
+      supabase.from('fleet_paie').select('*').eq('chauffeur_id', id).order('mois', { ascending: false }).limit(12),
+      supabase.from('fleet_bonus').select('montant, statut, moyen_versement, semaine').eq('chauffeur_id', id).eq('semaine', mois),
+      supabase.rpc('fleet_settings_objectifs')
+    ]);
+    if (chRes.error || !chRes.data) return { erreur: (chRes.error && chRes.error.message) || 'Profil introuvable' };
+    const ch = objToCamel(chRes.data);
+    const obj = (objRes && objRes.data) || {};
+    const lignesPaie = (paieRes.data || []).map(objToCamel);
+    const duMois = lignesPaie.find(l => l.mois === mois) || null;
+
+    // Salaire au prorata des jours de contrat dans le mois
+    const debut = String(ch.dateDebutContrat || '').slice(0, 10) || debutMois;
+    const fin = String(ch.dateFinContrat || '').slice(0, 10) || finMois;
+    const de = debut > debutMois ? debut : debutMois, a = fin < finMois ? fin : finMois;
+    const joursContrat = de <= a ? (Number(a.slice(8, 10)) - Number(de.slice(8, 10)) + 1) : 0;
+    const salaireBase = Number(ch.salaireMensuel) > 0 ? Number(ch.salaireMensuel) : 0;
+    const salaireDu = Math.round(salaireBase * joursContrat / joursMois);
+
+    // Prime : meme calcul que le bureau
+    const ca = (caRes.data || []).map(objToCamel);
+    const caMois = Math.round(ca.reduce((s, l) => s + (Number(l.caBrut) || 0), 0));
+    const joursRoules = new Set(ca.filter(l => Number(l.caBrut) > 0).map(l => String(l.date).slice(0, 10))).size;
+    const joursPlanifies = new Set((plRes.data || []).map(p => String(p.date).slice(0, 10))).size;
+    const objectifJour = Number(ch.objectifCaJour || obj.caJourChauffeur || 60000);
+    const objectifMois = objectifJour * joursPlanifies;
+    const montantPrime = Number(obj.primeMensuelle || 100000);
+    const primeActive = obj.primeActive !== false;
+    const primeVersee = (bonusRes.data || []).map(objToCamel).find(b => b.statut === 'verse') || null;
+
+    return {
+      mois, auj, estSalarie: ch.typeContrat === 'salarie', prenom: ch.prenom || '',
+      salaireBase, joursContrat, joursMois, salaireDu, dateDebutContrat: ch.dateDebutContrat || null,
+      caMois, joursRoules, joursPlanifies, objectifMois, montantPrime, primeActive,
+      primeAcquise: primeActive && joursPlanifies > 0 && caMois >= objectifMois,
+      tauxPrime: objectifMois > 0 ? Math.min(999, Math.round(caMois / objectifMois * 100)) : 0,
+      primeVersee,
+      ligne: duMois,                                           // ce que le bureau a enregistre pour ce mois (ou null)
+      historique: lignesPaie.filter(l => l.mois !== mois && l.statut === 'paye')
+    };
+  },
+
+  /**
    * Contrat du chauffeur : le modele vient des parametres, les valeurs
    * personnelles de sa fiche. Le texte est renvoye deja prerempli.
    */
@@ -263,7 +328,7 @@ const DriverStore = {
       typeContrat: modele.typeContrat || 'CDI',
       poste: modele.poste || 'Chauffeur VTC',
       derniereMaj: modele.derniereMaj || null,
-      texte: this._preremplirContrat(modele.texte || '', ch, ent, immat, modele.employeur || {}),
+      texte: this._preremplirContrat(modele.texte || '', ch, ent, immat, modele.employeur || {}, bloc.vagues || []),
       chauffeur: ch,
       entreprise: ent,
       employeur: modele.employeur || {}
@@ -277,7 +342,7 @@ const DriverStore = {
    * l'application. Un contrat de travail doit porter ses mentions legales
    * completes — forme, capital, RCCM, gerant.
    */
-  _preremplirContrat(texte, ch, ent, immat, employeur) {
+  _preremplirContrat(texte, ch, ent, immat, employeur, vagues) {
     if (!texte) return '';
     const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     const somme = (n) => (n === 0 || n) && Number(n) > 0
@@ -285,6 +350,12 @@ const DriverStore = {
     const jour = (j) => (j === 0 || j) ? JOURS[Number(j)] : '__________';
     const date = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '__________';
     const objectif = Number(ch.objectifCaJour || 0);
+    // Horaires des deux vagues (réglages de la flotte) : « 05:00 » → « 5 h 00 »
+    const heure = (hhmm, defaut) => {
+      const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || defaut));
+      return m ? `${Number(m[1])} h ${m[2]}` : String(hhmm || defaut);
+    };
+    const v1 = (vagues && vagues[0]) || {}, v2 = (vagues && vagues[1]) || {};
 
     const emp = employeur || {};
     const valeurs = {
@@ -305,10 +376,12 @@ const DriverStore = {
       repos2: jour(ch.jourRepos2),
       heureDebut: ent.heureDebutService || '6 h 00',
       heureFin: ent.heureFinService || 'minuit',
+      vague1Debut: heure(v1.debut, '05:00'), vague1Fin: heure(v1.fin, '16:00'),
+      vague2Debut: heure(v2.debut, '17:00'), vague2Fin: heure(v2.fin, '03:00'),
       salaire: somme(ch.salaireMensuel),
       jourPaie: ent.jourPaie || '5',
       objectif: somme(objectif),
-      objectifSemaine: objectif > 0 ? somme(objectif * 5) : '__________',
+      objectifSemaine: objectif > 0 ? somme(objectif * 6) : '__________',   // six jours travaillés, un jour de repos
       immatriculation: immat || '__________'
     };
     return texte.replace(/\{\{(\w+)\}\}/g, (m, cle) => (cle in valeurs) ? valeurs[cle] : m);
