@@ -30,7 +30,8 @@ const CandidaturesPage = {
       .map(c => ({ ...c, statut: this._statutConnu(c.statut) }))
       .sort((a, b) => String(b.dateCreation || '').localeCompare(String(a.dateCreation || '')));
   },
-  _statutConnu(s) { return this.ETAPES.some(e => e.cle === s) ? s : 'nouveau'; },
+  // Anciennes valeurs de la table (avant cette page) : « converti » = embauché, « perdu » = refusé.
+  _statutConnu(s) { const v = ({ converti: 'embauche', perdu: 'refuse' })[s] || s; return this.ETAPES.some(e => e.cle === v) ? v : 'nouveau'; },
   _etape(cle) { return this.ETAPES.find(e => e.cle === cle) || this.ETAPES[0]; },
   _estActive(c) { return c.statut !== 'embauche' && c.statut !== 'refuse'; },
 
