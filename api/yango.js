@@ -112,13 +112,17 @@ async function handleSyncCa(req, res) {
  * (courses du soir comprises) et celle qui commence.
  */
 async function handleCronSyncCa(req, res) {
-  const secret = process.env.CRON_SECRET;
-  const cleService = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Valeurs collees a la main dans Vercel : un espace ou un retour a la ligne en
+  // trop (copie depuis le Terminal) ferait echouer la comparaison ou l'en-tete.
+  const secret = (process.env.CRON_SECRET || '').trim();
+  const cleService = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   if (!secret || !cleService) {
     return res.status(503).json({ error: 'Tache planifiee non configuree', manquant: [!secret && 'CRON_SECRET', !cleService && 'SUPABASE_SERVICE_ROLE_KEY'].filter(Boolean) });
   }
-  if ((req.headers.authorization || '') !== `Bearer ${secret}`) {
-    return res.status(401).json({ error: 'Non autorise' });
+  const recu = String(req.headers.authorization || '').trim();
+  if (recu !== `Bearer ${secret}`) {
+    console.warn('[cron-sync-ca] refuse :', recu ? 'secret different' : 'aucun en-tete Authorization');
+    return res.status(401).json({ error: 'Non autorise', enTeteRecu: !!recu });
   }
   setRequestToken(cleService);
   const jourRef = new Date().toISOString().slice(0, 10);
