@@ -371,7 +371,7 @@ const Utils = {
           salaireDu: fige ? fige.salaireDu : salaireDu,
           prime: fige ? fige.prime : prime,
           primeInfo: primeHorsSalaire ? `Prime de ${this.formatCurrency(versee.montant || 0)} déjà remise (${versee.moyenVersement === 'yango' ? 'solde Yango' : 'espèces'})`
-            : (p && p.bloque ? p.raison : (p && !p.acquise && p.joursPlanifies > 0 ? `Objectif atteint à ${p.taux} %` : (p && p.joursPlanifies === 0 ? 'Aucun jour planifié' : ''))),
+            : (p && (p.bloque || !p.acquise) ? (p.raison || '') : ''),
           dette: Math.round(dettesParChauffeur[ch.id] || 0),
           joursRoules: (roules[ch.id] || new Set()).size, joursPlanifies: (planifies[ch.id] || new Set()).size,
           dernierJourRoule: dernier[ch.id] || null,
@@ -878,8 +878,11 @@ const Utils = {
    */
   /**
    * Prime mensuelle des chauffeurs salariés (modèle deux vagues, 14/09/2026).
-   * Objectif du mois = objectif par vague × jours planifiés du mois.
-   * La prime est acquise si le CA brut Yango du mois atteint cet objectif.
+   * Règle arrêtée par le propriétaire le 19/09/2026 :
+   *   objectif du mois = objectif par vague × le PLUS GRAND de (jours planifiés, jours roulés)
+   *   — rouler hors planning ne facilite plus la prime, un planning incomplet ne la fausse plus ;
+   *   la prime exige en plus au moins `primeJoursMin` jours roulés dans le mois (20 par défaut).
+   * Elle est acquise si le CA brut Yango du mois atteint l'objectif ET que le seuil de jours est tenu.
    * Fonction pure : toutes les données sont passées en paramètres.
    *
    * @param {string} mois   'YYYY-MM'
@@ -888,6 +891,7 @@ const Utils = {
     const objParVague = Number(objectifs.caJourChauffeur) > 0 ? Number(objectifs.caJourChauffeur) : 60000;
     const montantPrime = Number(objectifs.primeMensuelle) > 0 ? Number(objectifs.primeMensuelle) : 100000;
     const primeActive = objectifs.primeActive !== false;
+    const joursMin = Number.isFinite(Number(objectifs.primeJoursMin)) && objectifs.primeJoursMin !== null && objectifs.primeJoursMin !== '' ? Math.max(0, Number(objectifs.primeJoursMin)) : 20;
     const dansLeMois = (d) => String(d || '').slice(0, 7) === mois;
 
     // CA brut Yango du mois, par chauffeur
@@ -899,10 +903,7 @@ const Utils = {
       caParChauffeur[id] = (caParChauffeur[id] || 0) + (Number(e.caBrut ?? e.ca_brut) || 0);
     });
 
-    // Jours réellement roulés (CA > 0) dans le mois, par chauffeur. La règle ne
-    // s'en sert pas — l'objectif reste calculé sur les jours PLANIFIÉS — mais on
-    // le montre : un chauffeur qui roule hors planning gonfle son CA sans que
-    // son objectif bouge, et décroche la prime plus facilement qu'il ne devrait.
+    // Jours réellement roulés (CA > 0) dans le mois, par chauffeur.
     const roulesParChauffeur = {};
     (caJour || []).forEach(e => {
       if (!dansLeMois(e.date) || !((Number(e.caBrut ?? e.ca_brut) || 0) > 0)) return;
@@ -923,26 +924,29 @@ const Utils = {
       .map(ch => {
         const joursPlanifies = (joursParChauffeur[ch.id] || new Set()).size;
         const caMois = Math.round(caParChauffeur[ch.id] || 0);
-        const objectifMois = objParVague * joursPlanifies;
         const joursRoules = (roulesParChauffeur[ch.id] || new Set()).size;
-        const objectifSiRoules = objParVague * Math.max(joursPlanifies, joursRoules);
+        const joursObjectif = Math.max(joursPlanifies, joursRoules);
+        const objectifMois = objParVague * joursObjectif;
+        const objectifSiRoules = objectifMois;          // conservé pour compatibilité d'affichage
         const taux = objectifMois > 0 ? Math.round((caMois / objectifMois) * 100) : 0;
+        const objectifAtteint = joursObjectif > 0 && caMois >= objectifMois;
+        const seuilTenu = joursRoules >= joursMin;
         const dette = dettesParChauffeur[ch.id] || 0;
         let montant = 0, bloque = false, raison = '';
         if (!primeActive) { bloque = true; raison = 'Prime désactivée dans les réglages'; }
-        else if (joursPlanifies === 0) { raison = 'Aucun jour planifié ce mois'; }
-        else if (caMois >= objectifMois) {
+        else if (joursObjectif === 0) { raison = 'Aucun jour planifié ni roulé ce mois'; }
+        else if (objectifAtteint && !seuilTenu) { raison = `Objectif atteint, mais ${joursRoules} jour${joursRoules > 1 ? 's' : ''} roulé${joursRoules > 1 ? 's' : ''} sur les ${joursMin} exigés`; }
+        else if (objectifAtteint) {
           if (dette > 0) { bloque = true; raison = `Objectif atteint mais ${this.formatCurrency(dette)} de dette en cours`; }
           else montant = montantPrime;
         } else {
-          raison = `Il manque ${this.formatCurrency(objectifMois - caMois)}`;
+          raison = `Il manque ${this.formatCurrency(objectifMois - caMois)}${seuilTenu ? '' : ` et ${joursMin - joursRoules} jour${joursMin - joursRoules > 1 ? 's' : ''} roulé${joursMin - joursRoules > 1 ? 's' : ''}`}`;
         }
         return {
           chauffeurId: ch.id, nom: `${ch.prenom} ${ch.nom}`.trim(), mois,
-          joursPlanifies, joursRoules, caMois, objectifMois, objectifSiRoules, objParVague, taux, dette,
-          // « fragile » : acquise seulement parce que le planning compte moins de jours que ceux réellement roulés
-          fragile: joursPlanifies > 0 && caMois >= objectifMois && caMois < objectifSiRoules,
-          montant, acquise: caMois >= objectifMois && joursPlanifies > 0, bloque, raison
+          joursPlanifies, joursRoules, joursObjectif, joursMin, seuilTenu, caMois, objectifMois, objectifSiRoules, objParVague, taux, dette,
+          fragile: false,                                // la faille « planning incomplet » n'existe plus avec cette règle
+          montant, acquise: objectifAtteint && seuilTenu, objectifAtteint, bloque, raison
         };
       })
       .sort((a, b) => b.taux - a.taux);

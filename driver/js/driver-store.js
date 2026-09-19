@@ -227,7 +227,8 @@ const DriverStore = {
    * Ma paie : ce que le chauffeur salarie va toucher ce mois-ci, et ce qui lui a
    * deja ete paye. Meme regle que l'etat de paie du bureau :
    *   salaire du = salaire mensuel x jours de contrat dans le mois / jours du mois
-   *   prime      = acquise si le CA du mois atteint l'objectif (objectif par jour x jours planifies)
+   *   prime      = acquise si le CA du mois atteint l'objectif (objectif par jour x le plus grand de
+   *                jours planifies / jours roules) ET si le minimum de jours roules est tenu (20 par defaut)
    * Des qu'une ligne existe cote bureau (fleet_paie), c'est ELLE qui fait foi :
    * retenue, ajustement, net, paiement. Lecture seule ; la base ne renvoie au
    * chauffeur que ses propres lignes.
@@ -271,16 +272,19 @@ const DriverStore = {
     const joursRoules = new Set(ca.filter(l => Number(l.caBrut) > 0).map(l => String(l.date).slice(0, 10))).size;
     const joursPlanifies = new Set((plRes.data || []).map(p => String(p.date).slice(0, 10))).size;
     const objectifJour = Number(ch.objectifCaJour || obj.caJourChauffeur || 60000);
-    const objectifMois = objectifJour * joursPlanifies;
+    const joursObjectif = Math.max(joursPlanifies, joursRoules);
+    const objectifMois = objectifJour * joursObjectif;
     const montantPrime = Number(obj.primeMensuelle || 100000);
     const primeActive = obj.primeActive !== false;
+    const joursMin = (obj.primeJoursMin === 0 || Number(obj.primeJoursMin) > 0) ? Number(obj.primeJoursMin) : 20;
+    const objectifAtteint = joursObjectif > 0 && caMois >= objectifMois;
     const primeVersee = (bonusRes.data || []).map(objToCamel).find(b => b.statut === 'verse') || null;
 
     return {
       mois, auj, estSalarie: ch.typeContrat === 'salarie', prenom: ch.prenom || '',
       salaireBase, joursContrat, joursMois, salaireDu, dateDebutContrat: ch.dateDebutContrat || null,
-      caMois, joursRoules, joursPlanifies, objectifMois, montantPrime, primeActive,
-      primeAcquise: primeActive && joursPlanifies > 0 && caMois >= objectifMois,
+      caMois, joursRoules, joursPlanifies, joursObjectif, joursMin, objectifAtteint, objectifMois, montantPrime, primeActive,
+      primeAcquise: primeActive && objectifAtteint && joursRoules >= joursMin,
       tauxPrime: objectifMois > 0 ? Math.min(999, Math.round(caMois / objectifMois * 100)) : 0,
       primeVersee,
       ligne: duMois,                                           // ce que le bureau a enregistre pour ce mois (ou null)

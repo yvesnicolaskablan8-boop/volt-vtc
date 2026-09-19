@@ -3,8 +3,9 @@
  *
  * Modèle en vigueur depuis le 14/09/2026 (deux vagues par voiture) : chaque
  * chauffeur vise un CA par vague (réglage « Objectif CA par chauffeur et par
- * vague »). Sur le mois, son objectif vaut cet objectif × ses jours planifiés.
- * S'il l'atteint, il touche la prime mensuelle (réglage « Prime mensuelle »).
+ * vague »). Sur le mois, son objectif vaut cet objectif × le plus grand de ses
+ * jours planifiés et de ses jours roulés ; s'il l'atteint ET qu'il a roulé au
+ * moins 20 jours (réglage), il touche la prime mensuelle. Règle du 19/09/2026.
  * Les deux valeurs se règlent dans Paramètres › Versements.
  */
 const BonusPage = {
@@ -84,7 +85,8 @@ const BonusPage = {
         <div class="pr-regle" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color);">
           <span>Objectif par vague <b>${Utils.formatCurrency(parVague)}</b></span>
           <span>Prime si objectif atteint <b>${Utils.formatCurrency(prime)}</b></span>
-          <span>Objectif du mois = objectif par vague × jours planifiés</span>
+          <span>Objectif du mois = objectif par vague × le plus grand de (jours planifiés, jours roulés)</span>
+          <span>Au moins <b>${Number.isFinite(Number(o.primeJoursMin)) && o.primeJoursMin !== null && o.primeJoursMin !== '' ? Number(o.primeJoursMin) : 20} jours roulés</b> dans le mois</span>
           <a href="#/parametres" style="color:var(--pilote-blue);font-weight:700;">Modifier</a>
         </div>
         ${estMoisEnCours ? '<div class="d-sub" style="margin-top:8px;">Mois en cours : les montants évoluent encore. Versez de préférence après la clôture du mois.</div>' : ''}
@@ -149,7 +151,7 @@ const BonusPage = {
         <td class="r">${Utils.formatCurrency(r.caMois)}</td>
         <td class="r">${Utils.formatCurrency(r.objectifMois)}</td>
         <td><div class="pr-taux ${c}">${r.taux} %</div><div class="pr-jauge"><i class="${c}" data-w="${Math.min(100, r.taux)}"></i></div></td>
-        <td style="font-size:var(--font-size-xs);color:var(--text-secondary);">${Utils.escHtml(r.raison || (r.acquise ? 'Objectif atteint' : '—'))}${r.fragile ? `<div style="margin-top:4px;color:#b45309;font-weight:700;">⚠ ${r.joursRoules} jours roulés pour ${r.joursPlanifies} planifiés : sur les jours roulés, l'objectif serait de ${Utils.formatCurrency(r.objectifSiRoules)} et ne serait pas atteint.</div>` : ''}</td>
+        <td style="font-size:var(--font-size-xs);color:var(--text-secondary);">${Utils.escHtml(r.raison || (r.acquise ? 'Objectif atteint' : '—'))}</td>
         <td class="r" style="font-weight:800;color:${r.montant > 0 && !r.bloque ? '#0a9d78' : 'var(--text-muted)'};">${r.montant > 0 ? Utils.formatCurrency(r.montant) : '—'}</td>
         <td class="c">${badge}</td>
       </tr>`;
@@ -164,9 +166,6 @@ const BonusPage = {
         <div class="d-card"><div class="d-lbl">Retenues (dette)</div><div class="d-val" style="color:#b91c1c;">${resultats.filter(r => r.bloque).length}</div><div class="d-sub">primes bloquées</div></div>
       </div>
 
-      ${resultats.some(r => r.fragile) ? `<div class="card" style="margin-bottom:14px;padding:12px 16px;border-left:4px solid #E8930C;background:rgba(232,147,12,.08);font-size:13px;line-height:1.55;">
-        <b>${resultats.filter(r => r.fragile).length} prime(s) acquise(s) grâce à un planning incomplet.</b> L'objectif du mois est calculé sur les jours <b>planifiés</b>, alors que tout le CA compte, y compris celui des jours roulés hors planning. Complétez le planning des jours réellement travaillés, ou décidez d'une règle (objectif sur les jours roulés, nombre minimal de jours) avant de verser.
-      </div>` : ''}
       ${aVerser.length > 0 ? `<button class="btn btn-primary" id="bn-verser" style="margin-bottom:14px;">
         <iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon> Verser les ${aVerser.length} prime(s) (${Utils.formatCurrency(total)})
       </button>` : ''}
@@ -174,7 +173,7 @@ const BonusPage = {
       <div class="card" style="padding:0;overflow-x:auto;">
         <table class="pr-tab">
           <thead><tr>
-            <th>Chauffeur</th><th class="r">CA du mois</th><th class="r">Objectif</th><th>Atteinte</th>
+            <th>Chauffeur</th><th class="r">CA du mois</th><th class="r" title="Objectif par vague × le plus grand de (jours planifiés, jours roulés)">Objectif</th><th>Atteinte</th>
             <th>Détail</th><th class="r">Prime</th><th class="c">Statut</th>
           </tr></thead>
           <tbody>${lignes || '<tr><td colspan="7" style="padding:18px;text-align:center;color:var(--text-muted);">Aucun chauffeur salarié actif</td></tr>'}</tbody>

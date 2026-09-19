@@ -75,7 +75,7 @@ const PaiePage = {
           </div>
         </div>
         <div class="d-sub" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color);line-height:1.6;">
-          Salaire fixe <b>au prorata des jours de contrat</b> dans le mois · prime mensuelle si l'objectif est atteint et qu'aucune dette n'est en cours ·
+          Salaire fixe <b>au prorata des jours de contrat</b> dans le mois · prime mensuelle si l'objectif est atteint, avec le minimum de jours roulés, et qu'aucune dette n'est en cours ·
           la dette en cours est <b>signalée, jamais retenue d'office</b> : la retenue et l'ajustement sont vos décisions.
         </div>
       </div>
@@ -112,7 +112,6 @@ const PaiePage = {
         <td><div class="pa-nom">${esc(l.nom)}</div>
           <div class="pa-sous">${l.joursRoules} jour${l.joursRoules > 1 ? 's' : ''} roulé${l.joursRoules > 1 ? 's' : ''} · ${l.joursPlanifies} planifié${l.joursPlanifies > 1 ? 's' : ''}</div>
           ${(!l.paye && l.sansActivite) ? `<div class="pa-sous pa-dette">${l.jamaisRoule ? 'aucune course enregistrée' : `aucune course depuis ${l.joursSansActivite} jours`}</div>` : ''}
-          ${l.primeFragile ? '<div class="pa-sous" style="color:#b45309;font-weight:700;">prime acquise sur un planning incomplet</div>' : ''}
           ${l.primeInfo ? `<div class="pa-sous">${esc(l.primeInfo)}</div>` : ''}</td>
         <td class="r">${F(l.salaireBase)}</td>
         <td class="c">${l.complet ? `${l.joursMois} j` : `<span class="pa-badge prorata">${l.joursContrat} / ${l.joursMois} j</span>`}</td>
@@ -141,12 +140,10 @@ const PaiePage = {
       </div>
       ${(() => {
         const dormants = lignes.filter(l => !l.paye && l.sansActivite);
-        const fragiles = lignes.filter(l => !l.paye && l.primeFragile);
-        if (!dormants.length && !fragiles.length) return '';
+        if (!dormants.length) return '';
         return `<div class="card" style="margin-bottom:14px;padding:12px 16px;border-left:4px solid #EF4444;background:rgba(239,68,68,.06);font-size:13px;line-height:1.6;">
           <b>À vérifier avant de payer.</b>
           ${dormants.length ? `<div>• <b>${dormants.length} chauffeur(s)</b> sous contrat n'ont aucune course depuis plus de 7 jours (${dormants.map(l => esc(l.nom)).join(', ')}). Le salaire est calculé sur les jours de <b>contrat</b>, pas sur les jours travaillés : s'ils sont partis, renseignez la date de fin de contrat sur leur fiche ; sinon utilisez l'ajustement.</div>` : ''}
-          ${fragiles.length ? `<div>• <b>${fragiles.length} prime(s)</b> sont acquises grâce à un planning incomplet (plus de jours roulés que planifiés) — détail dans <a href="#/bonus" style="color:var(--pilote-blue);font-weight:700;">Prime mensuelle</a>.</div>` : ''}
         </div>`;
       })()}
       ${aPayer.length > 1 ? `<button class="btn btn-primary" data-pa-payer="tous" style="margin-bottom:14px;"><iconify-icon icon="solar:card-send-bold-duotone"></iconify-icon> Payer les ${aPayer.length} chauffeurs (${F(somme('net', l => !l.paye))})</button>` : ''}

@@ -51,10 +51,11 @@ const PaiePage = {
     let sousPrime;
     if (!d.primeActive) sousPrime = 'La prime n’est pas active en ce moment.';
     else if (primeHorsSalaire) sousPrime = `Déjà remise (${this._esc(this._moyen(d.primeVersee.moyenVersement) || 'à part')}) : ${this._f(d.primeVersee.montant)}.`;
-    else if (d.joursPlanifies === 0) sousPrime = 'Aucun jour au planning ce mois-ci pour l’instant.';
-    else if (d.primeAcquise) sousPrime = `Objectif du mois atteint (${d.tauxPrime} %). Versée avec le salaire si vous n’avez aucune dette.`;
-    else sousPrime = `${d.tauxPrime} % de l’objectif du mois. Encore ${this._f(Math.max(0, d.objectifMois - d.caMois))} pour la décrocher.`;
-    const barre = (d.primeActive && d.joursPlanifies > 0 && !primeHorsSalaire)
+    else if (!d.joursObjectif) sousPrime = 'Aucun jour roulé ni planifié ce mois-ci pour l’instant.';
+    else if (d.primeAcquise) sousPrime = `Objectif du mois atteint (${d.tauxPrime} %) avec ${d.joursRoules} jours roulés. Versée avec le salaire si vous n’avez aucune dette.`;
+    else if (d.objectifAtteint) sousPrime = `Objectif atteint ! Il faut aussi ${d.joursMin} jours roulés dans le mois : vous en avez ${d.joursRoules}.`;
+    else sousPrime = `${d.tauxPrime} % de l’objectif du mois. Encore ${this._f(Math.max(0, d.objectifMois - d.caMois))} pour la décrocher${d.joursMin > 0 ? ` · ${d.joursRoules}/${d.joursMin} jours roulés` : ''}.`;
+    const barre = (d.primeActive && d.joursObjectif > 0 && !primeHorsSalaire)
       ? `<div style="height:8px;border-radius:99px;background:#e5e7eb;overflow:hidden;margin:-2px 16px 12px"><div style="height:100%;width:${Math.min(100, d.tauxPrime)}%;border-radius:99px;background:${d.primeAcquise ? '#30d158' : '#ffb340'}"></div></div>` : '';
 
     const historique = (d.historique || []).map(h => `

@@ -347,16 +347,22 @@ const AccueilPage = {
       </div>`;
     }
 
-    // === Prime du mois : taux d'atteinte visible pour motiver (objectif par jour
-    // planifié × jours planifiés du mois ; prime versée si 100 % en fin de mois).
+    // === Prime du mois : taux d'atteinte visible pour motiver. Règle du 19/09/2026,
+    // identique à celle du bureau : objectif = objectif par jour × le plus grand de
+    // (jours planifiés, jours roulés) ; il faut en plus un minimum de jours roulés
+    // dans le mois (20 par défaut, réglage « primeJoursMin »).
     let primeHTML = '';
     if (estSalarie) {
       const obj = objectifsFlotte || {};
       const prime = Number(obj.primeMensuelle || 100000);
       const objectifJourPrime = Number(chauffeur.objectifCaJour || obj.caJourChauffeur || 60000);
       const joursPlan = [...new Set((planningMois || []).map(p => String(p.date).slice(0, 10)))];
-      const joursTotal = joursPlan.length || 26;
-      const joursEcoules = joursPlan.length ? joursPlan.filter(d => d <= todayStr).length : Math.min(26, today.getDate());
+      const joursRoules = new Set((data.caParJour || []).filter(l => Number(l.caBrut) > 0).map(l => String(l.date).slice(0, 10))).size;
+      const joursMin = (obj.primeJoursMin === 0 || Number(obj.primeJoursMin) > 0) ? Number(obj.primeJoursMin) : 20;
+      // Projection de fin de mois : jours planifiés, ou jours déjà roulés + jours encore planifiés si c'est plus ; sans planning, 26 jours.
+      const planRestants = joursPlan.filter(d => d > todayStr).length;
+      const joursTotal = joursPlan.length ? Math.max(joursPlan.length, joursRoules + planRestants) : Math.max(26, joursRoules);
+      const joursEcoules = joursPlan.length ? Math.max(joursPlan.filter(d => d <= todayStr).length, joursRoules) : Math.min(26, today.getDate());
       const caMois = (data.caParJour || []).reduce((s, l) => s + (Number(l.caBrut) || 0), 0);
       const objectifMois = objectifJourPrime * joursTotal;
       const taux = objectifMois > 0 ? Math.min(999, Math.round(caMois / objectifMois * 100)) : 0;
@@ -365,7 +371,9 @@ const AccueilPage = {
       const restant = Math.max(0, objectifMois - caMois);
       const joursRestants = Math.max(0, joursTotal - joursEcoules);
       const parJour = joursRestants > 0 ? Math.ceil(restant / joursRestants / 500) * 500 : restant;
-      const decrochee = caMois >= objectifMois && objectifMois > 0;
+      const objectifAtteint = caMois >= objectifMois && objectifMois > 0;
+      const joursManquants = Math.max(0, joursMin - joursRoules);
+      const decrochee = objectifAtteint && joursManquants === 0;
       const etat = decrochee ? 'ok' : rythme >= 0.95 ? 'ok' : rythme >= 0.75 ? 'mid' : 'ko';
       const phrase = decrochee ? `Prime décrochée, bravo patron ! 🎉`
         : joursRestants === 0 ? `Le mois est terminé : ${taux} % de l’objectif.`
@@ -375,7 +383,10 @@ const AccueilPage = {
       <div class="cp-card">
         <div class="cp-title">Prime ${prime.toLocaleString('fr-FR')} F</div>
         ${this._barrePrime(Math.min(100, taux), caMois, objectifMois, etat === 'ok' ? '#30d158' : etat === 'mid' ? '#ffb340' : '#ff6b6b')}
-        <div class="cp-desc">${decrochee ? "Décrochée, bravo patron ! 🎉" : joursRestants === 0 ? "Le mois est fini !" : "Fonce, elle est à toi ! 💪"}</div>
+        <div class="cp-desc">${decrochee ? "Décrochée, bravo patron ! 🎉"
+          : (objectifAtteint && joursManquants > 0) ? `Objectif atteint ! Encore ${joursManquants} jour${joursManquants > 1 ? 's' : ''} roulé${joursManquants > 1 ? 's' : ''} pour la valider.`
+          : joursRestants === 0 ? "Le mois est fini !"
+          : `Fonce, elle est à toi ! 💪${joursMin > 0 ? ` · ${joursRoules}/${joursMin} jours roulés` : ''}`}</div>
       </div>`;
     }
 
