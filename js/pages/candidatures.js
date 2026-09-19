@@ -71,6 +71,29 @@ const CandidaturesPage = {
     // Les candidatures font partie du second chargement : on relit la base à l'ouverture.
     Store.rechargerCollection('candidatures').then(() => { if (document.getElementById('cd-liste')) this._peindre(); });
     try { localStorage.setItem('pilote_candidatures_vues', new Date().toISOString()); } catch (_) {}
+    this._peindrePush();
+  },
+
+  // Alerte sur cet appareil à chaque candidature, même application fermée.
+  async _peindrePush() {
+    const b = document.getElementById('cd-push');
+    if (!b || typeof App === 'undefined' || !App.pushActif) return;
+    const actif = await App.pushActif();
+    if (!document.getElementById('cd-push')) return;
+    b.classList.toggle('appel', actif);
+    const t = b.querySelector('span'); if (t) t.textContent = actif ? 'Alertes actives sur cet appareil' : 'Être prévenu sur cet appareil';
+    b.title = actif ? 'Cliquez pour renvoyer une notification d’essai' : 'Recevoir une notification à chaque nouvelle candidature, même application fermée';
+  },
+
+  async _activerPush() {
+    const b = document.getElementById('cd-push');
+    if (b) b.disabled = true;
+    try {
+      const r = await App.activerPush();
+      if (r.ok) Toast.success(r.message); else Toast.warning(r.message);
+    } catch (e) { Toast.error('Activation impossible : ' + e.message); }
+    if (b) b.disabled = false;
+    this._peindrePush();
   },
 
   destroy() {
@@ -115,7 +138,10 @@ const CandidaturesPage = {
       <div class="cd-tete">
         <div><span class="cd-sur">PILOTE / RECRUTEMENT</span><h1>Candidatures</h1>
           <p>Les chauffeurs qui postulent sur pilote.tech arrivent ici. Un candidat rappelé dans l'heure a bien plus de chances de rejoindre la flotte.</p></div>
-        <a class="cd-b" href="https://pilote.tech/candidature" target="_blank" rel="noopener"><iconify-icon icon="solar:link-round-angle-bold"></iconify-icon>Voir le formulaire du site</a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="cd-b" id="cd-push" data-cd-push="1"><iconify-icon icon="solar:bell-bing-bold"></iconify-icon><span>Être prévenu sur cet appareil</span></button>
+          <a class="cd-b" href="https://pilote.tech/candidature" target="_blank" rel="noopener"><iconify-icon icon="solar:link-round-angle-bold"></iconify-icon>Voir le formulaire du site</a>
+        </div>
       </div>
       <div class="cd-filtres" id="cd-filtres"></div>
       <div class="cd-liste" id="cd-liste"></div>`;
@@ -195,8 +221,9 @@ const CandidaturesPage = {
   // ---- Actions ---------------------------------------------------------------
   _surClic(ev) {
     const self = CandidaturesPage;
-    const cible = ev.target.closest('[data-cd-filtre],[data-cd-statut],[data-cd-suivi],[data-cd-note],[data-cd-embaucher],[data-cd-trace]');
+    const cible = ev.target.closest('[data-cd-filtre],[data-cd-statut],[data-cd-suivi],[data-cd-note],[data-cd-embaucher],[data-cd-trace],[data-cd-push]');
     if (!cible) return;
+    if (cible.dataset.cdPush) { self._activerPush(); return; }
     if (cible.dataset.cdFiltre) { self._filtre = cible.dataset.cdFiltre; self._peindre(); return; }
     if (cible.dataset.cdSuivi) { self._ouvert = self._ouvert === cible.dataset.cdSuivi ? null : cible.dataset.cdSuivi; self._peindre(); return; }
     if (cible.dataset.cdNote) {

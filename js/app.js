@@ -195,7 +195,7 @@ const App = {
     // Register Service Worker for PWA (offline support + installability)
     if ('serviceWorker' in navigator) {
       // Force update: unregister old SWs and clear caches if version mismatch
-      const SW_VERSION = 740;
+      const SW_VERSION = 741;
       const storedSW = parseInt(localStorage.getItem('pilote_sw_ver') || '0');
       if (storedSW < SW_VERSION) {
         localStorage.setItem('pilote_sw_ver', SW_VERSION);
@@ -412,55 +412,71 @@ const App = {
     this._registerPushSubscription();
   },
 
+  // ---- Notifications push (application fermée) ---------------------------------
+  // L'ancien code appelait /api/notifications/push/… d'un serveur qui n'existe
+  // plus. Tout passe désormais par /api/push (clé VAPID tenue par le serveur).
+  // Un abonnement est lié à la clé avec laquelle il a été créé : s'il vient de
+  // l'ancien système, on le résilie et on se réabonne avec la clé courante.
+  async _pushApi(action, options = {}) {
+    const res = await fetch(`/api/push?action=${action}`, {
+      method: options.body ? 'POST' : 'GET',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Auth.getToken() },
+      body: options.body ? JSON.stringify(options.body) : undefined
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
+    return data;
+  },
+
+  /** (Ré)abonne cet appareil si la permission est déjà accordée. Silencieux. */
   async _registerPushSubscription() {
     try {
       const session = typeof Auth !== 'undefined' ? Auth.getSession() : null;
-      if (!session || session.role === 'chauffeur') return;
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      if (!session || session.role === 'chauffeur') return false;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return false;
+      if (Notification.permission !== 'granted') return false;
 
       const reg = await navigator.serviceWorker.ready;
+      const { publicKey } = await this._pushApi('cle');
+      if (!publicKey) return false;
+      const cle = this._urlBase64ToUint8Array(publicKey);
 
-      // Verifier si deja abonne
       let sub = await reg.pushManager.getSubscription();
-      if (sub) return; // Deja abonne
-
-      // Ne re-souscrire que si la permission est deja accordee (activation via Parametres)
-      if (Notification.permission !== 'granted') return;
-
-      // Recuperer la cle VAPID
-      try {
-        const apiBase = Store._apiBase || '/api';
-        const token = Auth.getToken();
-        const vapidRes = await fetch(apiBase + '/notifications/push/vapid-key', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        if (!vapidRes.ok) throw new Error('VAPID key unavailable');
-        const { publicKey } = await vapidRes.json();
-        if (!publicKey) throw new Error('VAPID key missing');
-
-        // S'abonner au push
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: this._urlBase64ToUint8Array(publicKey)
-        });
-
-        // Envoyer la subscription au serveur
-        await fetch(apiBase + '/notifications/push/subscribe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify({ subscription: sub.toJSON() })
-        });
-
-        console.log('[Push] Subscription enregistree');
-      } catch (pushErr) {
-        console.warn('[Push] Push notifications not available:', pushErr.message);
+      if (sub) {
+        const actuelle = sub.options && sub.options.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey) : null;
+        const meme = actuelle && actuelle.length === cle.length && actuelle.every((v, i) => v === cle[i]);
+        if (!meme) { try { await sub.unsubscribe(); } catch (_) {} sub = null; }
       }
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: cle });
+      await this._pushApi('abonner', { body: { subscription: sub.toJSON(), userAgent: navigator.userAgent } });
+      return true;
     } catch (e) {
-      console.warn('[Push] Registration failed:', e.message);
+      console.warn('[Push] abonnement impossible :', e.message);
+      return false;
     }
+  },
+
+  /** Bouton « Être prévenu sur cet appareil » : demande la permission, abonne, envoie un essai. */
+  async activerPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      return { ok: false, message: "Ce navigateur ne sait pas recevoir d'alertes. Sur iPhone, ajoutez d'abord Pilote à l'écran d'accueil (Partager › Sur l'écran d'accueil), puis ouvrez-le depuis l'icône." };
+    }
+    const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+    if (typeof NotificationManager !== 'undefined') NotificationManager._permission = permission;
+    if (permission !== 'granted') return { ok: false, message: "Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages du navigateur (icône à gauche de l'adresse), puis réessayez." };
+    const abonne = await this._registerPushSubscription();
+    if (!abonne) return { ok: false, message: "L'abonnement n'a pas abouti. Réessayez dans un instant." };
+    try { await this._pushApi('test', { body: {} }); } catch (e) { return { ok: true, message: 'Appareil abonné. (La notification d’essai n’est pas partie : ' + e.message + ')' }; }
+    return { ok: true, message: "C'est actif : une notification d'essai vient de partir vers cet appareil." };
+  },
+
+  /** true si cet appareil est déjà abonné avec la permission accordée. */
+  async pushActif() {
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || Notification.permission !== 'granted') return false;
+      const reg = await navigator.serviceWorker.ready;
+      return !!(await reg.pushManager.getSubscription());
+    } catch (e) { return false; }
   },
 
   _urlBase64ToUint8Array(base64String) {

@@ -434,6 +434,7 @@ module.exports = {
   orderDurationMin,
   supabaseUpsert,
   supabasePatch,
+  entetesSupabase,
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   YANGO_BASE,
