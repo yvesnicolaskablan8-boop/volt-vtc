@@ -127,6 +127,25 @@ function noterPassageCron(resultat, erreur) {
   _dernierPassageCron = { quand: new Date().toISOString(), resultat, motif };
 }
 
+/**
+ * Forme de la cle de service configuree, SANS jamais la divulguer : son type, et
+ * pour un JWT le role et le projet inscrits dedans (ces deux champs ne sont pas
+ * secrets). Sert a dire « vous avez colle la cle publique » plutot que « refuse ».
+ */
+function formeCleService(cle) {
+  if (!cle) return { forme: 'absente' };
+  if (/^sb_secret_/.test(cle)) return { forme: 'sb_secret', longueur: cle.length };
+  if (/^sb_publishable_/.test(cle)) return { forme: 'sb_publishable (cle PUBLIQUE)', longueur: cle.length };
+  const parts = cle.split('.');
+  if (parts.length === 3) {
+    try {
+      const charge = JSON.parse(Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+      return { forme: 'jwt', role: charge.role || null, bonProjet: charge.ref === 'cnwigcbgzzwvvihopvto', longueur: cle.length };
+    } catch (e) { return { forme: 'jwt illisible (tronque ?)', longueur: cle.length }; }
+  }
+  return { forme: 'inconnue', longueur: cle.length, guillemets: /^["']|["']$/.test(cle), espaces: /\s/.test(cle) };
+}
+
 async function handleCronSyncCa(req, res) {
   // Valeurs collees a la main dans Vercel : un espace ou un retour a la ligne en
   // trop (copie depuis le Terminal) ferait echouer la comparaison ou l'en-tete.
@@ -139,7 +158,7 @@ async function handleCronSyncCa(req, res) {
   if (recu !== `Bearer ${secret}`) {
     console.warn('[cron-sync-ca] refuse :', recu ? 'secret different' : 'aucun en-tete Authorization');
     if (recu) noterPassageCron('refuse : secret different', null);
-    return res.status(401).json({ error: 'Non autorise', enTeteRecu: !!recu, dernierPassage: _dernierPassageCron });
+    return res.status(401).json({ error: 'Non autorise', enTeteRecu: !!recu, dernierPassage: _dernierPassageCron, cleService: formeCleService(cleService) });
   }
   setRequestToken(cleService);
   const jourRef = new Date().toISOString().slice(0, 10);
