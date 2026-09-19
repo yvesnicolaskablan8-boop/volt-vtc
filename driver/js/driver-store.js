@@ -332,7 +332,7 @@ const DriverStore = {
       typeContrat: modele.typeContrat || 'CDI',
       poste: modele.poste || 'Chauffeur VTC',
       derniereMaj: modele.derniereMaj || null,
-      texte: this._preremplirContrat(modele.texte || '', ch, ent, immat, modele.employeur || {}, bloc.vagues || []),
+      texte: this._preremplirContrat(modele.texte || '', ch, ent, immat, modele.employeur || {}, bloc.vagues || [], bloc.prime || {}),
       chauffeur: ch,
       entreprise: ent,
       employeur: modele.employeur || {}
@@ -346,7 +346,7 @@ const DriverStore = {
    * l'application. Un contrat de travail doit porter ses mentions legales
    * completes — forme, capital, RCCM, gerant.
    */
-  _preremplirContrat(texte, ch, ent, immat, employeur, vagues) {
+  _preremplirContrat(texte, ch, ent, immat, employeur, vagues, prime) {
     if (!texte) return '';
     const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     const somme = (n) => (n === 0 || n) && Number(n) > 0
@@ -360,6 +360,10 @@ const DriverStore = {
       return m ? `${Number(m[1])} h ${m[2]}` : String(hhmm || defaut);
     };
     const v1 = (vagues && vagues[0]) || {}, v2 = (vagues && vagues[1]) || {};
+    // Prime mensuelle (réglages de la flotte) : montant, et seuil de jours roulés écrit « vingt (20) ».
+    const pr = prime || {};
+    const joursMin = (pr.joursMin === 0 || Number(pr.joursMin) > 0) ? Number(pr.joursMin) : 20;
+    const EN_LETTRES = { 10: 'dix', 12: 'douze', 15: 'quinze', 16: 'seize', 18: 'dix-huit', 20: 'vingt', 21: 'vingt et un', 22: 'vingt-deux', 23: 'vingt-trois', 24: 'vingt-quatre', 25: 'vingt-cinq', 26: 'vingt-six' };
 
     const emp = employeur || {};
     const valeurs = {
@@ -386,6 +390,8 @@ const DriverStore = {
       jourPaie: ent.jourPaie || '5',
       objectif: somme(objectif),
       objectifSemaine: objectif > 0 ? somme(objectif * 6) : '__________',   // six jours travaillés, un jour de repos
+      primeMensuelle: somme(Number(pr.montant) > 0 ? Number(pr.montant) : 100000),
+      primeJoursMin: EN_LETTRES[joursMin] ? `${EN_LETTRES[joursMin]} (${joursMin})` : String(joursMin),
       immatriculation: immat || '__________'
     };
     return texte.replace(/\{\{(\w+)\}\}/g, (m, cle) => (cle in valeurs) ? valeurs[cle] : m);
@@ -396,15 +402,19 @@ const DriverStore = {
    * auparavant : le chauffeur signait, l'ecran confirmait, et aucune trace
    * n'etait ecrite — la signature n'existait pas.
    */
-  async accepterContrat(version) {
+  async accepterContrat(version, texte) {
     const id = this._chauffeurId();
     if (!id) return { success: false, error: 'Chauffeur inconnu' };
-    const { error } = await supabase.from('fleet_chauffeurs').update({
+    const ligne = {
       contrat_accepte: true,
       contrat_accepte_le: new Date().toISOString(),
       contrat_version: Number(version) || 1,
       contrat_signe: true
-    }).eq('id', id);
+    };
+    // Le texte EXACT que le chauffeur avait sous les yeux, champs remplis : le modèle et les
+    // réglages peuvent changer ensuite, la preuve de ce qui a été accepté ne doit pas bouger.
+    if (texte) ligne.contrat_contenu = String(texte);
+    const { error } = await supabase.from('fleet_chauffeurs').update(ligne).eq('id', id);
     if (error) {
       console.error('[Contrat] Acceptation non enregistree :', error.message);
       return { success: false, error: error.message };

@@ -34,6 +34,7 @@ const ContratPage = {
     const c = data;                       // version, typeContrat, poste, derniereMaj
     const ent = data.entreprise || {};
     this._version = data.version || 1;    // relu au moment de l'acceptation
+    this._texte = data.texte || '';       // texte affiché, conservé avec l'acceptation
 
     const nom = `${chauffeur.prenom || '____'} ${chauffeur.nom || '____'}`.trim();
     const telephone = chauffeur.telephone || '____';
@@ -337,7 +338,7 @@ const ContratPage = {
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
     }
 
-    const result = await DriverStore.accepterContrat(this._version);
+    const result = await DriverStore.accepterContrat(this._version, this._texte);
 
     if (result && result.success) {
       DriverToast.show('Contrat accept\u00e9 avec succ\u00e8s !', 'success');
